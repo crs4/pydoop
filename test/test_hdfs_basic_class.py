@@ -3,21 +3,12 @@ import random
 
 import sys
 import os
-import numpy as np
+from ctypes import create_string_buffer
 
 #----------------------------------------------------------------------------
 from pydoop.hdfs import hdfs as HDFS
 #----------------------------------------------------------------------------
 
-#----------------------------------------------------------------------------
-#
-# This is a hack, just until I find something more reasonable.
-#
-class buffer(np.char.chararray):
-  def __getitem__(self, i):
-    return np.ndarray.__getitem__(self, (i,))
-
-#----------------------------------------------------------------------------
 
 class hdfs_basic_tc(unittest.TestCase):
   def __init__(self, target, HDFS_HOST='', HDFS_PORT=0):
@@ -32,12 +23,8 @@ class hdfs_basic_tc(unittest.TestCase):
   #--
   def connect_disconnect(self):
     blk_size = self.fs.default_block_size()
-    #self.assertEqual(blk_size,  0)
     capacity = 0 #fs.capacity()
     used     = 0 #fs.used()
-    print 'blk_size = ', blk_size
-    print 'capacity = ', capacity
-    print 'used     = ', used
   #--
   def open_close(self):
     path = 'foobar.txt'
@@ -147,18 +134,18 @@ class hdfs_basic_tc(unittest.TestCase):
     #--
     flags = os.O_RDONLY
     f = self.fs.open_file(path, flags, 0, 0, 0)
-    chunk = buffer((len(data),))
+    chunk = create_string_buffer(len(data))
     bytes_read = f.read_chunk(chunk)
     self.assertEqual(bytes_read, len(data),
                      "wrong number of bytes read.")
     for i in range(len(data)):
-      self.assertEqual(chunk[i], data[i],
-                       "wrong bytes read at %d:>%s< >%s<" % (i, chunk[i], data[i]))
+      self.assertEqual(chunk[i], data[i], "wrong bytes read at %d:>%s< >%s<" %
+                       (i, chunk[i], data[i]))
     f.close()
     #--
     f = self.fs.open_file(path, flags, 0, 0, 0)
     pos = 0
-    chunk = buffer((len(txt),))
+    chunk = create_string_buffer(len(txt))
     for i in range(N):
       bytes_read = f.pread_chunk(pos, chunk)
       self.assertEqual(bytes_read, len(txt),
