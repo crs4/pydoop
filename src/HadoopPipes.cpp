@@ -32,6 +32,9 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
+#include <iostream>
+#include <fstream>
+
 using std::map;
 using std::string;
 using std::vector;
@@ -210,6 +213,11 @@ namespace HadoopPipes {
       string arg;
       int sep;
       sep = readUpto(command, delim);
+      //ZAG FIXME
+      std::ofstream lf("/tmp/HadoopPipes.log");
+      lf << "command=" << command << std::endl;
+      lf.flush();
+      //ZAG FIXME
       if (command == "mapItem") {
         HADOOP_ASSERT(sep == '\t', "Short text protocol command " + command);
         sep = readUpto(key, delim);
@@ -776,6 +784,7 @@ namespace HadoopPipes {
       }
       isNewKey = false;
       if (mapper != NULL) {
+	
         mapper->map(*this);
       } else {
         reducer->reduce(*this);
@@ -985,6 +994,10 @@ namespace HadoopPipes {
    * @return true, if the task succeeded.
    */
   bool runTask(const Factory& factory) {
+    std::ofstream lf("/tmp/HadoopPipes.log");
+    lf << "start factory." << std::endl;
+    lf.flush();
+
     try {
       TaskContextImpl* context = new TaskContextImpl(factory);
       Protocol* connection;
@@ -1035,8 +1048,15 @@ namespace HadoopPipes {
       context->setProtocol(connection, connection->getUplink());
       pthread_t pingThread;
       pthread_create(&pingThread, NULL, ping, (void*)(context));
+      lf << "Waiting for task.." << std::endl;
+      lf.flush();
       context->waitForTask();
+      lf << "After wait.." << std::endl;
+      lf.flush();
+
       while (!context->isDone()) {
+	lf << "Ready for nextKey." << std::endl;
+	lf.flush();
         context->nextKey();
       }
       context->closeAll();

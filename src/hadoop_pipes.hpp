@@ -4,13 +4,43 @@
 
 #include "hadoop_pipes_context.hpp"
 
+#include <hadoop/SerialUtils.hh>
+using namespace HadoopUtils;
 using namespace HadoopPipes;
+
+#include <iostream>
+#include <fstream>
 
 #include <string>
 
+
+// lifted from pycuda...
+
+template <typename T>
+inline boost::python::handle<> handle_from_new_ptr(T *ptr){
+  return boost::python::handle<>(
+				 typename boost::python::manage_new_object::apply<T *>::type()(ptr));
+}
+
+
+
 struct wrap_mapper: Mapper, wrapper<Mapper> {
   void map(MapContext& ctx) {
-    this->get_override("map")(ctx);
+    std::ofstream lf("/tmp/hadoop_pipes_mapper.log");
+    lf << "wrap_mapper::map ctx=" << &(ctx) << std::endl;
+    lf.flush();
+    override f = this->get_override("map");
+    lf << "Got an f " << std::endl;
+    lf.flush();
+    const std::string& k = ctx.getInputKey();
+    lf << "getInputKey() = "<< k << std::endl;
+    object o_ctx = make_tuple(handle_from_new_ptr(&ctx))[0];
+    lf << "Got a o_ctx " << std::endl;
+    lf.flush();
+    f(o_ctx);
+    lf << "ready to leave map." << std::endl;
+    lf.flush();
+    //this->get_override("map")(ctx);
   }
 };
 
@@ -51,29 +81,53 @@ struct wrap_record_writer: RecordWriter, wrapper<RecordWriter> {
     return base::method_name(arg); \
   }
 
+
 struct wrap_factory: Factory, wrapper<Factory> {
   //----------------------------------------------------------
   Mapper* createMapper(MapContext& ctx) const {
-#if 1    
+#if 0
     const MapContext& c_ctx = ctx;
     object o_ctx = make_getter(&c_ctx, 
 			       return_value_policy<copy_const_reference>());
     return this->get_override("createMapper")(o_ctx);
 #else
-    std::cerr << "wrap_factory:: m=" << m << std::endl;
-    
-    std::cerr << "wrap_factory:: ctx=" << &(ctx) << std::endl;
-    override f = ;
-    std::cerr << "wrap_factory:: f="  << std::endl;
-    std::cerr << "wrap_factory:: ctx.getInputKey()="  
-	      << ctx.getInputKey() << std::endl;
-    const MapContext& c_ctx = ctx;
-    object o_ctx = make_getter(&c_ctx, 
-			       return_value_policy<copy_const_reference>());
+    std::ofstream lf("/tmp/hadoop_pipes.log");
+    lf << "wrap_factory:: ctx=" << &(ctx) << std::endl;
+    lf << "wrap_factory:: ctx.getInputKey()="  
+       << ctx.getInputKey() << std::endl;
+    lf.flush();
+    /*
+    lf << "wrap_factory:: ctx.getCounter()="  
+       << ctx.getCounter("WORDCOUNTS", "INPUT_WORS") << std::endl;
+    lf.flush();
+    */
+    //--
+    const JobConf *jc = ctx.getJobConf();
+    lf << "Got a jc="<< jc << std::endl;
+    lf.flush();    
+    try {
+      int v = jc->getInt("io.sort.mb");
+      lf << "io.sort.mb " << v << std::endl;
+      lf.flush();
+    } catch(Error e){
+      lf << "Got an exception " << e.getMessage() << std::endl;
+      lf.flush();
+    }
+    override f = this->get_override("createMapper");
+    lf << "Got an f " << std::endl;
+    lf.flush();
+    const std::string& k = ctx.getInputKey();
+    lf << "getInputKey() = "<< k << std::endl;
+    object o_ctx = make_tuple(handle_from_new_ptr(&ctx))[0];
+    lf << "Got a o_ctx " << std::endl;
+    lf.flush();
+
     Mapper* m = f(o_ctx);
-    std::cerr << "wrap_factory:: m=" << m << std::endl;
+    lf << "Got a mapper." << std::endl;
+    lf.flush();
     return m;
 #endif
+
   }
   Reducer* createReducer(ReduceContext& ctx) const{
     const ReduceContext& c_ctx = ctx;
