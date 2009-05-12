@@ -1,0 +1,61 @@
+#!/bin/sh
+
+""":"
+export PYTHONPATH=/home/zag/Work/svn/ac-dc/lib/pydoop/trunk
+
+work_dir=$(dirname $0)
+base_name=$(basename $0)
+original_dir=$PWD
+
+exec python -u -OO $0 ${1+"@"}
+":"""
+
+#----------------------------------------------------------------------
+from pydoop import Mapper, Reducer, Factory, runTask
+import sys
+
+flog = open('/tmp/wordcount.log', 'w')
+def log(x):
+  flog.write('%s\n' % x)
+  flog.flush()
+
+
+WORDCOUNT    = 'WORDCOUNT'
+INPUT_WORDS  = 'INPUT_WORDS'
+OUTPUT_WORDS = 'OUTPUT_WORDS'
+
+class WC_Mapper(Mapper):
+  def __init__(self, task_ctx):
+    Mapper.__init__(self)
+    log('WC_Mapper::init  start')
+    log('WC_Mapper::task_ctx = %s' % dir(task_ctx))
+    #self.inputWords = task_ctx.getCounter(WORDCOUNT, INPUT_WORDS)
+    log('WC_Mapper::init  end')
+  #-
+  def map(self, map_ctx):
+    log('map start dir(%s)=%s' % (map_ctx, dir(map_ctx)))
+    jc = map_ctx.getJobConf()
+    log('jc[io.sort.mb =%s' % jc.getInt('io.sort.mb'))
+    #words = map_ctx.getInputValue()
+    words = ['fake', 'words', 'foo', 'bar']
+    #words = map_ctx.getInputValue().split()
+    log('map words=%s' % words)
+    for w in words:
+      map_ctx.emit(w, '1')
+    #map_ctx.incrementCounter(self.inputWords, len(words))
+    log('map end')
+
+class WC_Reducer(Reducer):
+  def __init__(self, task_ctx):
+    Reducer.__init__(self)
+    self.outputWords = task_ctx.getCounter(WORDCOUNT, OUTPUT_WORDS)
+  #-
+  def reduce(self, red_ctx):
+    s = 0
+    while red_ctx.nextValue():
+      s += int(red_ctx.getInputValue())
+    red_ctx.emit(red_ctx.getInputKey(), str(s))
+    red_ctx.incrementCounter(self.outputWords, 1)
+
+log('wordcount started')
+runTask(Factory(WC_Mapper, WC_Reducer))

@@ -1,7 +1,7 @@
 MODULE_NAME=hadoop_pipes
 
 # module low level components
-WRAP_FILES=hadoop_pipes hadoop_pipes_context hadoop_test 
+WRAP_FILES=hadoop_pipes hadoop_pipes_context hadoop_pipes_test_support
 
 # 
 AUX_FILES=HadoopPipes SerialUtils StringUtils
@@ -20,7 +20,7 @@ PYTHON_INC=/usr/include/python2.5
 HADOOP_INC=/opt/hadoop-0.19.1/c++/Linux-amd64-64/include
 HADOOP_LIB_DIR=/opt/hadoop-0.19.1/c++/Linux-amd64-64/lib
 
-CXXFLAGS= -O3 -fPIC -I${PYTHON_INC} -I${HADOOP_INC}
+CXXFLAGS= -g -fPIC -I${HADOOP_INC} -I${PYTHON_INC} 
 
 HADOOP_LIBS=-lhadooppipes -lhadooputils
 OTHER_LIBS=-lpthread
@@ -34,8 +34,8 @@ all: ${MODULE_NAME}.so
 
 
 ${MODULE_NAME}.so:  $(OBJ_WRAP_FILES) ${OBJ_MAIN_FILE}  $(OBJ_AUX_FILES)
-	g++ -shared  $^ -lboost_python \
-        -L${HADOOP_LIB_DIR} ${HADOOP_LIBS}  ${OTHER_LIBS} -o $@
+	g++ -shared  $^ -L${HADOOP_LIB_DIR} ${HADOOP_LIBS} \
+	${OTHER_LIBS} -lboost_python  -o $@
 
 
 

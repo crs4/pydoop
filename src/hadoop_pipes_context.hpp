@@ -9,7 +9,7 @@ using namespace HadoopPipes;
 
 static std::vector<std::string> horrible_hack;
 
-#define OVERRIDE_STR_REF(method_name) \
+#define OVERRIDE_STR_REF(method_name)	    \
  if (override f = this->get_override(method_name)){ \
     str r = f(); \
     horrible_hack.push_back(extract<std::string>(r)); \
@@ -55,8 +55,7 @@ struct wrap_job_conf : JobConf,
 //              TaskContext                //
 //+++++++++++++++++++++++++++++++++++++++++//
 
-struct wrap_task_context : TaskContext,
-			   wrapper<TaskContext>{
+struct wrap_task_context : TaskContext, wrapper<TaskContext>{
   const JobConf* getJobConf() {
     return this->get_override("getJobConf")();
   }
@@ -159,5 +158,7 @@ struct wrap_reduce_context : ReduceContext,
     return this->get_override("nextValue")();
   }
 };
+
+
 #endif
  

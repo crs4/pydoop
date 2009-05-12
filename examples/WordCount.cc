@@ -2,6 +2,8 @@
 #include "hadoop/TemplateFactory.hh"
 #include "hadoop/StringUtils.hh"
 
+#include <assert.h>
+
 class WordCountMap: public HadoopPipes::Mapper {
 public:
   WordCountMap(HadoopPipes::TaskContext& context){}

@@ -8,16 +8,6 @@ using namespace boost::python;
 #include <iostream>
 
 
-void try_context(TaskContext& tc){
-  std::cerr << "** in try_contxt"                        << std::endl;
-  std::cerr << "Inputkey="    << tc.getInputKey()        << std::endl;
-  std::cerr << "InputValue="  << tc.getInputValue()      << std::endl;
-  const std::string& k = tc.getInputKey();
-  const std::string& v = tc.getInputValue();
-  std::cerr << "** trying emit(" << k << "," << v << ")" <<std::endl;
-  tc.emit(k, v);
-}
-
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
@@ -32,6 +22,9 @@ void export_hadoop_pipes_context()
     .def("getFloat",    pure_virtual(&JobConf::getFloat))
     .def("getBoolean",  pure_virtual(&JobConf::getBoolean))
     ;
+  //--
+  class_<TaskContext::Counter>("TaskContext_Counter", init<int>())
+    .def("getId", &TaskContext::Counter::getId);
   //--
   class_<wrap_task_context, boost::noncopyable>("TaskContext")
     .def("getJobConf",  pure_virtual(&TaskContext::getJobConf),
@@ -49,6 +42,7 @@ void export_hadoop_pipes_context()
     .def("incrementCounter",
 	 pure_virtual(&TaskContext::incrementCounter))
     ;
+
   //--
   class_<wrap_map_context, bases<TaskContext>, 
     boost::noncopyable>("MapContext")
@@ -77,7 +71,7 @@ void export_hadoop_pipes_context()
 	 return_value_policy<copy_const_reference>())
     ;
   //--
-  class_<wrap_reduce_context, bases<TaskContext>, 
+  class_<wrap_reduce_context, bases<TaskContext>,
     boost::noncopyable>("ReduceContext")
     .def("getJobConf",  pure_virtual(&ReduceContext::getJobConf),
 	 return_internal_reference<>())
@@ -96,8 +90,6 @@ void export_hadoop_pipes_context()
     .def("nextValue", 
 	 pure_virtual(&ReduceContext::nextValue))
     ;
-  //--
-  def("try_context", try_context)
-    ;
+
 }
 

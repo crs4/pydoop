@@ -10,9 +10,9 @@ using namespace HadoopPipes;
 
 #include <iostream>
 #include <fstream>
+#include <ios>
 
 #include <string>
-
 
 // lifted from pycuda...
 
@@ -22,6 +22,11 @@ inline boost::python::handle<> handle_from_new_ptr(T *ptr){
 				 typename boost::python::manage_new_object::apply<T *>::type()(ptr));
 }
 
+template <typename T>
+inline boost::python::handle<> handle_from_old_ptr(T *ptr){
+  return boost::python::handle<>(
+				 typename boost::python::reference_existing_object::apply<T *>::type()(ptr));
+}
 
 
 struct wrap_mapper: Mapper, wrapper<Mapper> {
@@ -32,9 +37,8 @@ struct wrap_mapper: Mapper, wrapper<Mapper> {
     override f = this->get_override("map");
     lf << "Got an f " << std::endl;
     lf.flush();
-    const std::string& k = ctx.getInputKey();
-    lf << "getInputKey() = "<< k << std::endl;
-    object o_ctx = make_tuple(handle_from_new_ptr(&ctx))[0];
+    //object o_ctx = make_tuple(handle_from_new_ptr(&ctx))[0];
+    object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
     lf << "Got a o_ctx " << std::endl;
     lf.flush();
     f(o_ctx);
@@ -46,7 +50,9 @@ struct wrap_mapper: Mapper, wrapper<Mapper> {
 
 struct wrap_reducer: Reducer, wrapper<Reducer> {
   void reduce(ReduceContext& ctx) {
-    this->get_override("reduce")(ctx);
+    override f = this->get_override("reduce");
+    object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
+    f(o_ctx);
   }
 };
 
@@ -91,40 +97,15 @@ struct wrap_factory: Factory, wrapper<Factory> {
 			       return_value_policy<copy_const_reference>());
     return this->get_override("createMapper")(o_ctx);
 #else
-    std::ofstream lf("/tmp/hadoop_pipes.log");
-    lf << "wrap_factory:: ctx=" << &(ctx) << std::endl;
-    lf << "wrap_factory:: ctx.getInputKey()="  
-       << ctx.getInputKey() << std::endl;
-    lf.flush();
-    /*
-    lf << "wrap_factory:: ctx.getCounter()="  
-       << ctx.getCounter("WORDCOUNTS", "INPUT_WORS") << std::endl;
-    lf.flush();
-    */
-    //--
-    const JobConf *jc = ctx.getJobConf();
-    lf << "Got a jc="<< jc << std::endl;
-    lf.flush();    
-    try {
-      int v = jc->getInt("io.sort.mb");
-      lf << "io.sort.mb " << v << std::endl;
-      lf.flush();
-    } catch(Error e){
-      lf << "Got an exception " << e.getMessage() << std::endl;
-      lf.flush();
-    }
+    std::cerr << "createMapper() wrap_factory:: ctx=" << &(ctx) << std::endl;
     override f = this->get_override("createMapper");
-    lf << "Got an f " << std::endl;
-    lf.flush();
-    const std::string& k = ctx.getInputKey();
-    lf << "getInputKey() = "<< k << std::endl;
-    object o_ctx = make_tuple(handle_from_new_ptr(&ctx))[0];
-    lf << "Got a o_ctx " << std::endl;
-    lf.flush();
-
+    std::cerr << "createMapper() Got an f " << std::endl;
+    object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
+    std::cerr << "createMapper() Got a o_ctx " << std::endl;
     Mapper* m = f(o_ctx);
-    lf << "Got a mapper." << std::endl;
-    lf.flush();
+    std::cerr << "createMapper() Got a mapper " << m << std::endl;
+    m->map(ctx);
+    std::cerr << "createMapper() invoked " << m << std::endl;
     return m;
 #endif
 
