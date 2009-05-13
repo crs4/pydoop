@@ -26,5 +26,11 @@ void export_hadoop_pipes_test_support()
       return_value_policy<manage_new_object>());
   def("get_TaskContext_object", get_TaskContext_object,
       return_value_policy<manage_new_object>());
+  def("get_MapContext_object", get_MapContext_object,
+      return_value_policy<manage_new_object>());
+  def("get_ReduceContext_object", get_ReduceContext_object,
+      return_value_policy<manage_new_object>());
+  def ("double_a_string", double_a_string,
+       return_value_policy<copy_const_reference>());
 }
 

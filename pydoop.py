@@ -4,11 +4,10 @@ from hadoop_pipes import runTask as runTask
 from hadoop_pipes import Mapper  as Mapper
 from hadoop_pipes import Reducer as Reducer
 
-flog = open('/tmp/wordcount_factory.log', 'w')
-def log(x):
-  flog.write('%s\n' % x)
-  flog.flush()
+import sys
 
+def log(x):
+  sys.stderr.write('%s\n' % x)
 
 
 class Factory(hadoop_pipes.Factory):

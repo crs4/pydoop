@@ -1,7 +1,7 @@
 MODULE_NAME=hadoop_pipes
 
 # module low level components
-WRAP_FILES=hadoop_pipes hadoop_pipes_context hadoop_pipes_test_support
+WRAP_FILES=hadoop_pipes hadoop_pipes_context hadoop_pipes_test_support hacked_wrapper
 
 # 
 AUX_FILES=HadoopPipes SerialUtils StringUtils
@@ -37,13 +37,13 @@ ${MODULE_NAME}.so:  $(OBJ_WRAP_FILES) ${OBJ_MAIN_FILE}  $(OBJ_AUX_FILES)
 	g++ -shared  $^ -L${HADOOP_LIB_DIR} ${HADOOP_LIBS} \
 	${OTHER_LIBS} -lboost_python  -o $@
 
-
+for i in hadoop_pipes hadoop_pipes_context hadoop_pipes_test_support hacked_wrapper ; do  if [ `grep -c export ${i}.cpp` != "0" ] ;  then echo $i; fi done
 
 ${CPP_MAIN_FILE} : ${CPP_WRAP_FILES} ${HPP_WRAP_FILES} 
 	echo "#include <boost/python.hpp>" > $@
-	for i in ${WRAP_FILES} ; do echo "void export_$${i}();" >> $@; done
+	for i in ${WRAP_FILES} ; do if [ `grep -c export $${i}.cpp` != "0" ]; then echo "void export_$${i}();" >> $@; fi; done
 	echo "BOOST_PYTHON_MODULE(${MODULE_NAME}){" >> $@
-	for i in ${WRAP_FILES} ; do echo "export_$${i}();" >> $@; done
+	for i in ${WRAP_FILES} ; do if [ `grep -c export $${i}.cpp` != "0" ]; then echo "export_$${i}();" >> $@; fi; done
 	echo "}" >> $@
 
 

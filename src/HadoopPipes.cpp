@@ -378,33 +378,26 @@ namespace HadoopPipes {
     }
 
     virtual void nextEvent() {
-      std::ofstream lf("/tmp/HadoopPipes_protocol_nextEvent.log", 
-		       std::ios_base::app);
-      lf << "nextEvent" << std::endl;
-      lf.flush();
+      std::cerr << "nextEvent" << std::endl;
       
       int32_t cmd;
       cmd = deserializeInt(*downStream);
-      lf << "cmd = " << cmd << std::endl;
-      lf.flush();
+      std::cerr << "cmd = " << cmd << std::endl;
 
       switch (cmd) {
       case START_MESSAGE: {
         int32_t prot;
         prot = deserializeInt(*downStream);
-	lf << "START_MESSAGE PROT=" << prot << std::endl;
-	lf.flush();
+	std::cerr << "START_MESSAGE PROT=" << prot << std::endl;
         handler->start(prot);
         break;
       }
       case SET_JOB_CONF: {
-	lf << "SET_JOB_CONF." << std::endl;
-	lf.flush();
+	std::cerr << "SET_JOB_CONF." << std::endl;
 
         int32_t entries;
         entries = deserializeInt(*downStream);
-	lf << "SET_JOB_CONF. entries=" << entries <<std::endl;
-	lf.flush();
+	std::cerr << "SET_JOB_CONF. entries=" << entries <<std::endl;
 
 
         vector<string> result(entries);
@@ -412,8 +405,7 @@ namespace HadoopPipes {
           string item;
           deserializeString(item, *downStream);
           result.push_back(item);
-	  lf << "SET_JOB_CONF. item=" << item <<std::endl;
-	  lf.flush();
+	  std::cerr << "SET_JOB_CONF. item=" << item <<std::endl;
         }
 
         handler->setJobConf(result);
@@ -431,22 +423,17 @@ namespace HadoopPipes {
         string split;
         int32_t numReduces;
         int32_t piped;
-	lf << "RUN_MAP " <<std::endl;
-	lf.flush();
+	std::cerr << "RUN_MAP " <<std::endl;
 
         deserializeString(split, *downStream);
         numReduces = deserializeInt(*downStream);
         piped = deserializeInt(*downStream);
-	lf << "split =  " << split <<std::endl;
-	lf.flush();
-	lf << "numReduces =  " << numReduces <<std::endl;
-	lf.flush();
-	lf << "piped =  " << piped <<std::endl;
-	lf.flush();
+	std::cerr << "split =  " << split <<std::endl;
+	std::cerr << "numReduces =  " << numReduces <<std::endl;
+	std::cerr << "piped =  " << piped <<std::endl;
 
         handler->runMap(split, numReduces, piped);
-	lf << "AFTER RUN_MAP " <<std::endl;
-	lf.flush();
+	std::cerr << "AFTER RUN_MAP " <<std::endl;
         break;
       }
       case MAP_ITEM: {
@@ -482,7 +469,6 @@ namespace HadoopPipes {
       default:
         HADOOP_ASSERT(false, "Unknown binary command " + toString(cmd));
       }
-      lf.close();
     }
 
     virtual ~BinaryProtocol() {
@@ -667,14 +653,11 @@ namespace HadoopPipes {
     const Factory* factory;
     pthread_mutex_t mutexDone;
     std::vector<int> registeredCounterIds;
-  public:
-    std::ofstream lf; 
 
 
   public:
 
-    TaskContextImpl(const Factory& _factory) : lf("/tmp/HadoopPipes_taskctx.log",
-						  std::ios_base::app){
+    TaskContextImpl(const Factory& _factory){
       statusSet = false;
       done = false;
       newKey = NULL;
@@ -731,27 +714,23 @@ namespace HadoopPipes {
       HADOOP_ASSERT((reader == NULL) == pipedInput,
                     pipedInput ? "RecordReader defined when not needed.":
                     "RecordReader not defined");
-      lf << "runMap inputSplit " << *inputSplit << std::endl;
-      lf.flush();
-      lf << "runMap pipedInput " << pipedInput << std::endl;
-      lf.flush();
+      std::cerr << "runMap inputSplit " << *inputSplit << std::endl;
+      std::cerr  << "runMap pipedInput " << pipedInput << std::endl;
+      std::cerr  << "reader " << reader << std::endl;
+      std::cerr  << "value " << value << std::endl;
       if (reader != NULL) {
         value = new string();
       }
-      lf << "runMap get a mapper." << std::endl;
-      lf.flush();
+      std::cerr << "runMap get a mapper." << std::endl;
       mapper = factory->createMapper(*this);
-      lf << "runMap mapper = "<< mapper << std::endl;
-      lf.flush();
+      std::cerr << "runMap mapper = "<< mapper << std::endl;
       numReduces = _numReduces;
-      lf << "numReduces = "<< numReduces << std::endl;
-      lf.flush();
+      std::cerr << "numReduces = "<< numReduces << std::endl;
       if (numReduces != 0) { 
         reducer = factory->createCombiner(*this);
         partitioner = factory->createPartitioner(*this);
       }
-      lf << "reducer = "<< reducer << std::endl;
-      lf.flush();
+      std::cerr << "reducer = "<< reducer << std::endl;
       if (reducer != NULL) {
         int64_t spillSize = 100;
         if (jobConf->hasKey("io.sort.mb")) {
@@ -761,8 +740,7 @@ namespace HadoopPipes {
                                    uplink, partitioner, numReduces);
       }
       hasTask = true;
-      lf << "hasTask = "<< hasTask << std::endl;
-      lf.flush();
+      std::cerr << "hasTask = "<< hasTask << std::endl;
     }
 
     virtual void mapItem(const string& _key, const string& _value) {
@@ -791,12 +769,12 @@ namespace HadoopPipes {
     }
     
     virtual bool isDone(int c = 0) {
-      lf << "asking for lock: " << c  << std::endl;
+      std::cerr << "asking for lock: " << c  << std::endl;
       pthread_mutex_lock(&mutexDone);
-      lf << "got lock" <<  c  << std::endl;
+      std::cerr << "got lock" <<  c  << std::endl;
       bool doneCopy = done;
       pthread_mutex_unlock(&mutexDone);
-      lf << "released lock" <<  c  << std::endl;
+      std::cerr << "released lock" <<  c  << std::endl;
       return doneCopy;
     }
 
@@ -811,27 +789,19 @@ namespace HadoopPipes {
     }
 
     void waitForTask() {
-      lf << "In WAIT FOR TASK." << std::endl;
-      lf.flush();
+      std::cerr << "In WAIT FOR TASK." << std::endl;
 
       while (!done && !hasTask) {
-	lf << "asking for nextEvent." << std::endl;
-	lf.flush();
+	std::cerr << "asking for nextEvent." << std::endl;
         protocol->nextEvent();
-	lf << "done." << std::endl;
-	lf.flush();
+	std::cerr << "done." << std::endl;
       }
-      lf << "finished." << std::endl;
-      lf.flush();
+      std::cerr << "finished." << std::endl;
     }
 
     bool nextKey() {
-      lf << "get nextkey." << std::endl;
-      lf.flush();
-      lf << "reader=" << reader << std::endl;
-      lf.flush();
-      lf << "mapper=" << mapper << std::endl;
-      lf.flush();
+      std::cerr << "nextKey::reader=" << reader << std::endl;
+      std::cerr << "nextKey::mapper=" << mapper << std::endl;
 
       if (reader == NULL) {
         while (!isNewKey) {
@@ -852,8 +822,7 @@ namespace HadoopPipes {
       }
       isNewKey = false;
       if (mapper != NULL) {
-	lf << "mapper->map()"  << std::endl;
-	lf.flush();
+	std::cerr << "mapper->map()"  << std::endl;
         mapper->map(*this);
       } else {
         reducer->reduce(*this);
@@ -865,19 +834,14 @@ namespace HadoopPipes {
      * Advance to the next value.
      */
     virtual bool nextValue() {
-      lf << "in nextValue." << std::endl;
-      lf.flush();
-
       if (isNewKey || done) {
         return false;
       }
       isNewValue = false;
       progress();
-      lf << "protocol->nextEvent." << std::endl;
-      lf.flush();
+      std::cerr << "nextValue:: protocol->nextEvent." << std::endl;
       protocol->nextEvent();
-      lf << "after protocol->nextEvent." << std::endl;
-      lf.flush();
+      std::cerr << "nextValue:: after protocol->nextEvent." << std::endl;
 
       return isNewValue;
     }
@@ -1119,38 +1083,27 @@ namespace HadoopPipes {
         connection = new TextProtocol(stdin, context, stdout);
       }
       context->setProtocol(connection, connection->getUplink());
-#if 0
+
       pthread_t pingThread;
       pthread_create(&pingThread, NULL, ping, (void*)(context));
-      context->lf << "pingThread=" << pingThread << std::endl;
-      context->lf.flush();
-#endif
-      context->lf << "Waiting for task.." << std::endl;
-      context->lf.flush();
+      std::cerr << "pingThread=" << pingThread << std::endl;
+      std::cerr << "Waiting for task.." << std::endl;
       context->waitForTask();
-      context->lf << "After wait.." << std::endl;
-      context->lf.flush();
-      context->lf << "MXXXXXXXX.." << std::endl;
-      context->lf.flush();
-      context->lf << "isDone()." <<  context->isDone() << std::endl;
-      context->lf.flush();
+      std::cerr << "After wait.." << std::endl;
+      std::cerr << "MXXXXXXXX.." << std::endl;
+      std::cerr << "isDone()." <<  context->isDone() << std::endl;
 
       while (!context->isDone()) {
-	context->lf << "Ready for nextKey." << std::endl;
-	context->lf.flush();
+	std::cerr << "Ready for nextKey." << std::endl;
         context->nextKey();
       }
-      context->lf << "All done for task." << std::endl;
-      context->lf.flush();
+      std::cerr << "All done for task." << std::endl;
       context->closeAll();
       connection->getUplink()->done();
 
-      context->lf << "All shutdown for task." << std::endl;
-      context->lf.flush();
+      std::cerr << "All shutdown for task." << std::endl;
 
-#if 0
       pthread_join(pingThread,NULL);
-#endif
       delete context;
       delete connection;
       if (stream != NULL) {
@@ -1174,8 +1127,7 @@ namespace HadoopPipes {
       } 
       delete bufin;
       delete bufout;
-      context->lf << "All clear, getting out." << std::endl;
-      context->lf.flush();
+      std::cerr << "All clear, getting out." << std::endl;
       return true;
     } catch (Error& err) {
       fprintf(stderr, "Hadoop Pipes Exception: %s\n", 

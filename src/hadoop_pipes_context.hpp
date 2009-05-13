@@ -1,29 +1,37 @@
 #ifndef HADOOP_PIPES_CONTEXT_HPP
 #define HADOOP_PIPES_CONTEXT_HPP
 
+
+
+#include <hadoop/Pipes.hh>
+#include <boost/python.hpp>
+
 #include <string>
 #include <vector>
 #include <iostream>
 
-using namespace HadoopPipes;
 
 static std::vector<std::string> horrible_hack;
 
+namespace bp = boost::python;
+namespace hp = HadoopPipes;
+
+
 #define OVERRIDE_STR_REF(method_name)	    \
- if (override f = this->get_override(method_name)){ \
-    str r = f(); \
-    horrible_hack.push_back(extract<std::string>(r)); \
+  if (bp::override f = this->get_override(method_name)){	\
+    bp::str r = f();						\
+    horrible_hack.push_back(bp::extract<std::string>(r));	\
     return horrible_hack.back(); \
  } else { \
-   return extract<const std::string&>(object());	\
+    return bp::extract<const std::string&>(bp::object());	\
  }
 #define OVERRIDE_STR_REF_1(method_name,a)	    \
- if (override f = this->get_override(method_name)){ \
-    str r = f(a); \
-    horrible_hack.push_back(extract<std::string>(r)); \
+  if (bp::override f = this->get_override(method_name)){	\
+    bp::str r = f(a);						\
+    horrible_hack.push_back(bp::extract<std::string>(r));	\
     return horrible_hack.back(); \
  } else { \
-   return extract<const std::string&>(object());	\
+    return bp::extract<const std::string&>(bp::object());	\
  }
 
 
@@ -31,8 +39,8 @@ static std::vector<std::string> horrible_hack;
 //                JobConf                  //
 //+++++++++++++++++++++++++++++++++++++++++//
 
-struct wrap_job_conf : JobConf,
-		       wrapper<JobConf>{
+struct wrap_job_conf : hp::JobConf,
+		       bp::wrapper<hp::JobConf>{
   bool hasKey(const std::string& k) const {
     return this->get_override("hasKey")(k);
   }
@@ -55,15 +63,23 @@ struct wrap_job_conf : JobConf,
 //              TaskContext                //
 //+++++++++++++++++++++++++++++++++++++++++//
 
-struct wrap_task_context : TaskContext, wrapper<TaskContext>{
-  const JobConf* getJobConf() {
+struct wrap_task_context : hp::TaskContext, bp::wrapper<hp::TaskContext>{
+  const hp::JobConf* getJobConf() {
     return this->get_override("getJobConf")();
   }
-  const std::string& getInputKey()   { 
-    OVERRIDE_STR_REF("getInputKey");
+  const std::string& getInputKey()   {
+    std::cerr << "taskContext::getInputKey()"<<std::endl;
+    hp::TaskContext* tc = this;
+    const std::string& r = tc->getInputKey();
+    return r;
+    //OVERRIDE_STR_REF("getInputKey");
   };
   const std::string& getInputValue() {
-    OVERRIDE_STR_REF("getInputValue");
+    std::cerr << "taskContext::getInputValue()"<<std::endl;
+    hp::TaskContext* tc = this;
+    const std::string& r = tc->getInputValue();
+    return r;
+    //    OVERRIDE_STR_REF("getInputValue");
   };
   void  emit(const std::string& k, const std::string& v) {
     this->get_override("emit")(k, v);    
@@ -86,16 +102,20 @@ struct wrap_task_context : TaskContext, wrapper<TaskContext>{
 //+++++++++++++++++++++++++++++++++++++++++//
 //              MapContext                //
 //+++++++++++++++++++++++++++++++++++++++++//
-struct wrap_map_context : MapContext,
-			  wrapper<MapContext>{
-  const JobConf* getJobConf() {
+struct wrap_map_context : hp::MapContext,
+			  bp::wrapper<hp::MapContext>{
+  const hp::JobConf* getJobConf() {
     return this->get_override("getJobConf")();
   }
   const std::string& getInputKey()   {
     OVERRIDE_STR_REF("getInputKey"); 
   };
   const std::string& getInputValue() {
-    OVERRIDE_STR_REF("getInputValue"); 
+    std::cerr << "mapContext::getInputValue()"<<std::endl;
+    hp::MapContext* tc = this;
+    const std::string& r = tc->getInputValue();
+    return r;
+    // OVERRIDE_STR_REF("getInputValue"); 
   };
   void  emit(const std::string& k, const std::string& v) {
     this->get_override("emit")(k, v);    
@@ -127,15 +147,16 @@ struct wrap_map_context : MapContext,
 //+++++++++++++++++++++++++++++++++++++++++//
 //              ReduceContext                //
 //+++++++++++++++++++++++++++++++++++++++++//
-struct wrap_reduce_context : ReduceContext,
-			     wrapper<ReduceContext>{
-  const JobConf* getJobConf() {
+struct wrap_reduce_context : hp::ReduceContext,
+			     bp::wrapper<hp::ReduceContext>{
+  const hp::JobConf* getJobConf() {
     return this->get_override("getJobConf")();
   }
   const std::string& getInputKey()   { 
     OVERRIDE_STR_REF("getInputKey"); 
   };
   const std::string& getInputValue() {
+    std::cerr << "reduceContext::getInputValue()"<<std::endl;
     OVERRIDE_STR_REF("getInputValue"); 
   };
   void  emit(const std::string& k, const std::string& v) {
@@ -158,7 +179,6 @@ struct wrap_reduce_context : ReduceContext,
     return this->get_override("nextValue")();
   }
 };
-
 
 #endif
  

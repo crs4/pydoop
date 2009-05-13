@@ -36,8 +36,10 @@ class WC_Mapper(Mapper):
     log('map start dir(%s)=%s' % (map_ctx, dir(map_ctx)))
     jc = map_ctx.getJobConf()
     log('jc[io.sort.mb =%s' % jc.getInt('io.sort.mb'))
-    #words = map_ctx.getInputValue()
-    words = ['fake', 'words', 'foo', 'bar']
+    sys.stderr.write('WC_Mapper::mapready to getInputValue()')
+    words = map_ctx.getInputValue()
+    sys.stderr.write('WC_Mapper::map: words=%r' % words)
+    sys.stderr.write('WC_Mapper::mapready to getInputValue()')
     #words = map_ctx.getInputValue().split()
     log('map words=%s' % words)
     for w in words:

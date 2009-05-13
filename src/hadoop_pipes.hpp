@@ -5,8 +5,9 @@
 #include "hadoop_pipes_context.hpp"
 
 #include <hadoop/SerialUtils.hh>
-using namespace HadoopUtils;
-using namespace HadoopPipes;
+namespace hu = HadoopUtils;
+namespace hp = HadoopPipes;
+
 
 #include <iostream>
 #include <fstream>
@@ -29,126 +30,142 @@ inline boost::python::handle<> handle_from_old_ptr(T *ptr){
 }
 
 
-struct wrap_mapper: Mapper, wrapper<Mapper> {
-  void map(MapContext& ctx) {
-    std::ofstream lf("/tmp/hadoop_pipes_mapper.log");
-    lf << "wrap_mapper::map ctx=" << &(ctx) << std::endl;
-    lf.flush();
-    override f = this->get_override("map");
-    lf << "Got an f " << std::endl;
-    lf.flush();
-    //object o_ctx = make_tuple(handle_from_new_ptr(&ctx))[0];
-    object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
-    lf << "Got a o_ctx " << std::endl;
-    lf.flush();
+struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper> {
+
+  void map(hp::MapContext& ctx) {
+    std::cerr << "wrap_mapper::map ctx=" << &(ctx) << std::endl;
+    bp::override f = this->get_override("map");
+    std::cerr << "Got an f " << std::endl;
+    bp::object o_ctx = bp::make_tuple(handle_from_old_ptr(&ctx))[0];
+    std::cerr << "Got a o_ctx " << std::endl;
     f(o_ctx);
-    lf << "ready to leave map." << std::endl;
-    lf.flush();
+    std::cerr << "ready to leave map." << std::endl;
     //this->get_override("map")(ctx);
   }
-};
-
-struct wrap_reducer: Reducer, wrapper<Reducer> {
-  void reduce(ReduceContext& ctx) {
-    override f = this->get_override("reduce");
-    object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
-    f(o_ctx);
+  virtual ~wrap_mapper() {
+    std::cerr << "~wrap_mapper" << std::endl;
+    Py_DECREF(m_self);
   }
 };
 
-struct wrap_partitioner: Partitioner, wrapper<Partitioner> {
+struct wrap_reducer: hp::Reducer, bp::wrapper<hp::Reducer> {
+  void reduce(hp::ReduceContext& ctx) {
+    bp::override f = this->get_override("reduce");
+    bp::object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
+    f(o_ctx);
+  }
+  ~wrap_reducer() {
+    std::cerr << "~wrap_reducer" << std::endl;
+  }
+  PyObject* _py_self;
+};
+
+struct wrap_partitioner: hp::Partitioner, bp::wrapper<hp::Partitioner> {
   int partition(const std::string& key, int numOfReduces) {
     return this->get_override("partition")(key, numOfReduces);
   }
+  ~wrap_partitioner() {
+    std::cerr << "~wrap_partitioner" << std::endl;
+  }
+  PyObject* _py_self;
 };
 
-struct wrap_record_reader: RecordReader, wrapper<RecordReader> {
+struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader> {
   bool next(std::string& key, std::string& value) {
     return this->get_override("next")(key, value);
   }
   float getProgress() {
     return this->get_override("getProgress")();
   }
+  ~wrap_record_reader() {
+    std::cerr << "~wrap_record_reader" << std::endl;
+  }
+
+  PyObject* _py_self;
 };
 
-struct wrap_record_writer: RecordWriter, wrapper<RecordWriter> {
+struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
   void emit(const std::string& key, const std::string& value) {
     this->get_override("emit")(key, value);
   }
+  ~wrap_record_writer() {
+    std::cerr << "~wrap_record_writer" << std::endl;
+  }
+
+  PyObject* _py_self;
 };
 
 #define OVERRIDE_CREATOR_IF_POSSIBLE(base, ctx_type, method_name, arg)	\
-  if (override f = this->get_override("method_name")) { \
+  if (bp::override f = this->get_override("method_name")) {		\
     const ctx_type& c_ctx = ctx;\
-    object o_ctx = make_getter(&c_ctx, \
-			       return_value_policy<copy_const_reference>());\
+    bp::object o_ctx = bp::make_getter(&c_ctx,				\
+				       bp::return_value_policy<bp::copy_const_reference>()); \
     return f(o_ctx); \
   } else { \
     return base::method_name(arg); \
   }
 
 
-struct wrap_factory: Factory, wrapper<Factory> {
+struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
   //----------------------------------------------------------
-  Mapper* createMapper(MapContext& ctx) const {
+  hp::Mapper* createMapper(hp::MapContext& ctx) const {
 #if 0
-    const MapContext& c_ctx = ctx;
-    object o_ctx = make_getter(&c_ctx, 
-			       return_value_policy<copy_const_reference>());
+    const hp::MapContext& c_ctx = ctx;
+    bp::object o_ctx = bp::make_getter(&c_ctx, 
+				       bp::return_value_policy<copy_const_reference>());
     return this->get_override("createMapper")(o_ctx);
 #else
     std::cerr << "createMapper() wrap_factory:: ctx=" << &(ctx) << std::endl;
-    override f = this->get_override("createMapper");
+    bp::override f = this->get_override("createMapper");
     std::cerr << "createMapper() Got an f " << std::endl;
-    object o_ctx = make_tuple(handle_from_old_ptr(&ctx))[0];
+    bp::object o_ctx = bp::make_tuple(handle_from_old_ptr(&ctx))[0];
     std::cerr << "createMapper() Got a o_ctx " << std::endl;
-    Mapper* m = f(o_ctx);
+    hp::Mapper* m = f(o_ctx);
     std::cerr << "createMapper() Got a mapper " << m << std::endl;
-    m->map(ctx);
-    std::cerr << "createMapper() invoked " << m << std::endl;
     return m;
 #endif
 
   }
-  Reducer* createReducer(ReduceContext& ctx) const{
-    const ReduceContext& c_ctx = ctx;
-    object o_ctx = make_getter(&c_ctx, 
-			       return_value_policy<copy_const_reference>());
+  hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
+    const hp::ReduceContext& c_ctx = ctx;
+    bp::object o_ctx = bp::make_getter(&c_ctx, 
+				       bp::return_value_policy<bp::copy_const_reference>());
     return this->get_override("createReducer")(o_ctx);
   }
   //----------------------------------------------------------
-  Reducer* createCombiner(MapContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(Factory, MapContext, 
+  hp::Reducer* createCombiner(hp::MapContext& ctx) const {
+    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext, 
 				 createCombiner, ctx);
   }
-  Reducer* default_create_combiner(MapContext& ctx) const {
+  hp::Reducer* default_create_combiner(hp::MapContext& ctx) const {
     return this->Factory::createCombiner(ctx);
   }
   //----------------------------------------------------------
-  Partitioner* createPartitioner(MapContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(Factory, MapContext,
+  hp::Partitioner* createPartitioner(hp::MapContext& ctx) const {
+    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext,
 				 createPartitioner, ctx);
   }
-  Partitioner* default_create_partitioner(MapContext& ctx) const {
+  hp::Partitioner* default_create_partitioner(hp::MapContext& ctx) const {
     return this->Factory::createPartitioner(ctx);
   }
   //----------------------------------------------------------
-  RecordWriter* createRecordWriter(ReduceContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(Factory, ReduceContext,
+  hp::RecordWriter* createRecordWriter(hp::ReduceContext& ctx) const {
+    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::ReduceContext,
 				 createRecordWriter, ctx);
   }
-  RecordWriter* default_create_record_writer(ReduceContext& ctx) const {
+  hp::RecordWriter* default_create_record_writer(hp::ReduceContext& ctx) const {
     return this->Factory::createRecordWriter(ctx);
   }
   //----------------------------------------------------------
-  RecordReader* createRecordReader(MapContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(Factory, MapContext,
+  hp::RecordReader* createRecordReader(hp::MapContext& ctx) const {
+    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext,
 				 createRecordReader, ctx);
   }
-  RecordReader* default_create_record_reader(MapContext& ctx) const {
+  hp::RecordReader* default_create_record_reader(hp::MapContext& ctx) const {
     return this->Factory::createRecordReader(ctx);
   }
 };
+
 
 #endif  // HADOOP_PIPES_HPP
 
