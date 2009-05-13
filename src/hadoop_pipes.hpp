@@ -74,6 +74,25 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
   }
 };
 
+#define CREATE_AND_RETURN_OBJECT(obj_t, ctx_t, name, arg) \
+    bp::reference_existing_object::apply<obj_t&>::type converter; \
+    PyObject* obj = converter(arg); \
+    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj))); \
+    bp::override f = this->get_override("create"#name); \
+    obj_t* o = f(po); \
+    return o;
+
+
+struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
+  //----------------------------------------------------------
+  hp::Mapper* createMapper(hp::MapContext& ctx) const {
+    CREATE_AND_RETURN_OBJECT(hp::Mapper, hp::MapContext, Mapper, ctx);
+  }
+  hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
+    CREATE_AND_RETURN_OBJECT(hp::Reducer, hp::ReduceContext, Reducer, ctx);    
+  }
+
+  // FIXME ------ the following are probably broken.
 #define OVERRIDE_CREATOR_IF_POSSIBLE(base, ctx_type, method_name, arg)	\
   if (bp::override f = this->get_override(#method_name)) {		\
     const ctx_type& c_ctx = arg;\
@@ -84,36 +103,6 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
     return base::method_name(arg); \
   }
 
-
-struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
-  //----------------------------------------------------------
-  hp::Mapper* createMapper(hp::MapContext& ctx) const {
-#if 0
-    const hp::MapContext& c_ctx = ctx;
-    bp::object o_ctx = bp::make_getter(&c_ctx, 
-				       bp::return_value_policy<copy_const_reference>());
-    return this->get_override("createMapper")(o_ctx);
-#else
-    std::cerr << "createMapper() wrap_factory:: ctx=" << &(ctx) << std::endl;
-    bp::override f = this->get_override("createMapper");
-    bp::reference_existing_object::apply<hp::MapContext&>::type converter;
-    PyObject* obj = converter(ctx);
-    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
-    hp::Mapper* m = f(po);
-    std::cerr << "createMapper() Got a mapper " << m << std::endl;
-    return m;
-#endif
-
-  }
-  hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
-    //    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::ReduceContext, 
-    //				 createReducer, ctx);
-    const hp::ReduceContext& c_ctx = ctx;
-    bp::object o_ctx = bp::make_getter(&c_ctx, 
-				       bp::return_value_policy<bp::copy_const_reference>());
-    return this->get_override("createReducer")(o_ctx);
-
-  }
   //----------------------------------------------------------
   hp::Reducer* createCombiner(hp::MapContext& ctx) const {
     OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext, 
