@@ -413,17 +413,12 @@ namespace HadoopPipes {
         string split;
         int32_t numReduces;
         int32_t piped;
-	std::cerr << "RUN_MAP " <<std::endl;
 
         deserializeString(split, *downStream);
         numReduces = deserializeInt(*downStream);
         piped = deserializeInt(*downStream);
-	std::cerr << "split =  " << split <<std::endl;
-	std::cerr << "numReduces =  " << numReduces <<std::endl;
-	std::cerr << "piped =  " << piped <<std::endl;
 
         handler->runMap(split, numReduces, piped);
-	std::cerr << "AFTER RUN_MAP " <<std::endl;
         break;
       }
       case MAP_ITEM: {
@@ -704,23 +699,15 @@ namespace HadoopPipes {
       HADOOP_ASSERT((reader == NULL) == pipedInput,
                     pipedInput ? "RecordReader defined when not needed.":
                     "RecordReader not defined");
-      std::cerr << "runMap inputSplit " << *inputSplit << std::endl;
-      std::cerr  << "runMap pipedInput " << pipedInput << std::endl;
-      std::cerr  << "reader " << reader << std::endl;
-      std::cerr  << "value " << value << std::endl;
       if (reader != NULL) {
         value = new string();
       }
-      std::cerr << "runMap get a mapper." << std::endl;
       mapper = factory->createMapper(*this);
-      std::cerr << "runMap mapper = "<< mapper << std::endl;
       numReduces = _numReduces;
-      std::cerr << "numReduces = "<< numReduces << std::endl;
       if (numReduces != 0) { 
         reducer = factory->createCombiner(*this);
         partitioner = factory->createPartitioner(*this);
       }
-      std::cerr << "reducer = "<< reducer << std::endl;
       if (reducer != NULL) {
         int64_t spillSize = 100;
         if (jobConf->hasKey("io.sort.mb")) {
@@ -730,7 +717,6 @@ namespace HadoopPipes {
                                    uplink, partitioner, numReduces);
       }
       hasTask = true;
-      std::cerr << "hasTask = "<< hasTask << std::endl;
     }
 
     virtual void mapItem(const string& _key, const string& _value) {
@@ -759,12 +745,9 @@ namespace HadoopPipes {
     }
     
     virtual bool isDone(int c = 0) {
-      std::cerr << "asking for lock: " << c  << std::endl;
       pthread_mutex_lock(&mutexDone);
-      std::cerr << "got lock" <<  c  << std::endl;
       bool doneCopy = done;
       pthread_mutex_unlock(&mutexDone);
-      std::cerr << "released lock" <<  c  << std::endl;
       return doneCopy;
     }
 
@@ -779,20 +762,12 @@ namespace HadoopPipes {
     }
 
     void waitForTask() {
-      std::cerr << "In WAIT FOR TASK." << std::endl;
-
       while (!done && !hasTask) {
-	std::cerr << "asking for nextEvent." << std::endl;
         protocol->nextEvent();
-	std::cerr << "done." << std::endl;
       }
-      std::cerr << "finished." << std::endl;
     }
 
     bool nextKey() {
-      std::cerr << "nextKey::reader=" << reader << std::endl;
-      std::cerr << "nextKey::mapper=" << mapper << std::endl;
-
       if (reader == NULL) {
         while (!isNewKey) {
           nextValue();
@@ -812,7 +787,6 @@ namespace HadoopPipes {
       }
       isNewKey = false;
       if (mapper != NULL) {
-	std::cerr << "mapper->map()"  << std::endl;
         mapper->map(*this);
       } else {
         reducer->reduce(*this);
@@ -829,9 +803,7 @@ namespace HadoopPipes {
       }
       isNewValue = false;
       progress();
-      std::cerr << "nextValue:: protocol->nextEvent." << std::endl;
       protocol->nextEvent();
-      std::cerr << "nextValue:: after protocol->nextEvent." << std::endl;
 
       return isNewValue;
     }
@@ -958,15 +930,18 @@ namespace HadoopPipes {
       delete inputKeyClass;
       delete inputValueClass;
       delete inputSplit;
-      std::cerr << "I AM NOT deleting objects"<< std::endl;
       if (reader) {
         delete value;
       }
+      std::cerr << "WARNING: I AM NOT deleting reader."<< std::endl;
       //delete reader;
+      std::cerr << "WARNING: I AM NOT deleting mapper."<< std::endl;
       //delete mapper;
-      std::cerr << "Destroying reducer "<< reducer << std::endl;
+      std::cerr << "WARNING: I AM NOT deleting reducer."<< std::endl;
       //delete reducer;
+      std::cerr << "WARNING: I AM NOT deleting writer."<< std::endl;
       //delete writer;
+      std::cerr << "WARNING: I AM NOT deleting partitioner."<< std::endl;
       //delete partitioner;
       pthread_mutex_destroy(&mutexDone);
     }
@@ -1078,22 +1053,13 @@ namespace HadoopPipes {
 
       pthread_t pingThread;
       pthread_create(&pingThread, NULL, ping, (void*)(context));
-      std::cerr << "pingThread=" << pingThread << std::endl;
-      std::cerr << "Waiting for task.." << std::endl;
       context->waitForTask();
-      std::cerr << "After wait.." << std::endl;
-      std::cerr << "MXXXXXXXX.." << std::endl;
-      std::cerr << "isDone()." <<  context->isDone() << std::endl;
 
       while (!context->isDone()) {
-	std::cerr << "Ready for nextKey." << std::endl;
         context->nextKey();
       }
-      std::cerr << "All done for task." << std::endl;
       context->closeAll();
       connection->getUplink()->done();
-
-      std::cerr << "All shutdown for task." << std::endl;
 
       pthread_join(pingThread,NULL);
       delete context;
@@ -1119,7 +1085,6 @@ namespace HadoopPipes {
       } 
       delete bufin;
       delete bufout;
-      std::cerr << "All clear, getting out." << std::endl;
       return true;
     } catch (Error& err) {
       fprintf(stderr, "Hadoop Pipes Exception: %s\n", 
