@@ -378,34 +378,24 @@ namespace HadoopPipes {
     }
 
     virtual void nextEvent() {
-      std::cerr << "nextEvent" << std::endl;
-      
       int32_t cmd;
       cmd = deserializeInt(*downStream);
-      std::cerr << "cmd = " << cmd << std::endl;
 
       switch (cmd) {
       case START_MESSAGE: {
         int32_t prot;
         prot = deserializeInt(*downStream);
-	std::cerr << "START_MESSAGE PROT=" << prot << std::endl;
         handler->start(prot);
         break;
       }
       case SET_JOB_CONF: {
-	std::cerr << "SET_JOB_CONF." << std::endl;
-
         int32_t entries;
         entries = deserializeInt(*downStream);
-	std::cerr << "SET_JOB_CONF. entries=" << entries <<std::endl;
-
-
         vector<string> result(entries);
         for(int i=0; i < entries; ++i) {
           string item;
           deserializeString(item, *downStream);
           result.push_back(item);
-	  std::cerr << "SET_JOB_CONF. item=" << item <<std::endl;
         }
 
         handler->setJobConf(result);
@@ -968,14 +958,16 @@ namespace HadoopPipes {
       delete inputKeyClass;
       delete inputValueClass;
       delete inputSplit;
+      std::cerr << "I AM NOT deleting objects"<< std::endl;
       if (reader) {
         delete value;
       }
-      delete reader;
-      delete mapper;
-      delete reducer;
-      delete writer;
-      delete partitioner;
+      //delete reader;
+      //delete mapper;
+      std::cerr << "Destroying reducer "<< reducer << std::endl;
+      //delete reducer;
+      //delete writer;
+      //delete partitioner;
       pthread_mutex_destroy(&mutexDone);
     }
   };
