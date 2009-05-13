@@ -35,16 +35,25 @@ struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper> {
   void map(hp::MapContext& ctx) {
     std::cerr << "wrap_mapper::map ctx=" << &(ctx) << std::endl;
     bp::override f = this->get_override("map");
-    std::cerr << "Got an f " << std::endl;
+#if 1
+    bp::reference_existing_object::apply<hp::MapContext&>::type converter;
+    PyObject* obj = converter(ctx);
+    bp::object po = bp::object(bp::handle<>(obj));
+    f(po);    
+    //this->get_override("map")(po);
+#else
     bp::object o_ctx = bp::make_tuple(handle_from_old_ptr(&ctx))[0];
     std::cerr << "Got a o_ctx " << std::endl;
     f(o_ctx);
     std::cerr << "ready to leave map." << std::endl;
-    //this->get_override("map")(ctx);
+#endif
   }
   virtual ~wrap_mapper() {
-    std::cerr << "~wrap_mapper" << std::endl;
-    Py_DECREF(m_self);
+    std::cerr << "~wrap_mapper: decrementing...." << std::endl;
+    std::cerr << "~wrap_mapper: " << m_self << std::endl;
+    std::cerr << "~wrap_mapper: ob_refcnt" << (m_self)->ob_refcnt << std::endl;
+    //Py_XDECREF(m_self);
+    std::cerr << "~wrap_mapper: done." << std::endl;
   }
 };
 
@@ -96,8 +105,8 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
 };
 
 #define OVERRIDE_CREATOR_IF_POSSIBLE(base, ctx_type, method_name, arg)	\
-  if (bp::override f = this->get_override("method_name")) {		\
-    const ctx_type& c_ctx = ctx;\
+  if (bp::override f = this->get_override(#method_name)) {		\
+    const ctx_type& c_ctx = arg;\
     bp::object o_ctx = bp::make_getter(&c_ctx,				\
 				       bp::return_value_policy<bp::copy_const_reference>()); \
     return f(o_ctx); \
@@ -117,20 +126,23 @@ struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
 #else
     std::cerr << "createMapper() wrap_factory:: ctx=" << &(ctx) << std::endl;
     bp::override f = this->get_override("createMapper");
-    std::cerr << "createMapper() Got an f " << std::endl;
-    bp::object o_ctx = bp::make_tuple(handle_from_old_ptr(&ctx))[0];
-    std::cerr << "createMapper() Got a o_ctx " << std::endl;
-    hp::Mapper* m = f(o_ctx);
+    bp::reference_existing_object::apply<hp::MapContext&>::type converter;
+    PyObject* obj = converter(ctx);
+    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
+    hp::Mapper* m = f(po);
     std::cerr << "createMapper() Got a mapper " << m << std::endl;
     return m;
 #endif
 
   }
   hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
+    //    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::ReduceContext, 
+    //				 createReducer, ctx);
     const hp::ReduceContext& c_ctx = ctx;
     bp::object o_ctx = bp::make_getter(&c_ctx, 
 				       bp::return_value_policy<bp::copy_const_reference>());
     return this->get_override("createReducer")(o_ctx);
+
   }
   //----------------------------------------------------------
   hp::Reducer* createCombiner(hp::MapContext& ctx) const {

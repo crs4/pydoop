@@ -14,10 +14,8 @@ exec python -u -OO $0 ${1+"@"}
 from pydoop import Mapper, Reducer, Factory, runTask
 import sys
 
-flog = open('/tmp/wordcount.log', 'w')
 def log(x):
-  flog.write('%s\n' % x)
-  flog.flush()
+  sys.stderr.write('%s\n' % x)
 
 
 WORDCOUNT    = 'WORDCOUNT'
@@ -28,24 +26,22 @@ class WC_Mapper(Mapper):
   def __init__(self, task_ctx):
     Mapper.__init__(self)
     log('WC_Mapper::init  start')
-    log('WC_Mapper::task_ctx = %s' % dir(task_ctx))
+    log('WC_Mapper::task_ctx = %s' % task_ctx)
     #self.inputWords = task_ctx.getCounter(WORDCOUNT, INPUT_WORDS)
     log('WC_Mapper::init  end')
   #-
   def map(self, map_ctx):
-    log('map start dir(%s)=%s' % (map_ctx, dir(map_ctx)))
+    log('WC_Mapper::map self=%s, ctx=%s' % (self, map_ctx))
     jc = map_ctx.getJobConf()
-    log('jc[io.sort.mb =%s' % jc.getInt('io.sort.mb'))
-    sys.stderr.write('WC_Mapper::mapready to getInputValue()')
-    words = map_ctx.getInputValue()
-    sys.stderr.write('WC_Mapper::map: words=%r' % words)
-    sys.stderr.write('WC_Mapper::mapready to getInputValue()')
-    #words = map_ctx.getInputValue().split()
-    log('map words=%s' % words)
+    log('WC_Mapper::map jc[io.sort.mb =%s' % jc.getInt('io.sort.mb'))
+    log('WC_Mapper::map ready to getInputValue()')
+    words = map_ctx.getInputValue().split()
+    log('WC_Mapper::map: words=%r' % words)
     for w in words:
       map_ctx.emit(w, '1')
+      log('WC_Mapper::map emit %s' % w)
     #map_ctx.incrementCounter(self.inputWords, len(words))
-    log('map end')
+    log('WC_Mapper::map end')
 
 class WC_Reducer(Reducer):
   def __init__(self, task_ctx):

@@ -7,7 +7,7 @@ from hadoop_pipes import Reducer as Reducer
 import sys
 
 def log(x):
-  sys.stderr.write('%s\n' % x)
+  sys.stderr.write('Factory::%s\n' % x)
 
 
 class Factory(hadoop_pipes.Factory):
@@ -19,15 +19,19 @@ class Factory(hadoop_pipes.Factory):
     self.produced      = []
     log('end factory init')
 
+  def __del__(self):
+    log('they are killing me!')
+    for o in self.produced:
+      print o
+    log('will all die with me.')
+
   def createMapper(self, x):
-    log('start createMapper zag -- %s' % x)
-    log('dir(ctx) = %s' % dir(x))
     jc = x.getJobConf()
-    log('jc[io.sort.mb =%s' % jc.getInt('io.sort.mb'))
+    o = self.mapper_class(x)
+    log('createMapper:: created %s' % o)
+    del o
     o = self.mapper_class(x)
     self.produced.append(o)
-    log('type(o) = %s' % type(o))
-    log('dir(o) = %s' % dir(o))
     return o
 
   def createReducer(self, ctx):

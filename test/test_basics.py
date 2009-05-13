@@ -15,11 +15,21 @@ class basics_tc(unittest.TestCase):
     a = hadoop_pipes.double_a_string(h)
     print a
 
+  def create_and_destroy(self):
+    class t_m(hadoop_pipes.Mapper):
+      def __init__(self, c):
+        hadoop_pipes.Mapper.__init__(self)
+        self.c = c
+    x = [ t_m(i) for i in range(10)]
+
+
+
 #----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()
   #--
   suite.addTest(basics_tc('const_ref'))
+  suite.addTest(basics_tc('create_and_destroy'))
   #--
   return suite
 

@@ -136,7 +136,7 @@ void export_hadoop_pipes()
   //--
   class_<wrap_factory, boost::noncopyable>("Factory")
     .def("createMapper", pure_virtual(&hp::Factory::createMapper),
-	 return_value_policy<manage_new_object>())
+	 return_value_policy<reference_existing_object>())
     .def("createReducer", pure_virtual(&hp::Factory::createReducer),
 	 return_value_policy<manage_new_object>())
     .def("createCombiner", 

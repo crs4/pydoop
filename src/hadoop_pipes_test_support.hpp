@@ -235,17 +235,14 @@ ReduceContext* get_ReduceContext_object(dict d){
   return rc;
 }
 
-const std::string& double_a_string(const std::string& a){
+const char* double_a_string(const std::string& a){
   std::cerr << "read in str " << a << std::endl;
   str ps(a);
   object r = "%s.%s" % make_tuple(ps, ps);
+  incref(object(r).ptr());
   const char* p = extract<const char*>(r);
   std::cerr << "p=" << p << std::endl;
-  std::string s(p);
-  std::cerr << "s=" << s << std::endl;  
-  str aps(s);
-  incref(object(aps).ptr());
-  return s;
+  return p;
 }
 
 #if 0
