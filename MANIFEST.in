@@ -1,0 +1,8 @@
+include src/*.hpp
+include test/Makefile
+include test/WordCount.cc
+include test/all_tests.py
+include test/compile.sh
+include test/custom_return_internal_reference.hpp
+include test/try*
+recursive-include examples *
