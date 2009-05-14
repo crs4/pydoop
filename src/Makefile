@@ -22,7 +22,8 @@ HADOOP_LIB_DIR=/opt/hadoop-0.19.1/c++/Linux-amd64-64/lib
 
 CXXFLAGS= -g -fPIC -I${HADOOP_INC} -I${PYTHON_INC} 
 
-HADOOP_LIBS=-lhadooppipes -lhadooputils
+#HADOOP_LIBS=-lhadooppipes -lhadooputils
+HADOOP_LIBS=
 OTHER_LIBS=-lpthread
 
 
