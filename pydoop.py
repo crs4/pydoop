@@ -28,9 +28,6 @@ class Factory(hadoop_pipes.Factory):
   def createMapper(self, x):
     jc = x.getJobConf()
     o = self.mapper_class(x)
-    log('createMapper:: created %s' % o)
-    del o
-    o = self.mapper_class(x)
     self.produced.append(o)
     return o
 

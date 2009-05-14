@@ -1,0 +1,4 @@
+2009-05-14    <lsimleo@neuron.crs4.it>
+
+	* pydoop.py (Factory.createMapper): removed debug lines.
+

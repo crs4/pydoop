@@ -1,7 +1,7 @@
 #!/bin/sh
 
 """:"
-export PYTHONPATH=/home/zag/Work/svn/ac-dc/lib/pydoop/trunk
+export PYTHONPATH=/home/lsimleo/svn/ac-dc/lib/pydoop/trunk
 
 work_dir=$(dirname $0)
 base_name=$(basename $0)

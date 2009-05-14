@@ -2,7 +2,16 @@
 
 $ hadoop namenode -format 
 $ start-all.sh
+
+# http://localhost:50030
+# http://localhost:50070
+
 $ hadoop fs -mkdir examples/bin
+
+# To compile the c++ example
+$ export ARCH=amd64-64
+$ g++ -I/opt/hadoop-0.19.1/c++/Linux-${ARCH}/include -o WordCount WordCount.cc -L/opt/hadoop-0.19.1/c++/Linux-${ARCH}/lib -lhadooppipes -lhadooputils -lpthread
+
 $ hadoop fs -put WordCount examples/bin
 
 zag@manzanillo examples $ hadoop fs -ls  examples/bin
