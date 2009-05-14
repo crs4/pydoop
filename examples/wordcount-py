@@ -27,33 +27,43 @@ class WC_Mapper(Mapper):
     Mapper.__init__(self)
     log('WC_Mapper::init  start')
     log('WC_Mapper::task_ctx = %s' % task_ctx)
-    #self.inputWords = task_ctx.getCounter(WORDCOUNT, INPUT_WORDS)
+    self.inputWords = task_ctx.getCounter(WORDCOUNT, INPUT_WORDS)
     log('WC_Mapper::init  end')
   #-
   def map(self, map_ctx):
     log('WC_Mapper::map self=%s, ctx=%s' % (self, map_ctx))
     jc = map_ctx.getJobConf()
     log('WC_Mapper::map jc[io.sort.mb =%s' % jc.getInt('io.sort.mb'))
-    log('WC_Mapper::map ready to getInputValue()')
     words = map_ctx.getInputValue().split()
     log('WC_Mapper::map: words=%r' % words)
     for w in words:
       map_ctx.emit(w, '1')
       log('WC_Mapper::map emit %s' % w)
-    #map_ctx.incrementCounter(self.inputWords, len(words))
+    map_ctx.incrementCounter(self.inputWords, len(words))
     log('WC_Mapper::map end')
 
 class WC_Reducer(Reducer):
   def __init__(self, task_ctx):
     Reducer.__init__(self)
+    log('WC_Reducer::init  start')
+    log('WC_Reducer::task_ctx = %s' % task_ctx)
     self.outputWords = task_ctx.getCounter(WORDCOUNT, OUTPUT_WORDS)
   #-
   def reduce(self, red_ctx):
+    log('WC_Reducer::reduce self=%s, ctx=%s' % (self, red_ctx))
     s = 0
     while red_ctx.nextValue():
       s += int(red_ctx.getInputValue())
-    red_ctx.emit(red_ctx.getInputKey(), str(s))
+    k = red_ctx.getInputKey()
+    log('WC_Reducer::reduce k=%s, s=%d' % (k, s))
+    red_ctx.emit(k, str(s))
     red_ctx.incrementCounter(self.outputWords, 1)
 
 log('wordcount started')
 runTask(Factory(WC_Mapper, WC_Reducer))
+
+
+
+# Local Variables: **
+# mode: python **
+# End: **

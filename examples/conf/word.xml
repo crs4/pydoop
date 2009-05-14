@@ -2,7 +2,7 @@
 <configuration>
 <property>
   <name>hadoop.pipes.executable</name>
-  <value>/examples/bin/WordCount</value>
+  <value>examples/bin/WordCount</value>
 </property>
 
 
