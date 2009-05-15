@@ -1,4 +1,13 @@
-#!/usr/bin/env python
+#!/bin/sh
+
+
+# change the following exports to appropriate values for your environment
+""":"
+export PATH="/ELS/els5/acdc/opt/bin:$PATH"
+export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
+
+exec python -u -OO $0 ${1+"@"}
+":"""
 
 import sys
 from pydoop import Mapper, Reducer, Factory, runTask
