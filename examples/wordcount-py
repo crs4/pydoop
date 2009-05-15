@@ -1,26 +1,17 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-""":"
-export PYTHONPATH=/home/lsimleo/svn/ac-dc/lib/pydoop/trunk
-
-work_dir=$(dirname $0)
-base_name=$(basename $0)
-original_dir=$PWD
-
-exec python -u -OO $0 ${1+"@"}
-":"""
-
-#----------------------------------------------------------------------
-from pydoop import Mapper, Reducer, Factory, runTask
 import sys
-
-def log(x):
-  sys.stderr.write('%s\n' % x)
+from pydoop import Mapper, Reducer, Factory, runTask
 
 
 WORDCOUNT    = 'WORDCOUNT'
 INPUT_WORDS  = 'INPUT_WORDS'
 OUTPUT_WORDS = 'OUTPUT_WORDS'
+
+
+def log(x):
+  sys.stderr.write('%s\n' % x)
+
 
 class WC_Mapper(Mapper):
   def __init__(self, task_ctx):
@@ -42,6 +33,7 @@ class WC_Mapper(Mapper):
     map_ctx.incrementCounter(self.inputWords, len(words))
     log('WC_Mapper::map end')
 
+
 class WC_Reducer(Reducer):
   def __init__(self, task_ctx):
     Reducer.__init__(self)
@@ -59,11 +51,11 @@ class WC_Reducer(Reducer):
     red_ctx.emit(k, str(s))
     red_ctx.incrementCounter(self.outputWords, 1)
 
-log('wordcount started')
-runTask(Factory(WC_Mapper, WC_Reducer))
+
+def main(argv):
+  log('wordcount started')
+  runTask(Factory(WC_Mapper, WC_Reducer))
 
 
-
-# Local Variables: **
-# mode: python **
-# End: **
+if __name__ == "__main__":
+  main(sys.argv)
