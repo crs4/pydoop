@@ -9,6 +9,8 @@ Authors:
 dependencies:
     hadoop (with pipes)
     boost
+    hadoop (jar files)
+    jvm
 
 installation:
     (sudo) python setup.py install

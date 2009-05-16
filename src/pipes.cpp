@@ -8,7 +8,7 @@
 
 #include <boost/python.hpp>
 
-#include "hadoop_pipes.hpp"
+#include "pipes.hpp"
 
 
 
@@ -102,7 +102,7 @@ void try_factory_internal(hp::Factory& f){
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
-void export_hadoop_pipes() 
+void export_pipes() 
 {
   using namespace boost::python;
   //--

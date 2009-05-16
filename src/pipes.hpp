@@ -2,7 +2,7 @@
 #define HADOOP_PIPES_HPP
 
 
-#include "hadoop_pipes_context.hpp"
+#include "pipes_context.hpp"
 
 #include <hadoop/SerialUtils.hh>
 namespace hu = HadoopUtils;

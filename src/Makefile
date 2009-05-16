@@ -1,10 +1,35 @@
-MODULE_NAME=hadoop_pipes
+MODULE_NAME=pydoop_core
+
+
+PYTHON_INC=/usr/include/python2.5
+HADOOP_INC=/opt/hadoop-0.19.1/c++/Linux-amd64-64/include
+HADOOP_LIB_DIR=/opt/hadoop-0.19.1/c++/Linux-amd64-64/lib
+
+# this is, of course, gentoo specific.
+# check that the jvm selected is the right one using java-config 
+JAVA_HOME=/etc/java-config-2/current-system-vm
+PLATFORM=linux
+
 
 # module low level components
-WRAP_FILES=hadoop_pipes hadoop_pipes_context hadoop_pipes_test_support hacked_wrapper
+PIPES_FILES=pipes pipes_context pipes_test_support 
+PIPES_AUX_FILES=HadoopPipes SerialUtils StringUtils hacked_wrapper
+#--
+ALL_INCS += -I${HADOOP_INC}
+#ALL_LIBS += -L${HADOOP_LIB_DIR} -lhadooppipes -lhadooputils
+
+#--
+HDFS_FILES= hdfs_fs hdfs_file
+HDFS_AUX_FILES=
+#--
+ALL_INCS += -I./libhdfs -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/$(PLATFORM)
+ALL_LIBS +=-L./libhdfs -lhdfs
+
+#
+WRAP_FILES=${PIPES_FILES} ${HDFS_FILES}
 
 # 
-AUX_FILES=HadoopPipes SerialUtils StringUtils
+AUX_FILES=${PIPES_AUX_FILES} ${HDFS_AUX_FILES}
 
 CPP_AUX_FILES=$(addsuffix .cpp, ${AUX_FILES})
 OBJ_AUX_FILES=$(addsuffix .o, ${AUX_FILES})
@@ -16,15 +41,10 @@ OBJ_WRAP_FILES=$(addsuffix .o, ${WRAP_FILES})
 CPP_MAIN_FILE=${MODULE_NAME}_main.cpp
 OBJ_MAIN_FILE=${MODULE_NAME}_main.o
 
-PYTHON_INC=/usr/include/python2.5
-HADOOP_INC=/opt/hadoop-0.19.1/c++/Linux-amd64-64/include
-HADOOP_LIB_DIR=/opt/hadoop-0.19.1/c++/Linux-amd64-64/lib
+ALL_INCS += -I${PYTHON_INC}
+ALL_LIBS += -lpthread -lboost_python 
 
-CXXFLAGS= -g -fPIC -I${HADOOP_INC} -I${PYTHON_INC} 
-
-#HADOOP_LIBS=-lhadooppipes -lhadooputils
-HADOOP_LIBS=
-OTHER_LIBS=-lpthread
+CXXFLAGS= -g -fPIC ${ALL_INCS}
 
 
 all: ${MODULE_NAME}.so
@@ -34,11 +54,9 @@ all: ${MODULE_NAME}.so
 
 
 
-${MODULE_NAME}.so:  $(OBJ_WRAP_FILES) ${OBJ_MAIN_FILE}  $(OBJ_AUX_FILES)
-	g++ -shared  $^ -L${HADOOP_LIB_DIR} ${HADOOP_LIBS} \
-	${OTHER_LIBS} -lboost_python  -o $@
+${MODULE_NAME}.so:  ${OBJ_MAIN_FILE} $(OBJ_WRAP_FILES)  $(OBJ_AUX_FILES)
+	g++ -shared  $^ ${ALL_LIBS}  -o $@
 
-for i in hadoop_pipes hadoop_pipes_context hadoop_pipes_test_support hacked_wrapper ; do  if [ `grep -c export ${i}.cpp` != "0" ] ;  then echo $i; fi done
 
 ${CPP_MAIN_FILE} : ${CPP_WRAP_FILES} ${HPP_WRAP_FILES} 
 	echo "#include <boost/python.hpp>" > $@
@@ -49,7 +67,7 @@ ${CPP_MAIN_FILE} : ${CPP_WRAP_FILES} ${HPP_WRAP_FILES}
 
 
 clean:
-	rm -rf *.o *~
+	rm -rf *.o *~ ${CPP_MAIN_FILE}
 
 real-clean: clean
 	rm -rf ${CPP_MAIN_FILE} *.so

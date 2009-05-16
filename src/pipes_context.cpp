@@ -1,5 +1,4 @@
-
-#include "hadoop_pipes_context.hpp"
+#include "pipes_context.hpp"
 
 #include <iostream>
 
@@ -8,7 +7,7 @@ using namespace boost::python;
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
-void export_hadoop_pipes_context() 
+void export_pipes_context() 
 {
   using namespace boost::python;
   //--

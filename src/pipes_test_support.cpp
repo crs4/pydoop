@@ -3,7 +3,7 @@
 #include <boost/python.hpp>
 using namespace boost::python;
 
-#include "hadoop_pipes_test_support.hpp"
+#include "pipes_test_support.hpp"
 
 #include <iostream>
 
@@ -11,7 +11,7 @@ using namespace boost::python;
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
-void export_hadoop_pipes_test_support() 
+void export_pipes_test_support() 
 {
   class_<test_factory>("TestFactory",
 		       init<Factory&>())
