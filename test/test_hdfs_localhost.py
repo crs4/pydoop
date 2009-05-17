@@ -37,7 +37,7 @@ class hdfs_local_tc(unittest.TestCase):
     fs.delete(path)
     fs.close()
   #--
-  def _write_read_helper(self, fs, path, N, txt):
+  def _write_example_file(self, fs, path, N, txt):
     flags = os.O_WRONLY
     f = fs.open_file(path, flags, 0, 0, 0)
     data = ''
@@ -55,7 +55,7 @@ class hdfs_local_tc(unittest.TestCase):
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
-    data = self._write_read_helper(fs, path, N, txt)
+    data = self._write_example_file(fs, path, N, txt)
     #--
     flags = os.O_RDONLY
     f = fs.open_file(path, flags, 0, 0, 0)
@@ -87,7 +87,7 @@ class hdfs_local_tc(unittest.TestCase):
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
-    data = self._write_read_helper(fs, path, N, txt)
+    data = self._write_example_file(fs, path, N, txt)
     #--
     flags = os.O_RONLY
     f = fs.open_file(path, flags, 0, 0, 0)
@@ -118,12 +118,45 @@ class hdfs_local_tc(unittest.TestCase):
     #--
   def copy(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
-    pass
+    fs_plain_disk = HDFS('', 0)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs_plain_disk, path, N, txt)
+    fs_plain_disk.copy(path, fs, path)
+    fs_plain_disk.delete(path)
+    self.assertFalse(fs_plain_disk.exists(path))
+    self.assertTrue(fs.exists(path))
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    data2 = f.read(len(data))
+    self.assertEqual(len(data2), len(data),
+                     "wrong number of bytes read.")
+    self.assertEqual(data2, data,
+                     "wrong bytes read.")
+    f.close()
+    fs.delete(path)
     fs.close()
   #--
   def move(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
-    pass
+    fs_plain_disk = HDFS('', 0)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs_plain_disk, path, N, txt)
+    fs_plain_disk.move(path, fs, path)
+    self.assertFalse(fs_plain_disk.exists(path))
+    self.assertTrue(fs.exists(path))
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    data2 = f.read(len(data))
+    self.assertEqual(len(data2), len(data),
+                     "wrong number of bytes read.")
+    self.assertEqual(data2, data,
+                     "wrong bytes read.")
+    f.close()
+    fs.delete(path)
     fs.close()
   #--
   def rename(self):
@@ -132,7 +165,7 @@ class hdfs_local_tc(unittest.TestCase):
     new_path = 'MOVED-' + old_path
     txt  = 'hello there!'
     N  = 100
-    data = self._write_read_helper(fs, old_path, N, txt)
+    data = self._write_example_file(fs, old_path, N, txt)
     fs.rename(old_path, new_path)
     self.assertTrue(fs.exists(new_path))
     self.assertFalse(fs.exists(old_path))
@@ -183,6 +216,8 @@ def suite():
   suite.addTest(hdfs_local_tc('rename'))
   suite.addTest(hdfs_local_tc('change_dir'))
   suite.addTest(hdfs_local_tc('create_dir'))
+  suite.addTest(hdfs_local_tc('copy'))
+  suite.addTest(hdfs_local_tc('move'))
   #--
   return suite
 

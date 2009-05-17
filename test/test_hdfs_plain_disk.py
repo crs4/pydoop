@@ -12,7 +12,7 @@ from pydoop_core import hdfs_fs as HDFS
 HDFS_HOST=''
 HDFS_PORT=0
 
-class hdfs_local_tc(unittest.TestCase):
+class hdfs_plain_disk_tc(unittest.TestCase):
   def connect_disconnect(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     blk_size = fs.default_block_size()
@@ -177,12 +177,12 @@ class hdfs_local_tc(unittest.TestCase):
 def suite():
   suite = unittest.TestSuite()
   #--
-  suite.addTest(hdfs_local_tc('connect_disconnect'))
-  suite.addTest(hdfs_local_tc('open_close'))
-  suite.addTest(hdfs_local_tc('write_read'))
-  suite.addTest(hdfs_local_tc('rename'))
-  suite.addTest(hdfs_local_tc('change_dir'))
-  suite.addTest(hdfs_local_tc('create_dir'))
+  suite.addTest(hdfs_plain_disk_tc('connect_disconnect'))
+  suite.addTest(hdfs_plain_disk_tc('open_close'))
+  suite.addTest(hdfs_plain_disk_tc('write_read'))
+  suite.addTest(hdfs_plain_disk_tc('rename'))
+  suite.addTest(hdfs_plain_disk_tc('change_dir'))
+  suite.addTest(hdfs_plain_disk_tc('create_dir'))
   #--
   return suite
 
