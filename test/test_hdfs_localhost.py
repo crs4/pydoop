@@ -9,8 +9,8 @@ import numpy as np
 from pydoop_core import hdfs_fs as HDFS
 #----------------------------------------------------------------------------
 
-HDFS_HOST=''
-HDFS_PORT=0
+HDFS_HOST='localhost'
+HDFS_PORT=9000
 
 class hdfs_local_tc(unittest.TestCase):
   def connect_disconnect(self):

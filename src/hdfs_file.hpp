@@ -31,16 +31,9 @@ struct wrap_hdfs_file {
     std::cerr << "created file " << filename_ << std::endl;
   }
   
-  ~wrap_hdfs_file(){ 
-    close(); 
-  }
-
-  void close(){
-    if (is_open_) {
-    _close_helper();    
-    }
-  }
-    
+  ~wrap_hdfs_file(){close(); }
+  //-----------------------------------------------
+  void close(){ if (is_open_) { _close_helper();} }
   //-----------------------------------------------
   void seek(tOffset desidered_pos); 
   //-----------------------------------------------

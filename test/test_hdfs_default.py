@@ -9,7 +9,7 @@ import numpy as np
 from pydoop_core import hdfs_fs as HDFS
 #----------------------------------------------------------------------------
 
-HDFS_HOST=''
+HDFS_HOST='default'
 HDFS_PORT=0
 
 class hdfs_local_tc(unittest.TestCase):

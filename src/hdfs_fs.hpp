@@ -30,9 +30,21 @@ struct wrap_hdfs_fs {
   tOffset get_default_block_size();
   tOffset get_capacity();
   tOffset get_used();
+  //--
   bool exists(const std::string& path);
   void unlink(const std::string& path);
-  
+  void copy(const std::string& src_path, 
+	    wrap_hdfs_fs& dst_fs, const std::string& dst_path);
+  void move(const std::string& src_path, 
+	    wrap_hdfs_fs& dst_fs, const std::string& dst_path);
+  void rename(const std::string& old_path, const std::string& new_path);
+  //--
+  std::string get_working_directory();
+  void set_working_directory(const std::string& path);
+  void create_directory(const std::string& path);
+  //-----------------------------------------------
+  void set_replication(const std::string& path, int replication);
+  //--
   wrap_hdfs_file* open_file(std::string path, int flags, 
 			    int buffer_size, int replication, 
 			    int blocksize);
