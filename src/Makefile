@@ -2,8 +2,8 @@ MODULE_NAME=pydoop_core
 
 
 PYTHON_INC=/usr/include/python2.5
-HADOOP_INC=/opt/hadoop-0.19.1/c++/Linux-amd64-64/include
-HADOOP_LIB_DIR=/opt/hadoop-0.19.1/c++/Linux-amd64-64/lib
+HADOOP_INC=/opt/hadoop/c++/Linux-amd64-64/include
+HADOOP_LIB_DIR=/opt/hadoop/c++/Linux-amd64-64/lib
 
 # this is, of course, gentoo specific.
 # check that the jvm selected is the right one using java-config 

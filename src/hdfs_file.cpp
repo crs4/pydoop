@@ -77,6 +77,7 @@ void export_hdfs_file()
   using namespace boost::python;
   //--
   class_<wrap_hdfs_file, boost::noncopyable>("hdfs_file", no_init)
+    .def("close", &wrap_hdfs_file::close)
     .def("seek", &wrap_hdfs_file::seek)
     .def("tell", &wrap_hdfs_file::tell)
     .def("read", &wrap_hdfs_file::read)
