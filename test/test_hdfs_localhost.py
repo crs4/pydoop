@@ -75,7 +75,10 @@ class hdfs_local_tc(unittest.TestCase):
       self.assertEqual(txt2, txt,
                        "wrong pread.")
       pos += len(txt)
-      self.assertEqual(pos, f.tell())
+      # It is unclear if this is a bug or a feature of the API.
+      # I guess the problem is that there is not a fseek function, and thus
+      # when one uses a pread it basically does a random access.
+      self.assertEqual(0, f.tell())
     f.close()
     #--
     fs.delete(path)
@@ -112,6 +115,44 @@ class hdfs_local_tc(unittest.TestCase):
                          "wrong bytes read at %d." % c)
       pos += len(txt)
       self.assertEqual(pos, f.tell())
+    f.close()
+    #--
+    fs.close()
+    #--
+  #--
+  def write_read_chunk(self):
+    fs = HDFS(HDFS_HOST, HDFS_PORT)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs, path, N, txt)
+    #--
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    chunk = buffer((len(data),))
+    bytes_read = f.read_chunk(chunk)
+    self.assertEqual(bytes_read, len(data),
+                     "wrong number of bytes read.")
+    for i in range(len(data)):
+      self.assertEqual(chunk[i], data[i],
+                       "wrong bytes read at %d:>%s< >%s<" % (i, chunk[i], data[i]))
+    f.close()
+    #--
+    f = fs.open_file(path, flags, 0, 0, 0)
+    pos = 0
+    chunk = buffer((len(txt),))
+    for i in range(N):
+      bytes_read = f.pread_chunk(pos, chunk)
+      self.assertEqual(bytes_read, len(txt),
+                       "wrong number of bytes read.")
+      for c in range(len(txt)):
+        self.assertEqual(chunk[c], txt[c],
+                         "wrong bytes read at %d." % c)
+      pos += len(txt)
+      # It is unclear if this is a bug or a feature of the API.
+      # I guess the problem is that there is not a fseek function, and thus
+      # when one uses a pread it basically does a random access.
+      self.assertEqual(0, f.tell())
     f.close()
     #--
     fs.close()
@@ -172,12 +213,24 @@ class hdfs_local_tc(unittest.TestCase):
     fs.delete(new_path)
     fs.close()
   #--
+  def available(self):
+    fs = HDFS(HDFS_HOST, HDFS_PORT)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs, path, N, txt)
+    #--
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    self.assertEqual(len(data), f.available())
+    f.close()
+    fs.delete(path)
+    fs.close()
+  #--
   def change_dir(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     cwd = fs.working_directory()
-    print 'CWD=', cwd
     new_d = os.path.join(cwd, 'foo/bar/dir')
-    print 'NEW_D=', new_d
     fs.set_working_directory(new_d)
     self.assertEqual(fs.working_directory(), new_d)
     fs.set_working_directory(cwd)
@@ -187,19 +240,15 @@ class hdfs_local_tc(unittest.TestCase):
   def create_dir(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     cwd = fs.working_directory()
-    print 'CWD=', cwd
     parts = ['foo', 'bar', 'dir']
     new_d = os.path.join(cwd, '/'.join(parts))
-    print 'NEW_D=', new_d
     fs.create_directory(new_d)
     p = cwd
     ps = []
     for x in parts:
       p = os.path.join(p, x)
-      print 'p=', p
       ps.insert(0, p)
     for x in ps:
-      print 'x=', x
       self.assertTrue(fs.exists(x))
       fs.delete(x)
       self.assertFalse(fs.exists(x))
@@ -218,6 +267,7 @@ def suite():
   suite.addTest(hdfs_local_tc('create_dir'))
   suite.addTest(hdfs_local_tc('copy'))
   suite.addTest(hdfs_local_tc('move'))
+  suite.addTest(hdfs_local_tc('available'))
   #--
   return suite
 

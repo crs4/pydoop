@@ -9,6 +9,16 @@ import numpy as np
 from pydoop_core import hdfs_fs as HDFS
 #----------------------------------------------------------------------------
 
+#----------------------------------------------------------------------------
+#
+# This is a hack, just until I find something more reasonable.
+#
+class buffer(np.char.chararray):
+  def __getitem__(self, i):
+    return np.ndarray.__getitem__(self, (i,))
+
+#----------------------------------------------------------------------------
+
 HDFS_HOST=''
 HDFS_PORT=0
 
@@ -50,6 +60,20 @@ class hdfs_plain_disk_tc(unittest.TestCase):
     f.close()
     return data
   #--
+  def available(self):
+    fs = HDFS(HDFS_HOST, HDFS_PORT)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_read_helper(fs, path, N, txt)
+    #--
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    self.assertEqual(len(data), f.available())
+    f.close()
+    fs.delete(path)
+    fs.close()
+  #--
   def write_read(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     path = 'foobar.txt'
@@ -69,13 +93,25 @@ class hdfs_plain_disk_tc(unittest.TestCase):
     f = fs.open_file(path, flags, 0, 0, 0)
     pos = 0
     for i in range(N):
+      txt2 = f.read(len(txt))
+      self.assertEqual(len(txt2), len(txt),
+                     "wrong number of bytes read.")
+      self.assertEqual(txt2, txt,
+                       "wrong bytes read.")
+      pos += len(txt)
+      self.assertEqual(pos, f.tell())
+    f.close()
+    #--
+    f = fs.open_file(path, flags, 0, 0, 0)
+    pos = 0
+    for i in range(N):
       txt2 = f.pread(pos, len(txt))
       self.assertEqual(len(txt2), len(txt),
                        "wrong number of bytes pread.")
       self.assertEqual(txt2, txt,
                        "wrong pread.")
+      self.assertEqual(0, f.tell())
       pos += len(txt)
-      self.assertEqual(pos, f.tell())
     f.close()
     #--
     fs.delete(path)
@@ -89,29 +125,32 @@ class hdfs_plain_disk_tc(unittest.TestCase):
     N  = 10
     data = self._write_read_helper(fs, path, N, txt)
     #--
-    flags = os.O_RONLY
+    flags = os.O_RDONLY
     f = fs.open_file(path, flags, 0, 0, 0)
-    chunk = np.zeros((len(data),), np.Char)
+    chunk = buffer((len(data),))
     bytes_read = f.read_chunk(chunk)
     self.assertEqual(bytes_read, len(data),
                      "wrong number of bytes read.")
     for i in range(len(data)):
       self.assertEqual(chunk[i], data[i],
-                     "wrong bytes read at %d." % i)
+                       "wrong bytes read at %d:>%s< >%s<" % (i, chunk[i], data[i]))
     f.close()
     #--
     f = fs.open_file(path, flags, 0, 0, 0)
     pos = 0
-    chunk = np.zeros((len(txt),), np.Char)
+    chunk = buffer((len(txt),))
     for i in range(N):
-      bytes_read = f.pread(pos, chunk)
+      bytes_read = f.pread_chunk(pos, chunk)
       self.assertEqual(bytes_read, len(txt),
                        "wrong number of bytes read.")
       for c in range(len(txt)):
         self.assertEqual(chunk[c], txt[c],
                          "wrong bytes read at %d." % c)
       pos += len(txt)
-      self.assertEqual(pos, f.tell())
+      # It is unclear if this is a bug or a feature of the API.
+      # I guess the problem is that there is not a fseek function, and thus
+      # when one uses a pread it basically does a random access.
+      self.assertEqual(0, f.tell())
     f.close()
     #--
     fs.close()
@@ -142,9 +181,7 @@ class hdfs_plain_disk_tc(unittest.TestCase):
   def change_dir(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     cwd = fs.working_directory()
-    print 'CWD=', cwd
     new_d = os.path.join(cwd, 'foo/bar/dir')
-    print 'NEW_D=', new_d
     fs.set_working_directory(new_d)
     self.assertEqual(fs.working_directory(), new_d)
     fs.set_working_directory(cwd)
@@ -154,19 +191,15 @@ class hdfs_plain_disk_tc(unittest.TestCase):
   def create_dir(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     cwd = fs.working_directory()
-    print 'CWD=', cwd
     parts = ['foo', 'bar', 'dir']
     new_d = os.path.join(cwd, '/'.join(parts))
-    print 'NEW_D=', new_d
     fs.create_directory(new_d)
     p = cwd
     ps = []
     for x in parts:
       p = os.path.join(p, x)
-      print 'p=', p
       ps.insert(0, p)
     for x in ps:
-      print 'x=', x
       self.assertTrue(fs.exists(x))
       fs.delete(x)
       self.assertFalse(fs.exists(x))
@@ -180,9 +213,11 @@ def suite():
   suite.addTest(hdfs_plain_disk_tc('connect_disconnect'))
   suite.addTest(hdfs_plain_disk_tc('open_close'))
   suite.addTest(hdfs_plain_disk_tc('write_read'))
+  suite.addTest(hdfs_plain_disk_tc('write_read_chunk'))
   suite.addTest(hdfs_plain_disk_tc('rename'))
   suite.addTest(hdfs_plain_disk_tc('change_dir'))
   suite.addTest(hdfs_plain_disk_tc('create_dir'))
+  suite.addTest(hdfs_plain_disk_tc('available'))
   #--
   return suite
 

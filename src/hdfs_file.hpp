@@ -9,6 +9,7 @@
 #include <boost/python.hpp>
 namespace bp = boost::python;
 
+
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //                 hdfs_file                           //
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -16,9 +17,6 @@ namespace bp = boost::python;
 // forward declaration
 struct wrap_hdfs_fs;
 
-struct wrap_hdfs_file_info {
-  // FIXME to be filled.
-};
 
 struct wrap_hdfs_file {
   const std::string filename_;
@@ -37,21 +35,21 @@ struct wrap_hdfs_file {
   //-----------------------------------------------
   void seek(tOffset desidered_pos); 
   //-----------------------------------------------
-  int tell();
+  tOffset tell();
   //-----------------------------------------------
   std::string read(tSize length);
   //-----------------------------------------------
   std::string pread(tOffset position, tSize length);
   //-----------------------------------------------
   tSize write(std::string buffer);
-
   //-----------------------------------------------
-#if 0
+  tSize read_chunk(bp::object buffer);
   //-----------------------------------------------
-  int read_chunk();
+  tSize pread_chunk(tOffset position, bp::object buffer);
   //-----------------------------------------------
-  int pread_chunk();
-#endif
+  tSize write_chunk(bp::object buffer);
+  //-----------------------------------------------
+  int available();
 
   //-----------------------------------------------
   void _close_helper();

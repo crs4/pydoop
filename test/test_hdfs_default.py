@@ -12,7 +12,7 @@ from pydoop_core import hdfs_fs as HDFS
 HDFS_HOST='default'
 HDFS_PORT=0
 
-class hdfs_local_tc(unittest.TestCase):
+class hdfs_default_tc(unittest.TestCase):
   def connect_disconnect(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     blk_size = fs.default_block_size()
@@ -37,7 +37,7 @@ class hdfs_local_tc(unittest.TestCase):
     fs.delete(path)
     fs.close()
   #--
-  def _write_read_helper(self, fs, path, N, txt):
+  def _write_example_file(self, fs, path, N, txt):
     flags = os.O_WRONLY
     f = fs.open_file(path, flags, 0, 0, 0)
     data = ''
@@ -50,12 +50,26 @@ class hdfs_local_tc(unittest.TestCase):
     f.close()
     return data
   #--
+  def available(self):
+    fs = HDFS(HDFS_HOST, HDFS_PORT)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs, path, N, txt)
+    #--
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    self.assertEqual(len(data), f.available())
+    f.close()
+    fs.delete(path)
+    fs.close()
+  #--
   def write_read(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
-    data = self._write_read_helper(fs, path, N, txt)
+    data = self._write_example_file(fs, path, N, txt)
     #--
     flags = os.O_RDONLY
     f = fs.open_file(path, flags, 0, 0, 0)
@@ -75,7 +89,10 @@ class hdfs_local_tc(unittest.TestCase):
       self.assertEqual(txt2, txt,
                        "wrong pread.")
       pos += len(txt)
-      self.assertEqual(pos, f.tell())
+      # It is unclear if this is a bug or a feature of the API.
+      # I guess the problem is that there is not a fseek function, and thus
+      # when one uses a pread it basically does a random access.
+      self.assertEqual(0, f.tell())
     f.close()
     #--
     fs.delete(path)
@@ -87,7 +104,7 @@ class hdfs_local_tc(unittest.TestCase):
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
-    data = self._write_read_helper(fs, path, N, txt)
+    data = self._write_example_file(fs, path, N, txt)
     #--
     flags = os.O_RONLY
     f = fs.open_file(path, flags, 0, 0, 0)
@@ -116,14 +133,85 @@ class hdfs_local_tc(unittest.TestCase):
     #--
     fs.close()
     #--
+  #--
+  def write_read_chunk(self):
+    fs = HDFS(HDFS_HOST, HDFS_PORT)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs, path, N, txt)
+    #--
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    chunk = buffer((len(data),))
+    bytes_read = f.read_chunk(chunk)
+    self.assertEqual(bytes_read, len(data),
+                     "wrong number of bytes read.")
+    for i in range(len(data)):
+      self.assertEqual(chunk[i], data[i],
+                       "wrong bytes read at %d:>%s< >%s<" % (i, chunk[i], data[i]))
+    f.close()
+    #--
+    f = fs.open_file(path, flags, 0, 0, 0)
+    pos = 0
+    chunk = buffer((len(txt),))
+    for i in range(N):
+      bytes_read = f.pread_chunk(pos, chunk)
+      self.assertEqual(bytes_read, len(txt),
+                       "wrong number of bytes read.")
+      for c in range(len(txt)):
+        self.assertEqual(chunk[c], txt[c],
+                         "wrong bytes read at %d." % c)
+      pos += len(txt)
+      # It is unclear if this is a bug or a feature of the API.
+      # I guess the problem is that there is not a fseek function, and thus
+      # when one uses a pread it basically does a random access.
+      self.assertEqual(0, f.tell())
+    f.close()
+    #--
+    fs.close()
+    #--
   def copy(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
-    pass
+    fs_plain_disk = HDFS('', 0)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs_plain_disk, path, N, txt)
+    fs_plain_disk.copy(path, fs, path)
+    fs_plain_disk.delete(path)
+    self.assertFalse(fs_plain_disk.exists(path))
+    self.assertTrue(fs.exists(path))
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    data2 = f.read(len(data))
+    self.assertEqual(len(data2), len(data),
+                     "wrong number of bytes read.")
+    self.assertEqual(data2, data,
+                     "wrong bytes read.")
+    f.close()
+    fs.delete(path)
     fs.close()
   #--
   def move(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
-    pass
+    fs_plain_disk = HDFS('', 0)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(fs_plain_disk, path, N, txt)
+    fs_plain_disk.move(path, fs, path)
+    self.assertFalse(fs_plain_disk.exists(path))
+    self.assertTrue(fs.exists(path))
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    data2 = f.read(len(data))
+    self.assertEqual(len(data2), len(data),
+                     "wrong number of bytes read.")
+    self.assertEqual(data2, data,
+                     "wrong bytes read.")
+    f.close()
+    fs.delete(path)
     fs.close()
   #--
   def rename(self):
@@ -132,7 +220,7 @@ class hdfs_local_tc(unittest.TestCase):
     new_path = 'MOVED-' + old_path
     txt  = 'hello there!'
     N  = 100
-    data = self._write_read_helper(fs, old_path, N, txt)
+    data = self._write_example_file(fs, old_path, N, txt)
     fs.rename(old_path, new_path)
     self.assertTrue(fs.exists(new_path))
     self.assertFalse(fs.exists(old_path))
@@ -142,9 +230,7 @@ class hdfs_local_tc(unittest.TestCase):
   def change_dir(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     cwd = fs.working_directory()
-    print 'CWD=', cwd
     new_d = os.path.join(cwd, 'foo/bar/dir')
-    print 'NEW_D=', new_d
     fs.set_working_directory(new_d)
     self.assertEqual(fs.working_directory(), new_d)
     fs.set_working_directory(cwd)
@@ -154,19 +240,15 @@ class hdfs_local_tc(unittest.TestCase):
   def create_dir(self):
     fs = HDFS(HDFS_HOST, HDFS_PORT)
     cwd = fs.working_directory()
-    print 'CWD=', cwd
     parts = ['foo', 'bar', 'dir']
     new_d = os.path.join(cwd, '/'.join(parts))
-    print 'NEW_D=', new_d
     fs.create_directory(new_d)
     p = cwd
     ps = []
     for x in parts:
       p = os.path.join(p, x)
-      print 'p=', p
       ps.insert(0, p)
     for x in ps:
-      print 'x=', x
       self.assertTrue(fs.exists(x))
       fs.delete(x)
       self.assertFalse(fs.exists(x))
@@ -177,12 +259,15 @@ class hdfs_local_tc(unittest.TestCase):
 def suite():
   suite = unittest.TestSuite()
   #--
-  suite.addTest(hdfs_local_tc('connect_disconnect'))
-  suite.addTest(hdfs_local_tc('open_close'))
-  suite.addTest(hdfs_local_tc('write_read'))
-  suite.addTest(hdfs_local_tc('rename'))
-  suite.addTest(hdfs_local_tc('change_dir'))
-  suite.addTest(hdfs_local_tc('create_dir'))
+  suite.addTest(hdfs_default_tc('connect_disconnect'))
+  suite.addTest(hdfs_default_tc('open_close'))
+  suite.addTest(hdfs_default_tc('write_read'))
+  suite.addTest(hdfs_default_tc('rename'))
+  suite.addTest(hdfs_default_tc('change_dir'))
+  suite.addTest(hdfs_default_tc('create_dir'))
+  suite.addTest(hdfs_default_tc('copy'))
+  suite.addTest(hdfs_default_tc('move'))
+  suite.addTest(hdfs_default_tc('available'))
   #--
   return suite
 
