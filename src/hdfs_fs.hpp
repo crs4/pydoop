@@ -31,6 +31,10 @@ struct wrap_hdfs_fs {
   tOffset get_capacity();
   tOffset get_used();
   //--
+  bp::list list_directory(std::string path);
+  bp::dict get_path_info(std::string path);
+  bp::list get_hosts(std::string path, tOffset start, tOffset length);
+  //--
   bool exists(const std::string& path);
   void unlink(const std::string& path);
   void copy(const std::string& src_path, 

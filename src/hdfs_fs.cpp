@@ -95,6 +95,71 @@ void wrap_hdfs_fs::set_replication(const std::string& path, int replication){
 		      "Cannot set replication of " + path);
 }
 
+static bp::dict list_directory_helper(hdfsFileInfo *info){
+  bp::dict d;
+  if (info->mKind == kObjectKindFile) {
+    d["kind"] = "file";
+  } else if (info->mKind == kObjectKindDirectory) {
+    d["kind"] = "directory";
+  } else {
+    d["kind"] = "unknown";
+  }
+  d["name"] = std::string(info->mName);
+  d["owner"] = std::string(info->mOwner);
+  d["group"] = std::string(info->mGroup);
+  d["size"] = info->mSize;
+  d["replication"] = info->mReplication;
+  d["block_size"] = info->mBlockSize;
+  d["permissions"] = info->mPermissions;
+  d["last_access"] = info->mLastAccess;
+  d["last_mod"]    = info->mLastMod;
+  return d;
+}
+
+bp::list wrap_hdfs_fs::list_directory(std::string path){
+  int num_entries;
+  bp::list l;
+  hdfsFileInfo *infos = hdfsListDirectory(fs_, path.c_str(), &num_entries);
+  exec_and_trap_error(hdfsFileInfo*, 
+		      hdfsListDirectory(fs_, path.c_str(), &num_entries),
+		      "Cannot list directory " + path);
+  for(std::size_t i = 0; i < num_entries; ++i){
+    l.append(list_directory_helper(&(res[i])));
+  }
+  hdfsFreeFileInfo(infos, num_entries);
+  return l;
+}
+
+bp::dict wrap_hdfs_fs::get_path_info(std::string path){
+  int num_entries;
+  hdfsFileInfo *infos = hdfsListDirectory(fs_, path.c_str(), &num_entries);
+  exec_and_trap_error(hdfsFileInfo*, 
+		      hdfsListDirectory(fs_, path.c_str(), &num_entries),
+		      "Cannot get_path_info for " + path);
+  bp::dict d = list_directory_helper(&(res[0]));
+  hdfsFreeFileInfo(infos, num_entries);
+  return d;
+}
+
+bp::list wrap_hdfs_fs::get_hosts(std::string path, tOffset start, tOffset length){
+  exec_and_trap_error(char***, hdfsGetHosts(fs_, path.c_str(), start, length),
+		      "Cannot get_hosts for " + path);
+  bp::list blocks;
+  char ***bp = res;
+  while(bp != NULL){
+    char** p = *bp;
+    bp::list hosts_for_block;
+    while(p != NULL){
+      hosts_for_block.append(std::string(*p));
+      ++p;
+    }
+    blocks.append(hosts_for_block);
+    ++bp;
+  }
+  hdfsFreeHosts(res);
+  return blocks;
+}
+
 //--
 wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags, 
 					int buffer_size, int replication, 
@@ -111,6 +176,8 @@ wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags,
   return new wrap_hdfs_file(path, this, f);
 }
 
+
+
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
@@ -122,6 +189,9 @@ void export_hdfs_fs()
     .def("close", &wrap_hdfs_fs::disconnect)
     .def("capacity",  &wrap_hdfs_fs::get_capacity)
     .def("default_block_size",  &wrap_hdfs_fs::get_default_block_size)
+    .def("list_directory", &wrap_hdfs_fs::list_directory)
+    .def("get_path_info",  &wrap_hdfs_fs::get_path_info)
+    .def("get_hosts",  &wrap_hdfs_fs::get_hosts)
     .def("used",  &wrap_hdfs_fs::get_used)
     .def("exists",  &wrap_hdfs_fs::exists)
     .def("delete",  &wrap_hdfs_fs::unlink)

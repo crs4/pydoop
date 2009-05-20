@@ -26,5 +26,5 @@ ${HADOOP_ROOT}/conf
 export LD_LIBRARY_PATH=../src/libhdfs:${LD_LIBRARY_PATH}
 
 python test_hdfs_plain_disk.py
-python test_hdfs_default.py
-python test_hdfs_localhost.py
+python test_hdfs_network.py
+

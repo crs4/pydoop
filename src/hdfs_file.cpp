@@ -100,6 +100,7 @@ void wrap_hdfs_file::_close_helper() {
   }
 }
 
+
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
