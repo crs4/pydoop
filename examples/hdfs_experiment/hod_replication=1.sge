@@ -1,0 +1,57 @@
+[hod]
+stream                          = True
+java-home                       = /Archive/Software/Java/Sun/jdk1.6.0_05
+cluster                         = cybersar
+cluster-factor                  = 1.8
+xrs-port-range                  = 32768-65536
+debug                           = 2
+log-dir                         = /u/zag/hod_logs
+allocate-wait-time              = 3600
+temp-dir                        = /scratch/zag_hod
+
+[ringmaster]
+idleness-limit			= 7200
+register                        = True
+stream                          = False
+#workers_per_ring                = 2
+temp-dir                        = /scratch/zag_hod
+http-port-range                 = 8000-9000
+work-dirs                       = /scratch/zag_hod/1,/scratch/zag_hod/2
+xrs-port-range                  = 32768-65536
+debug                           = 2
+slots-per-node                  = 8
+log-dir                         = /u/zag/hod_logs
+hadoop-tar-ball                 = /u/acdc/hadoop/hadoop-0.19.1.tar.gz
+aux-binary-path                 = /ELS/els5/acdc/opt/bin:/usr/lib64/qt-3.3/bin:/usr/kerberos/bin:/drbd/GE/6.1u5/bin/lx24-amd64:/Archive_08/Software/Modules//Modules/3.2.6/bin:/Archive_08/usr_local/sbin/:/Archive_08/usr_local/bin/:/usr/local/bin:/bin:/usr/bin:/Archive/usr_local/bin
+
+[hodring]
+stream                          = False
+temp-dir                        = /scratch/zag_hod
+register                        = True
+java-home                       = /Archive/Software/Java/Sun/jdk1.6.0_05
+http-port-range                 = 8000-9000
+xrs-port-range                  = 32768-65536
+debug                           = 2
+log-dir                         = /u/zag/hod_logs
+
+[resource_manager]
+queue                           = short
+parallel-environment            = acdc.nompi
+slots-per-node                  = 8
+batch-home                      = /drbd/GE/6.1u5/bin/lx24-amd64
+id                              = sge
+env-vars                        = HOD_PYTHON_HOME=/ELS/els5/acdc/opt/bin/python
+
+[gridservice-mapred]
+external                        = False
+pkgs                            = /u/acdc/hadoop
+tracker_port                    = 8030
+info_port                       = 50080
+server-params                   = mapred.tasktracker.map.tasks.maximum=8,mapred.tasktracker.reduce.tasks.maximum=8
+
+[gridservice-hdfs]
+external                        = False
+pkgs                            = /u/acdc/hadoop
+server-params                   = dfs.replication=1
+fs_port                         = 8020
+info_port                       = 50070
