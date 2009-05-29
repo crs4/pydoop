@@ -49,13 +49,21 @@ case ${exp_type} in
 	;;
 esac
 
-echo "Using:"
-echo " hod_conf=${hod_conf}"
-echo " do_get=${do_get}"
-echo " do_put=${do_put}"
-echo " do_get_specific=${do_get_specific}"
-echo " do_clean_up=${do_clean_up}"
+(cat  <<EOF 
+Running experiment of type ${exp_type} with a ${N} nodes hdfs cluster.
+experiment id = ${exp_id}
+Using:
+   conf_dir=${conf_dir}
+   node_subsets=${node_subsets}
+   hod_conf=${hod_conf}
+   do_get=${do_get}
+   do_put=${do_put}
+   do_get_specific=${do_get_specific}
+   do_clean_up=${do_clean_up}
+EOF
+) > ${log_file}
 
+exit
 
 # we run the hadoop cluster anyway...
 hod="/ELS/els5/acdc/svn/hod_ge/releases/REL-0.1/bin/hod  -c ${hod_conf}"
