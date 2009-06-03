@@ -36,7 +36,7 @@ log-dir                         = /u/zag/hod_logs
 
 [resource_manager]
 queue                           = short
-parallel-environment            = acdc.nompi
+parallel-environment            = acdc.nompi.fu
 slots-per-node                  = 8
 batch-home                      = /drbd/GE/6.1u5/bin/lx24-amd64
 id                              = sge
