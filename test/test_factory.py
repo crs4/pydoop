@@ -2,12 +2,12 @@ import unittest
 
 from test_context import *
 
-import hadoop_pipes
+import pydoop_core
 
 
-class Mapper(hadoop_pipes.Mapper):
+class Mapper(pydoop_core.Mapper):
   def __init__(self, task_ctx):
-    hadoop_pipes.Mapper.__init__(self)
+    pydoop_core.Mapper.__init__(self)
     print 'Mapper has been instantiated'
   def map(self, map_ctx):
     print 'Mapper.map has been invoked'
@@ -17,16 +17,16 @@ class Mapper(hadoop_pipes.Mapper):
     print 'Mapper.map InputValue=%s' % v
     map_ctx.emit(k, v)
 
-class Reducer(hadoop_pipes.Reducer):
+class Reducer(pydoop_core.Reducer):
   def __init__(self, task_ctx):
-    hadoop_pipes.Reducer.__init__(self)
+    pydoop_core.Reducer.__init__(self)
     print 'Reducer has been instantiated'
   def reduce(self, map_ctx):
     print 'Reducer.reduce has been invoked'
 
-class Factory(hadoop_pipes.Factory):
+class Factory(pydoop_core.Factory):
   def __init__(self, mapper_class, reducer_class):
-    hadoop_pipes.Factory.__init__(self)
+    pydoop_core.Factory.__init__(self)
     self.mapper_class  = mapper_class
     self.reducer_class = reducer_class
     self.produced      = []
@@ -53,19 +53,19 @@ if __name__ == '__main__' :
   m.map(mctx)
   r    = fact.createReducer(rctx)
   r.reduce(rctx)
-  test_factory = hadoop_pipes.TestFactory(fact)
+  test_factory = pydoop_core.TestFactory(fact)
   print test_factory
   m = test_factory.createMapper(mctx)
   m.map(mctx)
   r = test_factory.createReducer(rctx)
   r.reduce(rctx)
-  hadoop_pipes.try_reducer(r, rctx)
-  hadoop_pipes.try_mapper(m, mctx)
-  hadoop_pipes.try_factory(fact, mctx, rctx)
-  hadoop_pipes.try_factory_internal(fact)
+  pydoop_core.try_reducer(r, rctx)
+  pydoop_core.try_mapper(m, mctx)
+  pydoop_core.try_factory(fact, mctx, rctx)
+  pydoop_core.try_factory_internal(fact)
 
 
-  #hadoop_pipes.runTask(fact)
+  #pydoop_core.runTask(fact)
 
 
 

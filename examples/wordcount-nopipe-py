@@ -3,14 +3,14 @@
 
 # change the following exports to appropriate values for your environment
 """:"
-export PATH="/ELS/els5/acdc/opt/bin:$PATH"
-export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
+#export PATH="/ELS/els5/acdc/opt/bin:$PATH"
+#export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
 
 exec python -u -OO $0 ${1+"@"}
 ":"""
 
 import sys
-sys.path.append("/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples")
+sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
 
 from pydoop import Mapper, Reducer, RecordReader, Factory, runTask
 
@@ -23,6 +23,42 @@ OUTPUT_WORDS = 'OUTPUT_WORDS'
 
 def log(x):
   sys.stderr.write('%s\n' % x)
+
+
+class MyFactory(Factory):
+  def __init__(self, map_class, reduce_class, record_reader_class):
+    Factory.__init__(self, map_class, reduce_class)
+    self.record_reader_class = record_reader_class
+  def createRecordReader(self, ctx):
+    o = self.record_reader_class(ctx)
+    self.produced.append(o)
+    return o
+
+
+class WC_RecordReader(RecordReader):
+  DEFAULT_VALUE='The quick red fox jumped on the lazy brown dog'
+  def __init__(self, ctx):
+    RecordReader.__init__(self)
+    log('WC_RecordReader::init  start')
+    log('WC_RecordReader::ctx = %s' % ctx)
+    log('WC_RecordReader::input_split = %s' % ctx.getInputSplit())
+    self.ctx = ctx
+    self.bytes_counter = 0
+    self.inputBytes = ctx.getCounter(WORDCOUNT, INPUT_BYTES)
+    log('WC_RecordReader::init  end')
+  #-
+  def next(self):
+    "@return tuple(bool have_a_record, str record_key, str record_value)"
+    if self.bytes_counter > 1000:
+      return (False, '', '')
+    delta_bytes = len(self.DEFAULT_VALUE)
+    self.bytes_counter += delta_bytes
+    log('WC_RecordReader::next outputting %s bytes' % delta_bytes)
+    self.ctx.incrementCounter(self.inputBytes, delta_bytes)
+    return (True, '%d' % self.bytes_counter, self.DEFAULT_VALUE)
+  #--
+  def getProgress(self):
+    return float(self.bytes_counter)/1000
 
 
 class WC_Mapper(Mapper):
@@ -63,10 +99,9 @@ class WC_Reducer(Reducer):
     red_ctx.emit(k, str(s))
     red_ctx.incrementCounter(self.outputWords, 1)
 
-
 def main(argv):
   log('wordcount started')
-  runTask(Factory(WC_Mapper, WC_Reducer))
+  runTask(MyFactory(WC_Mapper, WC_Reducer, WC_RecordReader))
 
 
 if __name__ == "__main__":

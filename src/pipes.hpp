@@ -15,6 +15,19 @@ namespace hp = HadoopPipes;
 
 #include <string>
 
+class pipes_exception: public std::exception {
+private:
+  const std::string msg_;
+public:
+  pipes_exception(std::string msg) : msg_(msg){}
+
+  virtual const char* what() const throw() {
+    return msg_.c_str();
+  }
+  ~pipes_exception() throw() {}
+} ;
+
+
 struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper> {
 
   void map(hp::MapContext& ctx) {
@@ -55,7 +68,25 @@ struct wrap_partitioner: hp::Partitioner, bp::wrapper<hp::Partitioner> {
 
 struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader> {
   bool next(std::string& key, std::string& value) {
-    return this->get_override("next")(key, value);
+    // t = (bool got_record, str key, str value)
+    bp::tuple t = this->get_override("next")();
+    if (!t[0]) {
+      return false;
+    }
+    bp::extract<std::string> k(t[1]);
+    if (k.check()) {
+      key = k;
+    } else {
+      throw pipes_exception("RecordReader:: overloaded method is not returning a proper key.");
+    }
+    bp::extract<std::string> v(t[2]);
+    if (v.check()) {
+      value = v;
+    } else {
+      throw pipes_exception("RecordReader:: verloaded method is not returning a proper value.");
+    }
+    std::cerr << "wrap_record_reader:: k=" << key <<", value=" << value <<std::endl; 
+    return true;
   }
   float getProgress() {
     return this->get_override("getProgress")();
@@ -74,67 +105,43 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
   }
 };
 
-#define CREATE_AND_RETURN_OBJECT(obj_t, ctx_t, name, arg) \
+#define CREATE_AND_RETURN_OBJECT(obj_t, ctx_t, method_name, ctx) \
     bp::reference_existing_object::apply<obj_t&>::type converter; \
-    PyObject* obj = converter(arg); \
+    PyObject* obj = converter(ctx); \
     bp::object po = bp::object(bp::handle<>(bp::borrowed(obj))); \
-    bp::override f = this->get_override("create"#name); \
-    obj_t* o = f(po); \
-    return o;
-
+    bp::override f = this->get_override(#method_name); \
+    if (f) {\
+      obj_t* o = f(po); \
+      return o;\
+    } else {\
+      return NULL;\
+    }
 
 struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
   //----------------------------------------------------------
   hp::Mapper* createMapper(hp::MapContext& ctx) const {
-    CREATE_AND_RETURN_OBJECT(hp::Mapper, hp::MapContext, Mapper, ctx);
+    CREATE_AND_RETURN_OBJECT(hp::Mapper, hp::MapContext, createMapper, ctx);
   }
   hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
-    CREATE_AND_RETURN_OBJECT(hp::Reducer, hp::ReduceContext, Reducer, ctx);    
-  }
-
-  // FIXME ------ the following are probably broken.
-#define OVERRIDE_CREATOR_IF_POSSIBLE(base, ctx_type, method_name, arg)	\
-  if (bp::override f = this->get_override(#method_name)) {		\
-    const ctx_type& c_ctx = arg;\
-    bp::object o_ctx = bp::make_getter(&c_ctx,				\
-				       bp::return_value_policy<bp::copy_const_reference>()); \
-    return f(o_ctx); \
-  } else { \
-    return base::method_name(arg); \
-  }
-
-  //----------------------------------------------------------
-  hp::Reducer* createCombiner(hp::MapContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext, 
-				 createCombiner, ctx);
-  }
-  hp::Reducer* default_create_combiner(hp::MapContext& ctx) const {
-    return this->Factory::createCombiner(ctx);
-  }
-  //----------------------------------------------------------
-  hp::Partitioner* createPartitioner(hp::MapContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext,
-				 createPartitioner, ctx);
-  }
-  hp::Partitioner* default_create_partitioner(hp::MapContext& ctx) const {
-    return this->Factory::createPartitioner(ctx);
-  }
-  //----------------------------------------------------------
-  hp::RecordWriter* createRecordWriter(hp::ReduceContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::ReduceContext,
-				 createRecordWriter, ctx);
-  }
-  hp::RecordWriter* default_create_record_writer(hp::ReduceContext& ctx) const {
-    return this->Factory::createRecordWriter(ctx);
+    CREATE_AND_RETURN_OBJECT(hp::Reducer, hp::ReduceContext, createReducer, ctx);    
   }
   //----------------------------------------------------------
   hp::RecordReader* createRecordReader(hp::MapContext& ctx) const {
-    OVERRIDE_CREATOR_IF_POSSIBLE(hp::Factory, hp::MapContext,
-				 createRecordReader, ctx);
+    CREATE_AND_RETURN_OBJECT(hp::RecordReader, hp::MapContext, createRecordReader, ctx);
   }
-  hp::RecordReader* default_create_record_reader(hp::MapContext& ctx) const {
-    return this->Factory::createRecordReader(ctx);
+  //----------------------------------------------------------
+  hp::Reducer* createCombiner(hp::MapContext& ctx) const {
+    CREATE_AND_RETURN_OBJECT(hp::Reducer, hp::MapContext, createCombiner, ctx);    
   }
+  //----------------------------------------------------------
+  hp::Partitioner* createPartitioner(hp::MapContext& ctx) const {
+    CREATE_AND_RETURN_OBJECT(hp::Partitioner, hp::MapContext, createPartitioner, ctx);    
+  }
+  //----------------------------------------------------------
+  hp::RecordWriter* createRecordWriter(hp::ReduceContext& ctx) const {
+    CREATE_AND_RETURN_OBJECT(hp::RecordWriter, hp::ReduceContext, createRecordWriter, ctx);    
+  }
+
 };
 
 

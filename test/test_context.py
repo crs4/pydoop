@@ -1,11 +1,11 @@
-import hadoop_pipes
+import pydoop_core
 
 
 jc_fields = {'foo' : 'a-string', 'bar' : 32}
 
-class jc(hadoop_pipes.JobConf):
+class jc(pydoop_core.JobConf):
   def __init__(self, d):
-    hadoop_pipes.JobConf.__init__(self)
+    pydoop_core.JobConf.__init__(self)
     self.d = d
   def hasKey(self, k):
     return self.d.has_key(k)
@@ -19,9 +19,9 @@ class jc(hadoop_pipes.JobConf):
     return bool(self.get(k))
 
 
-class tc(hadoop_pipes.TaskContext):
+class tc(pydoop_core.TaskContext):
   def __init__(self, j=None):
-    hadoop_pipes.TaskContext.__init__(self)
+    pydoop_core.TaskContext.__init__(self)
     self.job_conf = j
     for k in jc_fields.keys():
       print '%s -> %s' % (k, self.job_conf.get(k))
@@ -34,9 +34,9 @@ class tc(hadoop_pipes.TaskContext):
   def getJobConf(self):
     return self.job_conf
 
-class mc(hadoop_pipes.MapContext):
+class mc(pydoop_core.MapContext):
   def __init__(self, jc):
-    hadoop_pipes.MapContext.__init__(self)
+    pydoop_core.MapContext.__init__(self)
     self.job_conf = jc
   def getInputKey(self):
     return 'mc.getInputKey()'
@@ -45,9 +45,9 @@ class mc(hadoop_pipes.MapContext):
   def emit(self, k, v):
     print 'emitting %s -> %s' % (k,v)
 
-class rc(hadoop_pipes.ReduceContext):
+class rc(pydoop_core.ReduceContext):
   def __init__(self, jc):
-    hadoop_pipes.ReduceContext.__init__(self)
+    pydoop_core.ReduceContext.__init__(self)
     self.job_conf = jc
   def getInputKey(self):
     return 'rc.getInputKey()'
@@ -60,11 +60,11 @@ class rc(hadoop_pipes.ReduceContext):
 if __name__ == '__main__':
   j = jc({'foo' : 'a-string', 'bar' : 32})
   t = tc(j)
-  hadoop_pipes.try_context(t)
+  pydoop_core.try_context(t)
   m = mc(j)
-  hadoop_pipes.try_context(m)
+  pydoop_core.try_context(m)
   r = rc(j)
-  hadoop_pipes.try_context(r)
+  pydoop_core.try_context(r)
 
 
 

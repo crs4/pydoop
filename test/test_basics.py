@@ -4,7 +4,7 @@ import random
 import sys
 
 #----------------------------------------------------------------------------
-import hadoop_pipes
+import pydoop_core
 #----------------------------------------------------------------------------
 
 
@@ -12,13 +12,13 @@ class basics_tc(unittest.TestCase):
   def const_ref(self):
     # scope of a string ref
     h = "hello"
-    a = hadoop_pipes.double_a_string(h)
+    a = pydoop_core.double_a_string(h)
     print a
 
   def create_and_destroy(self):
-    class t_m(hadoop_pipes.Mapper):
+    class t_m(pydoop_core.Mapper):
       def __init__(self, c):
-        hadoop_pipes.Mapper.__init__(self)
+        pydoop_core.Mapper.__init__(self)
         self.c = c
     x = [ t_m(i) for i in range(10)]
 

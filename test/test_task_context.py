@@ -4,7 +4,7 @@ import random
 import sys
 
 #----------------------------------------------------------------------------
-import hadoop_pipes
+import pydoop_core
 
 #----------------------------------------------------------------------------
 class taskcontext_tc(unittest.TestCase):
@@ -14,7 +14,7 @@ class taskcontext_tc(unittest.TestCase):
   def test_task_from_cpluplus(self):
     d = {'input_key' : 'inputkey',
          'input_value' : 'inputvalue'}
-    o = hadoop_pipes.get_TaskContext_object(d)
+    o = pydoop_core.get_TaskContext_object(d)
     self.assertEqual(o.getInputKey(), d['input_key'])
     self.assertEqual(o.getInputValue(), d['input_value'])
     jc = o.getJobConf()
@@ -32,7 +32,7 @@ class taskcontext_tc(unittest.TestCase):
          'input_split' : 'inputsplit',
          'input_key_class' : 'keyclass',
          'input_value_class' : 'valueclass'}
-    o = hadoop_pipes.get_MapContext_object(d)
+    o = pydoop_core.get_MapContext_object(d)
     self.assertEqual(o.getInputKey(), d['input_key'])
     self.assertEqual(o.getInputValue(), d['input_value'])
     self.assertEqual(o.getInputSplit(), d['input_split'])
@@ -50,7 +50,7 @@ class taskcontext_tc(unittest.TestCase):
   def test_reducecontext_from_cpluplus(self):
     d = {'input_key' : 'inputkey',
          'input_value' : 'inputvalue'}
-    o = hadoop_pipes.get_ReduceContext_object(d)
+    o = pydoop_core.get_ReduceContext_object(d)
     self.assertEqual(o.getInputKey(), d['input_key'])
     self.assertEqual(o.getInputValue(), d['input_value'])
     jc = o.getJobConf()

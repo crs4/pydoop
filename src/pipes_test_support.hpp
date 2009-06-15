@@ -16,6 +16,9 @@ using namespace HadoopUtils;
 struct test_factory {
   Factory& f_;
   test_factory(Factory& f): f_(f){}
+  RecordReader* createRecordReader(MapContext& ctx) {
+    return f_.createRecordReader(ctx);
+  }
   Mapper* createMapper(MapContext& ctx) {
     std::cerr << "test_factory:: Ready to evaluate createMapper" << std::endl;
     Mapper* m = f_.createMapper(ctx);
@@ -244,6 +247,8 @@ const char* double_a_string(const std::string& a){
   std::cerr << "p=" << p << std::endl;
   return p;
 }
+
+
 
 #if 0
 void try_context(TaskContext& tc){
