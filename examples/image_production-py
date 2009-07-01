@@ -24,11 +24,15 @@ def log(x):
 class IP_Mapper(Mapper):
   #--
   def _configure(self, jc, k, f, df):
-    v = df if not jc.hasKey(k) else jc.get(k)
+    v = df
+    if jc.hasKey(k):
+      v = jc.get(k)
     setattr(self, f, v)
   #--
   def _configure_int(self, jc, k, f, df):
-    v = df if not jc.hasKey(k) else jc.getInt(k)
+    v = df
+    if jc.hasKey(k):
+      v = jc.getInt(k)
     setattr(self, f, v)
   #--
   def __init__(self, task_ctx):
@@ -40,9 +44,12 @@ class IP_Mapper(Mapper):
     self._configure(jc, 'image.production.repository', 'repository',
                     'hdfs://users/zag/image_rep')
     self._configure_int(jc, 'image.production.cycles', 'cycles', 4)
-    self._configure_int(jc, 'image.production.xsize',  'xsize',   64)
-    self._configure_int(jc, 'image.production.ysize',  'ysize',   64)
+    self._configure_int(jc, 'image.production.xsize',  'xsize', 32)
+    self._configure_int(jc, 'image.production.ysize',  'ysize', 32)
     log('IP_Mapper::init image_repository = %s' % self.repository)
+    log('IP_Mapper::init cycles = %s' % self.cycles)
+    log('IP_Mapper::init xsize  = %s' % self.xsize)
+    log('IP_Mapper::init ysize  = %s' % self.ysize)
     log('IP_Mapper::init  end')
   #-
   def map(self, map_ctx):
@@ -55,8 +62,9 @@ class IP_Mapper(Mapper):
       log('IP_Mapper::map lane=%d, tile=%d' % (lane, tile))
       map_ctx.incrementCounter(self.inputTiles, 1)
       for i in range(self.cycles):
-        k = 'L%02d%03d' % (lane, tile)
+        k = 'L%02dT%03d' % (lane, tile)
         v = 'c%d-x%d-y%d' % (i, self.xsize, self.ysize)
+        log('IP_Mapper::map emit (%s, %s)' % (k, v))
         map_ctx.emit(k, v)
     log('IP_Mapper::map end')
 

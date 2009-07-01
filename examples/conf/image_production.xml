@@ -27,25 +27,25 @@
 
   <property>
     <name>image.production.repository</name>
-    <values>hdfs://user/zag/images</values>
+    <value>hdfs://user/zag/images</value>
     <description>Repository where the images will be written.</description>
   </property>
 
   <property>
     <name>image.production.cycles</name>
-    <values>3</values>
+    <value>3</value>
     <description>Number of requested cycles.</description>
   </property>
 
   <property>
     <name>image.production.xsize</name>
-    <values>64</values>
+    <value>64</value>
     <description>Images xsize.</description>
   </property>
 
   <property>
     <name>image.production.ysize</name>
-    <values>64</values>
+    <value>64</value>
     <description>Images ysize.</description>
   </property>
 
