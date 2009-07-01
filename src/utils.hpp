@@ -1,3 +1,6 @@
+#ifndef PYDOOP_UTILS_HPP
+#define PYDOOP_UTILS_HPP
+
 // Convert (Python) dictionary to (C++) map. 
 // Stolen from the net.
 // https://galen.dulci.duhs.duke.edu/msi/doxygen/c%2B%2B/html/cppmap__conv__pif_8cpp-source.html
@@ -23,3 +26,4 @@ template<typename S, typename T> map<S, T> pydict2cppmap(PyObject* obj)
   return cppmap;
 }
 
+#endif

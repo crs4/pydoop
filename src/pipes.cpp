@@ -155,7 +155,6 @@ void export_pipes()
   def("try_reducer", try_reducer);
   def("try_factory", try_factory);
   def("try_factory_internal", try_factory_internal);
-
 }
 
 

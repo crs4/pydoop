@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# change the following exports to appropriate values for your environment
+""":"
+#export PATH="/ELS/els5/acdc/opt/bin:$PATH"
+#export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
+
+exec python -u -OO $0 ${1+"@"}
+":"""
+
+import sys
+sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
+
+from pydoop import Mapper, Reducer, Factory, runTask
+
+IMAGE_PRODUCTION = 'IMAGE_PRODUCTION'
+INPUT_TILES      = 'INPUT_TILES'
+OUTPUT_SLICES    = 'OUTPUT_SLICES'
+
+
+def log(x):
+  sys.stderr.write('%s\n' % x)
+
+class IP_Mapper(Mapper):
+  #--
+  def _configure(self, jc, k, f, df):
+    v = df if not jc.hasKey(k) else jc.get(k)
+    setattr(self, f, v)
+  #--
+  def _configure_int(self, jc, k, f, df):
+    v = df if not jc.hasKey(k) else jc.getInt(k)
+    setattr(self, f, v)
+  #--
+  def __init__(self, task_ctx):
+    Mapper.__init__(self)
+    log('IP_Mapper::init  start')
+    log('IP_Mapper::task_ctx = %s' % task_ctx)
+    self.inputTiles   = task_ctx.getCounter(IMAGE_PRODUCTION, INPUT_TILES)
+    jc = task_ctx.getJobConf()
+    self._configure(jc, 'image.production.repository', 'repository',
+                    'hdfs://users/zag/image_rep')
+    self._configure_int(jc, 'image.production.cycles', 'cycles', 4)
+    self._configure_int(jc, 'image.production.xsize',  'xsize',   64)
+    self._configure_int(jc, 'image.production.ysize',  'ysize',   64)
+    log('IP_Mapper::init image_repository = %s' % self.repository)
+    log('IP_Mapper::init  end')
+  #-
+  def map(self, map_ctx):
+    log('IP_Mapper::map self=%s, ctx=%s' % (self, map_ctx))
+    iv = map_ctx.getInputValue().strip()
+    if not iv:
+      log('IP_Mapper::map empty record')
+    else:
+      lane, tile = map(int, map_ctx.getInputValue().split())
+      log('IP_Mapper::map lane=%d, tile=%d' % (lane, tile))
+      map_ctx.incrementCounter(self.inputTiles, 1)
+      for i in range(self.cycles):
+        k = 'L%02d%03d' % (lane, tile)
+        v = 'c%d-x%d-y%d' % (i, self.xsize, self.ysize)
+        map_ctx.emit(k, v)
+    log('IP_Mapper::map end')
+
+class IP_Reducer(Reducer):
+  def __init__(self, task_ctx):
+    Reducer.__init__(self)
+    log('IP_Reducer::init  start')
+    log('IP_Reducer::task_ctx = %s' % task_ctx)
+    self.outputSlices = task_ctx.getCounter(IMAGE_PRODUCTION, OUTPUT_SLICES)
+  #-
+  def reduce(self, red_ctx):
+    log('IP_Reducer::reduce self=%s, ctx=%s' % (self, red_ctx))
+    s = 0
+    while red_ctx.nextValue():
+      s += 1
+    k = red_ctx.getInputKey()
+    log('IP_Reducer::reduce k=%s, s=%d' % (k, s))
+    red_ctx.emit(k, str(s))
+    red_ctx.incrementCounter(self.outputSlices, s)
+
+def main(argv):
+  log('image_production started')
+  runTask(Factory(IP_Mapper, IP_Reducer))
+
+
+if __name__ == "__main__":
+  main(sys.argv)
+
+# Local Variables: **
+# mode: python **
+# End: **

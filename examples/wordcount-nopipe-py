@@ -34,7 +34,6 @@ class MyFactory(Factory):
     self.produced.append(o)
     return o
 
-
 class WC_RecordReader(RecordReader):
   DEFAULT_VALUE='The quick red fox jumped on the lazy brown dog'
   def __init__(self, ctx):

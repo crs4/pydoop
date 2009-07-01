@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>keep.failed.task.files</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hadoop.pipes.command-file.keep</name>
+    <value>true</value>
+  </property>
+
+  
+  <property>
+    <name>hadoop.pipes.executable</name>
+    <value>examples/bin/image_production-py</value>
+  </property>
+
+  <property>
+    <name>hadoop.pipes.java.recordreader</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>hadoop.pipes.java.recordwriter</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>image.production.repository</name>
+    <values>hdfs://user/zag/images</values>
+    <description>Repository where the images will be written.</description>
+  </property>
+
+  <property>
+    <name>image.production.cycles</name>
+    <values>3</values>
+    <description>Number of requested cycles.</description>
+  </property>
+
+  <property>
+    <name>image.production.xsize</name>
+    <values>64</values>
+    <description>Images xsize.</description>
+  </property>
+
+  <property>
+    <name>image.production.ysize</name>
+    <values>64</values>
+    <description>Images ysize.</description>
+  </property>
+
+  <!--
+      mapred.cache
+      First of all you need to copy the files to the dfs. And then add
+      the file to the distributed cache. You can give comma separated
+      values of the files or archives to be added to distributed
+      cache, for "mapred.cache.files" and "mapred.cache.archives" in
+      the conf file.
+
+      You can also give URIs of the file names. You can give the URI
+      as hdfs://<path>#<link>, here mapred will create a symlink with
+      name "link" in the working directory.
+  -->
+
+  <!-- it appears to work! -->
+  <!-- property>  
+    <name>mapred.cache.files</name>  
+    <value>/files/file1,/files/file2.txt</value>  
+    <description>Example file lists</description> 
+  </property>
+
+  <property> 
+    <name>mapred.cache.archives</name> 
+    <value>/archives/arc1.zip,/archives/arc2.jar</value> 
+  <description>The archives in distributed cache</description> 
+  </property -->
+
+</configuration>
