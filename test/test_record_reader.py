@@ -4,15 +4,15 @@ import random
 import sys
 
 #----------------------------------------------------------------------------
-import pydoop_core
-from pydoop import Factory
+import pydoop_pipes
+from pydoop.pipes import Factory, RecordReader
 
-class test_record_reader(pydoop_core.RecordReader):
+class test_record_reader(RecordReader):
   DEFAULT_VALUE='The quick red fox jumped on the lazy brown dog'
   KEY_FORMAT='key-%d'
   NUMBER_RECORDS=10
   def __init__(self, ctx):
-    pydoop_core.RecordReader.__init__(self)
+    RecordReader.__init__(self)
     self.ctx = ctx
     self.counter = 0
 
@@ -37,7 +37,7 @@ class record_reader_tc(unittest.TestCase):
          'input_split' : 'inputsplit',
          'input_key_class' : 'keyclass',
          'input_value_class' : 'valueclass'}
-    ctx = pydoop_core.get_MapContext_object(d)
+    ctx = pydoop_pipes.get_MapContext_object(d)
     self.assertEqual(ctx.getInputKey(), d['input_key'])
     self.assertEqual(ctx.getInputValue(), d['input_value'])
     self.assertEqual(ctx.getInputSplit(), d['input_split'])
@@ -47,13 +47,13 @@ class record_reader_tc(unittest.TestCase):
     f = Factory(None, None, test_record_reader)
     rr = f.createRecordReader(ctx)
     for i in range(test_record_reader.NUMBER_RECORDS):
-      (f, k, v) = pydoop_core.get_record_from_record_reader(rr)
+      (f, k, v) = pydoop_pipes.get_record_from_record_reader(rr)
       self.assertTrue(f)
       self.assertEqual(k, test_record_reader.KEY_FORMAT % (i+1))
       self.assertEqual(v, test_record_reader.DEFAULT_VALUE)
-      self.assertAlmostEqual(pydoop_core.get_progress_from_record_reader(rr),
+      self.assertAlmostEqual(pydoop_pipes.get_progress_from_record_reader(rr),
                              float(i+1)/test_record_reader.NUMBER_RECORDS)
-    (f, k, v) = pydoop_core.get_record_from_record_reader(rr)
+    (f, k, v) = pydoop_pipes.get_record_from_record_reader(rr)
     self.assertFalse(f)
 
 #----------------------------------------------------------------------------

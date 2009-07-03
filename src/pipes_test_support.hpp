@@ -14,19 +14,19 @@ using namespace HadoopPipes;
 using namespace HadoopUtils;
 
 struct test_factory {
-  Factory& f_;
-  test_factory(Factory& f): f_(f){}
+  Factory* fp_;
+  test_factory(Factory* fp): fp_(fp){}
   RecordReader* createRecordReader(MapContext& ctx) {
-    return f_.createRecordReader(ctx);
+    return fp_->createRecordReader(ctx);
   }
   Mapper* createMapper(MapContext& ctx) {
     std::cerr << "test_factory:: Ready to evaluate createMapper" << std::endl;
-    Mapper* m = f_.createMapper(ctx);
+    Mapper* m = fp_->createMapper(ctx);
     std::cerr << "test_factory:: done." << std::endl;
     return m;
   }
   Reducer* createReducer(ReduceContext& ctx) {
-    return f_.createReducer(ctx);
+    return fp_->createReducer(ctx);
   }
 };
 

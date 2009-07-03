@@ -1,5 +1,3 @@
-#!/bin/sh
-
 HADOOP_ROOT=/opt/hadoop
 export CLASSPATH=\
 ${HADOOP_ROOT}/lib/xmlenc-0.52.jar:\
@@ -25,5 +23,4 @@ ${HADOOP_ROOT}/conf
 
 export LD_LIBRARY_PATH=../src/libhdfs:${LD_LIBRARY_PATH}
 
-python all_tests_hdfs.py
 

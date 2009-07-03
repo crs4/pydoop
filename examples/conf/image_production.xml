@@ -8,7 +8,6 @@
     <name>hadoop.pipes.command-file.keep</name>
     <value>true</value>
   </property>
-
   
   <property>
     <name>hadoop.pipes.executable</name>

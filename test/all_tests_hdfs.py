@@ -1,13 +1,14 @@
 import unittest
 
 suites = []
+
 #--
-import test_task_context
-suites.append(test_task_context.suite())
+import test_hdfs_plain_disk
+suites.append(test_hdfs_plain_disk.suite())
+
 #--
-import test_jobconf
-suites.append(test_jobconf.suite())
-#--
+import test_hdfs_network
+suites.append(test_hdfs_network.suite())
 
 alltests = unittest.TestSuite(tuple(suites))
 

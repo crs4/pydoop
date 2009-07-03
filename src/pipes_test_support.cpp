@@ -33,7 +33,7 @@ float get_progress_from_record_reader(RecordReader* rr){
 void export_pipes_test_support() 
 {
   class_<test_factory>("TestFactory",
-		       init<Factory&>())
+		       init<Factory*>())
     .def("createRecordReader", &test_factory::createRecordReader,
 	 return_value_policy<manage_new_object>())
     .def("createMapper", &test_factory::createMapper,

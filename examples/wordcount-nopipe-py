@@ -12,7 +12,7 @@ exec python -u -OO $0 ${1+"@"}
 import sys
 sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
 
-from pydoop import Mapper, Reducer, RecordReader, Factory, runTask
+from pydoop.pipes import Mapper, Reducer, RecordReader, Factory, runTask
 
 
 WORDCOUNT    = 'WORDCOUNT'
@@ -25,14 +25,6 @@ def log(x):
   sys.stderr.write('%s\n' % x)
 
 
-class MyFactory(Factory):
-  def __init__(self, map_class, reduce_class, record_reader_class):
-    Factory.__init__(self, map_class, reduce_class)
-    self.record_reader_class = record_reader_class
-  def createRecordReader(self, ctx):
-    o = self.record_reader_class(ctx)
-    self.produced.append(o)
-    return o
 
 class WC_RecordReader(RecordReader):
   DEFAULT_VALUE='The quick red fox jumped on the lazy brown dog'
@@ -100,7 +92,7 @@ class WC_Reducer(Reducer):
 
 def main(argv):
   log('wordcount started')
-  runTask(MyFactory(WC_Mapper, WC_Reducer, WC_RecordReader))
+  runTask(Factory(WC_Mapper, WC_Reducer, WC_RecordReader))
 
 
 if __name__ == "__main__":

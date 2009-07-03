@@ -12,7 +12,7 @@ exec python -u -OO $0 ${1+"@"}
 import sys
 sys.path.append("/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples")
 
-from pydoop import Mapper, Reducer, RecordReader, Factory, runTask
+from pydoop.pipes import Mapper, Reducer, Factory, runTask
 
 
 WORDCOUNT    = 'WORDCOUNT'

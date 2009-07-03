@@ -11,7 +11,12 @@ exec python -u -OO $0 ${1+"@"}
 import sys
 sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
 
-from pydoop import Mapper, Reducer, Factory, runTask
+import os
+
+from pydoop     import Mapper, Reducer, Factory, runTask
+from pydoop     import hdfs
+
+from gap_record import factory as gap_image_factory
 
 IMAGE_PRODUCTION = 'IMAGE_PRODUCTION'
 INPUT_TILES      = 'INPUT_TILES'
@@ -35,6 +40,20 @@ class IP_Mapper(Mapper):
       v = jc.getInt(k)
     setattr(self, f, v)
   #--
+  def _extract_hdfs_server(self):
+    path = self.repository
+    root = ''
+    tail = ''
+    while path.find('/') > -1:
+      root = os.path.join(tail, root)
+      path, tail = os.path.split(path)
+    assert path == 'hdfs:' and len(tail) > 0
+    parts = tail.split(':')
+    if len(parts) == 1:
+      return parts[0], 0, root
+    else:
+      return parts[0], parts[1], root
+  #--
   def __init__(self, task_ctx):
     Mapper.__init__(self)
     log('IP_Mapper::init  start')
@@ -42,11 +61,17 @@ class IP_Mapper(Mapper):
     self.inputTiles   = task_ctx.getCounter(IMAGE_PRODUCTION, INPUT_TILES)
     jc = task_ctx.getJobConf()
     self._configure(jc, 'image.production.repository', 'repository',
-                    'hdfs://users/zag/image_rep')
+                    'hdfs://localhost/users/zag/image_rep')
     self._configure_int(jc, 'image.production.cycles', 'cycles', 4)
     self._configure_int(jc, 'image.production.xsize',  'xsize', 32)
     self._configure_int(jc, 'image.production.ysize',  'ysize', 32)
+    self.hdfs_host, self.hdfs_port, self.hdfs_root = self._extract_hdfs_server()
+
+    self.gr = gap_record(self.xsize, self.ysize)
+
     log('IP_Mapper::init image_repository = %s' % self.repository)
+    log('IP_Mapper::init hdfs_host = %s' % self.hdsf_host)
+    log('IP_Mapper::init hdfs_port = %s' % self.hdsf_port)
     log('IP_Mapper::init cycles = %s' % self.cycles)
     log('IP_Mapper::init xsize  = %s' % self.xsize)
     log('IP_Mapper::init ysize  = %s' % self.ysize)
@@ -61,11 +86,25 @@ class IP_Mapper(Mapper):
       lane, tile = map(int, map_ctx.getInputValue().split())
       log('IP_Mapper::map lane=%d, tile=%d' % (lane, tile))
       map_ctx.incrementCounter(self.inputTiles, 1)
+      #--
+      lane_tile_id = 'L%02dT%03d' % (lane, tile)
+      path = os.path.join(self.hdfs_root, lane_tile_id)
+      fs = hdfs(self.hdfs_host, self.hdfs_port)
+      log('IP_Mapper::map opened server (%s:%s' % (self.hdsf_host,
+                                                   self.hdfs_port))
+      f = fs.open_file(path, os.O_WRONLY, 0, 0, 0)
+      log('IP_Mapper::map opened hdfs file=%s' % path)
+      gr = self.gr
       for i in range(self.cycles):
-        k = 'L%02dT%03d' % (lane, tile)
-        v = 'c%d-x%d-y%d' % (i, self.xsize, self.ysize)
-        log('IP_Mapper::map emit (%s, %s)' % (k, v))
-        map_ctx.emit(k, v)
+        k = lane_tile_id
+        gr._write_header(lane, tile, i)
+        written = f.write_chunk(self.gr.buffer)
+        log('IP_Mapper::map written %d bytes out of  %d' % (written,
+                                                            gr.record_size))
+
+        log('IP_Mapper::map emit (%s, %s)' % (k, gr.record_size))
+        map_ctx.emit(k, '%d' % gr.record_size)
+      f.close()
     log('IP_Mapper::map end')
 
 class IP_Reducer(Reducer):
