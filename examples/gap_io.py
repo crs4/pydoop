@@ -71,26 +71,23 @@ class factory(object):
     self.sbuff.write(data)
   #--
 
-
 #-----------------------------------------------------------------
 import random
 
-def make_rnd_img(xsize, ysize):
-  img = ''.join(map(lambda x: chr(random.randint(0, 255)),
-                    range(2 * xsize * ysize)))
-  return img
-
-
-def write_img(f_out, xsize, ysize, lane, tile, cycle,
-              img_a, img_c, img_g, img_t):
-
+class fake_factory(factory):
+  def __make_rnd_img(self):
+    return  ''.join(map(lambda x: chr(random.randint(0, 255)),
+                        range(2 * self.xsize * self.ysize)))
   #--
-  f_out = open('junk.bin', 'w')
-  f_out.write(r.data)
-  f_out.close()
+  def make(self, lane, tile, cycle):
+    a = self.__make_rnd_img()
+    c = self.__make_rnd_img()
+    g = self.__make_rnd_img()
+    t = self.__make_rnd_img()
+    return factory.make(self, lane, tile, cycle, a, c, g, t)
 
 
-
+#-----------------------------------------------------------------
 from pydoop.hdfs import hdfs, split_hdfs_path
 
 import os

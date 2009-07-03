@@ -5,6 +5,32 @@
 #export PATH="/ELS/els5/acdc/opt/bin:$PATH"
 #export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
 
+#--
+export LD_LIBRARY_PATH=/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
+
+HADOOP_ROOT=/opt/hadoop
+export CLASSPATH=\
+${HADOOP_ROOT}/lib/xmlenc-0.52.jar:\
+${HADOOP_ROOT}/lib/slf4j-log4j12-1.4.3.jar:\
+${HADOOP_ROOT}/lib/slf4j-api-1.4.3.jar:\
+${HADOOP_ROOT}/lib/servlet-api.jar:\
+${HADOOP_ROOT}/lib/oro-2.0.8.jar:\
+${HADOOP_ROOT}/lib/log4j-1.2.15.jar:\
+${HADOOP_ROOT}/lib/kfs-0.2.0.jar:\
+${HADOOP_ROOT}/lib/junit-3.8.1.jar:\
+${HADOOP_ROOT}/lib/jetty-5.1.4.jar:\
+${HADOOP_ROOT}/lib/jets3t-0.6.1.jar:\
+${HADOOP_ROOT}/lib/hsqldb-1.8.0.10.jar:\
+${HADOOP_ROOT}/lib/commons-net-1.4.1.jar:\
+${HADOOP_ROOT}/lib/commons-logging-api-1.0.4.jar:\
+${HADOOP_ROOT}/lib/commons-logging-1.0.4.jar:\
+${HADOOP_ROOT}/lib/commons-httpclient-3.0.1.jar:\
+${HADOOP_ROOT}/lib/commons-codec-1.3.jar:\
+${HADOOP_ROOT}/lib/commons-cli-2.0-SNAPSHOT.jar:\
+${HADOOP_ROOT}/hadoop-0.19.1-core.jar:\
+${HADOOP_ROOT}/hadoop-0.19.1-tools.jar:\
+${HADOOP_ROOT}/conf
+
 exec python -u -OO $0 ${1+"@"}
 ":"""
 
@@ -13,13 +39,15 @@ sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
 
 import os
 
-from pydoop     import Mapper, Reducer, Factory, runTask
-from pydoop     import hdfs
+from pydoop.pipes import Mapper, Reducer, Factory, runTask
+from pydoop.hdfs  import hdfs, split_hdfs_path
 
-from gap_record import factory as gap_image_factory
+
+import gap_io
 
 IMAGE_PRODUCTION = 'IMAGE_PRODUCTION'
 INPUT_TILES      = 'INPUT_TILES'
+OUTPUT_BYTES     = 'OUTPUT_BYTES'
 OUTPUT_SLICES    = 'OUTPUT_SLICES'
 
 
@@ -40,39 +68,28 @@ class IP_Mapper(Mapper):
       v = jc.getInt(k)
     setattr(self, f, v)
   #--
-  def _extract_hdfs_server(self):
-    path = self.repository
-    root = ''
-    tail = ''
-    while path.find('/') > -1:
-      root = os.path.join(tail, root)
-      path, tail = os.path.split(path)
-    assert path == 'hdfs:' and len(tail) > 0
-    parts = tail.split(':')
-    if len(parts) == 1:
-      return parts[0], 0, root
-    else:
-      return parts[0], parts[1], root
-  #--
   def __init__(self, task_ctx):
     Mapper.__init__(self)
     log('IP_Mapper::init  start')
     log('IP_Mapper::task_ctx = %s' % task_ctx)
-    self.inputTiles   = task_ctx.getCounter(IMAGE_PRODUCTION, INPUT_TILES)
+    self.input_tiles  = task_ctx.getCounter(IMAGE_PRODUCTION, INPUT_TILES)
+    self.output_bytes = task_ctx.getCounter(IMAGE_PRODUCTION, OUTPUT_BYTES)
+    #--
     jc = task_ctx.getJobConf()
     self._configure(jc, 'image.production.repository', 'repository',
-                    'hdfs://localhost/users/zag/image_rep')
-    self._configure_int(jc, 'image.production.cycles', 'cycles', 4)
+                    'hdfs://localhost:9000/user/zag/image_rep')
+    self._configure_int(jc, 'image.production.cycles', 'n_cycles', 4)
     self._configure_int(jc, 'image.production.xsize',  'xsize', 32)
     self._configure_int(jc, 'image.production.ysize',  'ysize', 32)
-    self.hdfs_host, self.hdfs_port, self.hdfs_root = self._extract_hdfs_server()
+    self.hdfs_host, self.hdfs_port, self.hdfs_root = \
+                    split_hdfs_path(self.repository)
 
-    self.gr = gap_record(self.xsize, self.ysize)
+    self.img_factory = gap_io.fake_factory(self.xsize, self.ysize)
 
     log('IP_Mapper::init image_repository = %s' % self.repository)
-    log('IP_Mapper::init hdfs_host = %s' % self.hdsf_host)
-    log('IP_Mapper::init hdfs_port = %s' % self.hdsf_port)
-    log('IP_Mapper::init cycles = %s' % self.cycles)
+    log('IP_Mapper::init hdfs_host = %s' % self.hdfs_host)
+    log('IP_Mapper::init hdfs_port = %s' % self.hdfs_port)
+    log('IP_Mapper::init cycles = %s' % self.n_cycles)
     log('IP_Mapper::init xsize  = %s' % self.xsize)
     log('IP_Mapper::init ysize  = %s' % self.ysize)
     log('IP_Mapper::init  end')
@@ -85,26 +102,27 @@ class IP_Mapper(Mapper):
     else:
       lane, tile = map(int, map_ctx.getInputValue().split())
       log('IP_Mapper::map lane=%d, tile=%d' % (lane, tile))
-      map_ctx.incrementCounter(self.inputTiles, 1)
+      map_ctx.incrementCounter(self.input_tiles, 1)
       #--
       lane_tile_id = 'L%02dT%03d' % (lane, tile)
       path = os.path.join(self.hdfs_root, lane_tile_id)
       fs = hdfs(self.hdfs_host, self.hdfs_port)
-      log('IP_Mapper::map opened server (%s:%s' % (self.hdsf_host,
+      log('IP_Mapper::map opened server (%s:%s' % (self.hdfs_host,
                                                    self.hdfs_port))
       f = fs.open_file(path, os.O_WRONLY, 0, 0, 0)
       log('IP_Mapper::map opened hdfs file=%s' % path)
-      gr = self.gr
-      for i in range(self.cycles):
+      for i in range(self.n_cycles):
         k = lane_tile_id
-        gr._write_header(lane, tile, i)
-        written = f.write_chunk(self.gr.buffer)
-        log('IP_Mapper::map written %d bytes out of  %d' % (written,
-                                                            gr.record_size))
-
-        log('IP_Mapper::map emit (%s, %s)' % (k, gr.record_size))
-        map_ctx.emit(k, '%d' % gr.record_size)
+        img = self.img_factory.make(lane, tile, i)
+        written = f.write(img.data)
+        assert written == len(img.data)
+        log('IP_Mapper::map written %d bytes' % written)
+        log('IP_Mapper::map emit (%s, %s)' % (k, written))
+        map_ctx.incrementCounter(self.output_bytes, written)
+        map_ctx.emit(k, '%d' % 4)
       f.close()
+      fs.close()
+
     log('IP_Mapper::map end')
 
 class IP_Reducer(Reducer):
