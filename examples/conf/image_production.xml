@@ -26,7 +26,7 @@
 
   <property>
     <name>image.production.repository</name>
-    <value>hdfs://localhost/user/zag/images</value>
+    <value>hdfs://localhost/user/lsimleo/images</value>
     <description>Repository where the images will be written.</description>
   </property>
 

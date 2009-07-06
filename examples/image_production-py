@@ -6,7 +6,7 @@
 #export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
 
 #--
-export LD_LIBRARY_PATH=/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=/home/lsimleo/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
 
 HADOOP_ROOT=/opt/hadoop
 export CLASSPATH=\
@@ -35,7 +35,7 @@ exec python -u -OO $0 ${1+"@"}
 ":"""
 
 import sys
-sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
+sys.path.append('/home/lsimleo/svn/ac-dc/lib/pydoop/trunk/examples')
 
 import os
 

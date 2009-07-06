@@ -1,5 +1,15 @@
 # better have two independent modules...
 # pydoop_pipes and pydoop_hdfs
+
+machine=`uname -m`
+ifeq ($(machine),x86_64)
+	OS_ARCH=amd64
+else
+	OS_ARCH=i386
+endif
+SHLIB_VERSION=1
+
+
 PIPES_MODULE_NAME=pydoop_pipes
 HDFS_MODULE_NAME=pydoop_hdfs
 
@@ -50,7 +60,7 @@ HDFS_ALL_LIBS +=-L./libhdfs -lhdfs
 HDFS_ALL_INCS += -I${PYTHON_INC}
 HDFS_ALL_LIBS += -lpthread -lboost_python 
 
-
+LIBHDFS = ./libhdfs/libhdfs.so
 
 CXXFLAGS= -g -fPIC ${PIPES_ALL_INCS} ${HDFS_ALL_INCS}
 
@@ -61,11 +71,16 @@ all: ${PIPES_MODULE_NAME}.so ${HDFS_MODULE_NAME}.so
 	g++ -c -o $@ ${CXXFLAGS} $<
 
 
+
+./libhdfs/libhdfs.so:
+	make OS_ARCH=$(OS_ARCH) SHLIB_VERSION=$(SHLIB_VERSION) -C ./libhdfs
+
+
 ${PIPES_MODULE_NAME}.so:  ${PIPES_OBJ_MAIN_FILE} $(PIPES_OBJ_WRAP_FILES)  $(PIPES_OBJ_AUX_FILES)
 	g++ -shared  $^ ${PIPES_ALL_LIBS}  -o $@
 
 
-${HDFS_MODULE_NAME}.so:  ${HDFS_OBJ_MAIN_FILE} $(HDFS_OBJ_WRAP_FILES)  $(HDFS_OBJ_AUX_FILES)
+${HDFS_MODULE_NAME}.so:  $(LIBHDFS) ${HDFS_OBJ_MAIN_FILE} $(HDFS_OBJ_WRAP_FILES)  $(HDFS_OBJ_AUX_FILES)
 	g++ -shared  $^ ${HDFS_ALL_LIBS}  -o $@
 
 
@@ -90,3 +105,4 @@ clean:
 
 real-clean: clean
 	rm -rf ${PIPES_CPP_MAIN_FILE} ${HDFS_CPP_MAIN_FILE} *.so
+	make -C ./libhdfs real-clean
