@@ -1,0 +1,197 @@
+#!/bin/sh
+
+# This examples demostrate parallel production of (fake) images
+
+
+# change the following exports to appropriate values for your environment
+""":"
+#export PATH="/ELS/els5/acdc/opt/bin:$PATH"
+#export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
+
+export LD_LIBRARY_PATH=${HOME}/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
+
+HADOOP_ROOT=/opt/hadoop
+export CLASSPATH=\
+${HADOOP_ROOT}/lib/xmlenc-0.52.jar:\
+${HADOOP_ROOT}/lib/slf4j-log4j12-1.4.3.jar:\
+${HADOOP_ROOT}/lib/slf4j-api-1.4.3.jar:\
+${HADOOP_ROOT}/lib/servlet-api.jar:\
+${HADOOP_ROOT}/lib/oro-2.0.8.jar:\
+${HADOOP_ROOT}/lib/log4j-1.2.15.jar:\
+${HADOOP_ROOT}/lib/kfs-0.2.0.jar:\
+${HADOOP_ROOT}/lib/junit-3.8.1.jar:\
+${HADOOP_ROOT}/lib/jetty-5.1.4.jar:\
+${HADOOP_ROOT}/lib/jets3t-0.6.1.jar:\
+${HADOOP_ROOT}/lib/hsqldb-1.8.0.10.jar:\
+${HADOOP_ROOT}/lib/commons-net-1.4.1.jar:\
+${HADOOP_ROOT}/lib/commons-logging-api-1.0.4.jar:\
+${HADOOP_ROOT}/lib/commons-logging-1.0.4.jar:\
+${HADOOP_ROOT}/lib/commons-httpclient-3.0.1.jar:\
+${HADOOP_ROOT}/lib/commons-codec-1.3.jar:\
+${HADOOP_ROOT}/lib/commons-cli-2.0-SNAPSHOT.jar:\
+${HADOOP_ROOT}/hadoop-0.19.1-core.jar:\
+${HADOOP_ROOT}/hadoop-0.19.1-tools.jar:\
+${HADOOP_ROOT}/conf
+
+
+exec python -u -OO $0 ${1+"@"}
+":"""
+
+import sys
+sys.path.append('/home/zag/Work/svn/ac-dc/lib/pydoop/trunk/examples')
+
+from pydoop.pipes import Mapper, Reducer, RecordReader, Factory, InputSplit
+from pydoop.pipes import runTask
+
+from pydoop.hdfs  import hdfs, split_hdfs_path
+
+from gap_io import image as gap_image
+
+import os
+
+
+IMAGE_ANALYSIS = 'IMAGE_ANALYSIS'
+INPUT_IMAGES  = 'INPUT_IMAGES'
+ANALYZED_IMAGES  = 'ANALYZED_IMAGES'
+PROCESSED_BYTES  = 'PROCESSED_BYTES'
+REDUCED_BYTES    = 'REDUCED_BYTES'
+
+
+def log(x):
+  sys.stderr.write('%s\n' % x)
+
+class record_reader(RecordReader):
+  #--
+  def _configure(self, jc, k, f, df):
+    v = df
+    if jc.hasKey(k):
+      v = jc.get(k)
+    setattr(self, f, v)
+  #--
+  def _configure_int(self, jc, k, f, df):
+    v = df
+    if jc.hasKey(k):
+      v = jc.getInt(k)
+    setattr(self, f, v)
+  #--
+  def __init__(self, ctx):
+    RecordReader.__init__(self)
+    log('IP_RecordReader::init  start')
+    log('IP_RecordReader::ctx = %s' % ctx)
+    isplit = ctx.getInputSplit()
+    log('IP_RecordReader::input_split(raw) = >%r<' % isplit)
+    #--
+    self.ctx = ctx
+    self.input_images = ctx.getCounter(IMAGE_ANALYSIS, INPUT_IMAGES)
+    #--
+    jc = self.ctx.getJobConf()
+    self._configure_int(jc, 'image.analysis.xsize', 'xsize', 32)
+    self._configure_int(jc, 'image.analysis.ysize', 'ysize', 32)
+    self.min_record_size = gap_image.image_size(self.xsize, self.ysize)
+    #--
+    self.input_split = InputSplit(isplit)
+    host, port, fpath = split_hdfs_path(self.inputsplit.filename)
+    log('IP_RecordReader:: host=%r port=%d fpath=%r' % (host, port, fpath))
+    self.fs   = hdfs(host, port)
+    self.file = self.open_file(fpath, os.RDONLY, 0, 0, 0)
+    #--
+    self.position      = self.input_split.offset
+    self.bytes_read     = 0
+    self.bytes_consumed = 0
+    self.buffer = self.file.pread(self.position, self.min_record_size)
+    self.__read_block()
+    self.__align_buffer()
+
+    log('IP_RecordReader::init  end')
+  #--
+  def __del__(self):
+    log('IP_RecordReader::del  begin')
+    self.file.close()
+    self.fs.close()
+    log('IP_RecordReader::del  end')
+  #--
+  def __read_block(self):
+    self.buffer = self.file.pread(self.position, self.min_record_size)
+    if len(self.buffer) < self.min_record_size:
+      log('IP_RecordReader::init  BAD FILE LENGTH.')
+      assert len(self.buffer) == self.min_record_size
+    self.bytes_read += self.min_record_size
+  #--
+  def __align_buffer(self):
+    l = self.buffer.find(gap_image.MAGIC_NUMBER)
+    if l < 0:
+      log('IP_RecordReader::init  Cannot find MAGIC_NUMBER.')
+      assert l >= 0
+    if self.position == 0 and l != 0:
+      log('IP_RecordReader::init  Misaligned MAGIC_NUMBER.')
+      assert l == 0
+    self.position += l
+    if l > 0:
+      self.__read_block()
+      self.bytes_read += l - self.min_record_size
+  #-
+  def next(self):
+    "@return tuple(bool have_a_record, str record_key, str record_value)"
+    if self.bytes_consumed > self.input_split.length:
+      return (False, '', '')
+    self.bytes_consumed = self.bytes_read
+    # this is basically a consistency check. It will throw out on bad data
+    img = gap_image(self.buffer)
+    log('IP_RecordReader::next outputting an image of %d bytes' % len(self.buffer))
+    self.ctx.incrementCounter(self.input_images, 1)
+    k = '%d;%d;%d' % (img.lane, img.tile, img.cycle)
+    return (True, k, img.data)
+  #--
+  def getProgress(self):
+    return float(self.bytes_consumed)/self.input_split.length
+
+
+class mapper(Mapper):
+  def __init__(self, task_ctx):
+    Mapper.__init__(self)
+    log('IP_Mapper::init  start')
+    log('IP_Mapper::task_ctx = %s' % task_ctx)
+    self.inputTiles = task_ctx.getCounter(IMAGE_ANALYSIS, ANALYZED_IMAGES)
+    self.processedBytes = task_ctx.getCounter(IMAGE_ANALYSIS, PROCESSED_BYTES)
+    log('IP_Mapper::init  end')
+  #-
+  def map(self, map_ctx):
+    log('IP_Mapper::map self=%s, ctx=%s' % (self, map_ctx))
+    jc = map_ctx.getJobConf()
+    lane, tile, cycle = map_ctx.getInputKey().split(';')
+    v = map_ctx.getInputValue()
+    k = '%s;%s' % (lane, tile)
+    map_ctx.emit(k, len(v))
+    map_ctx.incrementCounter(self.inputTiles, 1)
+    map_ctx.incrementCounter(self.processedBytes, len(v))
+    log('IP_Mapper::map end')
+
+class reducer(Reducer):
+  def __init__(self, task_ctx):
+    Reducer.__init__(self)
+    log('IP_Reducer::init  start')
+    log('IP_Reducer::task_ctx = %s' % task_ctx)
+    self.reduced_bytes = task_ctx.getCounter(IMAGE_ANALYSIS, REDUCED_BYTES)
+    log('IP_Reducer::init  end')
+  #-
+  def reduce(self, red_ctx):
+    log('IP_Reducer::reduce self=%s, ctx=%s' % (self, red_ctx))
+    s = 0
+    while red_ctx.nextValue():
+      s += int(red_ctx.getInputValue())
+    k = red_ctx.getInputKey()
+    log('IP_Reducer::reduce k=%s, s=%d' % (k, s))
+    red_ctx.emit(k, str(s))
+    red_ctx.incrementCounter(self.reduced_bytes, s)
+
+def main(argv):
+  log('image_production started')
+  runTask(Factory(mapper, reducer, record_reader))
+
+
+if __name__ == "__main__":
+  main(sys.argv)
+
+# Local Variables: **
+# mode: python **
+# End: **

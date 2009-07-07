@@ -9,10 +9,17 @@
 exec python -u -OO $0 ${1+"@"}
 ":"""
 
-import sys
-sys.path.append('/home/lsimleo/svn/ac-dc/lib/pydoop/trunk/examples')
 
-from pydoop.pipes import Mapper, Reducer, RecordReader, Factory, runTask
+# FIXME this is a local hack that should go away in the real dist.
+import sys
+import os
+
+pydoop_path = os.path.join(os.environ['HOME'],
+                           'svn/ac-dc/lib/pydoop/trunk/examples')
+sys.path.append(pydoop_path)
+
+from pydoop.pipes import Mapper, Reducer, RecordReader, Factory, InputSplit
+from pydoop.pipes import runTask
 
 
 WORDCOUNT    = 'WORDCOUNT'
@@ -25,14 +32,15 @@ def log(x):
   sys.stderr.write('%s\n' % x)
 
 
-
 class WC_RecordReader(RecordReader):
   DEFAULT_VALUE='The quick red fox jumped on the lazy brown dog'
   def __init__(self, ctx):
     RecordReader.__init__(self)
     log('WC_RecordReader::init  start')
     log('WC_RecordReader::ctx = %s' % ctx)
-    log('WC_RecordReader::input_split = %s' % ctx.getInputSplit())
+    log('WC_RecordReader::input_split = >%r<' % ctx.getInputSplit())
+    #log('WC_RecordReader::input_key_class = >%r<' % ctx.getInputKeyClass())
+    #log('WC_RecordReader::input_value_class = >%r<' % ctx.getInputValueClass())
     self.ctx = ctx
     self.bytes_counter = 0
     self.inputBytes = ctx.getCounter(WORDCOUNT, INPUT_BYTES)

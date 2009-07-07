@@ -6,6 +6,23 @@ import sys
 #----------------------------------------------------------------------------
 import pydoop_pipes
 
+
+from   pydoop.pipes import InputSplit
+
+
+example_input_splits = [('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
+                         'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
+                         550952, 550917),
+                        ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
+                         'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
+                         0, 550952),
+                         ('\x001hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
+                         'hdfs://localhost:9000/user/zag/in-dir/images_list',
+                          0, 36)
+                        ]
+
+
+
 #----------------------------------------------------------------------------
 class taskcontext_tc(unittest.TestCase):
   def setUp(self):
@@ -62,6 +79,15 @@ class taskcontext_tc(unittest.TestCase):
     o.setStatus('hello')
     o.emit('key', 'vall')
 
+  #--
+  def test_input_split(self):
+    for s in example_input_splits:
+      i = InputSplit(s[0])
+      self.assertEqual(i.filename, s[1])
+      self.assertEqual(i.offset, s[2])
+      self.assertEqual(i.length, s[3])
+
+
 #----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()
@@ -69,6 +95,7 @@ def suite():
   suite.addTest(taskcontext_tc('test_task_from_cpluplus'))
   suite.addTest(taskcontext_tc('test_mapcontext_from_cpluplus'))
   suite.addTest(taskcontext_tc('test_reducecontext_from_cpluplus'))
+  suite.addTest(taskcontext_tc('test_input_split'))
   return suite
 
 if __name__ == '__main__':

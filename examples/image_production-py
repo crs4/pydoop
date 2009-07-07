@@ -6,7 +6,7 @@
 #export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
 
 #--
-export LD_LIBRARY_PATH=/home/lsimleo/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=${HOME}/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
 
 HADOOP_ROOT=/opt/hadoop
 export CLASSPATH=\
@@ -34,8 +34,13 @@ ${HADOOP_ROOT}/conf
 exec python -u -OO $0 ${1+"@"}
 ":"""
 
+
+# FIXME this is a local hack that should go away in the real dist.
 import sys
-sys.path.append('/home/lsimleo/svn/ac-dc/lib/pydoop/trunk/examples')
+import os
+pydoop_path = os.path.join(os.environ['HOME'],
+                           'svn/ac-dc/lib/pydoop/trunk/examples')
+sys.path.append(pydoop_path)
 
 import os
 

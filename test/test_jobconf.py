@@ -49,6 +49,7 @@ class jobconf_tc(unittest.TestCase):
     self.assertEqual(o.getInt('int'), int(d['int']))
     self.assertEqual(o.getBoolean('bool'), d['bool'] == 'true')
 
+
 #----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()

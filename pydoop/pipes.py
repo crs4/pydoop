@@ -7,6 +7,8 @@ from pydoop_pipes import RecordWriter as RecordWriter
 from pydoop_pipes import Partitioner  as Partitioner
 
 from factory      import Factory
+from input_split  import InputSplit
+
 
 
 
