@@ -1,3 +1,8 @@
+2009-07-07    <lsimleo@neuron.crs4.it>
+
+	* setup.py: added auto main generation for boost extensions (as in
+	src/Makefile). Updated to build pydoop_pipes.
+
 2009-07-06    <lsimleo@neuron.crs4.it>
 
 	* src/libhdfs/Makefile: slight generalization.

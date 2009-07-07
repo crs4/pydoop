@@ -1,8 +1,5 @@
 include src/*.hpp
-include test/Makefile
-include test/WordCount.cc
-include test/all_tests.py
-include test/compile.sh
-include test/custom_return_internal_reference.hpp
-include test/try*
+include test/all_tests_pipes.py
+include test/all_tests_hdfs.py
+include test/run_hdfs_tests.sh
 recursive-include examples *
