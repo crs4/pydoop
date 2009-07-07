@@ -26,7 +26,7 @@
 
   <property>
     <name>image.production.repository</name>
-    <value>hdfs://localhost/user/lsimleo/images</value>
+    <value>hdfs://localhost/user/zag/images</value>
     <description>Repository where the images will be written.</description>
   </property>
 
@@ -38,13 +38,13 @@
 
   <property>
     <name>image.production.xsize</name>
-    <value>64</value>
+    <value>128</value>
     <description>Images xsize.</description>
   </property>
 
   <property>
     <name>image.production.ysize</name>
-    <value>64</value>
+    <value>128</value>
     <description>Images ysize.</description>
   </property>
 

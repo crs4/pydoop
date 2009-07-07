@@ -85,7 +85,6 @@ struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader> {
     } else {
       throw pipes_exception("RecordReader:: verloaded method is not returning a proper value.");
     }
-    std::cerr << "wrap_record_reader:: k=" << key <<", value=" << value <<std::endl; 
     return true;
   }
   float getProgress() {

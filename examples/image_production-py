@@ -42,7 +42,6 @@ pydoop_path = os.path.join(os.environ['HOME'],
                            'svn/ac-dc/lib/pydoop/trunk/examples')
 sys.path.append(pydoop_path)
 
-import os
 
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
 from pydoop.hdfs  import hdfs, split_hdfs_path
