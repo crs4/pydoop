@@ -10,7 +10,7 @@ dependencies:
     hadoop (with pipes)
     boost
     hadoop (jar files)
-    jvm
+    java
 
 installation:
-    (sudo) python setup.py install
+    [JAVA_HOME=my_java_home HADOOP_HOME=my_hadoop_home] python setup.py install
