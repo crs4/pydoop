@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>hadoop.pipes.executable</name>
+    <value>examples/bin/image_loader-py</value>
+  </property>
+
+  <property>
+    <name>hadoop.pipes.java.recordreader</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>hadoop.pipes.java.recordwriter</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>image.loader.source.directory</name>
+    <value>/data/gap_images</value>
+    <description>Repository where the gap image files will be
+    written.</description>
+  </property>
+
+  <property>
+    <name>image.loader.target.directory</name>
+    <value>hdfs://localhost/user/zag/images</value>
+    <description>Repository where the gap image files will be
+    written.</description>
+  </property>
+
+  <property>
+    <name>image.loader.cycles</name>
+    <value>3</value>
+    <description>Number of cycles that will be read for each tile.</description>
+  </property>
+
+</configuration>

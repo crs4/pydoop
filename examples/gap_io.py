@@ -88,7 +88,8 @@ class fake_factory(factory):
 
 
 #-----------------------------------------------------------------
-from pydoop.hdfs import hdfs, split_hdfs_path
+from pydoop.hdfs  import hdfs
+from pydoop.utils import split_hdfs_path
 
 import os
 
