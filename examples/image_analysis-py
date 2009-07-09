@@ -1,41 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-# This examples demostrate parallel production of (fake) images
-
-
-# change the following exports to appropriate values for your environment
-""":"
-#export PATH="/ELS/els5/acdc/opt/bin:$PATH"
-#export LD_LIBRARY_PATH="/ELS/els5/acdc/opt/lib:$LD_LIBRARY_PATH"
-
-export LD_LIBRARY_PATH=${HOME}/svn/ac-dc/lib/pydoop/trunk/src/libhdfs:${LD_LIBRARY_PATH}
-
-HADOOP_ROOT=/opt/hadoop
-export CLASSPATH=\
-${HADOOP_ROOT}/lib/xmlenc-0.52.jar:\
-${HADOOP_ROOT}/lib/slf4j-log4j12-1.4.3.jar:\
-${HADOOP_ROOT}/lib/slf4j-api-1.4.3.jar:\
-${HADOOP_ROOT}/lib/servlet-api.jar:\
-${HADOOP_ROOT}/lib/oro-2.0.8.jar:\
-${HADOOP_ROOT}/lib/log4j-1.2.15.jar:\
-${HADOOP_ROOT}/lib/kfs-0.2.0.jar:\
-${HADOOP_ROOT}/lib/junit-3.8.1.jar:\
-${HADOOP_ROOT}/lib/jetty-5.1.4.jar:\
-${HADOOP_ROOT}/lib/jets3t-0.6.1.jar:\
-${HADOOP_ROOT}/lib/hsqldb-1.8.0.10.jar:\
-${HADOOP_ROOT}/lib/commons-net-1.4.1.jar:\
-${HADOOP_ROOT}/lib/commons-logging-api-1.0.4.jar:\
-${HADOOP_ROOT}/lib/commons-logging-1.0.4.jar:\
-${HADOOP_ROOT}/lib/commons-httpclient-3.0.1.jar:\
-${HADOOP_ROOT}/lib/commons-codec-1.3.jar:\
-${HADOOP_ROOT}/lib/commons-cli-2.0-SNAPSHOT.jar:\
-${HADOOP_ROOT}/hadoop-0.19.1-core.jar:\
-${HADOOP_ROOT}/hadoop-0.19.1-tools.jar:\
-${HADOOP_ROOT}/conf
-
-
-exec python -u -OO $0 ${1+"@"}
-":"""
 
 import sys
 import os
@@ -46,7 +10,8 @@ sys.path.append(pydoop_path)
 from pydoop.pipes import Mapper, Reducer, RecordReader, Factory, InputSplit
 from pydoop.pipes import runTask
 
-from pydoop.hdfs  import hdfs, split_hdfs_path
+from pydoop.hdfs  import hdfs
+from pydoop.utils import split_hdfs_path
 
 from gap_io import image as gap_image
 
@@ -102,10 +67,11 @@ class record_reader(RecordReader):
     self.position       = self.input_split.offset
     self.bytes_read     = 0
     #--
+    log('IA_RecordReader:: xsize=%d ysize=%d min_record_size=%d' %
+        (self.xsize, self.ysize, self.min_record_size))
     log('IA_RecordReader::init offset=%d length=%d' % (self.position,
                                                        self.input_split.length))
     #--
-    self.buffer = self.file.pread(self.position, self.min_record_size)
     self.__read_block()
     self.__align_buffer()
     #--
@@ -118,18 +84,20 @@ class record_reader(RecordReader):
     log('IA_RecordReader::del  end')
   #--
   def __read_block(self):
-    log('IA_RecordReader:: read_block at %d' % self.position)
     self.buffer = self.file.pread(self.position, self.min_record_size)
-    if len(self.buffer) != self.min_record_size:
-      log('IA_RecordReader::__read_block  CRITICAL BAD FILE LENGTH.')
-      assert len(self.buffer) == self.min_record_size
-    self.bytes_read += self.min_record_size
+    self.bytes_read += len(self.buffer)
+    log('IA_RecordReader:: read_block at %d; total bytes read = %d' %
+        (self.position, self.bytes_read))
   #--
   def __align_buffer(self):
+    if self.bytes_read < self.min_record_size:
+      self.end_reached = True
+      log('IA_RecordReader::__align_buffer  WARNING EOF reached.')
+      return
     l = self.buffer.find(gap_image.MAGIC_NUMBER)
     if l < 0:
-      log('IA_RecordReader::init  CRITICAL Cannot find MAGIC_NUMBER.')
-      assert l >= 0
+      log('IA_RecordReader::init  WARNING Cannot find MAGIC_NUMBER.')
+      return
     if self.position == 0 and l != 0:
       log('IA_RecordReader::init  CRITICAL Misaligned MAGIC_NUMBER.')
       assert l == 0
