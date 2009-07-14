@@ -53,12 +53,12 @@ class Factory(pydoop_pipes.Factory):
     #--
     if combiner_class is not None:
       self.combiner_class = combiner_class
-      setattr(self, 'createRecordWriter',
+      setattr(self, 'createCombiner',
               self.__make_creator('combiner_class'))
     #--
     if partitioner_class is not None:
       self.partitioner_class = partitioner_class
-      setattr(self, 'createRecordWriter',
+      setattr(self, 'createPartitioner',
               self.__make_creator('partitioner_class'))
     #--
     self.produced      = []

@@ -76,6 +76,7 @@ def suite():
   suite.addTest(hdfs_default_tc('copy'))
   suite.addTest(hdfs_default_tc('move'))
   suite.addTest(hdfs_default_tc('available'))
+  suite.addTest(hdfs_default_tc('get_path_info'))
   suite.addTest(hdfs_default_tc('list_directory'))
   #--
   suite.addTest(hdfs_local_tc('connect_disconnect'))
@@ -87,6 +88,7 @@ def suite():
   suite.addTest(hdfs_local_tc('copy'))
   suite.addTest(hdfs_local_tc('move'))
   suite.addTest(hdfs_local_tc('available'))
+  suite.addTest(hdfs_local_tc('get_path_info'))
   suite.addTest(hdfs_local_tc('list_directory'))
   return suite
 

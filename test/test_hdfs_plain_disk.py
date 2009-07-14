@@ -18,6 +18,7 @@ def suite():
   suite.addTest(hdfs_plain_disk_tc('change_dir'))
   suite.addTest(hdfs_plain_disk_tc('create_dir'))
   suite.addTest(hdfs_plain_disk_tc('available'))
+  suite.addTest(hdfs_plain_disk_tc('get_path_info'))
   suite.addTest(hdfs_plain_disk_tc('list_directory'))
   #--
   return suite

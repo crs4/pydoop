@@ -78,6 +78,23 @@ class hdfs_basic_tc(unittest.TestCase):
     f.close()
     self.fs.delete(path)
   #--
+  def get_path_info(self):
+    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
+    path = 'foobar.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(path, N, txt)
+    #--
+    info = self.fs.get_path_info(path)
+    for k in ('kind group name last_mod replication owner'
+              + ' permissions block_size last_access size').split():
+      self.assertTrue(info.has_key(k))
+    self.assertEqual(info['kind'], 'file')
+    self.assertEqual(info['size'], 120)
+    #self.assertEqual(info['permissions'], 420)
+    print 'info=', info
+    self.fs.delete(path)
+  #--
   def write_read(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'

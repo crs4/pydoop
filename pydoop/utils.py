@@ -16,6 +16,13 @@ def jc_configure_int(obj, jc, k, f, df):
   setattr(obj, f, v)
 
 #--
+def jc_configure_bool(obj, jc, k, f, df):
+  v = df
+  if jc.hasKey(k):
+    v = jc.getBoolean(k)
+  setattr(obj, f, v)
+
+#--
 import os
 def split_hdfs_path(path):
   root = ''

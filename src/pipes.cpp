@@ -126,7 +126,7 @@ void export_pipes()
   class_<wrap_record_reader, boost::noncopyable>("RecordReader",
 						 "Basic wrapping of RecordReader class")
     // We disable python view of next, since it is unclear how its
-    // call by ref to implement a side-effect should be interpeted.
+    // call by ref to implement a side-effect should be interpreted.
     //.def("next",pure_virtual(&hp::RecordReader::next))
     .def("getProgress", pure_virtual(&hp::RecordReader::getProgress))
     ;

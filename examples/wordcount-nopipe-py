@@ -18,7 +18,7 @@ pydoop_path = os.path.join(os.environ['HOME'],
                            'svn/ac-dc/lib/pydoop/trunk/examples')
 sys.path.append(pydoop_path)
 
-from pydoop.pipes import Mapper, Reducer, RecordReader, Factory, InputSplit
+from pydoop.pipes import Mapper, Reducer, Partitioner, RecordReader, Factory, InputSplit
 from pydoop.pipes import runTask
 
 
@@ -80,6 +80,20 @@ class WC_Mapper(Mapper):
     map_ctx.incrementCounter(self.inputWords, len(words))
     log('WC_Mapper::map end')
 
+class WC_Partitioner(Partitioner):
+  def __init__(self, ctx):
+    log("WC_Partitioner::init start")
+    log("WC_Partitioner::init ctx=%s" % ctx)
+    jc = ctx.getJobConf()
+    k = 'mapred.job.split.file'
+    log('WC_Partitioner::init jc[%s] =%s' % (k, jc.get(k)))
+
+    Partitioner.__init__(self)
+    log("WC_Partitioner::init end")
+  #-
+  def partition(self, key, num_of_reduces):
+    log("WC_Partitioner::partition(%r, %d)-> 0" % (key, num_of_reduces))
+    return 0
 
 class WC_Reducer(Reducer):
   def __init__(self, task_ctx):
@@ -100,7 +114,8 @@ class WC_Reducer(Reducer):
 
 def main(argv):
   log('wordcount started')
-  runTask(Factory(WC_Mapper, WC_Reducer, WC_RecordReader))
+  runTask(Factory(WC_Mapper, WC_Reducer, WC_RecordReader,
+                  partitioner_class=WC_Partitioner))
 
 
 if __name__ == "__main__":
