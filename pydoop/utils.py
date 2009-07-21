@@ -3,16 +3,20 @@
 
 DEFAULT_HDFS_PORT=9000
 
-def jc_configure(obj, jc, k, f, df):
+def jc_configure(obj, jc, k, f, df=None):
   v = df
   if jc.hasKey(k):
     v = jc.get(k)
+  elif not df:
+    raise ValueError("No default for option '%s'" % k)
   setattr(obj, f, v)
 #--
-def jc_configure_int(obj, jc, k, f, df):
+def jc_configure_int(obj, jc, k, f, df=None):
   v = df
   if jc.hasKey(k):
     v = jc.getInt(k)
+  elif not df:
+    raise ValueError("No default for option '%s'" % k)    
   setattr(obj, f, v)
 
 #--
@@ -37,4 +41,3 @@ def split_hdfs_path(path):
     return parts[0], DEFAULT_HDFS_PORT, root
   else:
     return parts[0], int(parts[1]), root
-

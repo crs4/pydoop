@@ -73,6 +73,7 @@ std::string wrap_hdfs_fs::get_working_directory() {
 		      hdfsGetWorkingDirectory(fs_, buff, buff_size),
 		      "Cannot get working directory");
   std::string cwd(buff);
+  delete [] buff;  // fixing #206
   return cwd;
 }
 //--

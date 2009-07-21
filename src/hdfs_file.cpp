@@ -26,6 +26,7 @@ std::string wrap_hdfs_file::read(tSize length) {
 		      "Cannot read on " + filename_);
 
   std::string res_s(buf, res);
+  delete [] buf;  // fixing #206
   return res_s;
 }
 //-----------------------------------------------
@@ -49,6 +50,7 @@ std::string wrap_hdfs_file::pread(tOffset position, tSize length) {
 				      static_cast<void*>(buf), length),
 		      "Cannot pread on " + filename_);
   std::string res_s(buf, res);
+  delete [] buf;  // fixing #206
   return res_s;
 }
 //-----------------------------------------------
