@@ -2,30 +2,6 @@ import pydoop_pipes
 
 import sys
 
-class Factory_disabled(pydoop_pipes.Factory):
-  def __init__(self, mapper_class, reducer_class):
-    pydoop_pipes.Factory.__init__(self)
-    #--
-    self.mapper_class  = mapper_class
-    self.reducer_class  = reducer_class
-    self.produced      = []
-
-  def __del__(self):
-    # sys.stderr.write('Destroying factory\n')
-    pass
-
-  #--
-  def createMapper(self, ctx):
-    o = self.mapper_class(ctx)
-    self.produced.append(o)
-    return o
-  #--
-  def createReducer(self, ctx):
-    o = self.reducer_class(ctx)
-    self.produced.append(o)
-    return o
-
-
 class Factory(pydoop_pipes.Factory):
   def __init__(self, mapper_class, reducer_class,
                record_reader_class=None,
