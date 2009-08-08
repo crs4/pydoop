@@ -10,6 +10,94 @@
 #include "hadoop/StringUtils.hh"
 #include "hadoop/SerialUtils.hh"
 
+
+namespace hp = HadoopPipes;
+namespace bp = boost::python;
+
+
+void try_mapper(hp::Mapper& m, hp::MapContext& mc){
+  std::cerr << "** In try_mapper" << std::endl;
+  m.map(mc);
+}
+void try_reducer(hp::Reducer& r, hp::ReduceContext& rc){
+  std::cerr << "** In try_reducer" << std::endl;
+  r.reduce(rc);
+}
+
+void try_factory(hp::Factory& f, hp::MapContext& mc, hp::ReduceContext& rc){
+  hp::Mapper* m = f.createMapper(mc);
+  m->map(mc);
+  hp::Reducer* r = f.createReducer(rc);
+  r->reduce(rc);
+}
+
+class JobConfDummy: public hp::JobConf {
+  std::string s;
+public:
+  JobConfDummy() : s("ehehe"){}
+  bool hasKey(const std::string& k) const { return false; };
+  const std::string& get(const std::string& k) const{return s; };
+  int getInt(const std::string& k) const{ return 1; };
+  float getFloat(const std::string& k) const{return 0.2; };
+  bool getBoolean(const std::string& k) const{return true; };
+};
+
+class TaskContextDummy: public hp::MapContext, 
+			public hp::ReduceContext {
+  std::string s;
+  JobConfDummy *jobconf;
+public:
+  TaskContextDummy() : s("inputKey"){
+    jobconf = new JobConfDummy();
+  }
+  const hp::JobConf* getJobConf() {
+    return jobconf;
+  }
+  const std::string& getInputKey() {
+    return s;
+  }
+  const std::string& getInputValue() {
+    return s;
+  }
+  void emit(const std::string& k, const std::string& v) {
+    std::cerr << "emit k=" << k << " v="<< v << std::endl;
+  }
+  void progress() {}
+  void setStatus(const std::string& k) {}
+  Counter* getCounter(const std::string& k, 
+		      const std::string& v) {
+    return new Counter(1);
+  }
+  bool nextValue() {}
+  const std::string& getInputSplit()      { return s;}
+  const std::string& getInputKeyClass()   { return s;}
+  const std::string& getInputValueClass() { return s;}
+  
+  void incrementCounter(const hp::TaskContext::Counter* c, 
+			uint64_t i) {}
+};
+
+void try_factory_internal(hp::Factory& f){
+  
+  TaskContextDummy tc;
+  hp::MapContext* mtcp = &(tc);
+  std::cerr << "** try_factory_internal: 1 -- mapper(ctx)" << std::endl;
+  hp::Mapper* m = f.createMapper(*mtcp);
+  std::cerr << "** try_factory_internal: 2 -- mapper.map(ctx)" << std::endl;
+  m->map(tc);
+  std::cerr << "** try_factory_internal: 3 -- delete mapper " << m << std::endl;
+  //delete m;
+  std::cerr << "** try_factory_internal: 4 -- after delete mapper " << std::endl;
+
+  std::cerr << "** try_factory_internal: 3 -- reducer(ctx)" << std::endl;
+  hp::Reducer* r = f.createReducer(tc);
+  std::cerr << "** try_factory_internal: 4 -- reducer.reduce(ctx)" << std::endl;
+  r->reduce(tc);
+  std::cerr << "** try_factory_internal: 6 -- delete reducer" << std::endl;
+  //delete r;
+}
+
+
 using namespace HadoopPipes;
 using namespace HadoopUtils;
 
@@ -30,7 +118,7 @@ struct test_factory {
   }
 };
 
-//-----------------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
 class JobConfImpl: public JobConf {
 private:
   std::map<std::string, std::string> values;
@@ -247,20 +335,6 @@ const char* double_a_string(const std::string& a){
   std::cerr << "p=" << p << std::endl;
   return p;
 }
-
-
-
-#if 0
-void try_context(TaskContext& tc){
-  std::cerr << "** in try_contxt"                        << std::endl;
-  std::cerr << "Inputkey="    << tc.getInputKey()        << std::endl;
-  std::cerr << "InputValue="  << tc.getInputValue()      << std::endl;
-  const std::string& k = tc.getInputKey();
-  const std::string& v = tc.getInputValue();
-  std::cerr << "** trying emit(" << k << "," << v << ")" <<std::endl;
-  tc.emit(k, v);
-}
-#endif
 
 
 #endif

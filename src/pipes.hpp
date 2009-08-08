@@ -8,7 +8,6 @@
 namespace hu = HadoopUtils;
 namespace hp = HadoopPipes;
 
-
 #include <iostream>
 #include <fstream>
 #include <ios>
@@ -105,7 +104,7 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
 };
 
 #define CREATE_AND_RETURN_OBJECT(obj_t, ctx_t, method_name, ctx) \
-    bp::reference_existing_object::apply<obj_t&>::type converter; \
+    bp::reference_existing_object::apply<ctx_t&>::type converter; \
     PyObject* obj = converter(ctx); \
     bp::object po = bp::object(bp::handle<>(bp::borrowed(obj))); \
     bp::override f = this->get_override(#method_name); \

@@ -27,6 +27,12 @@ float get_progress_from_record_reader(RecordReader* rr){
   return p;
 }
 
+int get_partition_from_partitioner(Partitioner* pr, 
+				   std::string k, int n_partitions){
+  int p = pr->partition(k, n_partitions);
+  return p;
+}
+
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
@@ -55,5 +61,11 @@ void export_pipes_test_support()
   //
   def("get_record_from_record_reader", get_record_from_record_reader);
   def("get_progress_from_record_reader", get_progress_from_record_reader);
+  def("get_partition_from_partitioner", get_partition_from_partitioner);
+
+  def("try_mapper", try_mapper);
+  def("try_reducer", try_reducer);
+  def("try_factory", try_factory);
+  def("try_factory_internal", try_factory_internal);
 }
 

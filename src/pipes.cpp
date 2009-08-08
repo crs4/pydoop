@@ -10,93 +10,8 @@
 
 #include "pipes.hpp"
 
-
-
-
 #include <iostream>
 
-
-namespace hp = HadoopPipes;
-namespace bp = boost::python;
-
-
-
-void try_mapper(hp::Mapper& m, hp::MapContext& mc){
-  std::cerr << "** In try_mapper" << std::endl;
-  m.map(mc);
-}
-void try_reducer(hp::Reducer& r, hp::ReduceContext& rc){
-  std::cerr << "** In try_reducer" << std::endl;
-  r.reduce(rc);
-}
-
-void try_factory(hp::Factory& f, hp::MapContext& mc, hp::ReduceContext& rc){
-  hp::Mapper* m = f.createMapper(mc);
-  m->map(mc);
-  hp::Reducer* r = f.createReducer(rc);
-  r->reduce(rc);
-}
-
-class JobConfDummy: public hp::JobConf {
-  std::string s;
-public:
-  JobConfDummy() : s("ehehe"){}
-  bool hasKey(const std::string& k) const { return false; };
-  const std::string& get(const std::string& k) const{return s; };
-  int getInt(const std::string& k) const{ return 1; };
-  float getFloat(const std::string& k) const{return 0.2; };
-  bool getBoolean(const std::string& k) const{return true; };
-};
-
-class TaskContextDummy: public hp::MapContext, 
-			public hp::ReduceContext {
-  std::string s;
-  JobConfDummy *jobconf;
-public:
-  TaskContextDummy() : s("inputKey"){
-    jobconf = new JobConfDummy();
-  }
-  const hp::JobConf* getJobConf() {
-    return jobconf;
-  }
-  const std::string& getInputKey() {
-    return s;
-  }
-  const std::string& getInputValue() {
-    return s;
-  }
-  void emit(const std::string& k, const std::string& v) {
-    std::cerr << "emit k=" << k << " v="<< v << std::endl;
-  }
-  void progress() {}
-  void setStatus(const std::string& k) {}
-  Counter* getCounter(const std::string& k, 
-		      const std::string& v) {
-    return new Counter(1);
-  }
-  bool nextValue() {}
-  const std::string& getInputSplit()      { return s;}
-  const std::string& getInputKeyClass()   { return s;}
-  const std::string& getInputValueClass() { return s;}
-  
-  void incrementCounter(const hp::TaskContext::Counter* c, 
-			uint64_t i) {}
-};
-
-void try_factory_internal(hp::Factory& f){
-  
-  TaskContextDummy tc;
-  hp::MapContext* mtcp = &(tc);
-  std::cerr << "** try_factory_internal: 1" << std::endl;
-  hp::Mapper* m = f.createMapper(*mtcp);
-  std::cerr << "** try_factory_internal: 2" << std::endl;
-  m->map(tc);
-  std::cerr << "** try_factory_internal: 3" << std::endl;
-  hp::Reducer* r = f.createReducer(tc);
-  std::cerr << "** try_factory_internal: 4" << std::endl;
-  r->reduce(tc);
-  std::cerr << "** try_factory_internal: 5" << std::endl;
-}
 
 
 //+++++++++++++++++++++++++++++++++++++++++
@@ -151,10 +66,6 @@ void export_pipes()
 	 return_value_policy<reference_existing_object>())
     ;
   def("runTask", hp::runTask);
-  def("try_mapper", try_mapper);
-  def("try_reducer", try_reducer);
-  def("try_factory", try_factory);
-  def("try_factory_internal", try_factory_internal);
 }
 
 
