@@ -86,7 +86,7 @@ void try_factory_internal(hp::Factory& f){
   std::cerr << "** try_factory_internal: 2 -- mapper.map(ctx)" << std::endl;
   m->map(tc);
   std::cerr << "** try_factory_internal: 3 -- delete mapper " << m << std::endl;
-  //delete m;
+  delete m;
   std::cerr << "** try_factory_internal: 4 -- after delete mapper " << std::endl;
 
   std::cerr << "** try_factory_internal: 3 -- reducer(ctx)" << std::endl;
@@ -94,7 +94,7 @@ void try_factory_internal(hp::Factory& f){
   std::cerr << "** try_factory_internal: 4 -- reducer.reduce(ctx)" << std::endl;
   r->reduce(tc);
   std::cerr << "** try_factory_internal: 6 -- delete reducer" << std::endl;
-  //delete r;
+  delete r;
 }
 
 

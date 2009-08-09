@@ -933,16 +933,11 @@ namespace HadoopPipes {
       if (reader) {
         delete value;
       }
-      std::cerr << "WARNING: I AM NOT deleting reader."<< std::endl;
-      //delete reader;
-      std::cerr << "WARNING: I AM NOT deleting mapper."<< std::endl;
-      //delete mapper;
-      std::cerr << "WARNING: I AM NOT deleting reducer."<< std::endl;
-      //delete reducer;
-      std::cerr << "WARNING: I AM NOT deleting writer."<< std::endl;
-      //delete writer;
-      std::cerr << "WARNING: I AM NOT deleting partitioner."<< std::endl;
-      //delete partitioner;
+      delete reader;
+      delete mapper;
+      delete reducer;
+      delete writer;
+      delete partitioner;
       pthread_mutex_destroy(&mutexDone);
     }
   };

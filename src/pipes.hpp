@@ -36,11 +36,7 @@ struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper> {
     this->get_override("map")(po);
   }
   virtual ~wrap_mapper() {
-    std::cerr << "~wrap_mapper: decrementing...." << std::endl;
-    std::cerr << "~wrap_mapper: " << m_self << std::endl;
-    std::cerr << "~wrap_mapper: ob_refcnt " << (m_self)->ob_refcnt << std::endl;
-    //Py_XDECREF(m_self);
-    std::cerr << "~wrap_mapper: done." << std::endl;
+    std::cerr << "~wrap_mapper: invoked." << std::endl;
   }
 };
 
@@ -52,7 +48,7 @@ struct wrap_reducer: hp::Reducer, bp::wrapper<hp::Reducer> {
     this->get_override("reduce")(po);
   }
   ~wrap_reducer() {
-    std::cerr << "~wrap_reducer" << std::endl;
+    std::cerr << "~wrap_reducer: invoked." << std::endl;
   }
 };
 
@@ -61,7 +57,7 @@ struct wrap_partitioner: hp::Partitioner, bp::wrapper<hp::Partitioner> {
     return this->get_override("partition")(key, numOfReduces);
   }
   ~wrap_partitioner() {
-    std::cerr << "~wrap_partitioner" << std::endl;
+    std::cerr << "~wrap_partitioner invoked." << std::endl;
   }
 };
 
@@ -90,7 +86,7 @@ struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader> {
     return this->get_override("getProgress")();
   }
   ~wrap_record_reader() {
-    std::cerr << "~wrap_record_reader" << std::endl;
+    std::cerr << "~wrap_record_reader invoked." << std::endl;
   }
 };
 
@@ -99,17 +95,20 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
     this->get_override("emit")(key, value);
   }
   ~wrap_record_writer() {
-    std::cerr << "~wrap_record_writer" << std::endl;
+    std::cerr << "~wrap_record_writer invoked." << std::endl;
   }
 };
 
-#define CREATE_AND_RETURN_OBJECT(obj_t, ctx_t, method_name, ctx) \
-    bp::reference_existing_object::apply<ctx_t&>::type converter; \
-    PyObject* obj = converter(ctx); \
-    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj))); \
-    bp::override f = this->get_override(#method_name); \
+#define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
+    bp::reference_existing_object::apply<ctx_t&>::type converter;\
+    PyObject* obj = converter(ctx);\
+    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));\
+    bp::override f = this->get_override(#method_name);\
     if (f) {\
-      obj_t* o = f(po); \
+      bp::object res = f(po);\
+      std::auto_ptr<wobj_t> ap = bp::extract<std::auto_ptr<wobj_t> >(res);\
+      obj_t* o = ap.get();\
+      ap.release();\
       return o;\
     } else {\
       return NULL;\
@@ -118,26 +117,32 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter> {
 struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
   //----------------------------------------------------------
   hp::Mapper* createMapper(hp::MapContext& ctx) const {
-    CREATE_AND_RETURN_OBJECT(hp::Mapper, hp::MapContext, createMapper, ctx);
+    CREATE_AND_RETURN_OBJECT(wrap_mapper, hp::Mapper, hp::MapContext, 
+			     createMapper, ctx);    
   }
   hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
-    CREATE_AND_RETURN_OBJECT(hp::Reducer, hp::ReduceContext, createReducer, ctx);    
+    CREATE_AND_RETURN_OBJECT(wrap_reducer, hp::Reducer, hp::ReduceContext, 
+			     createReducer, ctx);    
   }
   //----------------------------------------------------------
   hp::RecordReader* createRecordReader(hp::MapContext& ctx) const {
-    CREATE_AND_RETURN_OBJECT(hp::RecordReader, hp::MapContext, createRecordReader, ctx);
+    CREATE_AND_RETURN_OBJECT(wrap_record_reader, hp::RecordReader, hp::MapContext, 
+			     createRecordReader, ctx);
   }
   //----------------------------------------------------------
   hp::Reducer* createCombiner(hp::MapContext& ctx) const {
-    CREATE_AND_RETURN_OBJECT(hp::Reducer, hp::MapContext, createCombiner, ctx);    
+    CREATE_AND_RETURN_OBJECT(wrap_reducer, hp::Reducer, hp::MapContext, 
+			     createCombiner, ctx);    
   }
   //----------------------------------------------------------
   hp::Partitioner* createPartitioner(hp::MapContext& ctx) const {
-    CREATE_AND_RETURN_OBJECT(hp::Partitioner, hp::MapContext, createPartitioner, ctx);    
+    CREATE_AND_RETURN_OBJECT(wrap_partitioner, hp::Partitioner, hp::MapContext, 
+			     createPartitioner, ctx);    
   }
   //----------------------------------------------------------
   hp::RecordWriter* createRecordWriter(hp::ReduceContext& ctx) const {
-    CREATE_AND_RETURN_OBJECT(hp::RecordWriter, hp::ReduceContext, createRecordWriter, ctx);    
+    CREATE_AND_RETURN_OBJECT(wrap_record_writer, hp::RecordWriter, hp::ReduceContext, 
+			     createRecordWriter, ctx);    
   }
 
 };

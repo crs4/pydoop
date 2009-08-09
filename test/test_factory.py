@@ -5,7 +5,7 @@ import sys
 
 #----------------------------------------------------------------------------
 
-from pydoop.pipes import Factory, Mapper, Reducer
+from pydoop.pipes import Factory, Mapper, Reducer, runTask
 from pydoop.pipes import RecordReader, RecordWriter
 #from pydoop.pipes import Partitioner
 
@@ -16,13 +16,19 @@ import sys
 
 class mapper(Mapper):
   call_history=[]
+  instance_counter = 0
 
   def __init__(self, ctx):
     Mapper.__init__(self)
     mapper.call_history.append('initialized')
+    self.id = mapper.instance_counter
+    mapper.instance_counter += 1
 
   def map(self, ctx):
     mapper.call_history.append('map() invoked')
+
+  def __del__(self):
+    sys.stderr.write("Aghhh... I am %d and I am dying...\n" % self.id)
 
 class reducer(Reducer):
   call_history=[]
@@ -84,12 +90,15 @@ class factory_tc(unittest.TestCase):
     mapper.call_history = []
     reducer.call_history = []
     mf = Factory(mapper, reducer)
-    f = pydoop_pipes.TestFactory(mf)
     pydoop_pipes.try_factory_internal(mf)
     self.assertEqual(len(mapper.call_history), 2)
     self.assertEqual(len(reducer.call_history), 2)
+    f = pydoop_pipes.TestFactory(mf)
     self.failUnless(isinstance(f.createMapper(self.m_ctx), mapper))
     self.failUnless(isinstance(f.createReducer(self.r_ctx), reducer))
+    self.assertEqual(len(mapper.call_history), 3)
+    self.assertEqual(len(reducer.call_history), 3)
+
 
 
 #----------------------------------------------------------------------------

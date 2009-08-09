@@ -5,6 +5,7 @@ from distutils.command.build_clib import *
 
 # JAVA_HOME=my/java/home HADOOP_HOME=my/hadoop/home python setup.py build
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
+
 HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
 
 
@@ -30,7 +31,7 @@ def get_hadoop_include_dirs(hadoop_home):
 def get_java_library_dirs(java_home):
     a = get_arch()[0]
     return [os.path.join(java_home, "jre/lib/%s/server" % a)]
-    
+
 
 class BoostExtFactory(object):
 
@@ -73,7 +74,7 @@ class BoostExtFactory(object):
 
 
 class pydoop_build_clib(build_clib):
-    
+
     def build_libraries (self, libraries):  # cut-n-paste
         for (lib_name, build_info) in libraries:
             sources = build_info.get('sources')
@@ -101,7 +102,7 @@ class pydoop_build_clib(build_clib):
 
 def create_pipes_ext():
     wrap = ["pipes", "pipes_context", "pipes_test_support"]
-    aux = ["HadoopPipes", "SerialUtils", "StringUtils", "hacked_wrapper"]    
+    aux = ["HadoopPipes", "SerialUtils", "StringUtils"]
     factory = BoostExtFactory(
         "pydoop_pipes",
         ["src/%s.cpp" % n for n in wrap],

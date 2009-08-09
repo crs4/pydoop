@@ -2,8 +2,10 @@ import unittest
 
 class TestCaseBoostPython(unittest.TestCase):
     def test_OuterInner(self):
-        import test_iref
+        import iref
         import gc
+        def
+
         def do_test_value():
             outerTest = test_iref.Outer()
             inner = outerTest.innerval
