@@ -93,7 +93,7 @@ void try_factory_internal(hp::Factory& f){
   hp::Reducer* r = f.createReducer(tc);
   std::cerr << "** try_factory_internal: 4 -- reducer.reduce(ctx)" << std::endl;
   r->reduce(tc);
-  std::cerr << "** try_factory_internal: 6 -- delete reducer" << std::endl;
+  std::cerr << "** try_factory_internal: 6 -- delete reducer" << r << std::endl;
   delete r;
 }
 

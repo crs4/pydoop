@@ -28,15 +28,21 @@ class mapper(Mapper):
     mapper.call_history.append('map() invoked')
 
   def __del__(self):
-    sys.stderr.write("Aghhh... I am %d and I am dying...\n" % self.id)
+    sys.stderr.write("mapper.__del__ %d\n" % self.id)
 
 class reducer(Reducer):
   call_history=[]
+  instance_counter = 0
   def __init__(self, ctx):
     Reducer.__init__(self)
     reducer.call_history.append('initialized')
+    self.id = reducer.instance_counter
+    reducer.instance_counter += 1
   def reduce(self, ctx):
     reducer.call_history.append('reduce() invoked')
+  def __del__(self):
+    sys.stderr.write("reducer.__del__ %d\n" % self.id)
+
 
 
 class record_reader(RecordReader):
@@ -54,6 +60,7 @@ class record_reader(RecordReader):
 
   def getProgress(self):
     return float(self.counter)/self.NUMBER_RECORDS
+
 
 #----------------------------------------------------------------------------
 
@@ -86,11 +93,13 @@ class factory_tc(unittest.TestCase):
     self.failUnless(isinstance(f.createRecordReader(self.m_ctx), record_reader))
 
   def test_map_reduce_factory(self):
+    import gc
     self.__check_ctx()
     mapper.call_history = []
     reducer.call_history = []
     mf = Factory(mapper, reducer)
     pydoop_pipes.try_factory_internal(mf)
+    self.assertEqual(0, gc.collect())
     self.assertEqual(len(mapper.call_history), 2)
     self.assertEqual(len(reducer.call_history), 2)
     f = pydoop_pipes.TestFactory(mf)
@@ -98,6 +107,7 @@ class factory_tc(unittest.TestCase):
     self.failUnless(isinstance(f.createReducer(self.r_ctx), reducer))
     self.assertEqual(len(mapper.call_history), 3)
     self.assertEqual(len(reducer.call_history), 3)
+    self.assertEqual(0, gc.collect())
 
 
 
