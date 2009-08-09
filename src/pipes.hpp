@@ -48,7 +48,7 @@ struct cxx_capsule {
       bp::reference_existing_object::apply<wobj_t*>::type converter;\
       PyObject* self = converter(this);\
       std::cerr << "       : current refcount is " << Py_REFCNT(self) << std::endl;\
-      Py_DECREF(self);\
+      while (Py_REFCNT(self) > 0){Py_DECREF(self);}\
     }
 
 
@@ -135,6 +135,7 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_
   }
 };
 
+#if 1
 #define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
     bp::reference_existing_object::apply<ctx_t&>::type converter;\
     PyObject* po_ctx = converter(ctx);\
@@ -153,6 +154,25 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_
     } else {\
       return NULL;\
     }
+#else
+#define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
+    bp::reference_existing_object::apply<ctx_t&>::type converter;\
+    PyObject* po_ctx = converter(ctx);\
+    bp::object o_ctx = bp::object(bp::handle<>(bp::borrowed(po_ctx)));\
+    bp::override f = this->get_override(#method_name);\
+    if (f) {\
+      bp::object res = f(o_ctx);\
+      std::auto_ptr<wobj_t> ap = bp::extract<std::auto_ptr<wobj_t> >(res);\
+      PyObject* obj = res.ptr();\
+      std::cerr << #method_name ": current refcount is " << Py_REFCNT(obj) << std::endl;\
+      wobj_t* o = ap.get();\
+      ap.release();\
+      o->entering_cxx_land();\
+      return o;\
+    } else {\
+      return NULL;\
+    }
+#endif
 
 struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
   //----------------------------------------------------------
