@@ -25,7 +25,7 @@ PLATFORM=linux
 
 #---------------------------------------
 PIPES_WRAP_FILES=pipes pipes_context pipes_test_support 
-PIPES_AUX_FILES=HadoopPipes SerialUtils StringUtils hacked_wrapper
+PIPES_AUX_FILES=HadoopPipes SerialUtils StringUtils
 PIPES_CPP_AUX_FILES=$(addsuffix .cpp, ${PIPES_AUX_FILES})
 PIPES_OBJ_AUX_FILES=$(addsuffix .o, ${PIPES_AUX_FILES})
 PIPES_CPP_WRAP_FILES=$(addsuffix .cpp, ${PIPES_WRAP_FILES})
@@ -44,7 +44,7 @@ PIPES_ALL_LIBS += -lpthread -lboost_python
 #--
 
 #-----------------------------------------
-HDFS_WRAP_FILES=hdfs_fs hdfs_file
+HDFS_WRAP_FILES=hdfs_fs hdfs_file hdfs_common
 HDFS_AUX_FILES=
 HDFS_CPP_AUX_FILES=$(addsuffix .cpp, ${HDFS_AUX_FILES})
 HDFS_OBJ_AUX_FILES=$(addsuffix .o, ${HDFS_AUX_FILES})

@@ -98,6 +98,7 @@ class factory_tc(unittest.TestCase):
     mapper.call_history = []
     reducer.call_history = []
     mf = Factory(mapper, reducer)
+    gc.collect()  # clean up existing references
     pydoop_pipes.try_factory_internal(mf)
     self.assertEqual(0, gc.collect())
     self.assertEqual(len(mapper.call_history), 2)

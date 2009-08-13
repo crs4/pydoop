@@ -26,7 +26,6 @@ struct wrap_hdfs_file {
 
   wrap_hdfs_file(std::string fn, wrap_hdfs_fs *fs, hdfsFile f) 
     : filename_(fn), fs_(fs), file_(f), is_open_(true) {
-    std::cerr << "created file " << filename_ << std::endl;
   }
   
   ~wrap_hdfs_file(){close(); }

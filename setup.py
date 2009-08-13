@@ -114,7 +114,7 @@ def create_pipes_ext():
 
 
 def create_hdfs_ext():
-    wrap = ["hdfs_fs", "hdfs_file"]
+    wrap = ["hdfs_fs", "hdfs_file", "hdfs_common"]
     aux = []
     factory = BoostExtFactory(
         "pydoop_hdfs",

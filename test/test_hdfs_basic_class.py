@@ -35,7 +35,15 @@ class hdfs_basic_tc(unittest.TestCase):
     f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
     f.close()
     self.assertTrue(self.fs.exists(path))
+    flags = os.O_RDONLY
+    f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
+    f.close()
     self.fs.delete(path)
+    sys.stderr.write("Java exceptions should follow...\n")
+    self.assertRaises(
+      IOError,
+      self.fs.open_file, path, flags, buff_size, replication, blocksize
+      )
   #--
   def _write_example_file(self, path, N, txt, fs=None):
     if not fs:
@@ -120,6 +128,10 @@ class hdfs_basic_tc(unittest.TestCase):
                        "wrong pread.")
       self.assertEqual(0, f.tell())
       pos += len(txt)
+    f.close()
+    flags = os.O_RDONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    self.assertRaises(IOError, f.write, txt)
     f.close()
     #--
     self.fs.delete(path)

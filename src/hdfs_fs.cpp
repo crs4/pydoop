@@ -165,8 +165,7 @@ bp::list wrap_hdfs_fs::get_hosts(std::string path, tOffset start, tOffset length
 wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags, 
 					int buffer_size, int replication, 
 					int blocksize) {
-  const char* c_path = (path.size() > 0) ? path.c_str() : NULL; 
-  std::cerr << "size of path =" << path.size() << std::endl;
+  const char* c_path = (path.size() > 0) ? path.c_str() : NULL;
   hdfsFile f = hdfsOpenFile(fs_, c_path, flags, buffer_size,
 			    replication, blocksize);
   if (f == NULL){
@@ -176,7 +175,6 @@ wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags,
   }
   return new wrap_hdfs_file(path, this, f);
 }
-
 
 
 //+++++++++++++++++++++++++++++++++++++++++
@@ -207,6 +205,3 @@ void export_hdfs_fs()
 	 return_value_policy<manage_new_object>())
     ;
 }
-
-
-

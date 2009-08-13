@@ -1,6 +1,10 @@
 #ifndef HADOOP_PIPES_HPP
 #define HADOOP_PIPES_HPP
 
+// borrowing a Python 2.6 macro
+#ifndef Py_REFCNT
+#define Py_REFCNT(ob)		(((PyObject*)(ob))->ob_refcnt)
+#endif
 
 #include "pipes_context.hpp"
 

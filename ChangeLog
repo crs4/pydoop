@@ -1,11 +1,31 @@
+2009-08-13    <lsimleo@neuron.crs4.it>
+
+	* src/pipes.hpp: added Py_REFCNT macro to make it work with Python
+	2.5.
+
+	* test/test_hdfs_basic_class.py: added assertRaises tests for
+	IOError.
+
+	* src/Makefile (PIPES_AUX_FILES): removed hacked_wrapper (the
+	source file has been removed in an earlier version).
+
+	* test/test_factory.py (factory_tc.test_map_reduce_factory):
+	changed to clean up refs before performing test.
+
+2009-08-10    <lsimleo@neuron.crs4.it>
+
+	* src/hdfs_common.cpp: created. Adds hdfs_exception mapping to
+	Python IOError.
+
 2009-08-09    <zag@manzanillo>
 
 	* pydoop/: Clean up.
 
-	* src/: All test support stuff in pipes.{c,h}pp has been moved to pipes_test_support.{c,h}pp
+	* src/: All test support stuff in pipes.{c,h}pp has been moved to
+	pipes_test_support.{c,h}pp
 
-	* test/test_factory.py (factory_tc.test_map_reduce_factory): Preparing to test C++ destruction.
-
+	* test/test_factory.py (factory_tc.test_map_reduce_factory):
+	Preparing to test C++ destruction.
 
 2009-07-08    <lsimleo@neuron.crs4.it>
 
@@ -27,4 +47,3 @@
 2009-05-14    <lsimleo@neuron.crs4.it>
 
 	* pydoop.py (Factory.createMapper): removed debug lines.
-
