@@ -10,6 +10,7 @@
 #include "hadoop/StringUtils.hh"
 #include "hadoop/SerialUtils.hh"
 
+#include <boost/python.hpp>
 
 namespace hp = HadoopPipes;
 namespace bp = boost::python;
@@ -290,48 +291,48 @@ public:
 //-----------------------------------------------------------------------------------//
 //-----------------------------------------------------------------------------------//
 JobConf* wrap_JobConf_object(JobConf& jc){ return &jc; }
-JobConf* get_JobConf_object(dict d){
+JobConf* get_JobConf_object(bp::dict d){
   JobConfImpl* jc = new JobConfImpl();
-  list keylist     = d.keys();
-  int  keylist_len = extract<int>(keylist.attr("__len__")());
+  bp::list keylist     = d.keys();
+  int  keylist_len = bp::extract<int>(keylist.attr("__len__")());
   for(int i = 0; i < keylist_len; ++i){
-    std::string k = extract<std::string>(keylist[i]);
-    std::string v = extract<std::string>(d[keylist[i]]);
+    std::string k = bp::extract<std::string>(keylist[i]);
+    std::string v = bp::extract<std::string>(d[keylist[i]]);
     jc->set(k, v);
   }
   return jc;
 }
 
-TaskContext* get_TaskContext_object(dict d){
-  std::string ik = extract<std::string>(d["input_key"]);
-  std::string iv = extract<std::string>(d["input_value"]);
+TaskContext* get_TaskContext_object(bp::dict d){
+  std::string ik = bp::extract<std::string>(d["input_key"]);
+  std::string iv = bp::extract<std::string>(d["input_value"]);
   TaskContext* tc = new TaskContextImpl(ik, iv);
   return tc;
 }
 
-MapContext* get_MapContext_object(dict d){
-  std::string ik = extract<std::string>(d["input_key"]);
-  std::string iv = extract<std::string>(d["input_value"]);
-  std::string is = extract<std::string>(d["input_split"]);
-  std::string ikc = extract<std::string>(d["input_key_class"]);
-  std::string ivc = extract<std::string>(d["input_value_class"]);
+MapContext* get_MapContext_object(bp::dict d){
+  std::string ik = bp::extract<std::string>(d["input_key"]);
+  std::string iv = bp::extract<std::string>(d["input_value"]);
+  std::string is = bp::extract<std::string>(d["input_split"]);
+  std::string ikc = bp::extract<std::string>(d["input_key_class"]);
+  std::string ivc = bp::extract<std::string>(d["input_value_class"]);
   MapContext* mc = new MapContextImpl(ik, iv, is, ikc, ivc);
   return mc;
 }
 
-ReduceContext* get_ReduceContext_object(dict d){
-  std::string ik = extract<std::string>(d["input_key"]);
-  std::string iv = extract<std::string>(d["input_value"]);
+ReduceContext* get_ReduceContext_object(bp::dict d){
+  std::string ik = bp::extract<std::string>(d["input_key"]);
+  std::string iv = bp::extract<std::string>(d["input_value"]);
   ReduceContext* rc = new ReduceContextImpl(ik, iv);
   return rc;
 }
 
 const char* double_a_string(const std::string& a){
   std::cerr << "read in str " << a << std::endl;
-  str ps(a);
-  object r = "%s.%s" % make_tuple(ps, ps);
-  incref(object(r).ptr());
-  const char* p = extract<const char*>(r);
+  bp::str ps(a);
+  bp::object r = "%s.%s" % bp::make_tuple(ps, ps);
+  bp::incref(bp::object(r).ptr());
+  const char* p = bp::extract<const char*>(r);
   std::cerr << "p=" << p << std::endl;
   return p;
 }

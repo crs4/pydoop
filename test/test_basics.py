@@ -7,7 +7,6 @@ import sys
 import pydoop_pipes
 #----------------------------------------------------------------------------
 
-
 class basics_tc(unittest.TestCase):
   def const_ref(self):
     # scope of a string ref

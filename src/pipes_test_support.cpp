@@ -1,14 +1,13 @@
 #include <hadoop/Pipes.hh>
 
-#include <boost/python.hpp>
-using namespace boost::python;
 
 #include "pipes_test_support.hpp"
 
 #include <string>
 #include <iostream>
 
-tuple get_record_from_record_reader(RecordReader* rr){
+
+bp::tuple get_record_from_record_reader(RecordReader* rr){
   std::string k;
   std::string v;
   bool f = rr->next(k, v);
@@ -17,9 +16,9 @@ tuple get_record_from_record_reader(RecordReader* rr){
 	    <<", " << k
 	    <<", " << v << ")" << std::endl;
 #endif
-  str key(k);
-  str value(v);
-  return make_tuple(f, key, value);
+  bp::str key(k);
+  bp::str value(v);
+  return bp::make_tuple(f, key, value);
 }
 
 float get_progress_from_record_reader(RecordReader* rr){
@@ -36,6 +35,7 @@ int get_partition_from_partitioner(Partitioner* pr,
 //+++++++++++++++++++++++++++++++++++++++++
 // Exporting class definitions.
 //+++++++++++++++++++++++++++++++++++++++++
+using namespace boost::python;
 void export_pipes_test_support() 
 {
   class_<test_factory>("TestFactory",

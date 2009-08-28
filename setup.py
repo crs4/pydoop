@@ -101,7 +101,7 @@ class pydoop_build_clib(build_clib):
 
 
 def create_pipes_ext():
-    wrap = ["pipes", "pipes_context", "pipes_test_support"]
+    wrap = ["pipes", "pipes_context", "pipes_test_support", "exceptions"]
     aux = ["HadoopPipes", "SerialUtils", "StringUtils"]
     factory = BoostExtFactory(
         "pydoop_pipes",
@@ -144,7 +144,7 @@ def create_ext_modules():
 
 setup(
     name="pydoop",
-    version="0.2.1",
+    version="0.2.3",
     description="Python MapReduce API for Hadoop",
     author="Gianluigi Zanetti",
     author_email="<gianluigi.zanetti@crs4.it>",

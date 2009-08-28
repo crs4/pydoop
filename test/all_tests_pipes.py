@@ -7,6 +7,15 @@ import test_basics
 suites.append(test_basics.suite())
 
 #--
+import test_exceptions
+suites.append(test_exceptions.suite())
+
+
+#--
+import test_utils
+suites.append(test_utils.suite())
+
+#--
 import test_task_context
 suites.append(test_task_context.suite())
 #--

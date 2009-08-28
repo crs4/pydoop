@@ -1,3 +1,28 @@
+2009-08-28    <zag@manzanillo.crs4.it>
+
+	* setup.py: Bumped to version 0.2.3.
+
+	* test/test_utils.py: added some testing.
+
+	* pydoop/utils.py: using raise_pydoop_exception to raise what (I
+	hope) will be a c++ compatible exception. It is probably the wrong thing to do. 
+
+	* test/test_exceptions.py: added some basic tests for the new exceptions.
+
+	* src/exceptions.cpp: Added. Contains translators that prepend the
+	exception name to the exception message. Better than nothing. We
+	currently support 'pydoop_exception' and 'pydoop_exception.pipes'.
+
+	* src/exceptions.hpp: Added. All our c++ exception are now defined
+	here. They will all be described as 'exception.UserWarning'
+
+	* src/Makefile (machine): replaced machine=`uname -a` with machine=$(shell uname -m)
+
+	* src/pipes_context.hpp: Removed horrible_hack. Now we simply do
+	an incref on the string object. Basically, we are creating a
+	memory leak inside python :-(. I do not see a clean way around
+	this.
+
 2009-08-13    <lsimleo@neuron.crs4.it>
 
 	* src/pipes.hpp: added Py_REFCNT macro to make it work with Python

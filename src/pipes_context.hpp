@@ -16,7 +16,8 @@ static std::vector<std::string> horrible_hack;
 namespace bp = boost::python;
 namespace hp = HadoopPipes;
 
-
+//FIXME This should be solved by ticket #216
+#if 0
 #define OVERRIDE_STR_REF(method_name)	    \
   if (bp::override f = this->get_override(method_name)){	\
     bp::str r = f();						\
@@ -33,7 +34,24 @@ namespace hp = HadoopPipes;
  } else { \
     return bp::extract<const std::string&>(bp::object());	\
  }
-
+#else
+#define OVERRIDE_STR_REF(method_name)	    \
+  if (bp::override f = this->get_override(method_name)){	\
+    bp::str r = f();						\
+    bp::incref(bp::object(r).ptr());				\
+    return bp::extract<const std::string&>(r);                  \
+ } else { \
+    return bp::extract<const std::string&>(bp::object());	\
+ }
+#define OVERRIDE_STR_REF_1(method_name,a)	    \
+  if (bp::override f = this->get_override(method_name)){	\
+    bp::str r = f(a);						\
+    bp::incref(bp::object(r).ptr());				\
+    return bp::extract<const std::string&>(r);                  \
+ } else { \
+    return bp::extract<const std::string&>(bp::object());	\
+ }
+#endif
 
 //+++++++++++++++++++++++++++++++++++++++++//
 //                JobConf                  //

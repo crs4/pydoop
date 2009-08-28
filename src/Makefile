@@ -1,7 +1,7 @@
 # better have two independent modules...
 # pydoop_pipes and pydoop_hdfs
 
-machine=`uname -m`
+machine=$(shell uname -m)
 ifeq ($(machine),x86_64)
 	OS_ARCH=amd64
 else
@@ -24,7 +24,7 @@ JAVA_HOME=/etc/java-config-2/current-system-vm
 PLATFORM=linux
 
 #---------------------------------------
-PIPES_WRAP_FILES=pipes pipes_context pipes_test_support 
+PIPES_WRAP_FILES=pipes pipes_context pipes_test_support exceptions
 PIPES_AUX_FILES=HadoopPipes SerialUtils StringUtils
 PIPES_CPP_AUX_FILES=$(addsuffix .cpp, ${PIPES_AUX_FILES})
 PIPES_OBJ_AUX_FILES=$(addsuffix .o, ${PIPES_AUX_FILES})

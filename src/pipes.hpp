@@ -18,17 +18,7 @@ namespace hp = HadoopPipes;
 
 #include <string>
 
-class pipes_exception: public std::exception {
-private:
-  const std::string msg_;
-public:
-  pipes_exception(std::string msg) : msg_(msg){}
-
-  virtual const char* what() const throw() {
-    return msg_.c_str();
-  }
-  ~pipes_exception() throw() {}
-} ;
+#include "exceptions.hpp"
 
 struct cxx_capsule {
   cxx_capsule() {
