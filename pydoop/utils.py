@@ -31,6 +31,15 @@ def jc_configure_bool(obj, jc, k, f, df=None):
   setattr(obj, f, v)
 
 #--
+def jc_configure_float(obj, jc, k, f, df=None):
+  v = df
+  if jc.hasKey(k):
+    v = jc.getFloat(k)
+  elif df is None:
+    raise_pydoop_exception("jc_configure_float: no default for option '%s'" % k)
+  setattr(obj, f, v)
+
+#--
 import os
 def split_hdfs_path(path):
   opath = path

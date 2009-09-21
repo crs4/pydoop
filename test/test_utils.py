@@ -22,6 +22,9 @@ configure_examples = { 'a' : ['str', 'this is a string'],
                        'b' : ['int', '22'],
                        'b1' : ['int', '23'],
                        'c' : ['float', '0.22'],
+                       'c1' : ['float', '22.02020202'],
+                       'c2' : ['float', '.22'],
+                       'c3' : ['float', '1.0e-22'],
                        'd' : ['bool' , 'false'],
                        'd1' : ['bool' , 'true'],
                        }
@@ -59,6 +62,9 @@ class utils_tc(unittest.TestCase):
       elif w[k][0] == 'bool':
         jc_configure_bool(o, jc, k, k)
         self.assertEqual(getattr(o, k), w[k][1] == 'true')
+      elif w[k][0] == 'float':
+        jc_configure_float(o, jc, k, k)
+        self.assertEqual(getattr(o, k), float(w[k][1]))
   #--
   def jc_configure_default(self):
     w = configure_examples
