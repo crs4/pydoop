@@ -1,6 +1,17 @@
-2009-09-21    <zag@manzanillo>
-	
+2009-09-22    <zag@manzanillo>
+
 	* setup.py: Bumped to version 0.2.4
+
+	* test/test_utils.py (utils_tc.split): updated to the new
+	split_hdfs_path.
+
+	* pydoop/utils.py (split_hdfs_path): Changed function
+	internals. Now we follow the python way and use internal
+	batteries (i.e. urlparse)
+ 
+2009-09-21    <zag@manzanillo>
+
+	* pydoop/utils.py (split_hdfs_path): Added handling of file:/// files.
 
 	* pydoop/utils.py (jc_configure_float): added.
 

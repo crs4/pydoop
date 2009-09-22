@@ -5,6 +5,7 @@ import sys
 
 #----------------------------------------------------------------------------
 from pydoop.utils import split_hdfs_path, jc_configure, jc_configure_int, jc_configure_bool
+from pydoop.utils import jc_configure_float
 from pydoop.utils import DEFAULT_HDFS_PORT
 
 from pydoop_pipes import get_JobConf_object
@@ -12,6 +13,10 @@ from pydoop_pipes import get_JobConf_object
 
 split_examples = [('canonical', 'hdfs://foobar.foo.com:1234/foofile/bar',
                    ('foobar.foo.com', 1234, '/foofile/bar')),
+                  ('canonical', 'file:///foofile/bar',
+                   ('', 0, '/foofile/bar')),
+                  ('canonical', 'hdfs:///foofile/bar',
+                   ('localhost', 0, '/foofile/bar')),
                   ('bad',       '/foobar.foo.com:1234/foofile/bar', ()),
                   ('bad',       'file://foobar.foo.com:1234/foofile/bar', ()),
                   ('canonical', 'hdfs://foobar.foo.com/foofile/bar',
@@ -22,7 +27,7 @@ configure_examples = { 'a' : ['str', 'this is a string'],
                        'b' : ['int', '22'],
                        'b1' : ['int', '23'],
                        'c' : ['float', '0.22'],
-                       'c1' : ['float', '22.02020202'],
+                       'c1' : ['float', '0.0202'],
                        'c2' : ['float', '.22'],
                        'c3' : ['float', '1.0e-22'],
                        'd' : ['bool' , 'false'],
@@ -32,6 +37,7 @@ configure_examples = { 'a' : ['str', 'this is a string'],
 class utils_tc(unittest.TestCase):
   def split(self):
     for t, p, r in split_examples:
+      print 'p=', p
       if t == 'bad':
         self.assertRaises(UserWarning, split_hdfs_path, p)
         try:
@@ -64,7 +70,7 @@ class utils_tc(unittest.TestCase):
         self.assertEqual(getattr(o, k), w[k][1] == 'true')
       elif w[k][0] == 'float':
         jc_configure_float(o, jc, k, k)
-        self.assertEqual(getattr(o, k), float(w[k][1]))
+        self.assertAlmostEqual(getattr(o, k), float(w[k][1]))
   #--
   def jc_configure_default(self):
     w = configure_examples
