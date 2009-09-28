@@ -1,3 +1,11 @@
+2009-09-28    <zag@manzanillo>
+
+	* src/SerialUtils.cpp (HadoopUtils): deserializeFloat put in phase
+	with hadoop-0.19 header files.
+
+	* src/pipes_serial_utils.cpp: Added basic functions to access
+	hadoop serialization.
+
 2009-09-27    <zag@manzanillo>
 
 	* setup.py: Bumped to 0.2.5 (added support for application testing)

@@ -14,8 +14,8 @@ def run_map():
   p = pipes_runner('./WordCount', output_visitor())
   p.start()
   p.run_map('fake_input_split', 3)
-  for k in ['faa', 'fii', 'foo', 'fuu']:
-    p.map_item(str(1), str(k))
+  for v in ['faa', 'fii', 'foo', 'fuu']:
+    p.map_item(str(1), str(v))
   p.close()
 
 def run_reduce():

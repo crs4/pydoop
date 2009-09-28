@@ -101,7 +101,8 @@ class pydoop_build_clib(build_clib):
 
 
 def create_pipes_ext():
-    wrap = ["pipes", "pipes_context", "pipes_test_support", "exceptions"]
+    wrap = ["pipes", "pipes_context", "pipes_test_support",
+            "pipes_serial_utils", "exceptions"]
     aux = ["HadoopPipes", "SerialUtils", "StringUtils"]
     factory = BoostExtFactory(
         "pydoop_pipes",

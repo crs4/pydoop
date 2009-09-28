@@ -24,7 +24,8 @@ JAVA_HOME=/etc/java-config-2/current-system-vm
 PLATFORM=linux
 
 #---------------------------------------
-PIPES_WRAP_FILES=pipes pipes_context pipes_test_support exceptions
+PIPES_WRAP_FILES=pipes pipes_context pipes_test_support exceptions \
+                 pipes_serial_utils
 PIPES_AUX_FILES=HadoopPipes SerialUtils StringUtils
 PIPES_CPP_AUX_FILES=$(addsuffix .cpp, ${PIPES_AUX_FILES})
 PIPES_OBJ_AUX_FILES=$(addsuffix .o, ${PIPES_AUX_FILES})

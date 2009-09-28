@@ -107,6 +107,51 @@ class utils_tc(unittest.TestCase):
       nk = 'not-here-%s' % k
       self.assertFalse(jc.hasKey(nk))
       self.assertRaises(UserWarning, jc_configure, o, jc, nk, k)
+  #--
+  def hadoop_serialization(self):
+    for k in range(-256,256, 4):
+      b = pp.serialize_int(k)
+      (o, v) = pp.deserialize_int(b, 0)
+      self.assertEqual(k, v)
+    for k in range(-32000,32000, 100):
+      b = pp.serialize_int(k)
+      (o, v) = pp.deserialize_int(b, 0)
+      self.assertEqual(k, v)
+    for k in [-0.233, 232.11, 1e-9, 1e+12]:
+      b = pp.serialize_float(k)
+      (o, v) = pp.deserialize_float(b, 0)
+      self.assertAlmostEqual((k-v)/(k+v), 0, 5)
+    for k in ['fpp', 'eee', 'ddd']:
+      b = pp.serialize_string(k)
+      (o, v) = pp.deserialize_string(b, 0)
+      self.assertEqual(k, v)
+    things = [1233, 0.333, 'hello_there', '22', -0.5]
+    b = ''
+    for t in things:
+      b += my_serialize(t)
+    o = 0
+    for t in things:
+      equal_test = self.assertEqual
+      if type(t) == int:
+        (o, v) = pp.deserialize_int(b, o)
+      elif type(t) == float:
+        (o, v) = pp.deserialize_float(b, o)
+        equal_test = self.assertAlmostEqual
+      elif type(t) == str:
+        (o, v) = pp.deserialize_string(b, o)
+      equal_test(v, t)
+
+import pydoop_pipes as pp
+
+def my_serialize(t):
+  tt = type(t)
+  if tt == int:
+    return pp.serialize_int(t)
+  if tt == float:
+    return pp.serialize_float(t)
+  if tt == str:
+    return pp.serialize_string(t)
+
 
 #----------------------------------------------------------------------------
 def suite():
@@ -116,6 +161,7 @@ def suite():
   suite.addTest(utils_tc('jc_configure_plain'))
   suite.addTest(utils_tc('jc_configure_default'))
   suite.addTest(utils_tc('jc_configure_no_default'))
+  suite.addTest(utils_tc('hadoop_serialization'))
   #--
   return suite
 

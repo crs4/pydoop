@@ -242,6 +242,7 @@ namespace HadoopUtils {
     return t;
   }
 
+
   void serializeFloat(float t, OutStream& stream)
   {
     char buf[sizeof(float)];
@@ -251,6 +252,8 @@ namespace HadoopUtils {
     stream.write(buf, sizeof(float));
   }
 
+#if 0
+  // this is out of sync with the /opt/hadoop-0.19 include file.
   void deserializeFloat(float& t, InStream& stream)
   {
     char buf[sizeof(float)];
@@ -259,6 +262,18 @@ namespace HadoopUtils {
     xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
     xdr_float(&xdrs, &t);
   }
+#else
+  float deserializeFloat(InStream& stream)
+  {
+    float t;
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+    return t;
+  }
+#endif
 
   void serializeString(const std::string& t, OutStream& stream)
   {
