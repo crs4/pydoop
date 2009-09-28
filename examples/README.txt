@@ -3,7 +3,7 @@
 $ hadoop namenode -format 
 $ start-all.sh
 
-# http://localhost:50030
+# 
 # http://localhost:50070
 
 $ hadoop fs -mkdir examples/bin

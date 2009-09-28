@@ -9,6 +9,7 @@ from pydoop_pipes import TaskContext   as TaskContext
 from pydoop_pipes import MapContext    as MapContext
 from pydoop_pipes import ReduceContext as ReduceContext
 
+
 from factory      import Factory
 from input_split  import InputSplit
 

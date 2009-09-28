@@ -1,6 +1,8 @@
 #-------------------------------------
 # utility functions
 
+from pipes_runner import pipes_runner as pipes_runner
+
 from pydoop_pipes import raise_pydoop_exception
 
 DEFAULT_HDFS_PORT=9000
@@ -47,6 +49,15 @@ def __cleanup_file_path(path):
   while path.startswith(os.path.sep):
     path = path[1:]
   return os.path.join(os.path.sep, path)
+
+from struct import pack
+def make_input_split(filename, offset, length):
+  l = len(filename)
+  s = pack(">h", l)
+  s += filename
+  s += pack(">q", offset)
+  s += pack(">q", length)
+  return s
 
 def split_hdfs_path(path):
   """

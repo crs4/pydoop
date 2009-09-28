@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <iostream>
+#include <sstream>
 
 
 #include "hadoop/StringUtils.hh"
@@ -15,6 +16,54 @@
 namespace hp = HadoopPipes;
 namespace bp = boost::python;
 
+#ifdef ENABLE_SERIALIZE_SUPPORT
+std::string hadoop_serialize_int(int32_t i) {
+  std::ostringstream o;
+  hp::serializeInt(i, o);
+  return o.str();
+}
+std::string hadoop_serialize_long(int64_t i) {
+  std::ostringstream o;
+  hp::serializeLong(i, o);
+  return o.str();
+}
+std::string hadoop_serialize_float(float f) {
+  std::ostringstream o;
+  hp::serializeFloat(i, o);
+  return o.str();
+}
+std::string hadoop_serialize_string(const std::string& s) {
+  std::ostringstream o;
+  hp::serializeFloat(i, o);
+  return o.str();
+}
+//---------------------------------------------------------------
+
+bp::pair hadoop_deserialize_int(const std::string& s) {
+  std::istringstream is(s);
+  int32_t i = bp::deserializeInt(is);
+  bp::make_tuple(, ps);
+  std::ostringstream o;
+  hp::serializeInt(i, o);
+  return o.str();
+}
+std::string hadoop_serialize_long(int64_t i) {
+  std::ostringstream o;
+  hp::serializeLong(i, o);
+  return o.str();
+}
+std::string hadoop_serialize_float(float f) {
+  std::ostringstream o;
+  hp::serializeFloat(i, o);
+  return o.str();
+}
+std::string hadoop_serialize_string(const std::string& s) {
+  std::ostringstream o;
+  hp::serializeFloat(i, o);
+  return o.str();
+}
+
+#endif // ENABLE_SERIALIZE_SUPPORT
 
 void try_mapper(hp::Mapper& m, hp::MapContext& mc){
   std::cerr << "** In try_mapper" << std::endl;

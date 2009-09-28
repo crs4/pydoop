@@ -144,7 +144,7 @@ def create_ext_modules():
 
 setup(
     name="pydoop",
-    version="0.2.4",
+    version="0.2.5",
     description="Python MapReduce API for Hadoop",
     author="Gianluigi Zanetti",
     author_email="<gianluigi.zanetti@crs4.it>",

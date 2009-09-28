@@ -1,3 +1,16 @@
+2009-09-27    <zag@manzanillo>
+
+	* setup.py: Bumped to 0.2.5 (added support for application testing)
+
+	* pydoop/pipes_runner.py (pipes_runner): Added a driver for
+	application testing.
+
+	* pydoop/text_protocol.py: Added support to directly talk pipes
+	textual protocol.
+
+	* pydoop/utils.py (make_input_split): Added a function to
+	build input splits.
+
 2009-09-22    <zag@manzanillo>
 
 	* setup.py: Bumped to version 0.2.4

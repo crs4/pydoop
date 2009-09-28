@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include <iostream>
+
 class WordCountMap: public HadoopPipes::Mapper {
 public:
   WordCountMap(HadoopPipes::TaskContext& context){}
