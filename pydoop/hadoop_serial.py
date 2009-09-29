@@ -4,7 +4,7 @@ def serialize_int(i, stream):
   serialize_long(i, stream)
 
 def serialize_long(i, stream):
-  if i >= -112 && i <= 127:
+  if i >= -112 and i <= 127:
     stream.write(pack("B", i))
     return
   length = -112
