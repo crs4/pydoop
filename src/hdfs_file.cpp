@@ -66,7 +66,7 @@ tSize wrap_hdfs_file::pread_chunk(tOffset position, bp::object buffer){
   return res;
 }
 //-----------------------------------------------
-tSize wrap_hdfs_file::write(std::string buffer){
+tSize wrap_hdfs_file::write(const std::string& buffer){
   exec_and_trap_error(tSize, hdfsWrite(fs_->fs_, file_, 
 				       static_cast<const void*>(buffer.c_str()),
 				       buffer.size()),

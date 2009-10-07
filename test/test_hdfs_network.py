@@ -1,8 +1,10 @@
-from test_hdfs_basic_class import hdfs_basic_tc, HDFS
+from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
 
 import unittest, os
 
+
 class hdfs_default_tc(hdfs_basic_tc):
+  
   def __init__(self, target):
     hdfs_basic_tc.__init__(self, target, 'default', 0)
 
@@ -12,9 +14,10 @@ class hdfs_default_tc(hdfs_basic_tc):
     capacity = fs.capacity()
     used     = fs.used()
     fs.close()
-    print 'blk_size = ', blk_size
+    print '\nblk_size = ', blk_size
     print 'capacity = ', capacity
     print 'used     = ', used
+    
   def copy(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     fs_plain_disk = HDFS('', 0)
@@ -36,7 +39,7 @@ class hdfs_default_tc(hdfs_basic_tc):
     f.close()
     fs.delete(path)
     fs.close()
-  #--
+    
   def move(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     fs_plain_disk = HDFS('', 0)
@@ -57,42 +60,59 @@ class hdfs_default_tc(hdfs_basic_tc):
     f.close()
     fs.delete(path)
     fs.close()
+    
+  def block_size(self):
+    txt = "hello there!"
+    for bs_MB in xrange(100, 500, 50):
+      bs = bs_MB * 2**20
+      path = "test_bs_%d.txt" % bs_MB
+      f = self.fs.open_file(path, os.O_WRONLY, 0, 0, bs)
+      _ = f.write(txt)
+      f.close()
+      info = self.fs.get_path_info(path)
+      try:
+        actual_bs = info["block_size"]
+      except KeyError:
+        sys.stderr.write(
+          "No info on block size! Check the 'get_path_info' test result")
+        break
+      else:
+        self.assertEqual(bs, actual_bs)
 
-#----------------------------------------------------------------------------
+  def replication(self):
+    txt = "hello there!"
+    for r in xrange(1, 6):
+      path = "test_replication_%d.txt" % r
+      f = self.fs.open_file(path, os.O_WRONLY, 0, r, 0)
+      _ = f.write(txt)
+      f.close()
+      info = self.fs.get_path_info(path)
+      try:
+        actual_r = info["replication"]
+      except KeyError:
+        sys.stderr.write(
+          "No info on replication! Check the 'get_path_info' test result")
+        break
+      else:
+        self.assertEqual(r, actual_r)
+
+
 class hdfs_local_tc(hdfs_default_tc):
+  
   def __init__(self, target):
     hdfs_basic_tc.__init__(self, target, 'localhost', 9000)
 
-#----------------------------------------------------------------------------
+
 def suite():
   suite = unittest.TestSuite()
-  #--
-  suite.addTest(hdfs_default_tc('connect_disconnect'))
-  suite.addTest(hdfs_default_tc('open_close'))
-  suite.addTest(hdfs_default_tc('write_read'))
-  suite.addTest(hdfs_default_tc('rename'))
-  suite.addTest(hdfs_default_tc('change_dir'))
-  suite.addTest(hdfs_default_tc('create_dir'))
-  suite.addTest(hdfs_default_tc('copy'))
-  suite.addTest(hdfs_default_tc('move'))
-  suite.addTest(hdfs_default_tc('available'))
-  suite.addTest(hdfs_default_tc('get_path_info'))
-  suite.addTest(hdfs_default_tc('list_directory'))
-  #--
-  suite.addTest(hdfs_local_tc('connect_disconnect'))
-  suite.addTest(hdfs_local_tc('open_close'))
-  suite.addTest(hdfs_local_tc('write_read'))
-  suite.addTest(hdfs_local_tc('rename'))
-  suite.addTest(hdfs_local_tc('change_dir'))
-  suite.addTest(hdfs_local_tc('create_dir'))
-  suite.addTest(hdfs_local_tc('copy'))
-  suite.addTest(hdfs_local_tc('move'))
-  suite.addTest(hdfs_local_tc('available'))
-  suite.addTest(hdfs_local_tc('get_path_info'))
-  suite.addTest(hdfs_local_tc('list_directory'))
+  tests = basic_tests()
+  tests.extend(['copy', 'move', 'block_size', 'replication'])
+  for tc in hdfs_default_tc, hdfs_local_tc:
+    for t in tests:
+      suite.addTest(tc(t))
   return suite
+
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
   runner.run((suite()))
-

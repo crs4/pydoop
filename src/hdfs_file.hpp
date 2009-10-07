@@ -40,7 +40,7 @@ struct wrap_hdfs_file {
   //-----------------------------------------------
   std::string pread(tOffset position, tSize length);
   //-----------------------------------------------
-  tSize write(std::string buffer);
+  tSize write(const std::string& buffer);
   //-----------------------------------------------
   tSize read_chunk(bp::object buffer);
   //-----------------------------------------------

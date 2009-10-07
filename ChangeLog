@@ -1,3 +1,9 @@
+2009-10-07    <lsimleo@neuron.crs4.it>
+
+	* src/hdfs_file.cpp (write): changed to use a reference to the buffer.
+
+	* test/test_hdfs_network.py: added tests for block size & replication.
+
 2009-09-28    <zag@manzanillo>
 
 	* src/SerialUtils.cpp (HadoopUtils): deserializeFloat put in phase
