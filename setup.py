@@ -1,11 +1,9 @@
 import sys, os, platform, re
 from distutils.core import setup, Extension
-from distutils.command.build_clib import *
 
 
 # JAVA_HOME=my/java/home HADOOP_HOME=my/hadoop/home python setup.py build
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
-
 HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
 
 
@@ -73,33 +71,6 @@ class BoostExtFactory(object):
         return Extension(self.name, all_files, **self.ext_args)
 
 
-class pydoop_build_clib(build_clib):
-
-    def build_libraries (self, libraries):  # cut-n-paste
-        for (lib_name, build_info) in libraries:
-            sources = build_info.get('sources')
-            if sources is None or type(sources) not in (ListType, TupleType):
-                raise DistutilsSetupError, \
-                      ("in 'libraries' option (library '%s'), " +
-                       "'sources' must be present and must be " +
-                       "a list of source filenames") % lib_name
-            sources = list(sources)
-            log.info("building '%s' library", lib_name)
-            macros = build_info.get('macros')
-            include_dirs = build_info.get('include_dirs')
-            objects = self.compiler.compile(sources,
-                                            output_dir=self.build_temp,
-                                            macros=macros,
-                                            include_dirs=include_dirs,
-                                            debug=self.debug)
-            # here comes the hack
-            objects.append(os.path.join(get_java_library_dirs(JAVA_HOME)[0],
-                                        "libjvm.so"))
-            self.compiler.create_static_lib(objects, lib_name,
-                                            output_dir=self.build_clib,
-                                            debug=self.debug)
-
-
 def create_pipes_ext():
     wrap = ["pipes", "pipes_context", "pipes_test_support",
             "pipes_serial_utils", "exceptions"]
@@ -117,23 +88,19 @@ def create_pipes_ext():
 def create_hdfs_ext():
     wrap = ["hdfs_fs", "hdfs_file", "hdfs_common"]
     aux = []
+    library_dirs = get_java_library_dirs(JAVA_HOME) + [
+            os.path.join(HADOOP_HOME, "c++/Linux-%s-%s/lib" % get_arch())]
     factory = BoostExtFactory(
         "pydoop_hdfs",
         ["src/%s.cpp" % n for n in wrap],
         ["src/%s.cpp" % n for n in aux],
-        include_dirs=get_java_include_dirs(JAVA_HOME) + ["src/libhdfs"],
-        runtime_library_dirs=get_java_library_dirs(JAVA_HOME),
-        libraries=["pthread", "boost_python", "hdfs"],
+        include_dirs=get_java_include_dirs(JAVA_HOME) + [
+            os.path.join(HADOOP_HOME, "src/c++/libhdfs")],
+        library_dirs=library_dirs,
+        runtime_library_dirs=library_dirs,
+        libraries=["pthread", "boost_python", "hdfs", "jvm"],
         )
     return factory.create()
-
-
-def create_libhdfs_clib():
-    name = "hdfs"
-    src = ["hdfs", "hdfsJniHelper"]
-    build_info = {"sources": ["src/libhdfs/%s.c" % s for s in src],
-                  "include_dirs": get_java_include_dirs(JAVA_HOME),}
-    return (name, build_info)
 
 
 def create_ext_modules():
@@ -145,7 +112,7 @@ def create_ext_modules():
 
 setup(
     name="pydoop",
-    version="0.2.5",
+    version="0.2.6",
     description="Python MapReduce API for Hadoop",
     author="Gianluigi Zanetti",
     author_email="<gianluigi.zanetti@crs4.it>",
@@ -153,7 +120,5 @@ setup(
     maintainer_email="simleo@crs4.it",
     url="http://svn.crs4.it/ac-dc/lib/pydoop",
     packages=["pydoop"],
-    libraries=[create_libhdfs_clib()],
-    ext_modules=create_ext_modules(),
-    cmdclass={"build_clib": pydoop_build_clib,},
+    ext_modules=create_ext_modules()
     )

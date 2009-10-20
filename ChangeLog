@@ -1,3 +1,8 @@
+2009-10-20    <lsimleo@neuron.crs4.it>
+
+	* setup.py: changed to use the pre-compiled libhdfs. NOTE: only
+	Hadoop 0.20 is supported now.
+
 2009-10-07    <lsimleo@neuron.crs4.it>
 
 	* src/hdfs_file.cpp (write): changed to use a reference to the buffer.

@@ -1,6 +1,4 @@
 include src/*.hpp
-include src/libhdfs/*.h
 include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
-include test/run_hdfs_tests.sh
 recursive-include examples *
