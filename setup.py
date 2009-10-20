@@ -2,6 +2,27 @@ import sys, os, platform, re
 from distutils.core import setup, Extension
 
 
+# https://issues.apache.org/jira/browse/MAPREDUCE-1125
+OLD_DESERIALIZE_FLOAT = """void deserializeFloat(float& t, InStream& stream)
+  {
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+  }"""
+NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
+  {
+    float t;
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+    return t;
+  }"""
+
+
 # JAVA_HOME=my/java/home HADOOP_HOME=my/hadoop/home python setup.py build
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
 HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
@@ -71,10 +92,42 @@ class BoostExtFactory(object):
         return Extension(self.name, all_files, **self.ext_args)
 
 
+def get_pipes_aux(hadoop_home):
+    dirs = {
+        "SerialUtils": "utils",
+        "StringUtils": "utils",
+        "HadoopPipes": "pipes"
+        }
+    patches = {
+        "SerialUtils": {
+            "#include <string>": "#include <string.h>",
+            OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
+            },
+        "StringUtils": {
+            "#include <strings.h>": "#include <string.h>\n#include <stdlib.h>"
+            },
+        "HadoopPipes": {
+            "#include <strings.h>": "#include <string.h>"
+            },
+        }
+    contents = dict.fromkeys(dirs)
+    for n, d in dirs.iteritems():
+        fn = os.path.join(hadoop_home, "src/c++/%s/impl/%s.cc" % (d, n))
+        f = open(fn)
+        contents[n] = f.read()
+        f.close()
+        for old, new in patches[n].iteritems():
+            contents[n] = contents[n].replace(old, new)
+        f = open("src/%s.cpp" % n, "w")
+        f.write(contents[n])
+        f.close()
+    return contents.keys()
+
+
 def create_pipes_ext():
     wrap = ["pipes", "pipes_context", "pipes_test_support",
             "pipes_serial_utils", "exceptions"]
-    aux = ["HadoopPipes", "SerialUtils", "StringUtils"]
+    aux = get_pipes_aux(HADOOP_HOME)
     factory = BoostExtFactory(
         "pydoop_pipes",
         ["src/%s.cpp" % n for n in wrap],

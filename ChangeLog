@@ -2,6 +2,8 @@
 
 	* setup.py: changed to use the pre-compiled libhdfs. NOTE: only
 	Hadoop 0.20 is supported now.
+	(create_pipes_ext): changed to generate auxiliary files by copying
+	them from the Hadoop installation and applying necessary patches.
 
 2009-10-07    <lsimleo@neuron.crs4.it>
 
