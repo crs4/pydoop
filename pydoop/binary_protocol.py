@@ -2,7 +2,6 @@ import subprocess
 import sys
 
 
-
 #-- message codes for the down protocol
 START_MESSAGE=0
 SET_JOB_CONF=1
@@ -48,6 +47,11 @@ class binary_down_protocol(object):
                                  bufsize=0,
                                  stdin=subprocess.PIPE,
                                  stdout=self.fd)
+    #--
+    open_server_socket()
+    start_process_in_background()
+    open_socket()
+    #--
   def __send(self, args):
     for v in args:
       self.proc.stdin.write(serialize(v))
