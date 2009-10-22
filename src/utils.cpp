@@ -8,6 +8,7 @@
 namespace bp = boost::python;
 namespace hu = HadoopUtils;
 
+
 std::string deserialize_string(const std::string& s) {
   std::string ds;
   hu::StringInStream stream(s);
@@ -22,8 +23,13 @@ std::string serialize_string(const std::string& s) {
   return ds;
 }
 
-void export_utils()
-{
-  bp::def("deserialize_string", deserialize_string);
-}
 
+//++++++++++++++++++++++++++++++//
+// Exporting class definitions. //
+//++++++++++++++++++++++++++++++//
+
+using namespace boost::python;
+
+void export_utils() {
+  def("deserialize_string", deserialize_string);
+}

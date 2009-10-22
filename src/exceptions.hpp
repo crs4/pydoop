@@ -2,20 +2,21 @@
 #define HADOOP_EXCEPTIONS_HPP
 
 #include <boost/python.hpp>
+
 namespace bp = boost::python;
+
 
 class pydoop_exception: public std::exception {
 private:
   const std::string msg_;
 public:
-  pydoop_exception(std::string msg) : msg_(msg){}
-
+  pydoop_exception(std::string msg) : msg_(msg) {}
   virtual const char* what() const throw() {
     return msg_.c_str();
   }
-
   virtual ~pydoop_exception() throw() {}
 };
+
 
 class pipes_exception: public pydoop_exception {
 public:
@@ -25,7 +26,4 @@ public:
   }
 };
 
-
-
-
-#endif
+#endif // HADOOP_EXCEPTIONS_HPP

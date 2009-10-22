@@ -7,7 +7,6 @@
 #include <iostream>
 #include <sstream>
 
-
 #include "hadoop/StringUtils.hh"
 #include "hadoop/SerialUtils.hh"
 
@@ -16,88 +15,41 @@
 namespace hp = HadoopPipes;
 namespace bp = boost::python;
 
-#ifdef ENABLE_SERIALIZE_SUPPORT
-std::string hadoop_serialize_int(int32_t i) {
-  std::ostringstream o;
-  hp::serializeInt(i, o);
-  return o.str();
-}
-std::string hadoop_serialize_long(int64_t i) {
-  std::ostringstream o;
-  hp::serializeLong(i, o);
-  return o.str();
-}
-std::string hadoop_serialize_float(float f) {
-  std::ostringstream o;
-  hp::serializeFloat(i, o);
-  return o.str();
-}
-std::string hadoop_serialize_string(const std::string& s) {
-  std::ostringstream o;
-  hp::serializeFloat(i, o);
-  return o.str();
-}
-//---------------------------------------------------------------
 
-bp::pair hadoop_deserialize_int(const std::string& s) {
-  std::istringstream is(s);
-  int32_t i = bp::deserializeInt(is);
-  bp::make_tuple(, ps);
-  std::ostringstream o;
-  hp::serializeInt(i, o);
-  return o.str();
-}
-std::string hadoop_serialize_long(int64_t i) {
-  std::ostringstream o;
-  hp::serializeLong(i, o);
-  return o.str();
-}
-std::string hadoop_serialize_float(float f) {
-  std::ostringstream o;
-  hp::serializeFloat(i, o);
-  return o.str();
-}
-std::string hadoop_serialize_string(const std::string& s) {
-  std::ostringstream o;
-  hp::serializeFloat(i, o);
-  return o.str();
-}
-
-#endif // ENABLE_SERIALIZE_SUPPORT
-
-void try_mapper(hp::Mapper& m, hp::MapContext& mc){
+void try_mapper(hp::Mapper& m, hp::MapContext& mc) {
   std::cerr << "** In try_mapper" << std::endl;
   m.map(mc);
 }
-void try_reducer(hp::Reducer& r, hp::ReduceContext& rc){
+
+void try_reducer(hp::Reducer& r, hp::ReduceContext& rc) {
   std::cerr << "** In try_reducer" << std::endl;
   r.reduce(rc);
 }
 
-void try_factory(hp::Factory& f, hp::MapContext& mc, hp::ReduceContext& rc){
+void try_factory(hp::Factory& f, hp::MapContext& mc, hp::ReduceContext& rc) {
   hp::Mapper* m = f.createMapper(mc);
   m->map(mc);
   hp::Reducer* r = f.createReducer(rc);
   r->reduce(rc);
 }
 
+
 class JobConfDummy: public hp::JobConf {
   std::string s;
 public:
-  JobConfDummy() : s("ehehe"){}
+  JobConfDummy() : s("dummy") {}
   bool hasKey(const std::string& k) const { return false; };
-  const std::string& get(const std::string& k) const{return s; };
-  int getInt(const std::string& k) const{ return 1; };
-  float getFloat(const std::string& k) const{return 0.2; };
-  bool getBoolean(const std::string& k) const{return true; };
+  const std::string& get(const std::string& k) const { return s; };
+  int getInt(const std::string& k) const { return 1; };
+  float getFloat(const std::string& k) const { return 0.2; };
+  bool getBoolean(const std::string& k) const { return true; };
 };
 
-class TaskContextDummy: public hp::MapContext, 
-			public hp::ReduceContext {
+class TaskContextDummy: public hp::MapContext, public hp::ReduceContext {
   std::string s;
   JobConfDummy *jobconf;
 public:
-  TaskContextDummy() : s("inputKey"){
+  TaskContextDummy() : s("inputKey") {
     jobconf = new JobConfDummy();
   }
   const hp::JobConf* getJobConf() {
@@ -114,20 +66,19 @@ public:
   }
   void progress() {}
   void setStatus(const std::string& k) {}
-  Counter* getCounter(const std::string& k, 
-		      const std::string& v) {
+  Counter* getCounter(const std::string& k, const std::string& v) {
     return new Counter(1);
   }
   bool nextValue() {}
-  const std::string& getInputSplit()      { return s;}
-  const std::string& getInputKeyClass()   { return s;}
-  const std::string& getInputValueClass() { return s;}
+  const std::string& getInputSplit() { return s; }
+  const std::string& getInputKeyClass() { return s; }
+  const std::string& getInputValueClass() { return s; }
   
-  void incrementCounter(const hp::TaskContext::Counter* c, 
-			uint64_t i) {}
+  void incrementCounter(const hp::TaskContext::Counter* c, uint64_t i) {}
 };
 
-void try_factory_internal(hp::Factory& f){
+
+void try_factory_internal(hp::Factory& f) {
   
   TaskContextDummy tc;
   hp::MapContext* mtcp = &(tc);
@@ -138,7 +89,6 @@ void try_factory_internal(hp::Factory& f){
   std::cerr << "** try_factory_internal: 3 -- delete mapper " << m << std::endl;
   delete m;
   std::cerr << "** try_factory_internal: 4 -- after delete mapper " << std::endl;
-
   std::cerr << "** try_factory_internal: 3 -- reducer(ctx)" << std::endl;
   hp::Reducer* r = f.createReducer(tc);
   std::cerr << "** try_factory_internal: 4 -- reducer.reduce(ctx)" << std::endl;
@@ -151,9 +101,10 @@ void try_factory_internal(hp::Factory& f){
 using namespace HadoopPipes;
 using namespace HadoopUtils;
 
+
 struct test_factory {
   Factory* fp_;
-  test_factory(Factory* fp): fp_(fp){}
+  test_factory(Factory* fp): fp_(fp) {}
   RecordReader* createRecordReader(MapContext& ctx) {
     return fp_->createRecordReader(ctx);
   }
@@ -168,11 +119,10 @@ struct test_factory {
   }
 };
 
-//----------------------------------------------------------------------------//
+
 class JobConfImpl: public JobConf {
 private:
   std::map<std::string, std::string> values;
-
 public:
   void set(const std::string& key, const std::string& value) {
     values[key] = value;
@@ -187,37 +137,33 @@ public:
     }
     return itr->second;
   }
-
   virtual int getInt(const std::string& key) const {
     const std::string& val = get(key);
     return toInt(val);
   }
-  
   virtual float getFloat(const std::string& key) const {
     const std::string& val = get(key);
     return toFloat(val);
   }
-
   virtual bool getBoolean(const std::string&key) const {
     const std::string& val = get(key);
     return toBool(val);
   }
 };
-//-----------------------------------------------------------------------------------//
+
+
 class TaskContextImpl: public TaskContext {
 private:
-  JobConfImpl      job_conf;
-  std::string      input_key;
-  std::string      input_value;
+  JobConfImpl job_conf;
+  std::string input_key;
+  std::string input_value;
   std::vector<int> counter_vals;
-  
 public:
   TaskContextImpl(const std::string& ik, const std::string& iv) :
-    job_conf(), input_key(ik), input_value(iv) { }
-  //
-  virtual const JobConf* getJobConf()        { return &job_conf;}
-  virtual const std::string& getInputKey()   { return input_key;}
-  virtual const std::string& getInputValue() { return input_value;}
+    job_conf(), input_key(ik), input_value(iv) {}
+  virtual const JobConf* getJobConf() { return &job_conf; }
+  virtual const std::string& getInputKey() { return input_key; }
+  virtual const std::string& getInputValue() { return input_value; }
   virtual void  emit(const std::string& k, const std::string& v) {
     std::cerr << "TaskContextImpl::emit("<<k<<", "<<v<<")"<<std::endl;
   }
@@ -227,7 +173,8 @@ public:
   virtual void  setStatus(const std::string& status) {
     std::cerr << "TaskContextImpl::setStatus("<<status<<")"<<std::endl;
   }
-  virtual Counter* getCounter(const std::string& group, const std::string& name) {
+  virtual Counter* getCounter(const std::string& group,
+			      const std::string& name) {
     int id = counter_vals.size();
     counter_vals.push_back(0);
     return new Counter(id);
@@ -240,21 +187,20 @@ public:
   }
 };
 
+
 class ReduceContextImpl: public TaskContextImpl, public ReduceContext {
 private:
-  JobConfImpl      job_conf;
-  std::string      input_key;
-  std::string      input_value;
+  JobConfImpl job_conf;
+  std::string input_key;
+  std::string input_value;
   std::vector<int> counter_vals;
-
 public:
   ReduceContextImpl(const std::string& ik, const std::string& iv) :
-    TaskContextImpl(ik, iv), input_key(ik), input_value(iv){}
+    TaskContextImpl(ik, iv), input_key(ik), input_value(iv) {}
   virtual bool nextValue() { return true; }
-
-  virtual const JobConf* getJobConf()        { return &job_conf;}
-  virtual const std::string& getInputKey()   { return input_key;}
-  virtual const std::string& getInputValue() { return input_value;}
+  virtual const JobConf* getJobConf() { return &job_conf; }
+  virtual const std::string& getInputKey() { return input_key; }
+  virtual const std::string& getInputValue() { return input_value; }
   virtual void  emit(const std::string& k, const std::string& v) {
     std::cerr << "TaskContextImpl::emit("<<k<<", "<<v<<")"<<std::endl;
   }
@@ -264,7 +210,8 @@ public:
   virtual void  setStatus(const std::string& status) {
     std::cerr << "ReduceContextImpl::setStatus("<<status<<")"<<std::endl;
   }
-  virtual Counter* getCounter(const std::string& group, const std::string& name) {
+  virtual Counter* getCounter(const std::string& group,
+			      const std::string& name) {
     int id = counter_vals.size();
     counter_vals.push_back(0);
     return new Counter(id);
@@ -280,9 +227,9 @@ public:
 
 class MapContextImpl: public TaskContextImpl, public MapContext {
 private:
-  JobConfImpl      job_conf;
-  std::string      input_key;
-  std::string      input_value;
+  JobConfImpl job_conf;
+  std::string input_key;
+  std::string input_value;
   std::vector<int> counter_vals;
   std::string input_split;
   std::string input_key_class;
@@ -290,16 +237,14 @@ private:
 public:
   MapContextImpl(const std::string& ik, const std::string& iv, 
 		 const std::string& is, const std::string& ikc, 
-		 const std::string& ivc) : 
+		 const std::string& ivc) :
     TaskContextImpl(ik, iv),
     job_conf(), input_key(ik), input_value(iv),
-    input_split(is), input_key_class(ikc), input_value_class(ivc){
+    input_split(is), input_key_class(ikc), input_value_class(ivc) {
   }
-
-  virtual const JobConf* getJobConf()        { return &job_conf;}
-  virtual const std::string& getInputKey()   { return input_key;}
-  virtual const std::string& getInputValue() { return input_value;}
-  //
+  virtual const JobConf* getJobConf() { return &job_conf; }
+  virtual const std::string& getInputKey() { return input_key; }
+  virtual const std::string& getInputValue() { return input_value; }
   virtual void  emit(const std::string& k, const std::string& v) {
     std::cerr << "MapContextImpl::emit("<<k<<", "<<v<<")"<<std::endl;
   }
@@ -309,7 +254,8 @@ public:
   virtual void  setStatus(const std::string& status) {
     std::cerr << "MapContextImpl::setStatus("<<status<<")"<<std::endl;
   }
-  virtual Counter* getCounter(const std::string& group, const std::string& name) {
+  virtual Counter* getCounter(const std::string& group,
+			      const std::string& name) {
     int id = counter_vals.size();
     counter_vals.push_back(0);
     return new Counter(id);
@@ -320,11 +266,8 @@ public:
     std::cerr << "MapContextImpl::incrementCounter("<<id<<", "
 	      <<amount<<")->"<< counter_vals[id]<< std::endl;
   }
-
-  //
   virtual const std::string& getInputSplit() {
     return input_split;
-    
   }
   virtual const std::string& getInputKeyClass() {
     return input_key_class;
@@ -335,16 +278,12 @@ public:
 };
 
 
-
-//-----------------------------------------------------------------------------------//
-//-----------------------------------------------------------------------------------//
-//-----------------------------------------------------------------------------------//
-JobConf* wrap_JobConf_object(JobConf& jc){ return &jc; }
-JobConf* get_JobConf_object(bp::dict d){
+JobConf* wrap_JobConf_object(JobConf& jc) { return &jc; }
+JobConf* get_JobConf_object(bp::dict d) {
   JobConfImpl* jc = new JobConfImpl();
-  bp::list keylist     = d.keys();
+  bp::list keylist = d.keys();
   int  keylist_len = bp::extract<int>(keylist.attr("__len__")());
-  for(int i = 0; i < keylist_len; ++i){
+  for(int i = 0; i < keylist_len; ++i) {
     std::string k = bp::extract<std::string>(keylist[i]);
     std::string v = bp::extract<std::string>(d[keylist[i]]);
     jc->set(k, v);
@@ -352,14 +291,14 @@ JobConf* get_JobConf_object(bp::dict d){
   return jc;
 }
 
-TaskContext* get_TaskContext_object(bp::dict d){
+TaskContext* get_TaskContext_object(bp::dict d) {
   std::string ik = bp::extract<std::string>(d["input_key"]);
   std::string iv = bp::extract<std::string>(d["input_value"]);
   TaskContext* tc = new TaskContextImpl(ik, iv);
   return tc;
 }
 
-MapContext* get_MapContext_object(bp::dict d){
+MapContext* get_MapContext_object(bp::dict d) {
   std::string ik = bp::extract<std::string>(d["input_key"]);
   std::string iv = bp::extract<std::string>(d["input_value"]);
   std::string is = bp::extract<std::string>(d["input_split"]);
@@ -369,14 +308,14 @@ MapContext* get_MapContext_object(bp::dict d){
   return mc;
 }
 
-ReduceContext* get_ReduceContext_object(bp::dict d){
+ReduceContext* get_ReduceContext_object(bp::dict d) {
   std::string ik = bp::extract<std::string>(d["input_key"]);
   std::string iv = bp::extract<std::string>(d["input_value"]);
   ReduceContext* rc = new ReduceContextImpl(ik, iv);
   return rc;
 }
 
-const char* double_a_string(const std::string& a){
+const char* double_a_string(const std::string& a) {
   std::cerr << "read in str " << a << std::endl;
   bp::str ps(a);
   bp::object r = "%s.%s" % bp::make_tuple(ps, ps);
@@ -386,6 +325,4 @@ const char* double_a_string(const std::string& a){
   return p;
 }
 
-
-#endif
- 
+#endif // HADOOP_PIPES_TEST_SUPPORT_HPP

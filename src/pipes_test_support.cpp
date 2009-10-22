@@ -1,42 +1,37 @@
+#include <string>
+
 #include <hadoop/Pipes.hh>
-
-
 #include "pipes_test_support.hpp"
 
-#include <string>
-#include <iostream>
 
-
-bp::tuple get_record_from_record_reader(RecordReader* rr){
+bp::tuple get_record_from_record_reader(RecordReader* rr) {
   std::string k;
   std::string v;
   bool f = rr->next(k, v);
-#if 0
-  std::cerr << "get_record_from_record_reader: ("<< f 
-	    <<", " << k
-	    <<", " << v << ")" << std::endl;
-#endif
   bp::str key(k);
   bp::str value(v);
   return bp::make_tuple(f, key, value);
 }
 
-float get_progress_from_record_reader(RecordReader* rr){
+float get_progress_from_record_reader(RecordReader* rr) {
   float p = rr->getProgress();
   return p;
 }
 
-int get_partition_from_partitioner(Partitioner* pr, 
-				   std::string k, int n_partitions){
+int get_partition_from_partitioner(Partitioner* pr,
+				   std::string k, int n_partitions) {
   int p = pr->partition(k, n_partitions);
   return p;
 }
 
-//+++++++++++++++++++++++++++++++++++++++++
-// Exporting class definitions.
-//+++++++++++++++++++++++++++++++++++++++++
+
+//++++++++++++++++++++++++++++++//
+// Exporting class definitions. //
+//++++++++++++++++++++++++++++++//
+
 using namespace boost::python;
-void export_pipes_test_support() 
+
+void export_pipes_test_support()
 {
   class_<test_factory>("TestFactory",
 		       init<Factory*>())
@@ -62,10 +57,8 @@ void export_pipes_test_support()
   def("get_record_from_record_reader", get_record_from_record_reader);
   def("get_progress_from_record_reader", get_progress_from_record_reader);
   def("get_partition_from_partitioner", get_partition_from_partitioner);
-
   def("try_mapper", try_mapper);
   def("try_reducer", try_reducer);
   def("try_factory", try_factory);
   def("try_factory_internal", try_factory_internal);
 }
-

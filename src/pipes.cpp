@@ -1,52 +1,39 @@
 #include <hadoop/Pipes.hh>
-
+#include "pipes.hpp"
 #include <boost/python.hpp>
 
-#include "pipes.hpp"
 
-#include <iostream>
+//++++++++++++++++++++++++++++++//
+// Exporting class definitions. //
+//++++++++++++++++++++++++++++++//
 
+using namespace boost::python;
 
+void export_pipes() {
 
-//+++++++++++++++++++++++++++++++++++++++++
-// Exporting class definitions.
-//+++++++++++++++++++++++++++++++++++++++++
-
-
-void export_pipes() 
-{
-  using namespace boost::python;
-  //--
-  class_<wrap_mapper, std::auto_ptr<wrap_mapper>, boost::noncopyable>("Mapper",
-								      "Basic wrapping of mapper class")
+  class_<wrap_mapper, std::auto_ptr<wrap_mapper>, boost::noncopyable>("Mapper", "Basic wrapping of mapper class")
     .def("map", pure_virtual(&hp::Mapper::map))
     ;
 
-  //--
-  class_<wrap_reducer, std::auto_ptr<wrap_reducer>, boost::noncopyable>("Reducer",
-					   "Basic wrapping of reducer class")
+  class_<wrap_reducer, std::auto_ptr<wrap_reducer>, boost::noncopyable>("Reducer", "Basic wrapping of reducer class")
     .def("reduce", pure_virtual(&hp::Reducer::reduce))
     ;
-  //--
-  class_<wrap_partitioner, std::auto_ptr<wrap_partitioner>, boost::noncopyable>("Partitioner",
-					       "Basic wrapping of Partitioner class")
 
+  class_<wrap_partitioner, std::auto_ptr<wrap_partitioner>, boost::noncopyable>("Partitioner", "Basic wrapping of Partitioner class")
     .def("partition", pure_virtual(&hp::Partitioner::partition))
     ;
-  //--
-  class_<wrap_record_reader, std::auto_ptr<wrap_record_reader>, boost::noncopyable>("RecordReader",
-						 "Basic wrapping of RecordReader class")
+
+  class_<wrap_record_reader, std::auto_ptr<wrap_record_reader>, boost::noncopyable>("RecordReader", "Basic wrapping of RecordReader class")
     // We disable python view of next, since it is unclear how its
     // call by ref to implement a side-effect should be interpreted.
     //.def("next",pure_virtual(&hp::RecordReader::next))
     .def("getProgress", pure_virtual(&hp::RecordReader::getProgress))
     ;
-  //--
-  class_<wrap_record_writer, std::auto_ptr<wrap_record_writer>, boost::noncopyable>("RecordWriter",
-						 "Basic wrapping of RecordWriter class")
+
+  class_<wrap_record_writer, std::auto_ptr<wrap_record_writer>, boost::noncopyable>("RecordWriter", "Basic wrapping of RecordWriter class")
     .def("emit", pure_virtual(&hp::RecordWriter::emit))
     ;
-  //--
+
   class_<wrap_factory, boost::noncopyable>("Factory")
     .def("createMapper", pure_virtual(&hp::Factory::createMapper),
 	 return_value_policy<reference_existing_object>())
@@ -63,8 +50,3 @@ void export_pipes()
     ;
   def("runTask", hp::runTask);
 }
-
-
-
-
-

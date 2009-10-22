@@ -1,16 +1,14 @@
 #include "pipes_context.hpp"
 
-#include <iostream>
+
+//++++++++++++++++++++++++++++++//
+// Exporting class definitions. //
+//++++++++++++++++++++++++++++++//
 
 using namespace boost::python;
 
-//+++++++++++++++++++++++++++++++++++++++++
-// Exporting class definitions.
-//+++++++++++++++++++++++++++++++++++++++++
-void export_pipes_context() 
-{
-  using namespace boost::python;
-  //--
+void export_pipes_context() {
+
   class_<wrap_job_conf, boost::noncopyable>("JobConf")
     .def("hasKey",      pure_virtual(&hp::JobConf::hasKey))
     .def("get",         pure_virtual(&hp::JobConf::get),
@@ -19,10 +17,10 @@ void export_pipes_context()
     .def("getFloat",    pure_virtual(&hp::JobConf::getFloat))
     .def("getBoolean",  pure_virtual(&hp::JobConf::getBoolean))
     ;
-  //--
+
   class_<hp::TaskContext::Counter>("TaskContext_Counter", init<int>())
     .def("getId", &hp::TaskContext::Counter::getId);
-  //--
+
   class_<wrap_task_context, boost::noncopyable>("TaskContext")
     .def("getJobConf",  pure_virtual(&hp::TaskContext::getJobConf),
 	 return_internal_reference<>())
@@ -40,7 +38,6 @@ void export_pipes_context()
 	 pure_virtual(&hp::TaskContext::incrementCounter))
     ;
 
-  //--
   class_<wrap_map_context, bases<hp::TaskContext>, 
     boost::noncopyable>("MapContext")
     .def("getJobConf",  pure_virtual(&hp::MapContext::getJobConf),
@@ -67,7 +64,7 @@ void export_pipes_context()
 	 pure_virtual(&hp::MapContext::getInputSplit),
 	 return_value_policy<copy_const_reference>())
     ;
-  //--
+
   class_<wrap_reduce_context, bases<hp::TaskContext>,
     boost::noncopyable>("ReduceContext")
     .def("getJobConf",  pure_virtual(&hp::ReduceContext::getJobConf),
@@ -87,6 +84,4 @@ void export_pipes_context()
     .def("nextValue", 
 	 pure_virtual(&hp::ReduceContext::nextValue))
     ;
-
 }
-
