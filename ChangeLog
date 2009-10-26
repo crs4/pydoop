@@ -1,3 +1,11 @@
+2009-10-26    <simleo@neuron.crs4.it>
+
+	* pydoop/pipes.py: Task components (Mapper, Reducer etc.)
+	explicitly redefined as abstract classes (fixes # 236).
+	Constructors now accept an optional context object that's not
+	used (__init__ must be explicitly overridden, and the user is
+	likely to expect the base class to accept a context object too).
+
 2009-10-20    <lsimleo@neuron.crs4.it>
 
 	* setup.py: changed to use the pre-compiled libhdfs. NOTE: only
