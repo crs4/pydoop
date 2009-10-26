@@ -1,6 +1,5 @@
 import sys, os, unittest
 from ctypes import create_string_buffer
-
 from pydoop.hdfs import hdfs as HDFS
 
 
@@ -161,9 +160,9 @@ class hdfs_basic_tc(unittest.TestCase):
       for c in range(len(txt)):
         self.assertEqual(chunk[c], txt[c], "wrong bytes read at %d." % c)
       pos += len(txt)
-      # It is unclear if this is a bug or a feature of the API.
-      # I guess the problem is that there is not a fseek function, and thus
-      # when one uses a pread it basically does a random access.
+      # It is unclear if this is a bug or a feature of the API.  I
+      # guess the problem is that there is not an fseek function, and
+      # thus when one uses a pread it basically does a random access.
       self.assertEqual(0, f.tell())
     f.close()
     

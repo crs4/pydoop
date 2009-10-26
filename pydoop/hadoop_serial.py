@@ -1,7 +1,9 @@
 from struct import pack
 
+
 def serialize_int(i, stream):
   serialize_long(i, stream)
+
 
 def serialize_long(i, stream):
   if i >= -112 and i <= 127:
@@ -17,4 +19,3 @@ def serialize_long(i, stream):
     length -= 1
   stream.write(pack("B", length))
   length = - (length + 120) if length < -120 else - (length + 112)
-

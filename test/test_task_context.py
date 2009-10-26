@@ -1,33 +1,26 @@
 import unittest
-import random
-
-import sys
-
-#----------------------------------------------------------------------------
 import pydoop_pipes
+from pydoop.pipes import InputSplit
 
 
-from   pydoop.pipes import InputSplit
+example_input_splits = [
+  ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
+   'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
+   550952, 550917),
+  ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
+   'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
+   0, 550952),
+  ('\x001hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
+   'hdfs://localhost:9000/user/zag/in-dir/images_list',
+   0, 36)
+  ]
 
 
-example_input_splits = [('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
-                         'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
-                         550952, 550917),
-                        ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
-                         'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
-                         0, 550952),
-                         ('\x001hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
-                         'hdfs://localhost:9000/user/zag/in-dir/images_list',
-                          0, 36)
-                        ]
-
-
-
-#----------------------------------------------------------------------------
 class taskcontext_tc(unittest.TestCase):
+  
   def setUp(self):
     pass
-  #--
+
   def test_task_from_cpluplus(self):
     d = {'input_key' : 'inputkey',
          'input_value' : 'inputvalue'}
@@ -42,7 +35,7 @@ class taskcontext_tc(unittest.TestCase):
     o.progress()
     o.setStatus('hello')
     o.emit('key', 'vall')
-  #--
+
   def test_mapcontext_from_cpluplus(self):
     d = {'input_key' : 'inputkey',
          'input_value' : 'inputvalue',
@@ -63,7 +56,7 @@ class taskcontext_tc(unittest.TestCase):
     o.progress()
     o.setStatus('hello')
     o.emit('key', 'vall')
-  #--
+
   def test_reducecontext_from_cpluplus(self):
     d = {'input_key' : 'inputkey',
          'input_value' : 'inputvalue'}
@@ -79,7 +72,6 @@ class taskcontext_tc(unittest.TestCase):
     o.setStatus('hello')
     o.emit('key', 'vall')
 
-  #--
   def test_input_split(self):
     for s in example_input_splits:
       i = InputSplit(s[0])
@@ -88,17 +80,15 @@ class taskcontext_tc(unittest.TestCase):
       self.assertEqual(i.length, s[3])
 
 
-#----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()
-  #--
   suite.addTest(taskcontext_tc('test_task_from_cpluplus'))
   suite.addTest(taskcontext_tc('test_mapcontext_from_cpluplus'))
   suite.addTest(taskcontext_tc('test_reducecontext_from_cpluplus'))
   suite.addTest(taskcontext_tc('test_input_split'))
   return suite
 
+
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
   runner.run((suite()))
-

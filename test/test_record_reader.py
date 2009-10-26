@@ -1,16 +1,16 @@
 import unittest
-import random
 
-import sys
 
-#----------------------------------------------------------------------------
 import pydoop_pipes
 from pydoop.pipes import Factory, RecordReader
 
+
 class test_record_reader(RecordReader):
-  DEFAULT_VALUE='The quick red fox jumped on the lazy brown dog'
-  KEY_FORMAT='key-%d'
-  NUMBER_RECORDS=10
+
+  DEFAULT_VALUE = 'The quick red fox jumped on the lazy brown dog'
+  KEY_FORMAT = 'key-%d'
+  NUMBER_RECORDS = 10
+  
   def __init__(self, ctx):
     RecordReader.__init__(self)
     self.ctx = ctx
@@ -26,11 +26,12 @@ class test_record_reader(RecordReader):
   def getProgress(self):
     return float(self.counter)/self.NUMBER_RECORDS
 
-#----------------------------------------------------------------------------
+
 class record_reader_tc(unittest.TestCase):
+
   def setUp(self):
     pass
-  #--
+
   def test_record_reader_from_cpluplus(self):
     d = {'input_key' : 'inputkey',
          'input_value' : 'inputvalue',
@@ -43,7 +44,6 @@ class record_reader_tc(unittest.TestCase):
     self.assertEqual(ctx.getInputSplit(), d['input_split'])
     self.assertEqual(ctx.getInputKeyClass(), d['input_key_class'])
     self.assertEqual(ctx.getInputValueClass(), d['input_value_class'])
-
     f = Factory(None, None, test_record_reader)
     rr = f.createRecordReader(ctx)
     for i in range(test_record_reader.NUMBER_RECORDS):
@@ -56,14 +56,13 @@ class record_reader_tc(unittest.TestCase):
     (f, k, v) = pydoop_pipes.get_record_from_record_reader(rr)
     self.assertFalse(f)
 
-#----------------------------------------------------------------------------
+
 def suite():
   suite = unittest.TestSuite()
-  #--
   suite.addTest(record_reader_tc('test_record_reader_from_cpluplus'))
   return suite
+
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
   runner.run((suite()))
-

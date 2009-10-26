@@ -1,14 +1,13 @@
 import pydoop_pipes
 
-import sys
 
 class Factory(pydoop_pipes.Factory):
+  
   def __init__(self, mapper_class, reducer_class,
                record_reader_class=None,
                record_writer_class=None,
                combiner_class=None,
-               partitioner_class=None,
-               ):
+               partitioner_class=None):
     pydoop_pipes.Factory.__init__(self)
     #--
     self.mapper_class  = mapper_class
@@ -36,19 +35,10 @@ class Factory(pydoop_pipes.Factory):
       self.partitioner_class = partitioner_class
       setattr(self, 'createPartitioner',
               self.__make_creator('partitioner_class'))
-    #--
-    #self.produced      = []
 
-  def __del__(self):
-    # sys.stderr.write('Destroying factory\n')
-    pass
-
-  #--
   def __make_creator(self, name):
     cls = getattr(self, name)
     def __make_creator_helper(ctx):
       o = cls(ctx)
-      #self.produced.append(o)
       return o
     return __make_creator_helper
-

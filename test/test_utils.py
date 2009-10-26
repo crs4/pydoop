@@ -1,40 +1,38 @@
 import unittest
-import random
 
-import sys
-
-#----------------------------------------------------------------------------
-from pydoop.utils import split_hdfs_path, jc_configure, jc_configure_int, jc_configure_bool
-from pydoop.utils import jc_configure_float
+from pydoop.utils import split_hdfs_path, jc_configure
+from pydoop.utils import jc_configure_int, jc_configure_bool, jc_configure_float
 from pydoop.utils import DEFAULT_HDFS_PORT
 
-from pydoop_pipes import get_JobConf_object
-#----------------------------------------------------------------------------
+import pydoop_pipes as pp
 
-split_examples = [('canonical', 'hdfs://foobar.foo.com:1234/foofile/bar',
-                   ('foobar.foo.com', 1234, '/foofile/bar')),
-                  ('canonical', 'file:///foofile/bar',
-                   ('', 0, '/foofile/bar')),
-                  ('canonical', 'hdfs:///foofile/bar',
-                   ('localhost', 0, '/foofile/bar')),
-                  ('bad',       '/foobar.foo.com:1234/foofile/bar', ()),
-                  ('bad',       'file://foobar.foo.com:1234/foofile/bar', ()),
-                  ('canonical', 'hdfs://foobar.foo.com/foofile/bar',
-                   ('foobar.foo.com', DEFAULT_HDFS_PORT, '/foofile/bar'))
-                  ]
 
-configure_examples = { 'a' : ['str', 'this is a string'],
-                       'b' : ['int', '22'],
-                       'b1' : ['int', '23'],
-                       'c' : ['float', '0.22'],
-                       'c1' : ['float', '0.0202'],
-                       'c2' : ['float', '.22'],
-                       'c3' : ['float', '1.0e-22'],
-                       'd' : ['bool' , 'false'],
-                       'd1' : ['bool' , 'true'],
-                       }
+split_examples = [
+  ('canonical', 'hdfs://foobar.foo.com:1234/foofile/bar',
+   ('foobar.foo.com', 1234, '/foofile/bar')),
+  ('canonical', 'file:///foofile/bar', ('', 0, '/foofile/bar')),
+  ('canonical', 'hdfs:///foofile/bar', ('localhost', 0, '/foofile/bar')),
+  ('bad', '/foobar.foo.com:1234/foofile/bar', ()),
+  ('bad', 'file://foobar.foo.com:1234/foofile/bar', ()),
+  ('canonical', 'hdfs://foobar.foo.com/foofile/bar',
+   ('foobar.foo.com', DEFAULT_HDFS_PORT, '/foofile/bar'))
+  ]
+
+configure_examples = {
+  'a' : ['str', 'this is a string'],
+  'b' : ['int', '22'],
+  'b1' : ['int', '23'],
+  'c' : ['float', '0.22'],
+  'c1' : ['float', '0.0202'],
+  'c2' : ['float', '.22'],
+  'c3' : ['float', '1.0e-22'],
+  'd' : ['bool' , 'false'],
+  'd1' : ['bool' , 'true'],
+  }
+
 
 class utils_tc(unittest.TestCase):
+
   def split(self):
     for t, p, r in split_examples:
       print 'p=', p
@@ -47,13 +45,13 @@ class utils_tc(unittest.TestCase):
           self.assertEqual(e.args[0], m)
       else:
         self.assertEqual(split_hdfs_path(p), r)
-  #--
+
   def jc_configure_plain(self):
     w = configure_examples
     d = {}
     for k in w.keys():
       d[k] = w[k][1]
-    jc = get_JobConf_object(d)
+    jc = pp.get_JobConf_object(d)
     class O(object):
       pass
     o = O()
@@ -71,13 +69,13 @@ class utils_tc(unittest.TestCase):
       elif w[k][0] == 'float':
         jc_configure_float(o, jc, k, k)
         self.assertAlmostEqual(getattr(o, k), float(w[k][1]))
-  #--
+
   def jc_configure_default(self):
     w = configure_examples
     d = {}
     for k in w.keys():
       d[k] = w[k][1]
-    jc = get_JobConf_object(d)
+    jc = pp.get_JobConf_object(d)
     class O(object):
       pass
     o = O()
@@ -93,13 +91,13 @@ class utils_tc(unittest.TestCase):
       elif w[k][0] == 'bool':
         jc_configure_bool(o, jc, nk, k, w[k][1]=='true')
         self.assertEqual(getattr(o, k), w[k][1] == 'true')
-  #--
+
   def jc_configure_no_default(self):
     w = configure_examples
     d = {}
     for k in w.keys():
       d[k] = w[k][1]
-    jc = get_JobConf_object(d)
+    jc = pp.get_JobConf_object(d)
     class O(object):
       pass
     o = O()
@@ -107,7 +105,7 @@ class utils_tc(unittest.TestCase):
       nk = 'not-here-%s' % k
       self.assertFalse(jc.hasKey(nk))
       self.assertRaises(UserWarning, jc_configure, o, jc, nk, k)
-  #--
+
   def hadoop_serialization(self):
     for k in range(-256,256, 4):
       b = pp.serialize_int(k)
@@ -141,7 +139,6 @@ class utils_tc(unittest.TestCase):
         (o, v) = pp.deserialize_string(b, o)
       equal_test(v, t)
 
-import pydoop_pipes as pp
 
 def my_serialize(t):
   tt = type(t)
@@ -153,20 +150,16 @@ def my_serialize(t):
     return pp.serialize_string(t)
 
 
-#----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()
-  #--
   suite.addTest(utils_tc('split'))
   suite.addTest(utils_tc('jc_configure_plain'))
   suite.addTest(utils_tc('jc_configure_default'))
   suite.addTest(utils_tc('jc_configure_no_default'))
   suite.addTest(utils_tc('hadoop_serialization'))
-  #--
   return suite
 
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
   runner.run((suite()))
-

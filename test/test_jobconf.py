@@ -1,14 +1,12 @@
 import unittest
-import random
-
-#----------------------------------------------------------------------------
 import pydoop_pipes
 
-#----------------------------------------------------------------------------
+
 class jobconf_tc(unittest.TestCase):
+  
   def setUp(self):
     pass
-  #--
+
   def test_override_from_python(self):
     d = {'str' : 'this is a string', 'float' : 0.23,
          'int' : 22, 'bool' : False}
@@ -37,7 +35,7 @@ class jobconf_tc(unittest.TestCase):
     self.assertEqual(jp.getFloat('float'), d['float'])
     self.assertEqual(jp.getInt('int'), d['int'])
     self.assertEqual(jp.getBoolean('bool'), d['bool'])
-  #--
+
   def test_override_from_cpluplus(self):
     d = {'str' : 'this is a string', 'float' : '0.23',
          'int' : '22', 'bool' : 'false'}
@@ -50,15 +48,13 @@ class jobconf_tc(unittest.TestCase):
     self.assertEqual(o.getBoolean('bool'), d['bool'] == 'true')
 
 
-#----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()
-  #--
   suite.addTest(jobconf_tc('test_override_from_python'))
   suite.addTest(jobconf_tc('test_override_from_cpluplus'))
   return suite
 
+
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
   runner.run((suite()))
-

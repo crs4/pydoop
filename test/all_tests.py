@@ -2,14 +2,8 @@ import unittest, imp
 
 
 TEST_MODULE_NAMES = [
-  "test_basics",
-  "test_exceptions",
-  "test_utils",
-  "test_task_context",
-  "test_jobconf",
-  "test_record_reader",
-  "test_partitioner",
-  "test_factory",
+  "all_tests_pipes",
+  "all_tests_hdfs"
   ]
 
 

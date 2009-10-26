@@ -1,6 +1,5 @@
-from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
-
 import unittest, os
+from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
 
 
 class hdfs_default_tc(hdfs_basic_tc):

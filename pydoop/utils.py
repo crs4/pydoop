@@ -1,11 +1,15 @@
-#-------------------------------------
-# utility functions
+"""
+This module contains miscellaneous utility functions.
+"""
 
-from pipes_runner import pipes_runner as pipes_runner
-
+import os
+from urlparse import urlparse
+from struct import pack
 from pydoop_pipes import raise_pydoop_exception
 
+
 DEFAULT_HDFS_PORT=9000
+
 
 def jc_configure(obj, jc, k, f, df=None):
   v = df
@@ -14,7 +18,8 @@ def jc_configure(obj, jc, k, f, df=None):
   elif df is None:
     raise_pydoop_exception("jc_configure: no default for option '%s'" % k)
   setattr(obj, f, v)
-#--
+
+
 def jc_configure_int(obj, jc, k, f, df=None):
   v = df
   if jc.hasKey(k):
@@ -23,7 +28,7 @@ def jc_configure_int(obj, jc, k, f, df=None):
     raise_pydoop_exception("jc_configure_int: no default for option '%s'" % k)
   setattr(obj, f, v)
 
-#--
+
 def jc_configure_bool(obj, jc, k, f, df=None):
   v = df
   if jc.hasKey(k):
@@ -32,7 +37,7 @@ def jc_configure_bool(obj, jc, k, f, df=None):
     raise_pydoop_exception("jc_configure_bool: no default for option '%s'" % k)
   setattr(obj, f, v)
 
-#--
+
 def jc_configure_float(obj, jc, k, f, df=None):
   v = df
   if jc.hasKey(k):
@@ -41,16 +46,13 @@ def jc_configure_float(obj, jc, k, f, df=None):
     raise_pydoop_exception("jc_configure_float: no default for option '%s'" % k)
   setattr(obj, f, v)
 
-#--
-from urlparse import urlparse
-import os
 
 def __cleanup_file_path(path):
   while path.startswith(os.path.sep):
     path = path[1:]
   return os.path.join(os.path.sep, path)
 
-from struct import pack
+
 def make_input_split(filename, offset, length):
   l = len(filename)
   s = pack(">h", l)
@@ -59,11 +61,17 @@ def make_input_split(filename, offset, length):
   s += pack(">q", length)
   return s
 
+
 def split_hdfs_path(path):
   """
-  hdfs://foobar.foo.com:1234/foodir/barfile' -> ('foobar.foo.com', 1234, '/foodir/barfile')
-  file:///foodir/barfile' -> ('',          0, '/foodir/barfile')
-  hdfs:///foodir/barfile' -> ('localhost', 0, '/foodir/barfile')
+  
+  >>> split_hdfs_path('hdfs://foobar.foo.com:1234/foodir/barfile')
+  ('foobar.foo.com', 1234, '/foodir/barfile')
+  >>> split_hdfs_path('file:///foodir/barfile')
+  ('', 0, '/foodir/barfile')
+  >>> split_hdfs_path('hdfs:///foodir/barfile')
+  ('localhost', 0, '/foodir/barfile')
+  
   """
   r = urlparse(path)
   if r.scheme == 'file':

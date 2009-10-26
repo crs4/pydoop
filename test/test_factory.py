@@ -1,20 +1,11 @@
-import unittest
-import random
-
-import sys
-
-#----------------------------------------------------------------------------
-
+import sys, unittest
+import pydoop_pipes
 from pydoop.pipes import Factory, Mapper, Reducer, runTask
 from pydoop.pipes import RecordReader, RecordWriter
-#from pydoop.pipes import Partitioner
 
-import pydoop_pipes
-#----------------------------------------------------------------------------
-
-import sys
 
 class mapper(Mapper):
+  
   call_history=[]
   instance_counter = 0
 
@@ -29,23 +20,28 @@ class mapper(Mapper):
 
   def __del__(self):
     sys.stderr.write("mapper.__del__ %d\n" % self.id)
+    
 
 class reducer(Reducer):
+  
   call_history=[]
   instance_counter = 0
+  
   def __init__(self, ctx):
     Reducer.__init__(self)
     reducer.call_history.append('initialized')
     self.id = reducer.instance_counter
     reducer.instance_counter += 1
+    
   def reduce(self, ctx):
     reducer.call_history.append('reduce() invoked')
+    
   def __del__(self):
     sys.stderr.write("reducer.__del__ %d\n" % self.id)
 
 
-
 class record_reader(RecordReader):
+  
   def __init__(self, ctx):
     RecordReader.__init__(self)
     self.ctx = ctx
@@ -62,10 +58,8 @@ class record_reader(RecordReader):
     return float(self.counter)/self.NUMBER_RECORDS
 
 
-#----------------------------------------------------------------------------
-
-
 class factory_tc(unittest.TestCase):
+  
   def setUp(self):
     self.d = {'input_key' : 'inputkey',
               'input_value' : 'inputvalue',
@@ -80,7 +74,8 @@ class factory_tc(unittest.TestCase):
     self.assertEqual(self.m_ctx.getInputValue(), self.d['input_value'])
     self.assertEqual(self.m_ctx.getInputSplit(), self.d['input_split'])
     self.assertEqual(self.m_ctx.getInputKeyClass(), self.d['input_key_class'])
-    self.assertEqual(self.m_ctx.getInputValueClass(), self.d['input_value_class'])
+    self.assertEqual(self.m_ctx.getInputValueClass(),
+                     self.d['input_value_class'])
 
   def test_factory_costructor(self):
     f = Factory(mapper, reducer)
@@ -111,17 +106,13 @@ class factory_tc(unittest.TestCase):
     self.assertEqual(0, gc.collect())
 
 
-
-#----------------------------------------------------------------------------
 def suite():
   suite = unittest.TestSuite()
-  #--
   suite.addTest(factory_tc('test_factory_costructor'))
   suite.addTest(factory_tc('test_map_reduce_factory'))
   return suite
 
+
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
   runner.run((suite()))
-
-

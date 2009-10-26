@@ -2,9 +2,7 @@ import os, glob
 
 
 DEFAULT_HADOOP_HOME = "/opt/hadoop"  # should only be useful for local use
-
 HADOOP_HOME = os.getenv("HADOOP_HOME", DEFAULT_HADOOP_HOME)
-# this should fix ticket 194
 HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR",
                             os.path.join(HADOOP_HOME, "conf"))
 
