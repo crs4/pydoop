@@ -220,6 +220,30 @@ class hdfs_basic_tc(unittest.TestCase):
     self.fs.delete(path)
     self.fs.delete(new_d)
 
+  def readline(self):
+    samples = [
+      "foo\nbar\n\ntar",
+      "\nfoo\nbar\n\ntar",
+      "foo\nbar\n\ntar\n",
+      "\n\n\n", "\n", "",
+      "foobartar",
+      ]
+    for text in samples:
+      expected_lines = text.splitlines(True)
+      for chunk_size in 2, max(1, len(text)), 2+len(text):
+        lines = []
+        f = self.fs.open_file("readline.txt", os.O_WRONLY, 0, 0, 0, chunk_size)
+        f.write(text)
+        f.close()
+        f = self.fs.open_file("readline.txt", os.O_RDONLY, 0, 0, 0, chunk_size)
+        while 1:
+          l = f.readline()
+          if l == "":
+            break
+          lines.append(l)
+        f.close()
+        self.assertEqual(lines, expected_lines)
+      
 
 def basic_tests():
   return [
@@ -232,5 +256,6 @@ def basic_tests():
     'create_dir',
     'available',
     'get_path_info',
-    'list_directory'
+    'list_directory',
+    'readline'
     ]

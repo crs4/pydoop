@@ -1,3 +1,8 @@
+2009-10-27    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py: added hdfs_file as a wrapper around the
+	underlying cpp object. Adds the readline method.
+
 2009-10-26    <simleo@neuron.crs4.it>
 
 	* pydoop/pipes.py: Task components (Mapper, Reducer etc.)
