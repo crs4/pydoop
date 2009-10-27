@@ -1,4 +1,4 @@
-pydoop - Python MapReduce API for Hadoop
+pydoop - Python MapReduce and HDFS API for Hadoop
 
 
 Copyright (C) Simone Leo, Gianluigi Zanetti - CRS4
@@ -49,3 +49,17 @@ locations, you need to add them to the search path. Example:
   python setup.py build_ext -L/my/lib/path -I/my/include/path -R/my/lib/path
   python setup.py build_py
   python setup.py install --skip-build
+
+
+*** TESTING ***
+
+NOTE: in order to run all HDFS tests you need to:
+
+ 1. set HADOOP_HOME (and possibly HADOOP_CONF_DIR, if it does not point to
+   ${HADOOP_HOME}/conf) to the correct location;
+ 2. start HDFS.
+
+After pydoop has been successfully installed, you might want to run
+unit tests. Move to the "test" subdirectory and run "python
+all_tests.py". You can also separately run "python all_tests_pipes.py"
+and "python all_tests_hdfs.py".

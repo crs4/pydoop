@@ -1,5 +1,14 @@
 2009-10-27    <simleo@neuron.crs4.it>
 
+	* README.txt: added section on running unit tests.
+
+	* MANIFEST.in: put in sync with what we have and want to release.
+
+	* examples: basic python example renamed to wordcount-minimal.py;
+	added wordcount-full.py, where we want to demonstrate (almost) all
+	pydoop features. For now it includes a Python RecordReader that
+	replaces the standard Java line reader.
+
 	* pydoop/hdfs.py: added hdfs_file as a wrapper around the
 	underlying cpp object. Adds the readline method.
 

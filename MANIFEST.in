@@ -1,4 +1,14 @@
 include src/*.hpp
 include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
-recursive-include examples *
+include test/all_tests.py
+exclude test/test_return_iref.py
+include examples/README.txt
+include examples/bin/wordcount-minimal.py
+include examples/bin/wordcount-full.py
+include examples/conf/wordcount-minimal.xml
+include examples/conf/wordcount-full.xml
+exclude pydoop/hadoop_serial.py
+exclude pydoop/text_protocol.py
+exclude pydoop/binary_protocol.py
+exclude pydoop/pipes_runner.py

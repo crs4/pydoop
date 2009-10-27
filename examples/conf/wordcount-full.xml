@@ -1,21 +1,14 @@
 <?xml version="1.0"?>
 <configuration>
-  <property>
-    <name>keep.failed.task.files</name>
-    <value>true</value>
-  </property>
-  <property>
-    <name>hadoop.pipes.command-file.keep</name>
-    <value>true</value>
-  </property>
+
 <property>
   <name>hadoop.pipes.executable</name>
-  <value>examples/bin/wordcount-py</value>
+  <value>bin/wordcount-full.py</value>
 </property>
 
 <property>
   <name>hadoop.pipes.java.recordreader</name>
-  <value>true</value>
+  <value>false</value>
 </property>
 
 <property>
