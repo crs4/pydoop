@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 
+"""
+A more comprehensive example that shows how to use most mapreduce and
+hdfs features. The RecordReader, RecordWriter and Partitioner classes
+shown here mimic the behavior of the default ones.
+"""
+
 import sys, os, logging, struct
 logging.basicConfig(level=logging.DEBUG)
 
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
 from pydoop.pipes import RecordReader, InputSplit, RecordWriter
+from pydoop.pipes import Partitioner
 from pydoop.utils import jc_configure, jc_configure_int
 
 from pydoop.hdfs import hdfs
@@ -106,10 +113,24 @@ class WordCountWriter(RecordWriter):
     self.file.write("%s%s%s\n" % (key, self.sep, value))
 
 
+class WordCountPartitioner(Partitioner):
+
+  def __init__(self, context):
+    super(WordCountPartitioner, self).__init__(context)
+    self.logger = logging.getLogger("Partitioner")
+
+  def partition(self, key, numOfReduces):
+    reducer_id = (hash(key) & sys.maxint) % numOfReduces
+    self.logger.debug("reducer_id: %r" % reducer_id)
+    return reducer_id
+
+
 def main(argv):
   runTask(Factory(WordCountMapper, WordCountReducer,
                   record_reader_class=WordCountReader,
-                  record_writer_class=WordCountWriter
+                  record_writer_class=WordCountWriter,
+                  partitioner_class=WordCountPartitioner,
+                  combiner_class=WordCountReducer
                   ))
 
 

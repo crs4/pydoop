@@ -15,7 +15,10 @@ too if you want:
 
   ${HADOOP_HOME}/bin/hadoop dfs -put bin input
 
-To run the "wordcount-simple" example:
+To run the wordcount examples:
 
-  ${HADOOP_HOME}/bin/hadoop pipes -conf conf/wordcount-simple.xml \
+  ${HADOOP_HOME}/bin/hadoop pipes -conf conf/wordcount-minimal.xml \
+    -input input -output output
+
+  ${HADOOP_HOME}/bin/hadoop pipes -conf conf/wordcount-full.xml \
     -input input -output output
