@@ -1,3 +1,5 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 import unittest, os
 from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
 

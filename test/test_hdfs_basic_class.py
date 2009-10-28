@@ -1,3 +1,5 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 import sys, os, unittest
 from ctypes import create_string_buffer
 from pydoop.hdfs import hdfs as HDFS

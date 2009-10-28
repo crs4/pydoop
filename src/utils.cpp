@@ -1,3 +1,5 @@
+// BEGIN_COPYRIGHT
+// END_COPYRIGHT
 #include <hadoop/StringUtils.hh>
 #include <hadoop/SerialUtils.hh>
 #include <boost/python.hpp>

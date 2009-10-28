@@ -1,3 +1,5 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 import sys, unittest
 import pydoop_pipes
 from pydoop.pipes import Factory, Mapper, Reducer, runTask

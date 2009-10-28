@@ -1,3 +1,5 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 import unittest
 import pydoop_pipes
 from pydoop.pipes import InputSplit

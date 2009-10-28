@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 
 """
 A more comprehensive example that shows how to use most mapreduce and

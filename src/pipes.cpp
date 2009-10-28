@@ -1,3 +1,5 @@
+// BEGIN_COPYRIGHT
+// END_COPYRIGHT
 #include <hadoop/Pipes.hh>
 #include "pipes.hpp"
 #include <boost/python.hpp>

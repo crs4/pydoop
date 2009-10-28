@@ -1,3 +1,5 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 """
 This module contains miscellaneous utility functions.
 """

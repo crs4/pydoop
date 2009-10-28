@@ -1,3 +1,5 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 """
 This module provides the basic MapReduce task components (Mapper,
 Reducer, RecordReader, ...) as abstract classes. Application

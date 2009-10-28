@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 
 """
 This example includes only the bare minimum required to run

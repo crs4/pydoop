@@ -1,3 +1,5 @@
+// BEGIN_COPYRIGHT
+// END_COPYRIGHT
 #include "hdfs_fs.hpp"
 #include "hdfs_file.hpp"
 

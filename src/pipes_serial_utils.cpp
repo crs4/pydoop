@@ -1,3 +1,5 @@
+// BEGIN_COPYRIGHT
+// END_COPYRIGHT
 #include <string>
 
 #include "hadoop/SerialUtils.hh"
