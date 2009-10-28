@@ -4,7 +4,8 @@ import sys, os, logging
 logging.basicConfig(level=logging.DEBUG)
 
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
-from pydoop.pipes import RecordReader, InputSplit
+from pydoop.pipes import RecordReader, InputSplit, RecordWriter
+from pydoop.utils import jc_configure, jc_configure_int
 
 from pydoop.hdfs import hdfs
 from pydoop.utils import split_hdfs_path
@@ -76,8 +77,31 @@ class WordCountReader(RecordReader):
     return min(float(self.bytes_read)/self.isplit.length, 1.0)
 
 
+class WordCountWriter(RecordWriter):
+
+  def __init__(self, context):
+    super(WordCountWriter, self).__init__(context)
+    jc = context.getJobConf()
+    jc_configure_int(self, jc, "mapred.task.partition", "part")
+    jc_configure(self, jc, "mapred.work.output.dir", "outdir")
+    self.outfn = "%s/part-%05d" % (self.outdir, self.part)
+    self.host, self.port, self.fpath = split_hdfs_path(self.outfn)
+    self.fs = hdfs(self.host, self.port)
+    self.file = self.fs.open_file(self.fpath, os.O_WRONLY, 0, 0, 0)
+
+  def __del__(self):
+    self.file.close()
+    self.fs.close()
+
+  def emit(self, key, value):
+    self.file.write("%s\t%s\n" % (key, value))
+
+
 def main(argv):
-  runTask(Factory(WordCountMapper, WordCountReducer, WordCountReader))
+  runTask(Factory(WordCountMapper, WordCountReducer,
+                  record_reader_class=WordCountReader,
+                  record_writer_class=WordCountWriter
+                  ))
 
 
 if __name__ == "__main__":

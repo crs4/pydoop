@@ -13,7 +13,7 @@
 
 <property>
   <name>hadoop.pipes.java.recordwriter</name>
-  <value>true</value>
+  <value>false</value>
 </property>
 
 </configuration>
