@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os, logging
+import sys, os, logging, struct
 logging.basicConfig(level=logging.DEBUG)
 
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
@@ -21,8 +21,11 @@ class WordCountMapper(Mapper):
   def __init__(self, context):
     super(WordCountMapper, self).__init__(context)
     self.inputWords = context.getCounter(WORDCOUNT, INPUT_WORDS)
+    self.logger = logging.getLogger("Mapper")
   
   def map(self, context):
+    k = context.getInputKey()
+    self.logger.debug("key = %r" % struct.unpack(">q", k)[0])
     words = context.getInputValue().split()
     for w in words:
       context.emit(w, "1")
@@ -44,7 +47,10 @@ class WordCountReducer(Reducer):
 
 
 class WordCountReader(RecordReader):
-
+  """
+  Mimics Hadoop's default LineRecordReader (keys are byte offsets with
+  respect to the whole file; values are text lines).
+  """
   def __init__(self, context):
     super(WordCountReader, self).__init__()
     self.logger = logging.getLogger("WordCountReader")
@@ -56,9 +62,10 @@ class WordCountReader(RecordReader):
     self.file = self.fs.open_file(self.fpath, os.O_RDONLY, 0, 0, 0)
     self.logger.debug("readline chunk size = %r" % self.file.chunk_size)
     self.file.seek(self.isplit.offset)
-    if self.isplit.offset > 0:
-      self.file.readline()  # discard, read by previous reader
     self.bytes_read = 0
+    if self.isplit.offset > 0:
+      discarded = self.file.readline()  # read by reader of previous split
+      self.bytes_read += len(discarded)
 
   def __del__(self):
     self.file.close()
@@ -67,23 +74,25 @@ class WordCountReader(RecordReader):
   def next(self):
     if self.bytes_read > self.isplit.length:  # end of input split
       return (False, "", "")
+    key = struct.pack(">q", self.isplit.offset+self.bytes_read)
     record = self.file.readline()
     if record == "":  # end of file
       return (False, "", "")
     self.bytes_read += len(record)
-    return (True, "dummy", record)
+    return (True, key, record)
 
   def getProgress(self):
     return min(float(self.bytes_read)/self.isplit.length, 1.0)
 
 
 class WordCountWriter(RecordWriter):
-
+  
   def __init__(self, context):
     super(WordCountWriter, self).__init__(context)
     jc = context.getJobConf()
     jc_configure_int(self, jc, "mapred.task.partition", "part")
     jc_configure(self, jc, "mapred.work.output.dir", "outdir")
+    jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
     self.outfn = "%s/part-%05d" % (self.outdir, self.part)
     self.host, self.port, self.fpath = split_hdfs_path(self.outfn)
     self.fs = hdfs(self.host, self.port)
@@ -94,7 +103,7 @@ class WordCountWriter(RecordWriter):
     self.fs.close()
 
   def emit(self, key, value):
-    self.file.write("%s\t%s\n" % (key, value))
+    self.file.write("%s%s%s\n" % (key, self.sep, value))
 
 
 def main(argv):
