@@ -31,11 +31,11 @@ struct cxx_capsule {
 };
 
 
-#define DESTROY_PYTHON_TOO(wobj_t) \
-    if (in_cxx_land) {\
-      bp::reference_existing_object::apply<wobj_t*>::type converter;\
-      PyObject* self = converter(this);\
-      while (Py_REFCNT(self) > 0){Py_DECREF(self);}\
+#define DESTROY_PYTHON_TOO(wobj_t)                                   \
+    if (in_cxx_land) {                                               \
+      bp::reference_existing_object::apply<wobj_t*>::type converter; \
+      PyObject* self = converter(this);                              \
+      while (Py_REFCNT(self) > 0){Py_DECREF(self);}                  \
     }
 
 

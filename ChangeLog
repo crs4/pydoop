@@ -1,3 +1,10 @@
+2009-10-28    <simleo@neuron.crs4.it>
+
+	* examples/bin/wordcount-full.py (WordCountReader): changed to
+	output file byte offset as key (mimic Hadoop default).
+	(WordCountWriter): added.
+	(WordCountPartitioner): added.
+
 2009-10-27    <simleo@neuron.crs4.it>
 
 	* README.txt: added section on running unit tests.
