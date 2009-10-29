@@ -1,5 +1,10 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 import sys, os, platform, re
 from distutils.core import setup, Extension
+
+import pydoop
 
 
 # https://issues.apache.org/jira/browse/MAPREDUCE-1125
@@ -23,7 +28,7 @@ NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
   }"""
 
 
-# JAVA_HOME=my/java/home HADOOP_HOME=my/hadoop/home python setup.py build
+# These variables MUST point to the correct locations, see README.txt
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
 HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
 
@@ -165,13 +170,11 @@ def create_ext_modules():
 
 setup(
     name="pydoop",
-    version="0.2.6",
-    description="Python MapReduce API for Hadoop",
-    author="Gianluigi Zanetti",
-    author_email="<gianluigi.zanetti@crs4.it>",
-    maintainer="Simone Leo",
-    maintainer_email="simleo@crs4.it",
-    url="http://svn.crs4.it/ac-dc/lib/pydoop",
+    version=pydoop.__version__,
+    description=pydoop.__doc__.strip().splitlines()[0],
+    author=pydoop.__author__,
+    author_email=pydoop.__author_email__,
+    url=pydoop.__url__,
     packages=["pydoop"],
     ext_modules=create_ext_modules()
     )
