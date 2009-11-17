@@ -1,3 +1,8 @@
+2009-11-16    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py (hdfs_file.seek): changed to reset
+	readline-related values. Fixes #239.
+
 2009-10-28    <simleo@neuron.crs4.it>
 
 	* examples/bin/wordcount-full.py (WordCountReader): changed to

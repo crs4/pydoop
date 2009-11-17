@@ -230,14 +230,15 @@ class hdfs_basic_tc(unittest.TestCase):
       "\n\n\n", "\n", "",
       "foobartar",
       ]
+    fn = "readline.txt"
     for text in samples:
       expected_lines = text.splitlines(True)
       for chunk_size in 2, max(1, len(text)), 2+len(text):
         lines = []
-        f = self.fs.open_file("readline.txt", os.O_WRONLY, 0, 0, 0, chunk_size)
+        f = self.fs.open_file(fn, os.O_WRONLY, 0, 0, 0, chunk_size)
         f.write(text)
         f.close()
-        f = self.fs.open_file("readline.txt", os.O_RDONLY, 0, 0, 0, chunk_size)
+        f = self.fs.open_file(fn, os.O_RDONLY, 0, 0, 0, chunk_size)
         while 1:
           l = f.readline()
           if l == "":
@@ -245,7 +246,24 @@ class hdfs_basic_tc(unittest.TestCase):
           lines.append(l)
         f.close()
         self.assertEqual(lines, expected_lines)
-      
+
+  def seek(self):
+    lines = ["1\n", "2\n", "3\n"]
+    text = "".join(lines)
+    fn = "seek.txt"
+    for chunk_size in range(1, 2+len(text)):
+      f = self.fs.open_file(fn, os.O_WRONLY, 0, 0, 0, chunk_size)
+      f.write(text)
+      f.close()
+      f = self.fs.open_file(fn, os.O_RDONLY, 0, 0, 0, chunk_size)
+      for i, l in enumerate(lines):
+        f.seek(sum(map(len, lines[:i])))
+        self.assertEqual(f.readline(), lines[i])
+        f.seek(0)
+        self.assertEqual(f.readline(), lines[0])
+        f.seek(sum(map(len, lines[:i])))
+        self.assertEqual(f.readline(), lines[i])
+      f.close()
 
 def basic_tests():
   return [
@@ -259,5 +277,6 @@ def basic_tests():
     'available',
     'get_path_info',
     'list_directory',
-    'readline'
+    'readline',
+    'seek'
     ]

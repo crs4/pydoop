@@ -33,6 +33,9 @@ class hdfs_file(object):
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file
     self.chunk_size = chunk_size
+    self.__reset()
+
+  def __reset(self):
     self.buffer_list = []
     self.chunk = ""
     self.EOF = False
@@ -87,6 +90,7 @@ class hdfs_file(object):
     return self.f.read_chunk(chunk)
   
   def seek(self, position):
+    self.__reset()
     return self.f.seek(position)
   
   def tell(self):
