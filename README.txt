@@ -35,6 +35,8 @@ compile and install your own, do the following:
   chmod +x src/c++/{libhdfs,pipes,utils}/configure
   ant compile -Dcompile.c++=true -Dlibhdfs=true
   mv build/c++/Linux-amd64-64/lib/libhdfs.* c++/Linux-amd64-64/lib/
+  cd c++/Linux-amd64-64/lib/
+  ln -fs libhdfs.so.0.0.0 libhdfs.so
 
 Note that if you run a 32-bit jvm on a 64-bit platform, you need the
 32-bit libhdfs (see https://issues.apache.org/jira/browse/HADOOP-3344).
