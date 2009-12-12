@@ -9,6 +9,7 @@ from urlparse import urlparse
 from struct import pack
 from pydoop_pipes import raise_pydoop_exception
 
+from pipes_runner import pipes_runner
 
 DEFAULT_HDFS_PORT=9000
 
@@ -66,14 +67,14 @@ def make_input_split(filename, offset, length):
 
 def split_hdfs_path(path):
   """
-  
+
   >>> split_hdfs_path('hdfs://foobar.foo.com:1234/foodir/barfile')
   ('foobar.foo.com', 1234, '/foodir/barfile')
   >>> split_hdfs_path('file:///foodir/barfile')
   ('', 0, '/foodir/barfile')
   >>> split_hdfs_path('hdfs:///foodir/barfile')
   ('localhost', 0, '/foodir/barfile')
-  
+
   """
   r = urlparse(path)
   if r.scheme == 'file':

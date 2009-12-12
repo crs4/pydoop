@@ -6,32 +6,32 @@ from pydoop.hdfs import hdfs as HDFS
 
 
 class hdfs_basic_tc(unittest.TestCase):
-  
+
   def __init__(self, target, HDFS_HOST='', HDFS_PORT=0):
     unittest.TestCase.__init__(self, target)
     self.HDFS_HOST = HDFS_HOST
     self.HDFS_PORT = HDFS_PORT
-    
+
   def setUp(self):
     self.fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
-    
+
   def tearDown(self):
     self.fs.close()
-    
+
   def failUnlessRaisesExternal(self, excClass, callableObj, *args, **kwargs):
     sys.stderr.write(
       "\n--- TESTING EXTERNAL EXCEPTION, ERROR MESSAGES ARE EXPECTED ---\n")
     self.failUnlessRaises(excClass, callableObj, *args, **kwargs)
     sys.stderr.write(
       "--- DONE TESTING EXTERNAL EXCEPTION ---------------------------\n")
-    
+
   assertRaisesExternal = failUnlessRaisesExternal
-  
+
   def connect_disconnect(self):
     blk_size = self.fs.default_block_size()
     capacity = 0 #fs.capacity()
     used     = 0 #fs.used()
-    
+
   def open_close(self):
     path = 'foobar.txt'
     flags = os.O_WRONLY
@@ -49,7 +49,7 @@ class hdfs_basic_tc(unittest.TestCase):
       IOError,
       self.fs.open_file, path, flags, buff_size, replication, blocksize
       )
-    
+
   def _write_example_file(self, path, N, txt, fs=None,
                           buffer_size=0, replication=0, block_size=0):
     if not fs:
@@ -65,7 +65,7 @@ class hdfs_basic_tc(unittest.TestCase):
                        "wrong number of bytes written.")
     f.close()
     return data
-  
+
   def available(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
@@ -78,7 +78,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.assertEqual(len(data), f.available())
     f.close()
     self.fs.delete(path)
-    
+
   def get_path_info(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
@@ -95,7 +95,7 @@ class hdfs_basic_tc(unittest.TestCase):
     #self.assertEqual(info['permissions'], 420)
     print '\nPATH INFO =', info
     self.fs.delete(path)
-    
+
   def write_read(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
@@ -135,7 +135,41 @@ class hdfs_basic_tc(unittest.TestCase):
     f.close()
     #--
     self.fs.delete(path)
-    
+
+  def write_read_big(self):
+    N_CHUNKS   = 1024
+    CHUNK_SIZE = 2**20
+    path = 'foobar.big'
+    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
+    flags = os.O_WRONLY
+    f = fs.open_file(path, flags, 0, 0, 0)
+    chunk  = '!' * CHUNK_SIZE
+    sys.stderr.write('size=%d' % CHUNK_SIZE)
+    N  = 1024
+    for i in range(N):
+      res = f.write(chunk)
+      self.assertEqual(res, len(chunk))
+    f.close()
+    #--
+    flags = os.O_RDONLY
+    f = self.fs.open_file(path, flags, 0, 0, 0)
+    for i in range(N):
+      blob = f.read(CHUNK_SIZE)
+      self.assertEqual(len(blob), CHUNK_SIZE)
+      self.assertEqual(f.tell(), (i+1) * CHUNK_SIZE)
+    f.close()
+    #--
+    f = self.fs.open_file(path, flags, 0, 0, 0)
+    pos = 0
+    for i in range(N):
+      blob = f.pread(pos, CHUNK_SIZE)
+      self.assertEqual(len(blob), CHUNK_SIZE, "wrong number of bytes pread.")
+      self.assertEqual(0, f.tell())
+      pos += len(blob)
+    f.close()
+    #--
+    self.fs.delete(path)
+
   def write_read_chunk(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
@@ -167,13 +201,13 @@ class hdfs_basic_tc(unittest.TestCase):
       # thus when one uses a pread it basically does a random access.
       self.assertEqual(0, f.tell())
     f.close()
-    
+
   def copy(self):
     pass
-  
+
   def move(self):
     pass
-  
+
   def rename(self):
     old_path = 'foobar.txt'
     new_path = 'MOVED-' + old_path
@@ -184,7 +218,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.assertTrue(self.fs.exists(new_path))
     self.assertFalse(self.fs.exists(old_path))
     self.fs.delete(new_path)
-    
+
   def change_dir(self):
     cwd = self.fs.working_directory()
     new_d = os.path.join(cwd, 'foo/bar/dir')
@@ -192,7 +226,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.assertEqual(self.fs.working_directory(), new_d)
     self.fs.set_working_directory(cwd)
     self.assertEqual(self.fs.working_directory(), cwd)
-    
+
   def create_dir(self):
     cwd = self.fs.working_directory()
     parts = ['foo', 'bar', 'dir']
@@ -207,7 +241,7 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertTrue(self.fs.exists(x))
       self.fs.delete(x)
       self.assertFalse(self.fs.exists(x))
-      
+
   def list_directory(self):
     cwd = self.fs.working_directory()
     parts = ['foo', 'bar', 'dir']
@@ -278,5 +312,6 @@ def basic_tests():
     'get_path_info',
     'list_directory',
     'readline',
-    'seek'
+    'seek',
+    'write_read_big'
     ]
