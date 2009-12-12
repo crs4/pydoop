@@ -97,6 +97,32 @@ class hdfs_default_tc(hdfs_basic_tc):
       else:
         self.assertEqual(r, actual_r)
 
+  # HDFS returns less than the number of requested bytes if the chunk
+  # being read crosses the boundary between data blocks.
+  def readline_block_boundary(self):
+    bs = 512  # FIXME: hardwired to the default value of io.bytes.per.checksum
+    line = "012345678\n"
+    fn = "readline_block_boundary.txt"
+    f = self.fs.open_file(fn, os.O_WRONLY, 0, 0, bs)
+    bytes_written = lines_written = 0
+    while bytes_written < bs + 1:
+      f.write(line)
+      lines_written += 1
+      bytes_written += len(line)
+    f.close()
+    f = self.fs.open_file(fn, os.O_RDONLY, 0, 0, bs)
+    lines = []
+    while 1:
+      l = f.readline()
+      if l == "":
+        break
+      lines.append(l)
+    if f:
+      f.close()
+    self.assertEqual(len(lines), lines_written)
+    for i, l in enumerate(lines):
+      self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
+
 
 class hdfs_local_tc(hdfs_default_tc):
   
@@ -107,7 +133,8 @@ class hdfs_local_tc(hdfs_default_tc):
 def suite():
   suite = unittest.TestSuite()
   tests = basic_tests()
-  tests.extend(['copy', 'move', 'block_size', 'replication'])
+  tests.extend(['copy', 'move', 'block_size', 'replication',
+                'readline_block_boundary'])
   for tc in hdfs_default_tc, hdfs_local_tc:
     for t in tests:
       suite.addTest(tc(t))

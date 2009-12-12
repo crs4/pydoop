@@ -44,7 +44,7 @@ class hdfs_file(object):
   def __read_chunk(self):
     self.chunk = self.f.read(self.chunk_size)
     self.p = 0
-    if len(self.chunk) < self.chunk_size:
+    if not self.chunk:
       self.EOF = True
 
   def __read_chunks_until_nl(self):
