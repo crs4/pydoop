@@ -3,6 +3,7 @@
 #include <string>
 
 #include "hadoop/SerialUtils.hh"
+#include "hadoop/StringUtils.hh"
 #include <boost/python.hpp>
 
 namespace bp = boost::python;
@@ -74,7 +75,6 @@ bp::tuple pipes_deserialize_string(const std::string& s, std::size_t offset) {
   return bp::make_tuple(is.tellg(), res);
 }
 
-
 //++++++++++++++++++++++++++++++//
 // Exporting class definitions. //
 //++++++++++++++++++++++++++++++//
@@ -88,4 +88,6 @@ void export_pipes_serial_utils() {
   def("deserialize_int", pipes_deserialize_int);
   def("deserialize_float", pipes_deserialize_float);
   def("deserialize_string", pipes_deserialize_string);
+  def("quote_string", hu::quoteString);
+  def("unquote_string", hu::unquoteString);
 }

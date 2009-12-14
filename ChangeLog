@@ -1,3 +1,11 @@
+2009-12-13    <zag@pflip>
+
+	* src/pipes_serial_utils.cpp (export_pipes_serial_utils):
+	added {quote,unquote}_string. Exported via pydoop.utils.
+
+	* pydoop/text_protocol.py (text_down_protocol.set_job_conf): Fixed
+	a stupid % formatting mistake.
+
 2009-12-12    <zag@pflip>
 
 	* MANIFEST.in: added pipes_runner support.

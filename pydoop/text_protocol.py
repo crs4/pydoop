@@ -33,7 +33,7 @@ class text_down_protocol(object):
     self.fd.close()
   #--
   def set_job_conf(self, job_conf_dict):
-    args = ['setJobConf', '%s' % 2*len(job_conf_dict)]
+    args = ['setJobConf', '%d' % (2*len(job_conf_dict))]
     for k, v in job_conf_dict.iteritems():
       args.append(k)
       args.append(v)
@@ -79,7 +79,14 @@ class text_up_protocol(object):
     pass
 
 #----------------------------------------------------------------------------
+from pydoop.utils import unquote_string, quote_string
 
-
+class up_serializer(object):
+  @staticmethod
+  def deserialize(s):
+    return unquote_string(s)
+  @staticmethod
+  def serialize(s, deliminators):
+    return quote_string(s, deliminators)
 
 

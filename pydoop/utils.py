@@ -8,6 +8,7 @@ import os
 from urlparse import urlparse
 from struct import pack
 from pydoop_pipes import raise_pydoop_exception
+from pydoop_pipes import quote_string, unquote_string
 
 from pipes_runner import pipes_runner
 

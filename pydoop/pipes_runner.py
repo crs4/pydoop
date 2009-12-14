@@ -1,4 +1,5 @@
 from pydoop.text_protocol import text_down_protocol
+from pydoop.text_protocol import up_serializer
 
 
 class pipes_runner(object):
@@ -15,7 +16,7 @@ class pipes_runner(object):
               'run_map', 'run_reduce',
               'reduce_key', 'reduce_value', 'map_item']:
       self.__setattr__(n, self.down_channel.__getattribute__(n))
-      
+
   def close(self):
     self.down_channel.close()
     of = open(self.tmp_filename)
@@ -24,4 +25,5 @@ class pipes_runner(object):
       parts = l.split('\t')
       cmd = parts[0]
       f = self.output_visitor.__getattribute__(cmd)
-      f(*parts[1:])
+      x = map(up_serializer.deserialize, parts[1:])
+      f(*x)
