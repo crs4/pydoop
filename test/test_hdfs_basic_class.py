@@ -30,14 +30,14 @@ class hdfs_basic_tc(unittest.TestCase):
   def connect_disconnect(self):
     blk_size = self.fs.default_block_size()
     capacity = 0 #fs.capacity()
-    used     = 0 #fs.used()
+    used = 0 #fs.used()
 
   def open_close(self):
     path = 'foobar.txt'
     flags = os.O_WRONLY
-    buff_size   = 0
+    buff_size = 0
     replication = 0
-    blocksize   = 0
+    blocksize = 0
     f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
     f.close()
     self.assertTrue(self.fs.exists(path))
@@ -57,7 +57,7 @@ class hdfs_basic_tc(unittest.TestCase):
     flags = os.O_WRONLY
     f = fs.open_file(path, flags, buffer_size, replication, block_size)
     data = ''
-    txt  = 'hello there!'
+    txt = 'hello there!'
     for i in range(N):
       res = f.write(txt)
       data += txt
@@ -69,8 +69,8 @@ class hdfs_basic_tc(unittest.TestCase):
   def available(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
-    txt  = 'hello there!'
-    N  = 10
+    txt = 'hello there!'
+    N = 10
     data = self._write_example_file(path, N, txt)
     #--
     flags = os.O_RDONLY
@@ -82,20 +82,21 @@ class hdfs_basic_tc(unittest.TestCase):
   def get_path_info(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
-    txt  = 'hello there!'
-    N  = 10
+    txt = 'hello there!'
+    N = 10
     data = self._write_example_file(path, N, txt)
-    #--
     info = self.fs.get_path_info(path)
-    for k in ('kind group name last_mod replication owner'
-              + ' permissions block_size last_access size').split():
-      self.assertTrue(info.has_key(k))
-    self.assertEqual(info['kind'], 'file')
-    self.assertEqual(info['size'], 120)
-    #self.assertEqual(info['permissions'], 420)
-    print '\nPATH INFO =', info
+    self.__check_path_info(info, kind="file", size=N*len(txt))
+    self.assertEqual(info['name'].rsplit("/",1)[1], path)
     self.fs.delete(path)
-
+    # test on dir path
+    path = "test_get_path_info"
+    self.fs.create_directory(path)
+    info = self.fs.get_path_info(path)
+    self.__check_path_info(info, kind="directory")
+    self.assertEqual(info['name'].rsplit("/",1)[1], path)
+    self.fs.delete(path)
+      
   def write_read(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
@@ -132,40 +133,6 @@ class hdfs_basic_tc(unittest.TestCase):
     flags = os.O_RDONLY
     f = fs.open_file(path, flags, 0, 0, 0)
     self.assertRaisesExternal(IOError, f.write, txt)
-    f.close()
-    #--
-    self.fs.delete(path)
-
-  def write_read_big(self):
-    N_CHUNKS   = 1024
-    CHUNK_SIZE = 2**20
-    path = 'foobar.big'
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
-    flags = os.O_WRONLY
-    f = fs.open_file(path, flags, 0, 0, 0)
-    chunk  = '!' * CHUNK_SIZE
-    sys.stderr.write('size=%d' % CHUNK_SIZE)
-    N  = 1024
-    for i in range(N):
-      res = f.write(chunk)
-      self.assertEqual(res, len(chunk))
-    f.close()
-    #--
-    flags = os.O_RDONLY
-    f = self.fs.open_file(path, flags, 0, 0, 0)
-    for i in range(N):
-      blob = f.read(CHUNK_SIZE)
-      self.assertEqual(len(blob), CHUNK_SIZE)
-      self.assertEqual(f.tell(), (i+1) * CHUNK_SIZE)
-    f.close()
-    #--
-    f = self.fs.open_file(path, flags, 0, 0, 0)
-    pos = 0
-    for i in range(N):
-      blob = f.pread(pos, CHUNK_SIZE)
-      self.assertEqual(len(blob), CHUNK_SIZE, "wrong number of bytes pread.")
-      self.assertEqual(0, f.tell())
-      pos += len(blob)
     f.close()
     #--
     self.fs.delete(path)
@@ -248,12 +215,18 @@ class hdfs_basic_tc(unittest.TestCase):
     new_d = os.path.join(cwd, '/'.join(parts))
     self.fs.create_directory(new_d)
     self.assertTrue(self.fs.exists(new_d))
-    path = os.path.join(new_d, 'foobar.txt')
-    txt  = 'hello there!'
-    N  = 10
-    data = self._write_example_file( path, N, txt)
-    print "\nDIR LIST =", self.fs.list_directory(new_d)
-    self.fs.delete(path)
+    basenames = 'bar.txt', 'foo.txt'
+    paths = [os.path.join(new_d, fn) for fn in basenames]
+    txt = 'hello there!'
+    N = 10
+    data = [self._write_example_file(p, N, txt) for p in paths]
+    infos = self.fs.list_directory(new_d)
+    self.assertEqual(len(infos), len(paths))
+    for i in infos:
+      self.__check_path_info(i, kind="file", size=N*len(txt))
+      self.assertTrue(i['name'].rsplit("/",1)[1] in basenames)
+    for p in paths:
+      self.fs.delete(p)
     self.fs.delete(new_d)
 
   def readline(self):
@@ -299,6 +272,16 @@ class hdfs_basic_tc(unittest.TestCase):
         self.assertEqual(f.readline(), lines[i])
       f.close()
 
+  def __check_path_info(self, info, **expected_values):
+    keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
+            'permissions', 'block_size', 'last_access', 'size')
+    for k in keys:
+      self.assertTrue(k in info)
+    for k, exp_v in expected_values.iteritems():
+      v = info[k]
+      self.assertEqual(v, exp_v)
+
+
 def basic_tests():
   return [
     'connect_disconnect',
@@ -312,6 +295,5 @@ def basic_tests():
     'get_path_info',
     'list_directory',
     'readline',
-    'seek',
-    'write_read_big'
+    'seek'
     ]

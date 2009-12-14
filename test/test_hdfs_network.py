@@ -13,11 +13,8 @@ class hdfs_default_tc(hdfs_basic_tc):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     blk_size = fs.default_block_size()
     capacity = fs.capacity()
-    used     = fs.used()
+    used = fs.used()
     fs.close()
-    print '\nblk_size = ', blk_size
-    print 'capacity = ', capacity
-    print 'used     = ', used
     
   def copy(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)

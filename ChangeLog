@@ -1,3 +1,8 @@
+2009-12-14    <simleo@neuron.crs4.it>
+
+	* src/hdfs_fs.cpp (get_path_info): changed to wrap hdfsGetPathInfo.
+	Fixes #249.
+
 2009-12-13    <zag@pflip>
 
 	* src/pipes_serial_utils.cpp (export_pipes_serial_utils):

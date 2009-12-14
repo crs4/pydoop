@@ -1,8 +1,10 @@
-import subprocess
-import sys
+import sys, subprocess
+from pydoop.utils import unquote_string, quote_string
+
 
 def _true_false_str(v):
   return 'true' if v else 'false'
+
 
 class text_down_protocol(object):
   def __init__(self, pipes_program, out_file=None):
@@ -16,7 +18,6 @@ class text_down_protocol(object):
                                  stdout=self.fd)
   def __send(self, args):
     s = '\t'.join(args)
-    #sys.stderr.write('ready to send: <%s>\n' % s)
     self.proc.stdin.write('%s\n' % s)
   #--
   def start(self):
@@ -58,7 +59,6 @@ class text_down_protocol(object):
   def map_item(self, k, v):
     self.__send(['mapItem', k, v])
 
-#----------------------------------------------------------------------------
 
 class text_up_protocol(object):
   def __init__(self):
@@ -78,8 +78,6 @@ class text_up_protocol(object):
   def increment_counter(self, id, amount):
     pass
 
-#----------------------------------------------------------------------------
-from pydoop.utils import unquote_string, quote_string
 
 class up_serializer(object):
   @staticmethod
@@ -88,5 +86,3 @@ class up_serializer(object):
   @staticmethod
   def serialize(s, deliminators):
     return quote_string(s, deliminators)
-
-

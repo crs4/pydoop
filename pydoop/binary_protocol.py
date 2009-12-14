@@ -1,5 +1,5 @@
-import subprocess
-import sys
+import sys, subprocess
+import pydoop_pipes as pp
 
 
 #-- message codes for the down protocol
@@ -23,10 +23,10 @@ DONE=54
 REGISTER_COUNTER=55
 INCREMENT_COUNTER=56
 
+
 def _true_false_int(v):
   return 1 if v else 0
 
-import pydoop_pipes as pp
 
 def serialize(t):
   tt = type(t)
@@ -36,6 +36,7 @@ def serialize(t):
     return pp.serialize_float(t)
   if tt == str:
     return pp.serialize_string(t)
+
 
 class binary_down_protocol(object):
   def __init__(self, pipes_program, out_file=None):
@@ -96,7 +97,6 @@ class binary_down_protocol(object):
   def map_item(self, k, v):
     self.__send([MAP_ITEM, k, v])
 
-#----------------------------------------------------------------------------
 
 class binary_up_protocol(object):
   def __init__(self):
@@ -115,9 +115,3 @@ class binary_up_protocol(object):
     pass
   def increment_counter(self, id, amount):
     pass
-
-#----------------------------------------------------------------------------
-
-
-
-

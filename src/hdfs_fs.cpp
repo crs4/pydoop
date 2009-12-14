@@ -137,13 +137,11 @@ bp::list wrap_hdfs_fs::list_directory(std::string path) {
 }
 
 bp::dict wrap_hdfs_fs::get_path_info(std::string path) {
-  int num_entries;
-  hdfsFileInfo *infos = hdfsListDirectory(fs_, path.c_str(), &num_entries);
   exec_and_trap_error(hdfsFileInfo*, 
-		      hdfsListDirectory(fs_, path.c_str(), &num_entries),
-		      "Cannot get_path_info for " + path);
-  bp::dict d = list_directory_helper(&(res[0]));
-  hdfsFreeFileInfo(infos, num_entries);
+		      hdfsGetPathInfo(fs_, path.c_str()),
+		      "Cannot get path info for " + path);
+  bp::dict d = list_directory_helper(res);
+  hdfsFreeFileInfo(res, 1);
   return d;
 }
 
