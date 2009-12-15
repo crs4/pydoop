@@ -1,3 +1,9 @@
+2009-12-15    <zag@pflip>
+
+	* setup.py (OLD_WRITE_BUFFER): Fixed a bug (#250) in HadoopPipes
+	due to a bad use of fprintf. This should be escalated upstream to
+	hadoop.
+
 2009-12-14    <simleo@neuron.crs4.it>
 
 	* src/hdfs_fs.cpp (get_path_info): changed to wrap hdfsGetPathInfo.

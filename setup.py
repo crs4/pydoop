@@ -27,6 +27,14 @@ NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
     return t;
   }"""
 
+# Ticket #250
+OLD_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
+      fprintf(stream, quoteString(buffer, "\t\n").c_str());
+    }"""
+NEW_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
+      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
+    }"""
+
 
 # These variables MUST point to the correct locations, see README.txt
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
@@ -112,7 +120,8 @@ def get_pipes_aux(hadoop_home):
             "#include <strings.h>": "#include <string.h>\n#include <stdlib.h>"
             },
         "HadoopPipes": {
-            "#include <strings.h>": "#include <string.h>"
+            "#include <strings.h>": "#include <string.h>",
+            OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
             },
         }
     contents = dict.fromkeys(dirs)
