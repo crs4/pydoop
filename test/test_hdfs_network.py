@@ -63,7 +63,7 @@ class hdfs_default_tc(hdfs_basic_tc):
     txt = "hello there!"
     for bs_MB in xrange(100, 500, 50):
       bs = bs_MB * 2**20
-      path = "test_bs_%d.txt" % bs_MB
+      path = "foobar.txt"
       f = self.fs.open_file(path, os.O_WRONLY, 0, 0, bs)
       _ = f.write(txt)
       f.close()
@@ -76,11 +76,13 @@ class hdfs_default_tc(hdfs_basic_tc):
         break
       else:
         self.assertEqual(bs, actual_bs)
+      finally:
+        self.fs.delete(path)
 
   def replication(self):
     txt = "hello there!"
     for r in xrange(1, 6):
-      path = "test_replication_%d.txt" % r
+      path = "foobar.txt"
       f = self.fs.open_file(path, os.O_WRONLY, 0, r, 0)
       _ = f.write(txt)
       f.close()
@@ -93,21 +95,23 @@ class hdfs_default_tc(hdfs_basic_tc):
         break
       else:
         self.assertEqual(r, actual_r)
+      finally:
+        self.fs.delete(path)      
 
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.
   def readline_block_boundary(self):
     bs = 512  # FIXME: hardwired to the default value of io.bytes.per.checksum
     line = "012345678\n"
-    fn = "readline_block_boundary.txt"
-    f = self.fs.open_file(fn, os.O_WRONLY, 0, 0, bs)
+    path = "foobar.txt"
+    f = self.fs.open_file(path, os.O_WRONLY, 0, 0, bs)
     bytes_written = lines_written = 0
     while bytes_written < bs + 1:
       f.write(line)
       lines_written += 1
       bytes_written += len(line)
     f.close()
-    f = self.fs.open_file(fn, os.O_RDONLY, 0, 0, bs)
+    f = self.fs.open_file(path, os.O_RDONLY, 0, 0, bs)
     lines = []
     while 1:
       l = f.readline()
@@ -119,6 +123,7 @@ class hdfs_default_tc(hdfs_basic_tc):
     self.assertEqual(len(lines), lines_written)
     for i, l in enumerate(lines):
       self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
+    self.fs.delete(path)
 
 
 class hdfs_local_tc(hdfs_default_tc):
@@ -130,8 +135,13 @@ class hdfs_local_tc(hdfs_default_tc):
 def suite():
   suite = unittest.TestSuite()
   tests = basic_tests()
-  tests.extend(['copy', 'move', 'block_size', 'replication',
-                'readline_block_boundary'])
+  tests.extend([
+    'copy',
+    'move',
+    'block_size',
+    'replication',
+    'readline_block_boundary'
+    ])
   for tc in hdfs_default_tc, hdfs_local_tc:
     for t in tests:
       suite.addTest(tc(t))

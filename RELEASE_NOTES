@@ -1,0 +1,7 @@
+== Pydoop 0.3.2 ==
+
+Bugfix release.
+
+* hdfs: get_path_info has been fixed and now works correctly on directory paths.
+* hdfs_file.readline: fixed a bug that led to wrong line reads in proximity of HDFS block boundaries.
+* hdfs_file.seek: changed to reset readline-related parameters.

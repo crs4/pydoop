@@ -100,8 +100,8 @@ class hdfs_basic_tc(unittest.TestCase):
   def write_read(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
-    txt  = 'hello there!'
-    N  = 10
+    txt = 'hello there!'
+    N = 10
     data = self._write_example_file(path, N, txt)
     #--
     flags = os.O_RDONLY
@@ -138,7 +138,6 @@ class hdfs_basic_tc(unittest.TestCase):
     self.fs.delete(path)
 
   def write_read_chunk(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
@@ -168,6 +167,7 @@ class hdfs_basic_tc(unittest.TestCase):
       # thus when one uses a pread it basically does a random access.
       self.assertEqual(0, f.tell())
     f.close()
+    self.fs.delete(path)
 
   def copy(self):
     pass
@@ -178,9 +178,9 @@ class hdfs_basic_tc(unittest.TestCase):
   def rename(self):
     old_path = 'foobar.txt'
     new_path = 'MOVED-' + old_path
-    txt  = 'hello there!'
-    N  = 100
-    data = self._write_example_file( old_path, N, txt)
+    txt = 'hello there!'
+    N = 100
+    data = self._write_example_file(old_path, N, txt)
     self.fs.rename(old_path, new_path)
     self.assertTrue(self.fs.exists(new_path))
     self.assertFalse(self.fs.exists(old_path))
@@ -188,7 +188,7 @@ class hdfs_basic_tc(unittest.TestCase):
 
   def change_dir(self):
     cwd = self.fs.working_directory()
-    new_d = os.path.join(cwd, 'foo/bar/dir')
+    new_d = os.path.join(cwd, 'foo/bar/dir')  # does not need to exist
     self.fs.set_working_directory(new_d)
     self.assertEqual(self.fs.working_directory(), new_d)
     self.fs.set_working_directory(cwd)
@@ -227,7 +227,7 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertTrue(i['name'].rsplit("/",1)[1] in basenames)
     for p in paths:
       self.fs.delete(p)
-    self.fs.delete(new_d)
+    self.fs.delete(os.path.join(cwd, parts[0]))
 
   def readline(self):
     samples = [
@@ -237,15 +237,15 @@ class hdfs_basic_tc(unittest.TestCase):
       "\n\n\n", "\n", "",
       "foobartar",
       ]
-    fn = "readline.txt"
+    path = "foobar.txt"
     for text in samples:
       expected_lines = text.splitlines(True)
       for chunk_size in 2, max(1, len(text)), 2+len(text):
         lines = []
-        f = self.fs.open_file(fn, os.O_WRONLY, 0, 0, 0, chunk_size)
+        f = self.fs.open_file(path, os.O_WRONLY, 0, 0, 0, chunk_size)
         f.write(text)
         f.close()
-        f = self.fs.open_file(fn, os.O_RDONLY, 0, 0, 0, chunk_size)
+        f = self.fs.open_file(path, os.O_RDONLY, 0, 0, 0, chunk_size)
         while 1:
           l = f.readline()
           if l == "":
@@ -253,16 +253,17 @@ class hdfs_basic_tc(unittest.TestCase):
           lines.append(l)
         f.close()
         self.assertEqual(lines, expected_lines)
+    self.fs.delete(path)
 
   def seek(self):
     lines = ["1\n", "2\n", "3\n"]
     text = "".join(lines)
-    fn = "seek.txt"
+    path = "foobar.txt"
     for chunk_size in range(1, 2+len(text)):
-      f = self.fs.open_file(fn, os.O_WRONLY, 0, 0, 0, chunk_size)
+      f = self.fs.open_file(path, os.O_WRONLY, 0, 0, 0, chunk_size)
       f.write(text)
       f.close()
-      f = self.fs.open_file(fn, os.O_RDONLY, 0, 0, 0, chunk_size)
+      f = self.fs.open_file(path, os.O_RDONLY, 0, 0, 0, chunk_size)
       for i, l in enumerate(lines):
         f.seek(sum(map(len, lines[:i])))
         self.assertEqual(f.readline(), lines[i])
@@ -271,6 +272,7 @@ class hdfs_basic_tc(unittest.TestCase):
         f.seek(sum(map(len, lines[:i])))
         self.assertEqual(f.readline(), lines[i])
       f.close()
+    self.fs.delete(path)
 
   def __check_path_info(self, info, **expected_values):
     keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
