@@ -13,18 +13,18 @@ class text_down_protocol(object):
     self.fd = open(self.out_file, "w")
     self.proc = subprocess.Popen([],
                                  executable=self.pipes_program,
-                                 bufsize=0,
                                  stdin=subprocess.PIPE,
                                  stdout=self.fd)
   def __send(self, args):
-    s = '\t'.join(args)
-    self.proc.stdin.write('%s\n' % s)
+    s = '\t'.join(args) + '\n'
+    self.proc.stdin.write(s)
   #--
   def start(self):
     self.__send(['start',  '0'])
   #--
   def close(self):
     self.__send(['close'])
+    self.proc.stdin.close()
     self.proc.wait()
     self.fd.close()
   #--

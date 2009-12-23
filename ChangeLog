@@ -1,3 +1,11 @@
+2009-12-23    <zag@pflip>
+
+	* test/test_hdfs_basic_class.py (hdfs_basic_tc.copy_on_self):
+	added test to check copy on self.
+
+	* pydoop/text_protocol.py (text_down_protocol): minor clean up in
+	__send()
+
 2009-12-15    <zag@pflip>
 
 	* setup.py (OLD_WRITE_BUFFER): Fixed a bug (#250) in HadoopPipes

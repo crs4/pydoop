@@ -96,7 +96,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.__check_path_info(info, kind="directory")
     self.assertEqual(info['name'].rsplit("/",1)[1], path)
     self.fs.delete(path)
-      
+
   def write_read(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
@@ -171,6 +171,28 @@ class hdfs_basic_tc(unittest.TestCase):
 
   def copy(self):
     pass
+
+  def copy_on_self(self):
+    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
+    path = 'foobar.txt'
+    path1 = 'foobar1.txt'
+    txt  = 'hello there!'
+    N  = 10
+    data = self._write_example_file(path, N, txt, fs)
+    fs.copy(path, fs, path1)
+    fs.delete(path)
+    self.assertFalse(fs.exists(path))
+    self.assertTrue(fs.exists(path1))
+    flags = os.O_RDONLY
+    f = fs.open_file(path1, flags, 0, 0, 0)
+    data2 = f.read(len(data))
+    self.assertEqual(len(data2), len(data),
+                     "wrong number of bytes read.")
+    self.assertEqual(data2, data,
+                     "wrong bytes read.")
+    f.close()
+    fs.delete(path1)
+    fs.close()
 
   def move(self):
     pass
@@ -293,6 +315,7 @@ def basic_tests():
     'rename',
     'change_dir',
     'create_dir',
+    'copy_on_self',
     'available',
     'get_path_info',
     'list_directory',
