@@ -96,6 +96,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.__check_path_info(info, kind="directory")
     self.assertEqual(info['name'].rsplit("/",1)[1], path)
     self.fs.delete(path)
+    self.assertRaises(IOError, self.fs.get_path_info, path)
 
   def write_read(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
@@ -250,6 +251,7 @@ class hdfs_basic_tc(unittest.TestCase):
     for p in paths:
       self.fs.delete(p)
     self.fs.delete(os.path.join(cwd, parts[0]))
+    self.assertRaises(IOError, self.fs.list_directory, new_d)
 
   def readline(self):
     samples = [

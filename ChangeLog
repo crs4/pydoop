@@ -1,3 +1,12 @@
+2010-02-01    <simleo@neuron.crs4.it>
+
+	* src/hdfs_fs.cpp (get_path_info): fixed #261. The
+	'exec_and_trap_error' macro does not work here, error is signaled
+	by a NULL result, not negative. Also fixed analogous bugs in
+	list_directory and get_working_directory; unit tests updated
+	accordingly (except for get_working_directory: how do we get it to
+	fail on this?)
+
 2009-12-23    <zag@pflip>
 
 	* test/test_hdfs_basic_class.py (hdfs_basic_tc.copy_on_self):

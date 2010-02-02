@@ -75,9 +75,9 @@ void wrap_hdfs_fs::rename(const std::string& old_path,
 std::string wrap_hdfs_fs::get_working_directory() {
   std::size_t buff_size = 1024;
   char* buff = new char[buff_size];
-  exec_and_trap_error(char*,
-		      hdfsGetWorkingDirectory(fs_, buff, buff_size),
-		      "Cannot get working directory");
+  if (hdfsGetWorkingDirectory(fs_, buff, buff_size) == NULL) {
+    throw hdfs_exception("Cannot get working directory");
+  }
   std::string cwd(buff);
   delete [] buff;
   return cwd;
@@ -123,23 +123,29 @@ static bp::dict list_directory_helper(hdfsFileInfo *info) {
 }
 
 bp::list wrap_hdfs_fs::list_directory(std::string path) {
-  int num_entries;
+  hdfsFileInfo *res = 0;
+  int num_entries = 0;
   bp::list l;
-  hdfsFileInfo *infos = hdfsListDirectory(fs_, path.c_str(), &num_entries);
-  exec_and_trap_error(hdfsFileInfo*, 
-		      hdfsListDirectory(fs_, path.c_str(), &num_entries),
-		      "Cannot list directory " + path);
+  // if path does not exist, hdfsListDirectory breaks before returning a value
+  if (hdfsExists(fs_, path.c_str()) != 0) {
+    throw hdfs_exception("No such file or directory: " + path);
+  }
+  res = hdfsListDirectory(fs_, path.c_str(), &num_entries);
+  if (res == NULL) {
+    throw hdfs_exception("Cannot list directory " + path);
+  }
   for(std::size_t i = 0; i < num_entries; ++i) {
     l.append(list_directory_helper(&(res[i])));
   }
-  hdfsFreeFileInfo(infos, num_entries);
+  hdfsFreeFileInfo(res, num_entries);
   return l;
 }
 
 bp::dict wrap_hdfs_fs::get_path_info(std::string path) {
-  exec_and_trap_error(hdfsFileInfo*, 
-		      hdfsGetPathInfo(fs_, path.c_str()),
-		      "Cannot get path info for " + path);
+  hdfsFileInfo* res = hdfsGetPathInfo(fs_, path.c_str());
+  if (res == NULL) {
+    throw hdfs_exception("Cannot get path info for " + path);
+  }
   bp::dict d = list_directory_helper(res);
   hdfsFreeFileInfo(res, 1);
   return d;

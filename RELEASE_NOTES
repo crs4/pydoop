@@ -1,3 +1,11 @@
+== Pydoop 0.3.3 ==
+
+Bugfix release.
+
+* hdfs: get_path_info and list_directory have been fixed to correctly
+  raise an IOError for nonexistent paths.
+
+
 == Pydoop 0.3.2 ==
 
 Bugfix release.
