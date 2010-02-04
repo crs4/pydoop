@@ -4,11 +4,16 @@ AUTHOR = "Simone Leo, Gianluigi Zanetti"
 EXPORT_DIR = svn_export
 
 # epydoc parameters
-# MODULES = pydoop/__init__.py \
-# 	pydoop/pipes.py
-# NAME = pydoop
-# DOC_DIR = doc/html
-# URL = http://pydoop.sourceforge.net
+MODULES = pydoop/__init__.py \
+	pydoop/pipes.py \
+	pydoop/input_split.py \
+	pydoop/factory.py \
+	pydoop/utils.py \
+	pydoop/hdfs.py
+
+NAME = pydoop
+DOC_DIR = doc/html
+URL = http://pydoop.sourceforge.net
 
 .PHONY: all clean dist distclean
 
@@ -18,8 +23,8 @@ dist:
 	svn export . $(EXPORT_DIR)
 	python $(COPYRIGHTER) -a $(AUTHOR) -r $(EXPORT_DIR)
 	python $(COPYRIGHTER) -a $(AUTHOR) -b '// BEGIN_COPYRIGHT' -e '// END_COPYRIGHT' -c "//" $(EXPORT_DIR)/src
-#	mkdir -p $(EXPORT_DIR)/doc/html
-#	cd $(EXPORT_DIR) && epydoc -n $(NAME) -o $(DOC_DIR) -u $(URL) $(MODULES)
+	mkdir -p $(EXPORT_DIR)/doc/html
+	cd $(EXPORT_DIR) && epydoc --parse-only -v -n $(NAME) -o $(DOC_DIR) -u $(URL) $(MODULES)
 	cd $(EXPORT_DIR) && python setup.py sdist
 
 clean:

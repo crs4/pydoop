@@ -1,3 +1,7 @@
+2010-02-03    <simleo@neuron.crs4.it>
+
+	* pydoop: added epydoc markup for main modules.
+
 2010-02-01    <simleo@neuron.crs4.it>
 
 	* src/hdfs_fs.cpp (get_path_info): fixed #261. The

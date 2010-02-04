@@ -1,21 +1,31 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 """
-This module contains miscellaneous utility functions.
+Contains miscellaneous utility functions.
 """
 
 import os
 from urlparse import urlparse
 from struct import pack
 from pydoop_pipes import raise_pydoop_exception
-from pydoop_pipes import quote_string, unquote_string
-
+from pydoop_pipes import quote_string, unquote_string 
 from pipes_runner import pipes_runner
+
 
 DEFAULT_HDFS_PORT=9000
 
 
 def jc_configure(obj, jc, k, f, df=None):
+  """
+  Gets a configuration parameter from C{jc} and automatically sets a
+  corresponding attribute on C{obj}.
+
+  @param obj: object on which the attribute must be set
+  @param jc: a C{JobConf} object
+  @param k: a configuration key
+  @param f: name of the attribute to set
+  @param df: default value for the attribute if C{k} is not present in C{jc}
+  """
   v = df
   if jc.hasKey(k):
     v = jc.get(k)
@@ -25,6 +35,9 @@ def jc_configure(obj, jc, k, f, df=None):
 
 
 def jc_configure_int(obj, jc, k, f, df=None):
+  """
+  Works like L{jc_configure}, but converts C{jc[k]} to an int.
+  """
   v = df
   if jc.hasKey(k):
     v = jc.getInt(k)
@@ -34,6 +47,9 @@ def jc_configure_int(obj, jc, k, f, df=None):
 
 
 def jc_configure_bool(obj, jc, k, f, df=None):
+  """
+  Works like L{jc_configure}, but converts C{jc[k]} to a bool.
+  """
   v = df
   if jc.hasKey(k):
     v = jc.getBoolean(k)
@@ -43,6 +59,9 @@ def jc_configure_bool(obj, jc, k, f, df=None):
 
 
 def jc_configure_float(obj, jc, k, f, df=None):
+  """
+  Works like L{jc_configure}, but converts C{jc[k]} to a float.
+  """
   v = df
   if jc.hasKey(k):
     v = jc.getFloat(k)
@@ -58,6 +77,15 @@ def __cleanup_file_path(path):
 
 
 def make_input_split(filename, offset, length):
+  """
+  Make a fake (i.e. not tied to a real file) input split. Mostly
+  useful for testing purposes.
+
+  @param filename: file name.
+  @param offset: byte offset of the split with respect to the
+    beginning of the file
+  @param length: length of the split in bytes
+  """
   l = len(filename)
   s = pack(">h", l)
   s += filename
@@ -68,6 +96,7 @@ def make_input_split(filename, offset, length):
 
 def split_hdfs_path(path):
   """
+  Split HDFS URLs into (hostname, port, path) tuples.
 
   >>> split_hdfs_path('hdfs://foobar.foo.com:1234/foodir/barfile')
   ('foobar.foo.com', 1234, '/foodir/barfile')
@@ -76,6 +105,7 @@ def split_hdfs_path(path):
   >>> split_hdfs_path('hdfs:///foodir/barfile')
   ('localhost', 0, '/foodir/barfile')
 
+  @param path: a full hdfs path C{hdfs://<HOST>:<PORT>/some/path}
   """
   r = urlparse(path)
   if r.scheme == 'file':

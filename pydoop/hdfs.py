@@ -1,5 +1,10 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
+"""
+Provides data structures for interacting with an HDFS file system.
+"""
+
 import os, glob
 
 
@@ -29,6 +34,10 @@ class hdfs_file(object):
   ENDL = os.linesep
 
   def __init__(self, raw_hdfs_file, chunk_size=DEFAULT_CHUNK_SIZE):
+    """
+    C{hdfs_file} should not be instantiated directly. To get an hdfs
+    file object, call L{hdfs.open_file}.
+    """
     if not chunk_size > 0:
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file
@@ -65,6 +74,9 @@ class hdfs_file(object):
     return eol if eol > -1 else len(self.chunk)
 
   def readline(self):
+    """
+    Reads and returns a line of text.
+    """
     eol = self.__read_chunks_until_nl()
     line = "".join(self.buffer_list) + self.chunk[self.p:eol+1]
     self.buffer_list = []
@@ -72,40 +84,89 @@ class hdfs_file(object):
     return line
      
   def available(self):
+    """
+    Number of bytes that can be read from this input stream without blocking.
+    """
     return self.f.available()
   
   def close(self):
+    """
+    Close the file.
+    """
     return self.f.close()
   
   def pread(self, position, length):
+    """
+    Read C{length} bytes of data from the file, starting from C{position}.
+    """
     return self.f.pread(position, length)
   
   def pread_chunk(self, position, chunk):
+    """
+    Works like L{pread}, but data is stored in the writable buffer C{chunk}.
+
+    @param position: starting position from which to read.
+    @param chunk: a writable buffer (e.g., C{ctypes.create_string_buffer})
+
+    @return: the number of bytes read; -1 on error
+    """    
     return self.f.pread_chunk(position, chunk)
   
   def read(self, length):
+    """
+    Read C{length} bytes from the file.
+    """
     return self.f.read(length)
  
   def read_chunk(self, chunk):
+    """
+    Works like L{read}, but data is stored in the writable buffer C{chunk}.
+
+    @param chunk: a writable buffer (e.g., C{ctypes.create_string_buffer})
+
+    @return: the number of bytes read; -1 on error
+    """    
+    
     return self.f.read_chunk(chunk)
   
   def seek(self, position):
+    """
+    Seek to given offset in file.
+    """
     self.__reset()
     return self.f.seek(position)
   
   def tell(self):
+    """
+    Get the current byte offset in the file.
+    """
     return self.f.tell()
   
   def write(self, data):
+    """
+    Write data to the file.
+    """
     return self.f.write(data)
   
   def write_chunk(self, chunk):
+    """
+    Write data from buffer C{chunk} to the file.
+    """
     return self.f.write_chunk(chunk)
     
 
 class hdfs(hdfs_fs):
-
+  """
+  Represents a connection to an HDFS file system.
+  """
   def __init__(self, host, port):
+    """
+    @param host: hostname or IP address of the HDFS NameNode. Set to
+      an empty string (and port to 0) to connect to the local file
+      system; Set to 'default' (and port to 0) to connect to the
+      'configured' file system.
+    @param port: the port on which the NameNode is listening.
+    """
     super(hdfs, self).__init__(host, port)
 
   def open_file(self, path,
@@ -114,6 +175,22 @@ class hdfs(hdfs_fs):
                 replication=0,
                 blocksize=0,
                 readline_chunk_size=hdfs_file.DEFAULT_CHUNK_SIZE):
+    """
+    Open an hdfs file.
+
+    Pass 0 as buff_size, replication or blocksize if you want to use
+    the default configured values.
+
+    @param path: the full path to the file.
+    @param flags: opening flags - supported flags are os.O_RDONLY, os.O_WRONLY
+    @param buff_size: read/write buffer size.
+    @param replication: HDFS block replication.
+    @param blocksize: HDFS block size.
+    @param readline_chunk_size: the amount of bytes that L{hdfs_file.readline}
+      will use as buffer.
+
+    @return: handle to the open file
+    """
     return hdfs_file(super(hdfs, self).open_file(path, flags, buff_size,
                                                  replication, blocksize),
                      readline_chunk_size)

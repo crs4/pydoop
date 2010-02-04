@@ -17,3 +17,4 @@ include pydoop/hadoop_serial.py
 include pydoop/text_protocol.py
 include pydoop/binary_protocol.py
 include pydoop/pipes_runner.py
+recursive-include doc *

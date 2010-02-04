@@ -1,10 +1,18 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+"""
+Contains the Factory class, used by the framework to create the
+various MapReduce application components.
+"""
+
 import pydoop_pipes
 
 
 class Factory(pydoop_pipes.Factory):
-  
+  """
+  Creates MapReduce application component instances from the classes
+  specified as arguments to the constructor.
+  """
   def __init__(self, mapper_class, reducer_class,
                record_reader_class=None,
                record_writer_class=None,

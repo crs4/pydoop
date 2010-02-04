@@ -95,7 +95,7 @@ tSize wrap_hdfs_file::write_chunk(bp::object buffer) {
 int wrap_hdfs_file::available() {
   exec_and_trap_error(int,
 		      hdfsAvailable(fs_->fs_, file_),
-		      "Cannot get available butes on " + filename_);
+		      "Cannot get available bytes on " + filename_);
   return res;
 }
 

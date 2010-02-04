@@ -1,15 +1,23 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+"""
+Wrapper module for the InputSplit class.
+"""
+
 from struct import unpack
 
 
 class InputSplit(object):
+  """
+  Represents the data to be processed by an individual C{Mapper}.
 
+  Typically, it presents a byte-oriented view on the input and is
+  the responsibility of RecordReader of the job to process this and
+  present a record-oriented view. It is created from C{FileSplit} data.
+  """
   def __init__(self, data):
     """
-    Create from FileSplit data.
-
-    The format of FileSplit is:
+    @param data: a byte string in the format::
       <16 bit filename byte length>
       <filename in bytes>
       <64 bit offset>
