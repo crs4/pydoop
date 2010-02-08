@@ -1,3 +1,9 @@
+== Pydoop 0.3.4 ==
+
+* added a patch for Ubuntu
+* added API docs
+
+
 == Pydoop 0.3.3 ==
 
 Bugfix release.
