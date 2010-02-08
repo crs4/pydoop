@@ -14,6 +14,14 @@ hadoop 0.20.1 (http://hadoop.apache.org)
 boost >=1.35 (http://www.boost.org)
 
 
+*** NOTE FOR UBUNTU USERS ***
+
+Pydoop has been developed and tested on Gentoo Linux. In order to
+build it on Ubuntu, we had to apply a patch to the original Hadoop
+Pipes C++ code (tested on Ubuntu 9.10 64-bit). Check for the
+'pipes_ubuntu.patch' file in pydoop's root directory.
+
+
 *** INSTALLATION INSTRUCTIONS ***
 
 1. Set the JAVA_HOME and HADOOP_HOME environment variables to the

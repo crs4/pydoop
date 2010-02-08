@@ -1,3 +1,4 @@
+include pipes_ubuntu.patch
 include src/*.hpp
 exclude src/HadoopPipes.cpp
 exclude src/StringUtils.cpp
