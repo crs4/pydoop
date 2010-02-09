@@ -44,10 +44,19 @@ struct cxx_capsule {
 struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper>, cxx_capsule {
 
   void map(hp::MapContext& ctx) {
+#if 0
     bp::reference_existing_object::apply<hp::MapContext&>::type converter;
     PyObject* obj = converter(ctx);
     bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
     this->get_override("map")(po);
+#else
+    bp::reference_existing_object::apply<hp::MapContext&>::type converter;
+    PyObject* obj = converter(ctx);
+    bp::object po = bp::object(bp::handle<>(obj))
+    this->get_override("map")(po);
+    while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
+    //bp::decref(obj);
+#endif
   }
   virtual ~wrap_mapper() {
     DESTROY_PYTHON_TOO(wrap_mapper);
@@ -56,10 +65,19 @@ struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper>, cxx_capsule {
 
 struct wrap_reducer: hp::Reducer, bp::wrapper<hp::Reducer>, cxx_capsule {
   void reduce(hp::ReduceContext& ctx) {
+#if 0
     bp::reference_existing_object::apply<hp::ReduceContext&>::type converter;
     PyObject* obj = converter(ctx);
     bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
     this->get_override("reduce")(po);
+#else
+    bp::reference_existing_object::apply<hp::ReduceContext&>::type converter;
+    PyObject* obj = converter(ctx);
+    bp::object po = bp::object(bp::handle<>(obj));
+    this->get_override("reduce")(po);
+    while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
+    //bp::decref(obj);
+#endif
   }
   virtual ~wrap_reducer() {
     DESTROY_PYTHON_TOO(wrap_reducer);
