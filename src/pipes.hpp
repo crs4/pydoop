@@ -61,7 +61,7 @@ struct wrap_reducer: hp::Reducer, bp::wrapper<hp::Reducer>, cxx_capsule {
     bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
     this->get_override("reduce")(po);
   }
-  ~wrap_reducer() {
+  virtual ~wrap_reducer() {
     DESTROY_PYTHON_TOO(wrap_reducer);
   }
 };
@@ -70,7 +70,7 @@ struct wrap_partitioner: hp::Partitioner, bp::wrapper<hp::Partitioner>, cxx_caps
   int partition(const std::string& key, int numOfReduces) {
     return this->get_override("partition")(key, numOfReduces);
   }
-  ~wrap_partitioner() {
+  virtual ~wrap_partitioner() {
     DESTROY_PYTHON_TOO(wrap_partitioner);
   }
 };
@@ -99,7 +99,7 @@ struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader>, cxx_
   float getProgress() {
     return this->get_override("getProgress")();
   }
-  ~wrap_record_reader() {
+  virtual ~wrap_record_reader() {
     DESTROY_PYTHON_TOO(wrap_record_reader);
   }
 };
@@ -108,7 +108,7 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_
   void emit(const std::string& key, const std::string& value) {
     this->get_override("emit")(key, value);
   }
-  ~wrap_record_writer() {
+  virtual ~wrap_record_writer() {
     DESTROY_PYTHON_TOO(wrap_record_writer);
   }
 };

@@ -1,5 +1,6 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
+#include <errno.h>
 #include "hdfs_fs.hpp"
 
 
@@ -131,7 +132,7 @@ bp::list wrap_hdfs_fs::list_directory(std::string path) {
     throw hdfs_exception("No such file or directory: " + path);
   }
   res = hdfsListDirectory(fs_, path.c_str(), &num_entries);
-  if (res == NULL) {
+  if (res == NULL && errno) {
     throw hdfs_exception("Cannot list directory " + path);
   }
   for(std::size_t i = 0; i < num_entries; ++i) {

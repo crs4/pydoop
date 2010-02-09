@@ -238,6 +238,7 @@ class hdfs_basic_tc(unittest.TestCase):
     new_d = os.path.join(cwd, '/'.join(parts))
     self.fs.create_directory(new_d)
     self.assertTrue(self.fs.exists(new_d))
+    self.assertEqual(self.fs.list_directory(new_d), [])
     basenames = 'bar.txt', 'foo.txt'
     paths = [os.path.join(new_d, fn) for fn in basenames]
     txt = 'hello there!'
