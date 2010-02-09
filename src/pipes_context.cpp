@@ -42,6 +42,7 @@ void export_pipes_context() {
 
   class_<wrap_map_context, bases<hp::TaskContext>, 
     boost::noncopyable>("MapContext")
+  // FIXME this is a test
     .def("getJobConf",  pure_virtual(&hp::MapContext::getJobConf),
 	 return_internal_reference<>())
     .def("getInputKey", pure_virtual(&hp::MapContext::getInputKey), 

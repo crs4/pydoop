@@ -317,14 +317,5 @@ ReduceContext* get_ReduceContext_object(bp::dict d) {
   return rc;
 }
 
-const char* double_a_string(const std::string& a) {
-  std::cerr << "read in str " << a << std::endl;
-  bp::str ps(a);
-  bp::object r = "%s.%s" % bp::make_tuple(ps, ps);
-  bp::incref(bp::object(r).ptr());
-  const char* p = bp::extract<const char*>(r);
-  std::cerr << "p=" << p << std::endl;
-  return p;
-}
 
 #endif // HADOOP_PIPES_TEST_SUPPORT_HPP

@@ -27,6 +27,26 @@ int get_partition_from_partitioner(Partitioner* pr,
 }
 
 
+const char* double_a_string(const std::string& a) {
+  std::cerr << "read in str " << a << std::endl;
+  bp::str ps(a);
+  bp::object r = "%s.%s" % bp::make_tuple(ps, ps);
+  bp::incref(bp::object(r).ptr());
+  const char* p = bp::extract<const char*>(r);
+  std::cerr << "p=" << p << std::endl;
+  return p;
+}
+
+bp::str create_a_string(std::size_t n) {
+  std::string s(n, 'c');
+  bp::str r(s);
+  return r;
+}
+
+std::string& create_a_string_ref() {
+}
+
+
 //++++++++++++++++++++++++++++++//
 // Exporting class definitions. //
 //++++++++++++++++++++++++++++++//
@@ -63,4 +83,5 @@ void export_pipes_test_support()
   def("try_reducer", try_reducer);
   def("try_factory", try_factory);
   def("try_factory_internal", try_factory_internal);
+  def("create_a_string", create_a_string);
 }
