@@ -52,7 +52,7 @@ struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper>, cxx_capsule {
 #else
     bp::reference_existing_object::apply<hp::MapContext&>::type converter;
     PyObject* obj = converter(ctx);
-    bp::object po = bp::object(bp::handle<>(obj))
+    bp::object po = bp::object(bp::handle<>(obj));
     this->get_override("map")(po);
     while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
     //bp::decref(obj);
@@ -131,7 +131,7 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_
   }
 };
 
-
+#if 0
 #define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
     bp::reference_existing_object::apply<ctx_t&>::type converter;\
     PyObject* po_ctx = converter(ctx);\
@@ -149,10 +149,27 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_
     } else {\
       return NULL;\
     }
-
+#else
+#define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
+    bp::reference_existing_object::apply<ctx_t&>::type converter;\
+    PyObject* po_ctx = converter(ctx);\
+    bp::object o_ctx = bp::object(bp::handle<>(po_ctx));\
+    bp::override f = this->get_override(#method_name);\
+    if (f) {\
+      bp::object res = f(o_ctx);\
+      std::auto_ptr<wobj_t> ap = bp::extract<std::auto_ptr<wobj_t> >(res);\
+      PyObject* obj = res.ptr();\
+      bp::incref(obj);\
+      wobj_t* o = ap.get();\
+      ap.release();\
+      o->entering_cxx_land();\
+      return o;\
+    } else {\
+      return NULL;\
+    }
+#endif
 
 struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
-
   hp::Mapper* createMapper(hp::MapContext& ctx) const {
     CREATE_AND_RETURN_OBJECT(wrap_mapper, hp::Mapper, hp::MapContext, 
 			     createMapper, ctx);
