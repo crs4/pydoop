@@ -19,7 +19,7 @@ example_input_splits = [
 
 
 class taskcontext_tc(unittest.TestCase):
-  
+
   def setUp(self):
     pass
 
@@ -43,7 +43,10 @@ class taskcontext_tc(unittest.TestCase):
          'input_value' : 'inputvalue',
          'input_split' : 'inputsplit',
          'input_key_class' : 'keyclass',
-         'input_value_class' : 'valueclass'}
+         'input_value_class' : 'valueclass',
+         'job_conf' : {'foo' :  'foo1',
+                       'bar' :  'bar1'}
+         }
     o = pydoop_pipes.get_MapContext_object(d)
     self.assertEqual(o.getInputKey(), d['input_key'])
     self.assertEqual(o.getInputValue(), d['input_value'])
@@ -52,6 +55,9 @@ class taskcontext_tc(unittest.TestCase):
     self.assertEqual(o.getInputValueClass(), d['input_value_class'])
     jc = o.getJobConf()
     self.assertFalse(jc.hasKey('nononono'))
+    for k in d['job_conf'].keys():
+      self.assertTrue(jc.hasKey(k))
+      self.assertEqual(jc.get(k), d['job_conf'][k])
     c = o.getCounter('hello', 'there')
     o.incrementCounter(c, 29292)
     o.incrementCounter(c, 29292)

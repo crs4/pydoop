@@ -12,7 +12,7 @@ class test_record_reader(RecordReader):
   DEFAULT_VALUE = 'The quick red fox jumped on the lazy brown dog'
   KEY_FORMAT = 'key-%d'
   NUMBER_RECORDS = 10
-  
+
   def __init__(self, ctx):
     RecordReader.__init__(self)
     self.ctx = ctx
@@ -39,7 +39,8 @@ class record_reader_tc(unittest.TestCase):
          'input_value' : 'inputvalue',
          'input_split' : 'inputsplit',
          'input_key_class' : 'keyclass',
-         'input_value_class' : 'valueclass'}
+         'input_value_class' : 'valueclass',
+         'job_conf' : {}}
     ctx = pydoop_pipes.get_MapContext_object(d)
     self.assertEqual(ctx.getInputKey(), d['input_key'])
     self.assertEqual(ctx.getInputValue(), d['input_value'])

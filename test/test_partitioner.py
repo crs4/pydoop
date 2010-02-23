@@ -32,7 +32,9 @@ class partitioner_tc(unittest.TestCase):
          'input_value' : 'inputvalue',
          'input_split' : 'inputsplit',
          'input_key_class' : 'keyclass',
-         'input_value_class' : 'valueclass'}
+         'input_value_class' : 'valueclass',
+         'job_conf' : {}
+         }
     ctx = pydoop_pipes.get_MapContext_object(d)
     self.assertEqual(ctx.getInputKey(), d['input_key'])
     self.assertEqual(ctx.getInputValue(), d['input_value'])

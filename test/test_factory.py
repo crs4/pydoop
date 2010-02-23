@@ -7,7 +7,7 @@ from pydoop.pipes import RecordReader, RecordWriter
 
 
 class mapper(Mapper):
-  
+
   call_history=[]
   instance_counter = 0
 
@@ -22,28 +22,28 @@ class mapper(Mapper):
 
   def __del__(self):
     sys.stderr.write("mapper.__del__ %d\n" % self.id)
-    
+
 
 class reducer(Reducer):
-  
+
   call_history=[]
   instance_counter = 0
-  
+
   def __init__(self, ctx):
     Reducer.__init__(self)
     reducer.call_history.append('initialized')
     self.id = reducer.instance_counter
     reducer.instance_counter += 1
-    
+
   def reduce(self, ctx):
     reducer.call_history.append('reduce() invoked')
-    
+
   def __del__(self):
     sys.stderr.write("reducer.__del__ %d\n" % self.id)
 
 
 class record_reader(RecordReader):
-  
+
   def __init__(self, ctx):
     RecordReader.__init__(self)
     self.ctx = ctx
@@ -61,13 +61,14 @@ class record_reader(RecordReader):
 
 
 class factory_tc(unittest.TestCase):
-  
+
   def setUp(self):
     self.d = {'input_key' : 'inputkey',
               'input_value' : 'inputvalue',
               'input_split' : 'inputsplit',
               'input_key_class' : 'keyclass',
-              'input_value_class' : 'valueclass'}
+              'input_value_class' : 'valueclass',
+              'job_conf' : {}}
     self.m_ctx = pydoop_pipes.get_MapContext_object(self.d)
     self.r_ctx = pydoop_pipes.get_ReduceContext_object(self.d)
 
