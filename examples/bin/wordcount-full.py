@@ -29,6 +29,7 @@ class WordCountMapper(Mapper):
 
   def __init__(self, context):
     super(WordCountMapper, self).__init__(context)
+    context.setStatus("initializing")
     self.inputWords = context.getCounter(WORDCOUNT, INPUT_WORDS)
     self.logger = logging.getLogger("Mapper")
   
@@ -45,6 +46,7 @@ class WordCountReducer(Reducer):
 
   def __init__(self, context):
     super(WordCountReducer, self).__init__(context)
+    context.setStatus("initializing")
     self.outputWords = context.getCounter(WORDCOUNT, OUTPUT_WORDS)
   
   def reduce(self, context):

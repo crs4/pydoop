@@ -949,10 +949,11 @@ namespace HadoopPipes {
     TaskContextImpl* context = (TaskContextImpl*) ptr;
     sigset_t sigs;
     const int how = SIG_BLOCK;
-    sigemptyset(&sigs);
-    sigaddset(&sigs, SIGINT);
-    sigaddset(&sigs, SIGHUP);
-    sigaddset(&sigs, SIGQUIT);
+    // sigemptyset(&sigs);
+    // sigaddset(&sigs, SIGINT);
+    // sigaddset(&sigs, SIGHUP);
+    // sigaddset(&sigs, SIGQUIT);
+    sigfillset(&sigs);
     pthread_sigmask(how, &sigs, NULL);
     int sig;
     sigwait(sigs, &sig);
@@ -1070,8 +1071,8 @@ calling thread until one of the signals in set is delivered to the calling threa
       context->setProtocol(connection, connection->getUplink());
 #ifdef PYDOOP_HANDLE_SIGNALS
       mask_all_signals();
-      pthread_t mask_signals_thread;
-      pthread_create(&mask_signals_thread, NULL, mask_signals_thread, (void*)(context));
+      pthread_t wait_for_signals_thread;
+      pthread_create(&wait_for_signals_thread, NULL, wait_for_signals_thread, (void*)(context));
 #endif
       pthread_t pingThread;
       pthread_create(&pingThread, NULL, ping, (void*)(context));
@@ -1084,7 +1085,7 @@ calling thread until one of the signals in set is delivered to the calling threa
       connection->getUplink()->done();
       pthread_join(pingThread,NULL);
 #ifdef PYDOOP_HANDLE_SIGNALS
-      pthread_join(wait_for_signals, NULL);
+      pthread_join(wait_for_signals_thread, NULL);
 #endif
 
       delete context;

@@ -13,9 +13,6 @@ from pydoop.pipes import Mapper, Reducer, Factory, runTask
 
 
 class WordCountMapper(Mapper):
-
-  def __init__(self, context):
-    super(WordCountMapper, self).__init__(context)
   
   def map(self, context):
     words = context.getInputValue().split()
@@ -24,9 +21,6 @@ class WordCountMapper(Mapper):
 
 
 class WordCountReducer(Reducer):
-
-  def __init__(self, context):
-    super(WordCountReducer, self).__init__(context)
   
   def reduce(self, context):
     s = 0
