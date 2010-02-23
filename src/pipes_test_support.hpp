@@ -229,7 +229,7 @@ public:
 
 class MapContextImpl: public TaskContextImpl, public MapContext {
 private:
-  JobConfImpl job_conf;
+  const JobConf& job_conf;
   std::string input_key;
   std::string input_value;
   std::vector<int> counter_vals;
@@ -239,9 +239,9 @@ private:
 public:
   MapContextImpl(const std::string& ik, const std::string& iv, 
 		 const std::string& is, const std::string& ikc, 
-		 const std::string& ivc) :
+		 const std::string& ivc, const JobConf& jc) :
     TaskContextImpl(ik, iv),
-    job_conf(), input_key(ik), input_value(iv),
+    job_conf(jc), input_key(ik), input_value(iv),
     input_split(is), input_key_class(ikc), input_value_class(ivc) {
   }
   virtual const JobConf* getJobConf() { return &job_conf; }
@@ -306,7 +306,8 @@ MapContext* get_MapContext_object(bp::dict d) {
   std::string is = bp::extract<std::string>(d["input_split"]);
   std::string ikc = bp::extract<std::string>(d["input_key_class"]);
   std::string ivc = bp::extract<std::string>(d["input_value_class"]);
-  MapContext* mc = new MapContextImpl(ik, iv, is, ikc, ivc);
+  JobConf* jc = get_JobConf_object(bp::dict(d["job_conf"]));
+  MapContext* mc = new MapContextImpl(ik, iv, is, ikc, ivc, *jc);
   return mc;
 }
 
