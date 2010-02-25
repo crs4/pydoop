@@ -1,3 +1,9 @@
+2010-02-25    <simleo@neuron.crs4.it>
+
+	* src/HadoopPipes_signal.cpp: this is currently experimental, so
+	it's not distributed and disabled (a 'signal_setup_hack.diff' file
+	has been added to the root dir that shows how to re-enable it).
+
 2010-02-09    <simleo@neuron.crs4.it>
 
 	* src/pipes.hpp: all destructors made virtual.

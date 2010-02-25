@@ -607,6 +607,9 @@ namespace HadoopPipes {
                          public DownwardProtocol {
   private:
     bool done;
+#ifdef PYDOOP_HANDLE_SIGNALS
+    bool aborted;
+#endif
     JobConf* jobConf;
     string key;
     const string* newKey;
@@ -631,6 +634,9 @@ namespace HadoopPipes {
     int numReduces;
     const Factory* factory;
     pthread_mutex_t mutexDone;
+#ifdef PYDOOP_HANDLE_SIGNALS
+    pthread_mutex_t mutexAborted;
+#endif
     std::vector<int> registeredCounterIds;
 
   public:
@@ -638,6 +644,9 @@ namespace HadoopPipes {
     TaskContextImpl(const Factory& _factory) {
       statusSet = false;
       done = false;
+#ifdef PYDOOP_HANDLE_SIGNALS
+      aborted = false;
+#endif
       newKey = NULL;
       factory = &_factory;
       jobConf = NULL;
@@ -750,12 +759,30 @@ namespace HadoopPipes {
       pthread_mutex_unlock(&mutexDone);
     }
 
+#ifdef PYDOOP_HANDLE_SIGNALS
+    virtual bool isAborted() {
+      pthread_mutex_lock(&mutexAborted);
+      bool abortedCopy = aborted;
+      pthread_mutex_unlock(&mutexAborted);
+      return abortedCopy;
+    }
+
+    virtual void request_abort() {
+      pthread_mutex_lock(&mutexAborted);
+      aborted = true;
+      pthread_mutex_unlock(&mutexAborted);
+    }
+#endif
     virtual void abort() {
       throw Error("Aborted by driver");
     }
 
     void waitForTask() {
+#ifdef PYDOOP_HANDLE_SIGNALS
+      while (!aborted && !done && !hasTask) {
+#else
       while (!done && !hasTask) {
+#endif
         protocol->nextEvent();
       }
     }
@@ -938,7 +965,12 @@ namespace HadoopPipes {
   void mask_all_signals() {
     sigset_t sigs;
     const int how = SIG_SETMASK;
-    sigfillset(&sigs);
+    sigemptyset(&sigs);
+    sigaddset(&sigs, SIGINT);
+    sigaddset(&sigs, SIGHUP);
+    sigaddset(&sigs, SIGQUIT);
+    sigaddset(&sigs, SIGTERM);
+    //sigaddset(&sigs, SIGUSR1);
     pthread_sigmask(how, &sigs, NULL);
   }
   
@@ -946,37 +978,60 @@ namespace HadoopPipes {
    *  wait_for_signals
    */
   void* wait_for_signals(void* ptr) {
+    FILE* f = fopen("/var/tmp/wait_for_signal.log", "w");
+    fprintf(stderr, "wait_for_signals: init.\n");
+    fprintf(f, "wait_for_signals: init.\n");
+    fflush(f);
+    
     TaskContextImpl* context = (TaskContextImpl*) ptr;
     sigset_t sigs;
     const int how = SIG_BLOCK;
-    // sigemptyset(&sigs);
-    // sigaddset(&sigs, SIGINT);
-    // sigaddset(&sigs, SIGHUP);
-    // sigaddset(&sigs, SIGQUIT);
-    sigfillset(&sigs);
+    sigemptyset(&sigs);
+    sigaddset(&sigs, SIGINT);
+    sigaddset(&sigs, SIGHUP);
+    sigaddset(&sigs, SIGQUIT);
+    sigaddset(&sigs, SIGTERM);
+    sigaddset(&sigs, SIGUSR1);
     pthread_sigmask(how, &sigs, NULL);
     int sig;
-    sigwait(sigs, &sig);
-    fprintf(stderr, "Hadoop Pipes wait_for_signals intercepted a %d signal. Aborting.\n", sig);
-    context->abort();
+    sigwait(&sigs, &sig);
+    fprintf(stderr, "wait_for_signals: intercepted a %d signal.\n", sig);
+    fprintf(f, "wait_for_signals: intercepted a %d signal.\n", sig);
+    fflush(f);
+    if (sig == SIGUSR1) {
+      fprintf(stderr, "wait_for_signals: dying peacefully.\n");
+      fprintf(f, "wait_for_signals: intercepted a %d signal.\n", sig);
+      fflush(f);
+    } else {
+      fprintf(stderr, "wait_for_signals: requesting abort.\n");
+      fprintf(f, "wait_for_signals: requesting abort.\n");
+      fflush(f);
+      context->request_abort();
+    }
+    fprintf(stderr, "wait_for_signals: done.\n");
+    fprintf(f, "wait_for_signals: done.\n");
+    fflush(f);
     return NULL;
   }
   //FIXME do we need a -D_POSIX_PTHREAD_SEMANTICS in compilation?
 #endif
 
-calling thread until one of the signals in set is delivered to the calling thread. It then stores the number of the signal received in the location pointed to by sig and returns. The signals in set must be blocked and not ignored on entrance to sigwait. If the delivered signal has a signal handler function attached, that function is not called.
 
   /**
    * Ping the parent every 5 seconds to know if it is alive 
    */
   void* ping(void* ptr) {
+#ifdef PYDOOP_HANDLE_SIGNALS
     mask_all_signals();
+#endif
+    fprintf(stderr, "ping: init\n");
     TaskContextImpl* context = (TaskContextImpl*) ptr;
     char* portStr = getenv("hadoop.pipes.command.port");
     int MAX_RETRIES = 3;
     int remaining_retries = MAX_RETRIES;
     while (!context->isDone()) {
       try{
+	fprintf(stderr, "ping: going to sleep...\n");
         sleep(5);
         int sock = -1;
         if (portStr) {
@@ -1011,6 +1066,7 @@ calling thread until one of the signals in set is delivered to the calling threa
         }
       }
     }
+    fprintf(stderr, "ping: done.\n");
     return NULL;
   }
 
@@ -1072,20 +1128,32 @@ calling thread until one of the signals in set is delivered to the calling threa
 #ifdef PYDOOP_HANDLE_SIGNALS
       mask_all_signals();
       pthread_t wait_for_signals_thread;
-      pthread_create(&wait_for_signals_thread, NULL, wait_for_signals_thread, (void*)(context));
+      pthread_create(&wait_for_signals_thread, NULL, wait_for_signals, (void*)(context));
 #endif
       pthread_t pingThread;
       pthread_create(&pingThread, NULL, ping, (void*)(context));
 
       context->waitForTask();
+#ifdef PYDOOP_HANDLE_SIGNALS
+      while (!context->isAborted() && !context->isDone()) {
+        context->nextKey();
+      }
+      if (context->isAborted()) {
+	// minimal clean up...
+	pthread_join(pingThread,NULL);
+	pthread_kill(wait_for_signals_thread, SIGUSR1);
+	context->abort();
+      }
+#else
       while (!context->isDone()) {
         context->nextKey();
       }
+#endif
       context->closeAll();
       connection->getUplink()->done();
       pthread_join(pingThread,NULL);
 #ifdef PYDOOP_HANDLE_SIGNALS
-      pthread_join(wait_for_signals_thread, NULL);
+      pthread_kill(wait_for_signals_thread, SIGUSR1);
 #endif
 
       delete context;
