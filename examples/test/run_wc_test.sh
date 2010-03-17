@@ -33,6 +33,7 @@ ${HADOOP} pipes ${CONF_OVERRIDE} -conf ${CONF} -program ${HDFS_SCRIPT} \
 ${HADOOP} dfs -get ${WD}/output output
 ${HADOOP} dfs -rmr ${WD}
 
-sort -m output/part* -o output/global.out
-diff --brief java-output/part-r-00000 output/global.out
+sort output/part* -o output/global.out
+sort java-output/part-r-00000 -o java-output/part-r-00000.sorted
+diff --brief java-output/part-r-00000.sorted output/global.out
 [[ "$?" == 0 ]] || echo "TEST FAILED!"
