@@ -16,4 +16,10 @@
   <value>true</value>
 </property>
 
+<property>
+  <name>io.sort.mb</name>
+  <value>1</value>
+</property>
+
+
 </configuration>

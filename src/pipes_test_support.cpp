@@ -2,6 +2,7 @@
 // END_COPYRIGHT
 #include <string>
 
+#include <stdint.h>
 #include <hadoop/Pipes.hh>
 #include "pipes_test_support.hpp"
 

@@ -12,8 +12,10 @@ import sys
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
 
 
+
+
 class WordCountMapper(Mapper):
-  
+
   def map(self, context):
     words = context.getInputValue().split()
     for w in words:
@@ -21,7 +23,7 @@ class WordCountMapper(Mapper):
 
 
 class WordCountReducer(Reducer):
-  
+
   def reduce(self, context):
     s = 0
     while context.nextValue():

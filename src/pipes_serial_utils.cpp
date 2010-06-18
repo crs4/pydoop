@@ -2,6 +2,7 @@
 // END_COPYRIGHT
 #include <string>
 
+#include <stdint.h>
 #include "hadoop/SerialUtils.hh"
 #include "hadoop/StringUtils.hh"
 #include <boost/python.hpp>

@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include <stdint.h>
 #include <hadoop/Pipes.hh>
 #include <boost/python.hpp>
 

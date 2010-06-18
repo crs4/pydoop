@@ -113,6 +113,11 @@ def get_pipes_aux(hadoop_home):
         }
     patches = {
         "SerialUtils": {
+            '#include "hadoop/SerialUtils.hh"':
+            '''
+            #include <stdint.h>
+            #include "hadoop/SerialUtils.hh"
+            ''',
             "#include <string>": "#include <string.h>",
             OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
             },
@@ -120,6 +125,11 @@ def get_pipes_aux(hadoop_home):
             "#include <strings.h>": "#include <string.h>\n#include <stdlib.h>"
             },
         "HadoopPipes": {
+            '#include "hadoop/Pipes.hh"' :
+            '''
+            #include <stdint.h>
+            #include "hadoop/Pipes.hh"
+            ''',
             "#include <strings.h>": "#include <string.h>",
             OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
             },
