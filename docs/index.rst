@@ -11,8 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
-   installation
-   api_docs
+   installation/index
+   api_docs/index
 
 Indices and tables
 ==================
