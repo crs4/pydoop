@@ -12,10 +12,11 @@ Troubleshooting
     cd c++/Linux-amd64-64/lib/
     ln -fs libhdfs.so.0.0.0 libhdfs.so
 
-   Note that if you run a 32-bit jvm on a 64-bit platform, you need the
-   32-bit libhdfs (see https://issues.apache.org/jira/browse/HADOOP-3344).
-   In this case, copy the pre-compiled libhdfs.* from c++/Linux-i386-32/lib
-   to c++/Linux-amd64-64/lib.
+   Note that if you run a 32-bit jvm on a 64-bit platform, you need
+   the 32-bit libhdfs (see `HADOOP-3344
+   <https://issues.apache.org/jira/browse/HADOOP-3344>`_\ ).  In this
+   case, copy the pre-compiled ``libhdfs.*`` from ``c++/Linux-i386-32/lib`` to
+   ``c++/Linux-amd64-64/lib``.
 
 #. Non-standard include/lib directories: the setup script looks for
    includes and libraries in standard places -- read setup.py for
