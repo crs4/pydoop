@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<configuration>
+
+<property>
+  <name>hadoop.pipes.executable</name>
+  <value>pipes-bin/self_contained</value>
+</property>
+
+<property>
+  <name>hadoop.pipes.java.recordreader</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>hadoop.pipes.java.recordwriter</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>mapred.cache.archives</name>
+  <value>fooapp.tgz#fooapp</value>
+  <description>Explain... </description>
+</property>
+
+<property>
+  <name>mapred.create.symlink</name>
+  <value>yes</value>
+</property>
+
+</configuration>
