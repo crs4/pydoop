@@ -2,7 +2,7 @@
 # END_COPYRIGHT
 
 """
-Provides data structures for interacting with an HDFS file system.
+This module provides access to HDFS from Python applications.
 """
 
 import os, glob

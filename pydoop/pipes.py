@@ -1,30 +1,20 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 """
-Provides the basic MapReduce task components (Mapper,
-Reducer, RecordReader, ...) as abstract classes. Application
-developers must subclass them, providing implementations for all
-methods called by the framework.
+This module allows you to write the components of your MapReduce application.
+
+The basic MapReduce components (Mapper, Reducer, RecordReader, etc.)
+are provided as abstract classes. Application developers must subclass
+them, providing implementations for all methods called by the
+framework.
 """
 
-from pydoop_pipes import runTask as runTask
-
-from pydoop_pipes import Mapper  as BaseMapper
-from pydoop_pipes import Reducer as BaseReducer
-from pydoop_pipes import RecordReader as BaseRecordReader
-from pydoop_pipes import RecordWriter as BaseRecordWriter
-from pydoop_pipes import Reducer as BaseCombiner
-from pydoop_pipes import Partitioner as BasePartitioner
-
-from pydoop_pipes import TaskContext as TaskContext
-from pydoop_pipes import MapContext as MapContext
-from pydoop_pipes import ReduceContext as ReduceContext
-
+import pydoop_pipes as pp
 from factory import Factory
 from input_split import InputSplit
 
 
-class Mapper(BaseMapper):
+class Mapper(pp.Mapper):
   """
   Maps input key/value pairs to a set of intermediate key/value pairs.
   """
@@ -35,17 +25,17 @@ class Mapper(BaseMapper):
   def map(self, context):
     """
     Called once for each key/value pair in the input
-    split. Applications must override this, emitting an output (key,
-    value) pair through the context.
-
-    @param context: the MapContext object passed by the framework,
-    used to get the input key/value pair and emit the output key/value
-    pair.
+    split. Applications must override this, emitting an output
+    key/value pair through the context.
+    
+    :param context: the :class:`MapContext` object passed by the
+      framework, used to get the input key/value pair and emit the
+      output key/value pair.
     """
     raise NotImplementedError
 
 
-class Reducer(BaseReducer):
+class Reducer(pp.Reducer):
   """
   Reduces a set of intermediate values which share a key to a
   (possibly) smaller set of values.
@@ -57,18 +47,18 @@ class Reducer(BaseReducer):
   def reduce(self, context):
     """
     Called once for each key. Applications must override this, emitting an
-    output (key, value) pair through the context.
+    output key/value pair through the context.
 
-    @param context: the ReduceContext object passed by the
-    framework, used to get the input key and corresponding set of
-    values and emit the output key/value pair.
+    :param context: the :class:`ReduceContext` object passed by the framework,
+      used to get the input key and corresponding set of values and
+      emit the output key/value pair.
     """
     raise NotImplementedError
 
 
-class RecordReader(BaseRecordReader):
+class RecordReader(pp.RecordReader):
   """
-  Breaks the data into key/value pairs for input to the C{Mapper}.
+  Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
   """
   
   def __init__(self, context=None):
@@ -77,10 +67,10 @@ class RecordReader(BaseRecordReader):
   def next(self):
     """
     Called by the framework to provide a key/value pair to the
-    C{Mapper}. Applications must override this.
+    :class:`Mapper`\ . Applications must override this.
 
-    @rtype: tuple
-    @return: a tuple of three elements. The first one is a bool which
+    :rtype: tuple
+    :return: a tuple of three elements. The first one is a bool which
       is True if a record is being read and False otherwise (signaling
       the end of the input split). The second and third element are,
       respectively, the key and the value (as strings).
@@ -92,15 +82,15 @@ class RecordReader(BaseRecordReader):
     The current progress of the record reader through its
     data. Applications must override this.
 
-    @rtype: float
-    @return: the fraction of the data read as a number between 0.0 and 1.0.
+    :rtype: float
+    :return: the fraction of data read up to now, as a float between 0 and 1.
     """
     raise NotImplementedError
 
 
-class RecordWriter(BaseRecordWriter):
+class RecordWriter(pp.RecordWriter):
   """
-  Writes the output <key, value> pairs to an output file.
+  Writes the output key/value pairs to an output file.
   """
   def __init__(self, context=None):
     super(RecordWriter, self).__init__()
@@ -109,15 +99,17 @@ class RecordWriter(BaseRecordWriter):
     """
     Writes a key/value pair. Applications must override this.
 
-    @param key: a final output key.
-    @param value: a final output value.
+    :param key: a final output key
+    :type key: string
+    :param value: a final output value
+    :type value: string
     """
     raise NotImplementedError
 
 
-class Combiner(BaseCombiner):
+class Combiner(pp.Reducer):
   """
-  Works exactly as a C{Reducer}, but values aggregation is performed
+  Works exactly as a :class:`Reducer`\ , but values aggregation is performed
   locally to the machine hosting each map task.
   """
   def __init__(self, context=None):
@@ -127,14 +119,14 @@ class Combiner(BaseCombiner):
     raise NotImplementedError
 
 
-class Partitioner(BasePartitioner):
+class Partitioner(pp.Partitioner):
   """
-  Controls the partitioning of the keys of the intermediate
-  map-outputs. The key (or a subset of the key) is used to derive the
+  Controls the partitioning of intermediate keys output by the
+  :class:`Mapper`\ . The key (or a subset of it) is used to derive the
   partition, typically by a hash function. The total number of
   partitions is the same as the number of reduce tasks for the
-  job. Hence this controls which of the C{m} reduce tasks the
-  intermediate key (and hence the record) is sent for reduction.
+  job. Hence this controls which of the ``m`` reduce tasks the
+  intermediate key (and hence the record) is sent to for reduction.
   """
   
   def __init__(self, context=None):
@@ -142,14 +134,27 @@ class Partitioner(BasePartitioner):
 
   def partition(self, key, numOfReduces):
     """
-    Get the partition number for a given key given the total number of
-    partitions i.e. number of reduce-tasks for the job. Applications
-    must override this.
+    Get the partition number for ``key`` given the total number of
+    partitions, i.e., the number of reduce tasks for the
+    job. Applications must override this.
 
-    @param key: the key to be partioned.
-    @param numOfReduces: the total number of reduces.
-
-    @rtype: int
-    @return: the partition number for C{key}.
+    :param key: the key of the key/value pair being dispatched
+    :type key: string
+    :param numOfReduces: the total number of reduces.
+    :type numOfReduces: int
+    :rtype: int
+    :return: the partition number for ``key``\ .
     """
     raise NotImplementedError
+
+
+def runTask(factory):
+  """
+  Run the assigned task in the framework.
+
+  :param factory: a :class:`Factory` instance.
+  :type factory: :class:`Factory`
+  :rtype: bool
+  :return: True, if the task succeeded.
+  """
+  return pp.runTask(factory)

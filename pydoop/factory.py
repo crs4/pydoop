@@ -1,46 +1,44 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
-"""
-Contains the Factory class, used by the framework to create the
-various MapReduce application components.
-"""
 
-import pydoop_pipes
+import pydoop_pipes as pp
 
 
-class Factory(pydoop_pipes.Factory):
+class Factory(pp.Factory):
   """
-  Creates MapReduce application component instances from the classes
-  specified as arguments to the constructor.
+  Creates MapReduce application components.
+
+  The classes to use for each component must be specified as arguments
+  to the constructor.
   """
   def __init__(self, mapper_class, reducer_class,
                record_reader_class=None,
                record_writer_class=None,
                combiner_class=None,
                partitioner_class=None):
-    pydoop_pipes.Factory.__init__(self)
-    #--
+    pp.Factory.__init__(self)
+
     self.mapper_class  = mapper_class
     setattr(self, 'createMapper', self.__make_creator('mapper_class'))
-    #--
+
     self.reducer_class  = reducer_class
     setattr(self, 'createReducer', self.__make_creator('reducer_class'))
-    #--
+
     if record_reader_class is not None:
       self.record_reader_class = record_reader_class
       setattr(self, 'createRecordReader',
               self.__make_creator('record_reader_class'))
-    #--
+
     if record_writer_class is not None:
       self.record_writer_class = record_writer_class
       setattr(self, 'createRecordWriter',
               self.__make_creator('record_writer_class'))
-    #--
+
     if combiner_class is not None:
       self.combiner_class = combiner_class
       setattr(self, 'createCombiner',
               self.__make_creator('combiner_class'))
-    #--
+
     if partitioner_class is not None:
       self.partitioner_class = partitioner_class
       setattr(self, 'createPartitioner',
