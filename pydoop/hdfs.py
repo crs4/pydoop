@@ -91,16 +91,13 @@ class hdfs_file(object):
     Number of bytes that can be read from this input stream without blocking.
 
     :rtype: int
-    :return: available bytes; -1 on error
+    :return: available bytes
     """
     return self.f.available()
   
   def close(self):
     """
     Close the file.
-
-    :rtype: int
-    :return: 0 on success, -1 on error
     """
     return self.f.close()
   
@@ -120,15 +117,16 @@ class hdfs_file(object):
   def pread_chunk(self, position, chunk):
     """
     Works like :meth:`pread`\ , but data is stored in the writable
-    buffer ``chunk`` rather than returned.
+    buffer ``chunk`` rather than returned. Reads at most a number of
+    bytes equal to the size of ``chunk``\ .
 
     :type position: int
     :param position: position from which to read
     :type chunk: writable string buffer
-    :param chunk: a writable buffer, such as the one returned by the
+    :param chunk: a c-like string buffer, such as the one returned by the
       ``create_string_buffer`` function in the :mod:`ctypes` module
     :rtype: int
-    :return: the number of bytes read; -1 on error
+    :return: the number of bytes read
     """    
     return self.f.pread_chunk(position, chunk)
   
@@ -146,14 +144,14 @@ class hdfs_file(object):
   def read_chunk(self, chunk):
     """
     Works like :meth:`read`\ , but data is stored in the writable
-    buffer ``chunk`` rather than returned.
+    buffer ``chunk`` rather than returned. Reads at most a number of
+    bytes equal to the size of ``chunk``\ .
 
     :type chunk: writable string buffer
-    :param chunk: a writable buffer, such as the one returned by the
+    :param chunk: a c-like string buffer, such as the one returned by the
       ``create_string_buffer`` function in the :mod:`ctypes` module
-    :rtype: string
-    :return: the number of bytes actually read, possibly less
-      than than length; -1 on error
+    :rtype: int
+    :return: the number of bytes read
     """    
     return self.f.read_chunk(chunk)
   
@@ -163,8 +161,6 @@ class hdfs_file(object):
 
     :type position: int
     :param position: offset into the file to seek into
-    :rtype: int
-    :return: 0 on success, -1 on error
     """
     self.__reset()
     return self.f.seek(position)
@@ -174,7 +170,7 @@ class hdfs_file(object):
     Get the current byte offset in the file.
 
     :rtype: int
-    :return: current offset in bytes, -1 on error
+    :return: current offset in bytes
     """
     return self.f.tell()
   
@@ -185,7 +181,7 @@ class hdfs_file(object):
     :type data: string
     :param data: the data to be written to the file
     :rtype: int
-    :return: the number of bytes written, -1 on error
+    :return: the number of bytes written
     """
     return self.f.write(data)
   
@@ -194,28 +190,27 @@ class hdfs_file(object):
     Write data from buffer ``chunk`` to the file.
 
     :type chunk: writable string buffer
-    :param chunk: a writable buffer, such as the one returned by the
+    :param chunk: a c-like string buffer, such as the one returned by the
       ``create_string_buffer`` function in the :mod:`ctypes` module
     :rtype: int
-    :return: the number of bytes written, -1 on error
+    :return: the number of bytes written
     """
     return self.f.write_chunk(chunk)
-    
+
 
 class hdfs(hdfs_fs):
   """
   Represents a handle to an HDFS instance.
+
+  :type host: string
+  :param host: hostname or IP address of the HDFS NameNode. Set to
+    an empty string (and ``port`` to 0) to connect to the local file
+    system; Set to "default" (and ``port`` to 0) to connect to the
+    "configured" file system.  
+  :type port: int
+  :param port: the port on which the NameNode is listening
   """
   def __init__(self, host, port):
-    """
-    :type host: string
-    :param host: hostname or IP address of the HDFS NameNode. Set to
-      an empty string (and port to 0) to connect to the local file
-      system; Set to 'default' (and port to 0) to connect to the
-      'configured' file system.
-    :type port: int
-    :param port: the port on which the NameNode is listening
-    """
     super(hdfs, self).__init__(host, port)
 
   def open_file(self, path,
@@ -250,3 +245,172 @@ class hdfs(hdfs_fs):
     return hdfs_file(super(hdfs, self).open_file(path, flags, buff_size,
                                                  replication, blocksize),
                      readline_chunk_size)
+
+  def capacity(self):
+    """
+    Return the raw capacity of the filesystem.
+    
+    :rtype: int
+    :return: the raw capacity
+    """
+    return super(hdfs, self).capacity()
+
+  def close(self):
+    """
+    Close the HDFS handle (disconnect).
+    """
+    return super(hdfs, self).close()
+
+  def copy(self, from_path, to_hdfs, to_path):
+    """
+    Copy file from one filesystem to another.
+
+    :type from_path: string
+    :param from_path: the path of the source file
+    :type from_hdfs: :class:`hdfs`
+    :param to_hdfs: the handle to destination filesystem
+    :type to_path: string
+    :param to_path: the path of the destination file
+    """
+    return super(hdfs, self).copy(from_path, to_hdfs, to_path)
+
+  def create_directory(self, path):
+    """
+    Create directory ``path`` (non-existent parents will be created as well).
+
+    :type path: string
+    :param path: the path of the directory
+    """
+    return super(hdfs, self).create_directory(path)
+
+  def default_block_size(self):
+    """
+    Get the default block size.
+    
+    :rtype: int
+    :return: the default blocksize
+    """
+    return super(hdfs, self).default_block_size()
+  
+  def delete(self, path):
+    """
+    Delete ``path``. It will recursively delete a non-empty directory.
+
+    :type path: string
+    :param path: the path of the file or directory
+    """
+    return super(hdfs, self).delete(path)
+
+  def exists(self, path):
+    """
+    Check if a given path exists on the filesystem.
+
+    :type path: string
+    :param path: the path to look for
+    :rtype: bool
+    :return: True if ``path`` exists, else False
+    """
+    return super(hdfs, self).exists(path)
+
+  # FIXME: does not work!!!
+  def get_hosts(self, path, start, length):
+    """
+    Get hostnames where a particular block (determined by pos and
+    blocksize) of a file is stored. Due to replication, a single block
+    could be present on multiple hosts.
+
+    :type path: string
+    :param path: the path of the file
+    :type start: int
+    :param start: the start of the block
+    :type length: int
+    :param length: the length of the block
+    :rtype: list
+    :return: list of hosts that store the block
+    """
+    return super(hdfs, self).get_hosts(path, start, length)
+  
+  def get_path_info(self, path):
+    """
+    Get information about ``path`` as a dict of properties.
+    
+    :type path: string
+    :param path: a path in the filesystem
+    :rtype: dict
+    :return: path information
+    """
+    return super(hdfs, self).get_path_info(path)
+
+  def list_directory(self, path):
+    """
+    Get list of files and directories for ``path``\ .
+    
+    :type path: string
+    :param path: the path of the directory
+    :rtype: list
+    :return: list of files and directories in ``path``
+    """
+    return super(hdfs, self).list_directory(path)
+  
+  def move(self, from_path, to_hdfs, to_path):
+    """
+    Move file from one filesystem to another.
+
+    :type from_path: string
+    :param from_path: the path of the source file
+    :type from_hdfs: :class:`hdfs`
+    :param to_hdfs: the handle to destination filesystem
+    :type to_path: string
+    :param to_path: the path of the destination file
+    """
+    return super(hdfs, self).move(from_path, to_hdfs, to_path)
+    
+  def rename(self, from_path, to_path):
+    """
+    Rename file.
+
+    :type from_path: string
+    :param from_path: the path of the source file
+    :type to_path: string
+    :param to_path: the path of the destination file    
+    """
+    return super(hdfs, self).rename(from_path, to_path)
+
+  def set_replication(self, path, replication):
+    """
+    Set the replication of ``path`` to ``replication``\ .
+
+    :type path: string
+    :param path: the path of the file
+    :type replication: int
+    :param replication: the replication value
+    """
+    return super(hdfs, self).set_replication(path, replication)
+  
+  def set_working_directory(self, path):
+    """
+    Set the working directory to ``path``\ . All relative paths will
+    be resolved relative to it.
+
+    :type path: string
+    :param path: the path of the directory
+    """
+    return super(hdfs, self).set_working_directory(path)
+
+  def used(self):
+    """
+    Return the total raw size of all files in the filesystem.
+    
+    :rtype: int
+    :return: total size of files in the file system
+    """
+    return super(hdfs, self).used()
+  
+  def working_directory(self):
+    """
+    Get the current working directory.
+    
+    :rtype: str
+    :return: current working directory
+    """
+    return super(hdfs, self).working_directory()

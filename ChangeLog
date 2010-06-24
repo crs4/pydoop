@@ -1,3 +1,8 @@
+2010-06-24    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py (hdfs): added wrappers to all remaining methods,
+	with docstrings for Sphinx.
+
 2010-02-25    <simleo@neuron.crs4.it>
 
 	* src/HadoopPipes_signal.cpp: this is currently experimental, so
