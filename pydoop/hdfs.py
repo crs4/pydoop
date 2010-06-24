@@ -2,7 +2,8 @@
 # END_COPYRIGHT
 
 """
-This module provides access to HDFS from Python applications.
+This module provides facilities to connect to an HDFS and manipulate
+its files and directories.
 """
 
 import os, glob
@@ -27,17 +28,16 @@ from pydoop_hdfs import hdfs_fs
 
 class hdfs_file(object):
   """
-  A wrapper for raw hdfs files. Currently it adds the readline method.
+  Instances of this class represent HDFS file objects.
+
+  Objects from this class should not be instantiated directly. To get an HDFS
+  file object, call :meth:`hdfs.open_file`\ .
   """
   
   DEFAULT_CHUNK_SIZE = 16384
   ENDL = os.linesep
 
   def __init__(self, raw_hdfs_file, chunk_size=DEFAULT_CHUNK_SIZE):
-    """
-    C{hdfs_file} should not be instantiated directly. To get an hdfs
-    file object, call L{hdfs.open_file}.
-    """
     if not chunk_size > 0:
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file
@@ -75,7 +75,10 @@ class hdfs_file(object):
 
   def readline(self):
     """
-    Reads and returns a line of text.
+    Read and return a line of text.
+
+    :rtype: string
+    :return: the next line of text in the file, including the newline character
     """
     eol = self.__read_chunks_until_nl()
     line = "".join(self.buffer_list) + self.chunk[self.p:eol+1]
@@ -86,52 +89,82 @@ class hdfs_file(object):
   def available(self):
     """
     Number of bytes that can be read from this input stream without blocking.
+
+    :rtype: int
+    :return: available bytes; -1 on error
     """
     return self.f.available()
   
   def close(self):
     """
     Close the file.
+
+    :rtype: int
+    :return: 0 on success, -1 on error
     """
     return self.f.close()
   
   def pread(self, position, length):
     """
-    Read C{length} bytes of data from the file, starting from C{position}.
+    Read ``length`` bytes of data from the file, starting from ``position``\ .
+
+    :type position: int
+    :param position: position from which to read
+    :type length: int
+    :param length: the number of bytes to read
+    :rtype: string
+    :return: the chunk of data read from the file
     """
     return self.f.pread(position, length)
   
   def pread_chunk(self, position, chunk):
     """
-    Works like L{pread}, but data is stored in the writable buffer C{chunk}.
+    Works like :meth:`pread`\ , but data is stored in the writable
+    buffer ``chunk`` rather than returned.
 
-    @param position: starting position from which to read.
-    @param chunk: a writable buffer (e.g., C{ctypes.create_string_buffer})
-
-    @return: the number of bytes read; -1 on error
+    :type position: int
+    :param position: position from which to read
+    :type chunk: writable string buffer
+    :param chunk: a writable buffer, such as the one returned by the
+      ``create_string_buffer`` function in the :mod:`ctypes` module
+    :rtype: int
+    :return: the number of bytes read; -1 on error
     """    
     return self.f.pread_chunk(position, chunk)
   
   def read(self, length):
     """
-    Read C{length} bytes from the file.
+    Read ``length`` bytes from the file.
+
+    :type length: int
+    :param length: the number of bytes to read
+    :rtype: string
+    :return: the chunk of data read from the file
     """
     return self.f.read(length)
  
   def read_chunk(self, chunk):
     """
-    Works like L{read}, but data is stored in the writable buffer C{chunk}.
+    Works like :meth:`read`\ , but data is stored in the writable
+    buffer ``chunk`` rather than returned.
 
-    @param chunk: a writable buffer (e.g., C{ctypes.create_string_buffer})
-
-    @return: the number of bytes read; -1 on error
+    :type chunk: writable string buffer
+    :param chunk: a writable buffer, such as the one returned by the
+      ``create_string_buffer`` function in the :mod:`ctypes` module
+    :rtype: string
+    :return: the number of bytes actually read, possibly less
+      than than length; -1 on error
     """    
-    
     return self.f.read_chunk(chunk)
   
   def seek(self, position):
     """
-    Seek to given offset in file.
+    Seek to ``position`` in file.
+
+    :type position: int
+    :param position: offset into the file to seek into
+    :rtype: int
+    :return: 0 on success, -1 on error
     """
     self.__reset()
     return self.f.seek(position)
@@ -139,33 +172,49 @@ class hdfs_file(object):
   def tell(self):
     """
     Get the current byte offset in the file.
+
+    :rtype: int
+    :return: current offset in bytes, -1 on error
     """
     return self.f.tell()
   
   def write(self, data):
     """
-    Write data to the file.
+    Write ``data`` to the file.
+
+    :type data: string
+    :param data: the data to be written to the file
+    :rtype: int
+    :return: the number of bytes written, -1 on error
     """
     return self.f.write(data)
   
   def write_chunk(self, chunk):
     """
-    Write data from buffer C{chunk} to the file.
+    Write data from buffer ``chunk`` to the file.
+
+    :type chunk: writable string buffer
+    :param chunk: a writable buffer, such as the one returned by the
+      ``create_string_buffer`` function in the :mod:`ctypes` module
+    :rtype: int
+    :return: the number of bytes written, -1 on error
     """
     return self.f.write_chunk(chunk)
     
 
 class hdfs(hdfs_fs):
   """
-  Represents a connection to an HDFS file system.
+  Represents a handle to an HDFS instance.
   """
   def __init__(self, host, port):
     """
-    @param host: hostname or IP address of the HDFS NameNode. Set to
+    :type host: string
+    :param host: hostname or IP address of the HDFS NameNode. Set to
       an empty string (and port to 0) to connect to the local file
       system; Set to 'default' (and port to 0) to connect to the
       'configured' file system.
-    @param port: the port on which the NameNode is listening.
+    :type port: int
+    :param port: the port on which the NameNode is listening
     """
     super(hdfs, self).__init__(host, port)
 
@@ -176,20 +225,27 @@ class hdfs(hdfs_fs):
                 blocksize=0,
                 readline_chunk_size=hdfs_file.DEFAULT_CHUNK_SIZE):
     """
-    Open an hdfs file.
+    Open an HDFS file.
 
     Pass 0 as buff_size, replication or blocksize if you want to use
-    the default configured values.
+    the default values, i.e., the ones set in the Hadoop configuration
+    files.
 
-    @param path: the full path to the file.
-    @param flags: opening flags - supported flags are os.O_RDONLY, os.O_WRONLY
-    @param buff_size: read/write buffer size.
-    @param replication: HDFS block replication.
-    @param blocksize: HDFS block size.
-    @param readline_chunk_size: the amount of bytes that L{hdfs_file.readline}
-      will use as buffer.
-
-    @return: handle to the open file
+    :type path: string
+    :param path: the full path to the file
+    :type flags: int
+    :param flags: opening flags -- :data:`os.O_RDONLY` or :data:`os.O_WRONLY`
+    :type buff_size: int
+    :param buff_size: read/write buffer size in bytes
+    :type replication: int
+    :param replication: HDFS block replication
+    :type blocksize: int
+    :param blocksize: HDFS block size
+    :type readline_chunk_size: int
+    :param readline_chunk_size: the amount of bytes that
+      :meth:`hdfs_file.readline` will use for buffering
+    :rtpye: :class:`hdfs_file`
+    :return: handle to the open file
     """
     return hdfs_file(super(hdfs, self).open_file(path, flags, buff_size,
                                                  replication, blocksize),

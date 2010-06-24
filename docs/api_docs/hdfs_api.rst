@@ -2,3 +2,4 @@
 ===============================
 
 .. automodule:: pydoop.hdfs
+   :members:
