@@ -154,23 +154,25 @@ bp::dict wrap_hdfs_fs::get_path_info(std::string path) {
 
 bp::list wrap_hdfs_fs::get_hosts(std::string path, tOffset start,
 				 tOffset length) {
-  exec_and_trap_error(char***,
-		      hdfsGetHosts(fs_, path.c_str(), start, length),
-		      "Cannot get_hosts for " + path);
-  bp::list blocks;
-  char ***bp = res;
-  while(bp != NULL){
-    char** p = *bp;
-    bp::list hosts_for_block;
-    while(p != NULL){
-      hosts_for_block.append(std::string(*p));
-      ++p;
+  char*** hosts = hdfsGetHosts(fs_, path.c_str(), start, length);
+  if(hosts) {
+    bp::list blocks;
+    int i = 0;
+    while(hosts[i]) {
+      int j = 0;
+      bp::list hosts_for_block;
+      while(hosts[i][j]) {
+	hosts_for_block.append(std::string(hosts[i][j]));
+	++j;
+      }
+      blocks.append(hosts_for_block);
+      ++i;
     }
-    blocks.append(hosts_for_block);
-    ++bp;
+    hdfsFreeHosts(hosts);
+    return blocks;
+  } else {
+    throw hdfs_exception("Cannot get hosts per block for " + path);
   }
-  hdfsFreeHosts(res);
-  return blocks;
 }
 
 wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags, 

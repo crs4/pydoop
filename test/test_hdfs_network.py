@@ -125,6 +125,21 @@ class hdfs_default_tc(hdfs_basic_tc):
       self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
     self.fs.delete(path)
 
+  def get_hosts(self):
+    path = "test_get_hosts.txt"
+    block_size = 4096
+    N = 4
+    text = "x" * block_size * N
+    f = self.fs.open_file(path, os.O_WRONLY, 0, 0, block_size)
+    f.write(text)
+    f.close()
+    start = 0
+    for i in xrange(N):
+      length = block_size * i + 1
+      hosts_per_block = self.fs.get_hosts(path, start, length)
+      self.assertEqual(len(hosts_per_block), i+1)
+    self.fs.delete(path)
+
 
 class hdfs_local_tc(hdfs_default_tc):
   
@@ -140,7 +155,8 @@ def suite():
     'move',
     'block_size',
     'replication',
-    'readline_block_boundary'
+    'readline_block_boundary',
+    'get_hosts'
     ])
   for tc in hdfs_default_tc, hdfs_local_tc:
     for t in tests:

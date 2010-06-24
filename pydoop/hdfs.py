@@ -312,7 +312,6 @@ class hdfs(hdfs_fs):
     """
     return super(hdfs, self).exists(path)
 
-  # FIXME: does not work!!!
   def get_hosts(self, path, start, length):
     """
     Get hostnames where a particular block (determined by pos and
