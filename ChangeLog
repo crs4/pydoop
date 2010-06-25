@@ -1,5 +1,12 @@
 2010-06-25    <simleo@neuron.crs4.it>
 
+	* pydoop/utils.py (split_hdfs_path): fixed #260.
+
+	* examples/text_pipe_runner.py: changed to take pipes executable
+	as an input parameter.
+
+	* docs/conf.py: fixed sys.path manipulation to import from build dir.
+
 	* Makefile: refactored to support Sphinx docs; added more targets.
 
 2010-06-24    <simleo@neuron.crs4.it>

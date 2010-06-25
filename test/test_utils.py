@@ -1,24 +1,26 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
-import unittest
+import os, unittest
 
 from pydoop.utils import split_hdfs_path, jc_configure
 from pydoop.utils import jc_configure_int, jc_configure_bool, jc_configure_float
-from pydoop.utils import DEFAULT_HDFS_PORT
 
 import pydoop_pipes as pp
 
-
-split_examples = [
-  ('canonical', 'hdfs://foobar.foo.com:1234/foofile/bar',
-   ('foobar.foo.com', 1234, '/foofile/bar')),
-  ('canonical', 'file:///foofile/bar', ('', 0, '/foofile/bar')),
-  ('canonical', 'hdfs:///foofile/bar', ('localhost', 0, '/foofile/bar')),
-  ('bad', '/foobar.foo.com:1234/foofile/bar', ()),
-  ('bad', 'file://foobar.foo.com:1234/foofile/bar', ()),
-  ('canonical', 'hdfs://foobar.foo.com/foofile/bar',
-   ('foobar.foo.com', DEFAULT_HDFS_PORT, '/foofile/bar'))
+good_examples = [
+  ('hdfs://foo.bar.com:1234/foo/bar', ('foo.bar.com', 1234, '/foo/bar')),
+  ('hdfs://foo.bar.com/foo/bar', ('foo.bar.com', 0, '/foo/bar')),
+  ('hdfs:///foo/bar', ('default', 0, '/foo/bar')),
+  ('file:///foo/bar', ('', 0, '/foo/bar')),
+  ('file:/foo/bar', ('', 0, '/foo/bar')),
+  ('/foo/bar', ('default', 0, '/foo/bar')),
+  ('foo/bar', ('default', 0, '/user/%s/foo/bar' % os.environ["USER"]))
   ]
+
+bad_examples = [
+  ('file://foo.bar.com:1234/foo/bar', ()),
+  ('/foo.bar.com:1234/foo/bar', ())
+]
 
 configure_examples = {
   'a' : ['str', 'this is a string'],
@@ -36,17 +38,10 @@ configure_examples = {
 class utils_tc(unittest.TestCase):
 
   def split(self):
-    for t, p, r in split_examples:
-      print 'p=', p
-      if t == 'bad':
-        self.assertRaises(UserWarning, split_hdfs_path, p)
-        try:
-          split_hdfs_path(p)
-        except Exception, e:
-          m = 'pydoop_exception: split_hdfs_path: illegal hdfs path <%s>' % p
-          self.assertEqual(e.args[0], m)
-      else:
-        self.assertEqual(split_hdfs_path(p), r)
+    for p, r in good_examples:
+      self.assertEqual(split_hdfs_path(p), r)
+    for p, r in bad_examples:
+      self.assertRaises(UserWarning, split_hdfs_path, p)
 
   def jc_configure_plain(self):
     w = configure_examples

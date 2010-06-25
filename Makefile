@@ -6,17 +6,23 @@ GENERATED_SRC_FILES = src/pydoop_pipes_main.cpp src/pydoop_hdfs_main.cpp \
 	src/SerialUtils.cpp src/HadoopPipes.cpp src/StringUtils.cpp
 
 
-.PHONY: all build install docs dist clean distclean
+.PHONY: all build build_py install docs docs_py dist clean distclean
 
 all: build
 
 build:
 	python setup.py build
 
+build_py:
+	python setup.py build_py
+
 install: build
 	sudo python setup.py install --skip-build
 
 docs: build
+	make -C docs html
+
+docs_py: build_py
 	make -C docs html
 
 dist: docs
@@ -32,6 +38,7 @@ clean:
 	rm -rf build
 	rm -fv $(GENERATED_SRC_FILES)
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
+	make -C docs clean
 
 distclean: clean
 	rm -rf dist $(EXPORT_DIR) docs/_build/*

@@ -9,7 +9,7 @@ Pydoop |release| Documentation
 Contents:
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    installation/index
    api_docs/index

@@ -1,4 +1,6 @@
-from pydoop.utils import pipes_runner
+import sys
+from pydoop.pipes_runner import pipes_runner
+
 
 class output_visitor(object):
   def __init__(self):
@@ -10,16 +12,18 @@ class output_visitor(object):
   def progress(self, progress):
     print 'we are at %f done.' % float(progress)
 
-def run_map():
-  p = pipes_runner('./WordCount', output_visitor())
+
+def run_map(pipes_exe):
+  p = pipes_runner(pipes_exe, output_visitor())
   p.start()
   p.run_map('fake_input_split', 3)
   for v in ['faa', 'fii', 'foo', 'fuu']:
     p.map_item(str(1), str(v))
   p.close()
 
-def run_reduce():
-  p = pipes_runner('./WordCount', output_visitor())
+
+def run_reduce(pipes_exe):
+  p = pipes_runner(pipes_exe, output_visitor())
   p.start()
   p.run_reduce()
   red_vals = {'foo' : range(10), 'bar' : range(14)}
@@ -29,15 +33,16 @@ def run_reduce():
       p.reduce_value(str(v))
   p.close()
 
-def word_count_example():
-  run_map()
-  run_reduce()
+
+def word_count_example(argv):
+  try:
+    pipes_exe = sys.argv[1]
+  except IndexError:
+    sys.stdout.write("Usage: python %s PIPES_EXECUTABLE\n" % argv[0])
+    sys.exit(2)
+  run_map(pipes_exe)
+  run_reduce(pipes_exe)
 
 
 if __name__ == '__main__':
-  word_count_example()
-
-
-
-
-
+  word_count_example(sys.argv)

@@ -1,30 +1,40 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 """
-Contains miscellaneous utility functions.
+This module contains general utility functions for application writing.
 """
 
 import os
 from urlparse import urlparse
 from struct import pack
-from pydoop_pipes import raise_pydoop_exception
-from pydoop_pipes import quote_string, unquote_string 
-from pipes_runner import pipes_runner
+import pydoop_pipes as pp
 
 
-DEFAULT_HDFS_PORT=9000
+def raise_pydoop_exception(msg):
+  """
+  Raise a generic Pydoop exception.
+
+  The exception is built at the C++ level and translated into a
+  :exc:`UserWarning` by the Boost wrapper.
+  """
+  return pp.raise_pydoop_exception(msg)
 
 
 def jc_configure(obj, jc, k, f, df=None):
   """
-  Gets a configuration parameter from C{jc} and automatically sets a
-  corresponding attribute on C{obj}.
+  Gets a configuration parameter from ``jc`` and automatically sets a
+  corresponding attribute on ``obj``\ .
 
-  @param obj: object on which the attribute must be set
-  @param jc: a C{JobConf} object
-  @param k: a configuration key
-  @param f: name of the attribute to set
-  @param df: default value for the attribute if C{k} is not present in C{jc}
+  :type obj: any object, typically a MapReduce component
+  :param obj: object on which the attribute must be set
+  :type jc: :class:`JobConf`
+  :param jc: a job configuration object
+  :type k: string
+  :param k: a configuration key
+  :type f: string
+  :param f: name of the attribute to set
+  :type df: string
+  :param df: default value for the attribute if ``k`` is not present in ``jc``
   """
   v = df
   if jc.hasKey(k):
@@ -36,7 +46,7 @@ def jc_configure(obj, jc, k, f, df=None):
 
 def jc_configure_int(obj, jc, k, f, df=None):
   """
-  Works like L{jc_configure}, but converts C{jc[k]} to an int.
+  Works like :func:`jc_configure` , but converts ``jc[k]`` to an integer.
   """
   v = df
   if jc.hasKey(k):
@@ -48,7 +58,7 @@ def jc_configure_int(obj, jc, k, f, df=None):
 
 def jc_configure_bool(obj, jc, k, f, df=None):
   """
-  Works like L{jc_configure}, but converts C{jc[k]} to a bool.
+  Works like :func:`jc_configure`\ , but converts ``jc[k]`` to a boolean.
   """
   v = df
   if jc.hasKey(k):
@@ -60,7 +70,7 @@ def jc_configure_bool(obj, jc, k, f, df=None):
 
 def jc_configure_float(obj, jc, k, f, df=None):
   """
-  Works like L{jc_configure}, but converts C{jc[k]} to a float.
+  Works like :func:`jc_configure`\ , but converts ``jc[k]`` to a float.
   """
   v = df
   if jc.hasKey(k):
@@ -78,13 +88,17 @@ def __cleanup_file_path(path):
 
 def make_input_split(filename, offset, length):
   """
-  Make a fake (i.e. not tied to a real file) input split. Mostly
-  useful for testing purposes.
+  Build a fake (i.e., not tied to a real file)
+  :class:`InputSplit <pydoop.pipes.InputSplit>`\ . This is used for testing
+  purposes.
 
-  @param filename: file name.
-  @param offset: byte offset of the split with respect to the
+  :type filename: string
+  :param filename: file name
+  :type offset: int
+  :param offset: byte offset of the split with respect to the
     beginning of the file
-  @param length: length of the split in bytes
+  :type length: int
+  :param length: length of the split in bytes
   """
   l = len(filename)
   s = pack(">h", l)
@@ -94,32 +108,38 @@ def make_input_split(filename, offset, length):
   return s
 
 
-def split_hdfs_path(path):
+def split_hdfs_path(hdfs_url):
   """
-  Split HDFS URLs into (hostname, port, path) tuples.
+  Split ``hdfs_url`` into a (hostname, port, path) tuple.
 
-  >>> split_hdfs_path('hdfs://foobar.foo.com:1234/foodir/barfile')
-  ('foobar.foo.com', 1234, '/foodir/barfile')
-  >>> split_hdfs_path('file:///foodir/barfile')
-  ('', 0, '/foodir/barfile')
-  >>> split_hdfs_path('hdfs:///foodir/barfile')
-  ('localhost', 0, '/foodir/barfile')
-
-  @param path: a full hdfs path C{hdfs://<HOST>:<PORT>/some/path}
+  :type hdfs_url: string
+  :param hdfs_url: an HDFS url, e.g., ``hdfs://localhost:9000/user/me``
+  :rtype: tuple
+  :return: hostname, port, path
   """
-  r = urlparse(path)
-  if r.scheme == 'file':
+  e = 'Illegal HDFS url <%s>'
+  r = urlparse(hdfs_url)
+  if r.scheme == 'hdfs':
+    parts = r.netloc.split(':')
+    if len(parts) == 2:
+      hostname, port, path = parts[0], int(parts[1]), r.path
+    elif len(parts) == 1:
+      hostname, port, path = parts[0] or "default", 0, r.path
+    else:
+      raise_pydoop_exception(e % hdfs_url)
+  elif r.scheme == 'file':
     if r.netloc != '':
-      raise_pydoop_exception('split_hdfs_path: illegal hdfs path <%s>' % path)
-    return '', 0, r.path
-  if r.scheme != 'hdfs':
-    raise_pydoop_exception('split_hdfs_path: illegal hdfs path <%s>' % path)
-  npath = 'http:' + path[len('hdfs:'):]
-  r = urlparse(npath)
-  if r.netloc is '':
-    return 'localhost', 0, __cleanup_file_path(r.path)
-  parts = r.netloc.split(':')
-  if len(parts) == 2:
-    return parts[0], int(parts[1]), r.path
+      raise_pydoop_exception(e % hdfs_url)
+    hostname, port, path = '', 0, r.path
+  elif r.scheme == '':
+    first_chunk = r.path.lstrip("/").split("/", 1)[0]
+    if ":" in first_chunk:
+      raise_pydoop_exception(e % hdfs_url)
+    if not r.path.startswith("/"):
+      path = "/user/%s/%s" % (os.environ["USER"], r.path)
+    else:
+      path = r.path
+    hostname, port = 'default', 0
   else:
-    return parts[0], DEFAULT_HDFS_PORT, r.path
+    raise_pydoop_exception(e % hdfs_url)
+  return hostname, port, os.path.normpath(path)
