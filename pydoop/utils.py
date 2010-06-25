@@ -80,12 +80,6 @@ def jc_configure_float(obj, jc, k, f, df=None):
   setattr(obj, f, v)
 
 
-def __cleanup_file_path(path):
-  while path.startswith(os.path.sep):
-    path = path[1:]
-  return os.path.join(os.path.sep, path)
-
-
 def make_input_split(filename, offset, length):
   """
   Build a fake (i.e., not tied to a real file)

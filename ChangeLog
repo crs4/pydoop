@@ -1,6 +1,7 @@
 2010-06-25    <simleo@neuron.crs4.it>
 
-	* pydoop/utils.py (split_hdfs_path): fixed #260.
+	* pydoop/utils.py: removed __cleanup_file_path, it is no longer used.
+	(split_hdfs_path): fixed #260.
 
 	* examples/text_pipe_runner.py: changed to take pipes executable
 	as an input parameter.
