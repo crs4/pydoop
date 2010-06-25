@@ -2,35 +2,36 @@ ACDC_SVN_BASE = ${HOME}/svn/ac-dc
 COPYRIGHTER = $(ACDC_SVN_BASE)/tools/copyrighter/copyrighter.py
 AUTHOR = "Simone Leo, Gianluigi Zanetti"
 EXPORT_DIR = svn_export
+GENERATED_SRC_FILES = src/pydoop_pipes_main.cpp src/pydoop_hdfs_main.cpp \
+	src/SerialUtils.cpp src/HadoopPipes.cpp src/StringUtils.cpp
 
-# epydoc parameters
-MODULES = pydoop/__init__.py \
-	pydoop/pipes.py \
-	pydoop/input_split.py \
-	pydoop/factory.py \
-	pydoop/utils.py \
-	pydoop/hdfs.py
 
-NAME = pydoop
-DOC_DIR = doc/html
-URL = http://pydoop.sourceforge.net
+.PHONY: all build install docs dist clean distclean
 
-.PHONY: all clean dist distclean
+all: build
 
-all: dist
+build:
+	python setup.py build
 
-dist:
+install: build
+	sudo python setup.py install --skip-build
+
+docs: build
+	make -C docs html
+
+dist: docs
 	svn export . $(EXPORT_DIR)
 	python $(COPYRIGHTER) -a $(AUTHOR) -r $(EXPORT_DIR)
 	python $(COPYRIGHTER) -a $(AUTHOR) -b '// BEGIN_COPYRIGHT' -e '// END_COPYRIGHT' -c "//" $(EXPORT_DIR)/src
-	mkdir -p $(EXPORT_DIR)/doc/html
-	cd $(EXPORT_DIR) && epydoc --parse-only -v -n $(NAME) -o $(DOC_DIR) -u $(URL) $(MODULES)
+	rm -rf $(EXPORT_DIR)/docs/*
+	mv docs/_build/html $(EXPORT_DIR)/docs/
 	cd $(EXPORT_DIR) && python setup.py sdist
+	mv $(EXPORT_DIR)/dist .
 
 clean:
-	cd pygsa && rm -f *.pyc */*.pyc
-
-distclean:
-	rm -rf $(EXPORT_DIR) build
-	rm -fv MANIFEST src/SerialUtils.cpp src/HadoopPipes.cpp src/pydoop_pipes_main.cpp src/pydoop_hdfs_main.cpp src/StringUtils.cpp
+	rm -rf build
+	rm -fv $(GENERATED_SRC_FILES)
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
+
+distclean: clean
+	rm -rf dist $(EXPORT_DIR) docs/_build/*
