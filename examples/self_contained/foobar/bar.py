@@ -1,2 +1,0 @@
-def says():
-  return 'hello!'
