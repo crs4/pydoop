@@ -9,7 +9,7 @@ them, providing implementations for all methods called by the
 framework.
 """
 
-import pydoop_pipes as pp
+import _pipes as pp
 from factory import Factory
 from input_split import InputSplit
 

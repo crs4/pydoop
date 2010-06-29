@@ -1,7 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 import unittest
-import pydoop_pipes
+import pydoop._pipes
 
 import gc
 
@@ -12,7 +12,7 @@ class str_lifetime_tc(unittest.TestCase):
     N = 10000
     S = 10000000
     for x in xrange(N):
-      s = pydoop_pipes.create_a_string(S)
+      s = pydoop._pipes.create_a_string(S)
 
   def push_leak_map_context(self):
     N = 100
@@ -24,14 +24,14 @@ class str_lifetime_tc(unittest.TestCase):
          'input_key_class' : 'foo_key_class',
          'input_value_class' : 'foo_value_class'}
     for x in xrange(N):
-      mctx = pydoop_pipes.get_MapContext_object(d)
+      mctx = pydoop._pipes.get_MapContext_object(d)
       v = mctx.getInputValue()
 
   def garbage_collect(self):
     N = 10000
     S = 10000000
     for x in xrange(N):
-      s = pydoop_pipes.create_a_string(S)
+      s = pydoop._pipes.create_a_string(S)
       gc.collect()
 
 

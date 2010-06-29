@@ -1,7 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 import unittest
-import pydoop_pipes
+import pydoop._pipes
 
 
 class jobconf_tc(unittest.TestCase):
@@ -12,9 +12,9 @@ class jobconf_tc(unittest.TestCase):
   def test_override_from_python(self):
     d = {'str' : 'this is a string', 'float' : 0.23,
          'int' : 22, 'bool' : False}
-    class jc(pydoop_pipes.JobConf):
+    class jc(pydoop._pipes.JobConf):
       def __init__(self, d):
-        pydoop_pipes.JobConf.__init__(self)
+        pydoop._pipes.JobConf.__init__(self)
         self.d = d
       def hasKey(self, k):
         return self.d.has_key(k)
@@ -27,7 +27,7 @@ class jobconf_tc(unittest.TestCase):
       def getBoolean(self, k):
         return bool(self.get(k))
     jo = jc(d)
-    jp = pydoop_pipes.wrap_JobConf_object(jo)
+    jp = pydoop._pipes.wrap_JobConf_object(jo)
     for k in d:
       self.assertTrue(jp.hasKey(k))
     for k in d:
@@ -41,7 +41,7 @@ class jobconf_tc(unittest.TestCase):
   def test_override_from_cpluplus(self):
     d = {'str' : 'this is a string', 'float' : '0.23',
          'int' : '22', 'bool' : 'false'}
-    o = pydoop_pipes.get_JobConf_object(d)
+    o = pydoop._pipes.get_JobConf_object(d)
     for k in d:
       self.assertTrue(o.hasKey(k))
     self.assertEqual(o.get('str'), d['str'])

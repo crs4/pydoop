@@ -2,7 +2,9 @@
 # END_COPYRIGHT
 
 import sys, os, platform, re
-from distutils.core import setup, Extension
+from distutils.core import setup
+from distutils.extension import Extension
+from distutils.command.build_ext import build_ext
 
 import pydoop
 
@@ -65,22 +67,51 @@ def get_java_library_dirs(java_home):
     return [os.path.join(java_home, "jre/lib/%s/server" % a)]
 
 
-class BoostExtFactory(object):
+class BoostExtension(Extension):
 
     export_pattern = re.compile(r"void\s+export_(\w+)")
+    
+    def __init__(self, name, wrap_sources, aux_sources,
+                 patches=None,
+                 include_dirs=None,
+                 define_macros=None,
+                 undef_macros=None,
+                 library_dirs=None,
+                 libraries=None,
+                 runtime_library_dirs=None,
+                 extra_objects=None,
+                 extra_compile_args=None,
+                 extra_link_args=None,
+                 export_symbols=None,
+                 swig_opts = None,
+                 depends=None,
+                 language=None,
+                 **kw):
+        Extension.__init__(self, name,
+                           wrap_sources+aux_sources,
+                           include_dirs,
+                           define_macros,
+                           undef_macros,
+                           library_dirs,
+                           libraries,
+                           runtime_library_dirs,
+                           extra_objects,
+                           extra_compile_args,
+                           extra_link_args,
+                           export_symbols,
+                           swig_opts,
+                           depends,
+                           language,
+                           **kw)
+        self.module_name = self.name.rsplit(".", 1)[-1]
+        self.wrap_sources = wrap_sources
+        self.patches = patches
 
-    def __init__(self, name, wrap_files, aux_files, **ext_args):
-        self.name = name
-        self.wrap_files = wrap_files
-        self.aux_files = aux_files
-        self.main = self.__generate_main()
-        self.ext_args = ext_args
-
-    def __generate_main(self):
+    def generate_main(self):
         sys.stderr.write("generating main for %s...\n" % self.name)
         first_half = ["#include <boost/python.hpp>"]
-        second_half = ["BOOST_PYTHON_MODULE(%s){" % self.name]
-        for fn in self.wrap_files:
+        second_half = ["BOOST_PYTHON_MODULE(%s){" % self.module_name]
+        for fn in self.wrap_sources:
             f = open(fn)
             code = f.read()
             f.close()
@@ -90,8 +121,8 @@ class BoostExtFactory(object):
                 first_half.append("void %s();" % fun_name)
                 second_half.append("%s();" % fun_name)
         second_half.append("}")
-        destdir = os.path.split(self.wrap_files[0])[0]  # should be fine
-        outfn = os.path.join(destdir, "%s_main.cpp" % self.name)
+        destdir = os.path.split(self.wrap_sources[0])[0]  # should be ok
+        outfn = os.path.join(destdir, "%s_main.cpp" % self.module_name)
         outf = open(outfn, "w")
         for line in first_half:
             outf.write("%s%s" % (line, os.linesep))
@@ -100,66 +131,63 @@ class BoostExtFactory(object):
         outf.close()
         return outfn
 
-    def create(self):
-        all_files = self.aux_files + self.wrap_files + [self.main]
-        return Extension(self.name, all_files, **self.ext_args)
+    def generate_patched_aux(self):
+        aux = []
+        if not self.patches:
+            return aux
+        for fn, p in self.patches.iteritems():
+            f = open(fn)
+            contents = f.read()
+            f.close()
+            for old, new in self.patches[fn].iteritems():
+                contents = contents.replace(old, new)
+            patched_fn = "src/%s" % os.path.basename(fn)
+            f = open(patched_fn, "w")
+            f.write(contents)
+            f.close()
+            aux.append(patched_fn)
+        return aux
 
 
-def get_pipes_aux(hadoop_home):
-    dirs = {
-        "SerialUtils": "utils",
-        "StringUtils": "utils",
-        "HadoopPipes": "pipes"
-        }
-    patches = {
-        "SerialUtils": {
-            '#include "hadoop/SerialUtils.hh"':
-            '''
-            #include <stdint.h>
-            #include "hadoop/SerialUtils.hh"
-            ''',
-            "#include <string>": "#include <string.h>",
-            OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
-            },
-        "StringUtils": {
-            "#include <strings.h>": "#include <string.h>\n#include <stdlib.h>"
-            },
-        "HadoopPipes": {
-            '#include "hadoop/Pipes.hh"' :
-            '''
-            #include <stdint.h>
-            #include "hadoop/Pipes.hh"
-            ''',
-            "#include <strings.h>": "#include <string.h>",
-            OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
-            },
-        }
-    contents = dict.fromkeys(dirs)
-    for n, d in dirs.iteritems():
-        fn = os.path.join(hadoop_home, "src/c++/%s/impl/%s.cc" % (d, n))
-        f = open(fn)
-        contents[n] = f.read()
-        f.close()
-        for old, new in patches[n].iteritems():
-            contents[n] = contents[n].replace(old, new)
-        f = open("src/%s.cpp" % n, "w")
-        f.write(contents[n])
-        f.close()
-    return contents.keys()
+class build_boost_ext(build_ext):
+    
+    def finalize_options(self):
+        build_ext.finalize_options(self)
+        for e in self.extensions:
+            e.sources.append(e.generate_main())
+            e.sources.extend(e.generate_patched_aux())
 
 
 def create_pipes_ext():
     wrap = ["pipes", "pipes_context", "pipes_test_support",
             "pipes_serial_utils", "exceptions"]
-    aux = get_pipes_aux(HADOOP_HOME)
-    factory = BoostExtFactory(
-        "pydoop_pipes",
+    aux = []
+    basedir = os.path.join(HADOOP_HOME, "src/c++")
+    patches = {
+        os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
+            '#include "hadoop/SerialUtils.hh"':
+            '#include <stdint.h>\n#include "hadoop/SerialUtils.hh"',
+            "#include <string>": "#include <string.h>",
+            OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
+            },
+        os.path.join(basedir, "utils/impl/StringUtils.cc"): {
+            "#include <strings.h>": "#include <string.h>\n#include <stdlib.h>"
+            },
+        os.path.join(basedir, "pipes/impl/HadoopPipes.cc"): {
+            '#include "hadoop/Pipes.hh"':
+            '#include <stdint.h>\n#include "hadoop/Pipes.hh"',
+            "#include <strings.h>": "#include <string.h>",
+            OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
+            },
+        }
+    return BoostExtension(
+        "pydoop._pipes",
         ["src/%s.cpp" % n for n in wrap],
         ["src/%s.cpp" % n for n in aux],
+        patches=patches,
         include_dirs=get_hadoop_include_dirs(HADOOP_HOME),
         libraries = ["pthread", "boost_python"],
         )
-    return factory.create()
 
 
 def create_hdfs_ext():
@@ -167,8 +195,8 @@ def create_hdfs_ext():
     aux = []
     library_dirs = get_java_library_dirs(JAVA_HOME) + [
             os.path.join(HADOOP_HOME, "c++/Linux-%s-%s/lib" % get_arch())]
-    factory = BoostExtFactory(
-        "pydoop_hdfs",
+    return BoostExtension(
+        "pydoop._hdfs",
         ["src/%s.cpp" % n for n in wrap],
         ["src/%s.cpp" % n for n in aux],
         include_dirs=get_java_include_dirs(JAVA_HOME) + [
@@ -195,5 +223,6 @@ setup(
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
     packages=["pydoop"],
+    cmdclass={"build_ext": build_boost_ext},
     ext_modules=create_ext_modules()
     )

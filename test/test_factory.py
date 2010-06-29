@@ -1,7 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 import sys, unittest
-import pydoop_pipes
+import pydoop._pipes
 from pydoop.pipes import Factory, Mapper, Reducer, runTask
 from pydoop.pipes import RecordReader, RecordWriter
 
@@ -69,8 +69,8 @@ class factory_tc(unittest.TestCase):
               'input_key_class' : 'keyclass',
               'input_value_class' : 'valueclass',
               'job_conf' : {}}
-    self.m_ctx = pydoop_pipes.get_MapContext_object(self.d)
-    self.r_ctx = pydoop_pipes.get_ReduceContext_object(self.d)
+    self.m_ctx = pydoop._pipes.get_MapContext_object(self.d)
+    self.r_ctx = pydoop._pipes.get_ReduceContext_object(self.d)
 
   def __check_ctx(self):
     self.assertEqual(self.m_ctx.getInputKey(), self.d['input_key'])
@@ -97,11 +97,11 @@ class factory_tc(unittest.TestCase):
     reducer.call_history = []
     mf = Factory(mapper, reducer)
     gc.collect()  # clean up existing references
-    pydoop_pipes.try_factory_internal(mf)
+    pydoop._pipes.try_factory_internal(mf)
     self.assertEqual(0, gc.collect())
     self.assertEqual(len(mapper.call_history), 2)
     self.assertEqual(len(reducer.call_history), 2)
-    f = pydoop_pipes.TestFactory(mf)
+    f = pydoop._pipes.TestFactory(mf)
     self.failUnless(isinstance(f.createMapper(self.m_ctx), mapper))
     self.failUnless(isinstance(f.createReducer(self.r_ctx), reducer))
     self.assertEqual(len(mapper.call_history), 3)

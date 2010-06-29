@@ -7,7 +7,7 @@ This module contains general utility functions for application writing.
 import os
 from urlparse import urlparse
 from struct import pack
-import pydoop_pipes as pp
+import _pipes as pp
 
 
 def raise_pydoop_exception(msg):

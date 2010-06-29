@@ -1,7 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import pydoop_pipes as pp
+import _pipes as pp
 
 
 class Factory(pp.Factory):

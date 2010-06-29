@@ -23,7 +23,7 @@ CLASSPATH = "%s:%s" % (":".join(jars), CLASSPATH)
 os.environ["CLASSPATH"] = CLASSPATH
 
 
-from pydoop_hdfs import hdfs_fs
+from _hdfs import hdfs_fs
 
 
 class hdfs_file(object):

@@ -1,10 +1,10 @@
 include pipes_ubuntu.patch
 include src/*.hpp
-exclude src/HadoopPipes.cpp
-exclude src/StringUtils.cpp
-exclude src/SerialUtils.cpp
-exclude src/pydoop_pipes_main.cpp
-exclude src/pydoop_hdfs_main.cpp
+exclude src/HadoopPipes.cc
+exclude src/StringUtils.cc
+exclude src/SerialUtils.cc
+exclude src/_pipes_main.cpp
+exclude src/_hdfs_main.cpp
 include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
 include test/all_tests.py

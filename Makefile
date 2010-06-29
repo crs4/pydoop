@@ -2,8 +2,8 @@ ACDC_SVN_BASE = ${HOME}/svn/ac-dc
 COPYRIGHTER = $(ACDC_SVN_BASE)/tools/copyrighter/copyrighter.py
 AUTHOR = "Simone Leo, Gianluigi Zanetti"
 EXPORT_DIR = svn_export
-GENERATED_SRC_FILES = src/pydoop_pipes_main.cpp src/pydoop_hdfs_main.cpp \
-	src/SerialUtils.cpp src/HadoopPipes.cpp src/StringUtils.cpp
+GENERATED_SRC_FILES = src/_pipes_main.cpp src/_hdfs_main.cpp \
+	src/SerialUtils.cc src/HadoopPipes.cc src/StringUtils.cc
 
 
 .PHONY: all build build_py install docs docs_py dist clean distclean

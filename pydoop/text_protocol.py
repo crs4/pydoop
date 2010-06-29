@@ -1,5 +1,5 @@
 import sys, subprocess
-from pydoop_pipes import unquote_string, quote_string
+from _pipes import unquote_string, quote_string
 
 
 def _true_false_str(v):

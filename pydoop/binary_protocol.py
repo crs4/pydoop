@@ -1,5 +1,5 @@
 import sys, subprocess
-import pydoop_pipes as pp
+import _pipes as pp
 
 
 #-- message codes for the down protocol

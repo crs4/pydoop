@@ -1,3 +1,16 @@
+2010-06-29    <simleo@neuron.crs4.it>
+
+	* setup.py: Removed BoostExtFactory, added BoostExtension. The
+	latter is a subclass of Extension that can be directly passed to
+	the setup function as a member of the ext_modules list, with
+	additional methods to build main files and patched aux files.
+	Together with the newly added "build_boost_ext" command, this
+	fixes #191. Note that auto-generated files must still be excluded
+	in MANIFEST.in because the dist tarball is built after the docs
+	have been built and these, in turn, require package build.
+	(create_pipes_ext, create_hdfs_ext): changed module names to fix
+	#310. Imports in all python modules have been changed accordingly.
+
 2010-06-25    <simleo@neuron.crs4.it>
 
 	* pydoop/utils.py: removed __cleanup_file_path, it is no longer used.
