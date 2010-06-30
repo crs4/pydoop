@@ -14,6 +14,7 @@ include examples/bin/wordcount-minimal.py
 include examples/bin/wordcount-full.py
 include examples/conf/wordcount-minimal.xml
 include examples/conf/wordcount-full.xml
+recursive-include examples/self_contained *
 include pydoop/hadoop_serial.py
 include pydoop/text_protocol.py
 include pydoop/binary_protocol.py
