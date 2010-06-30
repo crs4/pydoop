@@ -1,3 +1,6 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 JAVA_HOME ?= /opt/sun-jdk
 HADOOP_HOME ?= /opt/hadoop
 HADOOP_CONF_DIR ?= $(HADOOP_HOME)/conf
@@ -19,14 +22,14 @@ HDFS_WORK_DIR := test_self_contained
 all: upload
 
 pydoop:
-	cd $(PYDOOP_TRUNK) && python setup.py build --build-base $(BUILD_DIR) --build-lib $(PYDOOP_DIR)
+	cd $(PYDOOP_TRUNK) && HADOOP_HOME=$(HADOOP_HOME) JAVA_HOME=$(JAVA_HOME) python setup.py build --build-base $(BUILD_DIR) --build-lib $(PYDOOP_DIR)
 	cd $(PYDOOP_DIR)/pydoop && tar czf pydoop.tgz *
 
 cv: 
 	python setup.py build --build-base $(BUILD_DIR) --build-lib $(CV_DIR)
 	cd $(CV_DIR)/cv && tar czf cv.tgz *
 
-upload: pydoop cv
+upload: pydoop cv dfsclean
 	$(HADOOP) dfs -mkdir $(HDFS_WORK_DIR)
 	$(HADOOP) dfs -put $(PYDOOP_DIR)/pydoop/pydoop.tgz $(HDFS_WORK_DIR)
 	$(HADOOP) dfs -put $(CV_DIR)/cv/cv.tgz $(HDFS_WORK_DIR)

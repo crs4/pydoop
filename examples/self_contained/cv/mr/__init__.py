@@ -1,8 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 """
-This is a trivial application that counts the occurence of each vowel
-in a text input stream.
+Contains MapReduce components for the cv application.
 """
 
 from pydoop.pipes import runTask, Factory

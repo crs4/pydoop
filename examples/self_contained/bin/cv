@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 import sys, os
 sys.path = [os.getcwd()] + sys.path
 from cv.mr import run_task
