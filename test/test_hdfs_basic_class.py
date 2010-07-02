@@ -27,11 +27,24 @@ class hdfs_basic_tc(unittest.TestCase):
 
   assertRaisesExternal = failUnlessRaisesExternal
 
-  def connect_disconnect(self):
-    blk_size = self.fs.default_block_size()
-    capacity = 0 #fs.capacity()
-    used = 0 #fs.used()
+  def chmod(self):
+    path = "/tmp/pydoop_test_chmod"
+    new_perm = 0777
+    try:
+      self.fs.delete(path)
+    except IOError:
+      pass
+    self.fs.create_directory(path)
+    old_perm = self.fs.get_path_info(path)["permissions"]
+    self.fs.chmod(path, new_perm)
+    self.assertEqual(self.fs.get_path_info(path)["permissions"], new_perm)
+    self.fs.chmod(path, old_perm)
+    self.assertEqual(self.fs.get_path_info(path)["permissions"], old_perm)
+    self.fs.delete(path)
 
+  def connect(self):
+    pass
+  
   def open_close(self):
     path = 'foobar.txt'
     flags = os.O_WRONLY
@@ -311,7 +324,8 @@ class hdfs_basic_tc(unittest.TestCase):
 
 def basic_tests():
   return [
-    'connect_disconnect',
+    'chmod',
+    'connect',
     'open_close',
     'write_read',
     'write_read_chunk',

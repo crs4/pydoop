@@ -6,7 +6,7 @@ This module provides facilities to connect to an HDFS and manipulate
 its files and directories.
 """
 
-import os, glob
+import os, glob, grp
 
 
 DEFAULT_HADOOP_HOME = "/opt/hadoop"  # should only be useful for local use
@@ -209,9 +209,28 @@ class hdfs(hdfs_fs):
     "configured" file system.  
   :type port: int
   :param port: the port on which the NameNode is listening
+  :type user: string
+  :param user: the Hadoop domain user name. Defaults to the current UNIX user.
+  :type groups: list
+  :param groups: the Hadoop domain groups. Defaults to ``["supergroup"]``
+    in the case of an actual HDFS connection and to ``[<CURRENT_GROUP>]``
+    for local fs connections.
+
+  **Note:** currently, when connecting to the local file system,
+  ``user`` and ``groups`` are ignored. The actual user and group
+  that will be used for file creation are the same as the ones of
+  the current process.
   """
-  def __init__(self, host, port):
-    super(hdfs, self).__init__(host, port)
+  def __init__(self, host, port, user="", groups=[]):
+    if user and not groups:  # this is an error for libhdfs. Not funny
+      if host:  # hdfs
+        groups = ["supergroup"]
+      else:  # local fs
+        try:
+          groups = [grp.getgrgid(os.getgid()).gr_name]
+        except KeyError:
+          groups = ["users"]
+    super(hdfs, self).__init__(host, port, user, groups)
 
   def open_file(self, path,
                 flags=os.O_RDONLY,
@@ -413,3 +432,23 @@ class hdfs(hdfs_fs):
     :return: current working directory
     """
     return super(hdfs, self).working_directory()
+
+  def chown(self, path, user='', group=''):
+    """
+    :type path: string
+    :param path: the path to the file or directory
+    :type owner: string
+    :param owner: Hadoop username. Set to '' if only setting group
+    :type group: string
+    :param group  Hadoop group name. Set to '' if only setting user
+    """
+    return super(hdfs, self).chown(path, user, group)
+
+  def chmod(self, path, mode):
+    """
+    :type path: string
+    :param path: the path to the file or directory
+    :type mode: string
+    :param mode: the bitmask to set it to
+    """
+    return super(hdfs, self).chmod(path, mode)

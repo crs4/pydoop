@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
-import unittest, os
+import unittest, os, pwd
 from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
 
 
@@ -9,12 +9,64 @@ class hdfs_default_tc(hdfs_basic_tc):
   def __init__(self, target):
     hdfs_basic_tc.__init__(self, target, 'default', 0)
 
-  def connect_disconnect(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
-    blk_size = fs.default_block_size()
-    capacity = fs.capacity()
-    used = fs.used()
-    fs.close()
+  def chown(self):
+    path = "/tmp/pydoop_test_chown"
+    new_owner = "nobody"
+    new_group = "users"
+    f = self.fs.open_file(path, os.O_WRONLY)
+    f.write("foo")
+    f.close()
+    old_owner = self.fs.get_path_info(path)["owner"]
+    old_group = self.fs.get_path_info(path)["group"]
+    self.fs.chown(path, user=new_owner)
+    self.assertEqual(self.fs.get_path_info(path)["owner"], new_owner)
+    self.assertEqual(self.fs.get_path_info(path)["group"], old_group)
+    self.fs.chown(path, group=new_group)
+    self.assertEqual(self.fs.get_path_info(path)["owner"], new_owner)
+    self.assertEqual(self.fs.get_path_info(path)["group"], new_group)
+    self.fs.chown(path, old_owner, old_group)
+    self.assertEqual(self.fs.get_path_info(path)["owner"], old_owner)
+    self.assertEqual(self.fs.get_path_info(path)["group"], old_group)
+    self.fs.delete(path)
+
+  def connect(self):
+    path = "/tmp/pydoop_test_connect"
+    try:
+      self.fs.delete(path)
+    except IOError:
+      pass
+    self.fs.create_directory(path)
+    default_user = self.fs.get_path_info(path)["owner"]
+    default_group = self.fs.get_path_info(path)["group"]
+    new_user = "nobody"
+    new_group = "users"
+    self.fs.chmod(path, 0777)
+    print
+    base_args = self.HDFS_HOST, self.HDFS_PORT
+    cases = [ # (hdfs_args_tuple, (expected_owner, expected_group))
+      (base_args, (default_user, default_group)),
+      (base_args+(new_user,), (new_user, default_group)),
+      
+      # file group ownership does not change even if we pass a group
+      # list. Maybe it's the way it's supposed to (not?) work: group
+      # ownership is not checked in libhdfs/hdfs_test.c
+      (base_args+(new_user, [new_group]), (new_user, default_group)),
+      (base_args+(new_user, [new_group, new_user]), (new_user, default_group)),
+      ]
+    for hdfs_args, (expected_owner, expected_group) in cases:
+      print "hdfs_args = %r" % (hdfs_args,)
+      fs = HDFS(*hdfs_args)
+      self.__connect_helper(fs, path, expected_owner, expected_group)
+    self.fs.delete(path)
+    
+  def __connect_helper(self, fs, path, expected_owner, expected_group):
+    file_path = "%s/%s_%s" % (path, expected_owner, expected_group)
+    f = fs.open_file(file_path, os.O_WRONLY)
+    f.write("foo")
+    f.close()
+    hdfs_path_info = fs.get_path_info(file_path)
+    self.assertEqual(hdfs_path_info["owner"], expected_owner)
+    self.assertEqual(hdfs_path_info["group"], expected_group)
     
   def copy(self):
     fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
@@ -151,6 +203,7 @@ def suite():
   suite = unittest.TestSuite()
   tests = basic_tests()
   tests.extend([
+    'chown',
     'copy',
     'move',
     'block_size',

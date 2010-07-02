@@ -14,12 +14,25 @@ namespace bp = boost::python;
 
 struct wrap_hdfs_fs {
   std::string host_;
-  int         port_;
-  hdfsFS      fs_;
+  int port_;
+  std::string user_;
+  hdfsFS fs_;
 
-  wrap_hdfs_fs(std::string host, int port): host_(host), port_(port) {
-    const char* host_str = (host_.size() == 0)? NULL : host_.c_str();
-    hdfsFS fs = hdfsConnect(host_str, port);
+  wrap_hdfs_fs(std::string host, int port, std::string user, bp::list groups):
+    host_(host), port_(port), user_(user) {
+    int ng = len(groups);
+    const char* host_str = (host_.size() == 0) ? NULL : host_.c_str();
+    const char* user_str = (user_.size() == 0) ? NULL : user_.c_str();
+    const char **groups_str = NULL;
+    if (ng > 0) {
+      groups_str = (const char**)malloc(sizeof(char*) * ng);
+      for (int k = 0; k < ng; ++k) {
+	char* s = bp::extract<char*>(groups[k]);
+	groups_str[k] = s;
+      }
+    }
+    hdfsFS fs = hdfsConnectAsUser(host_str, port, user_str, groups_str, ng);
+    free(groups_str);
     if (fs == NULL) {
       throw hdfs_exception("Cannot connect to " + host);
     }
@@ -47,6 +60,11 @@ struct wrap_hdfs_fs {
   void create_directory(const std::string& path);
 
   void set_replication(const std::string& path, int replication);
+
+  void chown(const std::string& path,
+	     const std::string& owner, const std::string& group);
+
+  void chmod(const std::string& path, unsigned short mode);
 
   wrap_hdfs_file* open_file(std::string path, int flags, 
 			    int buffer_size, int replication, 

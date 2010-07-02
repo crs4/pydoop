@@ -1,3 +1,24 @@
+2010-07-02    <simleo@neuron.crs4.it>
+
+	* src/hdfs_fs.hpp, src/hdfs_fs.cpp, pydoop/hdfs.py: added chown
+	and chmod.
+
+2010-07-01    <simleo@neuron.crs4.it>
+
+	* pydoop/__init__.py (__version__): changed from "0.3.6-dev" to
+	"0.3.6_rc1". This allows us to build internal releases that are
+	compliant with Gentoo's file naming rules, see
+	http://devmanual.gentoo.org/ebuild-writing/file-format/index.html.
+	The main advantage is that "0.3.6_rc2", ..., "0.3.6_rcN", "0.3.6"
+	will automatically be considered upgrades by portage.
+
+	* pydoop/hdfs.py (hdfs.__init__): changed to match changes in the
+	underlying C++ constructor.
+
+	* src/hdfs_fs.hpp (wrap_hdfs_fs): changed to wrap
+	hdfsConnectAsUser. It falls back to the old behavior if user is an
+	empty string and groups an empty list.
+
 2010-06-29    <simleo@neuron.crs4.it>
 
 	* setup.py: Removed BoostExtFactory, added BoostExtension. The

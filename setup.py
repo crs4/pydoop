@@ -194,7 +194,8 @@ def create_hdfs_ext():
     wrap = ["hdfs_fs", "hdfs_file", "hdfs_common"]
     aux = []
     library_dirs = get_java_library_dirs(JAVA_HOME) + [
-            os.path.join(HADOOP_HOME, "c++/Linux-%s-%s/lib" % get_arch())]
+        os.path.join(HADOOP_HOME, "c++/Linux-%s-%s/lib" % get_arch())
+        ]
     return BoostExtension(
         "pydoop._hdfs",
         ["src/%s.cpp" % n for n in wrap],

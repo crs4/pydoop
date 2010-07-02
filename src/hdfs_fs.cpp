@@ -175,6 +175,22 @@ bp::list wrap_hdfs_fs::get_hosts(std::string path, tOffset start,
   }
 }
 
+void wrap_hdfs_fs::chown(const std::string& path,
+			 const std::string& owner,
+			 const std::string& group) {
+  const char* owner_str = (owner.size() == 0) ? NULL : owner.c_str();
+  const char* group_str = (group.size() == 0) ? NULL : group.c_str();
+  exec_and_trap_error(int,
+		      hdfsChown(fs_, path.c_str(), owner_str, group_str),
+		      "Cannot chown " + path + " to " + owner + ", " + group);
+}
+
+void wrap_hdfs_fs::chmod(const std::string& path, unsigned short mode) {
+  exec_and_trap_error(int, hdfsChmod(fs_, path.c_str(), mode),
+		      "Cannot chmod " + path);
+}
+
+
 wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags, 
 					int buffer_size, int replication, 
 					int blocksize) {
@@ -196,7 +212,7 @@ wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags,
 using namespace boost::python;
 
 void export_hdfs_fs() {
-  class_<wrap_hdfs_fs, boost::noncopyable>("hdfs_fs", init<std::string, int>())
+  class_<wrap_hdfs_fs, boost::noncopyable>("hdfs_fs", init<std::string, int, std::string, bp::list>())
     .def("close", &wrap_hdfs_fs::disconnect)
     .def("capacity",  &wrap_hdfs_fs::get_capacity)
     .def("default_block_size",  &wrap_hdfs_fs::get_default_block_size)
@@ -213,6 +229,8 @@ void export_hdfs_fs() {
     .def("set_working_directory", &wrap_hdfs_fs::set_working_directory)
     .def("create_directory", &wrap_hdfs_fs::create_directory)
     .def("set_replication", &wrap_hdfs_fs::set_replication)
+    .def("chown", &wrap_hdfs_fs::chown)
+    .def("chmod", &wrap_hdfs_fs::chmod)
     .def("open_file", &wrap_hdfs_fs::open_file,
 	 return_value_policy<manage_new_object>())
     ;
