@@ -437,10 +437,10 @@ class hdfs(hdfs_fs):
     """
     :type path: string
     :param path: the path to the file or directory
-    :type owner: string
-    :param owner: Hadoop username. Set to '' if only setting group
+    :type user: string
+    :param user: Hadoop username. Set to '' if only setting group
     :type group: string
-    :param group  Hadoop group name. Set to '' if only setting user
+    :param group: Hadoop group name. Set to '' if only setting user
     """
     return super(hdfs, self).chown(path, user, group)
 
@@ -448,7 +448,7 @@ class hdfs(hdfs_fs):
     """
     :type path: string
     :param path: the path to the file or directory
-    :type mode: string
-    :param mode: the bitmask to set it to
+    :type mode: int
+    :param mode: the bitmask to set it to (e.g., 0777)
     """
     return super(hdfs, self).chmod(path, mode)
