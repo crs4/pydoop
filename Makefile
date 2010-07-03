@@ -39,6 +39,8 @@ clean:
 	rm -fv $(GENERATED_SRC_FILES)
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
 	make -C docs clean
+	make -C examples/self_contained clean
 
 distclean: clean
 	rm -rf dist $(EXPORT_DIR) docs/_build/*
+	make -C examples/self_contained distclean
