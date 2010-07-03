@@ -11,6 +11,7 @@ HADOOP = $(HADOOP_HOME)/bin/hadoop --config $(HADOOP_CONF_DIR)
 BASE_BUILD_DIR := $(realpath .)/_build
 
 PYDOOP_TRUNK := $(realpath ../..)
+CV_TRUNK := $(realpath .)
 
 PYDOOP_BUILD_DIR := $(BASE_BUILD_DIR)/pydoop
 PYDOOP_DIR := $(PYDOOP_BUILD_DIR)/pydoop
@@ -33,8 +34,8 @@ $(PYDOOP_TAR): $(PYDOOP_TRUNK)
 	cd $< && HADOOP_HOME=$(HADOOP_HOME) JAVA_HOME=$(JAVA_HOME) python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(PYDOOP_BUILD_DIR)
 	cd $(PYDOOP_DIR) && tar czf pydoop.tgz *
 
-$(CV_TAR):
-	python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(CV_BUILD_DIR)
+$(CV_TAR): $(CV_TRUNK)/setup.py $(CV_TRUNK)/cv 
+	python $< build --build-base $(BASE_BUILD_DIR) --build-lib $(CV_BUILD_DIR)
 	cd $(CV_DIR) && tar czf cv.tgz *
 
 upload: pydoop cv dfsclean
