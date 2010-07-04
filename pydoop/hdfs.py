@@ -435,6 +435,8 @@ class hdfs(hdfs_fs):
 
   def chown(self, path, user='', group=''):
     """
+    Change file owner and group.
+    
     :type path: string
     :param path: the path to the file or directory
     :type user: string
@@ -446,9 +448,24 @@ class hdfs(hdfs_fs):
 
   def chmod(self, path, mode):
     """
+    Change file mode bits.
+    
     :type path: string
     :param path: the path to the file or directory
     :type mode: int
     :param mode: the bitmask to set it to (e.g., 0777)
     """
     return super(hdfs, self).chmod(path, mode)
+
+  def utime(self, path, mtime, atime):
+    """
+    Change file last access and modification times.
+
+    :type path: string
+    :param path: the path to the file or directory
+    :type mtime: int
+    :param mtime: new modification time in seconds
+    :type atime: int
+    :param atime: new access time in seconds
+    """
+    return super(hdfs, self).utime(path, int(mtime), int(atime))

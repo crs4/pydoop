@@ -29,6 +29,27 @@ class hdfs_default_tc(hdfs_basic_tc):
     self.assertEqual(self.fs.get_path_info(path)["group"], old_group)
     self.fs.delete(path)
 
+  def utime(self):
+    path = "/tmp/pydoop_test_utime"
+    try:
+      self.fs.delete(path)
+    except IOError:
+      pass
+    f = self.fs.open_file(path, os.O_WRONLY)
+    f.write("foo")
+    f.close()
+    old_mtime = self.fs.get_path_info(path)["last_mod"]
+    old_atime = self.fs.get_path_info(path)["last_access"]
+    new_mtime = old_mtime - 500
+    new_atime = old_mtime - 100
+    self.fs.utime(path, new_mtime, new_atime)
+    self.assertEqual(self.fs.get_path_info(path)["last_mod"], int(new_mtime))
+    self.assertEqual(self.fs.get_path_info(path)["last_access"], int(new_atime))
+    self.fs.utime(path, old_mtime, old_atime)
+    self.assertEqual(self.fs.get_path_info(path)["last_mod"], int(old_mtime))
+    self.assertEqual(self.fs.get_path_info(path)["last_access"], int(old_atime))
+    self.fs.delete(path)
+
   def connect(self):
     path = "/tmp/pydoop_test_connect"
     try:
@@ -204,6 +225,7 @@ def suite():
   tests = basic_tests()
   tests.extend([
     'chown',
+    'utime',
     'copy',
     'move',
     'block_size',

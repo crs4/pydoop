@@ -66,6 +66,8 @@ struct wrap_hdfs_fs {
 
   void chmod(const std::string& path, unsigned short mode);
 
+  void utime(const std::string& path, long mtime, long atime);
+
   wrap_hdfs_file* open_file(std::string path, int flags, 
 			    int buffer_size, int replication, 
 			    int blocksize);

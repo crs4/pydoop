@@ -190,6 +190,10 @@ void wrap_hdfs_fs::chmod(const std::string& path, unsigned short mode) {
 		      "Cannot chmod " + path);
 }
 
+void wrap_hdfs_fs::utime(const std::string& path, long mtime, long atime) {
+  exec_and_trap_error(int, hdfsUtime(fs_, path.c_str(), mtime, atime),
+		      "Cannot utime " + path);
+}
 
 wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags, 
 					int buffer_size, int replication, 
@@ -231,6 +235,7 @@ void export_hdfs_fs() {
     .def("set_replication", &wrap_hdfs_fs::set_replication)
     .def("chown", &wrap_hdfs_fs::chown)
     .def("chmod", &wrap_hdfs_fs::chmod)
+    .def("utime", &wrap_hdfs_fs::utime)
     .def("open_file", &wrap_hdfs_fs::open_file,
 	 return_value_policy<manage_new_object>())
     ;
