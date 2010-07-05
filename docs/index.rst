@@ -13,6 +13,7 @@ Contents:
 
    installation/index
    api_docs/index
+   examples/index
 
 Indices and tables
 ==================

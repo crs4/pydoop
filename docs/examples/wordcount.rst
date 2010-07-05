@@ -17,7 +17,7 @@ Minimal WordCount
 -----------------
 
 This example includes only the bare minimum required to run the
-application. The entire application consists of just 17 lines of code:
+application. The entire application consists of just 17 lines of code::
 
   import sys
   from pydoop.pipes import Mapper, Reducer, Factory, runTask

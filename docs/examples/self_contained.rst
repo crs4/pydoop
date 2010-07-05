@@ -1,5 +1,5 @@
-A Self-contained Pydoop example
-===============================
+A Self-contained Example
+========================
 
 This example shows how to use the Hadoop Distributed Cache to
 distribute Python packages, possibly including Pydoop itself, to all
@@ -28,7 +28,7 @@ Hadoop supports automatic distribution of files and archives to all
 cluster nodes at job launch time through the Distributed Cache (DC)
 feature. The DC can be used to dispatch Python packages to all cluster
 nodes, eliminating the need to install dependencies for your
-application, including Pydoop itself:
+application, including Pydoop itself::
 
   <property>
     <name>mapred.cache.archives</name>
@@ -46,7 +46,7 @@ will look for the pydoop.tgz and cv.tgz archives in your HDFS home
 create the "pydoop" and "cv" symlinks in the current working directory
 of each running task before it is executed. If you include in each
 archive the *contents* of the corresponding package, all you have to
-do is add the task's cwd to the Python path:
+do is add the task's cwd to the Python path::
 
   import sys, os
   sys.path = [os.getcwd()] + sys.path
@@ -57,7 +57,7 @@ the distributed packages.
 The Makefile includes everything you need to build and run the example
 from scratch. Before doing this, review it and see if there is any
 variable that does not fit with your environment. For example, on
-Gentoo Linux you might want to run something like this:
+Gentoo Linux you might want to run something like this::
 
   make JAVA_HOME=/etc/java-config-2/current-system-vm run
 

@@ -9,11 +9,8 @@ include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
 include test/all_tests.py
 exclude test/test_return_iref.py
-include examples/README.txt
-include examples/bin/wordcount-minimal.py
-include examples/bin/wordcount-full.py
-include examples/conf/wordcount-minimal.xml
-include examples/conf/wordcount-full.xml
+include examples/README.rst
+recursive-include examples/wordcount *
 recursive-include examples/self_contained *
 include pydoop/hadoop_serial.py
 include pydoop/text_protocol.py
