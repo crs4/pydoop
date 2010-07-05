@@ -197,6 +197,13 @@ class hdfs_file(object):
     """
     return self.f.write_chunk(chunk)
 
+  def flush(self):
+    """
+    Force any buffered output to be written.
+    """
+    return self.f.flush()
+
+
 
 class hdfs(hdfs_fs):
   """

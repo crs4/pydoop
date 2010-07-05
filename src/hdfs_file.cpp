@@ -99,6 +99,12 @@ int wrap_hdfs_file::available() {
   return res;
 }
 
+void wrap_hdfs_file::flush() {
+  exec_and_trap_error(int,
+		      hdfsFlush(fs_->fs_, file_),
+		      "Cannot flush output on " + filename_);
+}
+
 void wrap_hdfs_file::_close_helper() {
   if (is_open_){
     int res = hdfsCloseFile(fs_->fs_, file_);
@@ -128,5 +134,6 @@ void export_hdfs_file() {
     .def("read_chunk", &wrap_hdfs_file::read_chunk)
     .def("pread_chunk", &wrap_hdfs_file::pread_chunk)
     .def("write_chunk", &wrap_hdfs_file::write_chunk)
+    .def("flush", &wrap_hdfs_file::flush)
     ;
 }

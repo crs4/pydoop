@@ -9,6 +9,18 @@ class hdfs_default_tc(hdfs_basic_tc):
   def __init__(self, target):
     hdfs_basic_tc.__init__(self, target, 'default', 0)
 
+  def capacity(self):
+    c = self.fs.capacity()
+    self.assertTrue(isinstance(c, (int,long)))
+
+  def default_block_size(self):
+    dbs = self.fs.default_block_size()
+    self.assertTrue(isinstance(dbs, (int,long)))
+
+  def used(self):
+    u = self.fs.used()
+    self.assertTrue(isinstance(u, (int,long)))
+
   def chown(self):
     path = "/tmp/pydoop_test_chown"
     new_owner = "nobody"
@@ -169,7 +181,19 @@ class hdfs_default_tc(hdfs_basic_tc):
       else:
         self.assertEqual(r, actual_r)
       finally:
-        self.fs.delete(path)      
+        self.fs.delete(path)
+
+  def set_replication(self):
+    path = "/tmp/test_set_replication"
+    f = self.fs.open_file(path, os.O_WRONLY)
+    f.write("foo")
+    f.close()
+    old_rep = self.fs.get_path_info(path)["replication"]
+    new_rep = old_rep + 1
+    self.fs.set_replication(path, new_rep)
+    self.assertEqual(self.fs.get_path_info(path)["replication"], new_rep)
+    self.fs.set_replication(path, old_rep)
+    self.assertEqual(self.fs.get_path_info(path)["replication"], old_rep)
 
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.
@@ -224,12 +248,16 @@ def suite():
   suite = unittest.TestSuite()
   tests = basic_tests()
   tests.extend([
+    'capacity',
+    'default_block_size',
+    'used',
     'chown',
     'utime',
     'copy',
     'move',
     'block_size',
     'replication',
+    'set_replication',
     'readline_block_boundary',
     'get_hosts'
     ])

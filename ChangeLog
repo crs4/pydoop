@@ -1,5 +1,7 @@
 2010-07-05    <simleo@neuron.crs4.it>
 
+	* src/hdfs_file.hpp, src/hdfs_file.cpp, pydoop/hdfs.py: added flush.
+
 	* src/hdfs_fs.hpp, src/hdfs_fs.cpp, pydoop/hdfs.py: added utime.
 
 2010-07-02    <simleo@neuron.crs4.it>

@@ -63,6 +63,13 @@ class hdfs_basic_tc(unittest.TestCase):
       self.fs.open_file, path, flags, buff_size, replication, blocksize
       )
 
+  def flush(self):
+    path = "/tmp/test_hdfs_flush"
+    f = self.fs.open_file(path, os.O_WRONLY)
+    f.write("foo")
+    f.flush()
+    f.close()
+
   def _write_example_file(self, path, N, txt, fs=None,
                           buffer_size=0, replication=0, block_size=0):
     if not fs:
@@ -327,6 +334,7 @@ def basic_tests():
     'chmod',
     'connect',
     'open_close',
+    'flush',
     'write_read',
     'write_read_chunk',
     'rename',

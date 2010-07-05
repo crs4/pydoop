@@ -40,6 +40,7 @@ struct wrap_hdfs_file {
   tSize pread_chunk(tOffset position, bp::object buffer);
   tSize write_chunk(bp::object buffer);
   int available();
+  void flush();
 
   void _close_helper();
 };
