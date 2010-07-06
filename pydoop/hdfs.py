@@ -10,6 +10,8 @@ import os, glob, grp
 
 
 DEFAULT_HADOOP_HOME = "/opt/hadoop"  # should only be useful for local use
+DEFAULT_LIBHDFS_OPTS = "-Xmx48m"  # enough for most applications.
+
 HADOOP_HOME = os.getenv("HADOOP_HOME", DEFAULT_HADOOP_HOME)
 HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR",
                             os.path.join(HADOOP_HOME, "conf"))
@@ -20,7 +22,9 @@ jars.append(HADOOP_CONF_DIR)
 
 CLASSPATH = os.environ.setdefault("CLASSPATH", "")
 CLASSPATH = "%s:%s" % (":".join(jars), CLASSPATH)
+
 os.environ["CLASSPATH"] = CLASSPATH
+os.environ["LIBHDFS_OPTS"] = os.getenv("LIBHDFS_OPTS", DEFAULT_LIBHDFS_OPTS)
 
 
 from _hdfs import hdfs_fs

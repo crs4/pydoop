@@ -27,6 +27,7 @@ rm -rf output
 
 echo -n "Waiting for HDFS to exit safe mode... "
 ${HADOOP} dfsadmin -safemode wait
+${HADOOP} dfs -rmr ${WD}
 ${HADOOP} dfs -mkdir ${WD}/bin
 ${HADOOP} dfs -put ${SCRIPT} ${HDFS_SCRIPT}
 ${HADOOP} dfs -put ${INPUTDIR} ${WD}/${INPUT_BASENAME}
