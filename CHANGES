@@ -1,3 +1,17 @@
+== Pydoop 0.3.6 ==
+
+ * added more usage examples.
+
+ * hdfs.hdfs_file: added flush.
+
+ * hdfs.hdfs: added the ability to connect as a specific user; added chown, chmod and utime.
+
+ * setup.py: changed to generate additional C++ source files only when build_ext is (indirectly or directly) called.
+
+ * utils.split_hdfs_path: added support for relative paths.
+
+ * All documentation is now generated with Sphinx.
+
 == Pydoop 0.3.5 ==
 
 * Changed some code that could possibly lead to memory leaks in some cases.
@@ -11,15 +25,11 @@
 
 == Pydoop 0.3.3 ==
 
-Bugfix release.
-
 * hdfs: get_path_info and list_directory have been fixed to correctly
   raise an IOError for nonexistent paths.
 
 
 == Pydoop 0.3.2 ==
-
-Bugfix release.
 
 * hdfs: get_path_info has been fixed and now works correctly on directory paths.
 * hdfs_file.readline: fixed a bug that led to wrong line reads in proximity of HDFS block boundaries.

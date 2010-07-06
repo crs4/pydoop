@@ -9,8 +9,8 @@ large clusters", in OSDI '04: 6th Symposium on Operating Systems
 Design and Implementation, 2004) and in the Hadoop documentation as a
 MapReduce programming tutorial.
 
-WordCount examples are located under ``examples/wordcount`` in the
-Pydoop distribution.
+Source code for the WordCount examples is located under
+``examples/wordcount`` in the Pydoop distribution.
 
 
 Minimal WordCount

@@ -7,3 +7,4 @@ Examples
    intro
    wordcount
    self_contained
+   hdfs

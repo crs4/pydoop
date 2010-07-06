@@ -4,17 +4,22 @@ AUTHOR = "Simone Leo, Gianluigi Zanetti"
 EXPORT_DIR = svn_export
 GENERATED_SRC_FILES = src/_pipes_main.cpp src/_hdfs_main.cpp \
 	src/SerialUtils.cc src/HadoopPipes.cc src/StringUtils.cc
-
+BUILD_DIR := $(realpath .)/build
+BUILD_LIB_DIR := $(BUILD_DIR)/lib
+PYDOOP_DIR := $(BUILD_LIB_DIR)/pydoop
 
 .PHONY: all build build_py install docs docs_py dist clean distclean
 
 all: build
+build: $(BUILD_DIR)
+build_py: $(PYDOOP_DIR)
 
-build:
-	python setup.py build
 
-build_py:
-	python setup.py build_py
+$(BUILD_DIR): setup.py pydoop src
+	python $< build --build-base $(BUILD_DIR) --build-lib $(BUILD_LIB_DIR)
+
+$(PYDOOP_DIR): setup.py pydoop
+	python $< build_py --build-lib $(BUILD_LIB_DIR)
 
 install: build
 	sudo python setup.py install --skip-build
