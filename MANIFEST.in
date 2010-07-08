@@ -13,6 +13,7 @@ include examples/README
 recursive-include examples/input *
 recursive-include examples/wordcount *
 recursive-include examples/self_contained *
+recursive-include examples/sequence_file *
 recursive-include examples/hdfs *
 include pydoop/hadoop_serial.py
 include pydoop/text_protocol.py

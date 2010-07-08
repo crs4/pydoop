@@ -7,6 +7,11 @@
 </property>
 
 <property>
+  <name>mapred.job.name</name>
+  <value>wordcount</value>
+</property>
+
+<property>
   <name>hadoop.pipes.java.recordreader</name>
   <value>true</value>
 </property>

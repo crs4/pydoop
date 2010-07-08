@@ -83,8 +83,7 @@ def jc_configure_float(obj, jc, k, f, df=None):
 def make_input_split(filename, offset, length):
   """
   Build a fake (i.e., not tied to a real file)
-  :class:`InputSplit <pydoop.pipes.InputSplit>`\ . This is used for testing
-  purposes.
+  :class:`~pydoop.pipes.InputSplit`\ . This is used for testing.
 
   :type filename: string
   :param filename: file name

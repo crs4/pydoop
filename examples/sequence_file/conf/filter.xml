@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<configuration>
+
+<property>
+  <name>hadoop.pipes.executable</name>
+  <value>bin/filter.py</value>
+</property>
+
+<property>
+  <name>mapred.job.name</name>
+  <value>filter</value>
+</property>
+
+<property>
+  <name>hadoop.pipes.java.recordreader</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>hadoop.pipes.java.recordwriter</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>mapred.input.format.class</name>
+  <value>org.apache.hadoop.mapred.SequenceFileInputFormat</value>
+</property>
+
+<property>
+  <name>filter.occurrence.threshold</name>
+  <value>10</value>
+</property>
+
+<!-- map-only application, do not modify this -->
+<property>
+  <name>mapred.reduce.tasks</name>
+  <value>0</value>
+</property>
+
+</configuration>

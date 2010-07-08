@@ -3,7 +3,7 @@
 
 <property>
   <name>hadoop.pipes.executable</name>
-  <value>bin/wordcount-full.py</value>
+  <value>bin/wordcount-minimal.py</value>
 </property>
 
 <property>
@@ -13,12 +13,22 @@
 
 <property>
   <name>hadoop.pipes.java.recordreader</name>
-  <value>false</value>
+  <value>true</value>
 </property>
 
 <property>
   <name>hadoop.pipes.java.recordwriter</name>
-  <value>false</value>
+  <value>true</value>
+</property>
+
+<property>
+  <name>mapred.output.format.class</name>
+  <value>org.apache.hadoop.mapred.SequenceFileOutputFormat</value>
+</property>
+
+<property>
+  <name>mapred.output.compression.type</name>
+  <value>NONE</value>
 </property>
 
 </configuration>

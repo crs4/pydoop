@@ -17,32 +17,52 @@ Pydoop applications are run as any other Hadoop Pipes applications
 
 Where ``input`` and ``output`` are, respectively, the HDFS directory
 where the applications will read its input and write its output. The
-configuration file, read from the local file system, is typically
-structured as follows::
+configuration file, read from the local file system, is an xml
+document consisting of a simple name = value property list:
+
+.. code-block:: xml
 
   <?xml version="1.0"?>
   <configuration>
+  
   <property>
     <name>hadoop.pipes.executable</name>
     <value>app_executable</value>
   </property>
+  
+  <property>
+    <name>mapred.job.name</name>
+    <value>app_name</value>
+  </property>
+  
   <property>
     <name>hadoop.pipes.java.recordreader</name>
     <value>true</value>
   </property>
+  
   <property>
     <name>hadoop.pipes.java.recordwriter</name>
     <value>true</value>
   </property>
+  
+  [...]
+
   </configuration>
 
-The value of the ``hadoop.pipes.executable`` property is the HDFS path
-(absolute or relative to your HDFS home directory) of the application
-launcher (i.e., the one that contains the ``runTask`` invocation). You
-can set general Hadoop properties (e.g., ``mapred.mmap.tasks``\ ) or
-application-specific properties: the latter are configuration
-parameters defined by the application developer whose value is
-retrieved through the ``JobConf`` object.
+``hadoop.pipes.executable`` is the HDFS path (either absolute or
+relative to your HDFS home directory) of the application launcher
+(i.e., the one that contains the :func:`~pydoop.pipes.runTask`
+invocation); ``mapred.job.name`` is just an identifier for your
+application: it will appear in the MapReduce web interface and it will
+be appended to the job log file name. The remaining two properties
+must be set to ``false`` if you are using your own customized
+RecordReader / RecordWriter.
+
+In the job configuration file you can set either general Hadoop
+properties (e.g., ``mapred.map.tasks``\ ) or application-specific
+properties: the latter are configuration parameters defined by the
+application developer, whose value will be retrieved at run time
+through the :class:`~pydoop.pipes.JobConf` object.
 
 To summarize, before running your application, you need to perform the
 following steps:

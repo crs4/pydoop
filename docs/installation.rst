@@ -25,17 +25,17 @@ Instructions
 
 To install as an unprivileged (but sudoer) user you can run::
 
-  $ export JAVA_HOME=<YOUR_JAVA_HOME>
-  $ export HADOOP_HOME=<YOUR_HADOOP_HOME>
-  $ python setup.py build
-  $ sudo python setup.py install --skip-build
+  export JAVA_HOME=<YOUR_JAVA_HOME>
+  export HADOOP_HOME=<YOUR_HADOOP_HOME>
+  python setup.py build
+  sudo python setup.py install --skip-build
 
 Finally, if you don't have root access, you can perform a local
 installation (i.e., into ``~/.local/lib/python2.X/site-packages``\ )::
 
-  $ export JAVA_HOME=<YOUR_JAVA_HOME>
-  $ export HADOOP_HOME=<YOUR_HADOOP_HOME>
-  $ python setup.py install --user
+  export JAVA_HOME=<YOUR_JAVA_HOME>
+  export HADOOP_HOME=<YOUR_HADOOP_HOME>
+  python setup.py install --user
 
 If the above does not work, please read the :ref:`troubleshooting`
 section.
@@ -97,7 +97,7 @@ Testing Your Installation
 After pydoop has been successfully installed, you might want to run
 unit tests. Move to the ``test`` subdirectory and run::
 
- python all_tests.py
+  python all_tests.py
 
 You can also separately run ``python all_tests_pipes.py``
 and ``python all_tests_hdfs.py``\ .
