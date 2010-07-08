@@ -14,12 +14,12 @@ HADOOP=${HADOOP_HOME}/bin/hadoop
 
 BINDIR=../bin
 CONFDIR=../conf
-INPUTDIR=../input
+INPUTDIR=../../input
 INPUT_BASENAME=$(basename ${INPUTDIR})
 
 SCRIPT=${BINDIR}/${SCRIPT_BASENAME}
 CONF=${CONFDIR}/${SCRIPT_BASENAME/.py/.xml}
-WD=test_pydoop_examples
+WD=test_wordcount
 HDFS_SCRIPT=${WD}/bin/${SCRIPT_BASENAME}
 CONF_OVERRIDE="-D mapred.map.tasks=2 -D mapred.reduce.tasks=2"
 

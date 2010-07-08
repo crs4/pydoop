@@ -22,6 +22,7 @@ CV_DIR := $(CV_BUILD_DIR)/cv
 CV_TAR := $(CV_DIR)/cv.tgz
 
 HDFS_WORK_DIR := test_self_contained
+INPUT_DIR := ../input
 
 
 .PHONY: all pydoop cv upload run clean distclean dfsclean
@@ -43,7 +44,7 @@ upload: pydoop cv dfsclean
 	$(HADOOP) dfs -put $(PYDOOP_TAR) $(HDFS_WORK_DIR)
 	$(HADOOP) dfs -put $(CV_TAR) $(HDFS_WORK_DIR)
 	$(HADOOP) dfs -put bin $(HDFS_WORK_DIR)/bin
-	$(HADOOP) dfs -put input $(HDFS_WORK_DIR)/input
+	$(HADOOP) dfs -put $(INPUT_DIR) $(HDFS_WORK_DIR)/input
 
 run: upload
 	$(HADOOP) pipes -D mapred.cache.archives=$(HDFS_WORK_DIR)/pydoop.tgz#pydoop,$(HDFS_WORK_DIR)/cv.tgz#cv -conf conf/cv.xml -program $(HDFS_WORK_DIR)/bin/cv -input $(HDFS_WORK_DIR)/input -output $(HDFS_WORK_DIR)/output

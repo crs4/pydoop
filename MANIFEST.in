@@ -10,6 +10,7 @@ include test/all_tests_hdfs.py
 include test/all_tests.py
 exclude test/test_return_iref.py
 include examples/README
+recursive-include examples/input *
 recursive-include examples/wordcount *
 recursive-include examples/self_contained *
 recursive-include examples/hdfs *
