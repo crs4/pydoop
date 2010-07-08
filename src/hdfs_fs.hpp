@@ -64,7 +64,7 @@ struct wrap_hdfs_fs {
   void chown(const std::string& path,
 	     const std::string& owner, const std::string& group);
 
-  void chmod(const std::string& path, unsigned short mode);
+  void chmod(const std::string& path, short mode);
 
   void utime(const std::string& path, long mtime, long atime);
 

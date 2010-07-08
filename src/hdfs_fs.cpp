@@ -185,7 +185,7 @@ void wrap_hdfs_fs::chown(const std::string& path,
 		      "Cannot chown " + path + " to " + owner + ", " + group);
 }
 
-void wrap_hdfs_fs::chmod(const std::string& path, unsigned short mode) {
+void wrap_hdfs_fs::chmod(const std::string& path, short mode) {
   exec_and_trap_error(int, hdfsChmod(fs_, path.c_str(), mode),
 		      "Cannot chmod " + path);
 }
