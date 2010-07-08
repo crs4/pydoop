@@ -1,3 +1,8 @@
+2010-07-07    <simleo@neuron.crs4.it>
+
+	* docs/conf.py: version and release are now dynamically retrieved
+	from pydoop/__init__.py.
+
 2010-07-05    <simleo@neuron.crs4.it>
 
 	* src/hdfs_file.hpp, src/hdfs_file.cpp, pydoop/hdfs.py: added flush.

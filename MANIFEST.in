@@ -1,4 +1,4 @@
-include pipes_ubuntu.patch
+include AUTHORS CHANGES pipes_ubuntu.patch
 include src/*.hpp
 exclude src/HadoopPipes.cc
 exclude src/StringUtils.cc
@@ -9,9 +9,10 @@ include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
 include test/all_tests.py
 exclude test/test_return_iref.py
-include examples/README.rst
+include examples/README
 recursive-include examples/wordcount *
 recursive-include examples/self_contained *
+recursive-include examples/hdfs *
 include pydoop/hadoop_serial.py
 include pydoop/text_protocol.py
 include pydoop/binary_protocol.py

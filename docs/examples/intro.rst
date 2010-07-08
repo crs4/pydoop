@@ -6,7 +6,7 @@ Pydoop includes several usage examples: you can find them in the
 need a working Hadoop cluster. If you don't have one available, you
 can bring up a single-node Hadoop cluster on your machine following
 the `Hadoop quickstart guide
-<http://hadoop.apache.org/common/docs/r0.20.1/quickstart.html>`_\
+<http://hadoop.apache.org/common/docs/r0.20.2/quickstart.html>`_\
 . Configure Hadoop for "Pseudo-Distributed Operation" and start the
 daemons as explained in the guide.
 
@@ -38,14 +38,19 @@ structured as follows::
 
 The value of the ``hadoop.pipes.executable`` property is the HDFS path
 (absolute or relative to your HDFS home directory) of the application
-launcher (i.e., the one that contains the ``runTask`` invocation).
+launcher (i.e., the one that contains the ``runTask`` invocation). You
+can set general Hadoop properties (e.g., ``mapred.mmap.tasks``\ ) or
+application-specific properties: the latter are configuration
+parameters defined by the application developer whose value is
+retrieved through the ``JobConf`` object.
 
 To summarize, before running your application, you need to perform the
 following steps:
 
  * upload the application launcher and the input file or directory to HDFS
  * prepare the xml configuration file, indicating the HDFS path to the
-   launcher as shown above; alternatively, you can specify it by passing it
-   as an argument to the ``-program`` pipes command line option
+   launcher as shown above; alternatively, you can specify the
+   launcher's path it by passing it as an argument to the ``-program``
+   command line option
  * check that the ``output`` directory does not exists (it will not be
-   overwritten; an error will be generated instead)
+   overwritten: an error will be generated instead)
