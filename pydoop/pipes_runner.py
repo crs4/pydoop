@@ -1,3 +1,6 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 from pydoop.text_protocol import text_down_protocol
 from pydoop.text_protocol import up_serializer
 

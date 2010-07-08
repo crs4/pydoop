@@ -22,7 +22,8 @@ class str_lifetime_tc(unittest.TestCase):
          'input_value' : big_string,
          'input_split' : '',
          'input_key_class' : 'foo_key_class',
-         'input_value_class' : 'foo_value_class'}
+         'input_value_class' : 'foo_value_class',
+         'job_conf': {}}
     for x in xrange(N):
       mctx = pydoop._pipes.get_MapContext_object(d)
       v = mctx.getInputValue()

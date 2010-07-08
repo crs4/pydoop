@@ -9,14 +9,15 @@ include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
 include test/all_tests.py
 exclude test/test_return_iref.py
+exclude test/test_string_lifetime.py
 include examples/README
 recursive-include examples/input *
 recursive-include examples/wordcount *
 recursive-include examples/self_contained *
 recursive-include examples/sequence_file *
 recursive-include examples/hdfs *
-include pydoop/hadoop_serial.py
-include pydoop/text_protocol.py
-include pydoop/binary_protocol.py
-include pydoop/pipes_runner.py
+exclude pydoop/hadoop_serial.py
+exclude pydoop/text_protocol.py
+exclude pydoop/binary_protocol.py
+exclude pydoop/pipes_runner.py
 recursive-include docs *

@@ -39,16 +39,20 @@ Example Application: Filter Wordcount Results
 
 ``SequenceFile`` is mostly useful to handle complex objects like
 C-style structs or images. To keep our example as simple as possible,
-we considered a situation where you wish to emit the raw bytes of an
-integer value.
+we considered a situation where a MapReduce task needs to emit the raw
+bytes of an integer value.
 
 We wrote a trivial application that reads input from a previous
 :doc:`wordcount` run and filters out words whose count falls below a
-configurable threshold. Suppose you know in advance that most counts
-will be large, but not so large that they cannot fit in a 32-bit
-integer: since the decimal representation could require as much as 10
-bytes, you decide to save space by having the Wordcount reducer emit
-the raw four bytes of the integer instead:
+configurable threshold. Of course, the filter could have been directly
+applied to the wordcount reducer: the job has been artificially split
+into two runs to give a ``SequenceFile`` read / write example.
+
+Suppose you know in advance that most counts will be large, but not so
+large that they cannot fit in a 32-bit integer: since the decimal
+representation could require as much as 10 bytes, you decide to save
+space by having the wordcount reducer emit the raw four bytes of the
+integer instead:
 
 .. code-block:: python
 

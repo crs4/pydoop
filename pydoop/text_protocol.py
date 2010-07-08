@@ -1,3 +1,6 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 import sys, subprocess
 from _pipes import unquote_string, quote_string
 

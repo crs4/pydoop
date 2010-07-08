@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 # You need a working Hadoop cluster to run this.
 
 HADOOP=${HADOOP_HOME}/bin/hadoop
