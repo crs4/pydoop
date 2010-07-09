@@ -4,6 +4,16 @@ import unittest, os, pwd
 from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
 
 
+DEFAULT_HDFS_HOST = "localhost"
+DEFAULT_HDFS_PORT = 9000
+HDFS_HOST = os.getenv("HDFS_HOST", DEFAULT_HDFS_HOST)
+HDFS_PORT = os.getenv("HDFS_PORT", DEFAULT_HDFS_PORT)
+try:
+  HDFS_PORT = int(HDFS_PORT)
+except ValueError:
+  import sys
+  sys.exit("Bad environment variable HDFS_PORT=%s (must be an int)" % HDFS_PORT)
+
 class hdfs_default_tc(hdfs_basic_tc):
   
   def __init__(self, target):
@@ -241,7 +251,7 @@ class hdfs_default_tc(hdfs_basic_tc):
 class hdfs_local_tc(hdfs_default_tc):
   
   def __init__(self, target):
-    hdfs_basic_tc.__init__(self, target, 'localhost', 9000)
+    hdfs_basic_tc.__init__(self, target, HDFS_HOST, HDFS_PORT)
 
 
 def suite():

@@ -3,7 +3,7 @@ HDFS: Usage by Block Size
 
 The HDFS API allows you to connect to an HDFS installation, read and
 write files and get information on files, directories and global
-filesystem properties.
+file system properties.
 
 This example (stripped of imports and main for brevity) shows how the
 API can be used to build statistics of HDFS usage by block size::

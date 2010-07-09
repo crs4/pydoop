@@ -2,8 +2,39 @@
 # END_COPYRIGHT
 
 """
-This module provides facilities to connect to an HDFS and manipulate
-its files and directories.
+This module allows you to connect to an HDFS installation, read and
+write files and get information on files, directories and global
+filesystem properties.
+
+
+Configuration
+-------------
+
+The hdfs module is built on top of ``libhdfs``, in turn a JNI wrapper
+around the Java fs code: therefore, for the module to work properly,
+the ``CLASSPATH`` environment variable must include all paths to the
+relevant Hadoop jars. Pydoop will do this for you, but it needs to
+know where your Hadoop installation is located and what is your hadoop
+configuration directory.
+
+In practice, what you need to do is make sure that the ``HADOOP_HOME``
+and the ``HADOOP_CONF_DIR`` (unless it coincides with
+``${HADOOP_HOME}/conf``\ ) environment variables are correctly set
+according to your installation. If these variables are not set at all,
+the hdfs module will fall back to ``/opt/hadoop`` for ``HADOOP_HOME``
+and ``opt/hadoop/conf`` for ``HADOOP_CONF_DIR``\ .
+
+Another important environment variable for this module is
+``LIBHDFS_OPTS``\ . This is used to set options for the JVM on top of
+which the module runs, most notably the amount of memory it uses. If
+``LIBHDFS_OPTS`` is not set, the C libhdfs will let it fall back to
+the default for your system, typically 1 GB. According to our
+experience, this is *much* more than most applications need and adds a
+lot of unnecessary memory overhead. For this reason, the hdfs module
+sets ``LIBHDFS_OPTS`` to ``-Xmx48m``\ , a value that we found to be
+appropriate for most applications. If your needs are different, you
+can set the environment variable externally and it will override the
+above setting.
 """
 
 import os, glob, grp

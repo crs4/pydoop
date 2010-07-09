@@ -65,9 +65,14 @@ Gentoo Linux you might want to run something like this::
 
   make JAVA_HOME=/etc/java-config-2/current-system-vm run
 
-You should run it on a slave node or on an identical machine. Remember
-that it is supposed to work with Pydoop and cv *not* installed on the
-slave nodes.
+Since the Makefile rebuilds Pydoop from scratch, you might also need
+to take into account non-standard lib and include directories, e.g.::
+
+  LDFLAGS="-L/my/lib/path -R/my/lib/path" CFLAGS=-I/my/include/path make run
+
+You should run make on a slave node or on an identical
+machine. Remember that it is supposed to work with Pydoop and cv *not*
+installed on the slave nodes.
 
 For further details, take a look at the source code and other files
 under ``examples/self_contained``\ .

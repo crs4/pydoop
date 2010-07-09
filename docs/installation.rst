@@ -6,11 +6,16 @@ Prerequisites
 
 In order to build and install Pydoop, you need the following software:
 
-* `Python <http://www.python.org>`_ version 2.5 or 2.6
+* `Python <http://www.python.org>`_ version 2.6.5
 * `Hadoop <http://hadoop.apache.org>`_ version 0.20.1 or 0.20.2
 * `Boost <http://www.boost.org>`_ version 1.40 or later
 
 The first two are also runtime requirements for all cluster nodes.
+
+Note that, due to a bug in Python's `urlparse
+<http://docs.python.org/release/2.6.5/library/urlparse.html>`_ module,
+any release prior to 2.6.5 will break
+:func:`~pydoop.utils.split_hdfs_path`\ .
 
 
 Instructions
@@ -54,8 +59,9 @@ Troubleshooting
 ---------------
 
 #. Missing libhdfs: Hadoop 0.20.1 does not include a pre-compiled
-   version of libhdfs.so for 64-bit machines. To compile and install
-   your own, do the following::
+   version of libhdfs.so for 64-bit machines. If you are using Hadoop
+   0.20.2 and/or a 32-bit system you can safely skip this. To compile
+   and install your own libhdfs, do the following::
 
     cd ${HADOOP_HOME}
     chmod +x src/c++/{libhdfs,pipes,utils}/configure
@@ -64,16 +70,14 @@ Troubleshooting
     cd c++/Linux-amd64-64/lib/
     ln -fs libhdfs.so.0.0.0 libhdfs.so
 
-   Note that if you run a 32-bit jvm on a 64-bit platform, you need
+   Note that if you run a 32-bit JVM on a 64-bit platform, you need
    the 32-bit libhdfs (see `HADOOP-3344
    <https://issues.apache.org/jira/browse/HADOOP-3344>`_\ ).  In this
    case, copy the pre-compiled ``libhdfs.*`` from
-   ``c++/Linux-i386-32/lib`` to ``c++/Linux-amd64-64/lib``\ . This
-   step is not required if you are using Hadoop 0.20.2, which includes
-   libhdfs for both 32-bit and 64-bit architectures.
+   ``c++/Linux-i386-32/lib`` to ``c++/Linux-amd64-64/lib``\ .
 
 #. Non-standard include/lib directories: the setup script looks for
-   includes and libraries in standard places -- read setup.py for
+   includes and libraries in standard places -- read ``setup.py`` for
    details. If some of the requirements are stored in different
    locations, you need to add them to the search path. Example::
 
@@ -85,17 +89,23 @@ Troubleshooting
 Testing Your Installation
 -------------------------
 
-**NOTE:** in order to run all HDFS tests you need to:
+After pydoop has been successfully installed, you might want to run
+unit tests to verify that everything works fine.
 
-#. set ``HADOOP_HOME`` (and possibly ``HADOOP_CONF_DIR``, if it does
-   not point to ``${HADOOP_HOME}/conf``\) to the correct location for
-   your system
+**IMPORTANT NOTICE:** in order to run HDFS tests you must:
+
+#. make sure that ``HADOOP_HOME`` (and ``HADOOP_CONF_DIR``, if it does
+   not coincide with ``${HADOOP_HOME}/conf``\) are set to the correct
+   locations for your system
+#. since one of the test cases tests connection to an HDFS instance
+   with *explicitly set* host and port, if in your case these are
+   different from, respectively, "localhost" and 9000, you must set
+   the ``HDFS_HOST`` and ``HDFS_PORT`` environment variables accordingly.
 #. start HDFS::
 
      ${HADOOP_HOME}/bin/start-dfs.sh
 
-After pydoop has been successfully installed, you might want to run
-unit tests. Move to the ``test`` subdirectory and run::
+To run the unit tests, move to the ``test`` subdirectory and run::
 
   python all_tests.py
 

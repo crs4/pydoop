@@ -2,8 +2,8 @@
 # END_COPYRIGHT
 
 MB = 2**20
-HOSTNAME = "localhost"
-PORT = 9000
+HOSTNAME = "default"
+PORT = 0
 TEST_ROOT = "tree_test"
 
 def isdir(fs, d):
