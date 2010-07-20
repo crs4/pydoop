@@ -174,7 +174,13 @@ class hdfs_file(object):
     :rtype: string
     :return: the chunk of data read from the file
     """
-    return self.f.read(length)
+    # libhdfs read stops at block boundary. Better hide this from users
+    chunks = [self.f.read(length)]
+    bytes_read = len(chunks[-1])
+    while 0 < bytes_read < length:
+      chunks.append(self.f.read(length - bytes_read))
+      bytes_read += len(chunks[-1])
+    return "".join(chunks)
  
   def read_chunk(self, chunk):
     """

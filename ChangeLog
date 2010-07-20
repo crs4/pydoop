@@ -1,3 +1,7 @@
+2010-07-20    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py (hdfs_file.read): fixed #312.
+
 2010-07-07    <simleo@neuron.crs4.it>
 
 	* docs/conf.py: version and release are now dynamically retrieved

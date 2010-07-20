@@ -1,11 +1,15 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
-import sys, os, unittest
+import sys, os, unittest, random
 from ctypes import create_string_buffer
-from pydoop.hdfs import hdfs as HDFS
+import xml.dom.minidom
+
+from pydoop.hdfs import HADOOP_HOME, HADOOP_CONF_DIR, hdfs as HDFS
 
 
 class hdfs_basic_tc(unittest.TestCase):
+
+  DEFAULT_BYTES_PER_CHECKSUM = 512
 
   def __init__(self, target, HDFS_HOST='', HDFS_PORT=0):
     unittest.TestCase.__init__(self, target)
@@ -319,6 +323,24 @@ class hdfs_basic_tc(unittest.TestCase):
       f.close()
     self.fs.delete(path)
 
+  def block_boundary(self):
+    path = "/tmp/foo" 
+    CHUNK_SIZE = 10
+    N = 2
+    bs = N * self.__get_bytes_per_checksum()
+    f = self.fs.open_file(path, os.O_WRONLY, blocksize=bs)
+    f.write("".join([chr(random.randint(32,126)) for _ in xrange(2*bs)]))
+    f.close()
+    f = self.fs.open_file(path)
+    try:
+      for pos in bs-1, bs, bs+1:
+        f.seek(pos)
+        chunk = f.read(CHUNK_SIZE)
+        self.assertEqual(len(chunk), CHUNK_SIZE)
+    finally:
+      f.close()
+      self.fs.delete(path)
+
   def __check_path_info(self, info, **expected_values):
     keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
             'permissions', 'block_size', 'last_access', 'size')
@@ -327,6 +349,36 @@ class hdfs_basic_tc(unittest.TestCase):
     for k, exp_v in expected_values.iteritems():
       v = info[k]
       self.assertEqual(v, exp_v)
+
+  def __get_bytes_per_checksum(self):
+    
+    def extract_text(nodes):
+      return str("".join([n.data for n in nodes if n.nodeType == n.TEXT_NODE]))
+
+    def extract_bpc(conf_path):
+      dom = xml.dom.minidom.parse(conf_path)
+      conf = dom.getElementsByTagName("configuration")[0]
+      props = conf.getElementsByTagName("property")
+      for p in props:
+        n = p.getElementsByTagName("name")[0]
+        if extract_text(n.childNodes) == "io.bytes.per.checksum":
+          v = p.getElementsByTagName("value")[0]
+          return int(extract_text(v.childNodes))
+      raise IOError  # for consistency, also raised by minidom.path
+
+    core_default = os.path.join(HADOOP_HOME, "src", "core", "core-default.xml")
+    core_site, hadoop_site = [os.path.join(HADOOP_CONF_DIR, fn) for fn in
+                              ("core-site.xml", "hadoop-site.xml")]
+    try:
+      return extract_bpc(core_site)
+    except IOError:
+      try:
+        return extract_bpc(hadoop_site)
+      except IOError:
+        try:
+          return extract_bpc(core_default)
+        except IOError:
+          return self.DEFAULT_BYTES_PER_CHECKSUM
 
 
 def basic_tests():
@@ -345,5 +397,6 @@ def basic_tests():
     'get_path_info',
     'list_directory',
     'readline',
-    'seek'
+    'seek',
+    'block_boundary',
     ]
