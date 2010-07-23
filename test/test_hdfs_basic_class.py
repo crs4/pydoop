@@ -328,15 +328,18 @@ class hdfs_basic_tc(unittest.TestCase):
     CHUNK_SIZE = 10
     N = 2
     bs = N * self.__get_bytes_per_checksum()
+    total_data = 2 * bs
     f = self.fs.open_file(path, os.O_WRONLY, blocksize=bs)
-    f.write("".join([chr(random.randint(32,126)) for _ in xrange(2*bs)]))
+    f.write("".join([chr(random.randint(32,126)) for _ in xrange(total_data)]))
     f.close()
     f = self.fs.open_file(path)
     try:
-      for pos in bs-1, bs, bs+1:
+      p = total_data - CHUNK_SIZE
+      for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data-1:
+        expected_len = CHUNK_SIZE if pos <= p else total_data - pos
         f.seek(pos)
         chunk = f.read(CHUNK_SIZE)
-        self.assertEqual(len(chunk), CHUNK_SIZE)
+        self.assertEqual(len(chunk), expected_len)
     finally:
       f.close()
       self.fs.delete(path)
