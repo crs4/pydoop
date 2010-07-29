@@ -261,16 +261,18 @@ class hdfs(hdfs_fs):
   :type port: int
   :param port: the port on which the NameNode is listening
   :type user: string
-  :param user: the Hadoop domain user name. Defaults to the current UNIX user.
+  :param user: the Hadoop domain user name. Defaults to the current
+    UNIX user. Note that, in MapReduce applications, since tasks are
+    spawned by the JobTracker, the default user will be the one that
+    started the JobTracker itself.
   :type groups: list
   :param groups: the Hadoop domain groups. Defaults to ``["supergroup"]``
     in the case of an actual HDFS connection and to ``[<CURRENT_GROUP>]``
     for local fs connections.
 
-  **Note:** currently, when connecting to the local file system,
-  ``user`` and ``groups`` are ignored. The actual user and group
-  that will be used for file creation are the same as the ones of
-  the current process.
+  **Note:** when connecting to the local file system, ``user`` and
+  ``groups`` are ignored. The actual user and group that will be used
+  for file creation are the same as the ones of the current process.
   """
   def __init__(self, host, port, user="", groups=[]):
     if user and not groups:  # this is an error for libhdfs. Not funny

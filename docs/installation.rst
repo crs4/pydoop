@@ -6,16 +6,11 @@ Prerequisites
 
 In order to build and install Pydoop, you need the following software:
 
-* `Python <http://www.python.org>`_ version 2.6.5
+* `Python <http://www.python.org>`_ version 2.6
 * `Hadoop <http://hadoop.apache.org>`_ version 0.20.1 or 0.20.2
 * `Boost <http://www.boost.org>`_ version 1.40 or later
 
 The first two are also runtime requirements for all cluster nodes.
-
-Note that, due to a bug in Python's `urlparse
-<http://docs.python.org/release/2.6.5/library/urlparse.html>`_ module,
-any release prior to 2.6.5 will break
-:func:`~pydoop.utils.split_hdfs_path`\ .
 
 
 Instructions

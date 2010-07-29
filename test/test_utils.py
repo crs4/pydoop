@@ -1,25 +1,32 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 import os, unittest
-
 from pydoop.utils import split_hdfs_path, jc_configure
-from pydoop.utils import jc_configure_int, jc_configure_bool, jc_configure_float
-
+from pydoop.utils import jc_configure_int, jc_configure_bool, \
+     jc_configure_float, DEFAULT_PORT
 import pydoop._pipes as pp
 
+
 good_examples = [
-  ('hdfs://foo.bar.com:1234/foo/bar', ('foo.bar.com', 1234, '/foo/bar')),
-  ('hdfs://foo.bar.com/foo/bar', ('foo.bar.com', 0, '/foo/bar')),
+  ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
+  ('hdfs://localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
+  ('hdfs://localhost/foo/bar', ('localhost', DEFAULT_PORT, '/foo/bar')),
   ('hdfs:///foo/bar', ('default', 0, '/foo/bar')),
   ('file:///foo/bar', ('', 0, '/foo/bar')),
   ('file:/foo/bar', ('', 0, '/foo/bar')),
+  ('file:///foo', ('', 0, '/foo')),
+  ('file:/foo', ('', 0, '/foo')),
+  ('file://localhost:9000/foo/bar', ('', 0, '/localhost:9000/foo/bar')),
+  ('//localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
   ('/foo/bar', ('default', 0, '/foo/bar')),
-  ('foo/bar', ('default', 0, '/user/%s/foo/bar' % os.environ["USER"]))
+  ('foo/bar', ('default', 0, '/user/%s/foo/bar' % os.environ["USER"])),
   ]
 
 bad_examples = [
-  ('file://foo.bar.com:1234/foo/bar', ()),
-  ('/foo.bar.com:1234/foo/bar', ())
+  ('ftp://localhost:9000/', ()),
+  ('hdfs://localhost:spam/', ()),
+  ('hdfs://localhost:9000', ()),
+  ('/localhost:9000/foo/bar', ('default', 0, '/localhost:9000/foo/bar')),
 ]
 
 configure_examples = {
@@ -37,7 +44,7 @@ configure_examples = {
 
 class utils_tc(unittest.TestCase):
 
-  def split(self):
+  def split_hdfs_path(self):
     for p, r in good_examples:
       self.assertEqual(split_hdfs_path(p), r)
     for p, r in bad_examples:
@@ -149,7 +156,7 @@ def my_serialize(t):
 
 def suite():
   suite = unittest.TestSuite()
-  suite.addTest(utils_tc('split'))
+  suite.addTest(utils_tc('split_hdfs_path'))
   suite.addTest(utils_tc('jc_configure_plain'))
   suite.addTest(utils_tc('jc_configure_default'))
   suite.addTest(utils_tc('jc_configure_no_default'))

@@ -4,10 +4,13 @@
 This module contains general utility functions for application writing.
 """
 
-import os
-from urlparse import urlparse
+import os, re
 from struct import pack
 import _pipes as pp
+
+
+# as in org/apache/hadoop/hdfs/server/namenode/NameNode.java
+DEFAULT_PORT = 8020
 
 
 def raise_pydoop_exception(msg):
@@ -110,29 +113,45 @@ def split_hdfs_path(hdfs_url):
   :rtype: tuple
   :return: hostname, port, path
   """
-  e = 'Illegal HDFS url <%s>'
-  r = urlparse(hdfs_url)
-  if r.scheme == 'hdfs':
-    parts = r.netloc.split(':')
-    if len(parts) == 2:
-      hostname, port, path = parts[0], int(parts[1]), r.path
-    elif len(parts) == 1:
-      hostname, port, path = parts[0] or "default", 0, r.path
+  # Use a helper class to compile URL_PATTERN once and for all
+  return _HdfsPathSplitter.split(hdfs_url)
+
+
+class _HdfsPathSplitter(object):
+
+  URL_PATTERN = re.compile(r"([a-z0-9+.-]+):(.*)")
+
+  @classmethod
+  def split(cls, hdfs_url):
+    try:
+      scheme, rest = cls.URL_PATTERN.match(hdfs_url).groups()
+    except AttributeError:
+      scheme, rest = "hdfs", hdfs_url
+    if scheme == "hdfs":
+      if rest[:2] == "//" and rest[2] != "/":
+        try:
+          netloc, path = rest[2:].split("/", 1)
+        except ValueError:
+          raise_pydoop_exception("not a valid HDFS filename")
+        path = "/%s" % path
+        try:
+          hostname, port = netloc.split(":")
+        except ValueError:
+          hostname, port = netloc, DEFAULT_PORT
+        try:
+          port = int(port)
+        except ValueError:
+          raise_pydoop_exception("port must be an integer")
+      elif ":" in rest:
+        raise_pydoop_exception("relative path in absolute URI")
+      elif rest[0] != "/":
+        path = "/user/%s/%s" % (os.environ["USER"], rest)
+        hostname, port = "default", 0
+      else:
+        hostname, port, path = "default", 0, rest
+    elif scheme == "file":
+      hostname, port, path = "", 0, rest
     else:
-      raise_pydoop_exception(e % hdfs_url)
-  elif r.scheme == 'file':
-    if r.netloc != '':
-      raise_pydoop_exception(e % hdfs_url)
-    hostname, port, path = '', 0, r.path
-  elif r.scheme == '':
-    first_chunk = r.path.lstrip("/").split("/", 1)[0]
-    if ":" in first_chunk:
-      raise_pydoop_exception(e % hdfs_url)
-    if not r.path.startswith("/"):
-      path = "/user/%s/%s" % (os.environ["USER"], r.path)
-    else:
-      path = r.path
-    hostname, port = 'default', 0
-  else:
-    raise_pydoop_exception(e % hdfs_url)
-  return hostname, port, os.path.normpath(path)
+      raise_pydoop_exception("unsupported scheme %r" % scheme)
+    path = "/%s" % path.lstrip("/")  # not handled by normpath
+    return hostname, port, os.path.normpath(path)

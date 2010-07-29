@@ -1,3 +1,8 @@
+2010-07-29    <simleo@neuron.crs4.it>
+
+	* pydoop/utils.py (split_hdfs_path): rewritten to eliminate
+	urlparse dependency (fixes ticket #316).
+
 2010-07-23    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py (hdfs_file.read): fixed #319.
