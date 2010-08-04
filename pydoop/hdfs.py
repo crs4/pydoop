@@ -260,7 +260,7 @@ class hdfs(hdfs_fs):
     "configured" file system.  
   :type port: int
   :param port: the port on which the NameNode is listening
-  :type user: string
+  :type user: string or ``None``
   :param user: the Hadoop domain user name. Defaults to the current
     UNIX user. Note that, in MapReduce applications, since tasks are
     spawned by the JobTracker, the default user will be the one that
@@ -274,7 +274,7 @@ class hdfs(hdfs_fs):
   ``groups`` are ignored. The actual user and group that will be used
   for file creation are the same as the ones of the current process.
   """
-  def __init__(self, host, port, user="", groups=[]):
+  def __init__(self, host, port, user=None, groups=[]):
     if user and not groups:  # this is an error for libhdfs. Not funny
       if host:  # hdfs
         groups = ["supergroup"]
@@ -283,7 +283,7 @@ class hdfs(hdfs_fs):
           groups = [grp.getgrgid(os.getgid()).gr_name]
         except KeyError:
           groups = ["users"]
-    super(hdfs, self).__init__(host, port, user, groups)
+    super(hdfs, self).__init__(host, port, user or "", groups)
 
   def open_file(self, path,
                 flags=os.O_RDONLY,

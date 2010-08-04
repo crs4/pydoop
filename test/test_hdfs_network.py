@@ -88,6 +88,7 @@ class hdfs_default_tc(hdfs_basic_tc):
     base_args = self.HDFS_HOST, self.HDFS_PORT
     cases = [ # (hdfs_args_tuple, (expected_owner, expected_group))
       (base_args, (default_user, default_group)),
+      (base_args+(None,), (default_user, default_group)),
       (base_args+(new_user,), (new_user, default_group)),
       
       # file group ownership does not change even if we pass a group
