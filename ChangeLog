@@ -1,5 +1,8 @@
 2010-08-04    <simleo@neuron.crs4.it>
 
+	* pydoop/utils.py (_HdfsPathSplitter.split): bad url exception now
+	reports bad url name.
+
 	* pydoop/hdfs.py (hdfs.__init__): user can now be None, with the
 	same effect as "".
 

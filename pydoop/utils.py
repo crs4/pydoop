@@ -132,7 +132,7 @@ class _HdfsPathSplitter(object):
         try:
           netloc, path = rest[2:].split("/", 1)
         except ValueError:
-          raise_pydoop_exception("not a valid HDFS filename")
+          raise_pydoop_exception("%s is not a valid HDFS URL" % hdfs_url)
         path = "/%s" % path
         try:
           hostname, port = netloc.split(":")
