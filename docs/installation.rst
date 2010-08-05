@@ -1,6 +1,20 @@
 Installation
 ============
 
+Supported Platforms
+-------------------
+
+Pydoop has been tested on the following Linux distros:
+
+* `Gentoo  <http://www.gentoo.org>`_ 10.0 32/64 bit
+* `Ubuntu <http://www.ubuntu.com>`_ 10.04 32/64 bit
+* `CentOS <http://www.centos.org>`_ 5.2 64 bit 
+
+Although we currently have no information regarding other Linux
+distributions, we expect Pydoop to work (possibly with some tweaking)
+on them as well. Platforms other than Linux are not supported.
+
+
 Prerequisites
 -------------
 
@@ -10,7 +24,7 @@ In order to build and install Pydoop, you need the following software:
 * `Hadoop <http://hadoop.apache.org>`_ version 0.20.1 or 0.20.2
 * `Boost <http://www.boost.org>`_ version 1.40 or later
 
-The first two are also runtime requirements for all cluster nodes.
+These are also runtime requirements for all cluster nodes.
 
 
 Instructions
@@ -40,12 +54,11 @@ installation (i.e., into ``~/.local/lib/python2.X/site-packages``\ )::
 If the above does not work, please read the :ref:`troubleshooting`
 section.
 
-**Note for Ubuntu users:** Pydoop has been developed and tested on
-Gentoo Linux. With the latest Ubuntu version and Hadoop 0.20.2, it
-should build without problems. However, a build test with Ubuntu 9.10
-64-bit and Hadoop 0.20.1 required us to apply a patch to the original
-Hadoop Pipes C++ code first. The patch file is included in Pydoop's
-distribution root as ``pipes_ubuntu.patch``\ .
+**Note for Ubuntu users:** a build test with Ubuntu 9.10 64-bit and
+Hadoop 0.20.1 required us to apply a patch to the original Hadoop
+Pipes C++ code first. Although we recommend updating to Ubuntu 10.04
+and Hadoop-0.20.2, we included the patch file (``pipes_ubuntu.patch``\ )
+in Pydoop's distribution root for those who might need it.
 
 
 .. _troubleshooting:
@@ -65,12 +78,6 @@ Troubleshooting
     cd c++/Linux-amd64-64/lib/
     ln -fs libhdfs.so.0.0.0 libhdfs.so
 
-   Note that if you run a 32-bit JVM on a 64-bit platform, you need
-   the 32-bit libhdfs (see `HADOOP-3344
-   <https://issues.apache.org/jira/browse/HADOOP-3344>`_\ ).  In this
-   case, copy the pre-compiled ``libhdfs.*`` from
-   ``c++/Linux-i386-32/lib`` to ``c++/Linux-amd64-64/lib``\ .
-
 #. Non-standard include/lib directories: the setup script looks for
    includes and libraries in standard places -- read ``setup.py`` for
    details. If some of the requirements are stored in different
@@ -84,7 +91,7 @@ Troubleshooting
 Testing Your Installation
 -------------------------
 
-After pydoop has been successfully installed, you might want to run
+After Pydoop has been successfully installed, you might want to run
 unit tests to verify that everything works fine.
 
 **IMPORTANT NOTICE:** in order to run HDFS tests you must:
