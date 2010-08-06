@@ -1,2 +1,0 @@
-hadoop 0.20.2: it works on ubuntu 32 bit, does not need the patch
-anymore. Looks like it needs boost 0.40.

@@ -23,10 +23,11 @@ good_examples = [
   ]
 
 bad_examples = [
-  ('ftp://localhost:9000/', ()),
-  ('hdfs://localhost:spam/', ()),
-  ('hdfs://localhost:9000', ()),
-  ('/localhost:9000/foo/bar', ('default', 0, '/localhost:9000/foo/bar')),
+  ('ftp://localhost:9000/', ()),          # bad scheme
+  ('hdfs://localhost:spam/', ()),         # port is not an int
+  ('hdfs://localhost:9000', ()),          # path part is empty
+  ('hdfs://localhost:9000/foo:bar', ()),  # colon outside netloc
+  ('/localhost:9000/foo/bar', ()),        # colon outside netloc
 ]
 
 configure_examples = {

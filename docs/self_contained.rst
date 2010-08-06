@@ -1,5 +1,5 @@
-A Self-contained Example
-========================
+Running Pydoop Applications without Installing
+==============================================
 
 This example shows how to use the Hadoop Distributed Cache to
 distribute Python packages, possibly including Pydoop itself, to all
@@ -13,12 +13,13 @@ Example Application: Count Vowels
 ---------------------------------
 
 The example MapReduce application, "cv", is rather trivial: it counts
-the occurrence of each vowel in the input text. Since the point here is
-to show how a structured package can be distributed and imported, the
-implementation is exceedingly verbose and inefficient. The included
-input text is a free version of Lewis Carrol's "Alice's Adventures in
-Wonderland" from Project Gutenberg (see the "input" sub-directory), but
-you can use any combination of text files if you wish.
+the occurrence of each vowel in the input text. Since the point here
+is to show how a structured package can be distributed and imported,
+the implementation is exceedingly verbose and inefficient. The
+included input text is a free version of Lewis Carrol's "Alice's
+Adventures in Wonderland" from `Project Gutenberg
+<http://www.gutenberg.org>`_ (see the "input" sub-directory), but you can use
+any combination of text files if you wish.
 
 
 How it works

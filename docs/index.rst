@@ -14,6 +14,7 @@ Contents:
    installation
    api_docs/index
    examples/index
+   self_contained
 
 Indices and tables
 ==================

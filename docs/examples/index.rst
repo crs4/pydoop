@@ -6,6 +6,5 @@ Examples
 
    intro
    wordcount
-   self_contained
    hdfs
    sequence_file

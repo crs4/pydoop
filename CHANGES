@@ -1,16 +1,24 @@
 == Pydoop 0.3.6 ==
 
- * added more usage examples.
+* Docs: removed an incorrect suggestion from the installation troubleshooting section. Thanks to Allen Wittenauer for pointing this out.
 
- * hdfs.hdfs_file: added flush.
+* hdfs_file.read has been rewritten to work around a limitation of the underlying libhdfs read function that makes it read less than the requested number of bytes in proximity of block boundaries.
 
- * hdfs.hdfs: added the ability to connect as a specific user; added chown, chmod and utime.
+* split_hdfs_path has been rewritten to do its job without using urlparse: we decided not to rely on it anymore since it changed behavior between two minor releases of Python. Its argument is now required to be an hdfs path, as the function's name suggests. This means that "hdfs://localhost:9000" is no longer a valid argument, while "hdfs://localhost:9000/" is OK.
 
- * setup.py: changed to generate additional C++ source files only when build_ext is (indirectly or directly) called.
+== Pydoop 0.3.6_rc2 ==
 
- * utils.split_hdfs_path: added support for relative paths.
+* added more usage examples.
 
- * All documentation is now generated with Sphinx.
+* hdfs.hdfs_file: added flush.
+
+* hdfs.hdfs: added the ability to connect as a specific user; added chown, chmod and utime.
+
+* setup.py: changed to generate additional C++ source files only when build_ext is (indirectly or directly) called.
+
+* utils.split_hdfs_path: added support for relative paths.
+
+* All documentation is now generated with Sphinx.
 
 == Pydoop 0.3.5 ==
 
@@ -25,8 +33,7 @@
 
 == Pydoop 0.3.3 ==
 
-* hdfs: get_path_info and list_directory have been fixed to correctly
-  raise an IOError for nonexistent paths.
+* hdfs: get_path_info and list_directory have been fixed to correctly raise an IOError for nonexistent paths.
 
 
 == Pydoop 0.3.2 ==
