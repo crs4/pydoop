@@ -225,5 +225,7 @@ setup(
     url=pydoop.__url__,
     packages=["pydoop"],
     cmdclass={"build_ext": build_boost_ext},
-    ext_modules=create_ext_modules()
+    ext_modules=create_ext_modules(),
+    platforms=["linux"],
+    license="Apache-2.0"
     )

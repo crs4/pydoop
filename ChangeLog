@@ -1,5 +1,9 @@
 2010-08-06    <simleo@neuron.crs4.it>
 
+	* setup.py: added platforms and license metadata. Note that the
+	Makefile (and the copyrighter script it uses) has not been updated
+	to include the Apache 2.0 notice yet.
+
 	* pydoop/utils.py (_HdfsPathSplitter.split): fixed a bug that was
 	causing it to allow colons in some hdfs paths; error messages now
 	provide more details on what went wrong.
