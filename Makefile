@@ -1,5 +1,5 @@
 ACDC_SVN_BASE = ${HOME}/svn/ac-dc
-COPYRIGHTER = $(ACDC_SVN_BASE)/tools/copyrighter/copyrighter.py
+COPYRIGHTER = $(ACDC_SVN_BASE)/tools/copyrighter/tags/REL-0.1.0/copyrighter.py
 AUTHOR = "Simone Leo, Gianluigi Zanetti"
 EXPORT_DIR = svn_export
 GENERATED_SRC_FILES = src/_pipes_main.cpp src/_hdfs_main.cpp \
