@@ -42,7 +42,7 @@ dist: docs
 	mv $(EXPORT_DIR)/dist .
 
 clean:
-	rm -rf build
+	rm -rf $(BUILD_DIR)
 	rm -fv $(GENERATED_SRC_FILES)
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
 	make -C docs clean
