@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 import os, unittest
 from pydoop.utils import split_hdfs_path, jc_configure
 from pydoop.utils import jc_configure_int, jc_configure_bool, \

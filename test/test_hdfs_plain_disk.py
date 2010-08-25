@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 import unittest, tempfile, os, pwd, grp
 from test_hdfs_basic_class import hdfs_basic_tc, basic_tests
 from pydoop.hdfs import hdfs as HDFS

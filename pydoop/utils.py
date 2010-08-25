@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 """
 This module contains general utility functions for application writing.
 """

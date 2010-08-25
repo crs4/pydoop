@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 """
 This module allows you to write the components of your MapReduce application.
 

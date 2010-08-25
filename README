@@ -1,6 +1,6 @@
-Pydoop is a Python MapReduce and HDFS API for Hadoop.
+Pydoop -- a Python MapReduce and HDFS API for Hadoop.
 
-Copyright (C) Simone Leo, Gianluigi Zanetti - CRS4
+Copyright 2010 CRS4.
 
 Documentation, including installation instructions, is provided in
 html form under docs/html. For a general overview, you can also read

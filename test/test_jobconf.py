@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 import unittest
 import pydoop._pipes
 

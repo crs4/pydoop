@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 """
 Contains MapReduce components for the cv application.
 """

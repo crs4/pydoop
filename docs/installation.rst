@@ -106,7 +106,7 @@ unit tests to verify that everything works fine.
 #. since one of the test cases tests connection to an HDFS instance
    with *explicitly set* host and port, if in your case these are
    different from, respectively, "localhost" and 9000, you must set
-   the ``HDFS_HOST`` and ``HDFS_PORT`` environment variables accordingly.
+   the ``HDFS_HOST`` and ``HDFS_PORT`` environment variables accordingly
 
 #. start HDFS::
 

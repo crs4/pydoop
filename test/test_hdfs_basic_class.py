@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 import sys, os, unittest, random
 from ctypes import create_string_buffer
 import xml.dom.minidom

@@ -1,5 +1,7 @@
 == Pydoop 0.3.6 ==
 
+* Pydoop is now released under the Apache License, Version 2.0.
+
 * Docs: removed an incorrect suggestion from the installation troubleshooting section. Thanks to Allen Wittenauer for pointing this out.
 
 * hdfs_file.read has been rewritten to work around a limitation of the underlying libhdfs read function that makes it read less than the requested number of bytes in proximity of block boundaries.

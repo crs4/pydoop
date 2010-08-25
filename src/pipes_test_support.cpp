@@ -1,5 +1,6 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
+
 #include <string>
 
 #include <stdint.h>

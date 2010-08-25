@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 

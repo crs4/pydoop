@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 """
 This package implements a trivial MapReduce application that counts
 the occurence of each vowel in a text input stream.

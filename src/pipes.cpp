@@ -1,5 +1,6 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
+
 #include <stdint.h>
 #include <hadoop/Pipes.hh>
 #include "pipes.hpp"

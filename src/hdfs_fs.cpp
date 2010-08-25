@@ -1,5 +1,6 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
+
 #include <errno.h>
 #include "hdfs_fs.hpp"
 

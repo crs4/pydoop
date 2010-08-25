@@ -1,5 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
+
 """
 Contains just a trivial function that tells whether the given
 character is a vowel.

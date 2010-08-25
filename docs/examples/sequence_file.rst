@@ -2,13 +2,18 @@ Using the Hadoop SequenceFile Format
 ====================================
 
 Although many MapReduce applications deal with text files, there are
-many cases where processing binary data is required. Hadoop supports
-this through the `SequenceFile
-<http://hadoop.apache.org/common/docs/r0.20.0/api/org/apache/hadoop/io/SequenceFile.html>`_
-format, which allows to read and write arbitrary key/value pairs.
+many cases where processing binary data is required. In this case, you
+basically have two options:
 
-It's easy to use this feature from Pydoop. To write ``SequenceFile``\ s,
-add the following properties to your job configuration file:
+#. write appropriate :class:`~pydoop.pipes.RecordReader` /
+   :class:`~pydoop.pipes.RecordWriter` classes for the binary format
+   you need to process
+#. convert your data to Hadoop's standard `SequenceFile
+   <http://hadoop.apache.org/common/docs/r0.20.0/api/org/apache/hadoop/io/SequenceFile.html>`_ format.
+
+Using Sequence Files within Pydoop is easy. To write output key/value
+pairs in the ``SequenceFile`` format, add the following properties to
+your job configuration file:
 
 .. code-block:: xml
 
@@ -24,7 +29,8 @@ add the following properties to your job configuration file:
 
 Where ``desired_compression_type`` can be ``NONE``, ``RECORD`` or
 ``BLOCK`` (see the ``SequenceFile`` documentation at the above
-link). To read ``SequenceFile``\ s, add the following one:
+link). To read key/value pairs written in the ``SequenceFile`` format,
+add the following one:
 
 .. code-block:: xml
 
