@@ -2,11 +2,6 @@
 <configuration>
 
 <property>
-  <name>hadoop.pipes.executable</name>
-  <value>bin/ipcount.py</value>
-</property>
-
-<property>
   <name>mapred.job.name</name>
   <value>ipcount</value>
 </property>

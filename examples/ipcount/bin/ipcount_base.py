@@ -10,8 +10,7 @@ http://httpd.apache.org/docs/1.3/logs.html#common
 """
 
 import sys
-import pydoop.pipes as pp #import Mapper, Reducer, Factory, runTask
-from pydoop.utils import jc_configure_int
+import pydoop.pipes as pp
 
 
 class Mapper(pp.Mapper):
