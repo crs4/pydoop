@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<configuration>
+
+<property>
+  <name>hadoop.pipes.executable</name>
+  <value>bin/ipcount.py</value>
+</property>
+
+<property>
+  <name>mapred.job.name</name>
+  <value>ipcount</value>
+</property>
+
+<property>
+  <name>hadoop.pipes.java.recordreader</name>
+  <value>true</value>
+</property>
+
+<property>
+  <name>hadoop.pipes.java.recordwriter</name>
+  <value>true</value>
+</property>
+
+</configuration>
