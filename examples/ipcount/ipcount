@@ -6,10 +6,12 @@
 # You need a working Hadoop cluster to run this.
 
 """
-Counts occurrences of IP addresses in a given Apache access log file,
-optionally ignoring IP addresses listed in a given file.
+Counts occurrences of IP addresses in Apache access log files,
+optionally ignoring IP addresses listed in a given file. The only
+required argument is the HDFS input directory containing the log
+files, formatted as described in:
 
-http://httpd.apache.org/docs/1.3/logs.html#common
+  http://httpd.apache.org/docs/1.3/logs.html#common
 
 NOTE: the MapReduce application launched by this example wrapper is a
   Pydoop reimplementation of a Dumbo programming example from
@@ -20,9 +22,9 @@ NOTE: the MapReduce application launched by this example wrapper is a
 
 import sys, os, optparse, subprocess as sp
 
-
 HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
 HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
+MR_SCRIPT = "bin/ipcount.py"
 INPUT = "input"
 OUTPUT = "output"
 BASE_MR_OPTIONS = {
@@ -63,18 +65,20 @@ class HelpFormatter(optparse.IndentedHelpFormatter):
 
 def make_parser():
   parser = optparse.OptionParser(
-    usage="ipcount [OPTIONS] PROG",
+    usage="ipcount [OPTIONS] HDFS_INPUT",
     formatter=HelpFormatter(),
     )
   parser.set_description(__doc__.lstrip())
+  parser.add_option("-s", type="str", dest="script", metavar="STRING",
+                    help="MapReduce script ['%default']", default=MR_SCRIPT)
   parser.add_option("-e", type="str", dest="exclude_fn", metavar="STRING",
-                    help="exclude IPs listed in this file")
-  parser.add_option("-i", type="str", dest="input", metavar="STRING",
-                    help="HDFS input dir ('%default')", default=INPUT)
+                    help="exclude IPs listed in this file [None]")
   parser.add_option("-o", type="str", dest="output", metavar="STRING",
-                    help="HDFS output dir ('%default')", default=OUTPUT)
+                    help="HDFS output dir ['%default']", default=OUTPUT)
+  parser.add_option("-n", type="int", dest="n_top", metavar="INT",
+                    help="number of top IPs to list [%default]", default=5)
   parser.add_option("--hadoop", type="str", metavar="STRING",
-                    help="Hadoop executable ('%default')", default=HADOOP)
+                    help="Hadoop executable ['%default']", default=HADOOP)
   return parser
 
 
@@ -82,12 +86,12 @@ def main(argv):
   parser = make_parser()
   opt, args = parser.parse_args()
   try:
-    script = args[0]
+    input_ = args[0]
   except IndexError:
     parser.print_help()
     sys.exit(2)
 
-  ret = hadoop_cmd("fs -test -e %s" % opt.input, opt.hadoop)
+  ret = hadoop_cmd("fs -test -e %s" % input_, opt.hadoop)
   if ret:
     sys.exit("ERROR: input dir not found on HDFS")
   ret = hadoop_cmd("fs -test -e %s" % opt.output, opt.hadoop)
@@ -102,17 +106,17 @@ def main(argv):
     mr_options["mapred.cache.files"] = "%(f)s#%(f)s" % {"f": exclude_fn_hdfs}
     mr_options["mapred.create.symlink"] = "yes"
     mr_options["ipcount.excludes"] = exclude_fn_hdfs
-  script_hdfs = os.path.basename(script)
-  overwrite_put(script, script_hdfs, opt.hadoop)
+  script_hdfs = os.path.basename(opt.script)
+  overwrite_put(opt.script, script_hdfs, opt.hadoop)
   pipes_options = build_pipes_options(mr_options)
   hadoop_cmd("pipes %s -program %s -input %s -output %s" % (
-    pipes_options, script_hdfs, opt.input, opt.output
+    pipes_options, script_hdfs, input_, opt.output
     ))
   
   p1 = sp.Popen([opt.hadoop, "dfs", "-cat", "%s/part*" % opt.output],
                 stdout=sp.PIPE)
   p2 = sp.Popen(["sort", "-k2,2nr"], stdin=p1.stdout, stdout=sp.PIPE)
-  p3 = sp.Popen(["head", "-n 5"], stdin=p2.stdout, stdout=sp.PIPE)
+  p3 = sp.Popen(["head", "-n %d" % opt.n_top], stdin=p2.stdout, stdout=sp.PIPE)
   print p3.communicate()[0]
 
 
