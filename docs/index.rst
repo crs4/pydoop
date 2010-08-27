@@ -15,6 +15,7 @@ Contents:
    api_docs/index
    examples/index
    self_contained
+   for_dumbo_users
 
 Indices and tables
 ==================

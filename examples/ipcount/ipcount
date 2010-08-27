@@ -13,14 +13,21 @@ files, formatted as described in:
 
   http://httpd.apache.org/docs/1.3/logs.html#common
 
+Note that the HDFS input directory will be used to determine the HDFS
+hostname and port. If a relative path is supplied, the program will
+fall back to default values.
+
 NOTE: the MapReduce application launched by this example wrapper is a
-  Pydoop reimplementation of a Dumbo programming example from
-  K. Bosteels, 'Fuzzy techniques in the usage and construction of
-  comparison measures for music objects', PhD thesis, Ghent
-  University, 2009, available at http://users.ugent.be/~klbostee.
+      Pydoop reimplementation of a Dumbo programming example from
+      K. Bosteels, 'Fuzzy techniques in the usage and construction of
+      comparison measures for music objects', PhD thesis, Ghent
+      University, 2009, available at http://users.ugent.be/~klbostee.
 """
 
-import sys, os, optparse, subprocess as sp
+import sys, os, optparse, operator, subprocess as sp
+import pydoop.utils as pu
+from pydoop.hdfs import hdfs
+
 
 HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
 HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
@@ -58,6 +65,26 @@ def overwrite_put(src, dst, hadoop=HADOOP):
     sys.exit("ERROR: '%s %s' failed" % (hadoop, put))
 
 
+def get_first_n(output, n):
+  hostname, port, path = pu.split_hdfs_path(output)
+  fs = hdfs(hostname, port)
+  ip_list = []
+  for entry in fs.list_directory(path):
+    fn = entry["name"]
+    if fn.rsplit("/",1)[-1].startswith("part"):
+      f = fs.open_file(fn)
+      while 1:
+        line = f.readline()
+        if line == "":
+          break
+        ip, count = line.strip().split()
+        ip_list.append((ip, int(count)))
+      f.close()
+  ip_list.sort(key=operator.itemgetter(1), reverse=True)
+  for ip, count in ip_list[:n]:
+    print "%s\t%d" % (ip, count)
+
+
 class HelpFormatter(optparse.IndentedHelpFormatter):
   def format_description(self, description):
     return description + "\n" if description else ""
@@ -91,6 +118,9 @@ def main(argv):
     parser.print_help()
     sys.exit(2)
 
+  # FIXME 1: check that input and output refer to the same HDFS
+  # FIXME 2: replace subprocess calls with hdfs calls
+
   ret = hadoop_cmd("fs -test -e %s" % input_, opt.hadoop)
   if ret:
     sys.exit("ERROR: input dir not found on HDFS")
@@ -113,11 +143,7 @@ def main(argv):
     pipes_options, script_hdfs, input_, opt.output
     ))
   
-  p1 = sp.Popen([opt.hadoop, "dfs", "-cat", "%s/part*" % opt.output],
-                stdout=sp.PIPE)
-  p2 = sp.Popen(["sort", "-k2,2nr"], stdin=p1.stdout, stdout=sp.PIPE)
-  p3 = sp.Popen(["head", "-n %d" % opt.n_top], stdin=p2.stdout, stdout=sp.PIPE)
-  print p3.communicate()[0]
+  get_first_n(opt.output, opt.n_top)
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ class Reducer(pp.Reducer):
 
 
 def main(argv):
-  pp.runTask(pp.Factory(Mapper, Reducer))
+  pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))
 
 
 if __name__ == "__main__":

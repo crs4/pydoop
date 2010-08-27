@@ -16,8 +16,7 @@ SCRIPT_BASENAME=$(basename ${SCRIPT})
 INPUT_BASENAME=$(basename ${INPUT_DIR})
 HDFS_SCRIPT=${SCRIPT_BASENAME}
 
-${HADOOP} dfs -rmr input output bin
-${HADOOP} dfs -mkdir bin
+${HADOOP} dfs -rmr input output
 ${HADOOP} dfs -put ${SCRIPT} ${HDFS_SCRIPT}
 ${HADOOP} dfs -put ${INPUT_DIR} ${INPUT_BASENAME}
 ${HADOOP} pipes ${CONF} -program ${HDFS_SCRIPT} \
