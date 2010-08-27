@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
+# You need a working Hadoop cluster to run this.
+
+"""
+Counts occurrences of IP addresses in a given Apache access log file,
+optionally ignoring IP addresses listed in a given file.
+
+http://httpd.apache.org/docs/1.3/logs.html#common
+
+NOTE: the MapReduce application launched by this example wrapper is a
+  Pydoop reimplementation of a Dumbo programming example from
+  K. Bosteels, 'Fuzzy techniques in the usage and construction of
+  comparison measures for music objects', PhD thesis, Ghent
+  University, 2009, available at http://users.ugent.be/~klbostee.
+"""
+
+import sys, os, optparse, subprocess as sp
+
+
+HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
+HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
+INPUT = "input"
+OUTPUT = "output"
+BASE_MR_OPTIONS = {
+  "mapred.job.name": "ipcount",
+  "hadoop.pipes.java.recordreader": "true",
+  "hadoop.pipes.java.recordwriter": "true",
+  "mapred.map.tasks": "2",
+  "mapred.reduce.tasks": "2",
+  }
+
+
+def build_pipes_options(opt_dict):
+  pipes_options = []
+  for name, value in opt_dict.iteritems():
+    pipes_options.append("-D %s=%s" % (name, value))
+  return " ".join(pipes_options)
+
+
+def hadoop_cmd(cmd, hadoop=HADOOP):
+  p = sp.Popen("%s %s" % (hadoop, cmd), shell=True)
+  return os.waitpid(p.pid, 0)[1]
+
+
+def overwrite_put(src, dst, hadoop=HADOOP):
+  ret = hadoop_cmd("fs -test -e %s" % dst, hadoop)
+  if ret == 0:
+    hadoop_cmd("fs -rmr %s" % dst, hadoop)
+  put = "fs -put %s %s" % (src, dst)
+  ret = hadoop_cmd(put, hadoop)
+  if ret:
+    sys.exit("ERROR: '%s %s' failed" % (hadoop, put))
+
+
+class HelpFormatter(optparse.IndentedHelpFormatter):
+  def format_description(self, description):
+    return description + "\n" if description else ""
+
+
+def make_parser():
+  parser = optparse.OptionParser(
+    usage="ipcount [OPTIONS] PROG",
+    formatter=HelpFormatter(),
+    )
+  parser.set_description(__doc__.lstrip())
+  parser.add_option("-e", type="str", dest="exclude_fn", metavar="STRING",
+                    help="exclude IPs listed in this file")
+  parser.add_option("-i", type="str", dest="input", metavar="STRING",
+                    help="HDFS input dir ('%default')", default=INPUT)
+  parser.add_option("-o", type="str", dest="output", metavar="STRING",
+                    help="HDFS output dir ('%default')", default=OUTPUT)
+  parser.add_option("--hadoop", type="str", metavar="STRING",
+                    help="Hadoop executable ('%default')", default=HADOOP)
+  return parser
+
+
+def main(argv):
+  parser = make_parser()
+  opt, args = parser.parse_args()
+  try:
+    script = args[0]
+  except IndexError:
+    parser.print_help()
+    sys.exit(2)
+
+  ret = hadoop_cmd("fs -test -e %s" % opt.input, opt.hadoop)
+  if ret:
+    sys.exit("ERROR: input dir not found on HDFS")
+  ret = hadoop_cmd("fs -test -e %s" % opt.output, opt.hadoop)
+  if ret == 0:
+    hadoop_cmd("fs -rmr %s" % opt.output, opt.hadoop)
+
+  mr_options = {}
+  mr_options.update(BASE_MR_OPTIONS)
+  if opt.exclude_fn:
+    exclude_fn_hdfs = os.path.basename(opt.exclude_fn)
+    overwrite_put(opt.exclude_fn, exclude_fn_hdfs, opt.hadoop)
+    mr_options["mapred.cache.files"] = "%(f)s#%(f)s" % {"f": exclude_fn_hdfs}
+    mr_options["mapred.create.symlink"] = "yes"
+    mr_options["ipcount.excludes"] = exclude_fn_hdfs
+  script_hdfs = os.path.basename(script)
+  overwrite_put(script, script_hdfs, opt.hadoop)
+  pipes_options = build_pipes_options(mr_options)
+  hadoop_cmd("pipes %s -program %s -input %s -output %s" % (
+    pipes_options, script_hdfs, opt.input, opt.output
+    ))
+  
+  p1 = sp.Popen([opt.hadoop, "dfs", "-cat", "%s/part*" % opt.output],
+                stdout=sp.PIPE)
+  p2 = sp.Popen(["sort", "-k2,2nr"], stdin=p1.stdout, stdout=sp.PIPE)
+  p3 = sp.Popen(["head", "-n 5"], stdin=p2.stdout, stdout=sp.PIPE)
+  print p3.communicate()[0]
+
+
+if __name__ == "__main__":
+  main(sys.argv)

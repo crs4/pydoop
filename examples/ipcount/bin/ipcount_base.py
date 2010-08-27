@@ -3,12 +3,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-"""
-Count occurrences of IP addresses in a given Apache access log file.
-
-http://httpd.apache.org/docs/1.3/logs.html#common
-"""
-
 import sys
 import pydoop.pipes as pp
 
@@ -29,7 +23,7 @@ class Reducer(pp.Reducer):
 
 
 def main(argv):
-  pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))
+  pp.runTask(pp.Factory(Mapper, Reducer))
 
 
 if __name__ == "__main__":

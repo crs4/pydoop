@@ -1,0 +1,26 @@
+#!/bin/bash
+
+nargs=1
+if [ $# -lt ${nargs} ]; then
+    echo "USAGE: $(basename $0) INPUT_DIR"
+    exit 2
+fi
+INPUT_DIR=$1
+
+SCRIPT=bin/ipcount_base.py
+CONF="-D mapred.job.name=ipcount -D hadoop.pipes.java.recordreader=true -D hadoop.pipes.java.recordwriter=true"
+
+HADOOP=${HADOOP_HOME}/bin/hadoop
+
+SCRIPT_BASENAME=$(basename ${SCRIPT})
+INPUT_BASENAME=$(basename ${INPUT_DIR})
+HDFS_SCRIPT=${SCRIPT_BASENAME}
+
+${HADOOP} dfs -rmr input output bin
+${HADOOP} dfs -mkdir bin
+${HADOOP} dfs -put ${SCRIPT} ${HDFS_SCRIPT}
+${HADOOP} dfs -put ${INPUT_DIR} ${INPUT_BASENAME}
+${HADOOP} pipes ${CONF} -program ${HDFS_SCRIPT} \
+    -input ${INPUT_BASENAME} -output output
+
+${HADOOP} dfs -cat output/part* | sort -k2,2nr | head -n 5
