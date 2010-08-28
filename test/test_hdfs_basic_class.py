@@ -324,23 +324,6 @@ class hdfs_basic_tc(unittest.TestCase):
       f.close()
     self.fs.delete(path)
 
-  def seek_big(self):
-    path = "/tmp/foo"
-    CHUNK_SIZE = 10
-    N = 2
-    bs = N * self.__get_bytes_per_checksum()
-    total_data = 2 * bs
-    f = self.fs.open_file(path, os.O_WRONLY, blocksize=bs)
-    f.write("".join([chr(random.randint(32,126)) for _ in xrange(total_data)]))
-    f.close()
-    f = self.fs.open_file(path)
-    try:
-      offset = 2483027968
-      f.seek(offset)
-    finally:
-      f.close()
-      self.fs.delete(path)
-
   def block_boundary(self):
     path = "/tmp/foo"
     CHUNK_SIZE = 10
@@ -404,21 +387,20 @@ class hdfs_basic_tc(unittest.TestCase):
 
 def basic_tests():
   return [
-    # 'chmod',
-    # 'connect',
-    # 'open_close',
-    # 'flush',
-    # 'write_read',
-    # 'write_read_chunk',
-    # 'rename',
-    # 'change_dir',
-    # 'create_dir',
-    # 'copy_on_self',
-    # 'available',
-    # 'get_path_info',
-    # 'list_directory',
-    # 'readline',
-    # 'seek',
-    'seek_big',
-#    'block_boundary',
+    'chmod',
+    'connect',
+    'open_close',
+    'flush',
+    'write_read',
+    'write_read_chunk',
+    'rename',
+    'change_dir',
+    'create_dir',
+    'copy_on_self',
+    'available',
+    'get_path_info',
+    'list_directory',
+    'readline',
+    'seek',
+    'block_boundary',
     ]
