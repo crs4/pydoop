@@ -4,6 +4,7 @@
 #include "hdfs_fs.hpp"
 #include "hdfs_file.hpp"
 
+#include <iostream>
 
 #define exec_and_trap_error(res_type_t,what,err_msg) \
   res_type_t res = what;                             \
@@ -12,6 +13,7 @@
   }
 
 void wrap_hdfs_file::seek(tOffset desidered_pos) {
+  std::cerr << "desidered_pos: "<< desidered_pos << std::endl;
   exec_and_trap_error(int,
 		      hdfsSeek(fs_->fs_, file_, desidered_pos),
 		      "Cannot seek on " + filename_)
