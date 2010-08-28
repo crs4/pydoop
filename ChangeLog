@@ -1,3 +1,8 @@
+2010-08-29    <zag@pflip>
+
+	* src/hdfs_file.cpp (tell): fixed bug ticket:325. A stupid int
+	instead of a long error.
+
 2010-08-24    <simleo@neuron.crs4.it>
 
 	* Makefile (clean): changed to remove $(BUILD_DIR) instead of "build"

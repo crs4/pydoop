@@ -13,14 +13,13 @@
   }
 
 void wrap_hdfs_file::seek(tOffset desidered_pos) {
-  std::cerr << "desidered_pos: "<< desidered_pos << std::endl;
   exec_and_trap_error(int,
 		      hdfsSeek(fs_->fs_, file_, desidered_pos),
 		      "Cannot seek on " + filename_)
 }
 
 tOffset wrap_hdfs_file::tell() {
-  exec_and_trap_error(int, hdfsTell(fs_->fs_, file_),
+  exec_and_trap_error(tOffset, hdfsTell(fs_->fs_, file_),
 		      "Cannot tell on " + filename_);
   return res;
 }
