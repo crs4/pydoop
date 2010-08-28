@@ -21,7 +21,7 @@ struct wrap_hdfs_fs {
 
   wrap_hdfs_fs(std::string host, int port, std::string user, bp::list groups):
     host_(host), port_(port), user_(user) {
-    int ng = len(groups);
+    int ng = bp::len(groups);
     const char* host_str = (host_.size() == 0) ? NULL : host_.c_str();
     const char* user_str = (user_.size() == 0) ? NULL : user_.c_str();
     const char **groups_str = NULL;

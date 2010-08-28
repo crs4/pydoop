@@ -1,5 +1,8 @@
 2010-08-29    <zag@pflip>
 
+	* src/hdfs_fs.hpp (wrap_hdfs_fs): Added namespace 'bp' to
+	'len'. Unclear why it compiled before.
+
 	* src/hdfs_file.cpp (tell): fixed bug ticket:325. A stupid int
 	instead of a long error.
 
