@@ -61,7 +61,7 @@ def overwrite_put(src, dst, hadoop=HADOOP):
     sys.exit("ERROR: '%s %s' failed" % (hadoop, put))
 
 
-def get_first_n(fs, output_path, n):
+def print_first_n(fs, output_path, n):
   ip_list = []
   for entry in fs.list_directory(output_path):
     fn = entry["name"]
@@ -139,7 +139,7 @@ def main(argv):
     d_options, script_hdfs, input_, opt.output
     ))
 
-  get_first_n(fs, opt.output, opt.n_top)
+  print_first_n(fs, opt.output, opt.n_top)
 
   lfs.close()
   fs.close()
