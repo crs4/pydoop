@@ -8,14 +8,10 @@
 """
 Counts occurrences of IP addresses in Apache access log files,
 optionally ignoring IP addresses listed in a given file. The only
-required argument is the HDFS input directory containing the log
-files, formatted as described in:
+required argument is the input directory containing the log files,
+formatted as described in:
 
   http://httpd.apache.org/docs/1.3/logs.html#common
-
-Note that the HDFS input directory will be used to determine the HDFS
-hostname and port. If a relative path is supplied, the program will
-fall back to default values.
 
 NOTE: the MapReduce application launched by this example wrapper is a
       Pydoop reimplementation of a Dumbo programming example from
@@ -43,15 +39,15 @@ BASE_MR_OPTIONS = {
   }
 
 
-def build_pipes_options(opt_dict):
-  pipes_options = []
+def build_d_options(opt_dict):
+  d_options = []
   for name, value in opt_dict.iteritems():
-    pipes_options.append("-D %s=%s" % (name, value))
-  return " ".join(pipes_options)
+    d_options.append("-D %s=%s" % (name, value))
+  return " ".join(d_options)
 
 
-def hadoop_cmd(cmd, hadoop=HADOOP):
-  p = sp.Popen("%s %s" % (hadoop, cmd), shell=True)
+def hadoop_pipes(pipes_opts, hadoop=HADOOP):
+  p = sp.Popen("%s pipes %s" % (hadoop, pipes_opts), shell=True)
   return os.waitpid(p.pid, 0)[1]
 
 
@@ -65,11 +61,9 @@ def overwrite_put(src, dst, hadoop=HADOOP):
     sys.exit("ERROR: '%s %s' failed" % (hadoop, put))
 
 
-def get_first_n(output, n):
-  hostname, port, path = pu.split_hdfs_path(output)
-  fs = hdfs(hostname, port)
+def get_first_n(fs, output_path, n):
   ip_list = []
-  for entry in fs.list_directory(path):
+  for entry in fs.list_directory(output_path):
     fn = entry["name"]
     if fn.rsplit("/",1)[-1].startswith("part"):
       f = fs.open_file(fn)
@@ -115,32 +109,40 @@ def main(argv):
     parser.print_help()
     sys.exit(2)
 
-  # FIXME 1: check that input and output refer to the same HDFS
-  # FIXME 2: replace subprocess calls with hdfs calls
+  # output HDFS bust be the same as the input one
+  opt.output = pu.split_hdfs_path(opt.output)[-1]
 
-  ret = hadoop_cmd("fs -test -e %s" % input_, opt.hadoop)
-  if ret:
-    sys.exit("ERROR: input dir not found on HDFS")
-  ret = hadoop_cmd("fs -test -e %s" % opt.output, opt.hadoop)
-  if ret == 0:
-    hadoop_cmd("fs -rmr %s" % opt.output, opt.hadoop)
+  hostname, port, _ = pu.split_hdfs_path(input_)
+  fs = hdfs(hostname, port)
+  lfs = hdfs("", 0)
+
+  script_hdfs = os.path.basename(opt.script)
+  lfs.copy(opt.script, fs, script_hdfs)
+  if not fs.exists(input_):
+    try:
+      lfs.copy(input_, fs, input_)
+    except IOError:
+      "could not find %r in either HDFS or local fs"
+  if fs.exists(opt.output):
+    fs.delete(opt.output)
 
   mr_options = {}
   mr_options.update(BASE_MR_OPTIONS)
   if opt.exclude_fn:
     exclude_fn_hdfs = os.path.basename(opt.exclude_fn)
-    overwrite_put(opt.exclude_fn, exclude_fn_hdfs, opt.hadoop)
+    lfs.copy(opt.exclude_fn, fs, exclude_fn_hdfs)
     mr_options["mapred.cache.files"] = "%(f)s#%(f)s" % {"f": exclude_fn_hdfs}
     mr_options["mapred.create.symlink"] = "yes"
     mr_options["ipcount.excludes"] = exclude_fn_hdfs
-  script_hdfs = os.path.basename(opt.script)
-  overwrite_put(opt.script, script_hdfs, opt.hadoop)
-  pipes_options = build_pipes_options(mr_options)
-  hadoop_cmd("pipes %s -program %s -input %s -output %s" % (
-    pipes_options, script_hdfs, input_, opt.output
+  d_options = build_d_options(mr_options)
+  hadoop_pipes("%s -program %s -input %s -output %s" % (
+    d_options, script_hdfs, input_, opt.output
     ))
-  
-  get_first_n(opt.output, opt.n_top)
+
+  get_first_n(fs, opt.output, opt.n_top)
+
+  lfs.close()
+  fs.close()
 
 
 if __name__ == "__main__":
