@@ -1,3 +1,8 @@
+2010-08-30    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py (hdfs_file): added "iterator over its own lines"
+	behavior -- fixes #324.
+
 2010-08-29    <zag@pflip>
 
 	* src/hdfs_fs.hpp (wrap_hdfs_fs): Added namespace 'bp' to

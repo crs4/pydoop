@@ -120,6 +120,19 @@ class hdfs_file(object):
     self.buffer_list = []
     self.p = eol+1
     return line
+
+  def next(self):
+    """
+    Return the next input line, or raise :class:`StopIteration`
+    when EOF is hit.
+    """
+    line = self.readline()
+    if line == "":
+      raise StopIteration
+    return line
+
+  def __iter__(self):
+    return self
      
   def available(self):
     """

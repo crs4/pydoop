@@ -4,7 +4,6 @@
 #include "hdfs_fs.hpp"
 #include "hdfs_file.hpp"
 
-#include <iostream>
 
 #define exec_and_trap_error(res_type_t,what,err_msg) \
   res_type_t res = what;                             \

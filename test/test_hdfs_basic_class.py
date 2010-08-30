@@ -279,7 +279,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.fs.delete(os.path.join(cwd, parts[0]))
     self.assertRaises(IOError, self.fs.list_directory, new_d)
 
-  def readline(self):
+  def __check_readline(self, get_lines):
     samples = [
       "foo\nbar\n\ntar",
       "\nfoo\nbar\n\ntar",
@@ -291,19 +291,39 @@ class hdfs_basic_tc(unittest.TestCase):
     for text in samples:
       expected_lines = text.splitlines(True)
       for chunk_size in 2, max(1, len(text)), 2+len(text):
-        lines = []
         f = self.fs.open_file(path, os.O_WRONLY, 0, 0, 0, chunk_size)
         f.write(text)
         f.close()
         f = self.fs.open_file(path, os.O_RDONLY, 0, 0, 0, chunk_size)
-        while 1:
-          l = f.readline()
-          if l == "":
-            break
-          lines.append(l)
-        f.close()
+        lines = get_lines(f)
         self.assertEqual(lines, expected_lines)
+        f.close()
     self.fs.delete(path)
+
+  def readline(self):
+    def get_lines(f):
+      lines = []
+      while 1:
+        l = f.readline()
+        if l == "":
+          break
+        lines.append(l)
+      return lines
+    self.__check_readline(get_lines)
+
+  def iter_lines(self):
+    def get_lines_explicit(f):
+      lines = []
+      while 1:
+        try:
+          lines.append(f.next())
+        except StopIteration:
+          break
+      return lines
+    def get_lines_implicit(f):
+      return [l for l in f]
+    for fun in get_lines_explicit, get_lines_implicit:
+      self.__check_readline(fun)
 
   def seek(self):
     lines = ["1\n", "2\n", "3\n"]
@@ -401,6 +421,7 @@ def basic_tests():
     'get_path_info',
     'list_directory',
     'readline',
+    'iter_lines',
     'seek',
     'block_boundary',
     ]

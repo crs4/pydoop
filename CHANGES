@@ -4,6 +4,8 @@
 
 * Docs: removed an incorrect suggestion from the installation troubleshooting section. Thanks to Allen Wittenauer for pointing this out.
 
+* hdfs_file.tell: fixed a bug that limited seek values to 32bit integers.
+
 * hdfs_file.read has been rewritten to work around a limitation of the underlying libhdfs read function that makes it read less than the requested number of bytes in proximity of block boundaries.
 
 * split_hdfs_path has been rewritten to do its job without using urlparse: we decided not to rely on it anymore since it changed behavior between two minor releases of Python. Its argument is now required to be an hdfs path, as the function's name suggests. This means that "hdfs://localhost:9000" is no longer a valid argument, while "hdfs://localhost:9000/" is OK.
