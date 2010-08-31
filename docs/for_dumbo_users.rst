@@ -2,18 +2,18 @@ Pydoop for Dumbo Users
 ======================
 
 Pydoop is not the only way to write Hadoop applications in Python. The
-"built-in" solutions are either Hadoop Streaming with Python
-executables or Jython. The main disadvantages with these approaches
-are the following:
+"built-in" solutions are Hadoop Streaming with Python executables and
+Jython. The main disadvantages with these approaches are the
+following:
 
-#. Hadoop Streaming does not provide a true API: the developer writes
-   a mapper and a reducer script that communicate with the framework
-   via standard input/output. The programming style is therefore
-   rather awkward, especially in the case of reducers, where
-   developers must manually handle key switching. More importantly,
-   there is no way to write a Python RecordReader, RecordWriter or
-   Partitioner. Before Hadoop 0.21, Streaming had the additional
-   limitation of only being able to process UTF-8 text records
+#. Streaming does not provide a true API: the developer writes a
+   mapper and a reducer script that communicate with the framework via
+   standard input/output. The programming style is therefore rather
+   awkward, especially in the case of reducers, where developers must
+   manually handle key switching. More importantly, there is no way to
+   write a Python RecordReader, RecordWriter or Partitioner. Before
+   Hadoop 0.21, Streaming had the additional limitation of only being
+   able to process UTF-8 text records
 
 #. Jython is a Java implementation of the Python language: the
    standard C implementation, in cases where ambiguity may arise, is
@@ -41,7 +41,7 @@ The following sections refer to Dumbo version 0.21.
 Counting IPs from an Apache Access Log
 --------------------------------------
 
-The `examples` directory includes a Pydoop reimplementation of
+The ``examples`` directory includes a Pydoop reimplementation of
 `Dumbo's tutorial example
 <http://wiki.github.com/klbostee/dumbo/short-tutorial>`_, an
 application for generating a list of the IPs that occur more
@@ -50,7 +50,7 @@ frequently in an `Apache access log
 documentation for the tutorial is included in K. Bosteels, `Fuzzy
 techniques in the usage and construction of comparison measures for
 music objects <http://users.ugent.be/~klbostee/thesis.pdf>`_, PhD
-thesis, Ghent University, 2009).
+thesis, Ghent University, 2009.
 
 The Dumbo MapReduce code for the basic example is::
 
@@ -62,12 +62,13 @@ The Dumbo MapReduce code for the basic example is::
     
   if __name__ == "__main__":
     import dumbo
-    dumbo.run(mapper,reducer,combiner=reducer)
+    dumbo.run(mapper, reducer, combiner=reducer)
 
 
 and it is run with::
 
-  $ dumbo start ipcount.py -input access.log -output ipcounts
+  $ dumbo start ipcount.py -hadoop /usr/local/hadoop \
+      -input access.log -output ipcounts
   $ dumbo cat ipcounts | sort -k2,2nr | head -n 5
 
 
@@ -90,10 +91,10 @@ The Pydoop version of the above is::
     pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))
 
 
-Currenty Pydoop does not provide a high-level wrapper to run jobs
+Currently Pydoop does not provide a high-level wrapper to run jobs
 (although we plan to include one in a future release). To run the
 application, therefore, we could execute the following commands (the
-first one is needed if the log file is not already on hdfs)::
+first one is needed if the log file is not already on HDFS)::
 
   $ hadoop fs -put access.log access.log
   $ hadoop fs -put ipcount.py ipcount.py
@@ -104,11 +105,11 @@ first one is needed if the log file is not already on hdfs)::
 
 However, it's easy to wrap all steps needed to execute the application
 in a driver Python script with a nice command line interface: an
-example is given by the "ipcount" program in the `examples`
+example is given by the "ipcount" program in the ``examples/ipcount``
 directory. In particular, by leveraging Pydoop's HDFS API,
 manipulation of output files such as the one performed by the last
-command and hdfs uploads can be done within Python, with no system
-call required::
+command and HDFS uploads can be done within Python, without any need
+to perform system calls::
 
   def print_first_n(fs, output_path, n):
     ip_list = []
@@ -125,7 +126,7 @@ call required::
       print "%s\t%d" % (ip, count)
 
 To run the application, execute the following from the
-`examples/ipcount` directory::
+``examples/ipcount`` directory::
 
   $ ./ipcount input
 
@@ -139,12 +140,12 @@ containing a list of IP addresses that must not be taken into account
 when building the top five list::
 
   class Mapper:
-
+  
     def __init__(self):
       file = open("excludes.txt", "r")
-      self.excludes = set(line[:−1] for line in file)
+      self.excludes = set(line[:-1] for line in file)
       file.close()
-
+  
     def __call__(self, key, value):
       ip = value.partition(" ")[0]
       if not ip in self.excludes:
@@ -167,11 +168,11 @@ Pydoop's implementation is quite similar::
 
 The main difference lies in the way you distribute the "exclude.txt"
 file to all cluster nodes. Dumbo takes advantage of Streaming's
-`-file` option which, in turn, uses `Hadoop's distributed cache
+``-file`` option which, in turn, uses `Hadoop's distributed cache
 <http://hadoop.apache.org/common/docs/r0.20.2/mapred_tutorial.html#DistributedCache>`_::
 
   $ dumbo start ipcount.py -hadoop /usr/local/hadoop \
-      -input logs/2009/10/* -output ipcounts -file excludes.txt
+      -input access.log -output ipcounts -file excludes.txt
 
 In the case of Pydoop, you can use the distributed cache by setting
 the following configuration parameters in your xml conf file:
@@ -189,11 +190,96 @@ the following configuration parameters in your xml conf file:
   </property>
 
 Alternatively, you can set them directly as command line options for
-pipes, by adding `-D mapred.cache.files=excludes.txt#excludes.txt -D
-mapred.create.symlink=yes` right after the "pipes" command. The latter
-approach is the one we used in `ipcount` (check the source code for
-details). Since we made the excludes file a configurable option, in
-our case you have to run::
+pipes, by adding ``-D mapred.cache.files=excludes.txt#excludes.txt -D
+mapred.create.symlink=yes`` right after the ``pipes`` command. The
+latter approach is the one we used in ipcount (check the source code
+for details). Since we made the excludes file a configurable option,
+in our case you would run::
 
   $ ./ipcount -e excludes.txt input
 
+In the next section we will see how configuration parameters are
+passed to the MapReduce application in both Dumbo and Pydoop.
+
+
+Status Reports, Counters and Configuration Parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Being built as a wrapper around Streaming, Dumbo sends status reports
+and counter updates to the framework via standard error. This is,
+however, hidden from the programmer::
+
+  class Mapper:
+    
+    def __init__(self):
+      self.status = "Initialization started"
+      self.excludes_fn = self.params["excludes"]
+      file = open(self.excludes_fn, "r")
+      self.excludes = set(line[:-1] for line in file)
+      file.close()
+      self.status = "Initialization done"
+  
+    def __call__(self, key, value):
+      ip = value.partition(" ")[0]
+      if not ip in self.excludes:
+        yield ip, 1
+      else:
+        self.counters["Excluded lines"] += 1
+
+Note that, in the above snippet, the hardwired reference to
+"excludes.txt" has been replaced by a configuration parameter. In
+Dumbo, values for parameters are supplied via the ``-param`` option:
+in this case, for instance, you would add ``-param
+excludes=excludes.txt`` to Dumbo's command line.
+
+The Pydoop equivalent of the above is::
+
+  class Mapper(pp.Mapper):
+  
+    def __init__(self, context):
+      super(Mapper, self).__init__(context)
+      context.setStatus("Initialization started")
+      self.excluded_counter = context.getCounter("IPCOUNT", "EXCLUDED_LINES")
+      jc = context.getJobConf()
+      pu.jc_configure(self, jc, "ipcount.excludes", "excludes_fn", "")
+      if self.excludes_fn:
+        f = open(self.excludes_fn)
+        self.excludes = set([line.strip() for line in f])
+        f.close()
+      else:
+        self.excludes = set([])
+      context.setStatus("Initialization done")
+  
+    def map(self, context):
+      ip = context.getInputValue().split(None,1)[0]
+      if ip not in self.excludes:
+        context.emit(ip, "1")
+      else:
+        context.incrementCounter(self.excluded_counter, 1)
+
+The ``ipcount.excludes`` parameter is passed in the same way as any
+other configuration parameter (see the distributed cache example in
+the previous section). The dotted name convention is useful to avoid
+clashing with standard Hadoop parameters.
+
+
+Input and Output Formats
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Just like Dumbo, Pydoop has currently no support for writing Python
+input and output format classes. You can use Java input/output formats
+by setting the ``mapred.input.format.class`` and the
+``mapred.output.format.class`` properties: see
+:doc:`examples/sequence_file` for an example. Note that if you write
+your own Java input/output format class, you need to pass the
+corresponding jar filename to pipes via the ``-jar`` option.
+
+
+Automatic Deployment of Python Packages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Dumbo includes a ``-libegg`` option for automatic distribution of
+`Python eggs
+<http://peak.telecommunity.com/DevCenter/PythonEggs>`_. For an example
+on how to distribute arbitrary Python packages, possibly including
+Pydoop itself, to all cluster nodes, see :doc:`self_contained`\ .
