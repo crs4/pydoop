@@ -28,14 +28,14 @@ a wrapper around Streaming that allows for a more natural API-like
 coding style and also includes facilities to make job running
 easier. Its author, `Klaas Bosteels
 <http://users.ugent.be/~klbostee/>`_, is also the author of the patch
-that lifted the aforementioned UTF-8 restriction from Streaming.
-
-This chapter is meant both as a guide for Dumbo programmers wishing to
-port their code to Pydoop and as a comparison between the two for
-Python programmers in search of the solution that best fits their
-MapReduce programming needs.
-
-The following sections refer to Dumbo version 0.21.
+that lifted the aforementioned UTF-8 restriction from
+Streaming. However, writing Python components other than the mapper,
+reducer and combiner is not possible, and there is no HDFS
+API. Pydoop, on the other hand, gives you almost complete access to
+MapReduce components (you can write a Python RecordReader,
+RecordWriter and Partitioner) and to HDFS without adding much
+complexity. As an example, in this section we will show how to rewrite
+Dumbo's tutorial example (Dumbo version 0.21) in Pydoop.
 
 
 Counting IPs from an Apache Access Log
