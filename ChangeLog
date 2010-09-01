@@ -1,3 +1,7 @@
+2010-09-01    <simleo@neuron.crs4.it>
+
+	* setup.py, src/pipes.hpp: code cleanup.
+
 2010-08-30    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py (hdfs_file): added "iterator over its own lines"

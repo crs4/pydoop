@@ -206,6 +206,7 @@ class hdfs_default_tc(hdfs_basic_tc):
     self.assertEqual(self.fs.get_path_info(path)["replication"], new_rep)
     self.fs.set_replication(path, old_rep)
     self.assertEqual(self.fs.get_path_info(path)["replication"], old_rep)
+    self.fs.delete(path)
 
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.

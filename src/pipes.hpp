@@ -45,19 +45,11 @@ struct cxx_capsule {
 struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper>, cxx_capsule {
 
   void map(hp::MapContext& ctx) {
-#if 0
-    bp::reference_existing_object::apply<hp::MapContext&>::type converter;
-    PyObject* obj = converter(ctx);
-    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
-    this->get_override("map")(po);
-#else
     bp::reference_existing_object::apply<hp::MapContext&>::type converter;
     PyObject* obj = converter(ctx);
     bp::object po = bp::object(bp::handle<>(obj));
     this->get_override("map")(po);
     while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
-    //bp::decref(obj);
-#endif
   }
   virtual ~wrap_mapper() {
     DESTROY_PYTHON_TOO(wrap_mapper);
@@ -66,19 +58,11 @@ struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper>, cxx_capsule {
 
 struct wrap_reducer: hp::Reducer, bp::wrapper<hp::Reducer>, cxx_capsule {
   void reduce(hp::ReduceContext& ctx) {
-#if 0
-    bp::reference_existing_object::apply<hp::ReduceContext&>::type converter;
-    PyObject* obj = converter(ctx);
-    bp::object po = bp::object(bp::handle<>(bp::borrowed(obj)));
-    this->get_override("reduce")(po);
-#else
     bp::reference_existing_object::apply<hp::ReduceContext&>::type converter;
     PyObject* obj = converter(ctx);
     bp::object po = bp::object(bp::handle<>(obj));
     this->get_override("reduce")(po);
     while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
-    //bp::decref(obj);
-#endif
   }
   virtual ~wrap_reducer() {
     DESTROY_PYTHON_TOO(wrap_reducer);
@@ -132,73 +116,53 @@ struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_
   }
 };
 
-#if 0
 #define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
-    bp::reference_existing_object::apply<ctx_t&>::type converter;\
-    PyObject* po_ctx = converter(ctx);\
-    bp::object o_ctx = bp::object(bp::handle<>(bp::borrowed(po_ctx)));\
-    bp::override f = this->get_override(#method_name);\
-    if (f) {\
-      bp::object res = f(o_ctx);\
-      std::auto_ptr<wobj_t> ap = bp::extract<std::auto_ptr<wobj_t> >(res);\
-      PyObject* obj = res.ptr();\
-      Py_INCREF(obj);\
-      wobj_t* o = ap.get();\
-      ap.release();\
-      o->entering_cxx_land();\
-      return o;\
-    } else {\
-      return NULL;\
-    }
-#else
-#define CREATE_AND_RETURN_OBJECT(wobj_t, obj_t, ctx_t, method_name, ctx) \
-    bp::reference_existing_object::apply<ctx_t&>::type converter;\
-    PyObject* po_ctx = converter(ctx);\
-    bp::object o_ctx = bp::object(bp::handle<>(po_ctx));\
-    bp::override f = this->get_override(#method_name);\
-    if (f) {\
-      bp::object res = f(o_ctx);\
-      std::auto_ptr<wobj_t> ap = bp::extract<std::auto_ptr<wobj_t> >(res);\
-      PyObject* obj = res.ptr();\
-      bp::incref(obj);\
-      wobj_t* o = ap.get();\
-      ap.release();\
-      o->entering_cxx_land();\
-      return o;\
-    } else {\
-      return NULL;\
-    }
-#endif
+  bp::reference_existing_object::apply<ctx_t&>::type converter;          \
+  PyObject* po_ctx = converter(ctx);                                     \
+  bp::object o_ctx = bp::object(bp::handle<>(po_ctx));                   \
+  bp::override f = this->get_override(#method_name);                     \
+  if (f) {                                                               \
+    bp::object res = f(o_ctx);                                           \
+    std::auto_ptr<wobj_t> ap = bp::extract<std::auto_ptr<wobj_t> >(res); \
+    PyObject* obj = res.ptr();                                           \
+    bp::incref(obj);                                                     \
+    wobj_t* o = ap.get();                                                \
+    ap.release();                                                        \
+    o->entering_cxx_land();                                              \
+    return o;                                                            \
+  } else {                                                               \
+    return NULL;                                                         \
+  }
 
 struct wrap_factory: hp::Factory, bp::wrapper<hp::Factory> {
   hp::Mapper* createMapper(hp::MapContext& ctx) const {
     CREATE_AND_RETURN_OBJECT(wrap_mapper, hp::Mapper, hp::MapContext, 
-			     createMapper, ctx);
+                             createMapper, ctx);
   }
 
   hp::Reducer* createReducer(hp::ReduceContext& ctx) const{
     CREATE_AND_RETURN_OBJECT(wrap_reducer, hp::Reducer, hp::ReduceContext, 
-			     createReducer, ctx);    
+                             createReducer, ctx);    
   }
 
   hp::RecordReader* createRecordReader(hp::MapContext& ctx) const {
     CREATE_AND_RETURN_OBJECT(wrap_record_reader, hp::RecordReader,
-			     hp::MapContext, createRecordReader, ctx);
+                             hp::MapContext, createRecordReader, ctx);
   }
 
   hp::Reducer* createCombiner(hp::MapContext& ctx) const {
     CREATE_AND_RETURN_OBJECT(wrap_reducer, hp::Reducer, hp::MapContext, 
-			     createCombiner, ctx);    
+                             createCombiner, ctx);    
   }
 
   hp::Partitioner* createPartitioner(hp::MapContext& ctx) const {
     CREATE_AND_RETURN_OBJECT(wrap_partitioner, hp::Partitioner, hp::MapContext, 
-			     createPartitioner, ctx);    
+                             createPartitioner, ctx);    
   }
 
   hp::RecordWriter* createRecordWriter(hp::ReduceContext& ctx) const {
     CREATE_AND_RETURN_OBJECT(wrap_record_writer, hp::RecordWriter,
-			     hp::ReduceContext, createRecordWriter, ctx);    
+                             hp::ReduceContext, createRecordWriter, ctx);    
   }
 
 };

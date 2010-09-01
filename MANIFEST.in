@@ -16,6 +16,7 @@ recursive-include examples/wordcount *
 recursive-include examples/self_contained *
 recursive-include examples/sequence_file *
 recursive-include examples/hdfs *
+recursive-include examples/ipcount *
 exclude pydoop/hadoop_serial.py
 exclude pydoop/text_protocol.py
 exclude pydoop/binary_protocol.py

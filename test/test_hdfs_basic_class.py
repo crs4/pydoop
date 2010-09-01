@@ -74,6 +74,7 @@ class hdfs_basic_tc(unittest.TestCase):
     f.write("foo")
     f.flush()
     f.close()
+    self.fs.delete(path)
 
   def _write_example_file(self, path, N, txt, fs=None,
                           buffer_size=0, replication=0, block_size=0):

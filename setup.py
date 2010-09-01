@@ -38,7 +38,7 @@ NEW_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
     }"""
 
 
-# These variables MUST point to the correct locations, see README.txt
+# These variables MUST point to the correct locations, see installation docs
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
 HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
 
@@ -71,38 +71,8 @@ class BoostExtension(Extension):
 
     export_pattern = re.compile(r"void\s+export_(\w+)")
     
-    def __init__(self, name, wrap_sources, aux_sources,
-                 patches=None,
-                 include_dirs=None,
-                 define_macros=None,
-                 undef_macros=None,
-                 library_dirs=None,
-                 libraries=None,
-                 runtime_library_dirs=None,
-                 extra_objects=None,
-                 extra_compile_args=None,
-                 extra_link_args=None,
-                 export_symbols=None,
-                 swig_opts = None,
-                 depends=None,
-                 language=None,
-                 **kw):
-        Extension.__init__(self, name,
-                           wrap_sources+aux_sources,
-                           include_dirs,
-                           define_macros,
-                           undef_macros,
-                           library_dirs,
-                           libraries,
-                           runtime_library_dirs,
-                           extra_objects,
-                           extra_compile_args,
-                           extra_link_args,
-                           export_symbols,
-                           swig_opts,
-                           depends,
-                           language,
-                           **kw)
+    def __init__(self, name, wrap_sources, aux_sources, patches=None, **kw):
+        Extension.__init__(self, name, wrap_sources+aux_sources, **kw)
         self.module_name = self.name.rsplit(".", 1)[-1]
         self.wrap_sources = wrap_sources
         self.patches = patches
