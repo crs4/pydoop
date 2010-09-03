@@ -47,10 +47,7 @@ The ``examples`` directory includes a Pydoop reimplementation of
 application for generating a list of the IPs that occur more
 frequently in an `Apache access log
 <http://httpd.apache.org/docs/1.3/logs.html#common>`_. Complete
-documentation for the tutorial is included in K. Bosteels, `Fuzzy
-techniques in the usage and construction of comparison measures for
-music objects <http://users.ugent.be/~klbostee/thesis.pdf>`_, PhD
-thesis, Ghent University, 2009.
+documentation for the tutorial is included in [#f1]_.
 
 The Dumbo MapReduce code for the basic example is::
 
@@ -175,7 +172,7 @@ file to all cluster nodes. Dumbo takes advantage of Streaming's
       -input access.log -output ipcounts -file excludes.txt
 
 In the case of Pydoop, you can use the distributed cache by setting
-the following configuration parameters in your xml conf file:
+the following configuration parameters in your XML conf file:
 
 .. code-block:: xml
 
@@ -272,7 +269,7 @@ by setting the ``mapred.input.format.class`` and the
 ``mapred.output.format.class`` properties: see
 :doc:`examples/sequence_file` for an example. Note that if you write
 your own Java input/output format class, you need to pass the
-corresponding jar filename to pipes via the ``-jar`` option.
+corresponding jar file name to pipes via the ``-jar`` option.
 
 
 Automatic Deployment of Python Packages
@@ -283,3 +280,35 @@ Dumbo includes a ``-libegg`` option for automatic distribution of
 <http://peak.telecommunity.com/DevCenter/PythonEggs>`_. For an example
 on how to distribute arbitrary Python packages, possibly including
 Pydoop itself, to all cluster nodes, see :doc:`self_contained`\ .
+
+
+Performance
+^^^^^^^^^^^
+
+We tested Pydoop's and Dumbo's performance with their respective
+wordcount examples from Pydoop 0.3.6 and Dumbo 0.21.28. Since Pydoop
+does not support Hadoop version 0.21 yet, we patched Hadoop 0.20.2 as
+described in the `Building and Installing
+<http://wiki.github.com/klbostee/dumbo/building-and-installing>`_
+section of Dumbo's online documentation and rebuilt it. The test we
+ran was very similar to the one described in [#f2]_ (wordcount on 20
+GB of random English text -- average completion time over five
+iterations), but this time we used only 48 CPUs distributed over 24
+nodes and a block size of 64 MB. In [#f2]_ we found out that plain
+UTF-8 Streaming was about 2.6 times slower than Pydoop, while in this
+test Dumbo was only 1.9 times slower. This is likely due to the
+introduction of binary data processing in Hadoop Streaming.
+
+
+.. rubric:: Footnotes
+
+.. [#f1] K. Bosteels, `Fuzzy techniques in the usage and construction
+         of comparison measures for music objects
+         <http://users.ugent.be/~klbostee/thesis.pdf>`_, PhD thesis,
+         Ghent University, 2009.
+.. [#f2] Simone Leo and Gianluigi Zanetti, Pydoop: a Python MapReduce
+         and HDFS API for Hadoop. In Proceedings of the `19th ACM
+         International Symposium on High Performance Distributed
+         Computing (HPDC 2010)
+         <http://hpdc2010.eecs.northwestern.edu/>`_, pages
+         819–825. ACM, 2010.
