@@ -2,7 +2,7 @@
 
 * Pydoop is now released under the Apache License, Version 2.0.
 
-* Docs: removed an incorrect suggestion from the installation troubleshooting section. Thanks to Allen Wittenauer for pointing this out.
+* Docs: installation section revised; installation-free example moved to top level; added a section dedicated to a comparison to Dumbo. Thanks to Allen Wittenauer for his comments and suggestions.
 
 * hdfs_file.tell: fixed a bug that limited seek values to 32bit integers.
 
