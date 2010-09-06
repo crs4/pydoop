@@ -11,9 +11,9 @@ following:
    standard input/output. The programming style is therefore rather
    awkward, especially in the case of reducers, where developers must
    manually handle key switching. More importantly, there is no way to
-   write a Python RecordReader, RecordWriter or Partitioner. Before
-   Hadoop 0.21, Streaming had the additional limitation of only being
-   able to process UTF-8 text records
+   write a Python RecordReader, RecordWriter or Partitioner. In Hadoop
+   versions prior to 0.21, Streaming has the additional limitation of
+   only being able to process UTF-8 text records;
 
 #. Jython is a Java implementation of the Python language: the
    standard C implementation, in cases where ambiguity may arise, is
@@ -35,7 +35,8 @@ API. Pydoop, on the other hand, gives you almost complete access to
 MapReduce components (you can write a Python RecordReader,
 RecordWriter and Partitioner) and to HDFS without adding much
 complexity. As an example, in this section we will show how to rewrite
-Dumbo's tutorial example (Dumbo version 0.21) in Pydoop.
+Dumbo's tutorial example in Pydoop. Throughout the rest of this
+section we refer to examples and results from Dumbo version 0.21.28.
 
 
 Counting IPs from an Apache Access Log
@@ -89,11 +90,9 @@ The Pydoop version of the above is::
 
 
 Currently Pydoop does not provide a high-level wrapper to run jobs
-(although we plan to include one in a future release). To run the
-application, therefore, we could execute the following commands (the
-first one is needed if the log file is not already on HDFS)::
+(although we plan to include one in a future release). Applications
+are run through the ``hadoop pipes`` command::
 
-  $ hadoop fs -put access.log access.log
   $ hadoop fs -put ipcount.py ipcount.py
   $ hadoop pipes -D hadoop.pipes.java.recordreader=true \
       -D hadoop.pipes.java.recordwriter=true \
@@ -122,8 +121,8 @@ to perform system calls::
     for ip, count in ip_list[:n]:
       print "%s\t%d" % (ip, count)
 
-To run the application, execute the following from the
-``examples/ipcount`` directory::
+To run the application via the ``ipcount`` wrapper, execute the
+following from the ``examples/ipcount`` directory::
 
   $ ./ipcount input
 
@@ -190,13 +189,14 @@ Alternatively, you can set them directly as command line options for
 pipes, by adding ``-D mapred.cache.files=excludes.txt#excludes.txt -D
 mapred.create.symlink=yes`` right after the ``pipes`` command. The
 latter approach is the one we used in ipcount (check the source code
-for details). Since we made the excludes file a configurable option,
-in our case you would run::
+for details). Since we made the name of the excludes file a command
+line option, in our case you would run::
 
   $ ./ipcount -e excludes.txt input
 
-In the next section we will see how configuration parameters are
-passed to the MapReduce application in both Dumbo and Pydoop.
+The "-e" option is turned into a MapReduce JobConf parameter by
+``ipcount``. In the next section we will see how JobConf parameters
+are passed to the MapReduce application in both Dumbo and Pydoop.
 
 
 Status Reports, Counters and Configuration Parameters
@@ -224,10 +224,11 @@ however, hidden from the programmer::
         self.counters["Excluded lines"] += 1
 
 Note that, in the above snippet, the hardwired reference to
-"excludes.txt" has been replaced by a configuration parameter. In
-Dumbo, values for parameters are supplied via the ``-param`` option:
-in this case, for instance, you would add ``-param
-excludes=excludes.txt`` to Dumbo's command line.
+"excludes.txt" has been replaced by a configuration parameter (this is
+a modification we applied to the original tutorial, which uses a
+different example). In Dumbo, values for parameters are supplied via
+the ``-param`` option: in this case, for instance, you would add
+``-param excludes=excludes.txt`` to Dumbo's command line.
 
 The Pydoop equivalent of the above is::
 
@@ -294,10 +295,10 @@ section of Dumbo's online documentation and rebuilt it. The test we
 ran was very similar to the one described in [#f2]_ (wordcount on 20
 GB of random English text -- average completion time over five
 iterations), but this time we used only 48 CPUs distributed over 24
-nodes and a block size of 64 MB. In [#f2]_ we found out that plain
-UTF-8 Streaming was about 2.6 times slower than Pydoop, while in this
-test Dumbo was only 1.9 times slower. This is likely due to the
-introduction of binary data processing in Hadoop Streaming.
+nodes and a block size of 64 MB. In [#f2]_ we found out that pre-0.21
+Streaming was about 2.6 times slower than Pydoop, while in this test
+Dumbo was only 1.9 times slower. This is likely due to the
+introduction of binary data processing in Streaming.
 
 
 .. rubric:: Footnotes
