@@ -4,15 +4,12 @@ Installation
 Supported Platforms
 -------------------
 
-Pydoop has been tested on the following Linux distros:
-
-* `Gentoo  <http://www.gentoo.org>`_ 10.0 32/64 bit
-* `Ubuntu <http://www.ubuntu.com>`_ 10.04 32/64 bit
-* `CentOS <http://www.centos.org>`_ 5.2 64 bit 
-
-Although we currently have no information regarding other Linux
-distributions, we expect Pydoop to work (possibly with some tweaking)
-on them as well. Platforms other than Linux are not supported.
+Pydoop has been tested on `Gentoo <http://www.gentoo.org>`_, `Ubuntu
+<http://www.ubuntu.com>`_ and `CentOS
+<http://www.centos.org>`_. Although we currently have no information
+regarding other Linux distributions, we expect Pydoop to work
+(possibly with some tweaking) on them as well. Platforms other than
+Linux are currently not supported.
 
 
 Prerequisites

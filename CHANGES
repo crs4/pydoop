@@ -4,6 +4,8 @@
 
 * Docs: installation section revised; installation-free example moved to top level; added a section dedicated to a comparison to Dumbo. Thanks to Allen Wittenauer for his comments and suggestions.
 
+* hdfs_file objects are now iterators over the lines in the file, just like standard Python file objects.
+
 * hdfs_file.tell: fixed a bug that limited seek values to 32bit integers.
 
 * hdfs_file.read has been rewritten to work around a limitation of the underlying libhdfs read function that makes it read less than the requested number of bytes in proximity of block boundaries.

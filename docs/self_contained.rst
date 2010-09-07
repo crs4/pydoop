@@ -1,5 +1,5 @@
-Running Pydoop Applications without Installing
-==============================================
+Installation-free Usage
+=======================
 
 This example shows how to use the Hadoop Distributed Cache to
 distribute Python packages, possibly including Pydoop itself, to all
