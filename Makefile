@@ -2,7 +2,7 @@ ACDC_SVN_BASE = ${HOME}/svn/ac-dc
 COPYRIGHT_OWNER = CRS4
 NOTICE_TEMPLATE = $(realpath .)/notice_template.txt
 COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
-# install copyrighter >=0.2.0 from ac-dc/tools/copyrighter
+# install copyrighter >=0.3.0 from ac-dc/tools/copyrighter
 
 EXPORT_DIR = svn_export
 GENERATED_SRC_FILES = src/_pipes_main.cpp src/_hdfs_main.cpp \
@@ -44,8 +44,9 @@ docs_put: docs
 
 $(DIST_DIR): docs
 	rm -rf $(EXPORT_DIR) && svn export . $(EXPORT_DIR)
-	$(COPYRIGHTER) -r $(EXPORT_DIR)/pydoop $(EXPORT_DIR)/test $(EXPORT_DIR)/examples
+	$(COPYRIGHTER) -r $(EXPORT_DIR)/pydoop $(EXPORT_DIR)/test $(EXPORT_DIR)/examples --exclude-dirs mapred
 	$(COPYRIGHTER) -r -c "//" $(EXPORT_DIR)/src
+	$(COPYRIGHTER) -r -c "//" $(EXPORT_DIR)/examples/input_format/net
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
 	cd $(EXPORT_DIR) && python setup.py sdist
