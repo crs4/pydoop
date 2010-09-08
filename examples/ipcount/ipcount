@@ -82,7 +82,7 @@ class HelpFormatter(optparse.IndentedHelpFormatter):
 
 def make_parser():
   parser = optparse.OptionParser(
-    usage="ipcount [OPTIONS] HDFS_INPUT",
+    usage="%prog [OPTIONS] INPUT",
     formatter=HelpFormatter(),
     )
   parser.set_description(__doc__.lstrip())
@@ -116,12 +116,13 @@ def main(argv):
   lfs = hdfs("", 0)
 
   script_hdfs = os.path.basename(opt.script)
+  input_hdfs = os.path.basename(input_)
   lfs.copy(opt.script, fs, script_hdfs)
-  if not fs.exists(input_):
+  if not fs.exists(input_hdfs):
     try:
-      lfs.copy(input_, fs, input_)
+      lfs.copy(input_, fs, input_hdfs)
     except IOError:
-      "could not find %r in either HDFS or local fs"
+      "could not find input dir in either HDFS or local fs"
   if fs.exists(opt.output):
     fs.delete(opt.output)
 
@@ -135,7 +136,7 @@ def main(argv):
     mr_options["ipcount.excludes"] = exclude_fn_hdfs
   d_options = build_d_options(mr_options)
   hadoop_pipes("%s -program %s -input %s -output %s" % (
-    d_options, script_hdfs, input_, opt.output
+    d_options, script_hdfs, input_hdfs, opt.output
     ))
 
   print_first_n(fs, opt.output, opt.n_top)

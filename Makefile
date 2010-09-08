@@ -14,7 +14,7 @@ DIST_DIR := $(realpath .)/$(EXPORT_DIR)/dist
 DOCS_DIR := $(realpath .)/docs
 DOCS_BUILD_DIR := $(DOCS_DIR)/_build
 
-.PHONY: all build build_py install docs docs_py dist clean distclean
+.PHONY: all build build_py install docs docs_py docs_put dist clean distclean
 
 all: build
 build: $(BUILD_DIR)
@@ -38,6 +38,9 @@ $(DOCS_BUILD_DIR): $(DOCS_DIR) build
 
 docs_py: build_py
 	make -C docs html
+
+docs_put: docs
+	rsync -avz --delete -e ssh $(EXPORT_DIR)/docs/html/ ${USER},pydoop@web.sourceforge.net:/home/groups/p/py/pydoop/htdocs/docs/
 
 $(DIST_DIR): docs
 	rm -rf $(EXPORT_DIR) && svn export . $(EXPORT_DIR)

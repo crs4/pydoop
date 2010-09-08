@@ -1,3 +1,9 @@
+2010-09-08    <simleo@neuron.crs4.it>
+
+	* Makefile: added a target to upload docs to sourceforge.
+
+	* examples: added an example on custom input formats.
+
 2010-09-01    <simleo@neuron.crs4.it>
 
 	* setup.py, src/pipes.hpp: code cleanup.
