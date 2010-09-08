@@ -28,7 +28,6 @@ from pydoop.hdfs import hdfs
 HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
 HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
 MR_SCRIPT = "bin/ipcount.py"
-INPUT = "input"
 OUTPUT = "output"
 BASE_MR_OPTIONS = {
   "mapred.job.name": "ipcount",
