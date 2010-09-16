@@ -17,8 +17,8 @@ following:
 
 #. Jython is a Java implementation of the Python language: the
    standard C implementation, in cases where ambiguity may arise, is
-   referred to as "cPython". Although this approach gives access to
-   the full programming API, it is limited by the fact that cPython
+   referred to as "CPython". Although this approach gives access to
+   the full programming API, it is limited by the fact that CPython
    modules (including part of the standard library) cannot be used.
 
 As a consequence, few Python programmers use Streaming or Jython

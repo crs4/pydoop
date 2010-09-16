@@ -29,8 +29,8 @@ $(PYDOOP_DIR): setup.py pydoop
 	python $< build_py --build-lib $(BUILD_LIB_DIR)
 
 # 'setup.py install' does not accept --build-dir
-install: build
-	sudo python setup.py install_lib --skip-build --build-dir $(BUILD_LIB_DIR)
+install: $(BUILD_LIB_DIR)
+	sudo python setup.py install_lib --skip-build --build-dir $<
 	sudo python setup.py install_egg_info
 
 $(DOCS_BUILD_DIR): $(DOCS_DIR) build
