@@ -19,21 +19,17 @@ struct wrap_hdfs_fs {
   std::string user_;
   hdfsFS fs_;
 
-  wrap_hdfs_fs(std::string host, int port, std::string user, bp::list groups):
+  wrap_hdfs_fs(std::string host, int port, std::string user):
     host_(host), port_(port), user_(user) {
-    int ng = bp::len(groups);
     const char* host_str = (host_.size() == 0) ? NULL : host_.c_str();
     const char* user_str = (user_.size() == 0) ? NULL : user_.c_str();
-    const char **groups_str = NULL;
-    if (ng > 0) {
-      groups_str = (const char**)malloc(sizeof(char*) * ng);
-      for (int k = 0; k < ng; ++k) {
-	char* s = bp::extract<char*>(groups[k]);
-	groups_str[k] = s;
-      }
-    }
-    hdfsFS fs = hdfsConnectAsUser(host_str, port, user_str, groups_str, ng);
-    free(groups_str);
+#ifdef CONNECT_GROUP_INFO
+    const char *groups_str[1] = {"supergroup"};
+    hdfsFS fs = hdfsConnectAsUser(host_str, port, user_str, groups_str, 1);
+#else
+    hdfsFS fs = hdfsConnectAsUser(host_str, port, user_str);
+#endif
+
     if (fs == NULL) {
       throw hdfs_exception("Cannot connect to " + host);
     }
@@ -49,7 +45,7 @@ struct wrap_hdfs_fs {
   bp::list get_hosts(std::string path, tOffset start, tOffset length);
 
   bool exists(const std::string& path);
-  void unlink(const std::string& path);
+  void unlink(const std::string& path, const bool recursive);
   void copy(const std::string& src_path, 
 	    wrap_hdfs_fs& dst_fs, const std::string& dst_path);
   void move(const std::string& src_path, 

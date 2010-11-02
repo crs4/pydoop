@@ -45,9 +45,13 @@ bool wrap_hdfs_fs::exists(const std::string& path) {
   return (res == 0);
 }
 
-void wrap_hdfs_fs::unlink(const std::string& path) {
+void wrap_hdfs_fs::unlink(const std::string& path, const bool recursive) {
   exec_and_trap_error(int,
+#ifdef RECURSIVE_DELETE
+		      hdfsDelete(fs_, path.c_str(), recursive),
+#else
 		      hdfsDelete(fs_, path.c_str()),
+#endif
 		      "Cannot delete " + path + " in filesystem on " + host_);
 }
 
@@ -217,7 +221,7 @@ wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags,
 using namespace boost::python;
 
 void export_hdfs_fs() {
-  class_<wrap_hdfs_fs, boost::noncopyable>("hdfs_fs", init<std::string, int, std::string, bp::list>())
+  class_<wrap_hdfs_fs, boost::noncopyable>("hdfs_fs", init<std::string, int, std::string>())
     .def("close", &wrap_hdfs_fs::disconnect)
     .def("capacity",  &wrap_hdfs_fs::get_capacity)
     .def("default_block_size",  &wrap_hdfs_fs::get_default_block_size)

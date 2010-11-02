@@ -279,24 +279,14 @@ class hdfs(hdfs_fs):
     spawned by the JobTracker, the default user will be the one that
     started the JobTracker itself.
   :type groups: list
-  :param groups: the Hadoop domain groups. Defaults to ``["supergroup"]``
-    in the case of an actual HDFS connection and to ``[<CURRENT_GROUP>]``
-    for local fs connections.
+  :param groups: ignored. Included for backwards compatibility.
 
-  **Note:** when connecting to the local file system, ``user`` and
-  ``groups`` are ignored. The actual user and group that will be used
-  for file creation are the same as the ones of the current process.
+  **Note:** when connecting to the local file system, ``user`` is
+  ignored. The actual user and group that will be used for file
+  creation are the same as the ones of the current process.
   """
   def __init__(self, host, port, user=None, groups=[]):
-    if user and not groups:  # this is an error for libhdfs. Not funny
-      if host:  # hdfs
-        groups = ["supergroup"]
-      else:  # local fs
-        try:
-          groups = [grp.getgrgid(os.getgid()).gr_name]
-        except KeyError:
-          groups = ["users"]
-    super(hdfs, self).__init__(host, port, user or "", groups)
+    super(hdfs, self).__init__(host, port, user or "")
 
   def open_file(self, path,
                 flags=os.O_RDONLY,
@@ -377,14 +367,17 @@ class hdfs(hdfs_fs):
     """
     return super(hdfs, self).default_block_size()
   
-  def delete(self, path):
+  def delete(self, path, recursive=True):
     """
     Delete ``path``. It will recursively delete a non-empty directory.
 
     :type path: string
     :param path: the path of the file or directory
+    :type recursive: bool
+    :param recursive: if path is directory, delete it recursively when True,
+      or raise exception otherwise
     """
-    return super(hdfs, self).delete(path)
+    return super(hdfs, self).delete(path, recursive)
 
   def exists(self, path):
     """

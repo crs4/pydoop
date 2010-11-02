@@ -50,16 +50,6 @@ def hadoop_pipes(pipes_opts, hadoop=HADOOP):
   return os.waitpid(p.pid, 0)[1]
 
 
-def overwrite_put(src, dst, hadoop=HADOOP):
-  ret = hadoop_cmd("fs -test -e %s" % dst, hadoop)
-  if ret == 0:
-    hadoop_cmd("fs -rmr %s" % dst, hadoop)
-  put = "fs -put %s %s" % (src, dst)
-  ret = hadoop_cmd(put, hadoop)
-  if ret:
-    sys.exit("ERROR: '%s %s' failed" % (hadoop, put))
-
-
 def print_first_n(fs, output_path, n):
   ip_list = []
   for entry in fs.list_directory(output_path):

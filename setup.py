@@ -1,12 +1,59 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, os, platform, re
+import sys, os, platform, re, subprocess
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 
 import pydoop
+
+# These variables MUST point to the correct locations, see installation docs
+JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
+HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
+
+class HadoopVersionError(Exception):
+    pass
+
+def get_hadoop_version(hadoop_home):
+    msg = "couldn't detect version for %r" % hadoop_home + ": %s"
+    hadoop_bin = os.path.join(hadoop_home, "bin/hadoop")
+    if not os.path.exists(hadoop_bin):
+        raise HadoopVersionError(msg % ("%r not found" % hadoop_bin))
+    args = [hadoop_bin, "version"]
+    try:
+        version = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            ).communicate()[0].splitlines()[0].split()[-1]
+    except (OSError, IndexError) as e:
+        raise HadoopVersionError(msg % ("'%s %s' failed" % tuple(args)))
+    else:
+        return version.split(".")
+
+# This is optional: in most cases, get_hadoop_version() should work fine
+HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
+
+MAPRED_SRC = HDFS_SRC = "src/c++"
+if HADOOP_VERSION >= (0,21,0):
+    MAPRED_SRC = os.path.join("mapred", MAPRED_SRC)
+    HDFS_SRC = os.path.join("hdfs", HDFS_SRC)
+MAPRED_SRC = os.path.join(HADOOP_HOME, MAPRED_SRC)
+HDFS_SRC = os.path.join(HADOOP_HOME, HDFS_SRC)
+
+
+# this should be more reliable than deciding based on hadoop version
+def get_hdfs_macros(hdfs_hdr):
+    hdfs_macros = []
+    f = open(hdfs_hdr)
+    t = f.read()
+    f.close()
+    delete_args = re.search(r"hdfsDelete\((.+)\)", t).groups()[0].split(",")
+    cas_args = re.search(r"hdfsConnectAsUser\((.+)\)", t).groups()[0].split(",")
+    if len(delete_args) > 2:
+        hdfs_macros.append(("RECURSIVE_DELETE", None))
+    if len(cas_args) > 3:
+        hdfs_macros.append(("CONNECT_GROUP_INFO", None))
+    return hdfs_macros
 
 
 # https://issues.apache.org/jira/browse/MAPREDUCE-1125
@@ -36,11 +83,6 @@ OLD_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
 NEW_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
       fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
     }"""
-
-
-# These variables MUST point to the correct locations, see installation docs
-JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
-HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
 
 
 def get_arch():
@@ -132,7 +174,7 @@ def create_pipes_ext():
     wrap = ["pipes", "pipes_context", "pipes_test_support",
             "pipes_serial_utils", "exceptions"]
     aux = []
-    basedir = os.path.join(HADOOP_HOME, "src/c++")
+    basedir = MAPRED_SRC
     patches = {
         os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
             '#include "hadoop/SerialUtils.hh"':
@@ -166,15 +208,16 @@ def create_hdfs_ext():
     library_dirs = get_java_library_dirs(JAVA_HOME) + [
         os.path.join(HADOOP_HOME, "c++/Linux-%s-%s/lib" % get_arch())
         ]
+    hdfs_include_dir = os.path.join(HDFS_SRC, "libhdfs")
     return BoostExtension(
         "pydoop._hdfs",
         ["src/%s.cpp" % n for n in wrap],
         ["src/%s.cpp" % n for n in aux],
-        include_dirs=get_java_include_dirs(JAVA_HOME) + [
-            os.path.join(HADOOP_HOME, "src/c++/libhdfs")],
+        include_dirs=get_java_include_dirs(JAVA_HOME) + [hdfs_include_dir],
         library_dirs=library_dirs,
         runtime_library_dirs=library_dirs,
         libraries=["pthread", "boost_python", "hdfs", "jvm"],
+        define_macros=get_hdfs_macros(os.path.join(hdfs_include_dir, "hdfs.h"))
         )
     return factory.create()
 
