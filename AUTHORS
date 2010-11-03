@@ -1,2 +1,6 @@
 Pydoop is developed and maintained by Simone Leo <simone.leo@crs4.it>
 and Gianluigi Zanetti <gianluigi.zanetti@crs4.it>.
+
+Other contributors are:
+
+ * Cosmin Cătănoaie: support for Hadoop 0.21.0
