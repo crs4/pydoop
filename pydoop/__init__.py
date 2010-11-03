@@ -8,7 +8,7 @@
 Pydoop is a Python MapReduce and HDFS API for Hadoop.
 """
 
-__version__ = "0.3.6"
+__version__ = "0.3.7_rc1"
 
 __author__ = "Simone Leo, Gianluigi Zanetti"
 
