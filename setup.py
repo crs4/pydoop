@@ -28,7 +28,7 @@ def get_hadoop_version(hadoop_home):
     except (OSError, IndexError) as e:
         raise HadoopVersionError(msg % ("'%s %s' failed" % tuple(args)))
     else:
-        return tuple(version.split("."))
+        return tuple(map(int, version.split(".")))
 
 # This is optional: in most cases, get_hadoop_version() should work fine
 HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
