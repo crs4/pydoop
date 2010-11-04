@@ -1,45 +1,57 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
 
-#include <string>
-
-#include <stdint.h>
-#include "hadoop/SerialUtils.hh"
 #include "hadoop/StringUtils.hh"
-#include <boost/python.hpp>
+#include "pipes_serial_utils.hpp"
 
 namespace bp = boost::python;
 namespace hu = HadoopUtils;
 
 
-class _StringOutStream: public hu::OutStream {
-public:
-  _StringOutStream() :  _os() {};
-  void write(const void *buff, std::size_t len){
-    _os.write(static_cast<const char*>(buff), len);
-  }
-  void flush() {}
-  std::string str() { return _os.str(); }
-protected:
-  std::ostringstream _os;
-};
+_StringOutStream::_StringOutStream(): _os() {}
+
+void _StringOutStream::write(const void *buff, std::size_t len) {
+  _os.write(static_cast<const char*>(buff), len);
+}
+
+void _StringOutStream::flush() {}
+
+std::string _StringOutStream::str() {
+  return _os.str();
+}
 
 
-class _StringInStream: public hu::InStream {
-public:
-  _StringInStream(const std::string& s) :  _is(s) {};
-  void read(void *buff, std::size_t len){
-    _is.read(static_cast<char*>(buff), len);
+_StringInStream::_StringInStream(const std::string& s):  _is(s) {}
+
+void _StringInStream::read(void *buff, std::size_t len) {
+  _is.read(static_cast<char*>(buff), len);
+}
+
+uint16_t _StringInStream::readUShort() {
+  char buf[2];
+  _is.read(buf, 2);
+  uint16_t t = (buf[0] << 8) + buf[1];
+  return t;
+}
+
+uint64_t _StringInStream::readLong() {
+  char buf[8];
+  _is.read(buf, 8);
+  int64_t t = 0;
+  for (int i = 0; i < 8; i++) {
+    t = t << 8;
+    t |= (buf[i] & 0xFF);
   }
-  void seekg(std::size_t offset){
-    _is.seekg(offset);
-  }
-  std::size_t tellg(){
-    return _is.tellg();
-  }
-protected:
-  std::istringstream _is; 
-};
+  return t;
+}
+
+void _StringInStream::seekg(std::size_t offset) {
+  _is.seekg(offset);
+}
+
+std::size_t _StringInStream::tellg() {
+  return _is.tellg();
+}
 
 
 #define PIPES_SERIALIZE_DEF(type, name, hu_name) \
@@ -48,7 +60,6 @@ std::string name(type t) {                       \
   hu_name(t, os);                                \
   return os.str();                               \
 }
-
 
 PIPES_SERIALIZE_DEF(long, pipes_serialize_int, hu::serializeLong);
 PIPES_SERIALIZE_DEF(float, pipes_serialize_float, hu::serializeFloat);
@@ -76,6 +87,7 @@ bp::tuple pipes_deserialize_string(const std::string& s, std::size_t offset) {
   hu::deserializeString(res, is);
   return bp::make_tuple(is.tellg(), res);
 }
+
 
 //++++++++++++++++++++++++++++++//
 // Exporting class definitions. //

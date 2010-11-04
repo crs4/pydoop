@@ -15,15 +15,24 @@ class InputSplit(object):
   :param data: a byte string, the FileSplit
   :type data: string
   
-  The FileSplit has the following format::
-    
+  In Hadoop <= 0.20.2, FileSplit has the following format::
+  
       16 bit filename byte length
       filename in bytes
       64 bit offset
       64 bit length
+  
+  Starting from release 0.21.0, the first field is a variable length
+  compressed long. For details, see::
 
-  Source: `FileSplit format description by Owen O'Malley <http://mail-archives.apache.org/mod_mbox/hadoop-core-user/200906.mbox/%3c480765DF-B33D-4189-A000-6F51D30CBACB@apache.org%3e>`_\ .
-
+      mapred/src/java/org/apache/hadoop/mapreduce/lib/input/FileSplit.Java
+      --> readFields
+      common/src/java/org/apache/hadoop/io/Text.java
+      --> readString
+      common/src/java/org/apache/hadoop/io/WritableUtils.java
+      --> readVInt
+  
+  in Hadoop's source code.
   """
   def __init__(self, data):
     o = 2 + unpack(">h", data[:2])[0]

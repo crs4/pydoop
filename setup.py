@@ -172,7 +172,7 @@ class build_boost_ext(build_ext):
 
 def create_pipes_ext():
     wrap = ["pipes", "pipes_context", "pipes_test_support",
-            "pipes_serial_utils", "exceptions"]
+            "pipes_serial_utils", "exceptions", "pipes_input_split"]
     aux = []
     basedir = MAPRED_SRC
     patches = {
