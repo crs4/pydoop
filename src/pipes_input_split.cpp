@@ -27,8 +27,8 @@ using namespace boost::python;
 
 void export_input_split() {
   class_<wrap_input_split, boost::noncopyable>("input_split", init<std::string>())
-    .def("filename", &wrap_input_split::filename)
-    .def("offset", &wrap_input_split::offset)
-    .def("length", &wrap_input_split::length)
+    .add_property("filename", &wrap_input_split::filename)
+    .add_property("offset", &wrap_input_split::offset)
+    .add_property("length", &wrap_input_split::length)
     ;
 }

@@ -6,8 +6,6 @@
 
 .. autoclass:: Factory
 
-.. autoclass:: InputSplit
-
 
 Classes Instantiated by the Framework
 -------------------------------------
@@ -93,7 +91,10 @@ methods related to the job's current configuration and state.
 
    .. method:: getInputSplit()
 
-   Access the :class:`InputSplit` of the :class:`Mapper`\ .
+   Access the (serialized) ``InputSplit`` of the :class:`Mapper`\ .
+
+   This is s raw byte string that should not be used directly, but
+   rather passed to :class:`InputSplit`'s constructor.
 
    :rtype: string
    

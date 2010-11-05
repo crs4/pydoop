@@ -1,6 +1,22 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
 
+// In Hadoop <= 0.20.2, FileSplit has the following format:
+//     16 bit filename byte length
+//     filename in bytes
+//     64 bit offset
+//     64 bit length
+// Starting from release 0.21.0, the first field is a variable length
+// compressed long. For details, see:
+//     mapred/src/java/org/apache/hadoop/mapreduce/lib/input/FileSplit.Java
+//     --> readFields
+//     common/src/java/org/apache/hadoop/io/Text.java
+//     --> readString
+//     common/src/java/org/apache/hadoop/io/WritableUtils.java
+//     --> readVInt  
+// in Hadoop's source code.
+
+
 #ifndef HADOOP_PIPES_INPUT_SPLIT_HPP
 #define HADOOP_PIPES_INPUT_SPLIT_HPP
 
@@ -24,7 +40,7 @@ public:
     uint16_t fn_len = is.readUShort();
     char *buf = new char[fn_len];
     is.read(buf, fn_len);
-    filename_ = buf;
+    filename_.assign(buf, fn_len);
     delete[] buf;
 #endif
     offset_ = bp::long_(is.readLong());

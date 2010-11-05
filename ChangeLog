@@ -1,3 +1,13 @@
+2010-11-05    <simleo@neuron.crs4.it>
+
+	* pydoop/pipes.py (InputSplit): moved here from (now defunct)
+	input_split.py. Changed to wrap the cpp implementation.
+
+	* src/pipes_input_split.cpp (export_input_split): getter methods
+	changed to properties.
+
+	* src/pipes_input_split.hpp (w): fixed string assignment bug.
+
 2010-11-04    <simleo@neuron.crs4.it>
 
 	* setup.py (get_hadoop_version): fixed to return a tuple of int.

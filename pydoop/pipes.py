@@ -12,7 +12,6 @@ framework.
 
 import _pipes as pp
 from factory import Factory
-from input_split import InputSplit
 
 
 class Mapper(pp.Mapper):
@@ -159,3 +158,22 @@ def runTask(factory):
   :return: True, if the task succeeded.
   """
   return pp.runTask(factory)
+
+
+class InputSplit(pp.input_split):
+  """
+  Represents the data to be processed by an individual :class:`Mapper`\ .
+
+  Typically, it presents a byte-oriented view on the input and it is
+  the responsibility of the :class:`RecordReader` to convert this to a
+  record-oriented view.
+
+  The ``InputSplit`` is a *logical* representation of the actual
+  dataset chunk, expressed through the ``filename``, ``offset`` and
+  ``length`` attributes.
+  
+  :param data: the byte string returned by :meth:`MapContext.getInputSplit`
+  :type data: string
+  """
+  def __init__(self, data):
+    super(InputSplit, self).__init__(data)
