@@ -1,5 +1,8 @@
 2010-11-05    <simleo@neuron.crs4.it>
 
+	* setup.py: added pipes define macro for new FileSplit; moved
+	get_hadoop_version to a separate pydoop.hadoop_utils module.
+
 	* pydoop/pipes.py (InputSplit): moved here from (now defunct)
 	input_split.py. Changed to wrap the cpp implementation.
 

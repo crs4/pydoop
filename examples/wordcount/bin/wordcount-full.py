@@ -20,6 +20,10 @@ from pydoop.utils import jc_configure, jc_configure_int
 from pydoop.hdfs import hdfs
 from pydoop.utils import split_hdfs_path
 
+from pydoop.hadoop_utils import get_hadoop_version
+
+HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
+HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"
@@ -104,9 +108,15 @@ class WordCountWriter(RecordWriter):
     super(WordCountWriter, self).__init__(context)
     self.fs = self.file = None
     jc = context.getJobConf()
-    jc_configure_int(self, jc, "mapred.task.partition", "part")
-    jc_configure(self, jc, "mapred.work.output.dir", "outdir")
-    jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
+    if HADOOP_VERSION < (0,21,0):
+      jc_configure_int(self, jc, "mapred.task.partition", "part")
+      jc_configure(self, jc, "mapred.work.output.dir", "outdir")
+      jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
+    else:
+      jc_configure_int(self, jc, "mapreduce.task.partition", "part")
+      jc_configure(self, jc, "mapreduce.task.output.dir", "outdir")
+      jc_configure(self, jc, "mapreduce.output.textoutputformat.separator",
+                   "sep", "\t")
     self.outfn = "%s/part-%05d" % (self.outdir, self.part)
     self.host, self.port, self.fpath = split_hdfs_path(self.outfn)
     self.fs = hdfs(self.host, self.port)

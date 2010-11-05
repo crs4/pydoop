@@ -1,34 +1,17 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, os, platform, re, subprocess
+import sys, os, platform, re
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
 
 import pydoop
+from pydoop.hadoop_utils import get_hadoop_version
 
 # These variables MUST point to the correct locations, see installation docs
 JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
 HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
-
-class HadoopVersionError(Exception):
-    pass
-
-def get_hadoop_version(hadoop_home):
-    msg = "couldn't detect version for %r" % hadoop_home + ": %s"
-    hadoop_bin = os.path.join(hadoop_home, "bin/hadoop")
-    if not os.path.exists(hadoop_bin):
-        raise HadoopVersionError(msg % ("%r not found" % hadoop_bin))
-    args = [hadoop_bin, "version"]
-    try:
-        version = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            ).communicate()[0].splitlines()[0].split()[-1]
-    except (OSError, IndexError) as e:
-        raise HadoopVersionError(msg % ("'%s %s' failed" % tuple(args)))
-    else:
-        return tuple(map(int, version.split(".")))
 
 # This is optional: in most cases, get_hadoop_version() should work fine
 HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
@@ -39,6 +22,14 @@ if HADOOP_VERSION >= (0,21,0):
     HDFS_SRC = os.path.join("hdfs", HDFS_SRC)
 MAPRED_SRC = os.path.join(HADOOP_HOME, MAPRED_SRC)
 HDFS_SRC = os.path.join(HADOOP_HOME, HDFS_SRC)
+
+
+# https://issues.apache.org/jira/browse/MAPREDUCE-375 -- integrated in 0.21.0
+def get_pipes_macros(hadoop_version):
+    pipes_macros = []
+    if hadoop_version >= (0,21,0):
+        pipes_macros.append(("VINT_ISPLIT_FILENAME", None))
+    return pipes_macros
 
 
 # this should be more reliable than deciding based on hadoop version
@@ -199,6 +190,7 @@ def create_pipes_ext():
         patches=patches,
         include_dirs=get_hadoop_include_dirs(HADOOP_HOME),
         libraries = ["pthread", "boost_python"],
+        define_macros=get_pipes_macros(HADOOP_VERSION)
         )
 
 

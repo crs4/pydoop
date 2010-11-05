@@ -1,22 +1,29 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import unittest
+import os, unittest
 import pydoop._pipes
 from pydoop.pipes import InputSplit
+from pydoop.hadoop_utils import get_hadoop_version
+
+HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
+HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
 
 
 example_input_splits = [
-  ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
+  ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
    'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
    550952, 550917),
-  ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
+  ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
    'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
    0, 550952),
-  ('\x001hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
+  ('1hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
    'hdfs://localhost:9000/user/zag/in-dir/images_list',
    0, 36)
   ]
+if HADOOP_VERSION < (0,21,0):
+  example_input_splits = [("\x00"+raw_split, fn, o, l)
+                          for (raw_split, fn, o, l) in example_input_splits]
 
 
 class taskcontext_tc(unittest.TestCase):
