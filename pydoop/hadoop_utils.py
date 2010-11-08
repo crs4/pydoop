@@ -8,8 +8,19 @@ class HadoopVersionError(Exception):
   pass
 
 
+def version_tuple(version_string):
+  try:
+    vt = tuple(map(int, version_string.split(".")))
+  except ValueError:
+    raise HadoopVersionError("bad version string: %r" % version_string)
+  return vt
+
+
 def get_hadoop_version(hadoop_home):
   msg = "couldn't detect version for %r" % hadoop_home + ": %s"
+  version = os.getenv("HADOOP_VERSION")
+  if version:
+    return version_tuple(version)
   hadoop_bin = os.path.join(hadoop_home, "bin/hadoop")
   if not os.path.exists(hadoop_bin):
     raise HadoopVersionError(msg % ("%r not found" % hadoop_bin))
@@ -21,4 +32,4 @@ def get_hadoop_version(hadoop_home):
   except (OSError, IndexError) as e:
     raise HadoopVersionError(msg % ("'%s %s' failed" % tuple(args)))
   else:
-    return tuple(map(int, version.split(".")))
+    return version_tuple(version)

@@ -1,3 +1,12 @@
+2010-11-08    <simleo@neuron.crs4.it>
+
+	* pydoop/hadoop_utils.py (get_hadoop_version): changed to handle
+	overriding by env var.
+
+	* setup.py (create_pipes_ext): removed include patches (fixed in
+	Hadoop 0.20.2); updated installation docs accordingly (0.20.1 is
+	no longer supported).
+
 2010-11-05    <simleo@neuron.crs4.it>
 
 	* setup.py: added pipes define macro for new FileSplit; moved

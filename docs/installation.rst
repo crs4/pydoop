@@ -18,7 +18,7 @@ Prerequisites
 In order to build and install Pydoop, you need the following software:
 
 * `Python <http://www.python.org>`_ version 2.6
-* `Hadoop <http://hadoop.apache.org>`_ version 0.20.1 or 0.20.2
+* `Hadoop <http://hadoop.apache.org>`_ version 0.20.2 or 0.21.0
 * `Boost <http://www.boost.org>`_ version 1.40 or later
 
 These are also runtime requirements for all cluster nodes. Note that
@@ -54,29 +54,11 @@ installation (i.e., into ``~/.local/lib/python2.6/site-packages``\ )::
 If the above does not work, please read the :ref:`troubleshooting`
 section.
 
-**Note for Ubuntu users:** a build test with Ubuntu 9.10 64-bit and
-Hadoop 0.20.1 required us to apply a patch to the original Hadoop
-Pipes C++ code first. Although we recommend updating to Ubuntu 10.04
-and Hadoop 0.20.2, we included the patch file (``pipes_ubuntu.patch``\ )
-in Pydoop's distribution root for those who might need it.
-
 
 .. _troubleshooting:
 
 Troubleshooting
 ---------------
-
-#. missing libhdfs: Hadoop 0.20.1 does not include a pre-compiled
-   version of libhdfs.so for 64-bit machines. If you are using Hadoop
-   0.20.2 and/or a 32-bit system you can safely skip this. To compile
-   and install your own libhdfs, do the following::
-
-    cd ${HADOOP_HOME}
-    chmod +x src/c++/{libhdfs,pipes,utils}/configure
-    ant compile -Dcompile.c++=true -Dlibhdfs=true
-    mv build/c++/Linux-amd64-64/lib/libhdfs.* c++/Linux-amd64-64/lib/
-    cd c++/Linux-amd64-64/lib/
-    ln -fs libhdfs.so.0.0.0 libhdfs.so
 
 #. non-standard include/lib directories: the setup script looks for
    includes and libraries in standard places -- read ``setup.py`` for
@@ -86,6 +68,14 @@ Troubleshooting
     python setup.py build_ext -L/my/lib/path -I/my/include/path -R/my/lib/path
     python setup.py build_py
     python setup.py install --skip-build
+
+#. Hadoop version issues. The current Pydoop version supports both
+   Hadoop 0.20.2 and 0.21.0. Hadoop version is automatically detected
+   *at compile time* based on the contents of HADOOP_HOME. If this
+   fails for any reason, you can provide the correct version string
+   through the HADOOP_VERSION environment variable, e.g.::
+
+    export HADOOP_VERSION="0.21.0"
 
 
 Testing Your Installation

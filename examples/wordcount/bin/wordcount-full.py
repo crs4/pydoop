@@ -22,8 +22,8 @@ from pydoop.utils import split_hdfs_path
 
 from pydoop.hadoop_utils import get_hadoop_version
 
-HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
-HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
+HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"

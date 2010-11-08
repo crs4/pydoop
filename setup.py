@@ -10,11 +10,11 @@ import pydoop
 from pydoop.hadoop_utils import get_hadoop_version
 
 # These variables MUST point to the correct locations, see installation docs
-JAVA_HOME = os.getenv("JAVA_HOME") or "/opt/sun-jdk"
-HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
+JAVA_HOME = os.getenv("JAVA_HOME", "/opt/sun-jdk")
+HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
 
-# This is optional: in most cases, get_hadoop_version() should work fine
-HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
+# Set the "HADOOP_VERSION" env var if this fails
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 
 MAPRED_SRC = HDFS_SRC = "src/c++"
 if HADOOP_VERSION >= (0,21,0):
@@ -149,6 +149,7 @@ class BoostExtension(Extension):
       f.write(contents)
       f.close()
       aux.append(patched_fn)
+    print aux
     return aux
 
 
@@ -168,18 +169,11 @@ def create_pipes_ext():
   basedir = MAPRED_SRC
   patches = {
     os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
-      '#include "hadoop/SerialUtils.hh"':
-      '#include <stdint.h>\n#include "hadoop/SerialUtils.hh"',
-      "#include <string>": "#include <string.h>",
       OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
       },
     os.path.join(basedir, "utils/impl/StringUtils.cc"): {
-      "#include <strings.h>": "#include <string.h>\n#include <stdlib.h>"
       },
     os.path.join(basedir, "pipes/impl/HadoopPipes.cc"): {
-      '#include "hadoop/Pipes.hh"':
-      '#include <stdint.h>\n#include "hadoop/Pipes.hh"',
-      "#include <strings.h>": "#include <string.h>",
       OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
       },
     }

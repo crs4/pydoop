@@ -6,8 +6,8 @@ import pydoop._pipes
 from pydoop.pipes import InputSplit
 from pydoop.hadoop_utils import get_hadoop_version
 
-HADOOP_HOME = os.getenv("HADOOP_HOME") or "/opt/hadoop"
-HADOOP_VERSION = os.getenv("HADOOP_VERSION") or get_hadoop_version(HADOOP_HOME)
+HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 
 
 example_input_splits = [

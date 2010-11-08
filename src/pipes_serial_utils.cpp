@@ -1,7 +1,7 @@
 // BEGIN_COPYRIGHT
 // END_COPYRIGHT
 
-#include "hadoop/StringUtils.hh"
+#include <hadoop/StringUtils.hh>
 #include "pipes_serial_utils.hpp"
 
 namespace bp = boost::python;
