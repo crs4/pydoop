@@ -22,23 +22,33 @@ get more InputSplits than the number of input files).
 import sys, os, optparse, subprocess as sp
 import pydoop.utils as pu
 from pydoop.hdfs import hdfs
+from pydoop.hadoop_utils import get_hadoop_version
 
 
-HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
+HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
 MR_SCRIPT = "wordcount-rr.py"
 OUTPUT = "output"
 INPUT_FORMAT = "net.sourceforge.pydoop.mapred.TextInputFormat"
 JAR = "pydoop-mapred.jar"
-BASE_MR_OPTIONS = {
-  "mapred.job.name": "test_rr_override",
-  "hadoop.pipes.java.recordreader": "false",
-  "hadoop.pipes.java.recordwriter": "true",
-  "mapred.map.tasks": "2",
-  "mapred.reduce.tasks": "2",
-  "mapred.input.format.class": INPUT_FORMAT,
-  }
 
+if HADOOP_VERSION < (0,21,0):
+  MR_JOB_NAME = "mapred.job.name"
+  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
+else:
+  MR_JOB_NAME = "mapreduce.job.name"
+  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
+  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+INPUT_FORMAT_CLASS = "mapred.input.format.class"
+
+BASE_MR_OPTIONS = {
+  MR_JOB_NAME: "test_rr_override",
+  PIPES_JAVA_RR: "false",
+  PIPES_JAVA_RW: "true",
+  INPUT_FORMAT_CLASS: INPUT_FORMAT,
+  }
 
 def build_d_options(opt_dict):
   d_options = []
@@ -52,16 +62,6 @@ def hadoop_pipes(pipes_opts, hadoop=HADOOP):
   sys.stderr.write("RUNNING PIPES CMD: %r\n" % cmd)
   p = sp.Popen(cmd, shell=True)
   return os.waitpid(p.pid, 0)[1]
-
-
-def overwrite_put(src, dst, hadoop=HADOOP):
-  ret = hadoop_cmd("fs -test -e %s" % dst, hadoop)
-  if ret == 0:
-    hadoop_cmd("fs -rmr %s" % dst, hadoop)
-  put = "fs -put %s %s" % (src, dst)
-  ret = hadoop_cmd(put, hadoop)
-  if ret:
-    sys.exit("ERROR: '%s %s' failed" % (hadoop, put))
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
