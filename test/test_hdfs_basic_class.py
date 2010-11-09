@@ -32,6 +32,26 @@ class hdfs_basic_tc(unittest.TestCase):
 
   assertRaisesExternal = failUnlessRaisesExternal
 
+  def delete(self):
+    path = "/tmp/pydoop_test_delete/subdir"
+    parent = path.rsplit("/", 1)[0]
+    self.fs.create_directory(path)
+    for i, s in enumerate(("foo", "bar")):
+      fn = "%s/%s" % (path, s)
+      f = self.fs.open_file(fn, os.O_WRONLY)
+      f.write("%s\n" % s)
+      f.close()
+      self.fs.delete(fn, recursive=i)
+      self.assertFalse(self.fs.exists(fn))
+    f = self.fs.open_file("%s/tar" % (path), os.O_WRONLY)
+    f.write("tar\n")
+    f.close()
+    self.assertRaisesExternal(IOError, self.fs.delete, path, recursive=False)
+    self.fs.delete(path, recursive=True)
+    self.assertFalse(self.fs.exists(path))
+    self.fs.delete(parent, recursive=False)
+    self.assertFalse(self.fs.exists(parent))
+    
   def chmod(self):
     path = "/tmp/pydoop_test_chmod"
     new_perm = 0777
@@ -408,6 +428,7 @@ class hdfs_basic_tc(unittest.TestCase):
 
 def basic_tests():
   return [
+    'delete',
     'chmod',
     'connect',
     'open_close',

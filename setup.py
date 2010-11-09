@@ -149,7 +149,6 @@ class BoostExtension(Extension):
       f.write(contents)
       f.close()
       aux.append(patched_fn)
-    print aux
     return aux
 
 

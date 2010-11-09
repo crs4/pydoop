@@ -71,9 +71,9 @@ Troubleshooting
 
 #. Hadoop version issues. The current Pydoop version supports both
    Hadoop 0.20.2 and 0.21.0. Hadoop version is automatically detected
-   *at compile time* based on the contents of HADOOP_HOME. If this
+   *at compile time* based on the contents of ``HADOOP_HOME``. If this
    fails for any reason, you can provide the correct version string
-   through the HADOOP_VERSION environment variable, e.g.::
+   through the ``HADOOP_VERSION`` environment variable, e.g.::
 
     export HADOOP_VERSION="0.21.0"
 

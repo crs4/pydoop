@@ -93,7 +93,7 @@ methods related to the job's current configuration and state.
 
    Access the (serialized) ``InputSplit`` of the :class:`Mapper`\ .
 
-   This is s raw byte string that should not be used directly, but
+   This is a raw byte string that should not be used directly, but
    rather passed to :class:`InputSplit`'s constructor.
 
    :rtype: string

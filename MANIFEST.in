@@ -1,4 +1,4 @@
-include AUTHORS CHANGES LICENSE pipes_ubuntu.patch
+include AUTHORS CHANGES LICENSE
 include src/*.hpp
 exclude src/HadoopPipes.cc
 exclude src/StringUtils.cc

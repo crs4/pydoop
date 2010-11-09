@@ -1,5 +1,8 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
-# rely on other pydoop modules
+# rely on extension modules.
 
 import os, re, subprocess
 

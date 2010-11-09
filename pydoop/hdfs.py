@@ -281,9 +281,10 @@ class hdfs(hdfs_fs):
   :type groups: list
   :param groups: ignored. Included for backwards compatibility.
 
-  **Note:** when connecting to the local file system, ``user`` is
-  ignored. The actual user and group that will be used for file
-  creation are the same as the ones of the current process.
+  **Note:** when connecting to the local file system, both ``user``
+  and ``groups`` are ignored. The actual user and group that will be
+  used for file creation are the same as the ones of the current
+  process.
   """
   def __init__(self, host, port, user=None, groups=[]):
     super(hdfs, self).__init__(host, port, user or "")
@@ -369,13 +370,13 @@ class hdfs(hdfs_fs):
   
   def delete(self, path, recursive=True):
     """
-    Delete ``path``. It will recursively delete a non-empty directory.
+    Delete ``path``.
 
     :type path: string
     :param path: the path of the file or directory
     :type recursive: bool
-    :param recursive: if path is directory, delete it recursively when True,
-      or raise exception otherwise
+    :param recursive: if path is directory, delete it recursively when True;
+      raise IOError when False and directory is non-empty
     """
     return super(hdfs, self).delete(path, recursive)
 
