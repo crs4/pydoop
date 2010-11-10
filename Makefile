@@ -44,7 +44,8 @@ docs_put: docs
 
 $(DIST_DIR): docs
 	rm -rf $(EXPORT_DIR) && svn export . $(EXPORT_DIR)
-	$(COPYRIGHTER) -r $(EXPORT_DIR)/pydoop $(EXPORT_DIR)/test $(EXPORT_DIR)/examples --exclude-dirs mapred
+	$(COPYRIGHTER) $(EXPORT_DIR)/setup.py
+	$(COPYRIGHTER) -r $(EXPORT_DIR)/pydoop $(EXPORT_DIR)/test $(EXPORT_DIR)/examples --exclude-dirs mapred,mapreduce
 	$(COPYRIGHTER) -r -c "//" $(EXPORT_DIR)/src
 	$(COPYRIGHTER) -r -c "//" $(EXPORT_DIR)/examples/input_format/net
 	rm -rf $(EXPORT_DIR)/docs/*
