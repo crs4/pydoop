@@ -23,18 +23,32 @@ NOTE: the MapReduce application launched by this example wrapper is a
 import sys, os, optparse, operator, subprocess as sp
 import pydoop.utils as pu
 from pydoop.hdfs import hdfs
+from pydoop.hadoop_utils import get_hadoop_version
 
 
 HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
 MR_SCRIPT = "bin/ipcount.py"
 OUTPUT = "output"
+
+if HADOOP_VERSION < (0,21,0):
+  MR_JOB_NAME = "mapred.job.name"
+  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
+  MR_CACHE_FILES = "mapred.cache.files"
+  MR_CREATE_SYMLINK = "mapred.create.symlink"
+else:
+  MR_JOB_NAME = "mapreduce.job.name"
+  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
+  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+  MR_CACHE_FILES = "mapreduce.job.cache.files"
+  MR_CREATE_SYMLINK = "mapreduce.job.cache.symlink.create"
+
 BASE_MR_OPTIONS = {
-  "mapred.job.name": "ipcount",
-  "hadoop.pipes.java.recordreader": "true",
-  "hadoop.pipes.java.recordwriter": "true",
-  "mapred.map.tasks": "2",
-  "mapred.reduce.tasks": "2",
+  MR_JOB_NAME: "ipcount",
+  PIPES_JAVA_RR: "true",
+  PIPES_JAVA_RW: "true",
   }
 
 
@@ -50,7 +64,7 @@ def hadoop_pipes(pipes_opts, hadoop=HADOOP):
   return os.waitpid(p.pid, 0)[1]
 
 
-def print_first_n(fs, output_path, n):
+def print_first_n(fs, output_path, n, outf=sys.stdout):
   ip_list = []
   for entry in fs.list_directory(output_path):
     fn = entry["name"]
@@ -62,7 +76,7 @@ def print_first_n(fs, output_path, n):
       f.close()
   ip_list.sort(key=operator.itemgetter(1), reverse=True)
   for ip, count in ip_list[:n]:
-    print "%s\t%d" % (ip, count)
+    outf.write("%s\t%d\n" % (ip, count))
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
@@ -84,6 +98,8 @@ def make_parser():
                     help="HDFS output dir ['%default']", default=OUTPUT)
   parser.add_option("-n", type="int", dest="n_top", metavar="INT",
                     help="number of top IPs to list [%default]", default=5)
+  parser.add_option("--local-output", type="str", metavar="STRING",
+                    help="local output file [stdout]", default=sys.stdout)
   parser.add_option("--hadoop", type="str", metavar="STRING",
                     help="Hadoop executable ['%default']", default=HADOOP)
   return parser
@@ -97,6 +113,8 @@ def main(argv):
   except IndexError:
     parser.print_help()
     sys.exit(2)
+  if opt.local_output is not sys.stdout:
+    opt.local_output = open(opt.local_output, 'w')
 
   # output HDFS bust be the same as the input one
   opt.output = pu.split_hdfs_path(opt.output)[-1]
@@ -121,18 +139,20 @@ def main(argv):
   if opt.exclude_fn:
     exclude_fn_hdfs = os.path.basename(opt.exclude_fn)
     lfs.copy(opt.exclude_fn, fs, exclude_fn_hdfs)
-    mr_options["mapred.cache.files"] = "%(f)s#%(f)s" % {"f": exclude_fn_hdfs}
-    mr_options["mapred.create.symlink"] = "yes"
+    mr_options[MR_CACHE_FILES] = "%(f)s#%(f)s" % {"f": exclude_fn_hdfs}
+    mr_options[MR_CREATE_SYMLINK] = "yes"
     mr_options["ipcount.excludes"] = exclude_fn_hdfs
   d_options = build_d_options(mr_options)
   hadoop_pipes("%s -program %s -input %s -output %s" % (
     d_options, script_hdfs, input_hdfs, opt.output
     ))
 
-  print_first_n(fs, opt.output, opt.n_top)
+  print_first_n(fs, opt.output, opt.n_top, outf=opt.local_output)
 
   lfs.close()
   fs.close()
+  if opt.local_output is not sys.stdout:
+    opt.local_output.close()
 
 
 if __name__ == "__main__":

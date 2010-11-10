@@ -1,25 +1,68 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-nargs=1
-if [ $# -lt ${nargs} ]; then
-    echo "USAGE: $(basename $0) INPUT_DIR"
-    exit 2
-fi
-INPUT_DIR=$1
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
 
-SCRIPT=bin/ipcount_base.py
-CONF="-D mapred.job.name=ipcount -D hadoop.pipes.java.recordreader=true -D hadoop.pipes.java.recordwriter=true"
+# You need a working Hadoop cluster to run this.
 
-HADOOP=${HADOOP_HOME}/bin/hadoop
+import sys, os, subprocess as sp
+from pydoop.hadoop_utils import get_hadoop_version
 
-SCRIPT_BASENAME=$(basename ${SCRIPT})
-INPUT_BASENAME=$(basename ${INPUT_DIR})
-HDFS_SCRIPT=${SCRIPT_BASENAME}
 
-${HADOOP} dfs -rmr input output
-${HADOOP} dfs -put ${SCRIPT} ${HDFS_SCRIPT}
-${HADOOP} dfs -put ${INPUT_DIR} ${INPUT_BASENAME}
-${HADOOP} pipes ${CONF} -program ${HDFS_SCRIPT} \
-    -input ${INPUT_BASENAME} -output output
+HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
+HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
+SCRIPT = "bin/ipcount_base.py"
+OUTPUT = "output"
 
-${HADOOP} dfs -cat output/part* | sort -k2,2nr | head -n 5
+if HADOOP_VERSION < (0,21,0):
+  MR_JOB_NAME = "mapred.job.name"
+  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
+else:
+  MR_JOB_NAME = "mapreduce.job.name"
+  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
+  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+
+MR_OPTIONS = {
+  MR_JOB_NAME: "ipcount_base",
+  PIPES_JAVA_RR: "true",
+  PIPES_JAVA_RW: "true",
+  }
+
+
+def build_d_options(opt_dict):
+  d_options = []
+  for name, value in opt_dict.iteritems():
+    d_options.append("-D %s=%s" % (name, value))
+  return " ".join(d_options)
+
+
+def run_cmd(cmd_string):
+  return sp.call(cmd_string, shell=True)
+
+
+def main(argv):
+  try:
+    local_input = argv[1]
+  except IndexError:
+    print "USAGE: %s LOCAL_INPUT" % argv[0]
+    sys.exit(2)
+
+  script_hdfs = os.path.basename(SCRIPT)
+  input_ = os.path.basename(local_input)
+  output = "output"
+  dopts = build_d_options(MR_OPTIONS)
+  run_cmd("%s fs -rmr %s %s" % (HADOOP, input_, output))
+  run_cmd("%s fs -put %s %s" % (HADOOP, SCRIPT, script_hdfs))
+  run_cmd("%s fs -put %s %s" % (HADOOP, local_input, input_))
+  run_cmd("%s pipes %s -program %s -input %s -output %s" %
+          (HADOOP, dopts, script_hdfs, input_, output))
+  p1 = sp.Popen([HADOOP, "fs", "-cat", "%s/part*" % output], stdout=sp.PIPE)
+  p2 = sp.Popen(["sort", "-k2,2nr"], stdin=p1.stdout, stdout=sp.PIPE)
+  p3 = sp.Popen(["head", "-n", "5"], stdin=p2.stdout, stdout=sp.PIPE)
+  print p3.communicate()[0]
+
+
+if __name__ == "__main__":
+  main(sys.argv)

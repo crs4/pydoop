@@ -50,6 +50,7 @@ BASE_MR_OPTIONS = {
   INPUT_FORMAT_CLASS: INPUT_FORMAT,
   }
 
+
 def build_d_options(opt_dict):
   d_options = []
   for name, value in opt_dict.iteritems():

@@ -1,3 +1,7 @@
+2010-11-10    <simleo@neuron.crs4.it>
+
+	* examples/ipcount: added support for Hadoop 0.21.0.
+
 2010-11-09    <simleo@neuron.crs4.it>
 
 	* examples/input_format: added support for Hadoop 0.21.0.
