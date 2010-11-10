@@ -46,8 +46,8 @@ upload: pydoop cv dfsclean
 	$(HADOOP) dfs -put bin $(HDFS_WORK_DIR)/bin
 	$(HADOOP) dfs -put $(INPUT_DIR) $(HDFS_WORK_DIR)/input
 
-run: upload
-	$(HADOOP) pipes -D mapred.cache.archives=$(HDFS_WORK_DIR)/pydoop.tgz#pydoop,$(HDFS_WORK_DIR)/cv.tgz#cv -conf conf/cv.xml -program $(HDFS_WORK_DIR)/bin/cv -input $(HDFS_WORK_DIR)/input -output $(HDFS_WORK_DIR)/output
+run: run_app upload
+	HDFS_WORK_DIR=$(HDFS_WORK_DIR) ./$<
 
 clean:
 	rm -rf $(BASE_BUILD_DIR)
