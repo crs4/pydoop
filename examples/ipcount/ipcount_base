@@ -59,10 +59,14 @@ def main(argv):
   run_cmd("%s fs -put %s %s" % (HADOOP, local_input, input_))
   run_cmd("%s pipes %s -program %s -input %s -output %s" %
           (HADOOP, dopts, script_hdfs, input_, output))
-  p1 = sp.Popen([HADOOP, "fs", "-cat", "%s/part*" % output], stdout=sp.PIPE)
-  p2 = sp.Popen(["sort", "-k2,2nr"], stdin=p1.stdout, stdout=sp.PIPE)
-  p3 = sp.Popen(["head", "-n", "5"], stdin=p2.stdout, stdout=sp.PIPE)
-  print p3.communicate()[0]
+  p1 = sp.Popen([HADOOP, "fs", "-cat", "%s/part*" % output],
+                stdout=sp.PIPE, stderr=sp.PIPE)
+  p2 = sp.Popen(["sort", "-k2,2nr"],
+                stdin=p1.stdout, stdout=sp.PIPE,stderr=sp.PIPE)
+  p3 = sp.Popen(["head", "-n", "5"],
+                stdin=p2.stdout, stdout=sp.PIPE, stderr=sp.PIPE)
+  out, err = p3.communicate()
+  print out
 
 
 if __name__ == "__main__":
