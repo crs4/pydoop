@@ -19,7 +19,7 @@ def string_version(tuple_version):
 
 def main(argv):
   if HADOOP_VERSION < (0,21,0):
-    hadoop_jars = "hadoop-%s-core.jar" % string_version(HADOOP_VERSION)
+    hadoop_jars = ["hadoop-%s-core.jar" % string_version(HADOOP_VERSION)]
   else:
     hadoop_jars = ["hadoop-%s-%s.jar" % (tag, string_version(HADOOP_VERSION))
                    for tag in ("common", "hdfs", "mapred")]

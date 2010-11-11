@@ -6,6 +6,10 @@ from ctypes import create_string_buffer
 import xml.dom.minidom
 
 from pydoop.hdfs import HADOOP_HOME, HADOOP_CONF_DIR, hdfs as HDFS
+from pydoop.hadoop_utils import get_hadoop_version
+
+HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 
 
 class hdfs_basic_tc(unittest.TestCase):
@@ -46,7 +50,8 @@ class hdfs_basic_tc(unittest.TestCase):
     f = self.fs.open_file("%s/tar" % (path), os.O_WRONLY)
     f.write("tar\n")
     f.close()
-    self.assertRaisesExternal(IOError, self.fs.delete, path, recursive=False)
+    if HADOOP_VERSION >= (0,21,0):
+      self.assertRaisesExternal(IOError, self.fs.delete, path, recursive=False)
     self.fs.delete(path, recursive=True)
     self.assertFalse(self.fs.exists(path))
     self.fs.delete(parent, recursive=False)

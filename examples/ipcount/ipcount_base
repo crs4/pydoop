@@ -48,6 +48,7 @@ def main(argv):
   except IndexError:
     print "USAGE: %s LOCAL_INPUT" % argv[0]
     sys.exit(2)
+  local_input = local_input.rstrip(os.path.sep)
 
   script_hdfs = os.path.basename(SCRIPT)
   input_ = os.path.basename(local_input)
