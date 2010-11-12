@@ -8,3 +8,4 @@ Examples
    wordcount
    hdfs
    sequence_file
+   input_format

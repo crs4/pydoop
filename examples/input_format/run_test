@@ -15,8 +15,8 @@ Python one. Just remember to set 'hadoop.pipes.java.recordreader' to
 
 The example custom InputFormat is a simple modification of the
 standard TextInputFormat: it adds a configurable boolean parameter
-that, if set to true, makes input file non-splitable (i.e., you can't
-get more InputSplits than the number of input files).
+that, if set to 'false', makes input file non-splitable (i.e., you
+can't get more InputSplits than the number of input files).
 """
 
 import sys, os, optparse, subprocess as sp
