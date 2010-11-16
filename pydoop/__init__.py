@@ -5,7 +5,14 @@
 # are parsed by setup.py, check it before modifying them.
 
 """
-Pydoop is a Python MapReduce and HDFS API for Hadoop.
+Pydoop: a Python MapReduce and HDFS API for Hadoop
+--------------------------------------------------
+
+Prerequisites:
+
+* Python 2.6
+* Hadoop 0.20.2 or 0.21.0
+* Boost 1.40 or later
 """
 
 __version__ = "0.3.7_rc1"

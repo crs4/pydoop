@@ -1,3 +1,7 @@
+2010-11-16    <simleo@neuron.crs4.it>
+
+	* setup.py: added more metadata for PyPI.
+
 2010-11-11    <simleo@neuron.crs4.it>
 
 	* examples/ipcount/ipcount_base (main): fixed handling of stderr.
