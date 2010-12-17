@@ -1,3 +1,8 @@
+2010-12-17    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py (hdfs_file.__read_chunks_until_nl): readline
+	improved to allow reading more than 20 chunks of data!
+
 2010-11-16    <simleo@neuron.crs4.it>
 
 	* setup.py: added more metadata for PyPI.

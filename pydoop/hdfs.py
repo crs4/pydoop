@@ -101,7 +101,6 @@ class hdfs_file(object):
     i = 0
     while eol < 0 and not self.EOF:
       i += 1
-      if i == 20: break
       if self.p < len(self.chunk):
         self.buffer_list.append(self.chunk[self.p:])
       self.__read_chunk()
