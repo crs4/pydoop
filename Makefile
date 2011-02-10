@@ -40,7 +40,7 @@ docs_py: build_py
 	make -C docs html
 
 docs_put: docs
-	rsync -avz --delete -e ssh $(EXPORT_DIR)/docs/html/ ${USER},pydoop@web.sourceforge.net:/home/groups/p/py/pydoop/htdocs/docs/
+	rsync -avz --delete -e ssh $(EXPORT_DIR)/docs/html/ ${USER},pydoop@web.sourceforge.net:/home/project-web/pydoop/htdocs/docs/
 
 $(DIST_DIR): docs
 	rm -rf $(EXPORT_DIR) && svn export . $(EXPORT_DIR)

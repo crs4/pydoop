@@ -1,3 +1,8 @@
+2011-02-10    <simleo@neuron.crs4.it>
+
+	* Makefile (docs_put): changed web upload path to the new value
+	set by Sourceforge in the Feb 2011 project-web update.
+
 2010-12-17    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py (hdfs_file.__read_chunks_until_nl): readline
