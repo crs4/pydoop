@@ -72,12 +72,36 @@ class hdfs_file(object):
   DEFAULT_CHUNK_SIZE = 16384
   ENDL = os.linesep
 
-  def __init__(self, raw_hdfs_file, chunk_size=DEFAULT_CHUNK_SIZE):
+  def __init__(self, raw_hdfs_file, fs, name, chunk_size=DEFAULT_CHUNK_SIZE):
     if not chunk_size > 0:
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file
+    self.__fs = fs
+    self.__name = name
+    self.__path = fs.get_path_info(name)["name"]
     self.chunk_size = chunk_size
     self.__reset()
+
+  @property
+  def fs(self):
+    """
+    The file's hdfs instance.
+    """
+    return self.__fs
+
+  @property
+  def name(self):
+    """
+    The name of the file as passed to :meth:`hdfs.open_file`.
+    """
+    return self.__name
+
+  @property
+  def size(self):
+    """
+    The file's size in bytes.
+    """
+    return self.fs.get_path_info(self.__path)["size"]
 
   def __reset(self):
     self.buffer_list = []
@@ -177,26 +201,31 @@ class hdfs_file(object):
     """    
     return self.f.pread_chunk(position, chunk)
   
-  def read(self, length):
+  def read(self, length=-1):
     """
-    Read ``length`` bytes from the file.
+    Read ``length`` bytes from the file.  If ``length`` is negative or
+    omitted, read all data until EOF.
 
     :type length: int
     :param length: the number of bytes to read
     :rtype: string
     :return: the chunk of data read from the file
     """
-    # libhdfs read stops at block boundary. Better hide this from users
+    # NOTE: libhdfs read stops at block boundaries: it is *essential*
+    # to ensure that we actually read the required number of bytes.
+    if length < 0:
+      length = self.size
     chunks = []
-    bytes_read = 0
-    while bytes_read < length:
-      c = self.f.read(length - bytes_read)
+    while 1:
+      if length <= 0:
+        break
+      c = self.f.read(min(self.chunk_size, length))
       if c == "":
         break
       chunks.append(c)
-      bytes_read += len(c)
+      length -= len(c)
     return "".join(chunks)
- 
+
   def read_chunk(self, chunk):
     """
     Works like :meth:`read`\ , but data is stored in the writable
@@ -319,7 +348,7 @@ class hdfs(hdfs_fs):
     """
     return hdfs_file(super(hdfs, self).open_file(path, flags, buff_size,
                                                  replication, blocksize),
-                     readline_chunk_size)
+                     self, path, readline_chunk_size)
 
   def capacity(self):
     """

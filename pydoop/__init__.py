@@ -15,7 +15,7 @@ Prerequisites:
 * Boost 1.40 or later
 """
 
-__version__ = "0.3.7"
+__version__ = "0.3.8"
 
 __author__ = "Simone Leo, Gianluigi Zanetti"
 

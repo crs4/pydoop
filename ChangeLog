@@ -1,3 +1,14 @@
+2011-04-12    <simleo@neuron.crs4.it>
+
+	* setup.py (BoostExtension): changed to generate files only when
+	they are actually needed (non-existent or outdated).
+
+	* pydoop/hdfs.py (hdfs_file): added properties to get a reference
+	to the file's name, size and hdfs instance.
+	(hdfs_file.read): changed to behave like the read method of a
+	Python file object, i.e., length can be omitted or negative to
+	read the whole file.
+
 2011-02-10    <simleo@neuron.crs4.it>
 
 	* Makefile (docs_put): changed web upload path to the new value

@@ -23,6 +23,7 @@ if HADOOP_VERSION >= (0,21,0):
 MAPRED_SRC = os.path.join(HADOOP_HOME, MAPRED_SRC)
 HDFS_SRC = os.path.join(HADOOP_HOME, HDFS_SRC)
 
+mtime = lambda fn: os.stat(fn).st_mtime
 
 # https://issues.apache.org/jira/browse/MAPREDUCE-375 -- integrated in 0.21.0
 def get_pipes_macros(hadoop_version):
@@ -110,28 +111,35 @@ class BoostExtension(Extension):
     self.wrap_sources = wrap_sources
     self.patches = patches
 
+  def __must_generate(self, target, prerequisites):
+    try:
+      return max(mtime(p) for p in prerequisites) > mtime(target)
+    except OSError:
+      return True
+
   def generate_main(self):
-    sys.stderr.write("generating main for %s...\n" % self.name)
-    first_half = ["#include <boost/python.hpp>"]
-    second_half = ["BOOST_PYTHON_MODULE(%s){" % self.module_name]
-    for fn in self.wrap_sources:
-      f = open(fn)
-      code = f.read()
-      f.close()
-      m = self.export_pattern.search(code)
-      if m is not None:
-        fun_name = "export_%s" % m.groups()[0]
-        first_half.append("void %s();" % fun_name)
-        second_half.append("%s();" % fun_name)
-    second_half.append("}")
     destdir = os.path.split(self.wrap_sources[0])[0]  # should be ok
     outfn = os.path.join(destdir, "%s_main.cpp" % self.module_name)
-    outf = open(outfn, "w")
-    for line in first_half:
-      outf.write("%s%s" % (line, os.linesep))
-    for line in second_half:
-      outf.write("%s%s" % (line, os.linesep))
-    outf.close()
+    if self.__must_generate(outfn, self.wrap_sources):
+      sys.stderr.write("generating main for %s\n" % self.name)
+      first_half = ["#include <boost/python.hpp>"]
+      second_half = ["BOOST_PYTHON_MODULE(%s){" % self.module_name]
+      for fn in self.wrap_sources:
+        f = open(fn)
+        code = f.read()
+        f.close()
+        m = self.export_pattern.search(code)
+        if m is not None:
+          fun_name = "export_%s" % m.groups()[0]
+          first_half.append("void %s();" % fun_name)
+          second_half.append("%s();" % fun_name)
+      second_half.append("}")
+      outf = open(outfn, "w")
+      for line in first_half:
+        outf.write("%s%s" % (line, os.linesep))
+      for line in second_half:
+        outf.write("%s%s" % (line, os.linesep))
+      outf.close()
     return outfn
 
   def generate_patched_aux(self):
@@ -139,15 +147,18 @@ class BoostExtension(Extension):
     if not self.patches:
       return aux
     for fn, p in self.patches.iteritems():
-      f = open(fn)
-      contents = f.read()
-      f.close()
-      for old, new in self.patches[fn].iteritems():
-        contents = contents.replace(old, new)
       patched_fn = "src/%s" % os.path.basename(fn)
-      f = open(patched_fn, "w")
-      f.write(contents)
-      f.close()
+      # FIXME: the patch should also be listed as a prerequisite.
+      if self.__must_generate(patched_fn, [fn]):
+        sys.stderr.write("copying and patching %s\n" % fn)
+        f = open(fn)
+        contents = f.read()
+        f.close()
+        for old, new in self.patches[fn].iteritems():
+          contents = contents.replace(old, new)
+        f = open(patched_fn, "w")
+        f.write(contents)
+        f.close()
       aux.append(patched_fn)
     return aux
 

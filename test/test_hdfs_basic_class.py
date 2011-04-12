@@ -93,6 +93,14 @@ class hdfs_basic_tc(unittest.TestCase):
       self.fs.open_file, path, flags, buff_size, replication, blocksize
       )
 
+  def file_attrs(self):
+    path = "/tmp/test_file_attrs"
+    f = self.fs.open_file(path, os.O_WRONLY)
+    self.assertEqual(f.name, path)
+    self.assertEqual(f.size, self.fs.get_path_info(path)["size"])
+    f.close()
+    self.fs.delete(path)
+
   def flush(self):
     path = "/tmp/test_hdfs_flush"
     f = self.fs.open_file(path, os.O_WRONLY)
@@ -220,6 +228,21 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertEqual(0, f.tell())
     f.close()
     self.fs.delete(path)
+
+  def read_all(self):
+    path = "/tmp/test_read_all"
+    blocksize = 32768
+    L = 2 * blocksize
+    content = "A" * L
+    f = self.fs.open_file(path, os.O_WRONLY, blocksize=blocksize)
+    byte_count = f.write(content)
+    self.assertEqual(byte_count, L)
+    f.close()
+    f = self.fs.open_file(path)
+    read_content = f.read()
+    f.close()
+    self.fs.delete(path)
+    self.assertEqual(read_content, content)
 
   def copy(self):
     pass
@@ -437,9 +460,11 @@ def basic_tests():
     'chmod',
     'connect',
     'open_close',
+    'file_attrs',
     'flush',
     'write_read',
     'write_read_chunk',
+    'read_all',
     'rename',
     'change_dir',
     'create_dir',
