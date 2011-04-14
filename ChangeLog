@@ -1,3 +1,8 @@
+2011-04-14    <simleo@neuron.crs4.it>
+
+	* pydoop/utils.py (split_hdfs_path): changed to accept a 'user'
+	parameter.
+
 2011-04-12    <simleo@neuron.crs4.it>
 
 	* setup.py (BoostExtension): changed to generate files only when

@@ -12,6 +12,7 @@ import _pipes as pp
 
 # as in org/apache/hadoop/hdfs/server/namenode/NameNode.java
 DEFAULT_PORT = 8020
+DEFAULT_USER = os.environ["USER"]
 
 
 def raise_pydoop_exception(msg):
@@ -105,17 +106,20 @@ def make_input_split(filename, offset, length):
   return s
 
 
-def split_hdfs_path(hdfs_path):
+def split_hdfs_path(hdfs_path, user=None):
   """
   Split ``hdfs_path`` into a (hostname, port, path) tuple.
 
   :type hdfs_path: string
   :param hdfs_path: an HDFS path, e.g., ``hdfs://localhost:9000/user/me``
+  :type user: string
+  :param user: user name used to resolve relative paths, defaults to the
+    current user
   :rtype: tuple
   :return: hostname, port, path
   """
   # Use a helper class to compile URL_PATTERN once and for all
-  return _HdfsPathSplitter.split(hdfs_path)
+  return _HdfsPathSplitter.split(hdfs_path, user or DEFAULT_USER)
 
 
 class _HdfsPathSplitter(object):
@@ -129,7 +133,7 @@ class _HdfsPathSplitter(object):
     raise_pydoop_exception(msg)
 
   @classmethod
-  def split(cls, hdfs_path):
+  def split(cls, hdfs_path, user):
     try:
       scheme, rest = cls.PATTERN.match(hdfs_path).groups()
     except AttributeError:
@@ -150,7 +154,7 @@ class _HdfsPathSplitter(object):
         except ValueError:
           cls.raise_bad_path(hdfs_path, "port must be an integer")
       elif rest[0] != "/":
-        path = "/user/%s/%s" % (os.environ["USER"], rest)
+        path = "/user/%s/%s" % (user, rest)
         hostname, port = "default", 0
       else:
         hostname, port, path = "default", 0, rest

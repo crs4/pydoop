@@ -4,32 +4,38 @@
 import os, unittest
 from pydoop.utils import split_hdfs_path, jc_configure
 from pydoop.utils import jc_configure_int, jc_configure_bool, \
-     jc_configure_float, DEFAULT_PORT
+     jc_configure_float, DEFAULT_PORT, DEFAULT_USER
 import pydoop._pipes as pp
 
 
-good_examples = [
-  ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
-  ('hdfs://localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
-  ('hdfs://localhost/foo/bar', ('localhost', DEFAULT_PORT, '/foo/bar')),
-  ('hdfs:///foo/bar', ('default', 0, '/foo/bar')),
-  ('file:///foo/bar', ('', 0, '/foo/bar')),
-  ('file:/foo/bar', ('', 0, '/foo/bar')),
-  ('file:///foo', ('', 0, '/foo')),
-  ('file:/foo', ('', 0, '/foo')),
-  ('file://localhost:9000/foo/bar', ('', 0, '/localhost:9000/foo/bar')),
-  ('//localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
-  ('/foo/bar', ('default', 0, '/foo/bar')),
-  ('foo/bar', ('default', 0, '/user/%s/foo/bar' % os.environ["USER"])),
-  ]
-
-bad_examples = [
-  ('ftp://localhost:9000/', ()),          # bad scheme
-  ('hdfs://localhost:spam/', ()),         # port is not an int
-  ('hdfs://localhost:9000', ()),          # path part is empty
-  ('hdfs://localhost:9000/foo:bar', ()),  # colon outside netloc
-  ('/localhost:9000/foo/bar', ()),        # colon outside netloc
-]
+split_hdfs_path_examples = {
+  "good": [
+    ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
+    ('hdfs://localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
+    ('hdfs://localhost/foo/bar', ('localhost', DEFAULT_PORT, '/foo/bar')),
+    ('hdfs:///foo/bar', ('default', 0, '/foo/bar')),
+    ('file:///foo/bar', ('', 0, '/foo/bar')),
+    ('file:/foo/bar', ('', 0, '/foo/bar')),
+    ('file:///foo', ('', 0, '/foo')),
+    ('file:/foo', ('', 0, '/foo')),
+    ('file://localhost:9000/foo/bar', ('', 0, '/localhost:9000/foo/bar')),
+    ('//localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
+    ('/foo/bar', ('default', 0, '/foo/bar')),
+    ('foo/bar', ('default', 0, '/user/%s/foo/bar' % DEFAULT_USER)),
+    ],
+  "good_with_user": [
+    ('a/b', None, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
+    ('a/b', DEFAULT_USER, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
+    ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
+    ],
+  "bad": [
+    ('ftp://localhost:9000/', ()),          # bad scheme
+    ('hdfs://localhost:spam/', ()),         # port is not an int
+    ('hdfs://localhost:9000', ()),          # path part is empty
+    ('hdfs://localhost:9000/foo:bar', ()),  # colon outside netloc
+    ('/localhost:9000/foo/bar', ()),        # colon outside netloc
+    ],
+  }
 
 configure_examples = {
   'a' : ['str', 'this is a string'],
@@ -47,9 +53,11 @@ configure_examples = {
 class utils_tc(unittest.TestCase):
 
   def split_hdfs_path(self):
-    for p, r in good_examples:
+    for p, r in split_hdfs_path_examples["good"]:
       self.assertEqual(split_hdfs_path(p), r)
-    for p, r in bad_examples:
+    for p, u, r in split_hdfs_path_examples["good_with_user"]:
+      self.assertEqual(split_hdfs_path(p, u), r)
+    for p, r in split_hdfs_path_examples["bad"]:
       self.assertRaises(UserWarning, split_hdfs_path, p)
 
   def jc_configure_plain(self):
