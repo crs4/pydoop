@@ -4,6 +4,7 @@
 	(hdfs.__init__): changed to store a reference to the actual host
 	and port.
 	(hdfs.open_file): changed to accept "r" and "w" opening modes.
+	(hdfs_file): added __enter__ and __exit__.
 
 2011-04-14    <simleo@neuron.crs4.it>
 

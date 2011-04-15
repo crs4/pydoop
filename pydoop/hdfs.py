@@ -78,10 +78,15 @@ class hdfs_file(object):
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file
     self.__fs = fs
-    self.__name = name
-    self.__path = fs.get_path_info(name)["name"]
+    self.__name = fs.get_path_info(name)["name"]
     self.chunk_size = chunk_size
     self.__reset()
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_value, traceback):
+    self.close()
 
   @property
   def fs(self):
@@ -93,7 +98,7 @@ class hdfs_file(object):
   @property
   def name(self):
     """
-    The name of the file as passed to :meth:`hdfs.open_file`.
+    The file's fully qualified name.
     """
     return self.__name
 
@@ -102,7 +107,7 @@ class hdfs_file(object):
     """
     The file's size in bytes.
     """
-    return self.fs.get_path_info(self.__path)["size"]
+    return self.fs.get_path_info(self.name)["size"]
 
   def __reset(self):
     self.buffer_list = []

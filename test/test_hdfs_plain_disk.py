@@ -26,12 +26,10 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
 
   def top_level_open(self):
     path = "file:/tmp/test_hdfs_open"
-    f = hdfs.open(path, "w")
-    f.write(path)
-    f.close()
-    f = hdfs.open(path)
-    self.assertEqual(f.read(), path)
-    f.close()
+    with hdfs.open(path, "w") as f:
+      f.write(path)
+    with hdfs.open(path) as f:
+      self.assertEqual(f.read(), path)
     f.fs.delete(path)
     f.fs.close()
 
