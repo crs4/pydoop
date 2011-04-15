@@ -1,64 +1,59 @@
-ACDC_SVN_BASE = ${HOME}/svn/ac-dc
-COPYRIGHT_OWNER = CRS4
-NOTICE_TEMPLATE = $(realpath .)/notice_template.txt
-COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
-# install copyrighter >=0.3.0 from ac-dc/tools/copyrighter
-
 EXPORT_DIR = svn_export
-GENERATED_SRC_FILES = src/_pipes_main.cpp src/_hdfs_main.cpp \
-	src/SerialUtils.cc src/HadoopPipes.cc src/StringUtils.cc
-BUILD_DIR := $(realpath .)/build
-BUILD_LIB_DIR := $(BUILD_DIR)/lib
-PYDOOP_DIR := $(BUILD_LIB_DIR)/pydoop
-DIST_DIR := $(realpath .)/$(EXPORT_DIR)/dist
-DOCS_DIR := $(realpath .)/docs
-DOCS_BUILD_DIR := $(DOCS_DIR)/_build
+COPYRIGHT_OWNER = CRS4
+NOTICE_TEMPLATE = notice_template.txt
+COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
+# install copyrighter >=0.4.0 from ac-dc/tools/copyrighter
 
-.PHONY: all build build_py install docs docs_py docs_put dist clean distclean
+GENERATED_SRC_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc)
+
+.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean
 
 all: build
-build: $(BUILD_DIR)
-build_py: $(PYDOOP_DIR)
-dist: $(DIST_DIR)
-docs: $(DOCS_BUILD_DIR)
 
-$(BUILD_DIR): setup.py pydoop src
-	python $< build --build-base $(BUILD_DIR) --build-lib $(BUILD_LIB_DIR)
+build:
+	python setup.py build
 
-$(PYDOOP_DIR): setup.py pydoop
-	python $< build_py --build-lib $(BUILD_LIB_DIR)
+build_py:
+	python setup.py build_py
 
-# 'setup.py install' does not accept --build-dir
-install: $(BUILD_LIB_DIR)
-	sudo python setup.py install_lib --skip-build --build-dir $<
-	sudo python setup.py install_egg_info
+install: build
+	python setup.py install --skip-build
 
-$(DOCS_BUILD_DIR): $(DOCS_DIR) build
-	make -C $< html
+install_py: build_py
+	python setup.py install --skip-build
+
+install_user: build
+	python setup.py install --skip-build --user
+
+install_user_py: build_py
+	python setup.py install --skip-build --user
+
+docs: build
+	make -C docs html
 
 docs_py: build_py
 	make -C docs html
 
 docs_put: docs
-	rsync -avz --delete -e ssh $(EXPORT_DIR)/docs/html/ ${USER},pydoop@web.sourceforge.net:/home/project-web/pydoop/htdocs/docs/
+	rsync -avz --delete -e ssh docs/_build/html/ ${USER},pydoop@web.sourceforge.net:/home/project-web/pydoop/htdocs/docs/
 
-$(DIST_DIR): docs
+docs_view: docs
+	yelp docs/_build/html/index.html &
+
+dist: docs
 	rm -rf $(EXPORT_DIR) && svn export . $(EXPORT_DIR)
-	$(COPYRIGHTER) $(EXPORT_DIR)/setup.py
-	$(COPYRIGHTER) -r $(EXPORT_DIR)/pydoop $(EXPORT_DIR)/test $(EXPORT_DIR)/examples --exclude-dirs mapred,mapreduce
-	$(COPYRIGHTER) -r -c "//" $(EXPORT_DIR)/src
-	$(COPYRIGHTER) -r -c "//" $(EXPORT_DIR)/examples/input_format/net
+	$(COPYRIGHTER) -r $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
 	cd $(EXPORT_DIR) && python setup.py sdist
 
 clean:
-	rm -rf $(BUILD_DIR)
-	rm -fv $(GENERATED_SRC_FILES)
-	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
+	rm -rf build
+	rm -f $(GENERATED_SRC_FILES)
 	make -C docs clean
 	make -C examples/self_contained clean
+	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
 
 distclean: clean
-	rm -rf $(EXPORT_DIR) docs/_build/*
+	rm -rf $(EXPORT_DIR)
 	make -C examples/self_contained distclean
