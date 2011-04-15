@@ -74,6 +74,8 @@ class hdfs_default_tc(hdfs_basic_tc):
     self.fs.delete(path)
 
   def connect(self):
+    print
+    print "(host, port) = %r" % ((self.fs.host, self.fs.port),)
     path = "/tmp/pydoop_test_connect"
     try:
       self.fs.delete(path)
@@ -85,7 +87,6 @@ class hdfs_default_tc(hdfs_basic_tc):
     new_user = "nobody"
     new_group = "users"
     self.fs.chmod(path, 0777)
-    print
     base_args = self.HDFS_HOST, self.HDFS_PORT
     cases = [ # (hdfs_args_tuple, (expected_owner, expected_group))
       (base_args, (default_user, default_group)),

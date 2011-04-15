@@ -289,7 +289,6 @@ class hdfs_file(object):
     return self.f.flush()
 
 
-
 class hdfs(hdfs_fs):
   """
   Represents a handle to an HDFS instance.
@@ -316,6 +315,27 @@ class hdfs(hdfs_fs):
   """
   def __init__(self, host, port, user=None, groups=[]):
     super(hdfs, self).__init__(host, port, user or "")
+    try:
+      h, p = self.get_path_info("/")["name"].rsplit("/", 2)[1].split(":")
+    except ValueError:
+      h, p = "", 0
+    else:
+      p = int(p)
+    self.__host, self.__port = h, p
+
+  @property
+  def host(self):
+    """
+    The actual hdfs hostname (empty string for the local fs).
+    """
+    return self.__host
+
+  @property
+  def port(self):
+    """
+    The actual hdfs port (0 for the local fs).
+    """
+    return self.__port
 
   def open_file(self, path,
                 flags=os.O_RDONLY,

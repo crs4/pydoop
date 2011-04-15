@@ -20,6 +20,8 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
       ]
     for fs in fs_list:
       self.__connect_helper(fs)
+      self.assertEqual(fs.host, '')
+      self.assertEqual(fs.port, 0)
       fs.close()
 
   def __connect_helper(self, fs):
