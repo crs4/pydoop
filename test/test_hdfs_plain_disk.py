@@ -3,7 +3,7 @@
 
 import unittest, tempfile, os, pwd, grp
 from test_hdfs_basic_class import hdfs_basic_tc, basic_tests
-from pydoop.hdfs import hdfs as HDFS
+import pydoop.hdfs as hdfs
 
 
 class hdfs_plain_disk_tc(hdfs_basic_tc):
@@ -13,16 +13,27 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
   
   def connect(self):
     fs_list = [
-      HDFS(self.HDFS_HOST, self.HDFS_PORT),
-      HDFS(self.HDFS_HOST, self.HDFS_PORT, "nobody"),
-      HDFS(self.HDFS_HOST, self.HDFS_PORT, "nobody", ["users"]),
-      HDFS(self.HDFS_HOST, self.HDFS_PORT, "nobody", ["users", "nobody"]),
+      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT),
+      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody"),
+      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody", ["users"]),
+      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody", ["users", "nobody"]),
       ]
     for fs in fs_list:
       self.__connect_helper(fs)
       self.assertEqual(fs.host, '')
       self.assertEqual(fs.port, 0)
       fs.close()
+
+  def top_level_open(self):
+    path = "file:/tmp/test_hdfs_open"
+    f = hdfs.open(path, "w")
+    f.write(path)
+    f.close()
+    f = hdfs.open(path)
+    self.assertEqual(f.read(), path)
+    f.close()
+    f.fs.delete(path)
+    f.fs.close()
 
   def __connect_helper(self, fs):
     path = os.path.join(tempfile.mkdtemp(prefix="pydoop_test_hdfs"), "foo")

@@ -1,7 +1,9 @@
 2011-04-15    <simleo@neuron.crs4.it>
 
-	* pydoop/hdfs.py (hdfs.__init__): changed to store a reference to
-	the actual host and port.
+	* pydoop/hdfs.py: added top-level open function.
+	(hdfs.__init__): changed to store a reference to the actual host
+	and port.
+	(hdfs.open_file): changed to accept "r" and "w" opening modes.
 
 2011-04-14    <simleo@neuron.crs4.it>
 

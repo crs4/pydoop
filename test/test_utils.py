@@ -2,40 +2,48 @@
 # END_COPYRIGHT
 
 import os, unittest
-from pydoop.utils import split_hdfs_path, jc_configure
-from pydoop.utils import jc_configure_int, jc_configure_bool, \
-     jc_configure_float, DEFAULT_PORT, DEFAULT_USER
+import pydoop.utils as pu
 import pydoop._pipes as pp
 
 
-split_hdfs_path_examples = {
-  "good": [
-    ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
-    ('hdfs://localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
-    ('hdfs://localhost/foo/bar', ('localhost', DEFAULT_PORT, '/foo/bar')),
-    ('hdfs:///foo/bar', ('default', 0, '/foo/bar')),
-    ('file:///foo/bar', ('', 0, '/foo/bar')),
-    ('file:/foo/bar', ('', 0, '/foo/bar')),
-    ('file:///foo', ('', 0, '/foo')),
-    ('file:/foo', ('', 0, '/foo')),
-    ('file://localhost:9000/foo/bar', ('', 0, '/localhost:9000/foo/bar')),
-    ('//localhost:9000/foo/bar', ('localhost', 9000, '/foo/bar')),
-    ('/foo/bar', ('default', 0, '/foo/bar')),
-    ('foo/bar', ('default', 0, '/user/%s/foo/bar' % DEFAULT_USER)),
-    ],
-  "good_with_user": [
-    ('a/b', None, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
-    ('a/b', DEFAULT_USER, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
-    ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
-    ],
-  "bad": [
+class split_hdfs_path_tc(unittest.TestCase):
+
+  def good(self):
+    for p, r in [
+      ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
+      ('hdfs://localhost:9000/a/b', ('localhost', 9000, '/a/b')),
+      ('hdfs://localhost/a/b', ('localhost', pu.DEFAULT_PORT, '/a/b')),
+      ('hdfs:///a/b', ('default', 0, '/a/b')),
+      ('file:///a/b', ('', 0, '/a/b')),
+      ('file:/a/b', ('', 0, '/a/b')),
+      ('file:///a', ('', 0, '/a')),
+      ('file:/a', ('', 0, '/a')),
+      ('file://localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
+      ('//localhost:9000/a/b', ('localhost', 9000, '/a/b')),
+      ('/a/b', ('default', 0, '/a/b')),
+      ('a/b', ('default', 0, '/user/%s/a/b' % pu.DEFAULT_USER)),
+      ]:
+      self.assertEqual(pu.split_hdfs_path(p), r)
+
+  def good_with_user(self):
+    for p, u, r in [
+      ('a/b', None, ('default', 0, '/user/%s/a/b' % pu.DEFAULT_USER)),
+      ('a/b', pu.DEFAULT_USER,
+       ('default', 0, '/user/%s/a/b' % pu.DEFAULT_USER)),
+      ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
+      ]:
+      self.assertEqual(pu.split_hdfs_path(p, u), r)
+
+  def bad(self):
+    for p, r in [
     ('ftp://localhost:9000/', ()),          # bad scheme
     ('hdfs://localhost:spam/', ()),         # port is not an int
     ('hdfs://localhost:9000', ()),          # path part is empty
-    ('hdfs://localhost:9000/foo:bar', ()),  # colon outside netloc
-    ('/localhost:9000/foo/bar', ()),        # colon outside netloc
-    ],
-  }
+    ('hdfs://localhost:9000/a:b', ()),      # colon outside netloc
+    ('/localhost:9000/a/b', ()),            # colon outside netloc
+    ]:
+      self.assertRaises(ValueError, pu.split_hdfs_path, p)
+
 
 configure_examples = {
   'a' : ['str', 'this is a string'],
@@ -52,14 +60,6 @@ configure_examples = {
 
 class utils_tc(unittest.TestCase):
 
-  def split_hdfs_path(self):
-    for p, r in split_hdfs_path_examples["good"]:
-      self.assertEqual(split_hdfs_path(p), r)
-    for p, u, r in split_hdfs_path_examples["good_with_user"]:
-      self.assertEqual(split_hdfs_path(p, u), r)
-    for p, r in split_hdfs_path_examples["bad"]:
-      self.assertRaises(UserWarning, split_hdfs_path, p)
-
   def jc_configure_plain(self):
     w = configure_examples
     d = {}
@@ -72,16 +72,16 @@ class utils_tc(unittest.TestCase):
     for k in w.keys():
       self.assertTrue(jc.hasKey(k))
       if w[k][0] == 'str':
-        jc_configure(o, jc, k, k)
+        pu.jc_configure(o, jc, k, k)
         self.assertEqual(getattr(o,k), w[k][1])
       elif w[k][0] == 'int':
-        jc_configure_int(o, jc, k, k)
+        pu.jc_configure_int(o, jc, k, k)
         self.assertEqual(getattr(o, k), int(w[k][1]))
       elif w[k][0] == 'bool':
-        jc_configure_bool(o, jc, k, k)
+        pu.jc_configure_bool(o, jc, k, k)
         self.assertEqual(getattr(o, k), w[k][1] == 'true')
       elif w[k][0] == 'float':
-        jc_configure_float(o, jc, k, k)
+        pu.jc_configure_float(o, jc, k, k)
         self.assertAlmostEqual(getattr(o, k), float(w[k][1]))
 
   def jc_configure_default(self):
@@ -97,13 +97,13 @@ class utils_tc(unittest.TestCase):
       nk = 'not-here-%s' % k
       self.assertFalse(jc.hasKey(nk))
       if w[k][0] == 'str':
-        jc_configure(o, jc, nk, k, w[k][1])
+        pu.jc_configure(o, jc, nk, k, w[k][1])
         self.assertEqual(getattr(o,k), w[k][1])
       elif w[k][0] == 'int':
-        jc_configure_int(o, jc, nk, k, int(w[k][1]))
+        pu.jc_configure_int(o, jc, nk, k, int(w[k][1]))
         self.assertEqual(getattr(o, k), int(w[k][1]))
       elif w[k][0] == 'bool':
-        jc_configure_bool(o, jc, nk, k, w[k][1]=='true')
+        pu.jc_configure_bool(o, jc, nk, k, w[k][1]=='true')
         self.assertEqual(getattr(o, k), w[k][1] == 'true')
 
   def jc_configure_no_default(self):
@@ -118,7 +118,7 @@ class utils_tc(unittest.TestCase):
     for k in w.keys():
       nk = 'not-here-%s' % k
       self.assertFalse(jc.hasKey(nk))
-      self.assertRaises(UserWarning, jc_configure, o, jc, nk, k)
+      self.assertRaises(UserWarning, pu.jc_configure, o, jc, nk, k)
 
   def hadoop_serialization(self):
     for k in range(-256,256, 4):
@@ -166,11 +166,13 @@ def my_serialize(t):
 
 def suite():
   suite = unittest.TestSuite()
-  suite.addTest(utils_tc('split_hdfs_path'))
   suite.addTest(utils_tc('jc_configure_plain'))
   suite.addTest(utils_tc('jc_configure_default'))
   suite.addTest(utils_tc('jc_configure_no_default'))
   suite.addTest(utils_tc('hadoop_serialization'))
+  suite.addTest(split_hdfs_path_tc('good'))
+  suite.addTest(split_hdfs_path_tc('good_with_user'))
+  suite.addTest(split_hdfs_path_tc('bad'))
   return suite
 
 

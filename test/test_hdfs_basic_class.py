@@ -5,10 +5,11 @@ import sys, os, unittest, random
 from ctypes import create_string_buffer
 import xml.dom.minidom
 
-from pydoop.hdfs import HADOOP_HOME, HADOOP_CONF_DIR, hdfs as HDFS
+import pydoop.hdfs as hdfs
 from pydoop.hadoop_utils import get_hadoop_version
 
-HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
+HADOOP_HOME = hdfs.HADOOP_HOME
+HADOOP_CONF_DIR = hdfs.HADOOP_CONF_DIR
 HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 
 
@@ -22,7 +23,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.HDFS_PORT = HDFS_PORT
 
   def setUp(self):
-    self.fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
+    self.fs = hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT)
 
   def tearDown(self):
     self.fs.close()
@@ -77,21 +78,14 @@ class hdfs_basic_tc(unittest.TestCase):
 
   def open_close(self):
     path = 'foobar.txt'
-    flags = os.O_WRONLY
-    buff_size = 0
-    replication = 0
-    blocksize = 0
-    f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
-    f.close()
-    self.assertTrue(self.fs.exists(path))
-    flags = os.O_RDONLY
-    f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
-    f.close()
+    for flags in "w", os.O_WRONLY:
+      self.fs.open_file(path, flags).close()
+      self.assertTrue(self.fs.exists(path))
+    for flags in "r", os.O_RDONLY:
+      self.fs.open_file(path, flags).close()
+    self.assertRaises(ValueError, self.fs.open_file, path, "a")
     self.fs.delete(path)
-    self.assertRaisesExternal(
-      IOError,
-      self.fs.open_file, path, flags, buff_size, replication, blocksize
-      )
+    self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
 
   def file_attrs(self):
     path = "/tmp/test_file_attrs"
@@ -117,16 +111,14 @@ class hdfs_basic_tc(unittest.TestCase):
     f = fs.open_file(path, flags, buffer_size, replication, block_size)
     data = ''
     txt = 'hello there!'
-    for i in range(N):
+    for _ in xrange(N):
       res = f.write(txt)
       data += txt
-      self.assertEqual(res, len(txt),
-                       "wrong number of bytes written.")
+      self.assertEqual(res, len(txt), "wrong number of bytes written")
     f.close()
     return data
 
   def available(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
     txt = 'hello there!'
     N = 10
@@ -139,11 +131,10 @@ class hdfs_basic_tc(unittest.TestCase):
     self.fs.delete(path)
 
   def get_path_info(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
     txt = 'hello there!'
     N = 10
-    data = self._write_example_file(path, N, txt)
+    _ = self._write_example_file(path, N, txt)
     info = self.fs.get_path_info(path)
     self.__check_path_info(info, kind="file", size=N*len(txt))
     self.assertEqual(info['name'].rsplit("/",1)[1], path)
@@ -158,7 +149,6 @@ class hdfs_basic_tc(unittest.TestCase):
     self.assertRaises(IOError, self.fs.get_path_info, path)
 
   def write_read(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
     txt = 'hello there!'
     N = 10
@@ -173,7 +163,7 @@ class hdfs_basic_tc(unittest.TestCase):
     #--
     f = self.fs.open_file(path, flags, 0, 0, 0)
     pos = 0
-    for i in range(N):
+    for _ in xrange(N):
       txt2 = f.read(len(txt))
       self.assertEqual(len(txt2), len(txt), "wrong number of bytes read.")
       self.assertEqual(txt2, txt, "wrong bytes read.")
@@ -183,7 +173,7 @@ class hdfs_basic_tc(unittest.TestCase):
     #--
     f = self.fs.open_file(path, flags, 0, 0, 0)
     pos = 0
-    for i in range(N):
+    for _ in xrange(N):
       txt2 = f.pread(pos, len(txt))
       self.assertEqual(len(txt2), len(txt), "wrong number of bytes pread.")
       self.assertEqual(txt2, txt, "wrong pread.")
@@ -191,7 +181,7 @@ class hdfs_basic_tc(unittest.TestCase):
       pos += len(txt)
     f.close()
     flags = os.O_RDONLY
-    f = fs.open_file(path, flags, 0, 0, 0)
+    f = self.fs.open_file(path, flags, 0, 0, 0)
     self.assertRaisesExternal(IOError, f.write, txt)
     f.close()
     #--
@@ -248,26 +238,21 @@ class hdfs_basic_tc(unittest.TestCase):
     pass
 
   def copy_on_self(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
     path = 'foobar.txt'
     path1 = 'foobar1.txt'
     txt  = 'hello there!'
-    N  = 10
-    data = self._write_example_file(path, N, txt, fs)
-    fs.copy(path, fs, path1)
-    fs.delete(path)
-    self.assertFalse(fs.exists(path))
-    self.assertTrue(fs.exists(path1))
-    flags = os.O_RDONLY
-    f = fs.open_file(path1, flags, 0, 0, 0)
-    data2 = f.read(len(data))
-    self.assertEqual(len(data2), len(data),
-                     "wrong number of bytes read.")
-    self.assertEqual(data2, data,
-                     "wrong bytes read.")
+    N = 10
+    data = self._write_example_file(path, N, txt, self.fs)
+    self.fs.copy(path, self.fs, path1)
+    self.fs.delete(path)
+    self.assertFalse(self.fs.exists(path))
+    self.assertTrue(self.fs.exists(path1))
+    f = self.fs.open_file(path1)
+    data2 = f.read()
+    self.assertEqual(len(data2), len(data), "wrong number of bytes read.")
+    self.assertEqual(data2, data, "wrong bytes read.")
     f.close()
-    fs.delete(path1)
-    fs.close()
+    self.fs.delete(path1)
 
   def move(self):
     pass
@@ -277,7 +262,7 @@ class hdfs_basic_tc(unittest.TestCase):
     new_path = 'MOVED-' + old_path
     txt = 'hello there!'
     N = 100
-    data = self._write_example_file(old_path, N, txt)
+    _ = self._write_example_file(old_path, N, txt)
     self.fs.rename(old_path, new_path)
     self.assertTrue(self.fs.exists(new_path))
     self.assertFalse(self.fs.exists(old_path))
@@ -317,7 +302,7 @@ class hdfs_basic_tc(unittest.TestCase):
     paths = [os.path.join(new_d, fn) for fn in basenames]
     txt = 'hello there!'
     N = 10
-    data = [self._write_example_file(p, N, txt) for p in paths]
+    _ = [self._write_example_file(p, N, txt) for p in paths]
     infos = self.fs.list_directory(new_d)
     self.assertEqual(len(infos), len(paths))
     for i in infos:
@@ -414,6 +399,9 @@ class hdfs_basic_tc(unittest.TestCase):
       f.close()
       self.fs.delete(path)
 
+  def top_level_open(self):
+    pass
+
   def __check_path_info(self, info, **expected_values):
     keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
             'permissions', 'block_size', 'last_access', 'size')
@@ -476,4 +464,5 @@ def basic_tests():
     'iter_lines',
     'seek',
     'block_boundary',
+    'top_level_open',
     ]

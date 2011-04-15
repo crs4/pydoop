@@ -37,7 +37,7 @@ can set the environment variable externally and it will override the
 above setting.
 """
 
-import os, glob, grp
+import os, glob
 
 
 DEFAULT_HADOOP_HOME = "/opt/hadoop"  # should only be useful for local use
@@ -59,6 +59,7 @@ os.environ["LIBHDFS_OPTS"] = os.getenv("LIBHDFS_OPTS", DEFAULT_LIBHDFS_OPTS)
 
 
 from _hdfs import hdfs_fs
+from utils import split_hdfs_path
 
 
 class hdfs_file(object):
@@ -352,8 +353,9 @@ class hdfs(hdfs_fs):
 
     :type path: string
     :param path: the full path to the file
-    :type flags: int
-    :param flags: opening flags -- :data:`os.O_RDONLY` or :data:`os.O_WRONLY`
+    :type flags: string or int
+    :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for reading,
+      ``'w'`` or :data:`os.O_WRONLY` for writing
     :type buff_size: int
     :param buff_size: read/write buffer size in bytes
     :type replication: int
@@ -366,6 +368,12 @@ class hdfs(hdfs_fs):
     :rtpye: :class:`hdfs_file`
     :return: handle to the open file
     """
+    if flags == "r":
+      flags = os.O_RDONLY
+    elif flags == "w":
+      flags = os.O_WRONLY
+    if flags != os.O_RDONLY and flags != os.O_WRONLY:
+      raise ValueError("opening mode %r not supported" % flags)
     return hdfs_file(super(hdfs, self).open_file(path, flags, buff_size,
                                                  replication, blocksize),
                      self, path, readline_chunk_size)
@@ -577,3 +585,18 @@ class hdfs(hdfs_fs):
     :param atime: new access time in seconds
     """
     return super(hdfs, self).utime(path, int(mtime), int(atime))
+
+
+def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
+         readline_chunk_size=hdfs_file.DEFAULT_CHUNK_SIZE, user=None):
+  """
+  Open a file, returning an :class:`hdfs_file` object.
+
+  ``hdfs_path`` and ``user`` are passed to
+  :func:`~pydoop.utils.split_hdfs_path`, while the other args are
+  passed to the :class:`hdfs_file` constructor.
+  """
+  host, port, path = split_hdfs_path(hdfs_path, user)
+  fs = hdfs(host, port, user)
+  return fs.open_file(path, mode, buff_size, replication, blocksize,
+                      readline_chunk_size)

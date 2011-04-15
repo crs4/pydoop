@@ -4,14 +4,12 @@
 """
 This module contains general utility functions for application writing.
 """
-
 import os, re
 from struct import pack
 import _pipes as pp
 
 
-# as in org/apache/hadoop/hdfs/server/namenode/NameNode.java
-DEFAULT_PORT = 8020
+DEFAULT_PORT = 8020  # org/apache/hadoop/hdfs/server/namenode/NameNode.java
 DEFAULT_USER = os.environ["USER"]
 
 
@@ -130,7 +128,7 @@ class _HdfsPathSplitter(object):
   def raise_bad_path(cls, hdfs_path, why=None):
     msg = "'%s' is not a valid HDFS path" % hdfs_path
     msg += " (%s)" % why if why else ""
-    raise_pydoop_exception(msg)
+    raise ValueError(msg)
 
   @classmethod
   def split(cls, hdfs_path, user):

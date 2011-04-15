@@ -2,7 +2,8 @@
 # END_COPYRIGHT
 
 import unittest, os, pwd
-from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, HDFS
+from test_hdfs_basic_class import hdfs_basic_tc, basic_tests#, HDFS
+import pydoop.hdfs as hdfs
 
 
 DEFAULT_HDFS_HOST = "localhost"
@@ -101,7 +102,7 @@ class hdfs_default_tc(hdfs_basic_tc):
       ]
     for hdfs_args, (expected_owner, expected_group) in cases:
       print "hdfs_args = %r" % (hdfs_args,)
-      fs = HDFS(*hdfs_args)
+      fs = hdfs.hdfs(*hdfs_args)
       self.__connect_helper(fs, path, expected_owner, expected_group)
     self.fs.delete(path)
     
@@ -115,8 +116,8 @@ class hdfs_default_tc(hdfs_basic_tc):
     self.assertEqual(hdfs_path_info["group"], expected_group)
     
   def copy(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
-    fs_plain_disk = HDFS('', 0)
+    fs = hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT)
+    fs_plain_disk = hdfs.hdfs('', 0)
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
@@ -137,8 +138,8 @@ class hdfs_default_tc(hdfs_basic_tc):
     fs.close()
     
   def move(self):
-    fs = HDFS(self.HDFS_HOST, self.HDFS_PORT)
-    fs_plain_disk = HDFS('', 0)
+    fs = hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT)
+    fs_plain_disk = hdfs.hdfs('', 0)
     path = 'foobar.txt'
     txt  = 'hello there!'
     N  = 10
@@ -262,6 +263,17 @@ class hdfs_default_tc(hdfs_basic_tc):
       hosts_per_block = self.fs.get_hosts(path, start, length)
       self.assertEqual(len(hosts_per_block), i+1)
     self.fs.delete(path)
+
+  def top_level_open(self):
+    path = "test_hdfs_open"
+    f = hdfs.open(path, "w")
+    f.write(path)
+    f.close()
+    f = hdfs.open(path)
+    self.assertEqual(f.read(), path)
+    f.close()
+    f.fs.delete(path)
+    f.fs.close()
 
 
 class hdfs_local_tc(hdfs_default_tc):
