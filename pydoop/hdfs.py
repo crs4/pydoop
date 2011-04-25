@@ -73,12 +73,15 @@ class hdfs_file(object):
   DEFAULT_CHUNK_SIZE = 16384
   ENDL = os.linesep
 
-  def __init__(self, raw_hdfs_file, fs, name, chunk_size=DEFAULT_CHUNK_SIZE):
+  def __init__(self, raw_hdfs_file, fs, name, flags,
+               chunk_size=DEFAULT_CHUNK_SIZE):
     if not chunk_size > 0:
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file
     self.__fs = fs
     self.__name = fs.get_path_info(name)["name"]
+    self.__size = fs.get_path_info(name)["size"]
+    self.__mode = "r" if flags == os.O_RDONLY else "w"
     self.chunk_size = chunk_size
     self.__reset()
 
@@ -107,7 +110,14 @@ class hdfs_file(object):
     """
     The file's size in bytes.
     """
-    return self.fs.get_path_info(self.name)["size"]
+    return self.__size
+
+  @property
+  def mode(self):
+    """
+    The I/O mode for the file.
+    """
+    return self.__mode
 
   def __reset(self):
     self.buffer_list = []
@@ -176,7 +186,10 @@ class hdfs_file(object):
     """
     Close the file.
     """
-    return self.f.close()
+    retval = self.f.close()
+    if self.mode == "w":
+      self.__size = self.fs.get_path_info(self.name)["size"]
+    return retval
   
   def pread(self, position, length):
     """
@@ -381,7 +394,7 @@ class hdfs(hdfs_fs):
       raise ValueError("opening mode %r not supported" % flags)
     return hdfs_file(super(hdfs, self).open_file(path, flags, buff_size,
                                                  replication, blocksize),
-                     self, path, readline_chunk_size)
+                     self, path, flags, readline_chunk_size)
 
   def capacity(self):
     """

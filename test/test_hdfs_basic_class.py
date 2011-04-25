@@ -91,7 +91,14 @@ class hdfs_basic_tc(unittest.TestCase):
     path = "/tmp/test_file_attrs"
     f = self.fs.open_file(path, os.O_WRONLY)
     self.assertTrue(f.name.endswith(path))
-    self.assertEqual(f.size, self.fs.get_path_info(path)["size"])
+    self.assertEqual(f.size, 0)
+    self.assertEqual(f.mode, "w")
+    f.write(path)
+    f.close()
+    self.assertEqual(f.size, len(path))
+    f = self.fs.open_file(path)
+    self.assertEqual(f.size, len(path))
+    self.assertEqual(f.mode, "r")
     f.close()
     self.fs.delete(path)
 

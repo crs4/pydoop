@@ -1,3 +1,7 @@
+2011-04-25    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py (hdfs_file): added mode property; fixed #337.
+
 2011-04-15    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py: added top-level open function.
