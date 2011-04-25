@@ -8,7 +8,7 @@ A trivial application that filters out words whose occurrence falls
 below a specified value.
 """
 
-import sys, struct
+import struct
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
 from pydoop.utils import jc_configure_int
 
@@ -36,9 +36,5 @@ class FilterReducer(Reducer):
     pass
 
 
-def main(argv):
-  runTask(Factory(FilterMapper, FilterReducer))
-
-
 if __name__ == "__main__":
-  main(sys.argv)
+  runTask(Factory(FilterMapper, FilterReducer))

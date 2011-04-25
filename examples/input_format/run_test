@@ -94,7 +94,7 @@ def main(argv):
     parser.print_help()
     sys.exit(2)
 
-  # output HDFS bust be the same as the input one
+  # output HDFS must be the same as the input one
   opt.output = pu.split_hdfs_path(opt.output)[-1]
 
   hostname, port, _ = pu.split_hdfs_path(input_)

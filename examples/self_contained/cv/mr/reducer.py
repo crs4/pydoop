@@ -1,7 +1,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys
 import pydoop.pipes as pp
 
 

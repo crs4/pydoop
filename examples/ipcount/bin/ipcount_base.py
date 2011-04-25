@@ -3,7 +3,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys
 import pydoop.pipes as pp
 
 
@@ -22,9 +21,5 @@ class Reducer(pp.Reducer):
     context.emit(context.getInputKey(), str(s))
 
 
-def main(argv):
-  pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))
-
-
 if __name__ == "__main__":
-  main(sys.argv)
+  pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))

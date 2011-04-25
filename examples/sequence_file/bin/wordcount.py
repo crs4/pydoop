@@ -3,7 +3,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, struct
+import struct
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
 
 
@@ -24,9 +24,5 @@ class WordCountReducer(Reducer):
     context.emit(context.getInputKey(), struct.pack(">i", s))
 
 
-def main(argv):
-  runTask(Factory(WordCountMapper, WordCountReducer))
-
-
 if __name__ == "__main__":
-  main(sys.argv)
+  runTask(Factory(WordCountMapper, WordCountReducer))

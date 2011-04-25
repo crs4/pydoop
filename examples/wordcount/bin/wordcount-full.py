@@ -12,15 +12,10 @@ shown here mimic the behavior of the default ones.
 import sys, os, logging, struct
 logging.basicConfig(level=logging.DEBUG)
 
-from pydoop.pipes import Mapper, Reducer, Factory, runTask
-from pydoop.pipes import RecordReader, InputSplit, RecordWriter
-from pydoop.pipes import Partitioner
+import pydoop.pipes as pp
 from pydoop.utils import jc_configure, jc_configure_int
-
-from pydoop.hdfs import hdfs
-from pydoop.utils import split_hdfs_path
-
 from pydoop.hadoop_utils import get_hadoop_version
+import pydoop.hdfs as hdfs
 
 HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
 HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
@@ -30,10 +25,10 @@ INPUT_WORDS = "INPUT_WORDS"
 OUTPUT_WORDS = "OUTPUT_WORDS"
 
 
-class WordCountMapper(Mapper):
+class Mapper(pp.Mapper):
 
   def __init__(self, context):
-    super(WordCountMapper, self).__init__(context)
+    super(Mapper, self).__init__(context)
     context.setStatus("initializing")
     self.inputWords = context.getCounter(WORDCOUNT, INPUT_WORDS)
     self.logger = logging.getLogger("Mapper")
@@ -47,10 +42,10 @@ class WordCountMapper(Mapper):
     context.incrementCounter(self.inputWords, len(words))
 
 
-class WordCountReducer(Reducer):
+class Reducer(pp.Reducer):
 
   def __init__(self, context):
-    super(WordCountReducer, self).__init__(context)
+    super(Reducer, self).__init__(context)
     context.setStatus("initializing")
     self.outputWords = context.getCounter(WORDCOUNT, OUTPUT_WORDS)
   
@@ -62,21 +57,19 @@ class WordCountReducer(Reducer):
     context.incrementCounter(self.outputWords, 1)
 
 
-class WordCountReader(RecordReader):
+class Reader(pp.RecordReader):
   """
   Mimics Hadoop's default LineRecordReader (keys are byte offsets with
   respect to the whole file; values are text lines).
   """
   def __init__(self, context):
-    super(WordCountReader, self).__init__()
+    super(Reader, self).__init__()
     self.fs = self.file = None
-    self.logger = logging.getLogger("WordCountReader")
-    self.isplit = InputSplit(context.getInputSplit())
+    self.logger = logging.getLogger("Reader")
+    self.isplit = pp.InputSplit(context.getInputSplit())
     for a in "filename", "offset", "length":
       self.logger.debug("isplit.%s = %r" % (a, getattr(self.isplit, a)))
-    self.host, self.port, self.fpath = split_hdfs_path(self.isplit.filename)
-    self.fs = hdfs(self.host, self.port)
-    self.file = self.fs.open_file(self.fpath, os.O_RDONLY)
+    self.file = hdfs.open(self.isplit.filename)
     self.logger.debug("readline chunk size = %r" % self.file.chunk_size)
     self.file.seek(self.isplit.offset)
     self.bytes_read = 0
@@ -86,7 +79,7 @@ class WordCountReader(RecordReader):
 
   def __del__(self):
     self.file.close()
-    self.fs.close()
+    self.file.fs.close()
     
   def next(self):
     if self.bytes_read > self.isplit.length:  # end of input split
@@ -102,11 +95,10 @@ class WordCountReader(RecordReader):
     return min(float(self.bytes_read)/self.isplit.length, 1.0)
 
 
-class WordCountWriter(RecordWriter):
+class Writer(pp.RecordWriter):
   
   def __init__(self, context):
-    super(WordCountWriter, self).__init__(context)
-    self.fs = self.file = None
+    super(Writer, self).__init__(context)
     jc = context.getJobConf()
     if HADOOP_VERSION < (0,21,0):
       jc_configure_int(self, jc, "mapred.task.partition", "part")
@@ -118,22 +110,20 @@ class WordCountWriter(RecordWriter):
       jc_configure(self, jc, "mapreduce.output.textoutputformat.separator",
                    "sep", "\t")
     self.outfn = "%s/part-%05d" % (self.outdir, self.part)
-    self.host, self.port, self.fpath = split_hdfs_path(self.outfn)
-    self.fs = hdfs(self.host, self.port)
-    self.file = self.fs.open_file(self.fpath, os.O_WRONLY)
+    self.file = hdfs.open(self.outfn, "w")
 
   def __del__(self):
     self.file.close()
-    self.fs.close()
+    self.file.fs.close()
 
   def emit(self, key, value):
     self.file.write("%s%s%s\n" % (key, self.sep, value))
 
 
-class WordCountPartitioner(Partitioner):
+class Partitioner(pp.Partitioner):
 
   def __init__(self, context):
-    super(WordCountPartitioner, self).__init__(context)
+    super(Partitioner, self).__init__(context)
     self.logger = logging.getLogger("Partitioner")
 
   def partition(self, key, numOfReduces):
@@ -142,14 +132,11 @@ class WordCountPartitioner(Partitioner):
     return reducer_id
 
 
-def main(argv):
-  runTask(Factory(WordCountMapper, WordCountReducer,
-                  record_reader_class=WordCountReader,
-                  record_writer_class=WordCountWriter,
-                  partitioner_class=WordCountPartitioner,
-                  combiner_class=WordCountReducer
-                  ))
-
-
 if __name__ == "__main__":
-  main(sys.argv)
+    pp.runTask(pp.Factory(
+      Mapper, Reducer,
+      record_reader_class=Reader,
+      record_writer_class=Writer,
+      partitioner_class=Partitioner,
+      combiner_class=Reducer
+      ))
