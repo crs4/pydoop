@@ -1,3 +1,13 @@
+== Pydoop 0.4.0 ==
+
+* hdfs: added a module-level open function that integrates utils.split_hdfs_path functionalities.
+
+* hdfs_file: added name, size and mode properties; added context management protocol.
+
+* hdfs_file.read: length can now be omitted (or negative) to read the whole file.
+
+* hdfs_file.seek: added support for seeking relative to the current position or to the file's end.
+
 == Pydoop 0.3.7 ==
 
 * fixed a bug that was causing hdfs_file.readline to truncate long lines.
