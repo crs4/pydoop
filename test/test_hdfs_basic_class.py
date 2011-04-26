@@ -83,6 +83,13 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertTrue(self.fs.exists(path))
     for flags in "r", os.O_RDONLY:
       self.fs.open_file(path, flags).close()
+    #--
+    f = self.fs.open_file(path, "r")
+    self.assertFalse(f.closed)
+    f.close()
+    self.assertTrue(f.closed)
+    self.assertRaises(ValueError, f.read, 1)
+    #--
     self.assertRaises(ValueError, self.fs.open_file, path, "a")
     self.fs.delete(path)
     self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
@@ -371,18 +378,22 @@ class hdfs_basic_tc(unittest.TestCase):
     text = "".join(lines)
     path = "foobar.txt"
     for chunk_size in range(1, 2+len(text)):
-      f = self.fs.open_file(path, os.O_WRONLY, 0, 0, 0, chunk_size)
-      f.write(text)
-      f.close()
-      f = self.fs.open_file(path, os.O_RDONLY, 0, 0, 0, chunk_size)
-      for i, l in enumerate(lines):
-        f.seek(sum(map(len, lines[:i])))
-        self.assertEqual(f.readline(), lines[i])
-        f.seek(0)
-        self.assertEqual(f.readline(), lines[0])
-        f.seek(sum(map(len, lines[:i])))
-        self.assertEqual(f.readline(), lines[i])
-      f.close()
+      with self.fs.open_file(path, "w") as f:
+        f.write(text)
+      with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
+        for i, l in enumerate(lines):
+          f.seek(sum(map(len, lines[:i])))
+          self.assertEqual(f.readline(), lines[i])
+          f.seek(0)
+          self.assertEqual(f.readline(), lines[0])
+          f.seek(sum(map(len, lines[:i])))
+          self.assertEqual(f.readline(), lines[i])
+      with self.fs.open_file(path) as f:
+        f.seek(1)
+        f.seek(1, os.SEEK_CUR)
+        self.assertEqual(f.tell(), 2)
+        f.seek(-1, os.SEEK_END)
+        self.assertEqual(f.tell(), len(text)-1)
     self.fs.delete(path)
 
   def block_boundary(self):

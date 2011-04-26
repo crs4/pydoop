@@ -62,12 +62,18 @@ from _hdfs import hdfs_fs
 from utils import split_hdfs_path
 
 
+def _complain_ifclosed(closed):
+  if closed:
+    raise ValueError("I/O operation on closed object")
+
+
 class hdfs_file(object):
   """
   Instances of this class represent HDFS file objects.
 
-  Objects from this class should not be instantiated directly. To get an HDFS
-  file object, call :meth:`hdfs.open_file`\ .
+  Objects from this class should not be instantiated directly.  The
+  preferred way to open an HDFS file is with the :func:`open` function;
+  alternatively, :meth:`hdfs.open_file` can be used.
   """
   
   DEFAULT_CHUNK_SIZE = 16384
@@ -83,7 +89,14 @@ class hdfs_file(object):
     self.__size = fs.get_path_info(name)["size"]
     self.__mode = "r" if flags == os.O_RDONLY else "w"
     self.chunk_size = chunk_size
+    self.closed = False
     self.__reset()
+
+  def __reset(self):
+    self.buffer_list = []
+    self.chunk = ""
+    self.EOF = False
+    self.p = 0
 
   def __enter__(self):
     return self
@@ -108,7 +121,8 @@ class hdfs_file(object):
   @property
   def size(self):
     """
-    The file's size in bytes.
+    The file's size in bytes. This attribute is initialized when the
+    file is opened and updated when it is closed.
     """
     return self.__size
 
@@ -118,12 +132,6 @@ class hdfs_file(object):
     The I/O mode for the file.
     """
     return self.__mode
-
-  def __reset(self):
-    self.buffer_list = []
-    self.chunk = ""
-    self.EOF = False
-    self.p = 0
 
   def __read_chunk(self):
     self.chunk = self.f.read(self.chunk_size)
@@ -154,6 +162,7 @@ class hdfs_file(object):
     :rtype: string
     :return: the next line of text in the file, including the newline character
     """
+    _complain_ifclosed(self.closed)
     eol = self.__read_chunks_until_nl()
     line = "".join(self.buffer_list) + self.chunk[self.p:eol+1]
     self.buffer_list = []
@@ -165,6 +174,7 @@ class hdfs_file(object):
     Return the next input line, or raise :class:`StopIteration`
     when EOF is hit.
     """
+    _complain_ifclosed(self.closed)
     line = self.readline()
     if line == "":
       raise StopIteration
@@ -172,7 +182,7 @@ class hdfs_file(object):
 
   def __iter__(self):
     return self
-     
+  
   def available(self):
     """
     Number of bytes that can be read from this input stream without blocking.
@@ -180,16 +190,19 @@ class hdfs_file(object):
     :rtype: int
     :return: available bytes
     """
+    _complain_ifclosed(self.closed)
     return self.f.available()
   
   def close(self):
     """
     Close the file.
     """
-    retval = self.f.close()
-    if self.mode == "w":
-      self.__size = self.fs.get_path_info(self.name)["size"]
-    return retval
+    if not self.closed:
+      self.closed = True
+      retval = self.f.close()
+      if self.mode == "w":
+        self.__size = self.fs.get_path_info(self.name)["size"]
+      return retval
   
   def pread(self, position, length):
     """
@@ -202,6 +215,7 @@ class hdfs_file(object):
     :rtype: string
     :return: the chunk of data read from the file
     """
+    _complain_ifclosed(self.closed)
     return self.f.pread(position, length)
   
   def pread_chunk(self, position, chunk):
@@ -217,7 +231,8 @@ class hdfs_file(object):
       ``create_string_buffer`` function in the :mod:`ctypes` module
     :rtype: int
     :return: the number of bytes read
-    """    
+    """
+    _complain_ifclosed(self.closed)
     return self.f.pread_chunk(position, chunk)
   
   def read(self, length=-1):
@@ -230,6 +245,7 @@ class hdfs_file(object):
     :rtype: string
     :return: the chunk of data read from the file
     """
+    _complain_ifclosed(self.closed)
     # NOTE: libhdfs read stops at block boundaries: it is *essential*
     # to ensure that we actually read the required number of bytes.
     if length < 0:
@@ -256,16 +272,27 @@ class hdfs_file(object):
       ``create_string_buffer`` function in the :mod:`ctypes` module
     :rtype: int
     :return: the number of bytes read
-    """    
+    """
+    _complain_ifclosed(self.closed)
     return self.f.read_chunk(chunk)
   
-  def seek(self, position):
+  def seek(self, position, whence=os.SEEK_SET):
     """
     Seek to ``position`` in file.
 
     :type position: int
-    :param position: offset into the file to seek into
+    :param position: offset in bytes to seek to
+    :type whence: int
+    :param whence: defaults to ``os.SEEK_SET`` (absolute); other
+      values are ``os.SEEK_CUR`` (relative to the current position)
+      and ``os.SEEK_END`` (relative to the file's end).
     """
+    _complain_ifclosed(self.closed)
+    if whence == os.SEEK_CUR:
+      position += self.tell()
+    elif whence == os.SEEK_END:
+      position += self.size
+    position = max(0, position)
     self.__reset()
     return self.f.seek(position)
   
@@ -276,6 +303,7 @@ class hdfs_file(object):
     :rtype: int
     :return: current offset in bytes
     """
+    _complain_ifclosed(self.closed)
     return self.f.tell()
   
   def write(self, data):
@@ -287,6 +315,7 @@ class hdfs_file(object):
     :rtype: int
     :return: the number of bytes written
     """
+    _complain_ifclosed(self.closed)
     return self.f.write(data)
   
   def write_chunk(self, chunk):
@@ -299,12 +328,14 @@ class hdfs_file(object):
     :rtype: int
     :return: the number of bytes written
     """
+    _complain_ifclosed(self.closed)
     return self.f.write_chunk(chunk)
 
   def flush(self):
     """
     Force any buffered output to be written.
     """
+    _complain_ifclosed(self.closed)
     return self.f.flush()
 
 
@@ -327,13 +358,12 @@ class hdfs(hdfs_fs):
   :type groups: list
   :param groups: ignored. Included for backwards compatibility.
 
-  **Note:** when connecting to the local file system, both ``user``
-  and ``groups`` are ignored. The actual user and group that will be
-  used for file creation are the same as the ones of the current
-  process.
+  **Note:** when connecting to the local file system, ``user`` is
+  ignored (i.e., it will always be the current UNIX user).
   """
   def __init__(self, host, port, user=None, groups=[]):
     super(hdfs, self).__init__(host, port, user or "")
+    self.closed = False
     try:
       h, p = self.get_path_info("/")["name"].rsplit("/", 2)[1].split(":")
     except ValueError:
@@ -386,6 +416,7 @@ class hdfs(hdfs_fs):
     :rtpye: :class:`hdfs_file`
     :return: handle to the open file
     """
+    _complain_ifclosed(self.closed)
     if flags == "r":
       flags = os.O_RDONLY
     elif flags == "w":
@@ -403,13 +434,16 @@ class hdfs(hdfs_fs):
     :rtype: int
     :return: the raw capacity
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).capacity()
 
   def close(self):
     """
     Close the HDFS handle (disconnect).
     """
-    return super(hdfs, self).close()
+    if not self.closed:
+      self.closed = True
+      return super(hdfs, self).close()
 
   def copy(self, from_path, to_hdfs, to_path):
     """
@@ -422,6 +456,7 @@ class hdfs(hdfs_fs):
     :type to_path: string
     :param to_path: the path of the destination file
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).copy(from_path, to_hdfs, to_path)
 
   def create_directory(self, path):
@@ -431,6 +466,7 @@ class hdfs(hdfs_fs):
     :type path: string
     :param path: the path of the directory
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).create_directory(path)
 
   def default_block_size(self):
@@ -440,6 +476,7 @@ class hdfs(hdfs_fs):
     :rtype: int
     :return: the default blocksize
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).default_block_size()
   
   def delete(self, path, recursive=True):
@@ -452,6 +489,7 @@ class hdfs(hdfs_fs):
     :param recursive: if path is directory, delete it recursively when True;
       raise IOError when False and directory is non-empty
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).delete(path, recursive)
 
   def exists(self, path):
@@ -463,6 +501,7 @@ class hdfs(hdfs_fs):
     :rtype: bool
     :return: True if ``path`` exists, else False
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).exists(path)
 
   def get_hosts(self, path, start, length):
@@ -480,6 +519,7 @@ class hdfs(hdfs_fs):
     :rtype: list
     :return: list of hosts that store the block
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).get_hosts(path, start, length)
   
   def get_path_info(self, path):
@@ -491,6 +531,7 @@ class hdfs(hdfs_fs):
     :rtype: dict
     :return: path information
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).get_path_info(path)
 
   def list_directory(self, path):
@@ -502,6 +543,7 @@ class hdfs(hdfs_fs):
     :rtype: list
     :return: list of files and directories in ``path``
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).list_directory(path)
   
   def move(self, from_path, to_hdfs, to_path):
@@ -515,6 +557,7 @@ class hdfs(hdfs_fs):
     :type to_path: string
     :param to_path: the path of the destination file
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).move(from_path, to_hdfs, to_path)
     
   def rename(self, from_path, to_path):
@@ -526,6 +569,7 @@ class hdfs(hdfs_fs):
     :type to_path: string
     :param to_path: the path of the destination file    
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).rename(from_path, to_path)
 
   def set_replication(self, path, replication):
@@ -537,6 +581,7 @@ class hdfs(hdfs_fs):
     :type replication: int
     :param replication: the replication value
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).set_replication(path, replication)
   
   def set_working_directory(self, path):
@@ -547,6 +592,7 @@ class hdfs(hdfs_fs):
     :type path: string
     :param path: the path of the directory
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).set_working_directory(path)
 
   def used(self):
@@ -556,6 +602,7 @@ class hdfs(hdfs_fs):
     :rtype: int
     :return: total size of files in the file system
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).used()
   
   def working_directory(self):
@@ -565,6 +612,7 @@ class hdfs(hdfs_fs):
     :rtype: str
     :return: current working directory
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).working_directory()
 
   def chown(self, path, user='', group=''):
@@ -578,6 +626,7 @@ class hdfs(hdfs_fs):
     :type group: string
     :param group: Hadoop group name. Set to '' if only setting user
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).chown(path, user, group)
 
   def chmod(self, path, mode):
@@ -589,6 +638,7 @@ class hdfs(hdfs_fs):
     :type mode: int
     :param mode: the bitmask to set it to (e.g., 0777)
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).chmod(path, mode)
 
   def utime(self, path, mtime, atime):
@@ -602,6 +652,7 @@ class hdfs(hdfs_fs):
     :type atime: int
     :param atime: new access time in seconds
     """
+    _complain_ifclosed(self.closed)
     return super(hdfs, self).utime(path, int(mtime), int(atime))
 
 

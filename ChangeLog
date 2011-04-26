@@ -1,3 +1,9 @@
+2011-04-26    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py: operations on a closed file or hdfs instance now
+	raise ValueError.
+	(hdfs_file.seek): added "whence" parameter.
+
 2011-04-25    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py (hdfs_file): added mode property; fixed #337.
