@@ -23,11 +23,10 @@ Consider the following simple modification of Hadoop's built-in
   public class TextInputFormat extends FileInputFormat<LongWritable, Text>
       implements JobConfigurable {
       
-      private Boolean will_split = true;
+      private Boolean will_split;
   
       public void configure(JobConf conf) {
-  	String can_split = conf.get("pydoop.input.issplitable");
-  	will_split = can_split.equals("true");
+  	will_split = conf.getBoolean("pydoop.input.issplitable", true);
       }
   
       protected boolean isSplitable(FileSystem fs, Path file) {
