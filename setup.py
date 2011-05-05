@@ -9,22 +9,6 @@ from distutils.command.build_ext import build_ext
 import pydoop
 from pydoop.hadoop_utils import get_hadoop_version
 
-# These variables MUST point to the correct locations, see installation docs
-JAVA_HOME = os.getenv("JAVA_HOME", "/opt/sun-jdk")
-HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
-
-# Set the "HADOOP_VERSION" env var if this fails
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
-
-MAPRED_SRC = HDFS_SRC = "src/c++"
-if HADOOP_VERSION >= (0,21,0):
-  MAPRED_SRC = os.path.join("mapred", MAPRED_SRC)
-  HDFS_SRC = os.path.join("hdfs", HDFS_SRC)
-MAPRED_SRC = os.path.join(HADOOP_HOME, MAPRED_SRC)
-HDFS_SRC = os.path.join(HADOOP_HOME, HDFS_SRC)
-
-mtime = lambda fn: os.stat(fn).st_mtime
-
 # https://issues.apache.org/jira/browse/MAPREDUCE-375 -- integrated in 0.21.0
 def get_pipes_macros(hadoop_version):
   pipes_macros = []
@@ -47,36 +31,6 @@ def get_hdfs_macros(hdfs_hdr):
     hdfs_macros.append(("CONNECT_GROUP_INFO", None))
   return hdfs_macros
 
-
-# https://issues.apache.org/jira/browse/MAPREDUCE-1125
-OLD_DESERIALIZE_FLOAT = """void deserializeFloat(float& t, InStream& stream)
-  {
-    char buf[sizeof(float)];
-    stream.read(buf, sizeof(float));
-    XDR xdrs;
-    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
-    xdr_float(&xdrs, &t);
-  }"""
-NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
-  {
-    float t;
-    char buf[sizeof(float)];
-    stream.read(buf, sizeof(float));
-    XDR xdrs;
-    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
-    xdr_float(&xdrs, &t);
-    return t;
-  }"""
-
-# Ticket #250
-OLD_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
-      fprintf(stream, quoteString(buffer, "\t\n").c_str());
-    }"""
-NEW_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
-      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
-    }"""
-
-
 def get_arch():
   bits, linkage = platform.architecture()
   if bits == "64bit":
@@ -89,12 +43,6 @@ def get_java_include_dirs(java_home):
   java_inc = os.path.join(java_home, "include")
   java_platform_inc = "%s/%s" % (java_inc, p)
   return [java_inc, java_platform_inc]
-
-
-def get_hadoop_include_dirs(hadoop_home):
-  a = "-".join(get_arch())
-  return [os.path.join(hadoop_home, "c++/Linux-%s/include" % a)]
-
 
 def get_java_library_dirs(java_home):
   a = get_arch()[0]
@@ -172,11 +120,11 @@ class build_boost_ext(build_ext):
       e.sources.extend(e.generate_patched_aux())
 
 
-def create_pipes_ext():
+def create_pipes_ext(path_finder):
   wrap = ["pipes", "pipes_context", "pipes_test_support",
           "pipes_serial_utils", "exceptions", "pipes_input_split"]
   aux = []
-  basedir = MAPRED_SRC
+  basedir = path_finder.mapred_src
   patches = {
     os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
       OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
@@ -192,37 +140,203 @@ def create_pipes_ext():
     ["src/%s.cpp" % n for n in wrap],
     ["src/%s.cpp" % n for n in aux],
     patches=patches,
-    include_dirs=get_hadoop_include_dirs(HADOOP_HOME),
+    include_dirs=path_finder.mapred_inc,
     libraries = ["pthread", "boost_python"],
-    define_macros=get_pipes_macros(HADOOP_VERSION)
+    define_macros=get_pipes_macros(path_finder.hadoop_version)
     )
 
 
-def create_hdfs_ext():
+def create_hdfs_ext(path_finder):
   wrap = ["hdfs_fs", "hdfs_file", "hdfs_common"]
   aux = []
-  library_dirs = get_java_library_dirs(JAVA_HOME) + [
-    os.path.join(HADOOP_HOME, "c++/Linux-%s-%s/lib" % get_arch())
-    ]
-  hdfs_include_dir = os.path.join(HDFS_SRC, "libhdfs")
+  library_dirs = get_java_library_dirs(JAVA_HOME) + path_finder.hdfs_link_paths["L"]
   return BoostExtension(
     "pydoop._hdfs",
     ["src/%s.cpp" % n for n in wrap],
     ["src/%s.cpp" % n for n in aux],
-    include_dirs=get_java_include_dirs(JAVA_HOME) + [hdfs_include_dir],
+    include_dirs=get_java_include_dirs(JAVA_HOME) + [path_finder.hdfs_inc_path],
     library_dirs=library_dirs,
     runtime_library_dirs=library_dirs,
     libraries=["pthread", "boost_python", "hdfs", "jvm"],
-    define_macros=get_hdfs_macros(os.path.join(hdfs_include_dir, "hdfs.h"))
+    define_macros=get_hdfs_macros(os.path.join(path_finder.hdfs_inc_path, "hdfs.h"))
     )
   return factory.create()
 
 
-def create_ext_modules():
+def create_ext_modules(path_finder):
   ext_modules = []
-  ext_modules.append(create_pipes_ext())
-  ext_modules.append(create_hdfs_ext())
+  ext_modules.append(create_pipes_ext(path_finder))
+  ext_modules.append(create_hdfs_ext(path_finder))
   return ext_modules
+
+def find_first_existing(*paths):
+  for p in paths:
+    if os.path.exists(p):
+      return p
+  return None
+
+class PathFinder(object):
+  def __init__(self, hadoop_home, hadoop_ver):
+    self.home = hadoop_home
+    self.hadoop_version = hadoop_ver
+    self.src = None
+    self.mapred_src = None
+    self.mapred_inc = []
+    self.hdfs_inc_path = None # special case, only one include path since we only have one file
+    self.hdfs_link_paths = { "L":[], "l":[] }
+
+  # returns one of:
+  #   1. HADOOP_SRC
+  #   2. HADOOP_HOME/src
+  #   3. /usr/src/hadoop*
+  #   4. None
+  # Returns the path if found
+  def __find_hadoop_src(self):
+    if os.getenv("HADOOP_SRC"):
+      return os.getenv("HADOOP_SRC")
+    if self.home:
+      if os.path.exists( os.path.join(self.home, "src") ):
+        return os.path.join(self.home, "src")
+
+    # look in /usr/src
+    usr_src = os.path.join( os.path.sep, "usr", "src" )
+    if os.path.exists(usr_src ):
+      path_list = [ path for path in os.listdir(usr_src) if re.match(r"hadoop\b.*", path) ]
+      if len(path_list) > 1:
+        path_list = sorted(path_list)
+      if path_list: # if non-empty
+        return os.path.join(usr_src, path_list[0])
+
+    return None # haven't found anything
+
+  def __set_mapred_inc_paths(self):
+    if os.getenv("HADOOP_INC_PATH"):
+      self.mapred_inc = os.getenv("HADOOP_INC_PATH").split(os.pathsep)
+      return
+
+    if re.match("cdh.*", self.hadoop_version[3] or ""):
+      # cloudera Hadoop
+      # look in the source first
+      paths = [ os.path.join( self.src, "c++", "pipes", "api", "hadoop" ), os.path.join( self.src, "c++", "utils", "api", "hadoop") ]
+      if all( map(os.path.exists, paths) ):
+        self.mapred_inc = paths
+      else:
+        # we didn't find the expected include paths in the source.  Try the standard /usr/include/hadoop
+        usr_inc_hadoop = os.path.join( os.path.sep, "usr", "include", "hadoop")
+        if os.path.exists( usr_inc_hadoop ):
+          self.mapred_inc = [ usr_inc_hadoop ]
+        else:
+          raise RuntimeError("Couldn't find Hadoop c++ include directories in source or in /usr/include/hadoop")
+    else: # Apache hadoop
+      arch_string = "-".join(get_arch())
+      inc_path = find_first_existing(
+        os.path.join(self.src, "mapred", "c++", "Linux-%s" % arch_string, "include"),
+        os.path.join(self.src, "c++", "Linux-%s" % arch_string, "include"),
+        os.path.join(os.path.sep, "usr", "include", "hadoop"))
+
+      if inc_path:
+        self.mapred_inc = [ inc_path ]
+      else:
+        raise RuntimeError("Couldn't find Hadoop c++ include directory.  Try specifying one with HADOOP_INC_PATH")
+
+  def __set_hdfs_link_paths(self):
+    # if cloudera Hadoop,
+    # library is /usr/lib/libhdfs.so
+    # So, we only need to tell GCC to link to libhdfs
+
+    self.hdfs_link_paths["l"].append("hdfs") # link to libhdfs
+
+    if not re.match("cdh.*", self.hadoop_version[3] or ""):
+      # Apache Hadoop
+      # But, where to find libhdfs?
+      lib = find_first_existing(
+        os.path.join(self.home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
+        os.path.join(self.home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
+        os.path.join(os.path.sep, "usr", "lib", "libhdfs.so"),
+        )
+      if lib:
+        dir, name = os.path.split(lib)
+        if dir != os.path.join(os.path.sep, "usr", "lib"):
+          self.hdfs_link_paths["L"].append(dir)
+      else:
+        raise RuntimeError("Couldn't find libhdfs.so in HADOOP_HOME or /usr/lib.")
+        
+  def __set_hdfs_inc_path(self):
+    fname = find_first_existing(
+      os.path.join(self.src, "c++", "libhdfs", "hdfs.h"),
+      os.path.join(os.path.sep, "usr", "include", "hdfs.h"),
+      )
+    if fname:
+      dir, name = os.path.split(fname)
+      if dir != os.path.join(os.path.sep, "usr", "include"):
+        self.hdfs_inc_path = dir
+      else:
+        self.hdfs_inc_path = ""
+    else:
+      raise RuntimeError("Couldn't find hdfs.h in source directory or /usr/include.")
+
+  def init_paths(self):
+    self.src = self.__find_hadoop_src()
+    if not self.src:
+      raise RuntimeError("Couldn't find Hadoop source code.  Please specify a path through the HADOOP_SRC environment variable.")
+
+    self.mapred_src = os.path.join(self.src, "c++")
+    if not os.path.exists(self.mapred_src):
+      raise RuntimeError("Hadoop source directory %s doesn't contain a 'c++' subdirectory.  If the source directory path is correct, please report a bug" % self.src)
+    self.__set_mapred_inc_paths()
+    self.__set_hdfs_inc_path()
+    self.__set_hdfs_link_paths()
+
+    print "========================================="
+    print "paths:"
+    names = ("home", "hadoop_version", "src", "mapred_src", "mapred_inc", "hdfs_inc_path", "hdfs_link_paths",)
+    for n in names:
+      print n, ": ", getattr(self, n)
+
+ 
+
+
+
+######################### main ################################
+
+JAVA_HOME = os.getenv("JAVA_HOME", find_first_existing("/opt/sun-jdk", "/usr/lib/jvm/java-6-sun"))
+HADOOP_HOME = os.getenv("HADOOP_HOME", find_first_existing("/opt/hadoop", "/usr/lib/hadoop"))
+# Set the "HADOOP_VERSION" env var if this fails
+HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
+
+path_finder = PathFinder(HADOOP_HOME, HADOOP_VERSION)
+path_finder.init_paths()
+
+mtime = lambda fn: os.stat(fn).st_mtime
+
+
+# https://issues.apache.org/jira/browse/MAPREDUCE-1125
+OLD_DESERIALIZE_FLOAT = """void deserializeFloat(float& t, InStream& stream)
+  {
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+  }"""
+NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
+  {
+    float t;
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+    return t;
+  }"""
+
+# Ticket #250
+OLD_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
+      fprintf(stream, quoteString(buffer, "\t\n").c_str());
+    }"""
+NEW_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
+      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
+    }"""
 
 
 setup(
@@ -236,7 +350,7 @@ setup(
   download_url="https://sourceforge.net/projects/pydoop/files/",
   packages=["pydoop"],
   cmdclass={"build_ext": build_boost_ext},
-  ext_modules=create_ext_modules(),
+  ext_modules=create_ext_modules(path_finder),
   platforms=["Linux"],
   license="Apache-2.0",
   keywords=["hadoop", "mapreduce"],
