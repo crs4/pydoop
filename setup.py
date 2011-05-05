@@ -185,6 +185,9 @@ class PathFinder(object):
     self.hdfs_inc_path = None # special case, only one include path since we only have one file
     self.hdfs_link_paths = { "L":[], "l":[] }
 
+  def cloudera(self):
+    return len(self.hadoop_version) > 3 and re.match("cdh.*", self.hadoop_version[3] or "")
+
   # returns one of:
   #   1. HADOOP_SRC
   #   2. HADOOP_HOME/src
@@ -214,30 +217,32 @@ class PathFinder(object):
       self.mapred_inc = os.getenv("HADOOP_INC_PATH").split(os.pathsep)
       return
 
-    if re.match("cdh.*", self.hadoop_version[3] or ""):
-      # cloudera Hadoop
-      # look in the source first
-      paths = [ os.path.join( self.src, "c++", "pipes", "api", "hadoop" ), os.path.join( self.src, "c++", "utils", "api", "hadoop") ]
-      if all( map(os.path.exists, paths) ):
-        self.mapred_inc = paths
-      else:
+    # look in the source first
+    src_paths = [ os.path.join( self.src, "c++", "pipes", "api", "hadoop" ), os.path.join( self.src, "c++", "utils", "api", "hadoop") ]
+    if all( map(os.path.exists, src_paths) ):
+      self.mapred_inc = map(os.path.dirname, src_paths) # the includes are for "hadoop/<file.h>", so we chop the hadoop directory off the path
+    else:
+      if self.cloudera():
         # we didn't find the expected include paths in the source.  Try the standard /usr/include/hadoop
         usr_inc_hadoop = os.path.join( os.path.sep, "usr", "include", "hadoop")
         if os.path.exists( usr_inc_hadoop ):
-          self.mapred_inc = [ usr_inc_hadoop ]
+          self.mapred_inc = [ os.path.dirname(usr_inc_hadoop) ]
         else:
+          msg = "Couldn't find Hadoop c++ include directory.  Searched in: \n  " + "\n  ".join(src_paths + [ usr_inc_hadoop ]) + "\nTry specifying one with HADOOP_INC_PATH"
           raise RuntimeError("Couldn't find Hadoop c++ include directories in source or in /usr/include/hadoop")
-    else: # Apache hadoop
-      arch_string = "-".join(get_arch())
-      inc_path = find_first_existing(
-        os.path.join(self.src, "mapred", "c++", "Linux-%s" % arch_string, "include"),
-        os.path.join(self.src, "c++", "Linux-%s" % arch_string, "include"),
-        os.path.join(os.path.sep, "usr", "include", "hadoop"))
+      else: # Apache hadoop
+        arch_string = "-".join(get_arch())
+        search_paths = (
+          os.path.join(self.src, "mapred", "c++", "Linux-%s" % arch_string, "include", "hadoop"),
+          os.path.join(self.src, "c++", "Linux-%s" % arch_string, "include", "hadoop"),
+          os.path.join(os.path.sep, "usr", "include", "hadoop"))
+        inc_path = find_first_existing( *search_paths )
 
-      if inc_path:
-        self.mapred_inc = [ inc_path ]
-      else:
-        raise RuntimeError("Couldn't find Hadoop c++ include directory.  Try specifying one with HADOOP_INC_PATH")
+        if inc_path:
+          self.mapred_inc = [ os.path.dirname(inc_path) ]
+        else:
+          msg = "Couldn't find Hadoop c++ include directory.  Searched in: \n  " + "\n  ".join(search_paths + src_paths) + "\nTry specifying one with HADOOP_INC_PATH"
+          raise RuntimeError(msg)
 
   def __set_hdfs_link_paths(self):
     # if cloudera Hadoop,
@@ -246,7 +251,7 @@ class PathFinder(object):
 
     self.hdfs_link_paths["l"].append("hdfs") # link to libhdfs
 
-    if not re.match("cdh.*", self.hadoop_version[3] or ""):
+    if not self.cloudera():
       # Apache Hadoop
       # But, where to find libhdfs?
       lib = find_first_existing(
@@ -278,7 +283,7 @@ class PathFinder(object):
   def init_paths(self):
     self.src = self.__find_hadoop_src()
     if not self.src:
-      raise RuntimeError("Couldn't find Hadoop source code.  Please specify a path through the HADOOP_SRC environment variable.")
+      raise RuntimeError("Couldn't find Hadoop source code.  Please specify a path through the HADOOP_SRC environment variable, or provide HADOOP_HOME with a 'src' directory under it.")
 
     self.mapred_src = os.path.join(self.src, "c++")
     if not os.path.exists(self.mapred_src):
