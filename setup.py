@@ -1,6 +1,23 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
+# Important environment variables
+# ---------------------------------
+#
+# The Pydoop setup looks in a number of default paths for what it needs.  If necessary, you
+# can override its behaviour or provide an alternative path by exporting the environment
+# variables below.
+#
+# HADOOP_HOME:  tell setup where your hadoop home is
+# HADOOP_SRC:  tell setup where to find the Hadoop source, if it's not under HADOOP_HOME/src or /usr/src/hadoop-*
+# HADOOP_INCLUDE_PATHS:  override the standard Hadoop include paths:
+#     src/c++/{pipes,utils}/api/hadoop, 
+#     /usr/include, 
+#     src/mapred/c++/Linux-{arch}/include/hadoop
+#     src/c++/Linux-{arch}/include/hadoop
+# JAVA_HOME:  by default looks  in /opt/sun-jdk and /usr/lib/jvm/java-6-sun
+# HADOOP_VERSION:  override the version returned by running "hadoop version" (and avoid running the hadoop binary)
+
 import sys, os, platform, re
 from distutils.core import setup
 from distutils.extension import Extension
@@ -213,8 +230,8 @@ class PathFinder(object):
     return None # haven't found anything
 
   def __set_mapred_inc_paths(self):
-    if os.getenv("HADOOP_INC_PATH"):
-      self.mapred_inc = os.getenv("HADOOP_INC_PATH").split(os.pathsep)
+    if os.getenv("HADOOP_INCLUDE_PATHS"):
+      self.mapred_inc = os.getenv("HADOOP_INCLUDE_PATHS").split(os.pathsep)
       return
 
     # look in the source first
