@@ -245,26 +245,20 @@ class PathFinder(object):
           raise RuntimeError(msg)
 
   def __set_hdfs_link_paths(self):
-    # if cloudera Hadoop,
-    # library is /usr/lib/libhdfs.so
-    # So, we only need to tell GCC to link to libhdfs
-
     self.hdfs_link_paths["l"].append("hdfs") # link to libhdfs
 
-    if not self.cloudera():
-      # Apache Hadoop
-      # But, where to find libhdfs?
-      lib = find_first_existing(
-        os.path.join(self.home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
-        os.path.join(self.home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
-        os.path.join(os.path.sep, "usr", "lib", "libhdfs.so"),
-        )
-      if lib:
-        dir, name = os.path.split(lib)
-        if dir != os.path.join(os.path.sep, "usr", "lib"):
-          self.hdfs_link_paths["L"].append(dir)
-      else:
-        raise RuntimeError("Couldn't find libhdfs.so in HADOOP_HOME or /usr/lib.")
+    # But, where to find libhdfs?
+    lib = find_first_existing(
+      os.path.join(os.path.sep, "usr", "lib", "libhdfs.so"),
+      os.path.join(self.home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
+      os.path.join(self.home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
+      )
+    if lib:
+      dir, name = os.path.split(lib)
+      if dir != os.path.join(os.path.sep, "usr", "lib"):
+        self.hdfs_link_paths["L"].append(dir)
+    else:
+      raise RuntimeError("Couldn't find libhdfs.so in HADOOP_HOME or /usr/lib.")
         
   def __set_hdfs_inc_path(self):
     fname = find_first_existing(
