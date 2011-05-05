@@ -18,8 +18,10 @@ Prerequisites
 In order to build and install Pydoop, you need the following software:
 
 * `Python <http://www.python.org>`_ version 2.6
-* `Hadoop <http://hadoop.apache.org>`_ version 0.20.2 or 0.21.0
-* `Boost <http://www.boost.org>`_ version 1.40 or later
+* `Hadoop <http://hadoop.apache.org>`_ version 0.20 or 0.21
+* The source code for the version of Hadoop you're using
+* `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
+  library).
 
 These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
@@ -27,32 +29,155 @@ installing Pydoop and your MapReduce application to all cluster nodes
 a complete HowTo.
 
 
-Instructions
-------------
+On Ubuntu
+...........
 
-#. set the ``JAVA_HOME`` and ``HADOOP_HOME`` environment variables to
-   the correct locations for your system. setup.py defaults
-   respectively to ``/opt/sun-jdk`` and ``/opt/hadoop``
+On Ubuntu or Debian you can install the dependencies with the following
+command::
 
-#. run ``python setup.py install`` (as root) in the Pydoop
-   distribution root directory
+  sudo apt-get install python libboost-python-dev
 
-To install as an unprivileged (but sudoer) user you can run::
 
-  export JAVA_HOME=<YOUR_JAVA_HOME>
-  export HADOOP_HOME=<YOUR_HADOOP_HOME>
+On Gentoo
+...........
+
+On Gentoo you can satisfy the dependencies with the following command::
+
+  emerge python boost
+
+The activated use flags per dev-libs/boost are::
+
+  + + python        : Adds support/bindings for the Python language
+
+
+
+Building Instructions
+----------------------
+
+Depending on how you installed Hadoop, you'll have follow the instructions
+in one of the following sections.
+
+
+Hadoop installed from tarball
+.................................
+
+If you have installed either Apache or Cloudera Hadoop from a tarball
+follow the instructions in this section.
+
+Set the ``HADOOP_HOME`` environment variable so that it points to where the
+Hadoop tarball was extracted::
+
+  export HADOOP_HOME=<path to Hadoop directory>
+
+Then, in the same shell::
+
+  tar xzf pydoop-*.tar.gz
+  cd pydoop-*
   python setup.py build
+
+
+Hadoop installed from Cloudera packages
+.........................................
+
+
+If you have installed Cloudera Hadoop on Ubuntu using the packages Cloudera
+provides, then run these commands::
+
+
+  sudo apt-get install libhdfs0-dev libhdfs0 hadoop-source hadoop
+  tar xzf pydoop-*.tar.gz
+  cd pydoop-*
+  python setup.py build
+
+
+Other setup
+.............
+
+
+If your situation isn't one of the above, you should still be able to build
+Pydoop once you've installed its dependencies.
+
+To start, extract the archive and try building::
+
+  tar xzf pydoop-*.tar.gz
+  cd pydoop-*
+  python setup.py build
+
+If the build fails, it's probably because setup.py can't find some component
+critical to the building process:  the Java installation, the Hadoop
+installation, or the Hadoop source code.  We can override the paths where
+setup.py searches with the environment variables below.
+
+JAVA_HOME
+
+  By default looks  in ``/opt/sun-jdk`` and ``/usr/lib/jvm/java-6-sun``.
+
+HADOOP_HOME
+
+  Your Hadoop installation, containing the Hadoop jars.  By default setup.py 
+  looks in ``/opt/hadoop`` and ``/usr/lib/hadoop``.
+
+
+HADOOP_SRC
+
+  Tell setup where to find the Hadoop source, if it's not under ``${HADOOP_HOME}/src`` or ``/usr/src/hadoop-*``
+
+HADOOP_VERSION
+
+  Override the version returned by running ``hadoop version`` (and avoid running the hadoop binary).
+
+HADOOP_INCLUDE_PATHS
+
+  Override the standard include paths for the Hadoop c++ headers.
+
+Example
+++++++++++
+
+::
+  
+  export JAVA_HOME=/usr/local/lib/jvm
+  export HADOOP_HOME=/usr/local/lib/hadoop
+  export HADOOP_SRC=/var/src/hadoop-0.20.3
+  tar xzf pydoop-*.tar.gz
+  cd pydoop-*
+  python setup.py build
+
+
+Installation
+----------------
+
+In the same shell you used to run the build (in particular, with the same
+environment variables still set), run one of the following installation
+commands in the Pydoop distribution directory.
+
+
+System-wide installation
+...........................
+
+To install in the system's ``/usr/lib`` space, run the following::
+
   sudo python setup.py install --skip-build
 
-Finally, if you don't have root access, you can perform a local
-installation (i.e., into ``~/.local/lib/python2.6/site-packages``\ )::
 
-  export JAVA_HOME=<YOUR_JAVA_HOME>
-  export HADOOP_HOME=<YOUR_HADOOP_HOME>
+User-local installation
+.........................
+
+To install to your current user's home directory::
+
   python setup.py install --user
 
-If the above does not work, please read the :ref:`troubleshooting`
-section.
+The package is installed in ``~/.local/lib/python2.6/site-packages``.
+This may be a particular handy solution if your home directory is accessible on
+the entire cluster.
+
+
+Installing to another location
+.................................
+
+::
+
+  python setup.py install --home <path>
+
 
 
 .. _troubleshooting:
@@ -71,7 +196,7 @@ Troubleshooting
 
 #. Hadoop version issues. The current Pydoop version supports both
    Hadoop 0.20.2 and 0.21.0. Hadoop version is automatically detected
-   *at compile time* based on the contents of ``HADOOP_HOME``. If this
+   *at compile time* based on the output of running ``hadoop version``. If this
    fails for any reason, you can provide the correct version string
    through the ``HADOOP_VERSION`` environment variable, e.g.::
 
@@ -90,7 +215,7 @@ unit tests to verify that everything works fine.
    not coincide with ``${HADOOP_HOME}/conf``\) are set to the correct
    locations for your system
 
-#. since one of the test cases tests connection to an HDFS instance
+#. since one of the test cases tests the connection to an HDFS instance
    with *explicitly set* host and port, if in your case these are
    different from, respectively, "localhost" and 9000, you must set
    the ``HDFS_HOST`` and ``HDFS_PORT`` environment variables accordingly
@@ -103,9 +228,15 @@ unit tests to verify that everything works fine.
 
      ${HADOOP_HOME}/bin/hadoop dfsadmin -safemode wait
 
-To run the unit tests, move to the ``test`` subdirectory and run::
+To run the unit tests, move to the ``test`` subdirectory and run *as the cluster
+superuser*::
 
   python all_tests.py
+
+The HDFS ``chown`` tests will fail if you do not run it as the user who started the 
+Hadoop cluster (and is therefore the superuser).  If you can't run the tests as
+the superuser, then simply take notice that the failures reported may be due to
+this reason.
 
 You can also separately run ``python all_tests_pipes.py``
 and ``python all_tests_hdfs.py``\ .
