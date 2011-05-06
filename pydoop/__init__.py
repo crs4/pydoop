@@ -15,10 +15,10 @@ Prerequisites:
 * Boost 1.40 or later
 """
 
-__version__ = "0.4.0_rc1"
+__version__ = "0.4.0_rc2"
 
-__author__ = "Simone Leo, Gianluigi Zanetti"
+__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
 
-__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>"
+__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
 
 __url__ = "http://pydoop.sourceforge.net"

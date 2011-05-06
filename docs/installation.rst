@@ -18,7 +18,7 @@ Prerequisites
 In order to build and install Pydoop, you need the following software:
 
 * `Python <http://www.python.org>`_ version 2.6
-* `Hadoop <http://hadoop.apache.org>`_ version 0.20 or 0.21
+* `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2 or 0.21.0 or `Cloudera Hadoop <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ CDH3 Update 0
 * The source code for the version of Hadoop you're using
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library).
