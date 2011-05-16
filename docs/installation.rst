@@ -233,10 +233,33 @@ superuser*::
 
   python all_tests.py
 
-The HDFS ``chown`` tests will fail if you do not run it as the user who started the 
-Hadoop cluster (and is therefore the superuser).  If you can't run the tests as
-the superuser, then simply take notice that the failures reported may be due to
-this reason.
 
-You can also separately run ``python all_tests_pipes.py``
-and ``python all_tests_hdfs.py``\ .
+.. note:: You can also separately run the pydoop.pipes and pydoop.hdfs tests with ``python all_tests_pipes.py`` and ``python all_tests_hdfs.py``\ .
+
+
+Superuser privileges
+......................
+
+
+The HDFS ``chown`` tests will fail if you do not run them as a cluster 
+superuser.  To have superuser privileges, you will have to either:
+
+* start the cluster with your own user account, so you will be the cluster 
+  superuser; or
+* edit ``hdfs-site.xml`` in your configuration and set the ``dfs.permissions.supergroup``  
+  property to one of your unix groups (type ``groups`` at the command prompt to see to 
+  which groups your account belongs).
+
+
+
+::
+
+  <property>
+    <name>dfs.permissions.supergroup</name>
+    <value>mygroup</value>
+  </property>
+
+
+If you can't acquire superuser privileges to run the tests, just keep in mind
+that the failures reported may be due to this reason.
+
