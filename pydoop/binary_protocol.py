@@ -1,8 +1,8 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, subprocess
-import _pipes as pp
+import sys, os, subprocess
+import pydoop._pipes as pp
 
 
 #-- message codes for the down protocol
@@ -43,11 +43,12 @@ def serialize(t):
 
 class binary_down_protocol(object):
   def __init__(self, pipes_program, out_file=None):
-    self.out_file = out_file
-    self.pipes_program = pipes_program
-    self.fd = open(self.out_file, "w")
-    self.proc = subprocess.Popen([],
-                                 executable=self.pipes_program,
+    if out_file:
+      self.fd = open(out_file, "w")
+    else:
+      self.fd = sys.stdout
+    self.pipes_program = os.path.realpath(pipes_program)
+    self.proc = subprocess.Popen([self.pipes_program],
                                  bufsize=0,
                                  stdin=subprocess.PIPE,
                                  stdout=self.fd)

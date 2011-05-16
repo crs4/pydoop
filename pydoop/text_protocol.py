@@ -1,8 +1,8 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, subprocess
-from _pipes import unquote_string, quote_string
+import sys, os, subprocess
+from pydoop._pipes import unquote_string, quote_string
 
 
 def _true_false_str(v):
@@ -11,11 +11,12 @@ def _true_false_str(v):
 
 class text_down_protocol(object):
   def __init__(self, pipes_program, out_file=None):
-    self.out_file = out_file
-    self.pipes_program = pipes_program
-    self.fd = open(self.out_file, "w")
-    self.proc = subprocess.Popen([],
-                                 executable=self.pipes_program,
+    if out_file:
+      self.fd = open(out_file, "w")
+    else:
+      self.fd = sys.stdout
+    self.pipes_program = os.path.realpath(pipes_program)
+    self.proc = subprocess.Popen([self.pipes_program],
                                  stdin=subprocess.PIPE,
                                  stdout=self.fd)
   def __send(self, args):
