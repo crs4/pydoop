@@ -1,3 +1,7 @@
+2011-05-16    <simleo@neuron.crs4.it>
+
+	* pydoop/hdfs.py: HADOOP_HOME is now required.
+
 2011-04-26    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py: operations on a closed file or hdfs instance now

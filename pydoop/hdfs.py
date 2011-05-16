@@ -20,9 +20,9 @@ configuration directory.
 In practice, what you need to do is make sure that the ``HADOOP_HOME``
 and the ``HADOOP_CONF_DIR`` (unless it coincides with
 ``${HADOOP_HOME}/conf``\ ) environment variables are correctly set
-according to your installation. If these variables are not set at all,
-the hdfs module will fall back to ``/opt/hadoop`` for ``HADOOP_HOME``
-and ``opt/hadoop/conf`` for ``HADOOP_CONF_DIR``\ .
+according to your installation. If ``HADOOP_HOME`` is not set or
+empty, the hdfs module will raise an exception; if ``HADOOP_CONF_DIR``
+is not set or empty, it will fall back to ``${HADOOP_HOME}/conf``\ .
 
 Another important environment variable for this module is
 ``LIBHDFS_OPTS``\ . This is used to set options for the JVM on top of
@@ -40,10 +40,11 @@ above setting.
 import os, glob
 
 
-DEFAULT_HADOOP_HOME = "/opt/hadoop"  # should only be useful for local use
 DEFAULT_LIBHDFS_OPTS = "-Xmx48m"  # enough for most applications.
-
-HADOOP_HOME = os.getenv("HADOOP_HOME", DEFAULT_HADOOP_HOME)
+try:
+  HADOOP_HOME = os.environ["HADOOP_HOME"]
+except KeyError:
+  raise ValueError("HADOOP_HOME not set")
 HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR",
                             os.path.join(HADOOP_HOME, "conf"))
 
