@@ -30,7 +30,7 @@ a complete HowTo.
 
 
 On Ubuntu
-...........
+.........
 
 On Ubuntu or Debian you can install the dependencies with the following
 command::
@@ -39,15 +39,12 @@ command::
 
 
 On Gentoo
-...........
+.........
 
-On Gentoo you can satisfy the dependencies with the following command::
+On Gentoo, emerge ``dev-libs/boost`` with the ``python`` use flag on::
 
-  emerge python boost
-
-The activated use flags per dev-libs/boost are::
-
-  + + python        : Adds support/bindings for the Python language
+  echo 'dev-libs/boost python' >> /etc/portage/package.use
+  emerge boost
 
 
 
@@ -59,7 +56,7 @@ in one of the following sections.
 
 
 Hadoop installed from tarball
-.................................
+.............................
 
 If you have installed either Apache or Cloudera Hadoop from a tarball
 follow the instructions in this section.
@@ -77,12 +74,11 @@ Then, in the same shell::
 
 
 Hadoop installed from Cloudera packages
-.........................................
+.......................................
 
 
-If you have installed Cloudera Hadoop on Ubuntu using the packages Cloudera
+If you have installed Hadoop on Ubuntu using the packages Cloudera
 provides, then run these commands::
-
 
   sudo apt-get install libhdfs0-dev libhdfs0 hadoop-source hadoop
   tar xzf pydoop-*.tar.gz
@@ -91,8 +87,7 @@ provides, then run these commands::
 
 
 Other setup
-.............
-
+...........
 
 If your situation isn't one of the above, you should still be able to build
 Pydoop once you've installed its dependencies.
@@ -117,21 +112,23 @@ HADOOP_HOME
   Your Hadoop installation, containing the Hadoop jars.  By default setup.py 
   looks in ``/opt/hadoop`` and ``/usr/lib/hadoop``.
 
-
 HADOOP_SRC
 
-  Tell setup where to find the Hadoop source, if it's not under ``${HADOOP_HOME}/src`` or ``/usr/src/hadoop-*``
+  Tell setup where to find the Hadoop source, if it's not under
+  ``${HADOOP_HOME}/src`` or ``/usr/src/hadoop-*``
 
 HADOOP_VERSION
 
-  Override the version returned by running ``hadoop version`` (and avoid running the hadoop binary).
+  Override the version returned by running ``hadoop version`` (and
+  avoid running the hadoop binary).
 
 HADOOP_INCLUDE_PATHS
 
   Override the standard include paths for the Hadoop c++ headers.
 
+
 Example
-++++++++++
++++++++
 
 ::
   
@@ -144,7 +141,7 @@ Example
 
 
 Installation
-----------------
+------------
 
 In the same shell you used to run the build (in particular, with the same
 environment variables still set), run one of the following installation
@@ -152,7 +149,7 @@ commands in the Pydoop distribution directory.
 
 
 System-wide installation
-...........................
+........................
 
 To install in the system's ``/usr/lib`` space, run the following::
 
@@ -160,15 +157,15 @@ To install in the system's ``/usr/lib`` space, run the following::
 
 
 User-local installation
-.........................
+.......................
 
 To install to your current user's home directory::
 
   python setup.py install --user
 
 The package is installed in ``~/.local/lib/python2.6/site-packages``.
-This may be a particular handy solution if your home directory is accessible on
-the entire cluster.
+This may be a particular handy solution if your home directory is
+accessible on the entire cluster.
 
 
 Installing to another location
@@ -177,7 +174,6 @@ Installing to another location
 ::
 
   python setup.py install --home <path>
-
 
 
 .. _troubleshooting:
@@ -233,7 +229,6 @@ superuser*::
 
   python all_tests.py
 
-
 .. note:: You can also separately run the pydoop.pipes and pydoop.hdfs tests with ``python all_tests_pipes.py`` and ``python all_tests_hdfs.py``\ .
 
 
@@ -246,20 +241,19 @@ superuser.  To have superuser privileges, you will have to either:
 
 * start the cluster with your own user account, so you will be the cluster 
   superuser; or
-* edit ``hdfs-site.xml`` in your configuration and set the ``dfs.permissions.supergroup``  
-  property to one of your unix groups (type ``groups`` at the command prompt to see to 
-  which groups your account belongs).
+
+* edit ``hdfs-site.xml`` in your configuration and set the
+  ``dfs.permissions.supergroup`` property to one of your unix groups
+  (type ``groups`` at the command prompt to see to which groups your
+  account belongs).
 
 
-
-::
+.. code-block:: xml
 
   <property>
     <name>dfs.permissions.supergroup</name>
     <value>mygroup</value>
   </property>
 
-
 If you can't acquire superuser privileges to run the tests, just keep in mind
 that the failures reported may be due to this reason.
-
