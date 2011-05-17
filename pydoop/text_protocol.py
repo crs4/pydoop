@@ -30,12 +30,14 @@ class text_down_protocol(object):
     self.__send(['close'])
     self.proc.stdin.close()
     self.proc.wait()
-    self.fd.close()
+    if self.fd is not sys.stdout:
+      self.fd.close()
   #--
   def abort(self):
     self.__send(['abort'])
     self.proc.wait()
-    self.fd.close()
+    if self.fd is not sys.stdout:
+      self.fd.close()
   #--
   def set_job_conf(self, job_conf_dict):
     args = ['setJobConf', '%d' % (2*len(job_conf_dict))]
