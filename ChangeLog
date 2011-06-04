@@ -1,3 +1,10 @@
+2011-06-04    <simleo@neuron.crs4.it>
+
+	* setup.py: first step towards support for Hadoop 0.20.203.0:
+	extension modules compile and can be imported correctly (no
+	testing yet) after applying hadoop-0.20.203.0.patch to Hadoop's
+	source code.
+
 2011-05-16    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs.py: HADOOP_HOME is now required.
