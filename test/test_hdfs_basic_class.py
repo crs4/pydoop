@@ -51,8 +51,6 @@ class hdfs_basic_tc(unittest.TestCase):
     f = self.fs.open_file("%s/tar" % (path), os.O_WRONLY)
     f.write("tar\n")
     f.close()
-    if HADOOP_VERSION >= (0,21,0):
-      self.assertRaisesExternal(IOError, self.fs.delete, path, recursive=False)
     self.fs.delete(path, recursive=True)
     self.assertFalse(self.fs.exists(path))
     self.fs.delete(parent, recursive=False)
@@ -484,3 +482,4 @@ def basic_tests():
     'block_boundary',
     'top_level_open',
     ]
+

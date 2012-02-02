@@ -12,29 +12,21 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
     hdfs_basic_tc.__init__(self, target, '', 0)
   
   def connect(self):
-    fs_list = [
-      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT),
-      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody"),
-      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody", ["users"]),
-      hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody", ["users", "nobody"]),
-      ]
-    for fs in fs_list:
-      self.assertFalse(fs.closed)
-      self.__connect_helper(fs)
-      self.assertEqual(fs.host, '')
-      self.assertEqual(fs.port, 0)
-      fs.close()
-      self.assertTrue(fs.closed)
-      self.assertRaises(ValueError, fs.default_block_size)
+    fs = hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT)
+    self.__connection_assertions_and_close(fs)
 
-  def top_level_open(self):
-    path = "file:/tmp/test_hdfs_open"
-    with hdfs.open(path, "w") as f:
-      f.write(path)
-    with hdfs.open(path) as f:
-      self.assertEqual(f.read(), path)
-    f.fs.delete(path)
-    f.fs.close()
+  def connect_with_user(self):
+    fs = hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT, "nobody")
+    self.__connection_assertions_and_close(fs)
+
+  def __connection_assertions_and_close(self, conn):
+    self.assertFalse(conn.closed)
+    self.__connect_helper(conn)
+    self.assertEqual(conn.host, '')
+    self.assertEqual(conn.port, 0)
+    conn.close()
+    self.assertTrue(conn.closed)
+    self.assertRaises(ValueError, conn.default_block_size)
 
   def __connect_helper(self, fs):
     path = os.path.join(tempfile.mkdtemp(prefix="pydoop_test_hdfs"), "foo")
@@ -51,10 +43,20 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
     self.assertEqual(hdfs_group, local_group)
     fs.delete(path)
 
+  def top_level_open(self):
+    path = "file:/tmp/test_hdfs_open"
+    with hdfs.open(path, "w") as f:
+      f.write(path)
+    with hdfs.open(path) as f:
+      self.assertEqual(f.read(), path)
+    f.fs.delete(path)
+    f.fs.close()
+
 
 def suite():
   suite = unittest.TestSuite()
   tests = basic_tests()
+  tests.append("connect_with_user")
   for t in tests:
     suite.addTest(hdfs_plain_disk_tc(t))
   return suite
