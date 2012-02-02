@@ -45,9 +45,6 @@ bp::str create_a_string(std::size_t n) {
   return r;
 }
 
-std::string& create_a_string_ref() {
-}
-
 
 //++++++++++++++++++++++++++++++//
 // Exporting class definitions. //
