@@ -26,13 +26,9 @@ from distutils.command.build_ext import build_ext
 import pydoop
 from pydoop.hadoop_utils import get_hadoop_version
 
-# https://issues.apache.org/jira/browse/MAPREDUCE-375 -- integrated in 0.21.0
 def get_pipes_macros(hadoop_version):
   pipes_macros = []
-  if hadoop_version >= (0,21,0):
-    pipes_macros.append(("VINT_ISPLIT_FILENAME", None))
   return pipes_macros
-
 
 # this should be more reliable than deciding based on hadoop version
 def get_hdfs_macros(hdfs_hdr):
