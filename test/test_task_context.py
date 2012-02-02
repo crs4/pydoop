@@ -21,10 +21,6 @@ example_input_splits = [
    'hdfs://localhost:9000/user/zag/in-dir/images_list',
    0, 36)
   ]
-if HADOOP_VERSION < (0,21,0):
-  example_input_splits = [("\x00"+raw_split, fn, o, l)
-                          for (raw_split, fn, o, l) in example_input_splits]
-
 
 class taskcontext_tc(unittest.TestCase):
 
