@@ -178,7 +178,6 @@ def create_hdfs_ext(path_finder):
     libraries=["pthread", "boost_python", "hdfs", "jvm"],
     define_macros=get_hdfs_macros(os.path.join(path_finder.hdfs_inc_path, "hdfs.h"))
     )
-  return factory.create()
 
 
 def create_ext_modules(path_finder):
