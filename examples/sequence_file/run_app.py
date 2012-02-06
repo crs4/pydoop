@@ -4,12 +4,13 @@
 # END_COPYRIGHT
 
 import sys, os, optparse, subprocess as sp
-from pydoop.hadoop_utils import get_hadoop_version
+import pydoop
+from pydoop.hadoop_utils import get_hadoop_exec
 
 
-HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
-HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
+HADOOP_HOME = pydoop.hadoop_home()
+HADOOP_VERSION = pydoop.hadoop_version()
+HADOOP = get_hadoop_exec(HADOOP_HOME)
 WD = "test_sequence_file"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"
 LOCAL_FILTER_SCRIPT = "bin/filter.py"

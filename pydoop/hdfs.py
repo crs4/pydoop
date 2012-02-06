@@ -42,15 +42,11 @@ import os, glob
 import pydoop
 
 DEFAULT_LIBHDFS_OPTS = "-Xmx48m"  # enough for most applications.
-try:
-  HADOOP_HOME = os.environ["HADOOP_HOME"]
-except KeyError:
-  raise ValueError("HADOOP_HOME not set")
-HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR",
-                            os.path.join(HADOOP_HOME, "conf"))
 
-jars = glob.glob(os.path.join(HADOOP_HOME, "lib/*.jar"))
-jars.extend(glob.glob(os.path.join(HADOOP_HOME, "hadoop*.jar")))
+HADOOP_CONF_DIR = pydoop.hadoop_conf()
+
+jars = glob.glob(os.path.join(pydoop.hadoop_home(), "lib/*.jar"))
+jars.extend(glob.glob(os.path.join(pydoop.hadoop_home(), "hadoop*.jar")))
 jars.append(HADOOP_CONF_DIR)
 
 CLASSPATH = os.environ.setdefault("CLASSPATH", "")

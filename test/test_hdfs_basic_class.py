@@ -5,13 +5,11 @@ import sys, os, unittest, random
 from ctypes import create_string_buffer
 import xml.dom.minidom
 
+import pydoop
 import pydoop.hdfs as hdfs
-from pydoop.hadoop_utils import get_hadoop_version
 
-HADOOP_HOME = hdfs.HADOOP_HOME
-HADOOP_CONF_DIR = hdfs.HADOOP_CONF_DIR
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
-
+HADOOP_HOME = pydoop.hadoop_home()
+HADOOP_CONF_DIR = pydoop.hadoop_conf()
 
 class hdfs_basic_tc(unittest.TestCase):
 

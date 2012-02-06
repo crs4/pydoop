@@ -4,10 +4,10 @@
 # END_COPYRIGHT
 
 import sys, os, subprocess
-from pydoop.hadoop_utils import get_hadoop_version
+import pydoop
 
-HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
+HADOOP_HOME = pydoop.hadoop_home()
+HADOOP_VERSION = pydoop.hadoop_version()
 SRC = "net/sourceforge/pydoop/mapred/TextInputFormat.java"
 CLASS = SRC.replace("java", "class")
 OUTPUT_JAR = "pydoop-mapred.jar"
