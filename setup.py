@@ -378,3 +378,5 @@ setup(
     "Intended Audience :: Developers",
     ],
   )
+
+# vim: set sw=2 ts=2 et
