@@ -154,7 +154,7 @@ def create_pipes_ext(path_finder):
     include_dirs.append("/usr/include/openssl")
     libraries.append("ssl")
   return BoostExtension(
-    "pydoop._pipes",
+    pydoop.complete_mod_name("_pipes", path_finder.hadoop_version),
     ["src/%s.cpp" % n for n in wrap],
     ["src/%s.cpp" % n for n in aux],
     patches=patches,
@@ -169,7 +169,7 @@ def create_hdfs_ext(path_finder):
   aux = []
   library_dirs = get_java_library_dirs(JAVA_HOME) + path_finder.hdfs_link_paths["L"]
   return BoostExtension(
-    "pydoop._hdfs",
+    pydoop.complete_mod_name("_hdfs", path_finder.hadoop_version),
     ["src/%s.cpp" % n for n in wrap],
     ["src/%s.cpp" % n for n in aux],
     include_dirs=get_java_include_dirs(JAVA_HOME) + [path_finder.hdfs_inc_path],

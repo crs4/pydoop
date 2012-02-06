@@ -3,7 +3,8 @@
 
 import os, unittest
 import pydoop.utils as pu
-import pydoop._pipes as pp
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
 
 
 class split_hdfs_path_tc(unittest.TestCase):

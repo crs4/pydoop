@@ -2,7 +2,8 @@
 # END_COPYRIGHT
 
 import unittest
-import pydoop._pipes
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
 
 
 class jobconf_tc(unittest.TestCase):
@@ -13,9 +14,9 @@ class jobconf_tc(unittest.TestCase):
   def test_override_from_python(self):
     d = {'str' : 'this is a string', 'float' : 0.23,
          'int' : 22, 'bool' : False}
-    class jc(pydoop._pipes.JobConf):
+    class jc(pp.JobConf):
       def __init__(self, d):
-        pydoop._pipes.JobConf.__init__(self)
+        pp.JobConf.__init__(self)
         self.d = d
       def hasKey(self, k):
         return self.d.has_key(k)
@@ -28,7 +29,7 @@ class jobconf_tc(unittest.TestCase):
       def getBoolean(self, k):
         return bool(self.get(k))
     jo = jc(d)
-    jp = pydoop._pipes.wrap_JobConf_object(jo)
+    jp = pp.wrap_JobConf_object(jo)
     for k in d:
       self.assertTrue(jp.hasKey(k))
     for k in d:
@@ -42,7 +43,7 @@ class jobconf_tc(unittest.TestCase):
   def test_override_from_cpluplus(self):
     d = {'str' : 'this is a string', 'float' : '0.23',
          'int' : '22', 'bool' : 'false'}
-    o = pydoop._pipes.get_JobConf_object(d)
+    o = pp.get_JobConf_object(d)
     for k in d:
       self.assertTrue(o.hasKey(k))
     self.assertEqual(o.get('str'), d['str'])

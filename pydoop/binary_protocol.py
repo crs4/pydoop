@@ -2,7 +2,9 @@
 # END_COPYRIGHT
 
 import sys, os, subprocess
-import pydoop._pipes as pp
+
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
 
 
 #-- message codes for the down protocol

@@ -10,7 +10,9 @@ them, providing implementations for all methods called by the
 framework.
 """
 
-import _pipes as pp
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
+
 from factory import Factory
 
 

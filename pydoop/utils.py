@@ -6,7 +6,9 @@ This module contains general utility functions for application writing.
 """
 import os, re
 from struct import pack
-import _pipes as pp
+
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
 
 
 DEFAULT_PORT = 8020  # org/apache/hadoop/hdfs/server/namenode/NameNode.java

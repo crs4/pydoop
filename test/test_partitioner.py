@@ -4,7 +4,8 @@
 import unittest
 
 
-import pydoop._pipes
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
 from pydoop.pipes import Factory, Partitioner
 
 
@@ -36,7 +37,7 @@ class partitioner_tc(unittest.TestCase):
          'input_value_class' : 'valueclass',
          'job_conf' : {}
          }
-    ctx = pydoop._pipes.get_MapContext_object(d)
+    ctx = pp.get_MapContext_object(d)
     self.assertEqual(ctx.getInputKey(), d['input_key'])
     self.assertEqual(ctx.getInputValue(), d['input_value'])
     self.assertEqual(ctx.getInputSplit(), d['input_split'])
@@ -49,7 +50,7 @@ class partitioner_tc(unittest.TestCase):
       k = 'key' + ('a' * i)
       self.assertEqual(
         partition_function(k, n_partitions),
-        pydoop._pipes.get_partition_from_partitioner(p, k, n_partitions)
+        pp.get_partition_from_partitioner(p, k, n_partitions)
         )
 
 

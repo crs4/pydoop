@@ -39,6 +39,7 @@ above setting.
 
 import os, glob
 
+import pydoop
 
 DEFAULT_LIBHDFS_OPTS = "-Xmx48m"  # enough for most applications.
 try:
@@ -58,8 +59,8 @@ CLASSPATH = "%s:%s" % (":".join(jars), CLASSPATH)
 os.environ["CLASSPATH"] = CLASSPATH
 os.environ["LIBHDFS_OPTS"] = os.getenv("LIBHDFS_OPTS", DEFAULT_LIBHDFS_OPTS)
 
+hdfs_fs = pydoop.import_version_specific_module("_hdfs").hdfs_fs
 
-from _hdfs import hdfs_fs
 from utils import split_hdfs_path
 
 

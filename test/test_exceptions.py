@@ -7,23 +7,24 @@ import random
 import sys
 
 #----------------------------------------------------------------------------
-import pydoop._pipes
+import pydoop
+pp = pydoop.import_version_specific_module('_pipes')
 #----------------------------------------------------------------------------
 
 class exceptions_tc(unittest.TestCase):
   def raise_pydoop(self):
     m = "hello there!"
-    self.assertRaises(UserWarning, pydoop._pipes.raise_pydoop_exception, m)
+    self.assertRaises(UserWarning, pp.raise_pydoop_exception, m)
     try:
-      pydoop._pipes.raise_pydoop_exception(m)
+      pp.raise_pydoop_exception(m)
     except Exception, e:
       self.assertEqual(e.args[0], 'pydoop_exception: ' + m)
 
   def raise_pipes(self):
     m = "hello there!"
-    self.assertRaises(UserWarning, pydoop._pipes.raise_pipes_exception, m)
+    self.assertRaises(UserWarning, pp.raise_pipes_exception, m)
     try:
-      pydoop._pipes.raise_pipes_exception(m)
+      pp.raise_pipes_exception(m)
     except Exception, e:
       self.assertEqual(e.args[0], 'pydoop_exception.pipes: ' + m)
 
