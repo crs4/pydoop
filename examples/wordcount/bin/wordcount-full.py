@@ -100,7 +100,7 @@ class Writer(pp.RecordWriter):
   def __init__(self, context):
     super(Writer, self).__init__(context)
     jc = context.getJobConf()
-    if HADOOP_VERSION < (0,21,0):
+    if HADOOP_VERSION != (0,21,0):
       jc_configure_int(self, jc, "mapred.task.partition", "part")
       jc_configure(self, jc, "mapred.work.output.dir", "outdir")
       jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")

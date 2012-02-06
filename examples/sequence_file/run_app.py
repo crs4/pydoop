@@ -15,18 +15,11 @@ WD = "test_sequence_file"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"
 LOCAL_FILTER_SCRIPT = "bin/filter.py"
 
-if HADOOP_VERSION < (0,21,0):
-  MR_JOB_NAME = "mapred.job.name"
-  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
-  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
-  MR_OUT_COMPRESS_TYPE = "mapred.output.compression.type"
-  MR_REDUCE_TASKS = "mapred.reduce.tasks"
-else:
-  MR_JOB_NAME = "mapreduce.job.name"
-  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
-  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
-  MR_OUT_COMPRESS_TYPE = "mapreduce.output.fileoutputformat.compress.type"
-  MR_REDUCE_TASKS = "mapreduce.job.reduces"
+MR_JOB_NAME = "mapred.job.name"
+PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
+MR_OUT_COMPRESS_TYPE = "mapred.output.compression.type"
+MR_REDUCE_TASKS = "mapred.reduce.tasks"
 MR_IN_CLASS = "mapred.input.format.class"
 MR_OUT_CLASS = "mapred.output.format.class"
 

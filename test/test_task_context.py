@@ -8,18 +8,14 @@ pp = pydoop.import_version_specific_module('_pipes')
 from pydoop.pipes import InputSplit
 from pydoop.hadoop_utils import get_hadoop_version
 
-HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
-
-
 example_input_splits = [
-  ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
+  ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
    'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
    550952, 550917),
-  ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
+  ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
    'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
    0, 550952),
-  ('1hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
+  ('\x001hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
    'hdfs://localhost:9000/user/zag/in-dir/images_list',
    0, 36)
   ]
