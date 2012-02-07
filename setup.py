@@ -22,6 +22,7 @@ import sys, os, platform, re
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
+from distutils.command.clean import clean
 
 import pydoop
 from pydoop.hadoop_utils import get_hadoop_version
@@ -327,6 +328,19 @@ class PathFinder(object):
       print n, ": ", getattr(self, n)
     print "========================================="
 
+class pydoop_clean(clean):
+  def run(self):
+    clean.run(self)
+    pydoop_src_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'src')
+    ## remove generated files and patched Hadoop pipes code 
+    r = re.compile('(%s|%s)_.*_main.cpp$' % (HdfsExtName, PipesExtName))
+    paths = filter(r.search, os.listdir(pydoop_src_path)) + ['SerialUtils.cc', 'StringUtils.cc', 'HadoopPipes.cc']
+    absolute_paths = [ os.path.join(pydoop_src_path, f) for f in paths ]
+    for f in absolute_paths:
+      if not self.dry_run:
+        os.remove(f)
+
+
 ######################### main ################################
 
 mtime = lambda fn: os.stat(fn).st_mtime
@@ -370,7 +384,7 @@ setup(
   url=pydoop.__url__,
   download_url="https://sourceforge.net/projects/pydoop/files/",
   packages=["pydoop"],
-  cmdclass={"build_ext": build_pydoop_ext},
+  cmdclass={"build_ext": build_pydoop_ext, 'clean': pydoop_clean},
   ext_modules=create_ext_modules(),
   platforms=["Linux"],
   license="Apache-2.0",
