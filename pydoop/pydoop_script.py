@@ -23,24 +23,34 @@ sys.path.insert(0, os.getcwd())
 import pydoop.pipes
 import %(module)s
 
+class ContextWriter(object):
+	def __init__(self, context):
+		self.context = context
+		self.counters = dict()
+
+	def emit(self, k, v):
+		self.context.emit(str(k), str(v))
+
+	def count(self, what, howmany):
+		if self.counters.has_key(what):
+			counter = self.counters[what]
+		else:
+			counter = self.context.getCounter('%(module)s', what)
+			self.counters[what] = counter
+		self.context.incrementCounter(counter, howmany)
+
 class PydoopScriptMapper(pydoop.pipes.Mapper):
 	def __init__(self, ctx):
 		super(type(self), self).__init__(ctx)
-		self.context = ctx
+		self.writer = ContextWriter(ctx)
 
-	def emit(self, k,v):
-		self.context.emit(str(k), str(v))
-		
 	def map(self, ctx):
-		%(module)s.%(map_fn)s(ctx.getInputValue(), self.emit)
+		%(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
 
 class PydoopScriptReducer(pydoop.pipes.Reducer):
 	def __init__(self, ctx):
 		super(type(self), self).__init__(ctx)
-		self.context = ctx
-
-	def emit(self, k,v):
-		self.context.emit(str(k), str(v))
+		self.writer = ContextWriter(ctx)
 
 	@staticmethod
 	def iter(ctx):
@@ -49,7 +59,7 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 
 	def reduce(self, ctx):
 		key = ctx.getInputKey()
-		%(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.emit)
+		%(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
 
 ## main
 sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopScriptReducer) ))
