@@ -33,6 +33,94 @@ HdfsSrc = ["hdfs_fs", "hdfs_file", "hdfs_common"]
 PipesExtName = "_pipes"
 HdfsExtName = "_hdfs"
 
+###############################################################################
+# Utility functions
+###############################################################################
+def get_arch():
+  bits, linkage = platform.architecture()
+  if bits == "64bit":
+    return "amd64", "64"
+  return "i386", "32"
+
+def get_java_include_dirs(java_home):
+  p = platform.system().lower()  # TODO: test for non-linux
+  java_inc = os.path.join(java_home, "include")
+  java_platform_inc = "%s/%s" % (java_inc, p)
+  return [java_inc, java_platform_inc]
+
+def get_java_library_dirs(java_home):
+  a = get_arch()[0]
+  return [os.path.join(java_home, "jre/lib/%s/server" % a)]
+
+# Given a list of paths, returns the first that exists.
+def find_first_existing(*paths):
+  for p in paths:
+    if os.path.exists(p):
+      return p
+  return None
+
+###############################################################################
+# Create extension objects.
+#
+# We first create some basic Extension objects to pass to the distutils setup
+# function.  The act as little more than placeholders, simply telling distutils
+# the name of the extension and what source files it depends on.
+#   functions:  create_basic_(pipes|hdfs)_ext
+#
+# When our build_pydoop_ext command is invoked, we build a complete extension
+# object that includes all the information required for the build process.  In
+# particular, it includes all the relevant paths.
+#
+# The reason for the two-stage process is to delay verifying paths to when 
+# they're needed (build) and avoiding those checks for other commands (such
+# as clean)..
+###############################################################################
+def create_basic_pipes_ext():
+  return BoostExtension(PipesExtName, ["src/%s.cpp" % n for n in PipesSrc], [])
+
+def create_basic_hdfs_ext():
+  return BoostExtension(HdfsExtName, ["src/%s.cpp" % n for n in HdfsSrc], [])
+
+def create_full_pipes_ext(path_finder):
+  basedir = path_finder.mapred_src
+  patches = {
+    os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
+      OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
+      },
+    os.path.join(basedir, "utils/impl/StringUtils.cc"): {
+      },
+    os.path.join(basedir, "pipes/impl/HadoopPipes.cc"): {
+      OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
+      },
+    }
+  include_dirs = path_finder.mapred_inc
+  libraries = ["pthread", "boost_python"]
+  if path_finder.hadoop_version[2] == 203:
+    include_dirs.append("/usr/include/openssl")
+    libraries.append("ssl")
+  return BoostExtension(
+    pydoop.complete_mod_name(PipesExtName, path_finder.hadoop_version),
+    ["src/%s.cpp" % n for n in PipesSrc],
+    [], # aux
+    patches=patches,
+    include_dirs=include_dirs,
+    libraries=libraries
+    )
+
+def create_full_hdfs_ext(path_finder):
+  library_dirs = get_java_library_dirs(path_finder.java_home) + path_finder.hdfs_link_paths["L"]
+  return BoostExtension(
+    pydoop.complete_mod_name(HdfsExtName, path_finder.hadoop_version),
+    ["src/%s.cpp" % n for n in HdfsSrc],
+    [], # aux
+    include_dirs=get_java_include_dirs(path_finder.java_home) + [path_finder.hdfs_inc_path],
+    library_dirs=library_dirs,
+    runtime_library_dirs=library_dirs,
+    libraries=["pthread", "boost_python", "hdfs", "jvm"],
+    define_macros=get_hdfs_macros(os.path.join(path_finder.hdfs_inc_path, "hdfs.h"))
+    )
+
+
 # this should be more reliable than deciding based on hadoop version
 def get_hdfs_macros(hdfs_hdr):
   hdfs_macros = []
@@ -47,26 +135,13 @@ def get_hdfs_macros(hdfs_hdr):
     hdfs_macros.append(("CONNECT_GROUP_INFO", None))
   return hdfs_macros
 
-def get_arch():
-  bits, linkage = platform.architecture()
-  if bits == "64bit":
-    return "amd64", "64"
-  return "i386", "32"
+###############################################################################
+# Custom distutils extension and commands
+###############################################################################
 
-
-def get_java_include_dirs(java_home):
-  p = platform.system().lower()  # TODO: test for non-linux
-  java_inc = os.path.join(java_home, "include")
-  java_platform_inc = "%s/%s" % (java_inc, p)
-  return [java_inc, java_platform_inc]
-
-def get_java_library_dirs(java_home):
-  a = get_arch()[0]
-  return [os.path.join(java_home, "jre/lib/%s/server" % a)]
-
-
+# Customized Extension class that generates the necessary Boost Python
+# export code.
 class BoostExtension(Extension):
-
   export_pattern = re.compile(r"void\s+export_(\w+)")
 
   def __init__(self, name, wrap_sources, aux_sources, patches=None, **kw):
@@ -126,52 +201,8 @@ class BoostExtension(Extension):
       aux.append(patched_fn)
     return aux
 
-def create_basic_pipes_ext():
-  return BoostExtension(PipesExtName, ["src/%s.cpp" % n for n in PipesSrc], [])
-
-def create_basic_hdfs_ext():
-  return BoostExtension(HdfsExtName, ["src/%s.cpp" % n for n in HdfsSrc], [])
-
-def create_full_pipes_ext(path_finder):
-  basedir = path_finder.mapred_src
-  patches = {
-    os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
-      OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
-      },
-    os.path.join(basedir, "utils/impl/StringUtils.cc"): {
-      },
-    os.path.join(basedir, "pipes/impl/HadoopPipes.cc"): {
-      OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
-      },
-    }
-  include_dirs = path_finder.mapred_inc
-  libraries = ["pthread", "boost_python"]
-  if path_finder.hadoop_version[2] == 203:
-    include_dirs.append("/usr/include/openssl")
-    libraries.append("ssl")
-  return BoostExtension(
-    pydoop.complete_mod_name(PipesExtName, path_finder.hadoop_version),
-    ["src/%s.cpp" % n for n in PipesSrc],
-    [], # aux
-    patches=patches,
-    include_dirs=include_dirs,
-    libraries=libraries
-    )
-
-def create_full_hdfs_ext(path_finder):
-  library_dirs = get_java_library_dirs(path_finder.java_home) + path_finder.hdfs_link_paths["L"]
-  return BoostExtension(
-    pydoop.complete_mod_name(HdfsExtName, path_finder.hadoop_version),
-    ["src/%s.cpp" % n for n in HdfsSrc],
-    [], # aux
-    include_dirs=get_java_include_dirs(path_finder.java_home) + [path_finder.hdfs_inc_path],
-    library_dirs=library_dirs,
-    runtime_library_dirs=library_dirs,
-    libraries=["pthread", "boost_python", "hdfs", "jvm"],
-    define_macros=get_hdfs_macros(os.path.join(path_finder.hdfs_inc_path, "hdfs.h"))
-    )
-
-
+# Customized distutils build_ext command that sets the options
+# required to build the Pydoop extensions.
 class build_pydoop_ext(build_ext):
   def finalize_options(self):
     build_ext.finalize_options(self)
@@ -184,19 +215,38 @@ class build_pydoop_ext(build_ext):
       e.sources.append(e.generate_main())
       e.sources.extend(e.generate_patched_aux())
 
-
 def create_ext_modules():
   ext_modules = []
   ext_modules.append(create_basic_pipes_ext())
   ext_modules.append(create_basic_hdfs_ext())
   return ext_modules
 
-def find_first_existing(*paths):
-  for p in paths:
-    if os.path.exists(p):
-      return p
-  return None
 
+# Custom clean action that removes files generated by the build process.
+# In particular, the build process generates _*_main.cpp files for the boost
+# extensions, and some patched Hadoop source code files, all inside the src
+# directory.  These are removed when this clean action is executed.
+class pydoop_clean(clean):
+  def run(self):
+    clean.run(self)
+    pydoop_src_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'src')
+    ## remove generated files and patched Hadoop pipes code 
+    r = re.compile('(%s|%s)_.*_main.cpp$' % (HdfsExtName, PipesExtName))
+    paths = filter(r.search, os.listdir(pydoop_src_path)) + ['SerialUtils.cc', 'StringUtils.cc', 'HadoopPipes.cc']
+    absolute_paths = [ os.path.join(pydoop_src_path, f) for f in paths ]
+    for f in absolute_paths:
+      if not self.dry_run:
+        os.remove(f)
+
+
+###############################################################################
+# Path finder
+# Class that encapsulates the logic to find paths and other info required by
+# the build process, such as:
+# * Java path
+# * Hadoop binary and source paths
+# * Hadoop version
+###############################################################################
 class PathFinder(object):
   def __init__(self):
     self.java_home = None
@@ -327,18 +377,6 @@ class PathFinder(object):
     for n in names:
       print n, ": ", getattr(self, n)
     print "========================================="
-
-class pydoop_clean(clean):
-  def run(self):
-    clean.run(self)
-    pydoop_src_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'src')
-    ## remove generated files and patched Hadoop pipes code 
-    r = re.compile('(%s|%s)_.*_main.cpp$' % (HdfsExtName, PipesExtName))
-    paths = filter(r.search, os.listdir(pydoop_src_path)) + ['SerialUtils.cc', 'StringUtils.cc', 'HadoopPipes.cc']
-    absolute_paths = [ os.path.join(pydoop_src_path, f) for f in paths ]
-    for f in absolute_paths:
-      if not self.dry_run:
-        os.remove(f)
 
 
 ######################### main ################################
