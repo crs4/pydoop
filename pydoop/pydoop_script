@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
