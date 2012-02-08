@@ -129,6 +129,8 @@ sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopSc
 
 		self.properties['mapred.reduce.tasks'] = n_red_tasks
 		self.properties['mapred.textoutputformat.separator'] = self.options.kv_separator
+		if self.properties['mapred.textoutputformat.separator'] == '':
+			sys.stderr.write("WARNING:  using the empty string as a key-value separator is known not to currently work with Hadoop TextOutputFormat.\n")
 
 	def __write_pipes_script(self, fd):
 		ld_path = os.environ.get('LD_LIBRARY_PATH', None)
