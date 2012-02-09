@@ -236,7 +236,11 @@ class pydoop_clean(clean):
     absolute_paths = [ os.path.join(pydoop_src_path, f) for f in paths ]
     for f in absolute_paths:
       if not self.dry_run:
-        os.remove(f)
+        try:
+          if os.path.exists(f):
+            os.remove(f)
+        except OSError as e:
+          print >>sys.stderr, "Error removing file.", e
 
 
 ###############################################################################
