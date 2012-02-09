@@ -29,6 +29,9 @@ def __is_exe(fpath):
 	return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
 def num_nodes():
+	"""
+	Get the number of task tracker in the cluster.
+	"""
 	hproc = subprocess.Popen([hadoop, "job", "-list-active-trackers"], stdout=subprocess.PIPE)
 	stdout, stderr = hproc.communicate()
 	if hproc.returncode == 0:
@@ -37,15 +40,24 @@ def num_nodes():
 		raise RuntimeError("Error running hadoop job -list-active-trackers")
 
 def hdfs_path_exists(path):
+	"""
+	stat the given HDFS path.
+	"""
 	retcode = subprocess.call([hadoop, 'dfs', '-stat', path], stdout=open('/dev/null', 'w'), stderr=subprocess.STDOUT)
 	return retcode == 0
 
 def run_hadoop_cmd_e(cmd, properties=None, args_list=[]):
+	"""
+	Run a Hadoop command.  Launches an exception in case of failure.
+	"""
 	retcode = run_hadoop_cmd(cmd, properties, args_list)
 	if retcode != 0:
 		raise RuntimeError("Error running Hadoop command")
 
 def run_hadoop_cmd(cmd, properties=None, args_list=[]):
+	"""
+	Run a Hadoop command.  Returns the exit code.
+	"""
 	args = [hadoop, cmd]
 	if properties:
 		args += __construct_property_args(properties)
@@ -53,9 +65,19 @@ def run_hadoop_cmd(cmd, properties=None, args_list=[]):
 	return subprocess.call(args)
 
 def dfs(*args):
+	"""
+	Run the Hadoop dfs command.  Given the specific command (e.g. -ls)
+	in the method arguments.
+	
+	Launches an exception in case of failure.
+	"""
 	return run_hadoop_cmd_e("dfs", args_list=args)
 
 def run_hadoop_jar(jar_name, properties=None, args_list=[]):
+	"""
+	Run a jar on Hadoop (hadoop jar command).
+	Launches an exception in case of failure.
+	"""
 	if os.path.exists(jar_name) and os.access(jar_name, os.R_OK):
 		args = [hadoop, 'jar', jar_name]
 		if properties:
@@ -70,12 +92,10 @@ def run_hadoop_jar(jar_name, properties=None, args_list=[]):
 def __construct_property_args(prop_dict):
 	return sum(map(lambda pair: ["-D", "%s=%s" % pair], prop_dict.iteritems()), []) # sum flattens the list
 
-def run_class_e(class_name, additional_cp=None, properties=None, args_list=[]):
-	retcode = run_class(class_name, additional_cp, properties, args_list)
-	if retcode != 0:
-		raise RuntimeError("Error running Hadoop class")
-
 def run_pipes(executable, input_path, output_path, properties=None, args_list=[]):
+	"""
+	Run a pipes command.  Returns exit code.
+	"""
 	args = [hadoop, "pipes"]
 	properties = properties.copy() if properties else {}
 	properties['hadoop.pipes.executable'] = executable
@@ -85,10 +105,10 @@ def run_pipes(executable, input_path, output_path, properties=None, args_list=[]
 	args.extend(args_list)
 	return subprocess.call(args)
 
-
 def run_class(class_name, additional_cp=None, properties=None, args_list=[]):
 	"""
-	Run a class that needs the Hadoop jars in its class path
+	Run a class that needs the Hadoop jars in its class path.
+	Returns the exit code.
 	"""
 	args = [hadoop, class_name]
 	if additional_cp:
@@ -103,7 +123,27 @@ def run_class(class_name, additional_cp=None, properties=None, args_list=[]):
 	args.extend(args_list)
 	return subprocess.call(args)
 
+def run_class_e(class_name, additional_cp=None, properties=None, args_list=[]):
+	"""
+	Run a class that needs the Hadoop jars in its class path
+	Launches an exception in case of failure.
+	"""
+	retcode = run_class(class_name, additional_cp, properties, args_list)
+	if retcode != 0:
+		raise RuntimeError("Error running Hadoop class")
+
+
 def find_jar(jar_name, root_path=None):
+	"""
+	Look for the named jar in:
+
+	* root_path, if specfied;
+	* current-working directory (cwd);
+	* cwd/build;
+	* /usr/share/java
+
+	Returns the full path of the jar if found; else returns None.
+	"""
 	root = root_path or os.getcwd()
 	paths = (root, os.path.join(root, "build"), "/usr/share/java")
 	for path in [ os.path.join(path, jar_name) for path in paths ]:
@@ -111,14 +151,18 @@ def find_jar(jar_name, root_path=None):
 			return path
 	return None
 
-def find_seal_jar(root_path = None):
-	return find_jar(SealJarName, root_path)
-
 #################################################################################
 # module initialization
 #################################################################################
 
 hadoop = None
+"""
+The path to the ``hadoop`` executable found.
+
+pydoop.hadut searches in ``HADOOP_HOME/bin``, then scans the ``PATH``.
+
+An ImportError is raised if the ``hadoop`` executable isn't found.
+"""
 
 if os.environ.has_key("HADOOP_HOME") and \
 	__is_exe(os.path.join(os.environ["HADOOP_HOME"], "bin", "hadoop")):
@@ -133,4 +177,3 @@ else:
 	if hadoop is None:
 		raise ImportError("Couldn't find hadoop executable.  Please set HADOOP_HOME or add the hadoop executable to your PATH")
 	hadoop = os.path.abspath(hadoop)
-
