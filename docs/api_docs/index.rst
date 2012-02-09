@@ -8,3 +8,4 @@ Contents:
    mr_api
    hdfs_api
    utils
+   hadut

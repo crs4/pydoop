@@ -1,3 +1,5 @@
+.. _installation:
+
 Installation
 ============
 
@@ -17,8 +19,8 @@ Prerequisites
 
 In order to build and install Pydoop, you need the following software:
 
-* `Python <http://www.python.org>`_ version 2.6
-* `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2 or 0.20.203.0 or 0.21.0 or `Cloudera Hadoop <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ CDH3 Update 0
+* `Python <http://www.python.org>`_ version 2.7
+* `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.x or 1.0 or `Cloudera Hadoop <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ CDH3 Update 0
 * The source code for the version of Hadoop you're using
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library)
@@ -135,7 +137,7 @@ Example
   
   export JAVA_HOME=/usr/local/lib/jvm
   export HADOOP_HOME=/usr/local/lib/hadoop
-  export HADOOP_SRC=/var/src/hadoop-0.20.3
+  export HADOOP_SRC=/var/src/hadoop-0.20.2
   tar xzf pydoop-*.tar.gz
   cd pydoop-*
   python setup.py build
@@ -164,8 +166,8 @@ To install to your current user's home directory::
 
   python setup.py install --user
 
-The package is installed in ``~/.local/lib/python2.6/site-packages``.
-This may be a particular handy solution if your home directory is
+The package is installed in ``~/.local/lib/python2.7/site-packages``.
+This may be a particularly handy solution if your home directory is
 accessible on the entire cluster.
 
 
@@ -175,6 +177,37 @@ Installing to another location
 ::
 
   python setup.py install --home <path>
+
+
+.. _multiple_hadoop_versions:
+
+Multiple Hadoop versions
+--------------------------------
+
+If you'd like to use your Pydoop installation with multiple versions of Hadoop,
+you will need to repeat the building process for each version of Hadoop.
+
+After building Pydoop for the first time following the instructions above, 
+modify your HADOOP-related environment variables to point to the other version 
+of Hadoop to be supported.  Then repeat the build and installation commands again.
+
+Example::
+
+  tar xzf pydoop-*.tar.gz
+  cd pydoop-*
+
+  export HADOOP_HOME=/usr/share/hadoop-0.20.2
+  python setup.py build
+  python setup.py install --user
+
+  export HADOOP_HOME=/usr/share/hadoop-1.0.0
+  python setup.py build
+  python setup.py install --user
+
+
+At run time, the appropriate version of the Pydoop modules will be loaded for
+the version of Hadoop selected by your `HADOOP_HOME` variable.
+
 
 
 .. _troubleshooting:
@@ -191,13 +224,12 @@ Troubleshooting
     python setup.py build_py
     python setup.py install --skip-build
 
-#. Hadoop version issues. The current Pydoop version supports both
-   Hadoop 0.20.2 and 0.21.0. Hadoop version is automatically detected
-   *at compile time* based on the output of running ``hadoop version``. If this
-   fails for any reason, you can provide the correct version string
+#. Hadoop version issues. The Hadoop version selected at compile time is 
+   automatically detected based on the output of running ``hadoop version``.
+   If this fails for any reason, you can provide the correct version string
    through the ``HADOOP_VERSION`` environment variable, e.g.::
 
-    export HADOOP_VERSION="0.21.0"
+    export HADOOP_VERSION="1.0.0"
 
 
 Testing Your Installation

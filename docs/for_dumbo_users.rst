@@ -70,7 +70,26 @@ and it is run with::
   $ dumbo cat ipcounts | sort -k2,2nr | head -n 5
 
 
-The Pydoop version of the above is::
+With Pydoop, we could implement the above program using
+:ref:`pydoop_script`.  Write an ``ipcount_script.py`` module::
+
+  def mapper(key,value, writer):
+    writer.emit(value.split(None, 1)[0], 1)
+
+  def reducer(key, ivalue, writer):
+    writer.emit(key, sum(map(int, ivalue)))
+
+Then, run it with::
+
+  pydoop_script ipcount_script.py access.log output
+  hadoop fs -cat output/part* | sort -k2,2nr | head -n 5
+ 
+
+It should be noted that ``pydoop_script`` doesn't allow you to set a combiner
+class, nor do tackle more sophisticated problems, perhaps where you would need
+to track a state within your mapper or reducer objects.  If you need that sort
+of functionality then step up to the full Pydoop framework.  In that case, you
+would implement the program above as follows::
 
   import pydoop.pipes as pp
     
@@ -89,23 +108,22 @@ The Pydoop version of the above is::
     pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))
 
 
-Currently Pydoop does not provide a high-level wrapper to run jobs
-(although we plan to include one in a future release). Applications
-are run through the ``hadoop pipes`` command::
+To run the bare Pydoop program use the ``hadoop pipes`` command::
 
-  $ hadoop fs -put ipcount.py ipcount.py
+  $ hadoop fs -put ipcount_pydoop.py ipcount_pydoop.py
   $ hadoop pipes -D hadoop.pipes.java.recordreader=true \
       -D hadoop.pipes.java.recordwriter=true \
-      -program ipcount.py -input access.log -output output
+      -program ipcount_pydoop.py -input access.log -output output
   $ hadoop fs -cat output/part* | sort -k2,2nr | head -n 5
 
-However, it's easy to wrap all steps needed to execute the application
+
+It's easy enough to wrap all steps needed to execute the application
 in a driver Python script with a nice command line interface: an
 example is given by the "ipcount" program in the ``examples/ipcount``
 directory. In particular, by leveraging Pydoop's HDFS API,
 manipulation of output files such as the one performed by the last
 command and HDFS uploads can be done within Python, without any need
-to perform system calls::
+to call the Hadoop command-line programs::
 
   def print_first_n(fs, output_path, n):
     ip_list = []
@@ -287,9 +305,8 @@ Performance
 ^^^^^^^^^^^
 
 We tested Pydoop's and Dumbo's performance with their respective
-wordcount examples from Pydoop 0.3.6 and Dumbo 0.21.28. Since Pydoop
-does not support Hadoop version 0.21 yet, we patched Hadoop 0.20.2 as
-described in the `Building and Installing
+wordcount examples from Pydoop 0.3.6 and Dumbo 0.21.28. We patched Hadoop 0.20.2
+as described in the `Building and Installing
 <http://wiki.github.com/klbostee/dumbo/building-and-installing>`_
 section of Dumbo's online documentation and rebuilt it. The test we
 ran was very similar to the one described in [#f2]_ (wordcount on 20
