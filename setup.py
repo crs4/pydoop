@@ -428,7 +428,7 @@ setup(
   packages=["pydoop"],
   cmdclass={"build_ext": build_pydoop_ext, 'clean': pydoop_clean},
   ext_modules=create_ext_modules(),
-	scripts=["scripts/pydoop_script"],
+  scripts=["scripts/pydoop_script"],
   platforms=["Linux"],
   license="Apache-2.0",
   keywords=["hadoop", "mapreduce"],
