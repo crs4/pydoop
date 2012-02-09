@@ -3,7 +3,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, os, subprocess
+import sys, os, subprocess, glob
 import pydoop
 
 HADOOP_HOME = pydoop.hadoop_home()
@@ -17,8 +17,8 @@ def string_version(tuple_version):
   return ".".join(map(str, HADOOP_VERSION))
 
 def main(argv):
-  hadoop_jars = ["hadoop-%s-core.jar" % string_version(HADOOP_VERSION)]
-  classpath = ":".join([os.path.join(HADOOP_HOME, jar) for jar in hadoop_jars])
+  hadoop_jars = glob.glob(os.path.join(HADOOP_HOME, "hadoop-*.jar"))
+  classpath = ":".join(hadoop_jars)
   subprocess.check_call("javac -cp %s %s" % (classpath, SRC), shell=True) 
   subprocess.check_call("jar -cvf %s %s" % (OUTPUT_JAR, CLASS), shell=True)
 
