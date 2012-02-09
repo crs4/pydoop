@@ -87,11 +87,11 @@ sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopSc
 		self.parser.add_argument('module', metavar='MODULE', help='Python module file')
 		self.parser.add_argument('input', metavar='INPUT', help='hdfs input path')
 		self.parser.add_argument('output', metavar='OUTPUT', help='hdfs output path')
-		self.parser.add_argument('-m', '--map-fn', metavar='NAME', default='mapper', 
+		self.parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper', 
 				help="Name of map function within module (default: mapper)")
-		self.parser.add_argument('-r', '--reduce-fn', metavar='NAME', default='reducer', 
+		self.parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer', 
 				help="Name of reduce function within module (default: reducer)")
-		self.parser.add_argument('-t', '--kv-separator', metavar='STR', default='\t', 
+		self.parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t', 
 				help="Key-value separator string in final output (default: <tab> character)")
 		self.parser.add_argument('--num-reducers', metavar='INT', type=int, dest="num_reducers",
 				help="Number of reduce tasks. Specify 0 to only perform map phase (default: 3 * num task trackers).")
@@ -208,6 +208,10 @@ sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopSc
 ##############################################
 
 if __name__ == '__main__':
-	script = PydoopScript()
-	script.parse_cmd_line()
-	sys.exit(script.run())
+	try:
+		script = PydoopScript()
+		script.parse_cmd_line()
+		sys.exit(script.run())
+	except Exception as e:
+		print >>sys.stderr, "Error running Pydoop script:", e
+		sys.exit(1)
