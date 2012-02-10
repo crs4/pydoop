@@ -18,9 +18,8 @@ CURRENT_YEAR = datetime.datetime.now().year
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-build_dir = os.path.abspath("../build")
-sys.path[1:1] = [os.path.join(build_dir, d) for d in os.listdir(build_dir)
-                 if d.startswith("lib")]
+sys.path[1:1] = [ os.path.abspath('../pydoop') ]
+
 # -- General configuration -----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions

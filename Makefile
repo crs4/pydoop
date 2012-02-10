@@ -28,10 +28,10 @@ install_user: build
 install_user_py: build_py
 	python setup.py install --skip-build --user
 
-docs: build
+docs:
 	make -C docs html
 
-docs_py: build_py
+docs_py:
 	make -C docs html
 
 docs_put: docs
