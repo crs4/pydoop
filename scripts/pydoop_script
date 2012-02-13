@@ -95,6 +95,10 @@ sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopSc
 				help="Key-value separator string in final output (default: <tab> character)")
 		self.parser.add_argument('--num-reducers', metavar='INT', type=int, dest="num_reducers",
 				help="Number of reduce tasks. Specify 0 to only perform map phase (default: 3 * num task trackers).")
+		self.parser.add_argument('--no-override-home', action='store_true',
+				help="Don't set the script's HOME directory to the $HOME in your " +
+				"environment.  Hadoop will set it to the value of the " +
+				"'mapreduce.admin.user.home.dir' property.")
 		self.parser.add_argument('-D', metavar="PROP=VALUE", action=type(self).SetProperty,
 				help='Set a property value, such as -D mapred.compress.map.output=true')
 
@@ -142,6 +146,9 @@ sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopSc
 			fd.write('export LD_LIBRARY_PATH="%s" # Seal dir + LD_LIBRARY_PATH copied from the env where you ran %s\n' % (ld_path, sys.argv[0]))
 		if pypath:
 			fd.write('export PYTHONPATH="%s"\n' % pypath)
+		# override the script's home directory.
+		if not self.properties.has_key("mapreduce.admin.user.home.dir") and os.environ.has_key('HOME') and not self.options.no_override_home:
+			fd.write('export HOME="%s"\n' % os.environ['HOME'])
 		fd.write('exec "%s" -u "$0" "$@"\n' % sys.executable)
 		fd.write('":"""\n')
 
