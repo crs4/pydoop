@@ -50,7 +50,7 @@ def hadoop_conf():
         HadoopConfDir = conf_dir
       else:
         raise ValueError("Cannot determine HADOOP_CONF_DIR")
-    return HadoopConfDir
+  return HadoopConfDir
 
 
 def hadoop_version():
