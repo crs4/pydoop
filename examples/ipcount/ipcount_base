@@ -7,22 +7,16 @@
 
 import sys, os, subprocess as sp
 from pydoop.hadoop_utils import get_hadoop_version
+import pydoop.hadut as hadut
 
 
-HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
-HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
+HADOOP = hadut.hadoop
 SCRIPT = "bin/ipcount_base.py"
 OUTPUT = "output"
 
-if HADOOP_VERSION < (0,21,0):
-  MR_JOB_NAME = "mapred.job.name"
-  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
-  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
-else:
-  MR_JOB_NAME = "mapreduce.job.name"
-  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
-  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+MR_JOB_NAME = "mapred.job.name"
+PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
 
 MR_OPTIONS = {
   MR_JOB_NAME: "ipcount_base",

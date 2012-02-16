@@ -33,14 +33,9 @@ OUTPUT = "output"
 INPUT_FORMAT = "net.sourceforge.pydoop.mapred.TextInputFormat"
 JAR = "pydoop-mapred.jar"
 
-if HADOOP_VERSION < (0,21,0):
-  MR_JOB_NAME = "mapred.job.name"
-  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
-  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
-else:
-  MR_JOB_NAME = "mapreduce.job.name"
-  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
-  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+MR_JOB_NAME = "mapred.job.name"
+PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
 INPUT_FORMAT_CLASS = "mapred.input.format.class"
 
 BASE_MR_OPTIONS = {
