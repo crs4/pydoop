@@ -82,8 +82,8 @@ def run_pipes(executable, input_path, output_path, properties=None, args_list=[]
 	properties['hadoop.pipes.executable'] = executable
 
 	args.extend( __construct_property_args(properties) )
-	args.extend(["-input", input_path, "-output", output_path])
 	args.extend(args_list)
+	args.extend(["-input", input_path, "-output", output_path])
 	return subprocess.call(args)
 
 def run_class(class_name, additional_cp=None, properties=None, args_list=[]):
