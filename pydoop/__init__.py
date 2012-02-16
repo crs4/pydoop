@@ -23,6 +23,8 @@ __author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pir
 
 __url__ = "http://pydoop.sourceforge.net"
 
+__jar_name__ = 'pydoop.jar'
+
 import os
 import pydoop.hadoop_utils as hu
 

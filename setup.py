@@ -18,11 +18,14 @@
 # JAVA_HOME:  by default looks  in /opt/sun-jdk and /usr/lib/jvm/java-6-sun
 # HADOOP_VERSION:  override the version returned by running "hadoop version" (and avoid running the hadoop binary)
 
-import sys, os, platform, re
+import sys, os, platform, re, glob
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.command.build_ext import build_ext
-from distutils.command.clean import clean
+from distutils.command.build_ext import build_ext as distutils_build_ext
+from distutils.command.clean import clean as distutils_clean
+from distutils.command.build import build as distutils_build
+from distutils.errors import DistutilsSetupError
+from distutils import log
 
 import pydoop
 from pydoop.hadoop_utils import get_hadoop_version
@@ -203,9 +206,9 @@ class BoostExtension(Extension):
 
 # Customized distutils build_ext command that sets the options
 # required to build the Pydoop extensions.
-class build_pydoop_ext(build_ext):
+class build_pydoop_ext(distutils_build_ext):
   def finalize_options(self):
-    build_ext.finalize_options(self)
+    distutils_build_ext.finalize_options(self)
 
     path_finder = PathFinder()
 
@@ -226,9 +229,9 @@ def create_ext_modules():
 # In particular, the build process generates _*_main.cpp files for the boost
 # extensions, and some patched Hadoop source code files, all inside the src
 # directory.  These are removed when this clean action is executed.
-class pydoop_clean(clean):
+class pydoop_clean(distutils_clean):
   def run(self):
-    clean.run(self)
+    distutils_clean.run(self)
     pydoop_src_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'src')
     ## remove generated files and patched Hadoop pipes code 
     r = re.compile('(%s|%s)_.*_main.cpp$' % (HdfsExtName, PipesExtName))
@@ -242,6 +245,30 @@ class pydoop_clean(clean):
         except OSError as e:
           print >>sys.stderr, "Error removing file.", e
 
+class pydoop_build(distutils_build):
+	def run(self):
+		distutils_build.run(self)
+		# build the java component
+		classpath = ':'.join(
+				glob.glob( os.path.join(pydoop.hadoop_home(), 'hadoop-*.jar') ) + 
+				glob.glob( os.path.join(pydoop.hadoop_home(), 'lib', '*.jar') ) )
+		class_dir = os.path.join(self.build_temp, 'pydoop_java')
+		package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
+
+		if not os.path.exists(class_dir):
+			os.mkdir(class_dir)
+		compile_cmd = "javac -classpath %s -d '%s' src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java" % (classpath, class_dir)
+		package_cmd = "jar -cf %s -C %s ./it" % (package_path, class_dir)
+		log.info("Compiling Java classes")
+		log.debug("Command: %s", compile_cmd)
+		ret = os.system(compile_cmd)
+		if ret:
+			raise DistutilsSetupError("Error compiling java component.  Command: %s" % compile_cmd)
+		log.info("Packaging Java classes")
+		log.debug("Command: %s", package_cmd)
+		ret = os.system(package_cmd) 
+		if ret:
+			raise DistutilsSetupError("Error packaging java component.  Command: %s" % package_cmd)
 
 ###############################################################################
 # Path finder
@@ -426,7 +453,7 @@ setup(
   url=pydoop.__url__,
   download_url="https://sourceforge.net/projects/pydoop/files/",
   packages=["pydoop"],
-  cmdclass={"build_ext": build_pydoop_ext, 'clean': pydoop_clean},
+	cmdclass={'build': pydoop_build, "build_ext": build_pydoop_ext, 'clean': pydoop_clean},
   ext_modules=create_ext_modules(),
   scripts=["scripts/pydoop_script"],
   platforms=["Linux"],
