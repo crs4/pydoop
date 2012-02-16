@@ -109,6 +109,7 @@ sys.exit(0 if result else 1)
 			'hadoop.pipes.java.recordreader': 'true',
 			'hadoop.pipes.java.recordwriter': 'true',
 			'mapred.create.symlink': 'yes',
+			'mapred.compress.map.output': 'true',
 			'bl.libhdfs.opts': '-Xmx48m'
 		}
 
