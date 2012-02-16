@@ -3,7 +3,7 @@
 Pydoop Script
 =========================
 
-`pydoop_script` is a helper command that for the simpler use cases hides all 
+`pydoop_script` is a helper command that for the simpler use cases hides all
 the details of running a regular Pydoop job.  Basically, it reduces running
 a simple text-processing Pydoop job to writing two
 Python functions in a module (or one if you don't need a reducer) and running
@@ -11,7 +11,7 @@ them like this::
 
   pydoop_script myscript.py hdfs_input hdfs_output
 
-The rest is magic.  Perhaps `pydoop_script` is best explained with a couple of 
+The rest is magic.  Perhaps ``pydoop_script`` is best explained with a couple of
 short examples.
 
 Examples
@@ -80,7 +80,7 @@ Measuring nucleic acid composition of a DNA sample
 .....................................................
 
 This is a more domain-specific problem.  We have some DNA sequencing data in the
-text, tab-delimited SAM format.  We'd like to calculate the nucleotide 
+text, tab-delimited SAM format.  We'd like to calculate the nucleotide
 composition of the sequenced sample.
 
 Our module, `nukes.py`::
@@ -103,13 +103,14 @@ Applicability
 ------------------------
 
 `pydoop_script` makes it easy to solve simple problems.  It makes it feasible to
-write simple (even throw-away) scripts to perform simple manipulations or analyses on 
-your data, especially if it's text-based. 
+write simple (even throw-away) scripts to perform simple manipulations or analyses on
+your data, especially if it's text-based.
 
-If you can specify your algorithm in two simple functions that have no state, 
-then you can consider using `pydoop_script`.
+If you can specify your algorithm in two simple functions that have no state
+or have a simple state that can be stored in module variables, then you can
+consider using ``pydoop_script``.
 
-If you need something more complex, then consider using the full Pydoop
+If you need something more sophisticated, then consider using the full Pydoop
 API or the native Hadoop Java API.
 
 
@@ -121,13 +122,13 @@ Usage
   pydoop_script MODULE INPUT OUTPUT
 
 
-`MODULE` is the file (on your local file system) containing your map and reduce
+``MODULE`` is the file (on your local file system) containing your map and reduce
 functions, in Python.
 
-`INPUT` and `OUTPUT` are HDFS paths, the former pointing to your input data and
+``INPUT`` and ``OUTPUT`` are HDFS paths, the former pointing to your input data and
 the latter to your job's output directory.
 
-Command line options supported by `pydoop_script`.
+Command line options supported by ``pydoop_script``.
 
 ====== ============== =================================================================
 Short  Long            Meaning
@@ -135,11 +136,11 @@ Short  Long            Meaning
 -h,    --help          show this help message and exit
 -m     --map-fn        Name of map function within module (default: mapper)
 -r     --reduce-fn     Name of reduce function within module (default: reducer)
--t     --kv-separator  Key-value separator string in final output (default: 
+-t     --kv-separator  Key-value separator string in final output (default:
                        <tab> character)
        --num-reducers  Number of reduce tasks. Specify 0 to only perform map
                        phase (default: 3 * num task trackers).
--D                     Set a property value, such as 
+-D                     Set a property value, such as
                        -D mapred.compress.map.output=true
 ====== ============== =================================================================
 
@@ -154,7 +155,7 @@ format by configuring the appropriate Hadoop properties.
 mapper
 ........
 
-The ``mapper`` function in your module will be called for each record in your input 
+The ``mapper`` function in your module will be called for each record in your input
 data.  It receives 3 parameters:
 
 #. key
@@ -170,7 +171,7 @@ value:
 writer:
   A Python object to write output and count values.  It has two methods:  ``emit(k,v)`` and ``count(what,
   how_many)``.
-  
+
 
 reducer
 ............
@@ -185,7 +186,7 @@ map function.  It also receives 3 parameters:
 key:
   The key produced by your map function
 
-values iterator:
+values iterable:
   Iterate over this parameter to see all the values emitted for this key.
 
 writer:
@@ -214,7 +215,7 @@ Naming your functions
 ........................
 
 If you'd like to give your map and reduce functions names different from
-``mapper`` and ``reducer``, you may do so by you must tell ``pydoop_script``.
+``mapper`` and ``reducer``, you may do so but you must tell ``pydoop_script``.
 Use the ``--map-fn`` and ``--reduce-fn`` command line arguments to select your
 customized names.
 

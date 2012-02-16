@@ -185,7 +185,7 @@ Multiple Hadoop versions
 --------------------------------
 
 If you'd like to use your Pydoop installation with multiple versions of Hadoop,
-you will need to repeat the building process for each version of Hadoop.
+you will need to rebuild the modules for each version of Hadoop.
 
 After building Pydoop for the first time following the instructions above, 
 modify your HADOOP-related environment variables to point to the other version 
@@ -198,15 +198,16 @@ Example::
 
   export HADOOP_HOME=/usr/share/hadoop-0.20.2
   python setup.py build
-  python setup.py install --user
+  python setup.py install
 
   export HADOOP_HOME=/usr/share/hadoop-1.0.0
   python setup.py build
-  python setup.py install --user
+  python setup.py install
 
 
 At run time, the appropriate version of the Pydoop modules will be loaded for
-the version of Hadoop selected by your `HADOOP_HOME` variable.
+the version of Hadoop selected by your ``HADOOP_HOME`` variable or the version
+of the ``hadoop`` executable found in your ``PATH``.
 
 
 
