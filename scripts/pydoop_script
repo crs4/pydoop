@@ -3,6 +3,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
+import pydoop
 import pydoop.hdfs
 import pydoop.hadut as hadut
 
@@ -113,6 +114,9 @@ sys.exit(0 if result else 1)
 
 		self.hdfs = None
 		self.options = None
+		# whether to use our custom Java NoSeparatorTextOutputFormat.  It's only required if we need to emit
+		# text with no separator between key and value.
+		self.use_no_sep_writer = False
 
 	def parse_cmd_line(self):
 		# we scan the command line first in case the user wants to
@@ -135,7 +139,7 @@ sys.exit(0 if result else 1)
 		self.properties['mapred.reduce.tasks'] = n_red_tasks
 		self.properties['mapred.textoutputformat.separator'] = self.options.kv_separator
 		if self.properties['mapred.textoutputformat.separator'] == '':
-			sys.stderr.write("WARNING:  using the empty string as a key-value separator is known not to currently work with Hadoop TextOutputFormat.\n")
+			self.use_no_sep_writer = True
 
 	def __write_pipes_script(self, fd):
 		ld_path = os.environ.get('LD_LIBRARY_PATH', None)
@@ -160,7 +164,6 @@ sys.exit(0 if result else 1)
 				}
 		fd.write(type(self).pipes_template % template_args)
 
-
 	def __validate(self):
 		# validate running arguments
 		if not os.access(self.options.module, os.R_OK):
@@ -171,6 +174,13 @@ sys.exit(0 if result else 1)
 
 		if self.hdfs.exists(self.options.output):
 			raise RuntimeError("Output directory %s already exists.  Please delete it or specify a different output directory." % self.options.output)
+
+	def __find_pydoop_jar(self):
+		pydoop_jar_path = os.path.join(os.path.dirname(pydoop.__file__), pydoop.__jar_name__)
+		if os.path.exists(pydoop_jar_path):
+			return pydoop_jar_path
+		else:
+			return None
 
 	def run(self):
 		if self.options is None:
@@ -189,6 +199,19 @@ sys.exit(0 if result else 1)
 			else:
 				self.properties['mapred.cache.files'] = dist_cache_parameter
 
+			pipes_args = self.left_over_args
+			if self.use_no_sep_writer:
+				pydoop_jar = self.__find_pydoop_jar()
+				if pydoop_jar is not None:
+					self.properties['mapred.output.format.class'] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
+					pipes_args.append('-libjars')
+					pipes_args.append(pydoop_jar)
+				else:
+					sys.stderr.write(
+					  "WARNING!!!\n" +
+					  "Can't find pydoop.jar (usually in the pydoop package directory)\n" +
+					  "Without this component your output will probably contain a tab\n" +
+					  "key-value separator.\n")
 			try:
 				with self.hdfs.open_file(remote_pipes_bin, 'w') as script:
 					self.__write_pipes_script(script)
