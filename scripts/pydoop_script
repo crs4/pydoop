@@ -64,7 +64,8 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 		%(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
 
 ## main
-sys.exit(pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopScriptReducer) ))
+result = pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopScriptReducer) )
+sys.exit(0 if result else 1)
 """
 
 	class Args(argparse.Namespace):
