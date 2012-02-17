@@ -15,6 +15,7 @@ SCRIPT = "bin/ipcount_base.py"
 OUTPUT = "output"
 
 MR_JOB_NAME = "mapred.job.name"
+MR_HOME_DIR = 'mapreduce.admin.user.home.dir'
 PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
 PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
 
@@ -22,6 +23,7 @@ MR_OPTIONS = {
   MR_JOB_NAME: "ipcount_base",
   PIPES_JAVA_RR: "true",
   PIPES_JAVA_RW: "true",
+	MR_HOME_DIR: os.path.expanduser("~"),
   }
 
 

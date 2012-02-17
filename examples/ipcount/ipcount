@@ -125,6 +125,7 @@ def main(argv):
     fs.delete(opt.output)
 
   mr_options = {}
+  mr_options['mapreduce.admin.user.home.dir'] = os.path.expanduser("~")
   mr_options.update(BASE_MR_OPTIONS)
   if opt.exclude_fn:
     exclude_fn_hdfs = os.path.basename(opt.exclude_fn)
