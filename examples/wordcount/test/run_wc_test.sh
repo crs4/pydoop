@@ -24,7 +24,7 @@ SCRIPT=${BINDIR}/${SCRIPT_BASENAME}
 CONF=${CONFDIR}/${SCRIPT_BASENAME/.py/.xml}
 WD=test_wordcount
 HDFS_SCRIPT=${WD}/bin/${SCRIPT_BASENAME}
-CONF_OVERRIDE="-D mapred.map.tasks=2 -D mapred.reduce.tasks=2"
+CONF_OVERRIDE="-D mapred.map.tasks=2 -D mapred.reduce.tasks=2 -D mapreduce.admin.user.home.dir=${HOME}"
 
 rm -rf output
 
