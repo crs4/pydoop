@@ -1,4 +1,4 @@
-EXPORT_DIR = svn_export
+EXPORT_DIR = /tmp/pydoop_export
 COPYRIGHT_OWNER = CRS4
 NOTICE_TEMPLATE = notice_template.txt
 COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
@@ -40,12 +40,19 @@ docs_put: docs
 docs_view: docs
 	yelp docs/_build/html/index.html &
 
-dist: docs
+dist-svn: docs
 	rm -rf $(EXPORT_DIR) && svn export . $(EXPORT_DIR)
 	$(COPYRIGHTER) -r $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
 	cd $(EXPORT_DIR) && python setup.py sdist
+
+dist: docs
+	rm -rf $(EXPORT_DIR) && mkdir $(EXPORT_DIR) && cp -a * $(EXPORT_DIR)
+	$(COPYRIGHTER) -r $(EXPORT_DIR)
+	rm -rf $(EXPORT_DIR)/docs/*
+	mv docs/_build/html $(EXPORT_DIR)/docs/
+	(cd $(EXPORT_DIR) && python setup.py sdist) && mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
 
 clean:
 	rm -rf build
