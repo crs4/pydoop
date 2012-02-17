@@ -9,7 +9,7 @@ New in this release
 Updated for Hadoop 1.0
 ++++++++++++++++++++++++++
 
-Pydoop now works with Hadoop 1.0.
+Pydoop now works with Hadoop 1.0 (we've tested with Hadoop 1.0.0)
 
 
 Support for multiple Hadoop versions
