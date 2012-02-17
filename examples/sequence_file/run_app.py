@@ -4,18 +4,15 @@
 # END_COPYRIGHT
 
 import sys, os, optparse, subprocess as sp
-import pydoop
-from pydoop.hadoop_utils import get_hadoop_exec
+import pydoop.hadut
 
-
-HADOOP_HOME = pydoop.hadoop_home()
-HADOOP_VERSION = pydoop.hadoop_version()
-HADOOP = get_hadoop_exec(HADOOP_HOME)
+HADOOP = pydoop.hadut.hadoop
 WD = "test_sequence_file"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"
 LOCAL_FILTER_SCRIPT = "bin/filter.py"
 
 MR_JOB_NAME = "mapred.job.name"
+MR_HOME_DIR = 'mapreduce.admin.user.home.dir'
 PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
 PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
 MR_OUT_COMPRESS_TYPE = "mapred.output.compression.type"
@@ -26,6 +23,7 @@ MR_OUT_CLASS = "mapred.output.format.class"
 BASE_MR_OPTIONS = {
   PIPES_JAVA_RR: "true",
   PIPES_JAVA_RW: "true",
+  MR_HOME_DIR: os.path.expanduser("~"),
   }
 
 
