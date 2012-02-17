@@ -34,12 +34,14 @@ INPUT_FORMAT = "net.sourceforge.pydoop.mapred.TextInputFormat"
 JAR = "pydoop-mapred.jar"
 
 MR_JOB_NAME = "mapred.job.name"
+MR_HOME_DIR = 'mapreduce.admin.user.home.dir'
 PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
 PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
 INPUT_FORMAT_CLASS = "mapred.input.format.class"
 
 BASE_MR_OPTIONS = {
   MR_JOB_NAME: "test_rr_override",
+  MR_HOME_DIR: os.path.expanduser("~"),
   PIPES_JAVA_RR: "false",
   PIPES_JAVA_RW: "true",
   INPUT_FORMAT_CLASS: INPUT_FORMAT,
@@ -111,7 +113,7 @@ def main(argv):
     mr_options[PIPES_JAVA_RR] = "true"
   mr_options["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
   d_options = build_d_options(mr_options)
-  hadoop_pipes("%s -jar %s -program %s -input %s -output %s" % (
+  hadoop_pipes("%s -libjars %s -program %s -input %s -output %s" % (
     d_options, JAR, script_hdfs, input_hdfs, opt.output
     ))
 
