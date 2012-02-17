@@ -1,5 +1,6 @@
 include AUTHORS CHANGES LICENSE
 include src/*.hpp
+recursive-include src/it *
 exclude src/HadoopPipes.cc
 exclude src/StringUtils.cc
 exclude src/SerialUtils.cc
@@ -19,6 +20,7 @@ recursive-include examples/hdfs *
 recursive-include examples/ipcount *
 recursive-include examples/input_format *
 recursive-exclude examples/input_format/net/sourceforge/pydoop/mapreduce *
+recursive-include examples/pydoop_script *
 exclude pydoop/hadoop_serial.py
 exclude pydoop/text_protocol.py
 exclude pydoop/binary_protocol.py

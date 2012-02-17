@@ -52,7 +52,7 @@ dist: docs
 	$(COPYRIGHTER) -r $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
-	(cd $(EXPORT_DIR) && python setup.py sdist) && mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
+	(cd $(EXPORT_DIR) && python setup.py sdist) && mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz . && rm -rf $(EXPORT_DIR)
 
 clean:
 	rm -rf build
