@@ -57,6 +57,22 @@ For further details, take a look at the source code in the
 ``examples/wordcount`` subdirectory of the Pydoop distribution.
 
 
+Running the examples
+-------------------------
+
+You should be able to run the examples by doing, from the pydoop root directory::
+
+  cd examples/wordcount/test/
+  ./run_wc_minimal.sh
+
+or
+
+::
+
+  cd examples/wordcount/test/
+  ./run_wc_full.sh 
+
+
 .. rubric:: Footnotes
 
 .. [#] J. Dean and S. Ghemawat, *MapReduce: simplified data processing

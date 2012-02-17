@@ -29,3 +29,13 @@ API can be used to build statistics of HDFS usage by block size::
 
 Source code for the example is located under ``examples/hdfs`` in the
 Pydoop distribution.
+
+Running the example
+-------------------------
+
+You should be able to run the example by doing, from the pydoop root directory::
+
+  cd examples/hdfs
+  ./run.sh 2 2
+
+or whatever tree depth and span you decide to try.

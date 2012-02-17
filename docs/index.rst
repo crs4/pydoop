@@ -36,6 +36,7 @@ Contents:
    news
    installation
    pydoop_script
+   running_pydoop_applications
    api_docs/index
    examples/index
    self_contained

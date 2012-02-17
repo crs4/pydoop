@@ -50,4 +50,7 @@ input splits than the number of input files).
 
 For details on how to compile the above code into a jar and use it
 with pipes, see ``examples/input_format`` in the Pydoop distribution
-root.
+root.  You can run the input_format example with::
+
+  cd examples/input_format
+  ./run_test ../input/alice.txt
