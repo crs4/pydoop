@@ -23,7 +23,7 @@ MR_OPTIONS = {
   MR_JOB_NAME: "ipcount_base",
   PIPES_JAVA_RR: "true",
   PIPES_JAVA_RW: "true",
-	MR_HOME_DIR: os.path.expanduser("~"),
+  MR_HOME_DIR: os.path.expanduser("~"),
   }
 
 
