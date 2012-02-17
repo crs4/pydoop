@@ -59,7 +59,7 @@ clean:
 	rm -f $(GENERATED_SRC_FILES)
 	make -C docs clean
 	make -C examples/self_contained clean
-	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
+	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\|\.jar\|\.class\)' -exec rm -fv {} \;
 
 distclean: clean
 	rm -rf $(EXPORT_DIR)
