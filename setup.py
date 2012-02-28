@@ -86,13 +86,15 @@ def create_basic_hdfs_ext():
 
 def create_full_pipes_ext(path_finder):
   basedir = path_finder.mapred_src
+  serial_utils_cc = os.path.join(basedir, "utils/impl/SerialUtils.cc")
+  pipes_cc = os.path.join(basedir, "pipes/impl/HadoopPipes.cc")
   patches = {
-    os.path.join(basedir, "utils/impl/SerialUtils.cc"): {
+    serial_utils_cc: {
       OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
       },
     os.path.join(basedir, "utils/impl/StringUtils.cc"): {
       },
-    os.path.join(basedir, "pipes/impl/HadoopPipes.cc"): {
+    pipes_cc: {
       OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
       },
     }
@@ -101,6 +103,8 @@ def create_full_pipes_ext(path_finder):
   if path_finder.hadoop_version[2] == 203:
     include_dirs.append("/usr/include/openssl")
     libraries.append("ssl")
+    patches[serial_utils_cc][OLD_SERIAL_UTILS_INCLUDE] = NEW_SERIAL_UTILS_INCLUDE
+    patches[pipes_cc][OLD_PIPES_CC_INCLUDE] = NEW_PIPES_CC_INCLUDE
   return BoostExtension(
     pydoop.complete_mod_name(PipesExtName, path_finder.hadoop_version),
     ["src/%s.cpp" % n for n in PipesSrc],
@@ -357,6 +361,7 @@ class PathFinder(object):
       os.path.join(os.path.sep, "usr", "lib", "libhdfs.so"),
       os.path.join(self.hadoop_home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
       os.path.join(self.hadoop_home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
+      os.path.join(self.hadoop_home, "lib", "libhdfs.so"),
       )
     if lib:
       dir, name = os.path.split(lib)
@@ -443,6 +448,14 @@ NEW_WRITE_BUFFER =r"""void writeBuffer(const string& buffer) {
       fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
     }"""
 
+# Pipes.hh and SerialUtils.hh don't include stdint.h.  Let's include it
+# in HadoopPipes.cc before it includes the other headers
+OLD_PIPES_CC_INCLUDE = """#include "hadoop/Pipes.hh"\n"""
+NEW_PIPES_CC_INCLUDE = """#include <stdint.h>\n#include "hadoop/Pipes.hh"\n"""
+
+OLD_SERIAL_UTILS_INCLUDE = """#include "hadoop/SerialUtils.hh"\n"""
+NEW_SERIAL_UTILS_INCLUDE = """#include <stdint.h>\n#include "hadoop/SerialUtils.hh"\n"""
+
 setup(
   name="pydoop",
   version=pydoop.__version__,
@@ -453,7 +466,7 @@ setup(
   url=pydoop.__url__,
   download_url="https://sourceforge.net/projects/pydoop/files/",
   packages=["pydoop"],
-	cmdclass={'build': pydoop_build, "build_ext": build_pydoop_ext, 'clean': pydoop_clean},
+  cmdclass={'build': pydoop_build, "build_ext": build_pydoop_ext, 'clean': pydoop_clean},
   ext_modules=create_ext_modules(),
   scripts=["scripts/pydoop_script"],
   platforms=["Linux"],
