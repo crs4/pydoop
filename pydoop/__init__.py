@@ -11,11 +11,11 @@ Pydoop: a Python MapReduce and HDFS API for Hadoop
 Prerequisites:
 
 * Python 2.7
-* Hadoop 0.20.x or 1.0
+* Hadoop 0.20.x, 0.20.203.x or 1.0
 * Boost 1.40 or later
 """
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 
 __author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
 
