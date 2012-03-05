@@ -15,15 +15,21 @@ def __is_exe(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
 def version_tuple(version_string):
+  # sample version strings:  "0.20.3-cdh3", "0.20.2", "0.21.2", '0.20.203.1-SNAPSHOT'
+  error_msg = "unrecognized version string format: %r" % version_string
+  if not re.match(r"(\d+)(\.\d+)*(-.+)?", version_string):
+    raise HadoopVersionError(error_msg)
+
+  parts = re.split('[.-]', version_string)
+  if len(parts) < 3:
+    raise HadoopVersionError(error_msg)
   try:
-    # sample version strings:  "0.20.3-cdh3", "0.20.2", "0.21.2"
-    m = re.match(r"(\d+)\.(\d+)\.(\d+)(-(.+))?", version_string)
-    vt = map(int, m.group(1,2,3))
-    if m.group(5):
-      vt = vt + [ m.group(5) ]
+    vt = map(int, parts[0:3])
+    if len(parts) > 3:
+      vt = vt + parts[3:]
     vt = tuple(vt)
   except ValueError:
-    raise HadoopVersionError("bad version string: %r" % version_string)
+    raise HadoopVersionError(error_msg)
   return vt
 
 

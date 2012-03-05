@@ -13,6 +13,7 @@ TEST_MODULE_NAMES = [
   "test_record_reader",
   "test_partitioner",
   "test_factory",
+  "test_pydoop",
   ]
 
 
