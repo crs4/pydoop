@@ -398,7 +398,7 @@ class PathFinder(object):
 
     print "========================================="
     print "paths:"
-    names = ("hadoop_home", "hadoop_version", "src", "mapred_src", "mapred_inc", "hdfs_inc_path", "hdfs_link_paths",)
+    names = ("java_home", "hadoop_home", "hadoop_version", "src", "mapred_src", "mapred_inc", "hdfs_inc_path", "hdfs_link_paths",)
     for n in names:
       print n, ": ", getattr(self, n)
     print "========================================="
