@@ -2,6 +2,7 @@
 # END_COPYRIGHT
 
 import unittest
+import os
 
 import pydoop
 import pydoop.hadoop_utils as hu
@@ -33,11 +34,28 @@ class pydoop_tc(unittest.TestCase):
     for s in bad_test_cases:
       self.assertRaises(HadoopVersionError, hu.version_tuple, s)
 
+  def test_version(self):
+    ver = pydoop.hadoop_version()
+    self.assertTrue(ver is not None)
+    self.assertTrue(len(ver) >= 3)
+    self.assertTrue( all([ type(v) == int for v in ver[0:3]]) )
+
+  def test_home(self):
+    if os.environ.has_key('HADOOP_HOME'):
+      self.assertEqual(os.environ['HADOOP_HOME'], pydoop.hadoop_home())
+
+  def test_conf(self):
+    if os.environ.has_key('HADOOP_CONF_DIR'):
+      self.assertEqual(os.environ['HADOOP_CONF_DIR'], pydoop.hadoop_conf())
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(pydoop_tc('test_get_hadoop_version'))
   suite.addTest(pydoop_tc('test_version_tuple_with_good_strings'))
   suite.addTest(pydoop_tc('test_version_tuple_with_bad_strings'))
+  suite.addTest(pydoop_tc('test_version'))
+  suite.addTest(pydoop_tc('test_home'))
+  suite.addTest(pydoop_tc('test_conf'))
   return suite
 
 
