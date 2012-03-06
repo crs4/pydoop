@@ -28,7 +28,6 @@ from distutils.errors import DistutilsSetupError
 from distutils import log
 
 import pydoop
-from pydoop.hadoop_utils import get_hadoop_version
 
 PipesSrc = ["pipes", "pipes_context", "pipes_test_support",
           "pipes_serial_utils", "exceptions", "pipes_input_split"]
@@ -285,17 +284,14 @@ class pydoop_build(distutils_build):
 class PathFinder(object):
   def __init__(self):
     self.java_home = None
-    self.hadoop_home = None
-    self.hadoop_version = None
+    self.hadoop_home = pydoop.hadoop_home()
+    self.hadoop_version = pydoop.hadoop_version()
     self.src = None
     self.mapred_src = None
     self.mapred_inc = []
     self.hdfs_inc_path = None # special case, only one include path since we only have one file
     self.hdfs_link_paths = { "L":[], "l":[] }
     self.__init_paths()
-
-  def cloudera(self):
-    return len(self.hadoop_version) > 3 and re.match("cdh.*", self.hadoop_version[3] or "")
 
   # returns one of:
   #   1. HADOOP_SRC
@@ -331,7 +327,7 @@ class PathFinder(object):
     if all( map(os.path.exists, src_paths) ):
       self.mapred_inc = map(os.path.dirname, src_paths) # the includes are for "hadoop/<file.h>", so we chop the hadoop directory off the path
     else:
-      if self.cloudera():
+      if pydoop.is_cloudera():
         # we didn't find the expected include paths in the source.  Try the standard /usr/include/hadoop
         usr_inc_hadoop = os.path.join( os.path.sep, "usr", "include", "hadoop")
         if os.path.exists( usr_inc_hadoop ):
@@ -388,13 +384,6 @@ class PathFinder(object):
     self.java_home = os.getenv("JAVA_HOME", find_first_existing("/opt/sun-jdk", "/usr/lib/jvm/java-6-sun"))
     if self.java_home is None:
       raise RuntimeError("Could not determine JAVA_HOME path")
-
-    self.hadoop_home = os.getenv("HADOOP_HOME", find_first_existing("/opt/hadoop", "/usr/lib/hadoop"))
-    if self.hadoop_home is None:
-      raise RuntimeError("Could not determine HADOOP_HOME path")
-
-    # Set the "HADOOP_VERSION" env var if this fails
-    self.hadoop_version = get_hadoop_version(self.hadoop_home)
 
     self.src = self.__find_hadoop_src()
     if not self.src:

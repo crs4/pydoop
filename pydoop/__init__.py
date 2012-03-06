@@ -41,6 +41,10 @@ def hadoop_version():
   global __path_finder
   return __path_finder.hadoop_version()
 
+def is_cloudera():
+  global __path_finder
+  return __path_finder.cloudera()
+
 def complete_mod_name(module, hadoop_version_tuple):
   return "%s.%s_%s" % (__package__, module, "_".join( map(str, hadoop_version_tuple)) )
 
