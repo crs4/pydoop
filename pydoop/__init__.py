@@ -25,41 +25,21 @@ __url__ = "http://pydoop.sourceforge.net"
 
 __jar_name__ = 'pydoop.jar'
 
-import os
 import pydoop.hadoop_utils as hu
 
-HadoopHome = None
-HadoopConfDir = None
-HadoopVersion = None
+__path_finder = hu.PathFinder()
 
 def hadoop_home():
-  global HadoopHome
-  if HadoopHome is None:
-    try:
-      HadoopHome = os.environ["HADOOP_HOME"]
-    except KeyError:
-      raise ValueError("HADOOP_HOME not set")
-  return HadoopHome
+  global __path_finder
+  return __path_finder.hadoop_home()
 
 def hadoop_conf():
-  global HadoopConfDir
-  if HadoopConfDir is None:
-    try:
-      HadoopConfDir = os.environ["HADOOP_CONF_DIR"]
-    except KeyError:
-      conf_dir = os.path.join(hadoop_home(), 'conf')
-      if os.path.isdir(conf_dir):
-        HadoopConfDir = conf_dir
-      else:
-        raise ValueError("Cannot determine HADOOP_CONF_DIR")
-  return HadoopConfDir
-
+  global __path_finder
+  return __path_finder.hadoop_conf()
 
 def hadoop_version():
-  global HadoopVersion
-  if HadoopVersion is None:
-    HadoopVersion = hu.get_hadoop_version( hadoop_home() )
-  return HadoopVersion
+  global __path_finder
+  return __path_finder.hadoop_version()
 
 def complete_mod_name(module, hadoop_version_tuple):
   return "%s.%s_%s" % (__package__, module, "_".join( map(str, hadoop_version_tuple)) )
@@ -68,3 +48,4 @@ def import_version_specific_module(name):
   from importlib import import_module
   low_level_mod = complete_mod_name(name, hadoop_version())
   return import_module(low_level_mod)
+
