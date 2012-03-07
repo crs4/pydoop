@@ -1,3 +1,12 @@
 build
 docs/_build
 *.pyc
+MANIFEST
+dist
+src/HadoopPipes.cc
+src/SerialUtils.cc
+src/StringUtils.cc
+src/_hdfs_*_main.cpp
+src/_pipes_*_main.cpp
+test/test_get_hosts.txt
+test/test_readline_big.txt
