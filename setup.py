@@ -344,7 +344,7 @@ class PathFinder(object):
 
     # But, where to find libhdfs?
     candidate_paths = \
-      glob.glob(os.path.join(os.pathsep,"usr","lib*","libhdfs.so*")) + \
+      glob.glob(os.path.join(os.path.sep,"usr","lib*","libhdfs.so*")) + \
       glob.glob(os.path.join(self.hadoop_home, "lib*", "libhdfs.so")) +\
       glob.glob(os.path.join(self.hadoop_home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so")) +\
       glob.glob(os.path.join(self.hadoop_home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"))
@@ -357,15 +357,12 @@ class PathFinder(object):
         
   def __set_hdfs_inc_path(self):
     candidate_paths = \
-      glob.glob(os.path.join(os.pathsep, "usr","include","hdfs.h")) +\
-      glob.glob(os.path.join(os.pathsep, "usr","include","hadoop*","hdfs.h")) +\
+      glob.glob(os.path.join(os.path.sep, "usr","include","hdfs.h")) +\
+      glob.glob(os.path.join(os.path.sep, "usr","include","hadoop*","hdfs.h")) +\
       glob.glob(os.path.join(self.src, "c++", "libhdfs", "hdfs.h"))
     if candidate_paths:
       dir, name = os.path.split(candidate_paths[0])
-      if dir != os.path.join(os.path.sep, "usr", "include"):
-        self.hdfs_inc_path = dir
-      else:
-        self.hdfs_inc_path = ""
+      self.hdfs_inc_path = dir
     else:
       raise RuntimeError("Couldn't find hdfs.h in source directory or /usr/include.")
 
