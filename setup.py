@@ -99,7 +99,7 @@ def create_full_pipes_ext(path_finder):
     }
   include_dirs = path_finder.mapred_inc
   libraries = ["pthread", "boost_python"]
-  if path_finder.hadoop_version[2] == 203:
+  if path_finder.hadoop_version[2] == 203 or path_finder.is_cloudera():
     include_dirs.append("/usr/include/openssl")
     libraries.append("ssl")
     patches[serial_utils_cc][OLD_SERIAL_UTILS_INCLUDE] = NEW_SERIAL_UTILS_INCLUDE
