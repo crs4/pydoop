@@ -138,15 +138,22 @@ class PathFinder(object):
     ######### HADOOP_HOME
     if os.environ.has_key("HADOOP_HOME"):
       self.__hadoop_home = os.getenv("HADOOP_HOME")
-    elif os.access("/etc/default/hadoop", os.R_OK):
-      with open("/etc/default/hadoop") as f:
-        # get HADOOP_HOME directories from this file.  If there's
-        # more than one we keep the last one.
-        dirs = [ line.rstrip("\n").split('=',1) for line in f.xreadlines() if re.match(r"\s*HADOOP_HOME=.*", line) ]
-        if len(dirs) > 0:
-          home_path = dirs[-1]
-          if os.path.isdir(home_path):
-            self.__hadoop_home = home_path
+    else:
+      # look in hadoop config files, under /etc/default.  In the hadoop-0.20
+      # package from cloudera this is called hadoop-0.20.  I don't know how
+      # they'll handle later versions (e.g., 0.20.203, 1.0.1, etc.).  Conflicting
+      # packages?  More version appendages?  For now we'll just grab the
+      # first of the sorted list of versions (should be the newest).
+      hadoop_cfg_files = sorted(glob.glob("/etc/default/hadoop*"), reverse=True)
+      if hadoop_cfg_files:
+        with open(hadoop_cfg_files[0]) as f:
+          # get HADOOP_HOME directories from this file.  If there's
+          # more than one we keep the last one.
+          dirs = [ line.rstrip("\n").split('=',1) for line in f.xreadlines() if re.match(r"\s*HADOOP_HOME=.*", line) ]
+          if len(dirs) > 0:
+            home_path = dirs[-1]
+            if os.path.isdir(home_path):
+              self.__hadoop_home = home_path
 
     if self.__hadoop_home is None:
       # Still no hadoop home.  Try a few standard paths then reduce the result to a single list

@@ -249,29 +249,29 @@ class pydoop_clean(distutils_clean):
           print >>sys.stderr, "Error removing file.", e
 
 class pydoop_build(distutils_build):
-	def run(self):
-		distutils_build.run(self)
-		# build the java component
-		classpath = ':'.join(
-				glob.glob( os.path.join(pydoop.hadoop_home(), 'hadoop-*.jar') ) + 
-				glob.glob( os.path.join(pydoop.hadoop_home(), 'lib', '*.jar') ) )
-		class_dir = os.path.join(self.build_temp, 'pydoop_java')
-		package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
+  def run(self):
+    distutils_build.run(self)
+    # build the java component
+    classpath = ':'.join(
+        glob.glob( os.path.join(pydoop.hadoop_home(), 'hadoop-*.jar') ) + 
+        glob.glob( os.path.join(pydoop.hadoop_home(), 'lib', '*.jar') ) )
+    class_dir = os.path.join(self.build_temp, 'pydoop_java')
+    package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
 
-		if not os.path.exists(class_dir):
-			os.mkdir(class_dir)
-		compile_cmd = "javac -classpath %s -d '%s' src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java" % (classpath, class_dir)
-		package_cmd = "jar -cf %s -C %s ./it" % (package_path, class_dir)
-		log.info("Compiling Java classes")
-		log.debug("Command: %s", compile_cmd)
-		ret = os.system(compile_cmd)
-		if ret:
-			raise DistutilsSetupError("Error compiling java component.  Command: %s" % compile_cmd)
-		log.info("Packaging Java classes")
-		log.debug("Command: %s", package_cmd)
-		ret = os.system(package_cmd) 
-		if ret:
-			raise DistutilsSetupError("Error packaging java component.  Command: %s" % package_cmd)
+    if not os.path.exists(class_dir):
+      os.mkdir(class_dir)
+    compile_cmd = "javac -classpath %s -d '%s' src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java" % (classpath, class_dir)
+    package_cmd = "jar -cf %s -C %s ./it" % (package_path, class_dir)
+    log.info("Compiling Java classes")
+    log.debug("Command: %s", compile_cmd)
+    ret = os.system(compile_cmd)
+    if ret:
+      raise DistutilsSetupError("Error compiling java component.  Command: %s" % compile_cmd)
+    log.info("Packaging Java classes")
+    log.debug("Command: %s", package_cmd)
+    ret = os.system(package_cmd) 
+    if ret:
+      raise DistutilsSetupError("Error packaging java component.  Command: %s" % package_cmd)
 
 ###############################################################################
 # Path finder
@@ -324,55 +324,44 @@ class PathFinder(object):
 
     # look in the source first
     src_paths = [ os.path.join( self.src, "c++", "pipes", "api", "hadoop" ), os.path.join( self.src, "c++", "utils", "api", "hadoop") ]
+
     if all( map(os.path.exists, src_paths) ):
       self.mapred_inc = map(os.path.dirname, src_paths) # the includes are for "hadoop/<file.h>", so we chop the hadoop directory off the path
     else:
-      if pydoop.is_cloudera():
-        # we didn't find the expected include paths in the source.  Try the standard /usr/include/hadoop
-        usr_inc_hadoop = os.path.join( os.path.sep, "usr", "include", "hadoop")
-        if os.path.exists( usr_inc_hadoop ):
-          self.mapred_inc = [ os.path.dirname(usr_inc_hadoop) ]
-        else:
-          msg = "Couldn't find Hadoop c++ include directory.  Searched in: \n  " + "\n  ".join(src_paths + [ usr_inc_hadoop ]) + "\nTry specifying one with HADOOP_INC_PATH"
-          raise RuntimeError("Couldn't find Hadoop c++ include directories in source or in /usr/include/hadoop")
-      else: # Apache hadoop
-        arch_string = "-".join(get_arch())
-        search_paths = (
-          os.path.join(self.src, "mapred", "c++", "Linux-%s" % arch_string, "include", "hadoop"),
-          os.path.join(self.src, "c++", "Linux-%s" % arch_string, "include", "hadoop"),
-          os.path.join(os.path.sep, "usr", "include", "hadoop"))
-        inc_path = find_first_existing( *search_paths )
-
-        if inc_path:
-          self.mapred_inc = [ os.path.dirname(inc_path) ]
-        else:
-          msg = "Couldn't find Hadoop c++ include directory.  Searched in: \n  " + "\n  ".join(search_paths + src_paths) + "\nTry specifying one with HADOOP_INC_PATH"
-          raise RuntimeError(msg)
+      # we didn't find the expected include paths in the source.  Try the standard /usr/include/hadoop
+      arch_string = "-".join(get_arch())
+      candidate_paths = \
+        glob.glob(os.path.join(self.src, "mapred", "c++", "Linux-%s" % arch_string, "include", "hadoop")) +\
+        glob.glob(os.path.join(self.src, "c++", "Linux-%s" % arch_string, "include", "hadoop")) +\
+        glob.glob(os.path.join( os.path.sep, "usr", "include", "hadoop*"))
+      if candidate_paths:
+        self.mapred_inc = [ os.path.dirname(candidate_paths[0]) ]
+      else:
+        raise RuntimeError("Couldn't find Hadoop c++ include directory.\nTry specifying one with HADOOP_INC_PATH")
 
   def __set_hdfs_link_paths(self):
     self.hdfs_link_paths["l"].append("hdfs") # link to libhdfs
 
     # But, where to find libhdfs?
-    lib = find_first_existing(
-      os.path.join(os.path.sep, "usr", "lib", "libhdfs.so"),
-      os.path.join(self.hadoop_home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
-      os.path.join(self.hadoop_home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"),
-      os.path.join(self.hadoop_home, "lib", "libhdfs.so"),
-      )
-    if lib:
-      dir, name = os.path.split(lib)
+    candidate_paths = \
+      glob.glob(os.path.join(os.pathsep,"usr","lib*","libhdfs.so*")) + \
+      glob.glob(os.path.join(self.hadoop_home, "lib*", "libhdfs.so")) +\
+      glob.glob(os.path.join(self.hadoop_home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so")) +\
+      glob.glob(os.path.join(self.hadoop_home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"))
+    if candidate_paths: # glob only returns existing paths
+      dir, name = os.path.split(candidate_paths[0])
       if dir != os.path.join(os.path.sep, "usr", "lib"):
         self.hdfs_link_paths["L"].append(dir)
     else:
       raise RuntimeError("Couldn't find libhdfs.so in HADOOP_HOME or /usr/lib.")
         
   def __set_hdfs_inc_path(self):
-    fname = find_first_existing(
-      os.path.join(self.src, "c++", "libhdfs", "hdfs.h"),
-      os.path.join(os.path.sep, "usr", "include", "hdfs.h"),
-      )
-    if fname:
-      dir, name = os.path.split(fname)
+    candidate_paths = \
+      glob.glob(os.path.join(os.pathsep, "usr","include","hdfs.h")) +\
+      glob.glob(os.path.join(os.pathsep, "usr","include","hadoop*","hdfs.h")) +\
+      glob.glob(os.path.join(self.src, "c++", "libhdfs", "hdfs.h"))
+    if candidate_paths:
+      dir, name = os.path.split(candidate_paths[0])
       if dir != os.path.join(os.path.sep, "usr", "include"):
         self.hdfs_inc_path = dir
       else:
