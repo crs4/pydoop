@@ -28,6 +28,7 @@ from distutils.errors import DistutilsSetupError
 from distutils import log
 
 import pydoop
+import pydoop.hadoop_utils as hadoop_utils
 
 PipesSrc = ["pipes", "pipes_context", "pipes_test_support",
           "pipes_serial_utils", "exceptions", "pipes_input_split"]
@@ -99,13 +100,13 @@ def create_full_pipes_ext(path_finder):
     }
   include_dirs = path_finder.mapred_inc
   libraries = ["pthread", "boost_python"]
-  if path_finder.hadoop_version[2] == 203 or path_finder.is_cloudera():
+  if path_finder.hadoop_version()[2] == 203 or path_finder.cloudera():
     include_dirs.append("/usr/include/openssl")
     libraries.append("ssl")
     patches[serial_utils_cc][OLD_SERIAL_UTILS_INCLUDE] = NEW_SERIAL_UTILS_INCLUDE
     patches[pipes_cc][OLD_PIPES_CC_INCLUDE] = NEW_PIPES_CC_INCLUDE
   return BoostExtension(
-    pydoop.complete_mod_name(PipesExtName, path_finder.hadoop_version),
+    pydoop.complete_mod_name(PipesExtName, path_finder.hadoop_version()),
     ["src/%s.cpp" % n for n in PipesSrc],
     [], # aux
     patches=patches,
@@ -116,7 +117,7 @@ def create_full_pipes_ext(path_finder):
 def create_full_hdfs_ext(path_finder):
   library_dirs = get_java_library_dirs(path_finder.java_home) + path_finder.hdfs_link_paths["L"]
   return BoostExtension(
-    pydoop.complete_mod_name(HdfsExtName, path_finder.hadoop_version),
+    pydoop.complete_mod_name(HdfsExtName, path_finder.hadoop_version()),
     ["src/%s.cpp" % n for n in HdfsSrc],
     [], # aux
     include_dirs=get_java_include_dirs(path_finder.java_home) + [path_finder.hdfs_inc_path],
@@ -213,7 +214,7 @@ class build_pydoop_ext(distutils_build_ext):
   def finalize_options(self):
     distutils_build_ext.finalize_options(self)
 
-    path_finder = PathFinder()
+    path_finder = SetupPathFinder()
 
     self.extensions = [ create_full_pipes_ext(path_finder), create_full_hdfs_ext(path_finder) ]
 
@@ -254,7 +255,7 @@ class pydoop_build(distutils_build):
     distutils_build.run(self)
     # build the java component
     classpath = ':'.join(
-        glob.glob( os.path.join(pydoop.hadoop_home(), 'hadoop-*.jar') ) + 
+        glob.glob( os.path.join(pydoop.hadoop_home(), 'hadoop-*.jar') ) +
         glob.glob( os.path.join(pydoop.hadoop_home(), 'lib', '*.jar') ) )
     class_dir = os.path.join(self.build_temp, 'pydoop_java')
     package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
@@ -282,11 +283,10 @@ class pydoop_build(distutils_build):
 # * Hadoop binary and source paths
 # * Hadoop version
 ###############################################################################
-class PathFinder(object):
+class SetupPathFinder(hadoop_utils.PathFinder):
   def __init__(self):
+    super(type(self), self).__init__() # call parent constructor
     self.java_home = None
-    self.hadoop_home = pydoop.hadoop_home()
-    self.hadoop_version = pydoop.hadoop_version()
     self.src = None
     self.mapred_src = None
     self.mapred_inc = []
@@ -303,9 +303,9 @@ class PathFinder(object):
   def __find_hadoop_src(self):
     if os.getenv("HADOOP_SRC"):
       return os.getenv("HADOOP_SRC")
-    if self.hadoop_home:
-      if os.path.exists( os.path.join(self.hadoop_home, "src") ):
-        return os.path.join(self.hadoop_home, "src")
+    if self.hadoop_home():
+      if os.path.exists( os.path.join(self.hadoop_home(), "src") ):
+        return os.path.join(self.hadoop_home(), "src")
 
     # look in /usr/src
     usr_src = os.path.join( os.path.sep, "usr", "src" )
@@ -346,9 +346,9 @@ class PathFinder(object):
     # But, where to find libhdfs?
     candidate_paths = \
       glob.glob(os.path.join(os.path.sep,"usr","lib*","libhdfs.so*")) + \
-      glob.glob(os.path.join(self.hadoop_home, "lib*", "libhdfs.so")) +\
-      glob.glob(os.path.join(self.hadoop_home, "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so")) +\
-      glob.glob(os.path.join(self.hadoop_home, "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"))
+      glob.glob(os.path.join(self.hadoop_home(), "lib*", "libhdfs.so")) +\
+      glob.glob(os.path.join(self.hadoop_home(), "hdfs", "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so")) +\
+      glob.glob(os.path.join(self.hadoop_home(), "c++", "Linux-%s-%s" % get_arch(), "lib", "libhdfs.so"))
     if candidate_paths: # glob only returns existing paths
       dir, name = os.path.split(candidate_paths[0])
       if dir != os.path.join(os.path.sep, "usr", "lib"):
@@ -368,6 +368,8 @@ class PathFinder(object):
       raise RuntimeError("Couldn't find hdfs.h in source directory or /usr/include.")
 
   def __init_paths(self):
+    # actually does not override the parent class' method since
+    # they're both private methods
     self.java_home = os.getenv("JAVA_HOME", find_first_existing("/opt/sun-jdk", "/usr/lib/jvm/java-6-sun"))
     if self.java_home is None:
       raise RuntimeError("Could not determine JAVA_HOME path")
@@ -385,9 +387,11 @@ class PathFinder(object):
 
     print "========================================="
     print "paths:"
-    names = ("java_home", "hadoop_home", "hadoop_version", "src", "mapred_src", "mapred_inc", "hdfs_inc_path", "hdfs_link_paths",)
+    names = ("java_home", "src", "mapred_src", "mapred_inc", "hdfs_inc_path", "hdfs_link_paths",)
     for n in names:
       print n, ": ", getattr(self, n)
+    print "hadoop_home", self.hadoop_home()
+    print "hadoop_version", self.hadoop_version()
     print "========================================="
 
 
