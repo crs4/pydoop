@@ -18,7 +18,7 @@
 # JAVA_HOME:  by default looks  in /opt/sun-jdk and /usr/lib/jvm/java-6-sun
 # HADOOP_VERSION:  override the version returned by running "hadoop version" (and avoid running the hadoop binary)
 
-import sys, os, platform, re, glob
+import sys, os, platform, re, glob, shutil
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as distutils_build_ext
@@ -235,6 +235,7 @@ def create_ext_modules():
 class pydoop_clean(distutils_clean):
   def run(self):
     distutils_clean.run(self)
+    shutil.rmtree(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dist'), ignore_errors=True)
     pydoop_src_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'src')
     ## remove generated files and patched Hadoop pipes code 
     r = re.compile('(%s|%s)_.*_main.cpp$' % (HdfsExtName, PipesExtName))
