@@ -1,20 +1,12 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import unittest, os, pwd
-from test_hdfs_basic_class import hdfs_basic_tc, basic_tests#, HDFS
+import unittest, os
+
+from test_hdfs_basic_class import hdfs_basic_tc, basic_tests
+from utils import HDFS_HOST, HDFS_PORT
 import pydoop.hdfs as hdfs
 
-
-DEFAULT_HDFS_HOST = "localhost"
-DEFAULT_HDFS_PORT = 9000
-HDFS_HOST = os.getenv("HDFS_HOST", DEFAULT_HDFS_HOST)
-HDFS_PORT = os.getenv("HDFS_PORT", DEFAULT_HDFS_PORT)
-try:
-  HDFS_PORT = int(HDFS_PORT)
-except ValueError:
-  import sys
-  sys.exit("Bad environment variable HDFS_PORT=%s (must be an int)" % HDFS_PORT)
 
 class hdfs_default_tc(hdfs_basic_tc):
   

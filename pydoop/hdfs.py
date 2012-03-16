@@ -144,9 +144,7 @@ class hdfs_file(object):
     if not self.chunk:
       self.__read_chunk()
     eol = self.chunk.find(self.ENDL, self.p)
-    i = 0
     while eol < 0 and not self.EOF:
-      i += 1
       if self.p < len(self.chunk):
         self.buffer_list.append(self.chunk[self.p:])
       self.__read_chunk()
@@ -345,7 +343,7 @@ class hdfs(hdfs_fs):
   :param host: hostname or IP address of the HDFS NameNode. Set to
     an empty string (and ``port`` to 0) to connect to the local file
     system; Set to "default" (and ``port`` to 0) to connect to the
-    "configured" file system.  
+    "configured" file system.
   :type port: int
   :param port: the port on which the NameNode is listening
   :type user: string or ``None``
@@ -415,6 +413,7 @@ class hdfs(hdfs_fs):
     :return: handle to the open file
     """
     _complain_ifclosed(self.closed)
+    path = str(path)  # the C API does not handle unicodes
     if flags == "r":
       flags = os.O_RDONLY
     elif flags == "w":

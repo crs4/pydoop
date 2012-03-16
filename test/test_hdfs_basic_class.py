@@ -1,15 +1,17 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, os, unittest, random
+import sys, os, unittest
 from ctypes import create_string_buffer
 import xml.dom.minidom
 
 import pydoop
 import pydoop.hdfs as hdfs
+from utils import make_random_data
 
 HADOOP_HOME = pydoop.hadoop_home()
 HADOOP_CONF_DIR = pydoop.hadoop_conf()
+
 
 class hdfs_basic_tc(unittest.TestCase):
 
@@ -379,11 +381,11 @@ class hdfs_basic_tc(unittest.TestCase):
       with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
         for i, l in enumerate(lines):
           f.seek(sum(map(len, lines[:i])))
-          self.assertEqual(f.readline(), lines[i])
+          self.assertEqual(f.readline(), l)
           f.seek(0)
           self.assertEqual(f.readline(), lines[0])
           f.seek(sum(map(len, lines[:i])))
-          self.assertEqual(f.readline(), lines[i])
+          self.assertEqual(f.readline(), l)
       with self.fs.open_file(path) as f:
         f.seek(1)
         f.seek(1, os.SEEK_CUR)
@@ -397,15 +399,15 @@ class hdfs_basic_tc(unittest.TestCase):
     CHUNK_SIZE = 10
     N = 2
     bs = N * self.__get_bytes_per_checksum()
-    total_data = 2 * bs
+    total_data_size = 2 * bs
     f = self.fs.open_file(path, os.O_WRONLY, blocksize=bs)
-    f.write("".join([chr(random.randint(32,126)) for _ in xrange(total_data)]))
+    f.write(make_random_data(total_data_size))
     f.close()
     f = self.fs.open_file(path)
     try:
-      p = total_data - CHUNK_SIZE
-      for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data-1:
-        expected_len = CHUNK_SIZE if pos <= p else total_data - pos
+      p = total_data_size - CHUNK_SIZE
+      for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data_size-1:
+        expected_len = CHUNK_SIZE if pos <= p else total_data_size - pos
         f.seek(pos)
         chunk = f.read(CHUNK_SIZE)
         self.assertEqual(len(chunk), expected_len)
@@ -480,4 +482,3 @@ def basic_tests():
     'block_boundary',
     'top_level_open',
     ]
-
