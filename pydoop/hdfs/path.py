@@ -7,6 +7,8 @@ pydoop.hdfs.path -- path name manipulations
 """
 
 import os, re
+
+import fs as hdfs_fs
 from config import DEFAULT_PORT, DEFAULT_USER
 
 
@@ -70,3 +72,41 @@ def split(hdfs_path, user=None):
   """
   # Use a helper class to compile URL_PATTERN once and for all
   return _HdfsPathSplitter.split(hdfs_path, user or DEFAULT_USER)
+
+
+def join(a, *p):
+  """
+  Join path name components, inserting ``/`` as needed.
+
+  If any component looks like an absolute path (i.e., it starts with
+  ``hdfs:`` or ``file:``), all previous components will be discarded.
+
+  Note that this is *not* the reverse of :func:`split`, but rather a
+  specialized version of os.path.join. It is the caller's
+  responsibility to ensure that individual parts are correctly formed.
+  """
+  path = [a.rstrip("/")]
+  for b in p:
+    b = b.strip("/")
+    if b.startswith('hdfs:') or b.startswith('file:'):
+      path = [b]
+    else:
+      path.append(b)
+  return "/".join(path)
+
+
+def abspath(hdfs_path, user=None, local=False):
+  """
+  Return an absolute path for ``hdfs_path``.
+
+  If ``local`` is true, it simply prepends 'file:' to
+  ``os.path.abspath(hdfs_path)``. The ``user`` arg is passed to
+  :func:`split`.
+  """
+  if local:
+    return 'file:%s' % os.path.abspath(hdfs_path)
+  hostname, port, path = split(hdfs_path, user=user)
+  fs = hdfs_fs.hdfs(hostname, port)
+  apath = join("hdfs://%s:%s" % (fs.host, fs.port), path)
+  fs.close()
+  return apath

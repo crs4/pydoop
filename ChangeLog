@@ -1,3 +1,10 @@
+2012-03-20  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hadoop_utils.py (PathFinder): hadoop_{home,conf,version}
+	changed to recompute their return values in response to dynamic
+	changes in os.environ. This is essential for hdfs.config to work
+	correctly.
+
 2011-06-04    <simleo@neuron.crs4.it>
 
 	* setup.py: first step towards support for Hadoop 0.20.203.0:

@@ -4,8 +4,17 @@
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, re, subprocess
-import glob
+import os, re, subprocess, glob
+
+try:
+  _ORIG_HADOOP_HOME
+except NameError:
+  _ORIG_HADOOP_HOME = os.getenv("HADOOP_HOME")
+try:
+  _ORIG_HADOOP_CONF_DIR
+except NameError:
+  _ORIG_HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR")
+
 
 class HadoopVersionError(Exception):
   pass
@@ -13,6 +22,7 @@ class HadoopVersionError(Exception):
 
 def __is_exe(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
 
 def version_tuple(version_string):
   """
@@ -63,10 +73,11 @@ def get_hadoop_version(hadoop_home=None):
     version = subprocess.Popen(
       args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
       ).communicate()[0].splitlines()[0].split()[-1]
-  except (OSError, IndexError) as e:
+  except (OSError, IndexError):
     raise HadoopVersionError(msg % ("'%s %s' failed" % tuple(args)))
   else:
     return version_tuple(version)
+
 
 def get_hadoop_exec(hadoop_home=None):
   # check whatever hadoop home the caller gave us
@@ -87,6 +98,7 @@ def get_hadoop_exec(hadoop_home=None):
 
   return None
 
+
 class PathFinder(object):
   """
   Path finder
@@ -103,6 +115,8 @@ class PathFinder(object):
     self.__initialized = False
 
   def hadoop_home(self):
+    if os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME:
+      self.__initialized = False
     if not self.__initialized:
       self.__init_paths()
     if self.__hadoop_home is None:
@@ -110,6 +124,8 @@ class PathFinder(object):
     return self.__hadoop_home
 
   def hadoop_version(self):
+    if os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME:
+      self.__initialized = False
     if not self.__initialized:
       self.__init_paths()
     if self.__hadoop_version is None:
@@ -117,6 +133,9 @@ class PathFinder(object):
     return self.__hadoop_version
 
   def hadoop_conf(self):
+    if (os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME or
+        os.getenv("HADOOP_CONF_DIR") != _ORIG_HADOOP_CONF_DIR):
+      self.__initialized = False
     if not self.__initialized:
       self.__init_paths()
     if self.__hadoop_conf is None:
@@ -135,6 +154,10 @@ class PathFinder(object):
       return False
 
   def __init_paths(self):
+    self.__hadoop_home = None
+    self.__hadoop_conf = None
+    self.__hadoop_version = None
+
     ######### HADOOP_HOME
     if os.environ.has_key("HADOOP_HOME"):
       self.__hadoop_home = os.getenv("HADOOP_HOME")
@@ -165,7 +188,7 @@ class PathFinder(object):
     ######### HADOOP_VERSION
     try:
       self.__hadoop_version = get_hadoop_version(self.__hadoop_home)
-    except:
+    except (HadoopVersionError, RuntimeError):
       pass # leave self.hadoop_version as None
 
     ######### HADOOP_CONF_DIR

@@ -1,7 +1,8 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import unittest
+import os, unittest
+import pydoop.hdfs as hdfs
 import pydoop.hdfs.path as hpath
 import pydoop.hdfs.config as pconf
 
@@ -45,11 +46,48 @@ class TestSplit(unittest.TestCase):
       self.assertRaises(ValueError, hpath.split, p)
 
 
+class TestJoin(unittest.TestCase):
+
+  def good(self):
+    for p, r in [
+      (('/foo', 'bar', 'tar'), '/foo/bar/tar'),
+      (('/foo/', 'bar/', 'tar/'), '/foo/bar/tar'),
+      (('/foo/', 'hdfs://host:9000/bar/', 'tar/'), 'hdfs://host:9000/bar/tar'),
+      (('/foo/', 'file:/bar/', 'tar/'), 'file:/bar/tar'),
+      (('/foo/', 'file:///bar/', 'tar/'), 'file:///bar/tar'),
+      ]:
+      self.assertEqual(hpath.join(*p), r)
+
+
+class TestAbspath(unittest.TestCase):
+
+  def setUp(self):
+    fs = hdfs.hdfs("default", 0)
+    self.host = fs.host
+    self.port = fs.port
+    fs.close()
+    self.root = "hdfs://%s:%s" % (self.host, self.port)
+
+  def good(self):
+    p = 'foo/bar'
+    for kw, r in [
+      ({"user": None, "local": False},
+       '%s/user/%s/%s' % (self.root, pconf.DEFAULT_USER, p)),
+      ({"user": "pydoop", "local": False},
+       '%s/user/pydoop/%s' % (self.root, p)),
+      ({"user": None, "local": True},
+       'file:%s' % (os.path.abspath(p))),
+      ]:
+      self.assertEqual(hpath.abspath(p, **kw), r)
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
   suite.addTest(TestSplit('good_with_user'))
   suite.addTest(TestSplit('bad'))
+  suite.addTest(TestJoin('good'))
+  suite.addTest(TestAbspath('good'))
   return suite
 
 

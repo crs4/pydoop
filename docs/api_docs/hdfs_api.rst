@@ -6,3 +6,9 @@
 
 .. automodule:: pydoop.hdfs.path
    :members:
+
+.. automodule:: pydoop.hdfs.fs
+   :members:
+
+.. automodule:: pydoop.hdfs.file
+   :members:
