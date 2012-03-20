@@ -130,19 +130,78 @@ the latter to your job's output directory.
 
 Command line options supported by ``pydoop_script``.
 
-====== ============== =================================================================
-Short  Long            Meaning
-====== ============== =================================================================
--h,    --help          show this help message and exit
--m     --map-fn        Name of map function within module (default: mapper)
--r     --reduce-fn     Name of reduce function within module (default: reducer)
--t     --kv-separator  Key-value separator string in final output (default:
-                       <tab> character)
-       --num-reducers  Number of reduce tasks. Specify 0 to only perform map
-                       phase (default: 3 * num task trackers).
--D                     Set a property value, such as
-                       -D mapred.compress.map.output=true
-====== ============== =================================================================
+====== ======================= =================================================================
+Short  Long                     Meaning
+====== ======================= =================================================================
+-h,    --help                   show this help message and exit
+-m     --map-fn                 Name of map function within module (default: mapper)
+-r     --reduce-fn              Name of reduce function within module (default: reducer)
+-t     --kv-separator           Key-value separator string in final output (default:
+                                <tab> character)
+       --num-reducers           Number of reduce tasks. Specify 0 to only perform map
+                                phase (default: 3 * num task trackers).
+-D                              Set a property value, such as
+                                -D mapred.compress.map.output=true
+====== ======================= =================================================================
+
+
+Generic Hadoop options
+.........................
+
+In addition to the options listed above, you can pass any of the generic Hadoop
+options to pydoop_script, but you must pass them **after the pydoop_script
+options listed above**.
+
+============================== =================================================
+-conf <configuration file>     specify an application configuration file
+-fs <local|namenode:port>      specify a namenode
+-jt <local|jobtracker:port>    specify a job tracker
+-files <list of files>         comma-separated files to be copied to the map
+                               reduce cluster
+-libjars <list of jars>        comma-separated jar files to include in the
+                               classpath
+-archives <list of archives>   comma-separated archives to be unarchived on the
+                               compute machines
+============================== =================================================
+
+Example: word count with stop words
+"""""""""""""""""""""""""""""""""""""
+
+Here is the word count example modified to ignore stop words.  The stop words
+are identified in a file that is distributed to all the nodes using the standard
+Hadoop ``-files`` option.
+
+Code::
+
+  # load stop word dictionary
+  stop = dict()
+  with open('stop_words.txt') as f:
+    for line in f.xreadlines():
+      stop[line.rstrip('\n')] = None
+
+  # map and reduce 
+  def mapper(k,v,writer):
+    for word in v.rstrip('\n').split():
+      if stop.has_key(word):
+        writer.count("stop words", 1)
+      else:
+        writer.emit(word,1)
+  
+  def reducer(word, icounts, writer):
+    writer.emit(word, sum(map(int, icounts)))
+
+Command line::
+
+  pydoop_script  word_count.py alice.txt wc -files stop_words.txt
+
+While this script works, it has the obvious weakness of loading the stop words
+list even when executing the reducer (since it's loaded as soon as we import the
+module).  If this inconvenience is a concern, we could solve the issue by
+triggering the loading from the ``mapper`` function, or by writing a full Pydoop
+application which would give us all the control we need to only load the list
+when required.
+
+
 
 Writing your map and reduce functions
 -----------------------------------------
