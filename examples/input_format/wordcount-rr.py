@@ -8,7 +8,6 @@ logging.basicConfig(level=logging.DEBUG)
 
 import pydoop.pipes as pp
 import pydoop.hdfs as hdfs
-from pydoop.utils import split_hdfs_path
 
 
 class Mapper(pp.Mapper):

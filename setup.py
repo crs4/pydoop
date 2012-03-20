@@ -30,6 +30,27 @@ from distutils import log
 import pydoop
 import pydoop.hadoop_utils as hadoop_utils
 
+
+BOOST_PYTHON = "boost_python"
+# Quick fix for Gentoo with boost >= 1.48.0-r1
+try:
+  import portage
+except ImportError:
+  pass
+else:
+  vardb = portage.db[portage.settings["ROOT"]]["vartree"].dbapi
+  pkg_list = vardb.cp_list("dev-libs/boost")
+  if len(pkg_list) == 0:
+    raise ValueError("boost not installed")
+  elif len(pkg_list) == 1:
+    pkg = pkg_list[0]
+  else:
+    raise ValueError("multiple boost slots are not supported")
+  version = portage.versions.cpv_getversion(pkg)
+  if portage.vercmp(version, "1.48.0-r1") > -1:
+    BOOST_PYTHON += "-%s.%s" % tuple(sys.version_info[:2])
+
+
 PipesSrc = ["pipes", "pipes_context", "pipes_test_support",
           "pipes_serial_utils", "exceptions", "pipes_input_split"]
 HdfsSrc = ["hdfs_fs", "hdfs_file", "hdfs_common"]
@@ -99,7 +120,7 @@ def create_full_pipes_ext(path_finder):
       },
     }
   include_dirs = path_finder.mapred_inc
-  libraries = ["pthread", "boost_python"]
+  libraries = ["pthread", BOOST_PYTHON]
   if path_finder.hadoop_version()[2] == 203 or path_finder.cloudera():
     include_dirs.append("/usr/include/openssl")
     libraries.append("ssl")
@@ -123,7 +144,7 @@ def create_full_hdfs_ext(path_finder):
     include_dirs=get_java_include_dirs(path_finder.java_home) + [path_finder.hdfs_inc_path],
     library_dirs=library_dirs,
     runtime_library_dirs=library_dirs,
-    libraries=["pthread", "boost_python", "hdfs", "jvm"],
+    libraries=["pthread", BOOST_PYTHON, "hdfs", "jvm"],
     define_macros=get_hdfs_macros(os.path.join(path_finder.hdfs_inc_path, "hdfs.h"))
     )
 
@@ -445,7 +466,10 @@ setup(
   author_email=pydoop.__author_email__,
   url=pydoop.__url__,
   download_url="https://sourceforge.net/projects/pydoop/files/",
-  packages=["pydoop"],
+  packages=[
+    "pydoop",
+    "pydoop.hdfs",
+    ],
   cmdclass={'build': pydoop_build, "build_ext": build_pydoop_ext, 'clean': pydoop_clean},
   ext_modules=create_ext_modules(),
   scripts=["scripts/pydoop_script"],

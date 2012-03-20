@@ -415,9 +415,6 @@ class hdfs_basic_tc(unittest.TestCase):
       f.close()
       self.fs.delete(path)
 
-  def top_level_open(self):
-    pass
-
   def __check_path_info(self, info, **expected_values):
     keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
             'permissions', 'block_size', 'last_access', 'size')
@@ -480,5 +477,4 @@ def basic_tests():
     'iter_lines',
     'seek',
     'block_boundary',
-    'top_level_open',
     ]

@@ -1,49 +1,10 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import os, unittest
+import unittest
 import pydoop.utils as pu
 import pydoop
 pp = pydoop.import_version_specific_module('_pipes')
-
-
-class split_hdfs_path_tc(unittest.TestCase):
-
-  def good(self):
-    for p, r in [
-      ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
-      ('hdfs://localhost:9000/a/b', ('localhost', 9000, '/a/b')),
-      ('hdfs://localhost/a/b', ('localhost', pu.DEFAULT_PORT, '/a/b')),
-      ('hdfs:///a/b', ('default', 0, '/a/b')),
-      ('file:///a/b', ('', 0, '/a/b')),
-      ('file:/a/b', ('', 0, '/a/b')),
-      ('file:///a', ('', 0, '/a')),
-      ('file:/a', ('', 0, '/a')),
-      ('file://localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
-      ('//localhost:9000/a/b', ('localhost', 9000, '/a/b')),
-      ('/a/b', ('default', 0, '/a/b')),
-      ('a/b', ('default', 0, '/user/%s/a/b' % pu.DEFAULT_USER)),
-      ]:
-      self.assertEqual(pu.split_hdfs_path(p), r)
-
-  def good_with_user(self):
-    for p, u, r in [
-      ('a/b', None, ('default', 0, '/user/%s/a/b' % pu.DEFAULT_USER)),
-      ('a/b', pu.DEFAULT_USER,
-       ('default', 0, '/user/%s/a/b' % pu.DEFAULT_USER)),
-      ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
-      ]:
-      self.assertEqual(pu.split_hdfs_path(p, u), r)
-
-  def bad(self):
-    for p, r in [
-    ('ftp://localhost:9000/', ()),          # bad scheme
-    ('hdfs://localhost:spam/', ()),         # port is not an int
-    ('hdfs://localhost:9000', ()),          # path part is empty
-    ('hdfs://localhost:9000/a:b', ()),      # colon outside netloc
-    ('/localhost:9000/a/b', ()),            # colon outside netloc
-    ]:
-      self.assertRaises(ValueError, pu.split_hdfs_path, p)
 
 
 configure_examples = {
@@ -171,9 +132,6 @@ def suite():
   suite.addTest(utils_tc('jc_configure_default'))
   suite.addTest(utils_tc('jc_configure_no_default'))
   suite.addTest(utils_tc('hadoop_serialization'))
-  suite.addTest(split_hdfs_path_tc('good'))
-  suite.addTest(split_hdfs_path_tc('good_with_user'))
-  suite.addTest(split_hdfs_path_tc('bad'))
   return suite
 
 

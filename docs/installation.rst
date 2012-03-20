@@ -223,8 +223,19 @@ Troubleshooting
    locations, you need to add them to the search path. Example::
 
     python setup.py build_ext -L/my/lib/path -I/my/include/path -R/my/lib/path
-    python setup.py build_py
+    python setup.py build
     python setup.py install --skip-build
+
+   Alternatively, you can write a small ``setup.cfg`` file for distutils:
+
+   .. code-block:: cfg
+
+    [build_ext]
+    include_dirs=/my/include/path
+    library_dirs=/my/lib/path
+    rpath=%(library_dirs)s
+
+   and then run ``python setup.py install``.
 
 #. Hadoop version issues. The Hadoop version selected at compile time is 
    automatically detected based on the output of running ``hadoop version``.

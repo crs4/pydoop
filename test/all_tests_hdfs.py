@@ -7,7 +7,8 @@ import unittest, imp
 TEST_MODULE_NAMES = [
   "test_hdfs_plain_disk",
   "test_hdfs_network",
-  "test_hdfs_utils",
+  "test_path",
+  "test_hdfs",
   ]
 
 

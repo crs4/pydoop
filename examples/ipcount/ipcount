@@ -21,9 +21,10 @@ NOTE: the MapReduce application launched by this example wrapper is a
 """
 
 import sys, os, optparse, operator, subprocess as sp
-import pydoop.utils as pu
 from pydoop.hdfs import hdfs
 import pydoop.hadut
+import pydoop.hdfs.path as hpath
+
 
 HADOOP = pydoop.hadut.hadoop
 MR_SCRIPT = "bin/ipcount.py"
@@ -95,7 +96,7 @@ def make_parser():
   return parser
 
 
-def main(argv):
+def main():
   parser = make_parser()
   opt, args = parser.parse_args()
   try:
@@ -107,9 +108,9 @@ def main(argv):
     opt.local_output = open(opt.local_output, 'w')
 
   # output HDFS bust be the same as the input one
-  opt.output = pu.split_hdfs_path(opt.output)[-1]
+  opt.output = hpath.split(opt.output)[-1]
 
-  hostname, port, _ = pu.split_hdfs_path(input_)
+  hostname, port, _ = hpath.split(input_)
   fs = hdfs(hostname, port)
   lfs = hdfs("", 0)
 
@@ -120,7 +121,7 @@ def main(argv):
     try:
       lfs.copy(input_, fs, input_hdfs)
     except IOError:
-      "could not find input dir in either HDFS or local fs"
+      raise ValueError("could not find input dir in either HDFS or local fs")
   if fs.exists(opt.output):
     fs.delete(opt.output)
 
@@ -147,4 +148,4 @@ def main(argv):
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main()

@@ -43,15 +43,6 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
     self.assertEqual(hdfs_group, local_group)
     fs.delete(path)
 
-  def top_level_open(self):
-    path = "file:/tmp/test_hdfs_open"
-    with hdfs.open(path, "w") as f:
-      f.write(path)
-    with hdfs.open(path) as f:
-      self.assertEqual(f.read(), path)
-    f.fs.delete(path)
-    f.fs.close()
-
 
 def suite():
   suite = unittest.TestSuite()
