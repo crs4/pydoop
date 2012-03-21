@@ -116,6 +116,28 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
     f.fs.close()
 
 
+def put(src_path, dest_hdfs_path, **kwargs):
+  """
+  Copy the contents of ``src_path`` to ``dest_hdfs_path``.
+
+  ``src_path`` is forced to be interpreted as an ordinary local path
+  (see :func:`~path.abspath`). Additional keyword arguments, if any,
+  are passed to :func:`open`.
+  """
+  cp(hpath.abspath(src_path, local=True), dest_hdfs_path, **kwargs)
+
+
+def get(src_hdfs_path, dest_path, **kwargs):
+  """
+  Copy the contents of ``src_hdfs_path`` to ``dest_path``.
+
+  ``dest_path`` is forced to be interpreted as an ordinary local path
+  (see :func:`~path.abspath`). Additional keyword arguments, if any,
+  are passed to :func:`open`.
+  """
+  cp(src_hdfs_path, hpath.abspath(dest_path, local=True), **kwargs)
+
+
 def mkdir(hdfs_path, user=None):
   """
   Create a directory and its parents as needed.

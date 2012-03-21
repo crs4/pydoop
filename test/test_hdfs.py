@@ -6,6 +6,7 @@ from itertools import izip
 
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.config as hconf
+import pydoop.hdfs.path as hpath
 from utils import make_random_data
 
 
@@ -68,6 +69,25 @@ class TestHDFS(unittest.TestCase):
           rdata = fi.read()
         self.assertEqual(rdata, self.data)
 
+  def put(self):
+    src = hpath.split(self.local_paths[0])[-1]
+    dest = self.hdfs_paths[0]
+    with open(src, "w") as f:
+      f.write(self.data)
+    hdfs.put(src, dest)
+    with hdfs.open(dest) as fi:
+      rdata = fi.read()
+    self.assertEqual(rdata, self.data)
+
+  def get(self):
+    src = self.hdfs_paths[0]
+    dest = hpath.split(self.local_paths[0])[-1]
+    hdfs.dump(self.data, src)
+    hdfs.get(src, dest)
+    with open(dest) as fi:
+      rdata = fi.read()
+    self.assertEqual(rdata, self.data)
+
   def __ls(self, ls_func, path_transform):
     for wd, paths in izip(
       (self.local_wd, self.hdfs_wd), (self.local_paths, self.hdfs_paths)
@@ -110,6 +130,8 @@ def suite():
   suite.addTest(TestHDFS("dump"))
   suite.addTest(TestHDFS("load"))
   suite.addTest(TestHDFS("cp"))
+  suite.addTest(TestHDFS("put"))
+  suite.addTest(TestHDFS("get"))
   suite.addTest(TestHDFS("lsl"))
   suite.addTest(TestHDFS("ls"))
   suite.addTest(TestHDFS("mkdir"))
