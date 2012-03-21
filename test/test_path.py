@@ -79,6 +79,18 @@ class TestAbspath(unittest.TestCase):
        'file:%s' % (os.path.abspath(p))),
       ]:
       self.assertEqual(hpath.abspath(p, **kw), r)
+    p = 'file:%s' % (os.path.abspath(p))
+    for kw, r in [
+      ({"user": None, "local": False}, p),
+      ({"user": None, "local": True}, 'file:%s' % (os.path.abspath(p))),
+      ]:
+      self.assertEqual(hpath.abspath(p, **kw), r)
+
+
+class TestBasename(unittest.TestCase):
+
+  def good(self):
+    self.assertEqual(hpath.basename("hdfs://localhost:9000/foo/bar"), "bar")
 
 
 def suite():
@@ -88,6 +100,7 @@ def suite():
   suite.addTest(TestSplit('bad'))
   suite.addTest(TestJoin('good'))
   suite.addTest(TestAbspath('good'))
+  suite.addTest(TestBasename('good'))
   return suite
 
 

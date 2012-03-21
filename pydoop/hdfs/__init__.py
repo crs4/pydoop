@@ -116,6 +116,28 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
     f.fs.close()
 
 
+def mkdir(hdfs_path, user=None):
+  """
+  Create a directory and its parents as needed.
+  """
+  host, port, path = hpath.split(hdfs_path, user)
+  fs = hdfs(host, port, user)
+  retval = fs.create_directory(path)
+  fs.close()
+  return retval
+
+
+def rmr(hdfs_path, user=None):
+  """
+  Recursively remove files and directories.
+  """
+  host, port, path = hpath.split(hdfs_path, user)
+  fs = hdfs(host, port, user)
+  retval = fs.delete(path)
+  fs.close()
+  return retval
+
+
 def lsl(hdfs_path, user=None):
   """
   Return a list of dictionaries of file properties.

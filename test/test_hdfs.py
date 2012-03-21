@@ -84,6 +84,25 @@ class TestHDFS(unittest.TestCase):
   def ls(self):
     self.__ls(hdfs.ls, lambda x: x)
 
+  def mkdir(self):
+    for wd in self.local_wd, self.hdfs_wd:
+      d1 = "%s/d1" % wd
+      d2 = "%s/d2" % d1
+      hdfs.mkdir(d2)
+      dir_list = hdfs.ls(d1)
+      self.assertEqual(len(dir_list), 1)
+      self.assertTrue(dir_list[0].endswith(d2))
+
+  def rmr(self):
+    for wd in self.local_wd, self.hdfs_wd:
+      d1 = "%s/d1" % wd
+      d2 = "%s/d2" % d1
+      hdfs.mkdir(d2)
+      for d, bn in ((d1, "f1"), (d2, "f2")):
+        hdfs.dump(self.data, "%s/%s" % (d, bn))
+      hdfs.rmr(d1)
+      self.assertEqual(len(hdfs.ls(wd)), 0)
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -93,6 +112,8 @@ def suite():
   suite.addTest(TestHDFS("cp"))
   suite.addTest(TestHDFS("lsl"))
   suite.addTest(TestHDFS("ls"))
+  suite.addTest(TestHDFS("mkdir"))
+  suite.addTest(TestHDFS("rmr"))
   return suite
 
 

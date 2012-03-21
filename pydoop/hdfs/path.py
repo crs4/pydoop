@@ -74,7 +74,7 @@ def split(hdfs_path, user=None):
   return _HdfsPathSplitter.split(hdfs_path, user or DEFAULT_USER)
 
 
-def join(a, *p):
+def join(*parts):
   """
   Join path name components, inserting ``/`` as needed.
 
@@ -82,16 +82,19 @@ def join(a, *p):
   ``hdfs:`` or ``file:``), all previous components will be discarded.
 
   Note that this is *not* the reverse of :func:`split`, but rather a
-  specialized version of os.path.join. It is the caller's
-  responsibility to ensure that individual parts are correctly formed.
+  specialized version of os.path.join. No check is made to determine
+  whether the returned string is a valid HDFS path.
   """
-  path = [a.rstrip("/")]
-  for b in p:
-    b = b.strip("/")
-    if b.startswith('hdfs:') or b.startswith('file:'):
-      path = [b]
+  try:
+    path = [parts[0].rstrip("/")]
+  except IndexError:
+    raise TypeError("need at least one argument")
+  for p in parts[1:]:
+    p = p.strip("/")
+    if p.startswith('hdfs:') or p.startswith('file:'):
+      path = [p]
     else:
-      path.append(b)
+      path.append(p)
   return "/".join(path)
 
 
@@ -99,14 +102,34 @@ def abspath(hdfs_path, user=None, local=False):
   """
   Return an absolute path for ``hdfs_path``.
 
-  If ``local`` is true, it simply prepends 'file:' to
-  ``os.path.abspath(hdfs_path)``. The ``user`` arg is passed to
-  :func:`split`.
+  The ``user`` arg is passed to :func:`split`. The ``local`` argument
+  forces ``hdfs_path`` to be interpreted as an ordinary local path:
+
+  .. code-block:: python
+
+    >>> import os
+    >>> os.chdir('/tmp')
+    >>> import pydoop.hdfs.path as hpath
+    >>> hpath.abspath('file:/tmp')
+    'file:/tmp'
+    >>> hpath.abspath('file:/tmp', local=True)
+    'file:/tmp/file:/tmp'
   """
   if local:
     return 'file:%s' % os.path.abspath(hdfs_path)
   hostname, port, path = split(hdfs_path, user=user)
-  fs = hdfs_fs.hdfs(hostname, port)
-  apath = join("hdfs://%s:%s" % (fs.host, fs.port), path)
-  fs.close()
+  if hostname:
+    fs = hdfs_fs.hdfs(hostname, port)
+    apath = join("hdfs://%s:%s" % (fs.host, fs.port), path)
+    fs.close()
+  else:
+    apath = "file:%s" % path
   return apath
+
+
+def basename(hdfs_path):
+  """
+  Return the final component of ``hdfs_path``.
+  """
+  # We only support Linux, so it's OK to use os.path.basename
+  return os.path.basename(hdfs_path)
