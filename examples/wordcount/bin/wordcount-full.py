@@ -12,13 +12,13 @@ shown here mimic the behavior of the default ones.
 import sys, os, logging, struct
 logging.basicConfig(level=logging.DEBUG)
 
+import pydoop
 import pydoop.pipes as pp
 from pydoop.utils import jc_configure, jc_configure_int
 from pydoop.hadoop_utils import get_hadoop_version
 import pydoop.hdfs as hdfs
 
-HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
+HADOOP_VERSION = pydoop.hadoop_version()
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"
