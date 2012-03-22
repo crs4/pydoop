@@ -262,12 +262,22 @@ Writer object
 .................
 
 The writer object given as the third parameter to both ``mapper`` and
-``reducer`` functions has two methods:  ``emit(k,v)`` and ``count(what, how_many)``.
+``reducer`` functions has methods:
+
+ *  ``emit(k,v)``
+ * ``count(what, how_many)``
+ * ``status(msg)``
+ * ``progress()``
 
 Call ``emit(k,v)`` to write a key-value pair (k,v) to the framework.
 
 Call ``count(what, how_many)`` to add ``how_many`` to the counter named
 ``what``.  If the counter doesn't already exist it will be created dynamically.
+
+Call ``status(msg)`` to update the task status to ``msg``.
+
+Call ``progress()`` to tell the framework your script is alive when it may spend
+a long time without calling any of the writer's other methods.
 
 
 Naming your functions

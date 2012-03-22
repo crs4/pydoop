@@ -42,6 +42,12 @@ class ContextWriter(object):
 			self.counters[what] = counter
 		self.context.incrementCounter(counter, howmany)
 
+	def status(self, msg):
+		self.context.setStatus(msg)
+
+	def progress(self):
+		self.context.progress()
+
 class PydoopScriptMapper(pydoop.pipes.Mapper):
 	def __init__(self, ctx):
 		super(type(self), self).__init__(ctx)
