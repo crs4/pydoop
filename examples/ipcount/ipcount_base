@@ -7,10 +7,10 @@
 
 import sys, os, subprocess as sp
 from pydoop.hadoop_utils import get_hadoop_version
-import pydoop.hadut as hadut
+import pydoop.hadoop_utils as hu
 
 
-HADOOP = hadut.hadoop
+HADOOP = hu.get_hadoop_exec()
 SCRIPT = "bin/ipcount_base.py"
 OUTPUT = "output"
 

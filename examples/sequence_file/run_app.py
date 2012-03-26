@@ -4,9 +4,10 @@
 # END_COPYRIGHT
 
 import sys, os, optparse, subprocess as sp
-import pydoop.hadut
+import pydoop.hadoop_utils as hu
 
-HADOOP = pydoop.hadut.hadoop
+
+HADOOP = hu.get_hadoop_exec()
 WD = "test_sequence_file"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"
 LOCAL_FILTER_SCRIPT = "bin/filter.py"

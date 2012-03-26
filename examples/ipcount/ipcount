@@ -22,11 +22,11 @@ NOTE: the MapReduce application launched by this example wrapper is a
 
 import sys, os, optparse, operator, subprocess as sp
 from pydoop.hdfs import hdfs
-import pydoop.hadut
 import pydoop.hdfs.path as hpath
+import pydoop.hadoop_utils as hu
 
 
-HADOOP = pydoop.hadut.hadoop
+HADOOP = hu.get_hadoop_exec()
 MR_SCRIPT = "bin/ipcount.py"
 OUTPUT = "output"
 
