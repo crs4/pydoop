@@ -23,6 +23,9 @@ class HadoopVersionError(Exception):
 def is_exe(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
+def is_readable(fpath):
+  return os.path.exists(fpath) and os.access(fpath, os.R_OK)
+
 
 def version_tuple(version_string):
   """

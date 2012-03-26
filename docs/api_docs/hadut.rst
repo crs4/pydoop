@@ -1,5 +1,5 @@
-:mod:`pydoop.hadut` --- Python-level API for Hadoop shell commands
-====================================================================
+:mod:`pydoop.hadut` --- Wrappers for Hadoop shell commands
+==========================================================
 
 .. automodule:: pydoop.hadut
    :members:

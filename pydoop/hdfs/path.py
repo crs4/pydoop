@@ -133,3 +133,14 @@ def basename(hdfs_path):
   """
   # We only support Linux, so it's OK to use os.path.basename
   return os.path.basename(hdfs_path)
+
+
+def exists(hdfs_path, user=None):
+  """
+  Return ``True`` if ``hdfs_path`` exists in the default HDFS, else ``False``.
+  """
+  hostname, port, path = split(hdfs_path, user=user)
+  fs = hdfs_fs.hdfs(hostname, port)
+  retval = fs.exists(path)
+  fs.close()
+  return retval

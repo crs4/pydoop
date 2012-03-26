@@ -1,7 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import os, unittest
+import os, unittest, uuid
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.path as hpath
 import pydoop.hdfs.config as pconf
@@ -93,6 +93,16 @@ class TestBasename(unittest.TestCase):
     self.assertEqual(hpath.basename("hdfs://localhost:9000/foo/bar"), "bar")
 
 
+class TestExists(unittest.TestCase):
+
+  def good(self):
+    path = uuid.uuid4().hex
+    hdfs.dump("foo\n", path)
+    self.assertTrue(hpath.exists(path))
+    hdfs.rmr(path)
+    self.assertFalse(hpath.exists(path))
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -101,6 +111,7 @@ def suite():
   suite.addTest(TestJoin('good'))
   suite.addTest(TestAbspath('good'))
   suite.addTest(TestBasename('good'))
+  suite.addTest(TestExists('good'))
   return suite
 
 

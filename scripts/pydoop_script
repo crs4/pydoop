@@ -139,7 +139,7 @@ sys.exit(0 if result else 1)
 
 		# number of reduce tasks
 		if self.options.num_reducers is None:
-			n_red_tasks = type(self).DefaultReduceTasksPerNode * hadut.num_nodes()
+			n_red_tasks = type(self).DefaultReduceTasksPerNode * hadut.get_num_nodes()
 		else:
 			n_red_tasks = self.options.num_reducers
 
@@ -228,7 +228,7 @@ sys.exit(0 if result else 1)
 						module.write(local_module.read())
 
 				return hadut.run_pipes(remote_pipes_bin, self.options.input, self.options.output,
-					properties=self.properties, args_list=self.left_over_args)
+					more_args=self.left_over_args, properties=self.properties)
 			finally:
 				try:
 					self.hdfs.delete(remote_bin_dir) # delete the temporary pipes script from HDFS
