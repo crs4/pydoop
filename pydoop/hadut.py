@@ -11,10 +11,30 @@ import pydoop.hadoop_utils as hu
 
 
 HADOOP = hu.get_hadoop_exec()
+GENERIC_ARGS = frozenset([
+  "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
+  ])
 
 
 def _construct_property_args(prop_dict):
   return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
+
+
+# generic args must go before command-specific args
+def _pop_generic_args(args):
+  generic_args = []
+  i = len(args) - 1
+  while i >= 0:
+    if args[i] in GENERIC_ARGS:
+      try:
+        args[i+1]
+      except IndexError:
+        raise ValueError("option %s has no value" % args[i])
+      generic_args.extend(args[i:i+2])
+      del args[i:i+2]
+      i -= 2
+    i -= 1
+  return generic_args
 
 
 def run_cmd(cmd, args=None, properties=None):
@@ -47,7 +67,9 @@ def run_cmd(cmd, args=None, properties=None):
   if args:
     if isinstance(args, basestring):
       args = args.split()
-    _args.extend(map(str, args))
+    gargs = _pop_generic_args(args)
+    for seq in gargs, args:
+      _args.extend(map(str, seq))
   p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   output, _ = p.communicate()
   if p.returncode:
