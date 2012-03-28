@@ -63,7 +63,7 @@ def dump(data, hdfs_path, **kwargs):
   """
   Write ``data`` to ``hdfs_path``.
 
-  Additional keyword arguments, if any, are passed to :func:`open`.
+  Additional keyword arguments, if any, are handled like in :func:`open`.
   """
   kwargs["mode"] = "w"
   with open(hdfs_path, **kwargs) as fo:
@@ -79,7 +79,7 @@ def load(hdfs_path, **kwargs):
   """
   Read the content of ``hdfs_path`` and return it.
 
-  Additional keyword arguments, if any, are passed to :func:`open`.
+  Additional keyword arguments, if any, are handled like in :func:`open`.
   """
   kwargs["mode"] = "r"
   data = []
@@ -95,16 +95,15 @@ def load(hdfs_path, **kwargs):
   return "".join(data)
 
 
-def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
-  """
-  Copy the contents of ``src_hdfs_path`` to ``dest_hdfs_path``.
-
-  Additional keyword arguments, if any, are passed to :func:`open`.
-  """
-  kwargs["mode"] = "r"
-  with open(src_hdfs_path, **kwargs) as fi:
-    kwargs["mode"] = "w"
-    with open(dest_hdfs_path, **kwargs) as fo:
+def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
+  try:
+    kwargs.pop("mode")
+  except KeyError:
+    pass
+  kwargs["flags"] = "r"
+  with src_fs.open_file(src_path, **kwargs) as fi:
+    kwargs["flags"] = "w"
+    with dest_fs.open_file(dest_path, **kwargs) as fo:
       bufsize = config.BUFSIZE
       while 1:
         chunk = fi.read(bufsize)
@@ -112,8 +111,59 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
           fo.write(chunk)
         else:
           break
-  for f in fi, fo:
-    f.fs.close()
+
+
+def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
+  """
+  Copy the contents of ``src_hdfs_path`` to ``dest_hdfs_path``.
+
+  Additional keyword arguments, if any, are handled like in
+  :func:`open`.  If ``src_hdfs_path`` is a directory, its contents
+  will be copied recursively.
+  """
+  src, dest = {}, {}
+  try:
+    for d, p in ((src, src_hdfs_path), (dest, dest_hdfs_path)):
+      d["host"], d["port"], d["path"] = hpath.split(p)
+      d["fs"] = hdfs(d["host"], d["port"])
+    #--- does src exist? ---
+    try:
+      src["info"] = src["fs"].get_path_info(src["path"])
+    except IOError:
+      raise IOError("no such file or directory: %r" % (src["path"]))
+    #--- src exists. Does dest exist? ---
+    try:
+      dest["info"] = dest["fs"].get_path_info(dest["path"])
+    except IOError:
+      if src["info"]["kind"] == "file":
+        _cp_file(src["fs"], src["path"], dest["fs"], dest["path"], **kwargs)
+        return
+      else:
+        dest["fs"].create_directory(dest["path"])
+        dest_hdfs_path = dest["fs"].get_path_info(dest["path"])["name"]
+        for item in src["fs"].list_directory(src["path"]):
+          cp(item["name"], dest_hdfs_path, **kwargs)
+        return
+    #--- dest exists. Is it a file? ---
+    if dest["info"]["kind"] == "file":
+      raise IOError("%r already exists" % (dest["path"]))
+    #--- dest is a directory ---
+    dest["path"] = hpath.join(dest["path"], hpath.basename(src["path"]))
+    if dest["fs"].exists(dest["path"]):
+      raise IOError("%r already exists" % (dest["path"]))
+    if src["info"]["kind"] == "file":
+      _cp_file(src["fs"], src["path"], dest["fs"], dest["path"], **kwargs)
+    else:
+      dest["fs"].create_directory(dest["path"])
+      dest_hdfs_path = dest["fs"].get_path_info(dest["path"])["name"]
+      for item in src["fs"].list_directory(src["path"]):
+        cp(item["name"], dest_hdfs_path, **kwargs)
+  finally:
+    for d in src, dest:
+      try:
+        d["fs"].close()
+      except KeyError:
+        pass
 
 
 def put(src_path, dest_hdfs_path, **kwargs):
@@ -122,7 +172,7 @@ def put(src_path, dest_hdfs_path, **kwargs):
 
   ``src_path`` is forced to be interpreted as an ordinary local path
   (see :func:`~path.abspath`). Additional keyword arguments, if any,
-  are passed to :func:`open`.
+  are handled like in :func:`open`.
   """
   cp(hpath.abspath(src_path, local=True), dest_hdfs_path, **kwargs)
 
@@ -132,8 +182,8 @@ def get(src_hdfs_path, dest_path, **kwargs):
   Copy the contents of ``src_hdfs_path`` to ``dest_path``.
 
   ``dest_path`` is forced to be interpreted as an ordinary local path
-  (see :func:`~path.abspath`). Additional keyword arguments, if any,
-  are passed to :func:`open`.
+  (see :func:`~path.abspath`).  Additional keyword arguments, if any,
+  are handled like in :func:`open`.
   """
   cp(src_hdfs_path, hpath.abspath(dest_path, local=True), **kwargs)
 

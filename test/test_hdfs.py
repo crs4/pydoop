@@ -7,7 +7,7 @@ from itertools import izip
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.config as hconf
 import pydoop.hdfs.path as hpath
-from utils import make_random_data
+from utils import make_random_data, FSTree
 
 
 class TestHDFS(unittest.TestCase):
@@ -30,12 +30,13 @@ class TestHDFS(unittest.TestCase):
       self.assertTrue(path.startswith("hdfs:"))
 
   def tearDown(self):
-    fs = hdfs.hdfs("", 0)
-    fs.delete(self.local_wd)
-    fs.close()
-    fs = hdfs.hdfs("default", 0)
-    fs.delete(self.hdfs_wd)
-    fs.close()
+    if 1:
+      fs = hdfs.hdfs("", 0)
+      fs.delete(self.local_wd)
+      fs.close()
+      fs = hdfs.hdfs("default", 0)
+      fs.delete(self.hdfs_wd)
+      fs.close()
 
   def open(self):
     for test_path in self.hdfs_paths[0], self.local_paths[0]:
@@ -53,40 +54,6 @@ class TestHDFS(unittest.TestCase):
         rdata = fi.read()
       fi.fs.close()
       self.assertEqual(rdata, self.data)
-
-  def load(self):
-    for test_path in self.hdfs_paths[0], self.local_paths[0]:
-      hdfs.dump(self.data, test_path)
-      rdata = hdfs.load(test_path)
-      self.assertEqual(rdata, self.data)
-
-  def cp(self):
-    for src in self.hdfs_paths[0], self.local_paths[0]:
-      hdfs.dump(self.data, src)
-      for dest in self.hdfs_paths[1], self.local_paths[1]:
-        hdfs.cp(src, dest)
-        with hdfs.open(dest) as fi:
-          rdata = fi.read()
-        self.assertEqual(rdata, self.data)
-
-  def put(self):
-    src = hpath.split(self.local_paths[0])[-1]
-    dest = self.hdfs_paths[0]
-    with open(src, "w") as f:
-      f.write(self.data)
-    hdfs.put(src, dest)
-    with hdfs.open(dest) as fi:
-      rdata = fi.read()
-    self.assertEqual(rdata, self.data)
-
-  def get(self):
-    src = self.hdfs_paths[0]
-    dest = hpath.split(self.local_paths[0])[-1]
-    hdfs.dump(self.data, src)
-    hdfs.get(src, dest)
-    with open(dest) as fi:
-      rdata = fi.read()
-    self.assertEqual(rdata, self.data)
 
   def __ls(self, ls_func, path_transform):
     for wd, paths in izip(
@@ -113,28 +80,116 @@ class TestHDFS(unittest.TestCase):
       self.assertEqual(len(dir_list), 1)
       self.assertTrue(dir_list[0].endswith(d2))
 
+  def load(self):
+    for test_path in self.hdfs_paths[0], self.local_paths[0]:
+      hdfs.dump(self.data, test_path)
+      rdata = hdfs.load(test_path)
+      self.assertEqual(rdata, self.data)
+
+  def __make_tree(self, wd):
+    d1 = "%s/d1" % wd
+    t1 = FSTree(d1)
+    d2 = "%s/d2" % d1
+    t2 = t1.add(d2)
+    hdfs.mkdir(d2)
+    for t, d, bn in ((t1, d1, "f1"), (t2, d2, "f2")):
+      f = "%s/%s" % (d, bn)
+      hdfs.dump(self.data, f)
+      t.add(f, 0)
+    return t1
+
+  def __cp_file(self, wd):
+    fn = "%s/fn" % wd
+    hdfs.dump(self.data, fn)
+    dest_dir = "%s/dest_dir" % wd
+    hdfs.mkdir(dest_dir)
+    fn_copy_on_wd = "%s/fn_copy" % wd
+    hdfs.cp(fn, fn_copy_on_wd)
+    self.assertEqual(hdfs.load(fn_copy_on_wd), self.data)
+    self.assertRaises(IOError, hdfs.cp, fn, fn_copy_on_wd)
+    fn_copy_on_dest_dir = "%s/fn" % dest_dir
+    hdfs.cp(fn, dest_dir)
+    self.assertEqual(hdfs.load(fn_copy_on_dest_dir), self.data)
+    self.assertRaises(IOError, hdfs.cp, fn, dest_dir)
+
+  def __cp_dir(self, wd):
+    src_dir = "%s/src_dir" % wd
+    hdfs.mkdir(src_dir)
+    copy_on_wd = "%s/src_dir_copy" % wd
+    copy_on_copy_on_wd = "%s/src_dir" % copy_on_wd
+    hdfs.cp(src_dir, copy_on_wd)
+    self.assertTrue(hpath.exists(copy_on_wd))
+    hdfs.cp(src_dir, copy_on_wd)
+    self.assertTrue(hpath.exists(copy_on_copy_on_wd))
+    self.assertRaises(IOError, hdfs.cp, src_dir, copy_on_wd)
+
+  def __cp_recursive(self, wd):
+    src_t = self.__make_tree(wd)
+    src = src_t.name
+    copy_on_wd = "%s_copy" % src
+    src_bn, copy_on_wd_bn = [hpath.basename(d) for d in (src, copy_on_wd)]
+    hdfs.cp(src, copy_on_wd)
+    for t in src_t.walk():
+      copy_name = t.name.replace(src_bn, copy_on_wd_bn)
+      self.assertTrue(hpath.exists(copy_name))
+      if t.kind == 0:
+        self.assertEqual(hdfs.load(copy_name), self.data)
+    hdfs.cp(src, copy_on_wd)
+    for t in src_t.walk():
+      copy_name = t.name.replace(src_bn, "%s/%s" % (copy_on_wd_bn, src_bn))
+      self.assertTrue(hpath.exists(copy_name))
+      if t.kind == 0:
+        self.assertEqual(hdfs.load(copy_name), self.data)
+    
+  def cp(self):
+    print
+    for wd in self.local_wd, self.hdfs_wd:
+      print "  on %s ..." % wd
+      print "    file ..."
+      self.__cp_file(wd)
+      print "    dir ..."
+      self.__cp_dir(wd)
+      print "    recursive ..."
+      self.__cp_recursive(wd)      
+
+  def put(self):
+    src = hpath.split(self.local_paths[0])[-1]
+    dest = self.hdfs_paths[0]
+    with open(src, "w") as f:
+      f.write(self.data)
+    hdfs.put(src, dest)
+    with hdfs.open(dest) as fi:
+      rdata = fi.read()
+    self.assertEqual(rdata, self.data)
+
+  def get(self):
+    src = self.hdfs_paths[0]
+    dest = hpath.split(self.local_paths[0])[-1]
+    hdfs.dump(self.data, src)
+    hdfs.get(src, dest)
+    with open(dest) as fi:
+      rdata = fi.read()
+    self.assertEqual(rdata, self.data)
+
   def rmr(self):
     for wd in self.local_wd, self.hdfs_wd:
-      d1 = "%s/d1" % wd
-      d2 = "%s/d2" % d1
-      hdfs.mkdir(d2)
-      for d, bn in ((d1, "f1"), (d2, "f2")):
-        hdfs.dump(self.data, "%s/%s" % (d, bn))
-      hdfs.rmr(d1)
+      t1 = self.__make_tree(wd)
+      hdfs.rmr(t1.name)
       self.assertEqual(len(hdfs.ls(wd)), 0)
+
 
 
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestHDFS("open"))
   suite.addTest(TestHDFS("dump"))
+  suite.addTest(TestHDFS("lsl"))
+  suite.addTest(TestHDFS("ls"))
+  suite.addTest(TestHDFS("mkdir"))
   suite.addTest(TestHDFS("load"))
   suite.addTest(TestHDFS("cp"))
   suite.addTest(TestHDFS("put"))
   suite.addTest(TestHDFS("get"))
-  suite.addTest(TestHDFS("lsl"))
-  suite.addTest(TestHDFS("ls"))
-  suite.addTest(TestHDFS("mkdir"))
   suite.addTest(TestHDFS("rmr"))
   return suite
 
