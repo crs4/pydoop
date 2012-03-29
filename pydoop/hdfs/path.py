@@ -127,12 +127,19 @@ def abspath(hdfs_path, user=None, local=False):
   return apath
 
 
+# basename/dirname: we only support Linux, so it's OK to use os.path
 def basename(hdfs_path):
   """
   Return the final component of ``hdfs_path``.
   """
-  # We only support Linux, so it's OK to use os.path.basename
   return os.path.basename(hdfs_path)
+
+
+def dirname(hdfs_path):
+  """
+  Return the directory component of ``hdfs_path``.
+  """
+  return os.path.dirname(hdfs_path)
 
 
 def exists(hdfs_path, user=None):

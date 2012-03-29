@@ -30,13 +30,12 @@ class TestHDFS(unittest.TestCase):
       self.assertTrue(path.startswith("hdfs:"))
 
   def tearDown(self):
-    if 1:
-      fs = hdfs.hdfs("", 0)
-      fs.delete(self.local_wd)
-      fs.close()
-      fs = hdfs.hdfs("default", 0)
-      fs.delete(self.hdfs_wd)
-      fs.close()
+    fs = hdfs.hdfs("", 0)
+    fs.delete(self.local_wd)
+    fs.close()
+    fs = hdfs.hdfs("default", 0)
+    fs.delete(self.hdfs_wd)
+    fs.close()
 
   def open(self):
     for test_path in self.hdfs_paths[0], self.local_paths[0]:
@@ -140,7 +139,7 @@ class TestHDFS(unittest.TestCase):
       self.assertTrue(hpath.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
-    
+
   def cp(self):
     print
     for wd in self.local_wd, self.hdfs_wd:
@@ -150,7 +149,7 @@ class TestHDFS(unittest.TestCase):
       print "    dir ..."
       self.__cp_dir(wd)
       print "    recursive ..."
-      self.__cp_recursive(wd)      
+      self.__cp_recursive(wd)
 
   def put(self):
     src = hpath.split(self.local_paths[0])[-1]

@@ -20,13 +20,12 @@ class hdfs_plain_disk_tc(hdfs_basic_tc):
     self.__connection_assertions_and_close(fs)
 
   def __connection_assertions_and_close(self, conn):
-    self.assertFalse(conn.closed)
+    old_refcount = conn.refcount
     self.__connect_helper(conn)
     self.assertEqual(conn.host, '')
     self.assertEqual(conn.port, 0)
     conn.close()
-    self.assertTrue(conn.closed)
-    self.assertRaises(ValueError, conn.default_block_size)
+    self.assertEqual(conn.refcount, old_refcount - 1)
 
   def __connect_helper(self, fs):
     path = os.path.join(tempfile.mkdtemp(prefix="pydoop_test_hdfs"), "foo")
