@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+import uuid, tempfile, os, shutil
+import subprocess as sp
+
+import pydoop.hdfs as hdfs
+
+
+PYDOOP_SCRIPT = "../../scripts/pydoop_script"
+SCRIPT = "lowercase.py"
+with open(SCRIPT) as fi:
+  text = fi.read()
+  assert text != text.lower()
+LOCAL_INPUT = SCRIPT
+HDFS_INPUT = uuid.uuid4().hex
+HDFS_OUTPUT = uuid.uuid4().hex
+LOCAL_OUTPUT = tempfile.mkdtemp()  
+
+
+def main():
+  hdfs.put(LOCAL_INPUT, HDFS_INPUT)
+  args = [
+    PYDOOP_SCRIPT,
+    '--num-reducers', '0',
+    '--kv-separator', '',
+    SCRIPT,
+    HDFS_INPUT,
+    HDFS_OUTPUT,
+    ]
+  retcode = sp.call(args)
+  if retcode:
+    raise RuntimeError("Error running pydoop_script")
+  hdfs.get(HDFS_OUTPUT, LOCAL_OUTPUT)
+  for d in HDFS_INPUT, HDFS_OUTPUT:
+    hdfs.rmr(d)
+  print "output downloaded to %r" % (LOCAL_OUTPUT,)
+  output_dir = os.path.join(LOCAL_OUTPUT, HDFS_OUTPUT)
+  with open(LOCAL_INPUT) as f:
+    expected_result = f.read().lower()
+    
+  out_fnames = sorted([os.path.join(output_dir, fn)
+                       for fn in os.listdir(output_dir)
+                       if fn.startswith("part-")])
+  out_files = map(open, out_fnames)
+  result = "".join(f.read() for f in out_files)
+  for f in out_files:
+    f.close()
+  
+  if result == expected_result:
+    print "OK."
+  else:
+    print "ERROR"
+    for r, n in (result, 'result'), (expected_result, 'expected_result'):
+      out_fn = "%s.txt" % n
+      with open(out_fn, "w") as fo:
+        fo.write(r)
+        print "wrote %r" % (out_fn,)
+  shutil.rmtree(LOCAL_OUTPUT)
+
+
+if __name__ == "__main__":
+  main()
+
+
+# Local Variables: **
+# mode: python **
+# End: **

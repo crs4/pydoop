@@ -246,10 +246,10 @@ sys.exit(0 if result else 1)
 ##############################################
 
 if __name__ == '__main__':
+	script = PydoopScript()
+	script.parse_cmd_line()
 	try:
-		script = PydoopScript()
-		script.parse_cmd_line()
-		sys.exit(script.run())
-	except Exception as e:
-		print >>sys.stderr, "Error running Pydoop script:", e
+		print script.run()
+	except RuntimeError as e:
+		sys.stderr.write("Error running Pydoop script\n%s" % e)
 		sys.exit(1)
