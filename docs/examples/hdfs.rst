@@ -1,12 +1,62 @@
-HDFS: Usage by Block Size
-=========================
+.. _hdfs-api-examples:
+
+HDFS API
+========
 
 The HDFS API allows you to connect to an HDFS installation, read and
 write files and get information on files, directories and global
-file system properties.
+file system properties:
 
-This example (stripped of imports and main for brevity) shows how the
-API can be used to build statistics of HDFS usage by block size::
+.. code-block:: python
+
+  >>> import pydoop.hdfs as hdfs
+  >>> hdfs.mkdir("test")
+  >>> hdfs.dump("hello", "test/hello.txt")
+  >>> text = hdfs.load("test/hello.txt")
+  >>> print text
+  hello
+  >>> hdfs.ls("test")
+  ['hdfs://localhost:9000/user/simleo/test/hello.txt']
+  >>> for k, v in hdfs.lsl("test")[0].iteritems():
+  ...     print "%s = %s" % (k, v)
+  ...
+  kind = file
+  group = supergroup
+  name = hdfs://localhost:9000/user/simleo/test/hello.txt
+  last_mod = 1333119543
+  replication = 2
+  owner = simleo
+  permissions = 420
+  block_size = 67108864
+  last_access = 1333119543
+  size = 5
+  >>> hdfs.cp("test", "test.copy")
+  >>> hdfs.ls("test.copy")
+  ['hdfs://localhost:9000/user/simleo/test.copy/hello.txt']
+  >>> hdfs.get("test/hello.txt", "/tmp/hello.txt")
+  >>> with open("/tmp/hello.txt") as f:
+  ...     print f.read()
+  ...
+  hello
+  >>> hdfs.put("/tmp/hello.txt", "test.copy/hello.txt.copy")
+  >>> for x in hdfs.ls("test.copy"): print x
+  ...
+  hdfs://localhost:9000/user/simleo/test.copy/hello.txt
+  hdfs://localhost:9000/user/simleo/test.copy/hello.txt.copy
+  >>> with hdfs.open("test/hello.txt", "r") as fi:
+  ...     print fi.read(3)
+  ...
+  hel
+    
+Pydoop's HDFS API can also be used at a lower level, which mirrors
+Hadoop's C API (libhdfs). The following (simplified) example shows how
+to build statistics of HDFS usage by block size by directly
+instantiating an ``hdfs`` object, which represents an open connection
+to an HDFS instance:
+
+.. code-block:: python
+
+  import pydoop.hdfs as hdfs
 
   def treewalker(fs, root_info):
     yield root_info
@@ -14,7 +64,7 @@ API can be used to build statistics of HDFS usage by block size::
       for info in fs.list_directory(root_info['name']):
         for item in treewalker(fs, info):
           yield item
-  
+
   def usage_by_bs(fs, root):
     stats = {}
     root_info = fs.get_path_info(root)
@@ -26,14 +76,15 @@ API can be used to build statistics of HDFS usage by block size::
       stats[bs] = stats.get(bs, 0) + size
     return stats
 
+  fs = hdfs.hdfs()
+  root = "%s/tree_test" % (fs.working_directory())
+  for k, v in usage_by_bs(fs, root).iteritems():
+    print "%.1f\t%d" % (k, v)
+  fs.close()
 
-Source code for the example is located under ``examples/hdfs`` in the
-Pydoop distribution.
-
-Running the example
--------------------------
-
-You should be able to run the example by doing, from the pydoop root directory::
+Full source code for the example is located under ``examples/hdfs`` in
+the Pydoop distribution. You should be able to run the example by
+doing, from the Pydoop root directory::
 
   cd examples/hdfs
   ./run.sh 2 2

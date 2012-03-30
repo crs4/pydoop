@@ -14,7 +14,7 @@ them like this::
 The rest is magic.  Perhaps ``pydoop_script`` is best explained with a couple of
 short examples.
 
-Examples
+Tutorial
 ----------------
 
 Lower case

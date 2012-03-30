@@ -1,3 +1,5 @@
+.. _hdfs-api:
+
 :mod:`pydoop.hdfs` --- HDFS API
 ===============================
 
