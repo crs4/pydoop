@@ -6,7 +6,6 @@ from itertools import izip
 
 import pydoop.hdfs as hdfs
 import pydoop.hdfs.config as hconf
-import pydoop.hdfs.path as hpath
 from utils import make_random_data, FSTree
 
 
@@ -117,26 +116,26 @@ class TestHDFS(unittest.TestCase):
     copy_on_wd = "%s/src_dir_copy" % wd
     copy_on_copy_on_wd = "%s/src_dir" % copy_on_wd
     hdfs.cp(src_dir, copy_on_wd)
-    self.assertTrue(hpath.exists(copy_on_wd))
+    self.assertTrue(hdfs.path.exists(copy_on_wd))
     hdfs.cp(src_dir, copy_on_wd)
-    self.assertTrue(hpath.exists(copy_on_copy_on_wd))
+    self.assertTrue(hdfs.path.exists(copy_on_copy_on_wd))
     self.assertRaises(IOError, hdfs.cp, src_dir, copy_on_wd)
 
   def __cp_recursive(self, wd):
     src_t = self.__make_tree(wd)
     src = src_t.name
     copy_on_wd = "%s_copy" % src
-    src_bn, copy_on_wd_bn = [hpath.basename(d) for d in (src, copy_on_wd)]
+    src_bn, copy_on_wd_bn = [hdfs.path.basename(d) for d in (src, copy_on_wd)]
     hdfs.cp(src, copy_on_wd)
     for t in src_t.walk():
       copy_name = t.name.replace(src_bn, copy_on_wd_bn)
-      self.assertTrue(hpath.exists(copy_name))
+      self.assertTrue(hdfs.path.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
     hdfs.cp(src, copy_on_wd)
     for t in src_t.walk():
       copy_name = t.name.replace(src_bn, "%s/%s" % (copy_on_wd_bn, src_bn))
-      self.assertTrue(hpath.exists(copy_name))
+      self.assertTrue(hdfs.path.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
 
@@ -152,7 +151,7 @@ class TestHDFS(unittest.TestCase):
       self.__cp_recursive(wd)
 
   def put(self):
-    src = hpath.split(self.local_paths[0])[-1]
+    src = hdfs.path.split(self.local_paths[0])[-1]
     dest = self.hdfs_paths[0]
     with open(src, "w") as f:
       f.write(self.data)
@@ -163,7 +162,7 @@ class TestHDFS(unittest.TestCase):
 
   def get(self):
     src = self.hdfs_paths[0]
-    dest = hpath.split(self.local_paths[0])[-1]
+    dest = hdfs.path.split(self.local_paths[0])[-1]
     hdfs.dump(self.data, src)
     hdfs.get(src, dest)
     with open(dest) as fi:

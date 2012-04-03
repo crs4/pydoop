@@ -21,8 +21,8 @@ NOTE: the MapReduce application launched by this example wrapper is a
 """
 
 import sys, os, optparse, operator, subprocess as sp
-from pydoop.hdfs import hdfs
-import pydoop.hdfs.path as hpath
+
+import pydoop.hdfs as hdfs
 import pydoop.hadoop_utils as hu
 
 
@@ -108,11 +108,11 @@ def main():
     opt.local_output = open(opt.local_output, 'w')
 
   # output HDFS bust be the same as the input one
-  opt.output = hpath.split(opt.output)[-1]
+  opt.output = hdfs.path.split(opt.output)[-1]
 
-  hostname, port, _ = hpath.split(input_)
-  fs = hdfs(hostname, port)
-  lfs = hdfs("", 0)
+  hostname, port, _ = hdfs.path.split(input_)
+  fs = hdfs.hdfs(hostname, port)
+  lfs = hdfs.hdfs("", 0)
 
   script_hdfs = os.path.basename(opt.script)
   input_hdfs = os.path.basename(input_)

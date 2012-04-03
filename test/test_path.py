@@ -3,7 +3,6 @@
 
 import os, unittest, uuid
 import pydoop.hdfs as hdfs
-import pydoop.hdfs.path as hpath
 import pydoop.hdfs.config as pconf
 
 
@@ -24,7 +23,7 @@ class TestSplit(unittest.TestCase):
       ('/a/b', ('default', 0, '/a/b')),
       ('a/b', ('default', 0, '/user/%s/a/b' % pconf.DEFAULT_USER)),
       ]:
-      self.assertEqual(hpath.split(p), r)
+      self.assertEqual(hdfs.path.split(p), r)
 
   def good_with_user(self):
     for p, u, r in [
@@ -33,7 +32,7 @@ class TestSplit(unittest.TestCase):
        ('default', 0, '/user/%s/a/b' % pconf.DEFAULT_USER)),
       ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
       ]:
-      self.assertEqual(hpath.split(p, u), r)
+      self.assertEqual(hdfs.path.split(p, u), r)
 
   def bad(self):
     for p in [
@@ -43,7 +42,7 @@ class TestSplit(unittest.TestCase):
     'hdfs://localhost:9000/a:b',      # colon outside netloc
     '/localhost:9000/a/b',            # colon outside netloc
     ]:
-      self.assertRaises(ValueError, hpath.split, p)
+      self.assertRaises(ValueError, hdfs.path.split, p)
 
 
 class TestJoin(unittest.TestCase):
@@ -56,7 +55,7 @@ class TestJoin(unittest.TestCase):
       (('/foo/', 'file:/bar/', 'tar/'), 'file:/bar/tar'),
       (('/foo/', 'file:///bar/', 'tar/'), 'file:///bar/tar'),
       ]:
-      self.assertEqual(hpath.join(*p), r)
+      self.assertEqual(hdfs.path.join(*p), r)
 
 
 class TestAbspath(unittest.TestCase):
@@ -78,19 +77,19 @@ class TestAbspath(unittest.TestCase):
       ({"user": None, "local": True},
        'file:%s' % (os.path.abspath(p))),
       ]:
-      self.assertEqual(hpath.abspath(p, **kw), r)
+      self.assertEqual(hdfs.path.abspath(p, **kw), r)
     p = 'file:%s' % (os.path.abspath(p))
     for kw, r in [
       ({"user": None, "local": False}, p),
       ({"user": None, "local": True}, 'file:%s' % (os.path.abspath(p))),
       ]:
-      self.assertEqual(hpath.abspath(p, **kw), r)
+      self.assertEqual(hdfs.path.abspath(p, **kw), r)
 
 
 class TestBasename(unittest.TestCase):
 
   def good(self):
-    self.assertEqual(hpath.basename("hdfs://localhost:9000/foo/bar"), "bar")
+    self.assertEqual(hdfs.path.basename("hdfs://localhost:9000/foo/bar"), "bar")
 
 
 class TestExists(unittest.TestCase):
@@ -98,9 +97,9 @@ class TestExists(unittest.TestCase):
   def good(self):
     path = uuid.uuid4().hex
     hdfs.dump("foo\n", path)
-    self.assertTrue(hpath.exists(path))
+    self.assertTrue(hdfs.path.exists(path))
     hdfs.rmr(path)
-    self.assertFalse(hpath.exists(path))
+    self.assertFalse(hdfs.path.exists(path))
 
 
 def suite():

@@ -40,7 +40,7 @@ above setting.
 import os
 
 import pydoop
-import config, path as hpath
+import config, path
 from fs import hdfs
 
 
@@ -53,9 +53,9 @@ def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
   :func:`~path.split`, while the other args are
   passed to the :class:`hdfs_file` constructor.
   """
-  host, port, path = hpath.split(hdfs_path, user)
+  host, port, path_ = path.split(hdfs_path, user)
   fs = hdfs(host, port, user)
-  return fs.open_file(path, mode, buff_size, replication, blocksize,
+  return fs.open_file(path_, mode, buff_size, replication, blocksize,
                       readline_chunk_size)
 
 
@@ -124,7 +124,7 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
   src, dest = {}, {}
   try:
     for d, p in ((src, src_hdfs_path), (dest, dest_hdfs_path)):
-      d["host"], d["port"], d["path"] = hpath.split(p)
+      d["host"], d["port"], d["path"] = path.split(p)
       d["fs"] = hdfs(d["host"], d["port"])
     #--- does src exist? ---
     try:
@@ -148,7 +148,7 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
     if dest["info"]["kind"] == "file":
       raise IOError("%r already exists" % (dest["path"]))
     #--- dest is a directory ---
-    dest["path"] = hpath.join(dest["path"], hpath.basename(src["path"]))
+    dest["path"] = path.join(dest["path"], path.basename(src["path"]))
     if dest["fs"].exists(dest["path"]):
       raise IOError("%r already exists" % (dest["path"]))
     if src["info"]["kind"] == "file":
@@ -174,7 +174,7 @@ def put(src_path, dest_hdfs_path, **kwargs):
   (see :func:`~path.abspath`). Additional keyword arguments, if any,
   are handled like in :func:`open`.
   """
-  cp(hpath.abspath(src_path, local=True), dest_hdfs_path, **kwargs)
+  cp(path.abspath(src_path, local=True), dest_hdfs_path, **kwargs)
 
 
 def get(src_hdfs_path, dest_path, **kwargs):
@@ -185,16 +185,16 @@ def get(src_hdfs_path, dest_path, **kwargs):
   (see :func:`~path.abspath`).  Additional keyword arguments, if any,
   are handled like in :func:`open`.
   """
-  cp(src_hdfs_path, hpath.abspath(dest_path, local=True), **kwargs)
+  cp(src_hdfs_path, path.abspath(dest_path, local=True), **kwargs)
 
 
 def mkdir(hdfs_path, user=None):
   """
   Create a directory and its parents as needed.
   """
-  host, port, path = hpath.split(hdfs_path, user)
+  host, port, path_ = path.split(hdfs_path, user)
   fs = hdfs(host, port, user)
-  retval = fs.create_directory(path)
+  retval = fs.create_directory(path_)
   fs.close()
   return retval
 
@@ -203,9 +203,9 @@ def rmr(hdfs_path, user=None):
   """
   Recursively remove files and directories.
   """
-  host, port, path = hpath.split(hdfs_path, user)
+  host, port, path_ = path.split(hdfs_path, user)
   fs = hdfs(host, port, user)
-  retval = fs.delete(path)
+  retval = fs.delete(path_)
   fs.close()
   return retval
 
@@ -218,9 +218,9 @@ def lsl(hdfs_path, user=None):
   file or directory contained by it; if it is a file, there is only
   one item corresponding to the file itself.
   """
-  host, port, path = hpath.split(hdfs_path, user)
+  host, port, path_ = path.split(hdfs_path, user)
   fs = hdfs(host, port, user)
-  dir_list = fs.list_directory(path)
+  dir_list = fs.list_directory(path_)
   fs.close()
   return dir_list
 

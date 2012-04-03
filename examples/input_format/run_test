@@ -20,9 +20,9 @@ can't get more InputSplits than the number of input files).
 """
 
 import sys, os, optparse, subprocess as sp
-from pydoop.hdfs import hdfs
+
 from pydoop.hadoop_utils import get_hadoop_version
-import pydoop.hdfs.path as hpath
+import pydoop.hdfs as hdfs
 
 
 HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
@@ -92,11 +92,11 @@ def main():
     sys.exit(2)
 
   # output HDFS must be the same as the input one
-  opt.output = hpath.split(opt.output)[-1]
+  opt.output = hdfs.path.split(opt.output)[-1]
 
-  hostname, port, _ = hpath.split(input_)
-  fs = hdfs(hostname, port)
-  lfs = hdfs("", 0)
+  hostname, port, _ = hdfs.path.split(input_)
+  fs = hdfs.hdfs(hostname, port)
+  lfs = hdfs.hdfs("", 0)
 
   script_hdfs = os.path.basename(MR_SCRIPT)
   input_hdfs = os.path.basename(input_)
