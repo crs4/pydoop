@@ -6,7 +6,8 @@ import unittest, imp
 
 TEST_MODULE_NAMES = [
   "all_tests_pipes",
-  "all_tests_hdfs"
+  "all_tests_hdfs",
+  "test_hadut",
   ]
 
 

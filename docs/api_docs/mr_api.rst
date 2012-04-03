@@ -4,8 +4,6 @@
 .. automodule:: pydoop.pipes
    :members:
 
-.. autoclass:: Factory
-
 
 Classes Instantiated by the Framework
 -------------------------------------

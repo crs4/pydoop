@@ -15,41 +15,40 @@ Prerequisites:
 * Boost 1.40 or later
 """
 
-__version__ = "0.6.0-rc1"
-
-__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
-
-__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
-
-__url__ = "http://pydoop.sourceforge.net"
-
-__jar_name__ = 'pydoop.jar'
-
+from importlib import import_module
 import pydoop.hadoop_utils as hu
 
-__path_finder = hu.PathFinder()
+_PATH_FINDER = hu.PathFinder()
+
+__version__ = "0.6.0-rc2"
+__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
+__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
+__url__ = "http://pydoop.sourceforge.net"
+__jar_name__ = 'pydoop.jar'
+
 
 def hadoop_home():
-  global __path_finder
-  return __path_finder.hadoop_home()
+  return _PATH_FINDER.hadoop_home()
+
 
 def hadoop_conf():
-  global __path_finder
-  return __path_finder.hadoop_conf()
+  return _PATH_FINDER.hadoop_conf()
+
 
 def hadoop_version():
-  global __path_finder
-  return __path_finder.hadoop_version()
+  return _PATH_FINDER.hadoop_version()
+
 
 def is_cloudera():
-  global __path_finder
-  return __path_finder.cloudera()
+  return _PATH_FINDER.cloudera()
+
 
 def complete_mod_name(module, hadoop_version_tuple):
-  return "%s.%s_%s" % (__package__, module, "_".join( map(str, hadoop_version_tuple)) )
+  return "%s.%s_%s" % (
+    __package__, module, "_".join(map(str, hadoop_version_tuple))
+    )
+
 
 def import_version_specific_module(name):
-  from importlib import import_module
   low_level_mod = complete_mod_name(name, hadoop_version())
   return import_module(low_level_mod)
-
