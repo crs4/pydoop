@@ -10,7 +10,6 @@ import os, subprocess, uuid
 import pydoop.hadoop_utils as hu
 
 
-HADOOP = hu.get_hadoop_exec()
 GENERIC_ARGS = frozenset([
   "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
   ])
@@ -37,7 +36,7 @@ def _pop_generic_args(args):
   return generic_args
 
 
-def run_cmd(cmd, args=None, properties=None):
+def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
   """
   Run a Hadoop command.
 
@@ -61,7 +60,8 @@ def run_cmd(cmd, args=None, properties=None):
     Exception in thread "main" java.lang.NoClassDefFoundError: foo
     ...
   """
-  _args = [HADOOP, cmd]
+  hadoop = hu.get_hadoop_exec(hadoop_home=hadoop_home)
+  _args = [hadoop, cmd]
   if properties:
     _args.extend(_construct_property_args(properties))
   if args:
