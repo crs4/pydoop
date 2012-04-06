@@ -5,6 +5,7 @@
 This module contains general utility functions for application writing.
 """
 
+import logging
 from struct import pack
 
 import pydoop
@@ -12,6 +13,9 @@ pp = pydoop.import_version_specific_module('_pipes')
 
 # for backwards compatibility
 from pydoop.hdfs.path import split as split_hdfs_path
+
+
+DEFAULT_LOG_LEVEL = "WARNING"
 
 
 def raise_pydoop_exception(msg):
@@ -82,6 +86,20 @@ def jc_configure_float(obj, jc, k, f, df=None):
   elif df is None:
     raise_pydoop_exception("jc_configure_float: no default for option '%s'" % k)
   setattr(obj, f, v)
+
+
+def jc_configure_log_level(obj, jc, k, f, df=None):
+  """
+  Works like :func:`jc_configure`\ , but converts ``jc[k]`` to a logging level.
+
+  The default value, if specified, must be a log level string, e.g., 'INFO'.
+  """
+  jc_configure(obj, jc, k, f, df)
+  a = getattr(obj, f)
+  try:
+    setattr(obj, f, getattr(logging, a))
+  except AttributeError:
+    raise ValueError("unsupported log level: %r" % a)
 
 
 def make_input_split(filename, offset, length):

@@ -1,7 +1,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import unittest, tempfile, os, stat, shutil
+import unittest, tempfile, os, stat, shutil, logging
 
 import pydoop
 import pydoop.utils as pu
@@ -10,6 +10,7 @@ pp = pydoop.import_version_specific_module('_pipes')
 
 
 CONFIGURE_EXAMPLES = {
+  # jobconf_key/attr_name: [type, str_value]
   'a' : ['str', 'this is a string'],
   'b' : ['int', '22'],
   'b1' : ['int', '23'],
@@ -19,6 +20,7 @@ CONFIGURE_EXAMPLES = {
   'c3' : ['float', '1.0e-22'],
   'd' : ['bool' , 'false'],
   'd1' : ['bool' , 'true'],
+  'e' : ['log_level' , 'DEBUG'],
   }
 
 
@@ -59,6 +61,9 @@ class TestUtils(unittest.TestCase):
       elif w[k][0] == 'float':
         pu.jc_configure_float(o, jc, k, k)
         self.assertAlmostEqual(getattr(o, k), float(w[k][1]))
+      elif w[k][0] == 'log_level':
+        pu.jc_configure_log_level(o, jc, k, k)
+        self.assertEqual(getattr(o, k), getattr(logging, w[k][1]))
 
   def test_jc_configure_default(self):
     w = CONFIGURE_EXAMPLES
@@ -79,6 +84,9 @@ class TestUtils(unittest.TestCase):
       elif w[k][0] == 'bool':
         pu.jc_configure_bool(o, jc, nk, k, w[k][1]=='true')
         self.assertEqual(getattr(o, k), w[k][1] == 'true')
+      elif w[k][0] == 'log_level':
+        pu.jc_configure_log_level(o, jc, nk, k, w[k][1])
+        self.assertEqual(getattr(o, k), getattr(logging, w[k][1]))
 
   def test_jc_configure_no_default(self):
     w = CONFIGURE_EXAMPLES
