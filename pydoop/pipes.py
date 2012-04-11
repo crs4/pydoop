@@ -34,6 +34,14 @@ class Mapper(pp.Mapper):
     """
     raise NotImplementedError
 
+  def close(self):
+    """
+    Called after the mapper has finished its job.
+
+    Overriding this method is **not** required.
+    """
+    pass
+
 
 class Reducer(pp.Reducer):
   """
@@ -54,6 +62,14 @@ class Reducer(pp.Reducer):
       emit the output key/value pair.
     """
     raise NotImplementedError
+
+  def close(self):
+    """
+    Called after the reducer has finished its job.
+
+    Overriding this method is **not** required.
+    """
+    pass
 
 
 class RecordReader(pp.RecordReader):
@@ -87,6 +103,14 @@ class RecordReader(pp.RecordReader):
     """
     raise NotImplementedError
 
+  def close(self):
+    """
+    Called after the record reader has finished its job.
+
+    Overriding this method is **not** required.
+    """
+    pass
+
 
 class RecordWriter(pp.RecordWriter):
   """
@@ -106,6 +130,14 @@ class RecordWriter(pp.RecordWriter):
     """
     raise NotImplementedError
 
+  def close(self):
+    """
+    Called after the record writer has finished its job.
+
+    Overriding this method is **not** required.
+    """
+    pass
+
 
 class Combiner(pp.Reducer):
   """
@@ -117,6 +149,14 @@ class Combiner(pp.Reducer):
 
   def reduce(self, context):
     raise NotImplementedError
+
+  def close(self):
+    """
+    Called after the combiner has finished its job.
+
+    Overriding this method is **not** required.
+    """
+    pass
 
 
 class Partitioner(pp.Partitioner):

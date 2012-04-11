@@ -15,10 +15,8 @@ logging.basicConfig(level=logging.DEBUG)
 import pydoop
 import pydoop.pipes as pp
 from pydoop.utils import jc_configure, jc_configure_int
-from pydoop.hadoop_utils import get_hadoop_version
 import pydoop.hdfs as hdfs
 
-HADOOP_VERSION = pydoop.hadoop_version()
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"
@@ -29,9 +27,9 @@ class Mapper(pp.Mapper):
 
   def __init__(self, context):
     super(Mapper, self).__init__(context)
+    self.logger = logging.getLogger("Mapper")
     context.setStatus("initializing")
     self.inputWords = context.getCounter(WORDCOUNT, INPUT_WORDS)
-    self.logger = logging.getLogger("Mapper")
   
   def map(self, context):
     k = context.getInputKey()
@@ -41,11 +39,15 @@ class Mapper(pp.Mapper):
       context.emit(w, "1")
     context.incrementCounter(self.inputWords, len(words))
 
+  def close(self):
+    self.logger.info("all done")
+
 
 class Reducer(pp.Reducer):
 
   def __init__(self, context):
     super(Reducer, self).__init__(context)
+    self.logger = logging.getLogger("Reducer")
     context.setStatus("initializing")
     self.outputWords = context.getCounter(WORDCOUNT, OUTPUT_WORDS)
   
@@ -56,6 +58,9 @@ class Reducer(pp.Reducer):
     context.emit(context.getInputKey(), str(s))
     context.incrementCounter(self.outputWords, 1)
 
+  def close(self):
+    self.logger.info("all done")
+
 
 class Reader(pp.RecordReader):
   """
@@ -64,7 +69,6 @@ class Reader(pp.RecordReader):
   """
   def __init__(self, context):
     super(Reader, self).__init__()
-    self.fs = self.file = None
     self.logger = logging.getLogger("Reader")
     self.isplit = pp.InputSplit(context.getInputSplit())
     for a in "filename", "offset", "length":
@@ -77,7 +81,8 @@ class Reader(pp.RecordReader):
       discarded = self.file.readline()  # read by reader of previous split
       self.bytes_read += len(discarded)
 
-  def __del__(self):
+  def close(self):
+    self.logger.debug("closing open handles")
     self.file.close()
     self.file.fs.close()
     
@@ -99,20 +104,16 @@ class Writer(pp.RecordWriter):
   
   def __init__(self, context):
     super(Writer, self).__init__(context)
+    self.logger = logging.getLogger("Writer")
     jc = context.getJobConf()
-    if HADOOP_VERSION != (0,21,0):
-      jc_configure_int(self, jc, "mapred.task.partition", "part")
-      jc_configure(self, jc, "mapred.work.output.dir", "outdir")
-      jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
-    else:
-      jc_configure_int(self, jc, "mapreduce.task.partition", "part")
-      jc_configure(self, jc, "mapreduce.task.output.dir", "outdir")
-      jc_configure(self, jc, "mapreduce.output.textoutputformat.separator",
-                   "sep", "\t")
+    jc_configure_int(self, jc, "mapred.task.partition", "part")
+    jc_configure(self, jc, "mapred.work.output.dir", "outdir")
+    jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
     self.outfn = "%s/part-%05d" % (self.outdir, self.part)
     self.file = hdfs.open(self.outfn, "w")
 
-  def __del__(self):
+  def close(self):
+    self.logger.debug("closing open handles")
     self.file.close()
     self.file.fs.close()
 

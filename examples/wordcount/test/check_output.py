@@ -47,7 +47,6 @@ def dict_equal(d1, d2):
   for k in keys:
     if d1[k] != d2[k]:
       return "values are different for key %r (%r != %r)" % (k, d1[k], d2[k])
-  return "OK."
 
 
 def main(argv):
@@ -58,7 +57,11 @@ def main(argv):
     print "Usage: python %s INPUT_DIR OUTPUT_DIR" % argv[0]
     sys.exit(2)
 
-  print dict_equal(wc_from_input(input_dir), wc_from_output(output_dir))
+  res = dict_equal(wc_from_input(input_dir), wc_from_output(output_dir))
+  if res:
+    sys.exit("ERROR: %s" % res)
+  else:
+    print "OK."
 
 
 if __name__ == "__main__":

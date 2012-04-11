@@ -17,10 +17,12 @@ void export_pipes() {
 
   class_<wrap_mapper, std::auto_ptr<wrap_mapper>, boost::noncopyable>("Mapper", "Basic wrapping of mapper class")
     .def("map", pure_virtual(&hp::Mapper::map))
+    .def("close", pure_virtual(&hp::Mapper::close))
     ;
 
   class_<wrap_reducer, std::auto_ptr<wrap_reducer>, boost::noncopyable>("Reducer", "Basic wrapping of reducer class")
     .def("reduce", pure_virtual(&hp::Reducer::reduce))
+    .def("close", pure_virtual(&hp::Reducer::close))
     ;
 
   class_<wrap_partitioner, std::auto_ptr<wrap_partitioner>, boost::noncopyable>("Partitioner", "Basic wrapping of Partitioner class")
@@ -32,10 +34,12 @@ void export_pipes() {
     // call by ref to implement a side-effect should be interpreted.
     //.def("next",pure_virtual(&hp::RecordReader::next))
     .def("getProgress", pure_virtual(&hp::RecordReader::getProgress))
+    .def("close", pure_virtual(&hp::RecordReader::close))
     ;
 
   class_<wrap_record_writer, std::auto_ptr<wrap_record_writer>, boost::noncopyable>("RecordWriter", "Basic wrapping of RecordWriter class")
     .def("emit", pure_virtual(&hp::RecordWriter::emit))
+    .def("close", pure_virtual(&hp::RecordWriter::close))
     ;
 
   class_<wrap_factory, boost::noncopyable>("Factory")

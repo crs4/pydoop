@@ -51,6 +51,9 @@ struct wrap_mapper: hp::Mapper, bp::wrapper<hp::Mapper>, cxx_capsule {
     this->get_override("map")(po);
     while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
   }
+  void close() {
+    this->get_override("close")();
+  }
   virtual ~wrap_mapper() {
     DESTROY_PYTHON_TOO(wrap_mapper);
   }
@@ -63,6 +66,9 @@ struct wrap_reducer: hp::Reducer, bp::wrapper<hp::Reducer>, cxx_capsule {
     bp::object po = bp::object(bp::handle<>(obj));
     this->get_override("reduce")(po);
     while (Py_REFCNT(obj) > 0){Py_DECREF(obj);}   
+  }
+  void close() {
+    this->get_override("close")();
   }
   virtual ~wrap_reducer() {
     DESTROY_PYTHON_TOO(wrap_reducer);
@@ -102,6 +108,9 @@ struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader>, cxx_
   float getProgress() {
     return this->get_override("getProgress")();
   }
+  void close() {
+    this->get_override("close")();
+  }
   virtual ~wrap_record_reader() {
     DESTROY_PYTHON_TOO(wrap_record_reader);
   }
@@ -110,6 +119,9 @@ struct wrap_record_reader: hp::RecordReader, bp::wrapper<hp::RecordReader>, cxx_
 struct wrap_record_writer: hp::RecordWriter, bp::wrapper<hp::RecordWriter>, cxx_capsule {
   void emit(const std::string& key, const std::string& value) {
     this->get_override("emit")(key, value);
+  }
+  void close() {
+    this->get_override("close")();
   }
   virtual ~wrap_record_writer() {
     DESTROY_PYTHON_TOO(wrap_record_writer);
