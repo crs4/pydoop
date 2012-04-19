@@ -58,7 +58,7 @@ class hdfs(object):
     try:
       h, p, u = self.HDFS_WD_PATTERN.match(wd).groups()
     except AttributeError:
-      h, p, u = "", 0, ""
+      h, p, u = "", 0, fs.get_path_info(wd)["owner"]
     return h, int(p), u, fs
 
   def __init__(self, host="default", port=0, user=None, groups=None):

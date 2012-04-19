@@ -1,3 +1,8 @@
+2012-04-11  simleo  <simleo@simleo-U36SD>
+
+	* src/pipes.hpp: wrapped the close() method of closable
+	components, i.e., all except the partitioner.
+
 2012-03-20  simleo  <simleo@simleo-U36SD>
 
 	* pydoop/hadoop_utils.py (PathFinder): hadoop_{home,conf,version}
