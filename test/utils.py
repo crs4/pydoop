@@ -1,8 +1,12 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import os, random
+import os, random, uuid, tempfile, xml.dom.minidom
+import pydoop
 
+_HADOOP_HOME = pydoop.hadoop_home()
+_HADOOP_CONF_DIR = pydoop.hadoop_conf()
+_RANDOM_DATA_SIZE = 32
 _DEFAULT_HDFS_HOST = "localhost"
 _DEFAULT_HDFS_PORT = 9000
 HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
@@ -48,6 +52,46 @@ class FSTree(object):
           yield t
 
 
-def make_random_data(size):
+def make_wd(fs, prefix="pydoop_test_"):
+  if fs.host:
+    wd = "%s%s" % (prefix, uuid.uuid4().hex)
+    fs.create_directory(wd)
+    return fs.get_path_info(wd)['name']
+  else:
+    return tempfile.mkdtemp(prefix=prefix)
+
+
+def make_random_data(size=_RANDOM_DATA_SIZE):
   randint = random.randint
   return "".join([chr(randint(32, 126)) for _ in xrange(size)])
+
+
+def get_bytes_per_checksum():
+
+  def extract_text(nodes):
+    return str("".join([n.data for n in nodes if n.nodeType == n.TEXT_NODE]))
+
+  def extract_bpc(conf_path):
+    dom = xml.dom.minidom.parse(conf_path)
+    conf = dom.getElementsByTagName("configuration")[0]
+    props = conf.getElementsByTagName("property")
+    for p in props:
+      n = p.getElementsByTagName("name")[0]
+      if extract_text(n.childNodes) == "io.bytes.per.checksum":
+        v = p.getElementsByTagName("value")[0]
+        return int(extract_text(v.childNodes))
+    raise IOError  # for consistency, also raised by minidom.path
+
+  core_default = os.path.join(_HADOOP_HOME, "src", "core", "core-default.xml")
+  core_site, hadoop_site = [os.path.join(_HADOOP_CONF_DIR, fn) for fn in
+                            ("core-site.xml", "hadoop-site.xml")]
+  try:
+    return extract_bpc(core_site)
+  except IOError:
+    try:
+      return extract_bpc(hadoop_site)
+    except IOError:
+      try:
+        return extract_bpc(core_default)
+      except IOError:
+        return self.DEFAULT_BYTES_PER_CHECKSUM

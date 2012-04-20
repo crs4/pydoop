@@ -1,39 +1,25 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, os, unittest, tempfile, uuid
+import sys, os, unittest, uuid
 from itertools import izip
 from ctypes import create_string_buffer
-import xml.dom.minidom
 
-import pydoop
 import pydoop.hdfs as hdfs
-from utils import make_random_data
-
-HADOOP_HOME = pydoop.hadoop_home()
-HADOOP_CONF_DIR = pydoop.hadoop_conf()
+from utils import make_wd, make_random_data, get_bytes_per_checksum
 
 
-def make_wd(fs, prefix="pydoop_test_"):
-  if fs.host:
-    wd = "%s%s" % (prefix, uuid.uuid4().hex)
-    fs.create_directory(wd)
-    return fs.get_path_info(wd)['name']
-  else:
-    return tempfile.mkdtemp(prefix=prefix)
-
-
-class hdfs_basic_tc(unittest.TestCase):
+class TestCommon(unittest.TestCase):
 
   DEFAULT_BYTES_PER_CHECKSUM = 512
 
-  def __init__(self, target, HDFS_HOST='', HDFS_PORT=0):
+  def __init__(self, target, hdfs_host='', hdfs_port=0):
     unittest.TestCase.__init__(self, target)
-    self.HDFS_HOST = HDFS_HOST
-    self.HDFS_PORT = HDFS_PORT
+    self.hdfs_host = hdfs_host
+    self.hdfs_port = hdfs_port
 
   def setUp(self):
-    self.fs = hdfs.hdfs(self.HDFS_HOST, self.HDFS_PORT)
+    self.fs = hdfs.hdfs(self.hdfs_host, self.hdfs_port)
     self.wd = make_wd(self.fs)
 
   def tearDown(self):
@@ -53,7 +39,7 @@ class hdfs_basic_tc(unittest.TestCase):
   # also an implicit test for the write method
   def _make_random_file(self, where=None, content=None, **kwargs):
     kwargs["flags"] = "w"
-    content = content or uuid.uuid4().hex
+    content = content or make_random_data()
     path = self._make_random_path(where=where)
     with self.fs.open_file(path, **kwargs) as fo:
       bytes_written = fo.write(content)
@@ -113,7 +99,7 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertTrue(f.name.endswith(path))
       self.assertEqual(f.size, 0)
       self.assertEqual(f.mode, "w")
-      content = uuid.uuid4().hex
+      content = make_random_data()
       f.write(content)
     self.assertEqual(f.size, len(content))
     with self.fs.open_file(path) as f:
@@ -124,17 +110,17 @@ class hdfs_basic_tc(unittest.TestCase):
   def flush(self):
     path = self._make_random_path()
     with self.fs.open_file(path, "w") as f:
-      f.write(uuid.uuid4().hex)
+      f.write(make_random_data())
       f.flush()
 
   def available(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     path = self._make_random_file(content=content)
     with self.fs.open_file(path) as f:
       self.assertEqual(len(content), f.available())
 
   def get_path_info(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     path = self._make_random_file(content=content)
     info = self.fs.get_path_info(path)
     self.__check_path_info(info, kind="file", size=len(content))
@@ -146,7 +132,7 @@ class hdfs_basic_tc(unittest.TestCase):
     self.assertRaises(IOError, self.fs.get_path_info, self._make_random_path())
 
   def read(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     path = self._make_random_file(content=content)
     with self.fs.open_file(path) as f:
       self.assertEqual(f.read(), content)
@@ -155,7 +141,7 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertRaisesExternal(IOError, f.write, content)
 
   def read_chunk(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     path = self._make_random_file(content=content)
     size = len(content)
     for chunk_size in size-1, size, size+1:
@@ -166,7 +152,7 @@ class hdfs_basic_tc(unittest.TestCase):
         self.assertEqual(chunk.value, content[:bytes_read])
 
   def write_chunk(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     chunk = create_string_buffer(len(content))
     chunk[:] = content
     path = self._make_random_path()
@@ -183,7 +169,7 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertEqual(f.tell(), offset)
 
   def pread(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     offset, length = 2, 3
     path = self._make_random_file(content=content)
     with self.fs.open_file(path) as f:
@@ -191,7 +177,7 @@ class hdfs_basic_tc(unittest.TestCase):
       self.assertEqual(f.tell(), 0)
 
   def pread_chunk(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     offset, length = 2, 3
     chunk = create_string_buffer(length)
     path = self._make_random_file(content=content)
@@ -205,7 +191,7 @@ class hdfs_basic_tc(unittest.TestCase):
     pass
 
   def copy_on_self(self):
-    content = uuid.uuid4().hex
+    content = make_random_data()
     path = self._make_random_file(content=content)
     path1 = self._make_random_path()
     self.fs.copy(path, self.fs, path1)
@@ -312,7 +298,7 @@ class hdfs_basic_tc(unittest.TestCase):
     path = self._make_random_path()
     CHUNK_SIZE = 10
     N = 2
-    bs = N * self.__get_bytes_per_checksum()
+    bs = N * get_bytes_per_checksum()
     total_data_size = 2 * bs
     with self.fs.open_file(path, "w", blocksize=bs) as f:
       f.write(make_random_data(total_data_size))
@@ -333,38 +319,8 @@ class hdfs_basic_tc(unittest.TestCase):
       v = info[k]
       self.assertEqual(v, exp_v)
 
-  def __get_bytes_per_checksum(self):
 
-    def extract_text(nodes):
-      return str("".join([n.data for n in nodes if n.nodeType == n.TEXT_NODE]))
-
-    def extract_bpc(conf_path):
-      dom = xml.dom.minidom.parse(conf_path)
-      conf = dom.getElementsByTagName("configuration")[0]
-      props = conf.getElementsByTagName("property")
-      for p in props:
-        n = p.getElementsByTagName("name")[0]
-        if extract_text(n.childNodes) == "io.bytes.per.checksum":
-          v = p.getElementsByTagName("value")[0]
-          return int(extract_text(v.childNodes))
-      raise IOError  # for consistency, also raised by minidom.path
-
-    core_default = os.path.join(HADOOP_HOME, "src", "core", "core-default.xml")
-    core_site, hadoop_site = [os.path.join(HADOOP_CONF_DIR, fn) for fn in
-                              ("core-site.xml", "hadoop-site.xml")]
-    try:
-      return extract_bpc(core_site)
-    except IOError:
-      try:
-        return extract_bpc(hadoop_site)
-      except IOError:
-        try:
-          return extract_bpc(core_default)
-        except IOError:
-          return self.DEFAULT_BYTES_PER_CHECKSUM
-
-
-def basic_tests():
+def common_tests():
   return [
     'open_close',
     'delete',

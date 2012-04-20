@@ -1,17 +1,26 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import unittest, os, uuid, shutil, getpass
+import unittest, os, uuid, shutil, getpass, socket
 
-from test_hdfs_basic_class import hdfs_basic_tc, basic_tests, make_wd
-from utils import HDFS_HOST, HDFS_PORT
+from common_hdfs_tests import TestCommon, common_tests
+from utils import HDFS_HOST, HDFS_PORT, make_wd, get_bytes_per_checksum
 import pydoop.hdfs as hdfs
 
 
 class TestConnection(unittest.TestCase):
 
-  def runTest(self):
-    for host, port in (("default", 0), (HDFS_HOST, HDFS_PORT)):
+  def setUp(self):
+    self.cases = [("default", 0), (HDFS_HOST, HDFS_PORT)]
+    try:
+      hdfs_ip = socket.gethostbyname(HDFS_HOST)
+    except socket.gaierror:
+      pass
+    else:
+      self.cases.append((hdfs_ip, HDFS_PORT))
+
+  def connect(self):
+    for host, port in self.cases:
       current_user = getpass.getuser()
       for user in None, current_user, "nobody":
         expected_user = user or current_user
@@ -19,11 +28,21 @@ class TestConnection(unittest.TestCase):
         self.assertEqual(fs.user, expected_user)
         fs.close()
 
+  def cache(self):
+    orig_fs = hdfs.hdfs(*self.cases[0])
+    for host, port in self.cases[1:]:
+      fs = hdfs.hdfs(host, port)
+      self.assertTrue(fs.fs is orig_fs.fs)
+      fs.close()
+      self.assertFalse(orig_fs.closed)
+    orig_fs.close()
+    self.assertTrue(orig_fs.closed)
 
-class hdfs_default_tc(hdfs_basic_tc):
+
+class TestHDFS(TestCommon):
   
   def __init__(self, target):
-    hdfs_basic_tc.__init__(self, target, 'default', 0)
+    TestCommon.__init__(self, target, 'default', 0)
 
   def capacity(self):
     c = self.fs.capacity()
@@ -109,7 +128,7 @@ class hdfs_default_tc(hdfs_basic_tc):
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.
   def readline_block_boundary(self):
-    bs = 512  # FIXME: hardwired to the default value of io.bytes.per.checksum
+    bs = get_bytes_per_checksum()
     line = "012345678\n"
     path = self._make_random_path()
     with self.fs.open_file(path, flags="w", blocksize=bs) as f:
@@ -149,16 +168,11 @@ class hdfs_default_tc(hdfs_basic_tc):
       self.assertEqual(len(hosts_per_block), i+1)
 
 
-class hdfs_local_tc(hdfs_default_tc):
-
-  def __init__(self, target):
-    hdfs_basic_tc.__init__(self, target, HDFS_HOST, HDFS_PORT)
-
-
 def suite():
   suite = unittest.TestSuite()
-  suite.addTest(TestConnection('runTest'))
-  tests = basic_tests()
+  suite.addTest(TestConnection('connect'))
+  suite.addTest(TestConnection('cache'))
+  tests = common_tests()
   tests.extend([
     'capacity',
     'default_block_size',
@@ -174,9 +188,8 @@ def suite():
     'readline_big',
     'get_hosts'
     ])
-  for tc in hdfs_default_tc, hdfs_local_tc:
-    for t in tests:
-      suite.addTest(tc(t))
+  for t in tests:
+    suite.addTest(TestHDFS(t))
   return suite
 
 

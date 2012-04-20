@@ -2,8 +2,9 @@
 # END_COPYRIGHT
 
 import unittest, getpass
-from test_hdfs_basic_class import hdfs_basic_tc, basic_tests
+
 import pydoop.hdfs as hdfs
+from common_hdfs_tests import TestCommon, common_tests
 
 
 class TestConnection(unittest.TestCase):
@@ -17,18 +18,18 @@ class TestConnection(unittest.TestCase):
       fs.close()
 
 
-class hdfs_plain_disk_tc(hdfs_basic_tc):
+class TestLocalFS(TestCommon):
   
   def __init__(self, target):
-    hdfs_basic_tc.__init__(self, target, '', 0)
+    TestCommon.__init__(self, target, '', 0)
 
 
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestConnection('runTest'))
-  tests = basic_tests()
+  tests = common_tests()
   for t in tests:
-    suite.addTest(hdfs_plain_disk_tc(t))
+    suite.addTest(TestLocalFS(t))
   return suite
 
 
