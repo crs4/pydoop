@@ -6,7 +6,7 @@ pydoop.hdfs.fs -- file system handles
 -------------------------------------
 """
 
-import os, re, itertools as it
+import os, re, socket, itertools as it
 
 import pydoop
 hdfs_fs = pydoop.import_version_specific_module("_hdfs").hdfs_fs
@@ -19,6 +19,9 @@ class _FSStatus(object):
   def __init__(self, fs, refcount=1):
     self.fs = fs
     self.refcount = refcount
+
+  def __repr__(self):
+    return "_FSStatus(%s, %s)" % (self.fs, self.refcount)
 
 
 def _complain_ifclosed(closed):
@@ -70,7 +73,14 @@ class hdfs(object):
     except KeyError:
       h, p, u, fs = self._get_connection_info(host, port, user)
       self.__status = _FSStatus(fs, refcount=1)
-      for t in it.product(*zip((h, p, u), (host, port, user))):
+      hosts, ports, users = [h, host], [p, port], [u, user]
+      try:
+        hosts.append(socket.gethostbyname(h))
+        hosts.append(socket.getfqdn(h))
+        hosts = list(set(hosts))
+      except socket.gaierror:
+        pass
+      for t in it.product(hosts, ports, users):
         self._CACHE[t] = self.__status
     else:
       self.__status.refcount += 1

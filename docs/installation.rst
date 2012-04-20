@@ -279,14 +279,13 @@ superuser*::
 
 
 Superuser privileges
-......................
+....................
 
+The following HDFS tests may fail if not run by the cluster superuser:
+``capacity``, ``chown`` and ``used``.  To get superuser privileges,
+you can either:
 
-The HDFS ``chown`` tests will fail if you do not run them as a cluster 
-superuser.  To have superuser privileges, you will have to either:
-
-* start the cluster with your own user account, so you will be the cluster 
-  superuser; or
+* start the cluster with your own user account;
 
 * edit ``hdfs-site.xml`` in your configuration and set the
   ``dfs.permissions.supergroup`` property to one of your unix groups

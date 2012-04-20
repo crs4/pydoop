@@ -234,9 +234,11 @@ class hdfs_basic_tc(unittest.TestCase):
     new_d = self._make_random_dir()
     self.assertEqual(self.fs.list_directory(new_d), [])
     paths = [self._make_random_file(where=new_d) for _ in xrange(3)]
+    paths.sort(key=os.path.basename)
     infos = self.fs.list_directory(new_d)
+    infos.sort(key=lambda p: os.path.basename(p["name"]))
     self.assertEqual(len(infos), len(paths))
-    for i, p in izip(sorted(infos), sorted(paths)):
+    for i, p in izip(infos, paths):
       self.__check_path_info(i, kind="file")
       self.assertTrue(i['name'].endswith(p))
     self.assertRaises(IOError, self.fs.list_directory, self._make_random_path())
