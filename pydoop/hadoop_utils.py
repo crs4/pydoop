@@ -14,6 +14,10 @@ try:
   _ORIG_HADOOP_CONF_DIR
 except NameError:
   _ORIG_HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR")
+try:
+  from config import DEFAULT_HADOOP_HOME
+except ImportError:  # should only happen at compile time
+  DEFAULT_HADOOP_HOME = None
 
 
 class HadoopVersionError(Exception):
@@ -114,13 +118,16 @@ class PathFinder(object):
     self.__hadoop_version = None
     self.__initialized = False
 
-  def hadoop_home(self):
+  def hadoop_home(self, fallback=DEFAULT_HADOOP_HOME):
     if os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME:
       self.__initialized = False
     if not self.__initialized:
       self.__init_paths()
     if self.__hadoop_home is None:
-      raise ValueError("HADOOP_HOME not set")
+      if fallback:
+        self.__hadoop_home = fallback
+      else:
+        raise ValueError("HADOOP_HOME not set")
     return self.__hadoop_home
 
   def hadoop_version(self):

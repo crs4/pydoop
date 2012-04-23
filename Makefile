@@ -5,8 +5,10 @@ COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
 # install copyrighter >=0.4.0 from ac-dc/tools/copyrighter
 
 GENERATED_SRC_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc)
+PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
-.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean
+
+.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean uninstall_user
 
 all: build
 
@@ -64,3 +66,6 @@ clean:
 distclean: clean
 	rm -rf $(EXPORT_DIR)
 	make -C examples/self_contained distclean
+
+uninstall_user:
+	rm -rf ~/.local/lib/python$(PY_V)/site-packages/pydoop*

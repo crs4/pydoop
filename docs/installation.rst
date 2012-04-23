@@ -80,7 +80,6 @@ Then, in the same shell::
 Hadoop installed from Cloudera packages
 .......................................
 
-
 If you have installed Hadoop on Ubuntu using the packages Cloudera
 provides, then run these commands::
 
@@ -128,7 +127,7 @@ HADOOP_VERSION
 
 HADOOP_INCLUDE_PATHS
 
-  Override the standard include paths for the Hadoop c++ headers.
+  Override the standard include paths for the Hadoop C++ headers.
 
 
 Example
@@ -183,14 +182,15 @@ Installing to another location
 .. _multiple_hadoop_versions:
 
 Multiple Hadoop versions
---------------------------------
+------------------------
 
 If you'd like to use your Pydoop installation with multiple versions of Hadoop,
 you will need to rebuild the modules for each version of Hadoop.
 
 After building Pydoop for the first time following the instructions above, 
 modify your HADOOP-related environment variables to point to the other version 
-of Hadoop to be supported.  Then repeat the build and installation commands again.
+of Hadoop to be supported.  Then repeat the build and installation commands
+again.
 
 Example::
 
@@ -205,11 +205,15 @@ Example::
   python setup.py build
   python setup.py install
 
-
 At run time, the appropriate version of the Pydoop modules will be loaded for
 the version of Hadoop selected by your ``HADOOP_HOME`` variable or the version
-of the ``hadoop`` executable found in your ``PATH``.
-
+of the ``hadoop`` executable found in your ``PATH``.  If Pydoop is not able to
+retrieve your Hadoop home directory from the environment or by looking into
+standard paths, it falls back to a default location that is hardwired at
+compile time: Pydoop looks for a file named ``DEFAULT_HADOOP_HOME`` in the
+current working directory; if the file does not exist, it is created and filled
+with the current Hadoop home (at compile time, Pydoop must *always* know where
+the Hadoop home is).
 
 
 .. _troubleshooting:

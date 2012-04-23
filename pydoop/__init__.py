@@ -18,6 +18,12 @@ Prerequisites:
 from importlib import import_module
 import pydoop.hadoop_utils as hu
 
+try:
+  from config import DEFAULT_HADOOP_HOME
+except ImportError:  # should only happen at compile time
+  DEFAULT_HADOOP_HOME = None
+
+
 _PATH_FINDER = hu.PathFinder()
 
 __version__ = "0.6.0-rc2"
@@ -27,8 +33,8 @@ __url__ = "http://pydoop.sourceforge.net"
 __jar_name__ = 'pydoop.jar'
 
 
-def hadoop_home():
-  return _PATH_FINDER.hadoop_home()
+def hadoop_home(fallback=DEFAULT_HADOOP_HOME):
+  return _PATH_FINDER.hadoop_home(fallback=fallback)
 
 
 def hadoop_conf():
