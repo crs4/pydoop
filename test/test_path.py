@@ -2,8 +2,9 @@
 # END_COPYRIGHT
 
 import os, unittest, uuid
+
 import pydoop.hdfs as hdfs
-import pydoop.hdfs.config as pconf
+from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
 
 
 class TestSplit(unittest.TestCase):
@@ -12,7 +13,7 @@ class TestSplit(unittest.TestCase):
     for p, r in [
       ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
       ('hdfs://localhost:9000/a/b', ('localhost', 9000, '/a/b')),
-      ('hdfs://localhost/a/b', ('localhost', pconf.DEFAULT_PORT, '/a/b')),
+      ('hdfs://localhost/a/b', ('localhost', DEFAULT_PORT, '/a/b')),
       ('hdfs:///a/b', ('default', 0, '/a/b')),
       ('file:///a/b', ('', 0, '/a/b')),
       ('file:/a/b', ('', 0, '/a/b')),
@@ -21,15 +22,15 @@ class TestSplit(unittest.TestCase):
       ('file://localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
       ('//localhost:9000/a/b', ('localhost', 9000, '/a/b')),
       ('/a/b', ('default', 0, '/a/b')),
-      ('a/b', ('default', 0, '/user/%s/a/b' % pconf.DEFAULT_USER)),
+      ('a/b', ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
       ]:
       self.assertEqual(hdfs.path.split(p), r)
 
   def good_with_user(self):
     for p, u, r in [
-      ('a/b', None, ('default', 0, '/user/%s/a/b' % pconf.DEFAULT_USER)),
-      ('a/b', pconf.DEFAULT_USER,
-       ('default', 0, '/user/%s/a/b' % pconf.DEFAULT_USER)),
+      ('a/b', None, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
+      ('a/b', DEFAULT_USER,
+       ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
       ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
       ]:
       self.assertEqual(hdfs.path.split(p, u), r)
@@ -71,7 +72,7 @@ class TestAbspath(unittest.TestCase):
     p = 'foo/bar'
     for kw, r in [
       ({"user": None, "local": False},
-       '%s/user/%s/%s' % (self.root, pconf.DEFAULT_USER, p)),
+       '%s/user/%s/%s' % (self.root, DEFAULT_USER, p)),
       ({"user": "pydoop", "local": False},
        '%s/user/pydoop/%s' % (self.root, p)),
       ({"user": None, "local": True},

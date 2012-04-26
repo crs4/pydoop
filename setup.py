@@ -271,10 +271,7 @@ class BoostExtension(Extension):
 
 
 class build_pydoop_ext(distutils_build_ext):
-  """
-  Customized distutils build_ext command that sets the options
-  required to build the Pydoop extensions.
-  """
+
   def finalize_options(self):
     distutils_build_ext.finalize_options(self)
     path_finder = SetupPathFinder()
@@ -285,6 +282,13 @@ class build_pydoop_ext(distutils_build_ext):
     for e in self.extensions:
       e.sources.append(e.generate_main())
       e.sources.extend(e.generate_patched_aux())
+
+  def build_extension(self, ext):
+    try:
+      self.compiler.compiler_so.remove("-Wstrict-prototypes")
+    except ValueError:
+      pass
+    distutils_build_ext.build_extension(self, ext)
 
 
 def create_ext_modules():

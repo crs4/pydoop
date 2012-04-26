@@ -5,7 +5,7 @@ import unittest, tempfile, os
 from itertools import izip
 
 import pydoop.hdfs as hdfs
-import pydoop.hdfs.config as hconf
+from pydoop.hdfs.common import BUFSIZE
 from utils import make_random_data, FSTree
 
 
@@ -22,7 +22,7 @@ class TestHDFS(unittest.TestCase):
     basenames = ["test_path_%d" % i for i in xrange(2)]
     self.local_paths = ["%s/%s" % (self.local_wd, bn) for bn in basenames]
     self.hdfs_paths = ["%s/%s" % (self.hdfs_wd, bn) for bn in basenames]
-    self.data = make_random_data(4*hconf.BUFSIZE + hconf.BUFSIZE/2)
+    self.data = make_random_data(4*BUFSIZE + BUFSIZE/2)
     for path in self.local_paths:
       self.assertTrue(path.startswith("file:"))
     for path in self.hdfs_paths:

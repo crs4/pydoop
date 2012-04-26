@@ -4,7 +4,7 @@ NOTICE_TEMPLATE = notice_template.txt
 COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
 # install copyrighter >=0.4.0 from ac-dc/tools/copyrighter
 
-GENERATED_SRC_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc)
+GENERATED_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc) DEFAULT_HADOOP_HOME pydoop/config.py
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
 
@@ -58,7 +58,7 @@ dist: docs
 
 clean:
 	rm -rf build
-	rm -f $(GENERATED_SRC_FILES)
+	rm -f $(GENERATED_FILES)
 	make -C docs clean
 	make -C examples/self_contained clean
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\|\.jar\|\.class\)' -exec rm -fv {} \;

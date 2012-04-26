@@ -8,8 +8,8 @@ pydoop.hdfs.path -- path name manipulations
 
 import os, re
 
+import common
 import fs as hdfs_fs
-from config import DEFAULT_PORT, DEFAULT_USER
 
 
 class _HdfsPathSplitter(object):
@@ -38,7 +38,7 @@ class _HdfsPathSplitter(object):
         try:
           hostname, port = netloc.split(":")
         except ValueError:
-          hostname, port = netloc, DEFAULT_PORT
+          hostname, port = netloc, common.DEFAULT_PORT
         try:
           port = int(port)
         except ValueError:
@@ -71,7 +71,7 @@ def split(hdfs_path, user=None):
   :return: hostname, port, path
   """
   # Use a helper class to compile URL_PATTERN once and for all
-  return _HdfsPathSplitter.split(hdfs_path, user or DEFAULT_USER)
+  return _HdfsPathSplitter.split(hdfs_path, user or common.DEFAULT_USER)
 
 
 def join(*parts):

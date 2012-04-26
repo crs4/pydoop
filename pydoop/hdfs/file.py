@@ -8,7 +8,7 @@ pydoop.hdfs.file -- HDFS file objects
 
 import os
 
-import config
+import common
 
 
 def _complain_ifclosed(closed):
@@ -26,7 +26,7 @@ class hdfs_file(object):
   """  
   ENDL = os.linesep
 
-  def __init__(self, raw_hdfs_file, fs, name, flags, chunk_size=config.BUFSIZE):
+  def __init__(self, raw_hdfs_file, fs, name, flags, chunk_size=common.BUFSIZE):
     if not chunk_size > 0:
       raise ValueError("chunk size must be positive")
     self.f = raw_hdfs_file

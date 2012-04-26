@@ -37,15 +37,35 @@ can set the environment variable externally and it will override the
 above setting.
 """
 
-import os
+import os, glob
 
 import pydoop
-import config, path
+import path, common
 from fs import hdfs
 
 
+try:
+  _ORIG_CLASSPATH
+except NameError:
+  _ORIG_CLASSPATH = os.getenv("CLASSPATH", "")
+
+
+def init():
+  jars = (
+    glob.glob(os.path.join(pydoop.hadoop_home(), "lib/*.jar")) +
+    glob.glob(os.path.join(pydoop.hadoop_home(), "hadoop*.jar")) +
+    [pydoop.hadoop_conf()]
+    )
+  os.environ["CLASSPATH"] = "%s:%s" % (":".join(jars), _ORIG_CLASSPATH)
+  os.environ["LIBHDFS_OPTS"] = os.getenv(
+    "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
+    )
+
+init()
+
+
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
-         readline_chunk_size=config.BUFSIZE, user=None):
+         readline_chunk_size=common.BUFSIZE, user=None):
   """
   Open a file, returning an :class:`hdfs_file` object.
 
@@ -68,7 +88,7 @@ def dump(data, hdfs_path, **kwargs):
   kwargs["mode"] = "w"
   with open(hdfs_path, **kwargs) as fo:
     i = 0
-    bufsize = config.BUFSIZE
+    bufsize = common.BUFSIZE
     while i < len(data):
       fo.write(data[i:i+bufsize])
       i += bufsize
@@ -84,7 +104,7 @@ def load(hdfs_path, **kwargs):
   kwargs["mode"] = "r"
   data = []
   with open(hdfs_path, **kwargs) as fi:
-    bufsize = config.BUFSIZE
+    bufsize = common.BUFSIZE
     while 1:
       chunk = fi.read(bufsize)
       if chunk:
@@ -104,7 +124,7 @@ def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
   with src_fs.open_file(src_path, **kwargs) as fi:
     kwargs["flags"] = "w"
     with dest_fs.open_file(dest_path, **kwargs) as fo:
-      bufsize = config.BUFSIZE
+      bufsize = common.BUFSIZE
       while 1:
         chunk = fi.read(bufsize)
         if chunk:

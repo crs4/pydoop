@@ -6,18 +6,21 @@ pydoop.hdfs.fs -- file system handles
 -------------------------------------
 """
 
-import os, re, socket, itertools as it
+import os, re, socket
 
 import pydoop
-hdfs_fs = pydoop.import_version_specific_module("_hdfs").hdfs_fs
+hdfs_ext = pydoop.import_version_specific_module("_hdfs")
+import common
 from file import hdfs_file
-import config
 
 
 class _FSStatus(object):
 
-  def __init__(self, fs, refcount=1):
+  def __init__(self, fs, host, port, user, refcount=1):
     self.fs = fs
+    self.host = host
+    self.port = port
+    self.user = user
     self.refcount = refcount
 
   def __repr__(self):
@@ -27,6 +30,14 @@ class _FSStatus(object):
 def _complain_ifclosed(closed):
   if closed:
     raise ValueError("I/O operation on closed HDFS instance")
+
+
+def _get_ip(host, default=None):
+  try:
+    ip = socket.gethostbyname(host)
+  except socket.gaierror:
+    ip = "0.0.0.0"  # same as socket.gethostbyname("")
+  return ip if ip != "0.0.0.0" else default
 
 
 class hdfs(object):
@@ -54,9 +65,19 @@ class hdfs(object):
   """
   HDFS_WD_PATTERN = re.compile(r'hdfs://([^:]+):(\d+)/user/([^/]+)')
   _CACHE = {}
+  _ALIASES = {"host": {}, "port": {}, "user": {}}
 
-  def _get_connection_info(self, host, port, user):
-    fs = hdfs_fs(host, port, user)
+  def __canonize_hpu(self, host, port, user):
+    if user is None:
+      user = ""
+    host = host.strip()
+    host = self._ALIASES["host"].get(host, host)
+    port = self._ALIASES["port"].get(port, port)
+    user = self._ALIASES["user"].get(user, user)
+    return host, port, user
+
+  def __get_connection_info(self, host, port, user):
+    fs = hdfs_ext.hdfs_fs(host, port, user)
     wd = fs.working_directory()
     try:
       h, p, u = self.HDFS_WD_PATTERN.match(wd).groups()
@@ -65,27 +86,27 @@ class hdfs(object):
     return h, int(p), u, fs
 
   def __init__(self, host="default", port=0, user=None, groups=None):
-    if user is None:
-      user = ""
-    host = host.strip()
+    host, port, user = self.__canonize_hpu(host, port, user)
     try:
       self.__status = self._CACHE[(host, port, user)]
     except KeyError:
-      h, p, u, fs = self._get_connection_info(host, port, user)
-      self.__status = _FSStatus(fs, refcount=1)
-      hosts, ports, users = [h, host], [p, port], [u, user]
-      try:
-        hosts.append(socket.gethostbyname(h))
-        hosts.append(socket.getfqdn(h))
-        hosts = list(set(hosts))
-      except socket.gaierror:
-        pass
-      for t in it.product(hosts, ports, users):
-        self._CACHE[t] = self.__status
+      h, p, u, fs = self.__get_connection_info(host, port, user)
+      aliasing_info = [] if user else [("user", u, user)]
+      if h != "":
+        aliasing_info.append(("port", p, port))
+      ip = _get_ip(h, None)
+      if ip:
+        aliasing_info.append(("host", ip, h))
+      else:
+        ip = h
+      aliasing_info.append(("host", ip, host))
+      for k, true_x, x in aliasing_info:
+        if true_x != x:
+          self._ALIASES[k][x] = true_x
+      self.__status = _FSStatus(fs, h, p, u, refcount=1)
+      self._CACHE[(ip, p, u)] = self.__status
     else:
       self.__status.refcount += 1
-      h, p, u = host, port, user
-    self.__host, self.__port, self.__user = h, p, u
 
   @property
   def fs(self):
@@ -100,21 +121,21 @@ class hdfs(object):
     """
     The actual hdfs hostname (empty string for the local fs).
     """
-    return self.__host
+    return self.__status.host
 
   @property
   def port(self):
     """
     The actual hdfs port (0 for the local fs).
     """
-    return self.__port
+    return self.__status.port
 
   @property
   def user(self):
     """
     The user associated with this HDFS connection.
     """
-    return self.__user
+    return self.__status.user
 
   def close(self):
     """
@@ -136,7 +157,7 @@ class hdfs(object):
                 buff_size=0,
                 replication=0,
                 blocksize=0,
-                readline_chunk_size=config.BUFSIZE):
+                readline_chunk_size=common.BUFSIZE):
     """
     Open an HDFS file.
 
