@@ -7,17 +7,28 @@
 import os, re, subprocess, glob
 
 try:
-  _ORIG_HADOOP_HOME
-except NameError:
-  _ORIG_HADOOP_HOME = os.getenv("HADOOP_HOME")
-try:
-  _ORIG_HADOOP_CONF_DIR
-except NameError:
-  _ORIG_HADOOP_CONF_DIR = os.getenv("HADOOP_CONF_DIR")
-try:
   from config import DEFAULT_HADOOP_HOME
 except ImportError:  # should only happen at compile time
   DEFAULT_HADOOP_HOME = None
+
+
+class _EnvMonitor(object):
+
+  ENV = os.environ.copy()
+
+  @classmethod
+  def has_changed(cls, var):
+    """
+    Return ``False`` if ``var`` has not changed since last check.
+
+    If ``var`` has changed, return True if its current value is empty
+    or ``None``, otherwise return the variable itself.
+    """
+    current_value = os.getenv(var)
+    if current_value != cls.ENV.get(var):
+      cls.ENV[var] = current_value
+      return current_value or True
+    return False
 
 
 class HadoopVersionError(Exception):
@@ -59,52 +70,108 @@ def version_tuple(version_string):
   return vt
 
 
+def get_hadoop_home(fallback=DEFAULT_HADOOP_HOME):
+  hadoop_home = os.getenv("HADOOP_HOME")
+  if hadoop_home:
+    return hadoop_home
+  # look in hadoop config files, under /etc/default.  In the
+  # hadoop-0.20 package from cloudera this is called hadoop-0.20.
+  # I don't know how they'll handle later versions (e.g.,
+  # 0.20.203, 1.0.1, etc.).  Conflicting packages?  More version
+  # appendages?  For now we'll just grab the first of the sorted
+  # list of versions (should be the newest).
+  hadoop_cfg_files = sorted(glob.glob("/etc/default/hadoop*"), reverse=True)
+  if hadoop_cfg_files:
+    with open(hadoop_cfg_files[0]) as f:
+      # get HADOOP_HOME directories from this file.  If there's
+      # more than one we keep the last one.
+      dirs = [line.rstrip("\n").split('=', 1) for line in f
+              if re.match(r"\s*HADOOP_HOME=.*", line)]
+      if len(dirs) > 0:
+        home_path = dirs[-1]
+        if os.path.isdir(home_path):
+          hadoop_home = home_path
+  if hadoop_home:
+    return hadoop_home
+  # search the PATH env var
+  for path in os.environ["PATH"].split(os.pathsep):
+    if is_exe(os.path.join(path, 'hadoop')):
+      return os.path.dirname(path)
+  # Try a few standard paths
+  paths = sum([glob.glob(s) for s in (
+    "/opt/hadoop*",
+    "/usr/lib/hadoop*",
+    "/usr/local/lib/hadoop*",
+    )], [])
+  if len(paths) > 0:
+    hadoop_home = paths[0]
+  if hadoop_home:
+    return hadoop_home
+  if fallback:
+    return fallback
+  raise ValueError("Hadoop home not found, try setting HADOOP_HOME")
+
+
 def get_hadoop_version(hadoop_home=None):
   """
   Get the version for the Hadoop installation in ``hadoop_home``.
 
-  If ``hadoop_home`` is None, tries to execute ``hadoop version``
-  and scans its output to detect the version number (see
-  :func:`version_tuple` for the format of the return value).
+  See :func:`version_tuple` for the format of the return value.
   """
-  msg = "couldn't detect version for %r" % hadoop_home + ": %s"
+  err_msg = "could not determine Hadoop version, try setting HADOOP_VERSION"
   version = os.getenv("HADOOP_VERSION")
   if version:
     return version_tuple(version)
-  hadoop_bin = get_hadoop_exec(hadoop_home)
-  if not hadoop_bin:
-    raise RuntimeError(
-      "Couldn't find hadoop executable in HADOOP_HOME/bin nor in your PATH. " +
-      "Please adjust either of those variables."
-      )
-  args = [hadoop_bin, "version"]
-  try:
-    version = subprocess.Popen(
-      args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-      ).communicate()[0].splitlines()[0].split()[-1]
-  except (OSError, IndexError):
-    raise HadoopVersionError(msg % ("'%s %s' failed" % tuple(args)))
   else:
-    return version_tuple(version)
+    try:
+      hadoop = get_hadoop_exec(hadoop_home)
+    except ValueError:
+      raise ValueError(err_msg)
+    args = [hadoop, "version"]
+    try:
+      version = subprocess.Popen(
+        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ).communicate()[0].splitlines()[0].split()[-1]
+    except (OSError, IndexError):
+      raise ValueError(err_msg)
+    else:
+      return version_tuple(version)
 
 
 def get_hadoop_exec(hadoop_home=None):
-  # check whatever hadoop home the caller gave us
   if hadoop_home:
     hadoop = os.path.join(hadoop_home, "bin", "hadoop")
     if is_exe(hadoop):
       return hadoop
-  # check the environment's HADOOP_HOME
-  if os.environ.has_key("HADOOP_HOME"):
-    hadoop = os.path.join(os.environ["HADOOP_HOME"], "bin", "hadoop")
-    if is_exe(hadoop):
-      return hadoop
-  # search the PATH for hadoop
-  for path in os.environ["PATH"].split(os.pathsep):
-    hadoop = os.path.join(path, 'hadoop')
-    if is_exe(hadoop):
-      return hadoop
-  return None
+  hadoop = os.path.join(get_hadoop_home(), "bin", "hadoop")
+  if is_exe(hadoop):
+    return hadoop
+  raise ValueError("hadoop command not found, try setting HADOOP_HOME or PATH")
+
+
+def cloudera_version(ver):
+  if ver is not None and len(ver) > 3:
+    cloudera_re = re.compile("cdh.*")
+    return any(map(cloudera_re.match, ver[3:]))
+  else:
+    return False
+
+
+def get_hadoop_conf(hadoop_home=None):
+  hadoop_conf = os.getenv("HADOOP_CONF_DIR")
+  if hadoop_conf:
+    return hadoop_conf
+  else:
+    hadoop_version = get_hadoop_version(hadoop_home=hadoop_home)
+    if cloudera_version(hadoop_version):
+      candidate = '/etc/hadoop-%d.%d/conf' % hadoop_version[0:2]
+      if os.path.isdir(candidate):
+        return candidate
+  if hadoop_home:
+    candidate = os.path.join(hadoop_home, 'conf')
+    if os.path.isdir(candidate):
+      return candidate
+  raise ValueError("Hadoop conf not found, try setting HADOOP_CONF_DIR")
 
 
 class PathFinder(object):
@@ -116,99 +183,29 @@ class PathFinder(object):
     self.__hadoop_home = None
     self.__hadoop_conf = None
     self.__hadoop_version = None
-    self.__initialized = False
 
   def hadoop_home(self, fallback=DEFAULT_HADOOP_HOME):
-    if os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME:
-      self.__initialized = False
-    if not self.__initialized:
-      self.__init_paths()
-    if self.__hadoop_home is None:
-      if fallback:
-        self.__hadoop_home = fallback
-      else:
-        raise ValueError("HADOOP_HOME not set")
+    if _EnvMonitor.has_changed("HADOOP_HOME"):
+      self.__hadoop_home = None
+    if not self.__hadoop_home:
+      self.__hadoop_home = get_hadoop_home(fallback=fallback)
     return self.__hadoop_home
 
   def hadoop_version(self):
-    if os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME:
-      self.__initialized = False
-    if not self.__initialized:
-      self.__init_paths()
-    if self.__hadoop_version is None:
-      raise HadoopVersionError("Could not determine Hadoop version")
+    if (_EnvMonitor.has_changed("HADOOP_HOME") or
+        _EnvMonitor.has_changed("HADOOP_VERSION")):
+      self.__hadoop_version = None
+    if not self.__hadoop_version:
+      self.__hadoop_version = get_hadoop_version(self.hadoop_home())
     return self.__hadoop_version
 
   def hadoop_conf(self):
-    if (os.getenv("HADOOP_HOME") != _ORIG_HADOOP_HOME or
-        os.getenv("HADOOP_CONF_DIR") != _ORIG_HADOOP_CONF_DIR):
-      self.__initialized = False
-    if not self.__initialized:
-      self.__init_paths()
-    if self.__hadoop_conf is None:
-      raise ValueError("HADOOP_CONF_DIR not set")
+    if (_EnvMonitor.has_changed("HADOOP_HOME") or
+        _EnvMonitor.has_changed("HADOOP_CONF_DIR")):
+      self.__hadoop_conf = None
+    if not self.__hadoop_conf:
+      self.__hadoop_conf = get_hadoop_conf(self.hadoop_home())
     return self.__hadoop_conf
 
   def cloudera(self):
-    return self.__cloudera_version(self.hadoop_version())
-
-  @staticmethod
-  def __cloudera_version(ver):
-    if ver is not None and len(ver) > 3:
-      cloudera_re = re.compile("cdh.*")
-      return any(map(cloudera_re.match, ver[3:]))
-    else:
-      return False
-
-  def __init_paths(self):
-    self.__hadoop_home = None
-    self.__hadoop_conf = None
-    self.__hadoop_version = None
-    #--- HADOOP_HOME ---
-    self.__hadoop_home = os.getenv("HADOOP_HOME")
-    if not self.__hadoop_home:
-      # look in hadoop config files, under /etc/default.  In the
-      # hadoop-0.20 package from cloudera this is called hadoop-0.20.
-      # I don't know how they'll handle later versions (e.g.,
-      # 0.20.203, 1.0.1, etc.).  Conflicting packages?  More version
-      # appendages?  For now we'll just grab the first of the sorted
-      # list of versions (should be the newest).
-      hadoop_cfg_files = sorted(glob.glob("/etc/default/hadoop*"), reverse=True)
-      if hadoop_cfg_files:
-        with open(hadoop_cfg_files[0]) as f:
-          # get HADOOP_HOME directories from this file.  If there's
-          # more than one we keep the last one.
-          dirs = [line.rstrip("\n").split('=', 1) for line in f
-                  if re.match(r"\s*HADOOP_HOME=.*", line)]
-          if len(dirs) > 0:
-            home_path = dirs[-1]
-            if os.path.isdir(home_path):
-              self.__hadoop_home = home_path
-    if not self.__hadoop_home:
-      # Try a few standard paths, then give up
-      paths = sum([glob.glob(s) for s in (
-        "/opt/hadoop*",
-        "/usr/lib/hadoop*",
-        "/usr/local/lib/hadoop*",
-        )], [])
-      if len(paths) > 0:
-        self.__hadoop_home = paths[0]
-    #--- HADOOP_VERSION ---
-    try:
-      self.__hadoop_version = get_hadoop_version(self.__hadoop_home)
-    except (HadoopVersionError, RuntimeError):
-      pass  # leave self.hadoop_version as None
-    #--- HADOOP_CONF_DIR ---
-    if "HADOOP_CONF_DIR" in os.environ:
-      self.__hadoop_conf = os.environ["HADOOP_CONF_DIR"]
-    elif self.__cloudera_version(self.__hadoop_version):
-      candidate = '/etc/hadoop-%d.%d/conf' % self.__hadoop_version[0:2]
-      if os.path.isdir(candidate):
-        self.__hadoop_conf = candidate
-    if self.__hadoop_conf is None:
-      # Try in hadoop home, then give up
-      if self.__hadoop_home is not None:
-        candidate = os.path.join(self.__hadoop_home, 'conf')
-        if os.path.isdir(candidate):
-          self.__hadoop_conf = candidate
-    self.__initialized = True
+    return cloudera_version(self.hadoop_version())

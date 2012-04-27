@@ -139,7 +139,7 @@ class TestHadoopUtils(unittest.TestCase):
   def setUp(self):
     self.hadoop_version = "0.20.2"
     self.hadoop_version_tuple = (0, 20, 2)
-    self.hadoop_home = tempfile.mkdtemp()
+    self.hadoop_home = tempfile.mkdtemp(prefix="pydoop_test_")
     self.bindir = os.path.join(self.hadoop_home, "bin")
     os.mkdir(self.bindir)
     self.hadoop_exe = os.path.join(self.bindir, "hadoop")
