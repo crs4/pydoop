@@ -3,11 +3,11 @@
 #include "hadoop/StringUtils.hh"
 
 
-class WordCountMap: public HadoopPipes::Mapper {
+class Mapper: public HadoopPipes::Mapper {
 private:
-  HadoopPipes::TaskContext *context;  // note that the MapContext won't do
+  HadoopPipes::TaskContext *context;
 public:
-  WordCountMap(HadoopPipes::TaskContext& context){
+  Mapper(HadoopPipes::TaskContext& context) {
     this->context = &context;
   }
   void map(HadoopPipes::MapContext& context) {
@@ -18,15 +18,15 @@ public:
     }
   }
   void close() {
-    // emit after seeing all tuples -- useful for buffering
-    this->context->emit("JUST_ONE_MORE", "1");
+    // emit after seeing all tuples -- useful for accumulation
+    this->context->emit("JUST_ONE_MORE", "0");
   }
 };
 
 
-class WordCountReduce: public HadoopPipes::Reducer {
+class Reducer: public HadoopPipes::Reducer {
 public:
-  WordCountReduce(HadoopPipes::TaskContext& context){}
+  Reducer(HadoopPipes::TaskContext& context) {}
   void reduce(HadoopPipes::ReduceContext& context) {
     int sum = 0;
     while (context.nextValue()) {
@@ -38,6 +38,5 @@ public:
 
 
 int main(int argc, char *argv[]) {
-  return HadoopPipes::runTask(HadoopPipes::TemplateFactory<WordCountMap,
-                              WordCountReduce>());
+  return HadoopPipes::runTask(HadoopPipes::TemplateFactory<Mapper, Reducer>());
 }

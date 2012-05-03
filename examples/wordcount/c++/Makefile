@@ -8,5 +8,12 @@ LDLIBS := -lhadooppipes -lhadooputils -lpthread
 
 build: WordCount
 
+run: build
+	hadoop fs -put WordCount WordCount
+	hadoop fs -put ../../input WordCountInput
+	hadoop pipes -conf WordCount.xml -input WordCountInput -output WordCountOutput
+	hadoop fs -get WordCountOutput WordCountOutput
+	hadoop fs -rmr 'WordCount*'
+
 clean:
-	rm -f WordCount
+	rm -rf WordCount WordCountOutput

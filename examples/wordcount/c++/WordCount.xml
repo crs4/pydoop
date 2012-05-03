@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <configuration>
+
 <property>
   <name>hadoop.pipes.executable</name>
-  <value>examples/bin/WordCount</value>
+  <value>WordCount</value>
 </property>
-
 
 <property>
   <name>hadoop.pipes.java.recordreader</name>
@@ -16,16 +16,15 @@
   <value>true</value>
 </property>
 
+<!-- debug settings
 <property>
   <name>keep.failed.task.files</name>
   <value>true</value>
 </property>
-
 <property>
   <name>hadoop.pipes.command-file.keep</name>
   <value>true</value>
 </property>
-
-
+-->
 
 </configuration>
