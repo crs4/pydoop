@@ -1,10 +1,10 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
+import os
+
 MB = 2**20
-HOSTNAME = "default"
-PORT = 0
-TEST_ROOT = "tree_test"
+TEST_ROOT = os.getenv("TEST_ROOT", "pydoop_test_tree")
 
 def isdir(fs, d):
   try:

@@ -1,3 +1,6 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 import sys
 from pydoop.pipes_runner import pipes_runner
 

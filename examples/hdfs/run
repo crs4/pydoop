@@ -3,7 +3,8 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-# You need a working HDFS installation to run this
+#export HADOOP_CONF_DIR=/my/hadoop/conf
+export TEST_ROOT=pydoop_test_tree
 
 nargs=2
 if [ $# -ne $nargs ]; then
@@ -13,8 +14,14 @@ fi
 DEPTH=$1
 SPAN=$2
 
+echo "Waiting for HDFS to exit safe mode..."
+hadoop dfsadmin -safemode wait
+
 echo "Generating tree..."
 python treegen.py ${DEPTH} ${SPAN} || exit 1
 
 echo "Computing usage by block size..."
-python treewalk.py
+python treewalk.py || exit 1
+
+echo "Cleaning up..."
+hadoop fs -rmr ${TEST_ROOT}

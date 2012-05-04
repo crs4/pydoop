@@ -1,11 +1,13 @@
-#!/usr/bin/env python
-
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
+"""
+Traverse an HDFS tree and output disk space usage by block size.
+"""
+
 import sys
-from pydoop.hdfs import hdfs
-from common import isdir, MB, HOSTNAME, PORT, TEST_ROOT
+import pydoop.hdfs as hdfs
+from common import isdir, MB, TEST_ROOT
 
 
 def treewalker(fs, root_info):
@@ -28,16 +30,18 @@ def usage_by_bs(fs, root):
   return stats
 
 
-def main(argv):
-  fs = hdfs(HOSTNAME, PORT)
-  root = "%s/%s" % (fs.working_directory(), TEST_ROOT)
-  if not isdir(fs, root):
-    sys.exit("%r does not exist" % root)
-  print "BS(MB)\tBYTES"
-  for k, v in usage_by_bs(fs, root).iteritems():
-    print "%.1f\t%d" % (k/float(MB), v)  
-  fs.close()
+def main():
+  fs = hdfs.hdfs()
+  try:
+    root = "%s/%s" % (fs.working_directory(), TEST_ROOT)
+    if not isdir(fs, root):
+      sys.exit("%r does not exist" % root)
+    print "BS(MB)\tBYTES"
+    for k, v in usage_by_bs(fs, root).iteritems():
+      print "%.1f\t%d" % (k/float(MB), v)  
+  finally:
+    fs.close()
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+  main()

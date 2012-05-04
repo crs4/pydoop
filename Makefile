@@ -61,6 +61,7 @@ clean:
 	rm -f $(GENERATED_FILES)
 	make -C docs clean
 	make -C examples/self_contained clean
+	make -C examples/wordcount/c++ clean
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\|\.jar\|\.class\)' -exec rm -fv {} \;
 
 distclean: clean

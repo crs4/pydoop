@@ -3,8 +3,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-# You need a working Hadoop cluster to run this.
-
 """
 Test overriding of RecordReader provided by InputFormat.
 
@@ -19,32 +17,26 @@ that, if set to 'false', makes input file non-splitable (i.e., you
 can't get more InputSplits than the number of input files).
 """
 
-import sys, os, optparse, subprocess as sp
+import sys, os, optparse, subprocess as sp, uuid
 
-from pydoop.hadoop_utils import get_hadoop_version
+from pydoop.hadoop_utils import get_hadoop_exec
 import pydoop.hdfs as hdfs
+import compiler
 
 
-HADOOP_HOME = os.getenv("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
-HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
-MR_SCRIPT = "wordcount-rr.py"
+HADOOP = get_hadoop_exec()
+LOCAL_MR_SCRIPT = "wordcount-rr.py"
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "../input"))
 OUTPUT = "output"
 INPUT_FORMAT = "net.sourceforge.pydoop.mapred.TextInputFormat"
-JAR = "pydoop-mapred.jar"
-
-MR_JOB_NAME = "mapred.job.name"
-MR_HOME_DIR = 'mapreduce.admin.user.home.dir'
-PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
-PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
-INPUT_FORMAT_CLASS = "mapred.input.format.class"
-
+JAR_NAME = "pydoop-mapred.jar"
 BASE_MR_OPTIONS = {
-  MR_JOB_NAME: "test_rr_override",
-  MR_HOME_DIR: os.path.expanduser("~"),
-  PIPES_JAVA_RR: "false",
-  PIPES_JAVA_RW: "true",
-  INPUT_FORMAT_CLASS: INPUT_FORMAT,
+  "mapred.job.name": "test_rr_override",
+  "mapreduce.admin.user.home.dir": os.path.expanduser("~"),
+  "hadoop.pipes.java.recordreader": "false",
+  "hadoop.pipes.java.recordwriter": "true",
+  "mapred.input.format.class": INPUT_FORMAT,
   }
 
 
@@ -69,57 +61,56 @@ class HelpFormatter(optparse.IndentedHelpFormatter):
 
 def make_parser():
   parser = optparse.OptionParser(
-    usage="%prog [OPTIONS] INPUT",
-    formatter=HelpFormatter(),
+    usage="%prog [OPTIONS]", formatter=HelpFormatter(),
     )
   parser.set_description(__doc__.lstrip())
-  parser.add_option("-o", type="str", dest="output", metavar="STRING",
-                    help="HDFS output dir ['%default']", default=OUTPUT)  
+  parser.add_option("-i", dest="input", metavar="STRING",
+                    help="input dir/file ['%default']", default=DEFAULT_INPUT)
   parser.add_option("--java-rr", action="store_true",
                     help="Java RecordReader (CRASHES THE APPLICATION)")
   parser.add_option("--splitable", action="store_true",
                     help="allow input format to split individual files")
+  parser.add_option("--clean", action="store_true",
+                    help="do not run the example. Perform cleanup")
   return parser
 
 
 def main():
+
   parser = make_parser()
-  opt, args = parser.parse_args()
-  try:
-    input_ = args[0]
-  except IndexError:
-    parser.print_help()
-    sys.exit(2)
+  opt, _ = parser.parse_args()
+  
+  if opt.clean:
+    os.system("find . -regex '.*\(\.class\|~\|.pyc\)' -exec rm -fv {} \;")
+    os.system("rm -rfv *.jar %s" % OUTPUT)
+    return 0
+  
+  retval = compiler.main(["compiler.py", JAR_NAME])
+  if retval:
+    return retval
 
-  # output HDFS must be the same as the input one
-  opt.output = hdfs.path.split(opt.output)[-1]
-
-  hostname, port, _ = hdfs.path.split(input_)
-  fs = hdfs.hdfs(hostname, port)
-  lfs = hdfs.hdfs("", 0)
-
-  script_hdfs = os.path.basename(MR_SCRIPT)
-  input_hdfs = os.path.basename(input_)
-  lfs.copy(MR_SCRIPT, fs, script_hdfs)
-  if fs.exists(input_hdfs):
-    fs.delete(input_hdfs)
-  lfs.copy(input_, fs, input_hdfs)
-  if fs.exists(opt.output):
-    fs.delete(opt.output)
+  wd = "pydoop_test_input_format"
+  hdfs.mkdir(wd)
+  mr_script = hdfs.path.join(wd, LOCAL_MR_SCRIPT)
+  hdfs.put(LOCAL_MR_SCRIPT, mr_script)
+  input_ = hdfs.path.join(wd, opt.input)
+  hdfs.put(opt.input, input_)
+  output = hdfs.path.join(wd, uuid.uuid4().hex)
 
   mr_options = {}
   mr_options.update(BASE_MR_OPTIONS)
   if opt.java_rr:
-    mr_options[PIPES_JAVA_RR] = "true"
+    mr_options["hadoop.pipes.java.recordreader"] = "true"
   mr_options["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
   d_options = build_d_options(mr_options)
   hadoop_pipes("%s -libjars %s -program %s -input %s -output %s" % (
-    d_options, JAR, script_hdfs, input_hdfs, opt.output
+    d_options, JAR_NAME, mr_script, input_, output
     ))
+  hdfs.get(output, OUTPUT)
+  hdfs.rmr(wd)
 
-  lfs.close()
-  fs.close()
+  return 0
 
 
 if __name__ == "__main__":
-  main()
+  sys.exit(main())
