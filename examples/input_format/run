@@ -91,14 +91,13 @@ def main():
 
   wd = "pydoop_test_input_format"
   hdfs.mkdir(wd)
-  mr_script = hdfs.path.join(wd, LOCAL_MR_SCRIPT)
+  mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
   hdfs.put(LOCAL_MR_SCRIPT, mr_script)
-  input_ = hdfs.path.join(wd, opt.input)
+  input_ = hdfs.path.join(wd, os.path.basename(opt.input))
   hdfs.put(opt.input, input_)
   output = hdfs.path.join(wd, uuid.uuid4().hex)
 
-  mr_options = {}
-  mr_options.update(BASE_MR_OPTIONS)
+  mr_options = BASE_MR_OPTIONS.copy()
   if opt.java_rr:
     mr_options["hadoop.pipes.java.recordreader"] = "true"
   mr_options["pydoop.input.issplitable"] = "true" if opt.splitable else "false"

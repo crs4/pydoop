@@ -16,15 +16,14 @@ class Mapper(pp.Mapper):
     jc = context.getJobConf()
     pu.jc_configure(self, jc, "ipcount.excludes", "excludes_fn", "")
     if self.excludes_fn:
-      f = open(self.excludes_fn)
-      self.excludes = set([line.strip() for line in f])
-      f.close()
+      with open(self.excludes_fn) as f:
+        self.excludes = set(l.strip() for l in f if not l.isspace())
     else:
-      self.excludes = set([])
+      self.excludes = set()
     context.setStatus("Initialization done")
 
   def map(self, context):
-    ip = context.getInputValue().split(None,1)[0]
+    ip = context.getInputValue().split(None, 1)[0]
     if ip not in self.excludes:
       context.emit(ip, "1")
     else:

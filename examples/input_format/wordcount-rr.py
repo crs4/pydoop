@@ -3,8 +3,7 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import logging, struct
-logging.basicConfig(level=logging.DEBUG)
+import struct
 
 import pydoop.pipes as pp
 import pydoop.hdfs as hdfs
@@ -33,19 +32,15 @@ class Reader(pp.RecordReader):
   """
   def __init__(self, context):
     super(Reader, self).__init__()
-    self.logger = logging.getLogger("Reader")
     self.isplit = pp.InputSplit(context.getInputSplit())
-    for a in "filename", "offset", "length":
-      self.logger.debug("isplit.%s = %r" % (a, getattr(self.isplit, a)))
     self.file = hdfs.open(self.isplit.filename)
-    self.logger.debug("readline chunk size = %r" % self.file.chunk_size)
     self.file.seek(self.isplit.offset)
     self.bytes_read = 0
     if self.isplit.offset > 0:
       discarded = self.file.readline()  # read by reader of previous split
       self.bytes_read += len(discarded)
 
-  def __del__(self):
+  def close(self):
     self.file.close()
     self.file.fs.close()
     
@@ -64,5 +59,4 @@ class Reader(pp.RecordReader):
 
 
 if __name__ == "__main__":
-  pp.runTask(pp.Factory(Mapper, Reducer,
-                  record_reader_class=Reader))
+  pp.runTask(pp.Factory(Mapper, Reducer, record_reader_class=Reader))
