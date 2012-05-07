@@ -95,8 +95,8 @@ shows some of these functionalities:
 See the :ref:`tutorial <hdfs-api-examples>` for more examples.
 
 
-Contents:
-==========================
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
@@ -110,10 +110,10 @@ Contents:
    self_contained
    for_dumbo_users
 
+
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

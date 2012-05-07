@@ -8,7 +8,7 @@ GENERATED_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc) DEFAULT_HADOOP
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
 
-.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean uninstall_user
+.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean uninstall_user logo favicon
 
 all: build
 
@@ -30,7 +30,25 @@ install_user: build
 install_user_py: build_py
 	python setup.py install --skip-build --user
 
-docs:
+logo: docs/_static/logo.png
+
+favicon: docs/_static/favicon.ico
+
+docs/_static/logo.png: logo/logo.svg
+#	direct conversion to final size with inkscape does not look good
+	inkscape -z -D -f $< -e logo/logo.png -w 800 # -b '#ffffff'
+	convert -resize 200x logo/logo.png $@
+	rm -f logo/logo.png
+
+docs/_static/favicon.ico: logo/favicon.svg
+	inkscape -z -D -f $< -e favicon-256.png -w 256 -h 256
+	for i in 16 32 64 128; do \
+	  convert favicon-256.png -resize $${i}x$${i} favicon-$${i}.png; \
+	done
+	convert favicon-16.png favicon-32.png favicon-64.png favicon-128.png $@
+	rm -f favicon-*.png
+
+docs: logo favicon
 	make -C docs html
 
 docs_py:
@@ -59,6 +77,7 @@ dist: docs
 clean:
 	rm -rf build
 	rm -f $(GENERATED_FILES)
+	rm -f docs/_static/logo.png docs/_static/favicon.ico
 	make -C docs clean
 	make -C examples/self_contained clean
 	make -C examples/wordcount/c++ clean
