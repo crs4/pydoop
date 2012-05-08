@@ -51,6 +51,13 @@ def complete_mod_name(module, hadoop_version_tuple):
     __package__, module, "_".join(map(str, hadoop_version_tuple))
     )
 
+def jar_path():
+  possible_path = os.path.join(os.path.dirname(__file__), __jar_name__)
+  if os.path.exists(possible_path):
+    return possible_path
+  else:
+    return None
+
 
 def import_version_specific_module(name):
   low_level_mod = complete_mod_name(name, hadoop_version())

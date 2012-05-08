@@ -48,6 +48,16 @@ class pydoop_tc(unittest.TestCase):
     if os.environ.has_key('HADOOP_CONF_DIR'):
       self.assertEqual(os.environ['HADOOP_CONF_DIR'], pydoop.hadoop_conf())
 
+  def test_pydoop_jar_path(self):
+    jar_path = pydoop.jar_path()
+    if jar_path is not None:
+      self.assertTrue(os.path.exists(jar_path))
+      directory, filename = os.path.split(jar_path)
+      self.assertEqual(pydoop.__jar_name__, filename)
+      # ensure the parent directory is called pydoop
+      self.assertEqual('pydoop', os.path.basename(directory))
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(pydoop_tc('test_get_hadoop_version'))
@@ -56,6 +66,7 @@ def suite():
   suite.addTest(pydoop_tc('test_version'))
   suite.addTest(pydoop_tc('test_home'))
   suite.addTest(pydoop_tc('test_conf'))
+  suite.addTest(pydoop_tc('test_pydoop_jar_path'))
   return suite
 
 
