@@ -41,6 +41,7 @@ def hadoop_home():
 
 BOOST_PYTHON = "boost_python"
 # Quick fix for Gentoo with boost >= 1.48.0-r1
+# This will not be necessary once we write an ebuild
 try:
   import portage
 except ImportError:

@@ -6,11 +6,9 @@
 # Do not run this directly: run 'make run' instead.
 
 import sys, os, subprocess as sp
-from pydoop.hadoop_utils import get_hadoop_version
 
 
 HADOOP_HOME = os.environ.get("HADOOP_HOME", "/opt/hadoop")
-HADOOP_VERSION = get_hadoop_version(HADOOP_HOME)
 HADOOP = os.path.join(HADOOP_HOME, "bin/hadoop")
 try:
   HDFS_WD = os.environ["HDFS_WORK_DIR"]
@@ -19,25 +17,12 @@ except KeyError:
 MR_SCRIPT = "%s/bin/cv" % HDFS_WD
 
 
-if HADOOP_VERSION < (0,21,0):
-  MR_JOB_NAME = "mapred.job.name"
-  PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
-  PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
-  MR_CACHE_ARCHIVES = "mapred.cache.archives"
-  MR_CREATE_SYMLINK = "mapred.create.symlink"
-else:
-  MR_JOB_NAME = "mapreduce.job.name"
-  PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
-  PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
-  MR_CACHE_ARCHIVES = "mapreduce.job.cache.archives"
-  MR_CREATE_SYMLINK = "mapreduce.job.cache.symlink.create"
-
 MR_OPTIONS = {
-  MR_JOB_NAME: "cv",
-  PIPES_JAVA_RR: "true",
-  PIPES_JAVA_RW: "true",
-  MR_CACHE_ARCHIVES: "%s/pydoop.tgz#pydoop,%s/cv.tgz#cv" % (HDFS_WD, HDFS_WD),
-  MR_CREATE_SYMLINK: "yes",
+  "mapred.job.name": "cv",
+  "hadoop.pipes.java.recordreader": "true",
+  "hadoop.pipes.java.recordwriter": "true",
+  "mapred.cache.archives": "%s/pydoop.tgz#pydoop,%s/cv.tgz#cv" % (HDFS_WD, HDFS_WD),
+  "mapred.create.symlink": "yes",
   }
 
 
@@ -54,9 +39,12 @@ def hadoop_pipes(pipes_opts, hadoop=HADOOP):
 
 
 def main(argv):
-  d_options = build_d_options(MR_OPTIONS)
+  try:
+    output = argv[1]
+  except IndexError:
+    output = "%s/output" % HDFS_WD
   input_ = "%s/input" % HDFS_WD
-  output = "%s/output" % HDFS_WD
+  d_options = build_d_options(MR_OPTIONS)
   hadoop_pipes("%s -program %s -input %s -output %s" % (
     d_options, MR_SCRIPT, input_, output
     ))

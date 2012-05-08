@@ -21,11 +21,11 @@ CV_BUILD_DIR := $(BASE_BUILD_DIR)/cv
 CV_DIR := $(CV_BUILD_DIR)/cv
 CV_TAR := $(CV_DIR)/cv.tgz
 
-HDFS_WORK_DIR := test_self_contained
+HDFS_WORK_DIR := pydoop_test_self_contained
 INPUT_DIR := ../input
 
 
-.PHONY: all pydoop cv upload run clean distclean dfsclean
+.PHONY: all pydoop cv upload run get clean distclean dfsclean
 
 all: upload
 pydoop: $(PYDOOP_TAR)
@@ -46,11 +46,13 @@ upload: pydoop cv dfsclean
 	$(HADOOP) dfs -put bin $(HDFS_WORK_DIR)/bin
 	$(HADOOP) dfs -put $(INPUT_DIR) $(HDFS_WORK_DIR)/input
 
-run: run_app upload
-	HDFS_WORK_DIR=$(HDFS_WORK_DIR) ./$<
+run: self_contained.py upload
+	HDFS_WORK_DIR=$(HDFS_WORK_DIR) python $< $(HDFS_WORK_DIR)/output
+	$(HADOOP) dfs -get $(HDFS_WORK_DIR)/output output
+	sort -m output/part*
 
 clean:
-	rm -rf $(BASE_BUILD_DIR)
+	rm -rf $(BASE_BUILD_DIR) output
 
 distclean: clean
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;

@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+import os, uuid, tempfile
+import subprocess as sp
+
+import pydoop.hdfs as hdfs
+
+PYDOOP_SCRIPT = "../../scripts/pydoop_script"
+SCRIPT = "base_histogram.py"
+LOCAL_INPUT = "example.sam"
+HDFS_INPUT = uuid.uuid4().hex
+HDFS_OUTPUT = uuid.uuid4().hex
+LOCAL_OUTPUT = tempfile.mkdtemp()
+
+
+def main():
+  hdfs.put(LOCAL_INPUT, HDFS_INPUT)
+  args = [
+    PYDOOP_SCRIPT,
+    SCRIPT,
+    HDFS_INPUT,
+    HDFS_OUTPUT,
+    ]
+  retcode = sp.call(args)
+  if retcode:
+    raise RuntimeError("Error running pydoop_script")
+  hdfs.get(HDFS_OUTPUT, LOCAL_OUTPUT)
+  for d in HDFS_INPUT, HDFS_OUTPUT:
+    hdfs.rmr(d)
+  print "output downloaded to %r" % (LOCAL_OUTPUT,)
+  output_dir = os.path.join(LOCAL_OUTPUT, HDFS_OUTPUT)
+  out_fnames = sorted([os.path.join(output_dir, fn)
+                       for fn in os.listdir(output_dir)
+                       if fn.startswith("part-")])
+  out_files = map(open, out_fnames)
+  result = "".join(f.read() for f in out_files)
+  for f in out_files:
+    f.close()
+  print result
+
+
+if __name__ == "__main__":
+  main()

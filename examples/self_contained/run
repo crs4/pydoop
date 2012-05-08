@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# export JAVA_HOME=/my/java/home
+# export HADOOP_HOME=/my/hadoop/home
+# export HADOOP_CONF_DIR=/my/hadoop/conf/dir
+
+make run
+make dfsclean

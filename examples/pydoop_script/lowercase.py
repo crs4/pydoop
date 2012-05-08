@@ -1,8 +1,8 @@
+"""
+Convert text to lowercase.
 
-# Convert text to lowercase.
-# Input: text
-# Output: lowercase text
+Set --kv-separator to the empty string when running this example.
+"""
 
-# set --kv-separator ''
-def mapper(ignored, record, writer):
-	writer.emit("", record.lower())
+def mapper(_, record, writer):
+  writer.emit("", record.lower())
