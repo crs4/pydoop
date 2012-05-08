@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 

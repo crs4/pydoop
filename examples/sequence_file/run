@@ -1,0 +1,117 @@
+#!/usr/bin/env python
+
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
+"""
+Run a word count on the input, storing counts as 32-bit integers in
+Hadoop SequenceFiles; subsequently, run a MapReduce application that
+filters out those words whose count falls below a specified threshold.
+
+The purpose of this example is to demonstrate the usage of
+SequenceFileInputFormat and SequenceFileOutputFormat.
+"""
+
+import os, optparse, subprocess as sp, uuid
+
+import pydoop.hadoop_utils as hu
+import pydoop.hdfs as hdfs
+
+
+HADOOP = hu.get_hadoop_exec()
+WD = "pydoop_test_sequence_file"
+OUTPUT = "output"
+LOCAL_WC_SCRIPT = "bin/wordcount.py"
+LOCAL_FILTER_SCRIPT = "bin/filter.py"
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "../input"))
+
+MR_JOB_NAME = "mapred.job.name"
+MR_HOME_DIR = 'mapreduce.admin.user.home.dir'
+PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
+PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
+MR_OUT_COMPRESS_TYPE = "mapred.output.compression.type"
+MR_REDUCE_TASKS = "mapred.reduce.tasks"
+MR_IN_CLASS = "mapred.input.format.class"
+MR_OUT_CLASS = "mapred.output.format.class"
+MRLIB = "org.apache.hadoop.mapred"
+
+BASE_MR_OPTIONS = {
+  PIPES_JAVA_RR: "true",
+  PIPES_JAVA_RW: "true",
+  MR_HOME_DIR: os.path.expanduser("~"),
+  }
+
+
+def build_d_options(opt_dict):
+  d_options = []
+  for name, value in opt_dict.iteritems():
+    d_options.append("-D %s=%s" % (name, value))
+  return " ".join(d_options)
+
+
+def hadoop_pipes(pipes_opts, hadoop=HADOOP):
+  cmd = "%s pipes %s" % (hadoop, pipes_opts)
+  print "running '%s'" % cmd
+  p = sp.Popen(cmd, shell=True)
+  return os.waitpid(p.pid, 0)[1]
+
+
+def make_parser():
+  parser = optparse.OptionParser(usage="%prog [OPTIONS]")
+  parser.add_option("-i", dest="input", metavar="STRING",
+                    help="input dir/file ['%default']", default=DEFAULT_INPUT)
+  parser.add_option("-t", type="int", dest="threshold", metavar="INT",
+                    help="min word occurrence [%default]", default=10)
+  return parser
+
+
+def run_wc(opt):
+  options = BASE_MR_OPTIONS.copy()
+  options.update({
+    MR_JOB_NAME: "wordcount",
+    MR_OUT_CLASS: "%s.SequenceFileOutputFormat" % MRLIB,
+    MR_OUT_COMPRESS_TYPE: "NONE",
+    })
+  script, input_, output = [hdfs.path.join(WD, uuid.uuid4().hex)
+                           for _ in xrange(3)]
+  hdfs.put(LOCAL_WC_SCRIPT, script)
+  hdfs.put(opt.input, input_)
+  hadoop_pipes("%s -program %s -input %s -output %s" % (
+    build_d_options(options), script, input_, output
+    ))
+  return output
+
+
+def run_filter(opt, input_):
+  options = BASE_MR_OPTIONS.copy()
+  options.update({
+    MR_JOB_NAME: "filter",
+    MR_IN_CLASS: "%s.SequenceFileInputFormat" % MRLIB,
+    MR_REDUCE_TASKS: "0",
+    "filter.occurrence.threshold": opt.threshold,
+    })
+  script, output = [hdfs.path.join(WD, uuid.uuid4().hex) for _ in xrange(2)]
+  hdfs.put(LOCAL_FILTER_SCRIPT, script)
+  hadoop_pipes("%s -program %s -input %s -output %s" % (
+    build_d_options(options), script, input_, output
+    ))
+  return output
+
+
+def main():
+
+  parser = make_parser()
+  opt, _ = parser.parse_args()
+
+  hdfs.mkdir(WD)
+  wc_output = run_wc(opt)
+  filter_output = run_filter(opt, wc_output)
+  hdfs.get(filter_output, OUTPUT)
+  print "output copied to %r" % (OUTPUT,)
+  hdfs.rmr(WD)
+
+
+if __name__ == "__main__":
+  main()

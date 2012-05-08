@@ -4,15 +4,14 @@
 # END_COPYRIGHT
 
 """
-A more comprehensive example that shows how to use most mapreduce and
-hdfs features. The RecordReader, RecordWriter and Partitioner classes
-shown here mimic the behavior of the default ones.
+A comprehensive example that shows how to implement optional MapReduce
+components and use the hdfs module. The RecordReader, RecordWriter and
+Partitioner classes shown here mimic the behavior of the default ones.
 """
 
-import sys, os, logging, struct
+import sys, logging, struct
 logging.basicConfig(level=logging.DEBUG)
 
-import pydoop
 import pydoop.pipes as pp
 from pydoop.utils import jc_configure, jc_configure_int
 import pydoop.hdfs as hdfs
@@ -134,10 +133,10 @@ class Partitioner(pp.Partitioner):
 
 
 if __name__ == "__main__":
-    pp.runTask(pp.Factory(
-      Mapper, Reducer,
-      record_reader_class=Reader,
-      record_writer_class=Writer,
-      partitioner_class=Partitioner,
-      combiner_class=Reducer
-      ))
+  pp.runTask(pp.Factory(
+    Mapper, Reducer,
+    record_reader_class=Reader,
+    record_writer_class=Writer,
+    partitioner_class=Partitioner,
+    combiner_class=Reducer
+    ))

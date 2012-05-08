@@ -1,9 +1,5 @@
-#!/usr/bin/env python
-
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
-
-# Do not run this directly: run 'make run' instead.
 
 import sys, os, subprocess as sp
 

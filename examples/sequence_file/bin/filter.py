@@ -4,8 +4,7 @@
 # END_COPYRIGHT
 
 """
-A trivial application that filters out words whose occurrence falls
-below a specified value.
+Filter out words whose occurrence falls below a specified value.
 """
 
 import struct

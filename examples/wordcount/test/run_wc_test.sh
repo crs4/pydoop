@@ -3,8 +3,6 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-# You need a working Hadoop cluster to run this.
-
 nargs=1
 if [ $# -ne $nargs ]; then
     echo "Usage: $0 EXAMPLE_SCRIPT_BASENAME (e.g., wordcount-full.py)"

@@ -8,6 +8,7 @@ This example includes only the bare minimum required to run
 wordcount. See wordcount-full.py for an example that uses counters,
 RecordReader, etc.
 """
+
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
 
 
