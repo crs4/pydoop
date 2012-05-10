@@ -338,16 +338,21 @@ class pydoop_build(distutils_build):
     package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
     if not os.path.exists(class_dir):
       os.mkdir(class_dir)
-    f = "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
-    compile_cmd = "javac -classpath %s -d '%s' %s" % (classpath, class_dir, f)
-    package_cmd = "jar -cf %s -C %s ./it" % (package_path, class_dir)
+    java_files = [
+      "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java",
+      "src/it/crs4/pydoop/pipes/*",
+    ]
     log.info("Compiling Java classes")
-    log.debug("Command: %s", compile_cmd)
-    ret = os.system(compile_cmd)
-    if ret:
-      raise DistutilsSetupError(
-        "Error compiling java component.  Command: %s" % compile_cmd
-        )
+    for f in java_files:
+      compile_cmd = "javac -classpath %s -d '%s' %s" % (classpath, class_dir, f)
+      log.debug("Command: %s", compile_cmd)
+      ret = os.system(compile_cmd)
+      if ret:
+        raise DistutilsSetupError(
+          "Error compiling java component.  Command: %s" % compile_cmd
+          )
+    package_cmd = "jar -cf %(package_path)s -C %(class_dir)s ./it" % \
+        { 'package_path':package_path, 'class_dir': class_dir }
     log.info("Packaging Java classes")
     log.debug("Command: %s", package_cmd)
     ret = os.system(package_cmd)
