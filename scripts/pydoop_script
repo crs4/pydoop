@@ -243,7 +243,7 @@ class PydoopScript(object):
             module.write(local_module.read())
         return hadut.run_pipes(
           remote_pipes_bin, self.options.input, self.options.output,
-          more_args=self.left_over_args, properties=self.properties
+          more_args=pipes_args, properties=self.properties
           )
       finally:
         try:
