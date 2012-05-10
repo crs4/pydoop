@@ -7,8 +7,11 @@ available via the Hadoop shell.
 """
 
 import os, subprocess, uuid
+import pydoop
 import pydoop.hadoop_utils as hu
+import pydoop.hdfs as hdfs
 
+import sys
 
 GENERIC_ARGS = frozenset([
   "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
@@ -185,13 +188,41 @@ def run_class(class_name, args=None, properties=None, classpath=None):
 
 
 def run_pipes(executable, input_path, output_path, more_args=None,
-              properties=None):
+              properties=None, force_pydoop_submitter=False):
   """
   Run a pipes command.
 
   ``more_args`` (after setting input/output path) and ``properties``
   are passed to :func:`run_cmd`.
+
+  If not specified otherwise, this function sets the properties
+  hadoop.pipes.java.recordreader and hadoop.pipes.java.recordwriter to 'true'.
+
+  This function works around a bug in Hadoop pipes that manifests itself when
+  running versions of Hadoop with security (i.e. >= 0.20.203) and using the
+  local file system as the default (no hdfs); see
+  https://issues.apache.org/jira/browse/MAPREDUCE-4000.
+  In those set-ups, the function uses Pydoop's own pipes Submitter application.
+  You can force the use of Pydoop's Submitter by passing the argument
+  force_pydoop_submitter=True.
   """
+  if properties is None:
+    properties = {}
+  # set the record reader and writer to use java by default
+  properties['hadoop.pipes.java.recordreader'] = properties.get('hadoop.pipes.java.recordreader', 'true')
+  properties['hadoop.pipes.java.recordwriter'] = properties.get('hadoop.pipes.java.recordwriter', 'true')
+
+  if force_pydoop_submitter:
+    use_pydoop_submit = True
+  else:
+    use_pydoop_submit = False
+    ver = pydoop.hadoop_version()
+    if ver >= (0,20,203): # when Hadoop introduced security
+      # see if the default file system is file://
+      default_fs = hdfs.hdfs("default", 0)
+      root_path_name = default_fs.get_path_info("/")['name']
+      use_pydoop_submit = root_path_name.startswith("file:/")
+
   if path_exists(executable):
     hdfs_executable = executable
   elif os.path.isfile(executable):
@@ -199,12 +230,20 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     dfs(["-put", executable, hdfs_executable], properties)
   else:
     raise ValueError("%s not found" % executable)
-  args = ["-input", input_path, "-output", output_path]
+
+  args = [ "-program", hdfs_executable,
+           "-input",   input_path,
+           "-output",  output_path ]
   if more_args is not None:
     args.extend(more_args)
-  properties = properties.copy() if properties is not None else {}
-  properties['hadoop.pipes.executable'] = hdfs_executable
-  return run_cmd("pipes", args, properties)
+
+  if use_pydoop_submit:
+    submitter = "it.crs4.pydoop.pipes.Submitter"
+    pydoop_jar = pydoop.jar_path()
+    args.extend(("-libjars", pydoop_jar))
+    return run_class(submitter, args, properties, classpath=pydoop_jar)
+  else:
+    return run_cmd("pipes", args, properties)
 
 
 def find_jar(jar_name, root_path=None):
