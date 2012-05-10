@@ -7,11 +7,11 @@ available via the Hadoop shell.
 """
 
 import os, subprocess, uuid
+
 import pydoop
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 
-import sys
 
 GENERIC_ARGS = frozenset([
   "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
@@ -179,7 +179,7 @@ def run_class(class_name, args=None, properties=None, classpath=None):
     old_classpath = os.getenv('HADOOP_CLASSPATH', '')
     if isinstance(classpath, basestring):
       classpath = [classpath]
-    classpath_list = [cp.strip() for i,s in enumerate(classpath) for cp in s.split(":")]
+    classpath_list = [cp.strip() for s in classpath for cp in s.split(":")]
     os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
   res = run_cmd(class_name, args, properties)
   if old_classpath is not None:
@@ -200,7 +200,7 @@ def run_pipes(executable, input_path, output_path, more_args=None,
 
   This function works around a bug in Hadoop pipes that manifests itself when
   running versions of Hadoop with security (i.e. >= 0.20.203) and using the
-  local file system as the default (no hdfs); see
+  local file system as the default (no HDFS); see
   https://issues.apache.org/jira/browse/MAPREDUCE-4000.
   In those set-ups, the function uses Pydoop's own pipes Submitter application.
   You can force the use of Pydoop's Submitter by passing the argument
@@ -208,21 +208,19 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   """
   if properties is None:
     properties = {}
-  # set the record reader and writer to use java by default
-  properties['hadoop.pipes.java.recordreader'] = properties.get('hadoop.pipes.java.recordreader', 'true')
-  properties['hadoop.pipes.java.recordwriter'] = properties.get('hadoop.pipes.java.recordwriter', 'true')
-
+  properties.setdefault('hadoop.pipes.java.recordreader', 'true')
+  properties.setdefault('hadoop.pipes.java.recordwriter', 'true')
   if force_pydoop_submitter:
     use_pydoop_submit = True
   else:
     use_pydoop_submit = False
     ver = pydoop.hadoop_version()
-    if ver >= (0,20,203): # when Hadoop introduced security
+    if ver >= (0, 20, 203): # when Hadoop introduced security
       # see if the default file system is file://
       default_fs = hdfs.hdfs("default", 0)
       root_path_name = default_fs.get_path_info("/")['name']
+      default_fs.close()
       use_pydoop_submit = root_path_name.startswith("file:/")
-
   if path_exists(executable):
     hdfs_executable = executable
   elif os.path.isfile(executable):
@@ -230,13 +228,13 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     dfs(["-put", executable, hdfs_executable], properties)
   else:
     raise ValueError("%s not found" % executable)
-
-  args = [ "-program", hdfs_executable,
-           "-input",   input_path,
-           "-output",  output_path ]
+  args = [
+    "-program", hdfs_executable,
+    "-input", input_path,
+    "-output", output_path
+    ]
   if more_args is not None:
     args.extend(more_args)
-
   if use_pydoop_submit:
     submitter = "it.crs4.pydoop.pipes.Submitter"
     pydoop_jar = pydoop.jar_path()
