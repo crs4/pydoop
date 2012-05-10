@@ -176,9 +176,8 @@ def run_class(class_name, args=None, properties=None, classpath=None):
     old_classpath = os.getenv('HADOOP_CLASSPATH', '')
     if isinstance(classpath, basestring):
       classpath = [classpath]
-    for i, s in enumerate(classpath):
-      classpath[i] = [cp.strip() for cp in s.split(":")]
-    os.environ['HADOOP_CLASSPATH'] = ":".join(classpath)
+    classpath_list = [cp.strip() for i,s in enumerate(classpath) for cp in s.split(":")]
+    os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
   res = run_cmd(class_name, args, properties)
   if old_classpath is not None:
     os.environ['HADOOP_CLASSPATH'] = old_classpath
