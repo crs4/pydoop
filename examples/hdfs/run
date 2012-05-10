@@ -6,18 +6,13 @@
 #export HADOOP_CONF_DIR=/my/hadoop/conf
 export TEST_ROOT=pydoop_test_tree
 
-nargs=2
-if [ $# -ne $nargs ]; then
-    echo "Usage: $0 TREE_DEPTH TREE_SPAN"
-    exit 2
-fi
-DEPTH=$1
-SPAN=$2
+DEPTH=${1:-3}
+SPAN=${2:-4}
 
 echo "Waiting for HDFS to exit safe mode..."
 hadoop dfsadmin -safemode wait
 
-echo "Generating tree..."
+echo "Generating tree (depth=${DEPTH}, span=${SPAN})..."
 python treegen.py ${DEPTH} ${SPAN} || exit 1
 
 echo "Computing usage by block size..."

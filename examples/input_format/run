@@ -89,7 +89,7 @@ def main():
   if retval:
     return retval
 
-  wd = "pydoop_test_input_format"
+  wd = "pydoop_test_input_format_%s" % uuid.uuid4().hex
   hdfs.mkdir(wd)
   mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
   hdfs.put(LOCAL_MR_SCRIPT, mr_script)

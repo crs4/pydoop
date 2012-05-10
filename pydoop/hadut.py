@@ -44,7 +44,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
   Run a Hadoop command.
 
   If the command succeeds, return its output; if it fails, raise a
-  ``RuntimeError`` with its output as the message.
+  ``RuntimeError`` with its error output as the message.
 
   .. code-block:: python
 
@@ -73,10 +73,10 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
     gargs = _pop_generic_args(args)
     for seq in gargs, args:
       _args.extend(map(str, seq))
-  p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-  output, _ = p.communicate()
+  p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  output, error = p.communicate()
   if p.returncode:
-    raise RuntimeError(output)
+    raise RuntimeError(error)
   return output
 
 
@@ -141,10 +141,10 @@ def run_jar(jar_name, more_args=None, properties=None):
 
   .. code-block:: python
 
-    >>> import pydoop
+    >>> import glob, pydoop
     >>> hadoop_home = pydoop.hadoop_home()
-    >>> hadoop_ver = ".".join(map(str, hu.get_hadoop_version()))
-    >>> jar_name = '%s/hadoop-%s-examples.jar' % (hadoop_home, hadoop_ver)    
+    >>> hadoop_ver = '.'.join(map(str, hu.get_hadoop_version()))
+    >>> jar_name = glob.glob('%s/*examples*.jar' % hadoop_home)[0]
     >>> more_args = ['wordcount']
     >>> try:
     ...     run_jar(jar_name, more_args=more_args)

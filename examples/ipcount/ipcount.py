@@ -84,7 +84,7 @@ def main(argv):
   if opt.output is not sys.stdout:
     opt.output = open(opt.output, 'w')
 
-  wd = "pydoop_test_ipcount"
+  wd = "pydoop_test_ipcount_%s" % uuid.uuid4().hex
   hdfs.mkdir(wd)
   mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
   hdfs.put(LOCAL_MR_SCRIPT, mr_script)

@@ -19,7 +19,7 @@ import pydoop.hdfs as hdfs
 
 
 HADOOP = hu.get_hadoop_exec()
-WD = "pydoop_test_sequence_file"
+WD = "pydoop_test_sequence_file_%s" % uuid.uuid4().hex
 OUTPUT = "output"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"
 LOCAL_FILTER_SCRIPT = "bin/filter.py"

@@ -162,7 +162,7 @@ def create_full_pipes_ext(path_finder):
       OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
       },
     }
-  include_dirs = path_finder.mapred_inc + ["/usr/include/openssl"]
+  include_dirs = path_finder.mapred_inc
   libraries = ["pthread", BOOST_PYTHON, "ssl"]
   patches[serial_utils_cc][OLD_SERIAL_UTILS_INCLUDE] = NEW_SERIAL_UTILS_INCLUDE
   patches[pipes_cc][OLD_PIPES_CC_INCLUDE] = NEW_PIPES_CC_INCLUDE

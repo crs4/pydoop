@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, uuid, tempfile
+import os, uuid, tempfile, shutil
 import subprocess as sp
 
 import pydoop.hdfs as hdfs
@@ -37,6 +37,7 @@ def main():
   for f in out_files:
     f.close()
   print result
+  shutil.rmtree(LOCAL_OUTPUT)
 
 
 if __name__ == "__main__":

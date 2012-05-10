@@ -19,13 +19,16 @@ Prerequisites
 
 In order to build and install Pydoop, you need the following software:
 
-* `Python <http://www.python.org>`_ version 2.7
-* `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.x or 1.0
-  (tested with 1.0.0) or `Cloudera Hadoop <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ CDH3 Update 0
+* `Python <http://www.python.org>`_ version 2.7 (or 2.6 with
+  backports [#]_)
+* `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20 (tested
+  with 0.20.2) or 1.0 (tested with 1.0.2) or `CDH
+  <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 3
+  (tested with update 3).
 * The source code for the version of Hadoop you're using
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library)
-* Only if you're using Hadoop 0.20.203.0: `openssl <http://www.openssl.org>`_
+* `OpenSSL <http://www.openssl.org>`_ (not required with Hadoop 0.20)
 
 These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
@@ -39,17 +42,16 @@ On Ubuntu
 On Ubuntu or Debian you can install the dependencies with the following
 command::
 
-  sudo apt-get install python libboost-python-dev
+  sudo apt-get install python libboost-python-dev openssl
 
 
 On Gentoo
 .........
 
-On Gentoo, emerge ``dev-libs/boost`` with the ``python`` use flag on::
+On Gentoo, emerge boost with the ``python`` use flag on and openssl::
 
   echo 'dev-libs/boost python' >> /etc/portage/package.use
-  emerge boost
-
+  emerge boost openssl
 
 
 Building Instructions
@@ -279,8 +281,6 @@ superuser*::
 
   python all_tests.py
 
-.. note:: You can also separately run the pydoop.pipes and pydoop.hdfs tests with ``python all_tests_pipes.py`` and ``python all_tests_hdfs.py``\ .
-
 
 Superuser privileges
 ....................
@@ -306,3 +306,11 @@ you can either:
 
 If you can't acquire superuser privileges to run the tests, just keep in mind
 that the failures reported may be due to this reason.
+
+
+.. rubric:: Footnotes
+
+.. [#] To make Pydoop work with Python 2.6 you need to install the
+   following additional modules: `importlib
+   <http://pypi.python.org/pypi/importlib>`_ and `argparse
+   <http://pypi.python.org/pypi/argparse>`_.
