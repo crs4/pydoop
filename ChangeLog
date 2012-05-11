@@ -1,3 +1,10 @@
+2012-05-11  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hdfs/file.py: added local_file, an extension of the
+	standard Python file object with the same interface as
+	hdfs_file. local_file objects can be used for connections to the
+	local file system to avoid JVM overhead during I/O.
+
 2012-04-27  simleo  <simleo@simleo-U36SD>
 
 	* pydoop/hadoop_utils.py: changed PathFinder to cache

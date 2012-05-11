@@ -11,7 +11,7 @@ import os, re, socket
 import pydoop
 hdfs_ext = pydoop.import_version_specific_module("_hdfs")
 import common
-from file import hdfs_file
+from file import hdfs_file, local_file
 
 
 class _FSStatus(object):
@@ -63,6 +63,7 @@ class hdfs(object):
   **Note:** when connecting to the local file system, ``user`` is
   ignored (i.e., it will always be the current UNIX user).
   """
+  SUPPORTED_OPEN_MODES = frozenset([os.O_RDONLY, os.O_WRONLY, "r", "w"])
   HDFS_WD_PATTERN = re.compile(r'hdfs://([^:]+):(\d+)/user/([^/]+)')
   _CACHE = {}
   _ALIASES = {"host": {}, "port": {}, "user": {}}
@@ -183,13 +184,19 @@ class hdfs(object):
     :return: handle to the open file
     """
     _complain_ifclosed(self.closed)
+    if flags not in self.SUPPORTED_OPEN_MODES:
+      raise ValueError("opening mode %r not supported" % flags)
+    if not self.host:
+      if flags == os.O_RDONLY:
+        flags = "r"
+      elif flags == os.O_WRONLY:
+        flags = "w"
+      return local_file(self, path, flags)
     path = str(path)  # the C API does not handle unicodes
     if flags == "r":
       flags = os.O_RDONLY
     elif flags == "w":
       flags = os.O_WRONLY
-    if flags != os.O_RDONLY and flags != os.O_WRONLY:
-      raise ValueError("opening mode %r not supported" % flags)
     return hdfs_file(
       self.fs.open_file(path, flags, buff_size, replication, blocksize),
       self, path, flags, readline_chunk_size

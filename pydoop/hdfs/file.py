@@ -23,7 +23,7 @@ class hdfs_file(object):
   Objects from this class should not be instantiated directly.  The
   preferred way to open an HDFS file is with the :func:`open` function;
   alternatively, :meth:`hdfs.open_file` can be used.
-  """  
+  """
   ENDL = os.linesep
 
   def __init__(self, raw_hdfs_file, fs, name, flags, chunk_size=common.BUFSIZE):
@@ -126,7 +126,7 @@ class hdfs_file(object):
 
   def __iter__(self):
     return self
-  
+
   def available(self):
     """
     Number of bytes that can be read from this input stream without blocking.
@@ -136,7 +136,7 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.available()
-  
+
   def close(self):
     """
     Close the file.
@@ -147,7 +147,7 @@ class hdfs_file(object):
       if self.mode == "w":
         self.__size = self.fs.get_path_info(self.name)["size"]
       return retval
-  
+
   def pread(self, position, length):
     """
     Read ``length`` bytes of data from the file, starting from ``position``\ .
@@ -161,7 +161,7 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.pread(position, length)
-  
+
   def pread_chunk(self, position, chunk):
     """
     Works like :meth:`pread`\ , but data is stored in the writable
@@ -178,7 +178,7 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.pread_chunk(position, chunk)
-  
+
   def read(self, length=-1):
     """
     Read ``length`` bytes from the file.  If ``length`` is negative or
@@ -219,7 +219,7 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.read_chunk(chunk)
-  
+
   def seek(self, position, whence=os.SEEK_SET):
     """
     Seek to ``position`` in file.
@@ -239,7 +239,7 @@ class hdfs_file(object):
     position = max(0, position)
     self.__reset()
     return self.f.seek(position)
-  
+
   def tell(self):
     """
     Get the current byte offset in the file.
@@ -249,7 +249,7 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.tell()
-  
+
   def write(self, data):
     """
     Write ``data`` to the file.
@@ -261,7 +261,7 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.write(data)
-  
+
   def write_chunk(self, chunk):
     """
     Write data from buffer ``chunk`` to the file.
@@ -281,3 +281,63 @@ class hdfs_file(object):
     """
     _complain_ifclosed(self.closed)
     return self.f.flush()
+
+
+class local_file(file):
+
+  def __init__(self, fs, name, flags):
+    super(local_file, self).__init__(name, flags)
+    self.__fs = fs
+    self.__name = os.path.abspath(super(local_file, self).name)
+    self.__size = os.fstat(super(local_file, self).fileno()).st_size
+
+  @property
+  def fs(self):
+    return self.__fs
+
+  @property
+  def name(self):
+    return self.__name
+
+  @property
+  def size(self):
+    return self.__size
+
+  def write(self, data):
+    super(local_file, self).write(data)
+    return len(data)
+
+  def available(self):
+    _complain_ifclosed(self.closed)
+    return self.size
+
+  def close(self):
+    if self.mode == "w":
+      self.flush()
+      os.fsync(self.fileno())
+      self.__size = os.fstat(self.fileno()).st_size
+    super(local_file, self).close()
+
+  def pread(self, position, length):
+    _complain_ifclosed(self.closed)
+    old_pos = self.tell()
+    self.seek(position)
+    data = self.read(length)
+    self.seek(old_pos)
+    return data
+
+  def pread_chunk(self, position, chunk):
+    _complain_ifclosed(self.closed)
+    data = self.pread(position, len(chunk))
+    chunk.value = data
+    return len(data)
+
+  def read_chunk(self, chunk):
+    _complain_ifclosed(self.closed)
+    data = self.read(len(chunk))
+    chunk.value = data
+    return len(data)
+
+  def write_chunk(self, chunk):
+    _complain_ifclosed(self.closed)
+    return self.write(chunk.value)

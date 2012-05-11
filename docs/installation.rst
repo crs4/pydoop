@@ -79,16 +79,16 @@ Then, in the same shell::
   python setup.py build
 
 
-Hadoop installed from Cloudera packages
-.......................................
+Hadoop installed from Cloudera Debian packages
+..............................................
 
-If you have installed Hadoop on Ubuntu using the packages Cloudera
-provides, then run these commands::
+If you have installed Hadoop on Debian/Ubuntu using the packages
+Cloudera provides, you have to make sure that the source code is
+installed as well::
 
-  sudo apt-get install libhdfs0-dev libhdfs0 hadoop-source hadoop
-  tar xzf pydoop-*.tar.gz
-  cd pydoop-*
-  python setup.py build
+  sudo apt-get install libhdfs0-dev hadoop-source
+
+Then you can unpack and build Pydoop as shown above.
 
 
 Other setup
