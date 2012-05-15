@@ -254,7 +254,7 @@ class PathFinder():
 # object that includes all the information required for the build process.  In
 # particular, it includes all the relevant paths.
 #
-# The reason for the two-stage process is to delay verifying paths to when 
+# The reason for the two-stage process is to delay verifying paths to when
 # they're needed (build) and avoiding those checks for other commands (such
 # as clean).
 # ------------------------------------------------------------------------------
@@ -443,8 +443,9 @@ class pydoop_build(distutils_build):
       os.mkdir(class_dir)
     java_files = [
       "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java",
-      "src/it/crs4/pydoop/pipes/*",
       ]
+    if HADOOP_VERSION >= (1, 0, 0):
+      java_files.append("src/it/crs4/pydoop/pipes/*")
     log.info("Compiling Java classes")
     for f in java_files:
       compile_cmd = "javac -classpath %s -d '%s' %s" % (classpath, class_dir, f)
