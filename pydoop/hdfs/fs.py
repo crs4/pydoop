@@ -6,7 +6,7 @@ pydoop.hdfs.fs -- file system handles
 -------------------------------------
 """
 
-import os, re, socket
+import os, socket, urlparse
 
 import pydoop
 hdfs_ext = pydoop.import_version_specific_module("_hdfs")
@@ -40,6 +40,21 @@ def _get_ip(host, default=None):
   return ip if ip != "0.0.0.0" else default
 
 
+def _get_connection_info(host, port, user):
+  fs = hdfs_ext.hdfs_fs(host, port, user)
+  wd = fs.working_directory()
+  res = urlparse.urlparse(wd)
+  if res.scheme == "file":
+    h, p, u = "", 0, fs.get_path_info(wd)["owner"]
+  else:
+    try:
+      h, p = res.netloc.split(":")
+    except ValueError:
+      h, p = res.netloc, common.DEFAULT_PORT
+    u = res.path.split("/", 2)[2]
+  return h, int(p), u, fs
+
+
 class hdfs(object):
   """
   A handle to an HDFS instance.
@@ -64,7 +79,6 @@ class hdfs(object):
   ignored (i.e., it will always be the current UNIX user).
   """
   SUPPORTED_OPEN_MODES = frozenset([os.O_RDONLY, os.O_WRONLY, "r", "w"])
-  HDFS_WD_PATTERN = re.compile(r'hdfs://([^:]+):(\d+)/user/([^/]+)')
   _CACHE = {}
   _ALIASES = {"host": {}, "port": {}, "user": {}}
 
@@ -77,21 +91,12 @@ class hdfs(object):
     user = self._ALIASES["user"].get(user, user)
     return host, port, user
 
-  def __get_connection_info(self, host, port, user):
-    fs = hdfs_ext.hdfs_fs(host, port, user)
-    wd = fs.working_directory()
-    try:
-      h, p, u = self.HDFS_WD_PATTERN.match(wd).groups()
-    except AttributeError:
-      h, p, u = "", 0, fs.get_path_info(wd)["owner"]
-    return h, int(p), u, fs
-
   def __init__(self, host="default", port=0, user=None, groups=None):
     host, port, user = self.__canonize_hpu(host, port, user)
     try:
       self.__status = self._CACHE[(host, port, user)]
     except KeyError:
-      h, p, u, fs = self.__get_connection_info(host, port, user)
+      h, p, u, fs = _get_connection_info(host, port, user)
       aliasing_info = [] if user else [("user", u, user)]
       if h != "":
         aliasing_info.append(("port", p, port))

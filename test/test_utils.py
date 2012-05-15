@@ -2,6 +2,7 @@
 # END_COPYRIGHT
 
 import unittest, tempfile, os, stat, shutil, logging
+import subprocess as sp
 
 import pydoop
 import pydoop.utils as pu
@@ -147,15 +148,11 @@ class TestHadoopUtils(unittest.TestCase):
       fd = fo.fileno()
       os.fchmod(fd, os.fstat(fd).st_mode | stat.S_IXUSR)
       fo.write("#!/bin/bash\necho Hadoop %s\n" % self.hadoop_version)
-    self.orig_hadoop_home = os.getenv("HADOOP_HOME")
-    self.orig_path = os.getenv("PATH")
-    self.orig_hadoop_version = os.getenv("HADOOP_VERSION")
+    self.orig_env = os.environ.copy()
 
   def tearDown(self):
-    for var_name in "HADOOP_HOME", "PATH", "HADOOP_VERSION":
-      orig_var = getattr(self, "orig_%s" % var_name.lower())
-      if orig_var:
-        os.environ[var_name] = orig_var
+    os.environ.clear()
+    os.environ.update(self.orig_env)
     shutil.rmtree(self.hadoop_home)
 
   def test_get_version_tuple(self):
@@ -175,10 +172,14 @@ class TestHadoopUtils(unittest.TestCase):
     # hadoop home from environment
     os.environ["HADOOP_HOME"] = self.hadoop_home
     self.assertEqual(hu.get_hadoop_exec(), self.hadoop_exe)
-    # hadoop home from path
+    # no hadoop home in environment
     del os.environ["HADOOP_HOME"]
     os.environ["PATH"] = self.bindir
-    self.assertEqual(hu.get_hadoop_exec(), self.hadoop_exe)
+    hadoop_exec = hu.get_hadoop_exec()
+    cmd = sp.Popen([hadoop_exec, "version"], env=self.orig_env,
+                   stdout=sp.PIPE, stderr=sp.PIPE)
+    out, _ = cmd.communicate()
+    self.assertTrue(out.splitlines()[0].strip().lower().startswith("hadoop"))
 
   def test_get_hadoop_version(self):
     # hadoop version from environment

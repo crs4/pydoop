@@ -75,6 +75,7 @@ dist: docs
 	(cd $(EXPORT_DIR) && python setup.py sdist) && mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz . && rm -rf $(EXPORT_DIR)
 
 clean:
+	python setup.py clean
 	rm -rf build
 	rm -f $(GENERATED_FILES)
 	rm -f docs/_static/logo.png docs/_static/favicon.ico

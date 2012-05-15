@@ -1,26 +1,30 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-# Important environment variables
-# ---------------------------------
-#
-# The Pydoop setup looks in a number of default paths for what it
-# needs.  If necessary, you can override its behaviour or provide an
-# alternative path by exporting the environment variables below.
-#
-# HADOOP_HOME: tell setup where your Hadoop home is
-# HADOOP_SRC: tell setup where to find the Hadoop source, if it's not
-#     under HADOOP_HOME/src or /usr/src/hadoop-*
-# HADOOP_INCLUDE_PATHS: override the standard Hadoop include paths:
-#     src/c++/{pipes,utils}/api/hadoop
-#     /usr/include
-#     src/mapred/c++/Linux-{arch}/include/hadoop
-#     src/c++/Linux-{arch}/include/hadoop
-# JAVA_HOME: by default looks in /opt/sun-jdk and /usr/lib/jvm/java-6-sun
-# HADOOP_VERSION: override the version returned by running "hadoop
-#     version" (and avoid running the hadoop binary)
+"""
+Important environment variables
+-------------------------------
 
-import sys, os, platform, re, glob, shutil
+The Pydoop setup looks in a number of default paths for what it
+needs.  If necessary, you can override its behaviour or provide an
+alternative path by exporting the environment variables below::
+
+  JAVA_HOME, e.g., /opt/sun-jdk
+  HADOOP_HOME, e.g., /opt/hadoop-1.0.2
+  HADOOP_CPP_SRC, e.g., /usr/src/hadoop-0.20/c++
+  MAPRED_INCLUDE, HDFS_INCLUDE, HDFS_LINK: colon-separated directories
+    contaning, respectively, MapReduce header files, HDFS header files
+    and the HDFS C library.
+
+Other relevant environment variables include::
+
+  BOOST_PYTHON: name of the Boost.Python library, with the leading 'lib'
+    and the trailing extension stripped. Defaults to 'boost_python'.
+
+  HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
+"""
+
+import os, platform, re, glob, shutil
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as distutils_build_ext
@@ -31,45 +35,65 @@ from distutils.errors import DistutilsSetupError
 from distutils import log
 
 import pydoop
-import pydoop.hadoop_utils as hadoop_utils
+import pydoop.hadoop_utils as hu
 
-
-# DEFAULT_HADOOP_HOME must NOT be used at compile time
-def hadoop_home():
-  return pydoop.hadoop_home(fallback=None)
-
-
-BOOST_PYTHON = "boost_python"
-# Quick fix for Gentoo with boost >= 1.48.0-r1
-# This will not be necessary once we write an ebuild
-try:
-  import portage
-except ImportError:
-  pass
-else:
-  VARDB = portage.db[portage.settings["ROOT"]]["vartree"].dbapi
-  PKG_LIST = VARDB.cp_list("dev-libs/boost")
-  if len(PKG_LIST) == 0:
-    raise ValueError("boost not installed")
-  elif len(PKG_LIST) == 1:
-    PKG = PKG_LIST[0]
-  else:
-    raise ValueError("multiple boost slots are not supported")
-  BOOST_VERSION = portage.versions.cpv_getversion(PKG)
-  if portage.vercmp(BOOST_VERSION, "1.48.0-r1") > -1:
-    BOOST_PYTHON += "-%s.%s" % tuple(sys.version_info[:2])
-
+HADOOP_HOME = pydoop.hadoop_home(fallback=None)
+HADOOP_VERSION = pydoop.hadoop_version()
+BOOST_PYTHON = os.getenv("BOOST_PYTHON", "boost_python")
 
 PIPES_SRC = ["pipes", "pipes_context", "pipes_test_support",
-            "pipes_serial_utils", "exceptions", "pipes_input_split"]
+             "pipes_serial_utils", "exceptions", "pipes_input_split"]
 HDFS_SRC = ["hdfs_fs", "hdfs_file", "hdfs_common"]
 PIPES_EXT_NAME = "_pipes"
 HDFS_EXT_NAME = "_hdfs"
 
 
-###############################################################################
-# Utility functions
-###############################################################################
+# -------
+# PATCHES
+# -------
+
+# https://issues.apache.org/jira/browse/MAPREDUCE-1125
+OLD_DESERIALIZE_FLOAT = """void deserializeFloat(float& t, InStream& stream)
+  {
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+  }"""
+NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
+  {
+    float t;
+    char buf[sizeof(float)];
+    stream.read(buf, sizeof(float));
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+    xdr_float(&xdrs, &t);
+    return t;
+  }"""
+
+# Ticket #250
+OLD_WRITE_BUFFER = r"""void writeBuffer(const string& buffer) {
+      fprintf(stream, quoteString(buffer, "\t\n").c_str());
+    }"""
+NEW_WRITE_BUFFER = r"""void writeBuffer(const string& buffer) {
+      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
+    }"""
+
+# Pipes.hh and SerialUtils.hh don't include stdint.h.  Let's include it
+# in HadoopPipes.cc before it includes the other headers
+OLD_PIPES_INCLUDE = """#include "hadoop/Pipes.hh"\n"""
+NEW_PIPES_INCLUDE = """#include <stdint.h>\n#include "hadoop/Pipes.hh"\n"""
+
+OLD_SERIAL_UTILS_INCLUDE = """#include "hadoop/SerialUtils.hh"\n"""
+NEW_SERIAL_UTILS_INCLUDE = """#include <stdint.h>
+#include "hadoop/SerialUtils.hh"
+"""
+
+
+# ---------
+# UTILITIES
+# ---------
 
 def get_arch():
   bits, _ = platform.architecture()
@@ -77,9 +101,10 @@ def get_arch():
     return "amd64", "64"
   return "i386", "32"
 
+HADOOP_ARCH_STR = "Linux-%s-%s" % get_arch()
 
 def get_java_include_dirs(java_home):
-  p = platform.system().lower()  # TODO: test for non-linux
+  p = platform.system().lower()  # Linux-specific
   java_inc = os.path.join(java_home, "include")
   java_platform_inc = "%s/%s" % (java_inc, p)
   return [java_inc, java_platform_inc]
@@ -88,16 +113,6 @@ def get_java_include_dirs(java_home):
 def get_java_library_dirs(java_home):
   a = get_arch()[0]
   return [os.path.join(java_home, "jre/lib/%s/server" % a)]
-
-
-def find_first_existing(*paths):
-  """
-  Given a list of paths, returns the first that exists.
-  """
-  for p in paths:
-    if os.path.exists(p):
-      return p
-  return None
 
 
 def mtime(fn):
@@ -115,83 +130,11 @@ def write_config(filename="pydoop/config.py"):
   prereq = "DEFAULT_HADOOP_HOME"
   if not os.path.exists(prereq):
     with open(prereq, "w") as f:
-      f.write("%s\n" % hadoop_home())
+      f.write("%s\n" % HADOOP_HOME)
   if must_generate(filename, [prereq]):
     with open(filename, "w") as f:
       f.write("# GENERATED BY setup.py\n")
-      f.write("DEFAULT_HADOOP_HOME='%s'\n" % hadoop_home())
-
-
-###############################################################################
-# Create extension objects.
-#
-# We first create some basic Extension objects to pass to the distutils setup
-# function.  They act as little more than placeholders, simply telling distutils
-# the name of the extension and what source files it depends on.
-#   functions:  create_basic_(pipes|hdfs)_ext
-#
-# When our build_pydoop_ext command is invoked, we build a complete extension
-# object that includes all the information required for the build process.  In
-# particular, it includes all the relevant paths.
-#
-# The reason for the two-stage process is to delay verifying paths to when 
-# they're needed (build) and avoiding those checks for other commands (such
-# as clean).
-###############################################################################
-
-def create_basic_pipes_ext():
-  return BoostExtension(PIPES_EXT_NAME, ["src/%s.cpp" % n for n in PIPES_SRC],
-                        [])
-
-
-def create_basic_hdfs_ext():
-  return BoostExtension(HDFS_EXT_NAME, ["src/%s.cpp" % n for n in HDFS_SRC], [])
-
-
-def create_full_pipes_ext(path_finder):
-  basedir = path_finder.mapred_src
-  serial_utils_cc = os.path.join(basedir, "utils/impl/SerialUtils.cc")
-  pipes_cc = os.path.join(basedir, "pipes/impl/HadoopPipes.cc")
-  patches = {
-    serial_utils_cc: {
-      OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT
-      },
-    os.path.join(basedir, "utils/impl/StringUtils.cc"): {
-      },
-    pipes_cc: {
-      OLD_WRITE_BUFFER: NEW_WRITE_BUFFER
-      },
-    }
-  include_dirs = path_finder.mapred_inc
-  libraries = ["pthread", BOOST_PYTHON, "ssl"]
-  patches[serial_utils_cc][OLD_SERIAL_UTILS_INCLUDE] = NEW_SERIAL_UTILS_INCLUDE
-  patches[pipes_cc][OLD_PIPES_CC_INCLUDE] = NEW_PIPES_CC_INCLUDE
-  return BoostExtension(
-    pydoop.complete_mod_name(PIPES_EXT_NAME, path_finder.hadoop_version()),
-    ["src/%s.cpp" % n for n in PIPES_SRC],
-    [],  # aux
-    patches=patches,
-    include_dirs=include_dirs,
-    libraries=libraries
-    )
-
-
-def create_full_hdfs_ext(path_finder):
-  library_dirs = get_java_library_dirs(path_finder.java_home) + \
-                 path_finder.hdfs_link_paths["L"]
-  return BoostExtension(
-    pydoop.complete_mod_name(HDFS_EXT_NAME, path_finder.hadoop_version()),
-    ["src/%s.cpp" % n for n in HDFS_SRC],
-    [],  # aux
-    include_dirs=get_java_include_dirs(path_finder.java_home) + \
-    [path_finder.hdfs_inc_path],
-    library_dirs=library_dirs,
-    runtime_library_dirs=library_dirs,
-    libraries=["pthread", BOOST_PYTHON, "hdfs", "jvm"],
-    define_macros=get_hdfs_macros(
-      os.path.join(path_finder.hdfs_inc_path, "hdfs.h")
-      ),
-    )
+      f.write("DEFAULT_HADOOP_HOME='%s'\n" % HADOOP_HOME)
 
 
 def get_hdfs_macros(hdfs_hdr):
@@ -210,9 +153,171 @@ def get_hdfs_macros(hdfs_hdr):
   return hdfs_macros
 
 
-###############################################################################
+class PathFinder():
+
+  def __init__(self):
+    self.__java_home = None
+    self.__hadoop_cpp_src = None
+    self.__mapred_inc = []
+    self.__hdfs_inc = []
+    self.__hdfs_link = []
+
+  def __error(self, what, env_var):
+    raise RuntimeError("%s not found, try setting %s" % (what, env_var))
+
+  @property
+  def java_home(self):
+    if not self.__java_home:
+      try:
+        self.__java_home = os.environ["JAVA_HOME"]
+      except KeyError:
+        self.__error("Java home", "JAVA_HOME")
+    return self.__java_home
+
+  @property
+  def hadoop_cpp_src(self):
+    if not self.__hadoop_cpp_src:
+      try:
+        self.__hadoop_cpp_src = os.environ["HADOOP_CPP_SRC"]
+      except KeyError:
+        src = os.path.join(HADOOP_HOME, "src", "c++")
+        if os.path.isdir(src):
+          self.__hadoop_cpp_src = src
+        else:
+          cloudera_src = hu.first_dir_in_glob("/usr/src/hadoop*/c++")
+          if cloudera_src:
+            self.__hadoop_cpp_src = cloudera_src
+          else:
+            self.__error("Hadoop source code", "HADOOP_CPP_SRC")
+    return self.__hadoop_cpp_src
+
+  @property
+  def mapred_inc(self):
+    if not self.__mapred_inc:
+      try:
+        self.__mapred_inc = os.environ["MAPRED_INCLUDE"].split(os.pathsep)
+      except KeyError:
+        paths = []
+        for lib in "pipes", "utils":
+          p = os.path.join(self.hadoop_cpp_src, lib, "api")
+          if os.path.isdir(p):
+            paths.append(p)
+        if len(paths) == 2:
+          self.__mapred_inc = paths
+        else:
+          p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "include")
+          if os.path.isdir(p):
+            self.__mapred_inc = [p]
+          else:
+            self.__error("MapReduce include paths", "MAPRED_INCLUDE")
+    return self.__mapred_inc
+
+  @property
+  def hdfs_inc(self):
+    if not self.__hdfs_inc:
+      try:
+        self.__hdfs_inc = os.environ["HDFS_INCLUDE"].split(os.pathsep)
+      except KeyError:
+        p = os.path.join(self.hadoop_cpp_src, "libhdfs")
+        if os.path.isdir(p):
+          self.__hdfs_inc = [p]
+        else:
+          self.__error("HDFS include paths", "HDFS_INCLUDE")
+    return self.__hdfs_inc
+
+  @property
+  def hdfs_link(self):
+    if not self.__hdfs_link:
+      try:
+        self.__hdfs_link = os.environ["HDFS_LINK"].split(os.pathsep)
+      except KeyError:
+        if os.path.exists("/usr/lib/libhdfs.so"):
+          pass  # distutils always looks there, nothing to do
+        else:
+          p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "lib")
+          if os.path.isdir(p):
+            self.__hdfs_link = [p]
+          else:
+            self.__error("HDFS link paths", "HDFS_LINK")
+    return self.__hdfs_link
+
+
+# ------------------------------------------------------------------------------
+# Create extension objects.
+#
+# We first create some basic Extension objects to pass to the distutils setup
+# function.  They act as little more than placeholders, simply telling distutils
+# the name of the extension and what source files it depends on.
+#   functions:  create_basic_(pipes|hdfs)_ext
+#
+# When our build_pydoop_ext command is invoked, we build a complete extension
+# object that includes all the information required for the build process.  In
+# particular, it includes all the relevant paths.
+#
+# The reason for the two-stage process is to delay verifying paths to when 
+# they're needed (build) and avoiding those checks for other commands (such
+# as clean).
+# ------------------------------------------------------------------------------
+
+def create_basic_pipes_ext():
+  return BoostExtension(PIPES_EXT_NAME, ["src/%s.cpp" % n for n in PIPES_SRC],
+                        [])
+
+
+def create_basic_hdfs_ext():
+  return BoostExtension(HDFS_EXT_NAME, ["src/%s.cpp" % n for n in HDFS_SRC], [])
+
+
+def create_full_pipes_ext(path_finder):
+  basedir = path_finder.hadoop_cpp_src
+  serial_utils = os.path.join(basedir, "utils/impl/SerialUtils.cc")
+  string_utils = os.path.join(basedir, "utils/impl/StringUtils.cc")
+  pipes = os.path.join(basedir, "pipes/impl/HadoopPipes.cc")
+  patches = {
+    serial_utils: {
+      OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT,
+      OLD_SERIAL_UTILS_INCLUDE: NEW_SERIAL_UTILS_INCLUDE,
+      },
+    string_utils: {},
+    pipes: {
+      OLD_WRITE_BUFFER: NEW_WRITE_BUFFER,
+      OLD_PIPES_INCLUDE: NEW_PIPES_INCLUDE,
+      },
+    }
+  include_dirs = path_finder.mapred_inc
+  libraries = ["pthread", BOOST_PYTHON, "ssl"]  # FIXME: not version-dep
+  return BoostExtension(
+    pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION),
+    ["src/%s.cpp" % n for n in PIPES_SRC],
+    [],  # aux
+    patches=patches,
+    include_dirs=include_dirs,
+    libraries=libraries
+    )
+
+
+def create_full_hdfs_ext(path_finder):
+  include_dirs = get_java_include_dirs(path_finder.java_home)
+  include_dirs.extend(path_finder.hdfs_inc)
+  library_dirs = get_java_library_dirs(path_finder.java_home)
+  library_dirs.extend(path_finder.hdfs_link)
+  return BoostExtension(
+    pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION),
+    ["src/%s.cpp" % n for n in HDFS_SRC],
+    [],  # aux
+    include_dirs=include_dirs,
+    library_dirs=library_dirs,
+    runtime_library_dirs=library_dirs,
+    libraries=["pthread", BOOST_PYTHON, "hdfs", "jvm"],
+    define_macros=get_hdfs_macros(
+      os.path.join(path_finder.hdfs_inc[0], "hdfs.h")
+      ),
+    )
+
+
+# ---------------------------------------
 # Custom distutils extension and commands
-###############################################################################
+# ---------------------------------------
 
 class BoostExtension(Extension):
   """
@@ -231,25 +336,23 @@ class BoostExtension(Extension):
     destdir = os.path.split(self.wrap_sources[0])[0]  # should be ok
     outfn = os.path.join(destdir, "%s_main.cpp" % self.module_name)
     if must_generate(outfn, self.wrap_sources):
-      sys.stderr.write("generating main for %s\n" % self.name)
+      log.info("generating main for %s\n" % self.name)
       first_half = ["#include <boost/python.hpp>"]
       second_half = ["BOOST_PYTHON_MODULE(%s){" % self.module_name]
       for fn in self.wrap_sources:
-        f = open(fn)
-        code = f.read()
-        f.close()
+        with open(fn) as f:
+          code = f.read()
         m = self.export_pattern.search(code)
         if m is not None:
           fun_name = "export_%s" % m.groups()[0]
           first_half.append("void %s();" % fun_name)
           second_half.append("%s();" % fun_name)
       second_half.append("}")
-      outf = open(outfn, "w")
-      for line in first_half:
-        outf.write("%s%s" % (line, os.linesep))
-      for line in second_half:
-        outf.write("%s%s" % (line, os.linesep))
-      outf.close()
+      with open(outfn, "w") as outf:
+        for line in first_half:
+          outf.write("%s%s" % (line, os.linesep))
+        for line in second_half:
+          outf.write("%s%s" % (line, os.linesep))
     return outfn
 
   def generate_patched_aux(self):
@@ -275,7 +378,7 @@ class build_pydoop_ext(distutils_build_ext):
 
   def finalize_options(self):
     distutils_build_ext.finalize_options(self)
-    path_finder = SetupPathFinder()
+    path_finder = PathFinder()
     self.extensions = [
       create_full_pipes_ext(path_finder),
       create_full_hdfs_ext(path_finder),
@@ -326,13 +429,13 @@ class pydoop_clean(distutils_clean):
 
 
 class pydoop_build(distutils_build):
-  
+
   def run(self):
     distutils_build.run(self)
     # build the java component
     classpath = ':'.join(
-        glob.glob(os.path.join(hadoop_home(), 'hadoop-*.jar')) +
-        glob.glob(os.path.join(hadoop_home(), 'lib', '*.jar'))
+        glob.glob(os.path.join(HADOOP_HOME, 'hadoop-*.jar')) +
+        glob.glob(os.path.join(HADOOP_HOME, 'lib', '*.jar'))
       )
     class_dir = os.path.join(self.build_temp, 'pydoop_java')
     package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
@@ -364,200 +467,10 @@ class pydoop_build(distutils_build):
 
 
 class pydoop_build_py(distutils_build_py):
+
   def run(self):
     write_config()
     distutils_build_py.run(self)
-
-
-class SetupPathFinder(hadoop_utils.PathFinder):
-  """
-  Encapsulates the logic to find paths and other info required by the
-  build process.
-  """
-  def __init__(self):
-    super(SetupPathFinder, self).__init__()
-    self.java_home = None
-    self.src = None
-    self.mapred_src = None
-    self.mapred_inc = []
-    self.hdfs_inc_path = None  # only one include path -- we only have one file
-    self.hdfs_link_paths = {"L": [], "l": []}
-    self.__init_paths()
-
-  # DEFAULT_HADOOP_HOME must NOT be used at compile time
-  def hadoop_home(self):
-    return super(SetupPathFinder, self).hadoop_home(fallback=None)
-
-  def __find_hadoop_src(self):
-    """
-    Return one of:
-    
-    1. HADOOP_SRC
-    2. HADOOP_HOME/src
-    3. /usr/src/hadoop*
-    4. None (not found)
-    """
-    if os.getenv("HADOOP_SRC"):
-      return os.getenv("HADOOP_SRC")
-    if self.hadoop_home():
-      src = os.path.join(self.hadoop_home(), "src")
-      if os.path.exists(src):
-        return src
-    # look in /usr/src
-    usr_src = os.path.join(os.path.sep, "usr", "src")
-    if os.path.exists(usr_src):
-      path_list = [path for path in os.listdir(usr_src)
-                   if re.match(r"hadoop\b.*", path)]
-      if len(path_list) > 1:
-        path_list = sorted(path_list)
-      if path_list:
-        return os.path.join(usr_src, path_list[0])
-    return None
-
-  def __set_mapred_inc_paths(self):
-    if os.getenv("HADOOP_INCLUDE_PATHS"):
-      self.mapred_inc = os.getenv("HADOOP_INCLUDE_PATHS").split(os.pathsep)
-      return
-    # look in the source first
-    src_paths = [
-      os.path.join(self.src, "c++", "pipes", "api", "hadoop"),
-      os.path.join(self.src, "c++", "utils", "api", "hadoop"),
-      ]
-    if all(map(os.path.exists, src_paths)):
-      # the includes are for "hadoop/<file.h>", so we chop the hadoop
-      # directory off the path
-      self.mapred_inc = map(os.path.dirname, src_paths)
-    else:
-      # try the standard /usr/include/hadoop
-      arch_string = "Linux-%s-%s" % get_arch()
-      candidate_paths = glob.glob(os.path.join(
-        self.src, "mapred", "c++", arch_string, "include", "hadoop"
-        ))
-      candidate_paths.extend(glob.glob(os.path.join(
-        self.src, "c++", arch_string, "include", "hadoop"
-        )))
-      candidate_paths.extend(glob.glob(os.path.join(
-        os.path.sep, "usr", "include", "hadoop*"
-        )))
-      if candidate_paths:
-        self.mapred_inc = [os.path.dirname(candidate_paths[0])]
-      else:
-        raise RuntimeError(
-          "Couldn't find Hadoop c++ include directory, " +
-          "try specifying one with HADOOP_INC_PATH"
-          )
-
-  def __set_hdfs_link_paths(self):
-    self.hdfs_link_paths["l"].append("hdfs")  # link to libhdfs
-    arch_string = "Linux-%s-%s" % get_arch()
-    candidate_paths = glob.glob(os.path.join(
-      os.path.sep, "usr", "lib*", "libhdfs.so*"
-      ))
-    candidate_paths.extend(glob.glob(os.path.join(
-      self.hadoop_home(), "lib*", "libhdfs.so"
-      )))
-    candidate_paths.extend(glob.glob(os.path.join(
-      self.hadoop_home(), "hdfs", "c++", arch_string, "lib", "libhdfs.so"
-      )))
-    candidate_paths.extend(glob.glob(os.path.join(
-      self.hadoop_home(), "c++", arch_string, "lib", "libhdfs.so"
-      )))
-    if candidate_paths:
-      dir_, _ = os.path.split(candidate_paths[0])
-      if dir_ != os.path.join(os.path.sep, "usr", "lib"):
-        self.hdfs_link_paths["L"].append(dir_)
-    else:
-      raise RuntimeError("Couldn't find libhdfs.so in HADOOP_HOME or /usr/lib")
-
-  def __set_hdfs_inc_path(self):
-    candidate_paths = glob.glob(os.path.join(
-      os.path.sep, "usr", "include", "hdfs.h"
-      ))
-    candidate_paths.extend(glob.glob(os.path.join(
-      os.path.sep, "usr", "include", "hadoop*", "hdfs.h"
-      )))
-    candidate_paths.extend(glob.glob(os.path.join(
-      self.src, "c++", "libhdfs", "hdfs.h"
-      )))
-    if candidate_paths:
-      dir_, _ = os.path.split(candidate_paths[0])
-      self.hdfs_inc_path = dir_
-    else:
-      raise RuntimeError(
-        "Couldn't find hdfs.h in source directory or /usr/include"
-        )
-
-  def __init_paths(self):
-    # actually does not override the parent class' method since
-    # they're both private methods
-    self.java_home = os.getenv(
-      "JAVA_HOME",
-      find_first_existing("/opt/sun-jdk", "/usr/lib/jvm/java-6-sun")
-      )
-    if self.java_home is None:
-      raise RuntimeError("Could not determine JAVA_HOME path")
-    self.src = self.__find_hadoop_src()
-    if not self.src:
-      raise RuntimeError(
-        "Couldn't find Hadoop source code, please specify a path through " +
-        "the HADOOP_SRC environment variable or provide HADOOP_HOME with " +
-        "a 'src' directory under it"
-        )
-    self.mapred_src = os.path.join(self.src, "c++")
-    if not os.path.exists(self.mapred_src):
-      raise RuntimeError(
-        "Hadoop source directory %s doesn't contain a 'c++' subdirectory. " +
-        "If the source directory path is correct, please report a bug" %
-        self.src
-        )
-    self.__set_mapred_inc_paths()
-    self.__set_hdfs_inc_path()
-    self.__set_hdfs_link_paths()
-    for n in ("java_home", "src", "mapred_src", "mapred_inc", "hdfs_inc_path",
-              "hdfs_link_paths", "hadoop_home", "hadoop_version"):
-      a = getattr(self, n)
-      log.info("%s = %s" % (n, a() if callable(a) else a))
-
-
-######################### main ################################
-
-# https://issues.apache.org/jira/browse/MAPREDUCE-1125
-OLD_DESERIALIZE_FLOAT = """void deserializeFloat(float& t, InStream& stream)
-  {
-    char buf[sizeof(float)];
-    stream.read(buf, sizeof(float));
-    XDR xdrs;
-    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
-    xdr_float(&xdrs, &t);
-  }"""
-NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
-  {
-    float t;
-    char buf[sizeof(float)];
-    stream.read(buf, sizeof(float));
-    XDR xdrs;
-    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
-    xdr_float(&xdrs, &t);
-    return t;
-  }"""
-
-# Ticket #250
-OLD_WRITE_BUFFER = r"""void writeBuffer(const string& buffer) {
-      fprintf(stream, quoteString(buffer, "\t\n").c_str());
-    }"""
-NEW_WRITE_BUFFER = r"""void writeBuffer(const string& buffer) {
-      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
-    }"""
-
-# Pipes.hh and SerialUtils.hh don't include stdint.h.  Let's include it
-# in HadoopPipes.cc before it includes the other headers
-OLD_PIPES_CC_INCLUDE = """#include "hadoop/Pipes.hh"\n"""
-NEW_PIPES_CC_INCLUDE = """#include <stdint.h>\n#include "hadoop/Pipes.hh"\n"""
-
-OLD_SERIAL_UTILS_INCLUDE = """#include "hadoop/SerialUtils.hh"\n"""
-NEW_SERIAL_UTILS_INCLUDE = """#include <stdint.h>
-#include "hadoop/SerialUtils.hh"
-"""
 
 
 setup(

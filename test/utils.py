@@ -2,13 +2,17 @@
 # END_COPYRIGHT
 
 import os, random, uuid, tempfile, xml.dom.minidom
+
 import pydoop
+import pydoop.hadoop_utils as hu
+
 
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32
 _DEFAULT_HDFS_HOST = "localhost"
 _DEFAULT_HDFS_PORT = 9000
+_DEFAULT_BYTES_PER_CHECKSUM = 512
 HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
 HDFS_PORT = os.getenv("HDFS_PORT", _DEFAULT_HDFS_PORT)
 try:
@@ -83,6 +87,10 @@ def get_bytes_per_checksum():
     raise IOError  # for consistency, also raised by minidom.path
 
   core_default = os.path.join(_HADOOP_HOME, "src", "core", "core-default.xml")
+  if not os.path.exists(core_default):
+    # FIXME: move source finder from setup.py to an installed module
+    cloudera_src = hu.first_dir_in_glob("/usr/src/hadoop*")
+    core_default = os.path.join(cloudera_src, "core", "core-default.xml")
   core_site, hadoop_site = [os.path.join(_HADOOP_CONF_DIR, fn) for fn in
                             ("core-site.xml", "hadoop-site.xml")]
   try:
@@ -94,4 +102,4 @@ def get_bytes_per_checksum():
       try:
         return extract_bpc(core_default)
       except IOError:
-        return self.DEFAULT_BYTES_PER_CHECKSUM
+        return _DEFAULT_BYTES_PER_CHECKSUM

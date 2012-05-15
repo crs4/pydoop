@@ -21,13 +21,18 @@ In order to build and install Pydoop, you need the following software:
 
 * `Python <http://www.python.org>`_ version 2.7 (or 2.6 with
   backports [#]_)
-* `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20 (tested
-  with 0.20.2) or 1.0 (tested with 1.0.2) or `CDH
-  <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 3
-  (tested with update 3).
-* The source code for the version of Hadoop you're using
+
+* either of the following:
+
+  * `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20 (tested
+    with 0.20.2)
+  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0 (tested with 1.0.2)
+  * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 3
+    (tested with update 4)
+
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library)
+
 * `OpenSSL <http://www.openssl.org>`_ (not required with Hadoop 0.20)
 
 These are also runtime requirements for all cluster nodes. Note that
@@ -48,23 +53,29 @@ command::
 On Gentoo
 .........
 
-On Gentoo, emerge boost with the ``python`` use flag on and openssl::
+We haven't released an ebuild for Pydoop yet. Emerge dependencies as follows::
 
   echo 'dev-libs/boost python' >> /etc/portage/package.use
   emerge boost openssl
+
+If you're using Boost version 1.48 or newer, you need to specify the
+name of your Boost.Python library in order to build Pydoop. This is
+done via the ``BOOST_PYTHON`` environment variable. For instance::
+
+  export BOOST_PYTHON=boost_python-2.7
 
 
 Building Instructions
 ----------------------
 
-Depending on how you installed Hadoop, you'll have follow the instructions
+Depending on how you installed Hadoop, you'll have to follow the instructions
 in one of the following sections.
 
 
 Hadoop installed from tarball
 .............................
 
-If you have installed either Apache or Cloudera Hadoop from a tarball
+If you have installed either Apache or Cloudera Hadoop from a tarball,
 follow the instructions in this section.
 
 Set the ``HADOOP_HOME`` environment variable so that it points to where the
@@ -94,55 +105,17 @@ Then you can unpack and build Pydoop as shown above.
 Other setup
 ...........
 
-If your situation isn't one of the above, you should still be able to build
-Pydoop once you've installed its dependencies.
-
-To start, extract the archive and try building::
-
-  tar xzf pydoop-*.tar.gz
-  cd pydoop-*
-  python setup.py build
-
 If the build fails, it's probably because setup.py can't find some component
 critical to the building process:  the Java installation, the Hadoop
 installation, or the Hadoop source code.  We can override the paths where
-setup.py searches with the environment variables below.
+setup.py searches with the environment variables below:
 
-JAVA_HOME
-
-  By default looks  in ``/opt/sun-jdk`` and ``/usr/lib/jvm/java-6-sun``.
-
-HADOOP_HOME
-
-  Your Hadoop installation, containing the Hadoop jars.  By default setup.py 
-  looks in ``/opt/hadoop`` and ``/usr/lib/hadoop``.
-
-HADOOP_SRC
-
-  Tell setup where to find the Hadoop source, if it's not under
-  ``${HADOOP_HOME}/src`` or ``/usr/src/hadoop-*``
-
-HADOOP_VERSION
-
-  Override the version returned by running ``hadoop version`` (and
-  avoid running the hadoop binary).
-
-HADOOP_INCLUDE_PATHS
-
-  Override the standard include paths for the Hadoop C++ headers.
-
-
-Example
-+++++++
-
-::
-  
-  export JAVA_HOME=/usr/local/lib/jvm
-  export HADOOP_HOME=/usr/local/lib/hadoop
-  export HADOOP_SRC=/var/src/hadoop-0.20.2
-  tar xzf pydoop-*.tar.gz
-  cd pydoop-*
-  python setup.py build
+* JAVA_HOME, e.g., ``/opt/sun-jdk``
+* HADOOP_HOME, e.g., ``/opt/hadoop-1.0.2``
+* HADOOP_CPP_SRC, e.g., ``/usr/src/hadoop-0.20/c++``
+* MAPRED_INCLUDE, HDFS_INCLUDE, HDFS_LINK: colon-separated directories
+  contaning, respectively, MapReduce header files, HDFS header files
+  and the HDFS C library.
 
 
 Installation
@@ -174,7 +147,7 @@ accessible on the entire cluster.
 
 
 Installing to another location
-.................................
+..............................
 
 ::
 
@@ -185,6 +158,10 @@ Installing to another location
 
 Multiple Hadoop versions
 ------------------------
+
+.. note::
+
+  The following instructions apply to installations from tarballs
 
 If you'd like to use your Pydoop installation with multiple versions of Hadoop,
 you will need to rebuild the modules for each version of Hadoop.
@@ -199,23 +176,21 @@ Example::
   tar xzf pydoop-*.tar.gz
   cd pydoop-*
 
-  export HADOOP_HOME=/usr/share/hadoop-0.20.2
-  python setup.py build
-  python setup.py install
+  export HADOOP_HOME=/opt/hadoop-0.20.2
+  python setup.py install --user
 
-  export HADOOP_HOME=/usr/share/hadoop-1.0.0
-  python setup.py build
-  python setup.py install
+  export HADOOP_HOME=/opt/hadoop-1.0.2
+  python setup.py install --user
 
-At run time, the appropriate version of the Pydoop modules will be loaded for
-the version of Hadoop selected by your ``HADOOP_HOME`` variable or the version
-of the ``hadoop`` executable found in your ``PATH``.  If Pydoop is not able to
-retrieve your Hadoop home directory from the environment or by looking into
-standard paths, it falls back to a default location that is hardwired at
-compile time: Pydoop looks for a file named ``DEFAULT_HADOOP_HOME`` in the
-current working directory; if the file does not exist, it is created and filled
-with the current Hadoop home (at compile time, Pydoop must *always* know where
-the Hadoop home is).
+At run time, the appropriate version of the Pydoop modules will be
+loaded for the version of Hadoop selected by your ``HADOOP_HOME``
+variable.  If Pydoop is not able to retrieve your Hadoop home
+directory from the environment or by looking into standard paths, it
+falls back to a default location that is hardwired at compile time:
+the setup script looks for a file named ``DEFAULT_HADOOP_HOME`` in the
+current working directory; if the file does not exist, it is created
+and filled with the path to the current Hadoop home (at compile time,
+Pydoop must *always* know where the Hadoop home is).
 
 
 .. _troubleshooting:
@@ -248,7 +223,7 @@ Troubleshooting
    If this fails for any reason, you can provide the correct version string
    through the ``HADOOP_VERSION`` environment variable, e.g.::
 
-    export HADOOP_VERSION="1.0.0"
+     export HADOOP_VERSION="1.0.0"
 
 
 Testing Your Installation
@@ -276,8 +251,8 @@ unit tests to verify that everything works fine.
 
      ${HADOOP_HOME}/bin/hadoop dfsadmin -safemode wait
 
-To run the unit tests, move to the ``test`` subdirectory and run *as the cluster
-superuser*::
+To run the unit tests, move to the ``test`` subdirectory and run *as
+the cluster superuser* (see below)::
 
   python all_tests.py
 
@@ -301,7 +276,7 @@ you can either:
 
   <property>
     <name>dfs.permissions.supergroup</name>
-    <value>mygroup</value>
+    <value>admin</value>
   </property>
 
 If you can't acquire superuser privileges to run the tests, just keep in mind

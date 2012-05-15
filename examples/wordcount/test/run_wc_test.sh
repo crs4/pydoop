@@ -11,7 +11,7 @@ fi
 SCRIPT_BASENAME=$1
 echo running test for ${SCRIPT_BASENAME}
 
-HADOOP=${HADOOP_HOME}/bin/hadoop
+HADOOP=`python -c "import pydoop.hadoop_utils as u; print u.get_hadoop_exec()"`
 
 BINDIR=../bin
 CONFDIR=../conf

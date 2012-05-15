@@ -11,8 +11,6 @@ from utils import make_wd, make_random_data, get_bytes_per_checksum
 
 class TestCommon(unittest.TestCase):
 
-  DEFAULT_BYTES_PER_CHECKSUM = 512
-
   def __init__(self, target, hdfs_host='', hdfs_port=0):
     unittest.TestCase.__init__(self, target)
     self.hdfs_host = hdfs_host
