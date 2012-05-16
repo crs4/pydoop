@@ -35,8 +35,6 @@ logo: docs/_static/logo.png
 favicon: docs/_static/favicon.ico
 
 docs/_static/logo.png: logo/logo.svg
-	#ticket #342
-	mkdir -p docs/_static
 #	direct conversion to final size with inkscape does not look good
 	inkscape -z -D -f $< -e logo/logo.png -w 800 # -b '#ffffff'
 	convert -resize 200x logo/logo.png $@
