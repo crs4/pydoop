@@ -6,21 +6,28 @@ Pydoop includes several usage examples: you can find them in the
 
 
 Remarks on running the examples
-----------------------------------
+-------------------------------
 
 Some tips for running the examples and other Pydoop applications.
 
 Home directory
-++++++++++++++++++
+++++++++++++++
 
-Hadoop will not set the ``HOME`` environment variable in your tasks' environment
-to its normal value.  At the time of this writing, you'll see ``/homes`` as its
-value unless you (or your Hadoop cluster administrator) configured the Hadoop 
-property ``mapreduce.admin.user.home.dir`` to something different
-(e.g. ``/home/${user.name}``).
+If you've installed Pydoop or other modules locally, i.e., into
+``~/.local/lib/python2.7/site-packages``, the Python code that runs
+within Hadoop tasks might not be able to find them. This is due to the
+fact that, according to your Hadoop version or configuration, those
+tasks might run as a different user. In Hadoop 1.0, you can work
+around this problem by setting the ``mapreduce.admin.user.home.dir``
+configuration parameter. In order to make Hadoop examples work under
+(hopefully) any configuration, we added an automatic hack of
+``sys.path``.
 
-This issue will cause problems if you've installed Pydoop or other modules in
-your home directory, since Python will not be able to find them.
+**NOTE**: In any event, to allow another user to execute your locally
+installed code, you must set permissions accordingly, e.g.::
+
+    chmod -R 755 ~/.local
+
 
 Setting the environment for your program
 +++++++++++++++++++++++++++++++++++++++++++
@@ -85,4 +92,3 @@ the desired ``LD_LIBRARY_PATH`` in your ``.profile`` or ``.bashrc``\
   of = open(script, "w")
   of.write(code)
   of.close()
-
