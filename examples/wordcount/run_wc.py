@@ -3,13 +3,12 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import sys, os, argparse, logging
+import sys, argparse, logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop.test_support as pts
 import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
-import check_output
 
 
 CONF = {
@@ -53,7 +52,8 @@ def main(argv):
   res = pts.collect_output(output)
   for d in exe, input_, output:
     hdfs.rmr(d)
-  logging.info(check_output.check(args.local_input, res))
+  local_wc = pts.LocalWordCount(args.local_input)
+  logging.info(local_wc.check(res))
 
 
 if __name__ == "__main__":
