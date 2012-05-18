@@ -1,12 +1,9 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-JAVA_HOME ?= /opt/sun-jdk
-HADOOP_HOME ?= /opt/hadoop
-HADOOP_CONF_DIR ?= $(HADOOP_HOME)/conf
-
-HADOOP = $(HADOOP_HOME)/bin/hadoop --config $(HADOOP_CONF_DIR)
-
+HADOOP_HOME = $(shell python -c 'import pydoop; print pydoop.hadoop_home()')
+HADOOP_CONF_DIR = $(shell python -c 'import pydoop; print pydoop.hadoop_conf()')
+HADOOP = $(shell python -c 'import pydoop.hadoop_utils as hu; print hu.get_hadoop_exec()') --config $(HADOOP_CONF_DIR)
 
 BASE_BUILD_DIR := $(realpath .)/_build
 
@@ -32,7 +29,7 @@ pydoop: $(PYDOOP_TAR)
 cv: $(CV_TAR)
 
 $(PYDOOP_TAR): $(PYDOOP_TRUNK)
-	cd $< && HADOOP_HOME=$(HADOOP_HOME) JAVA_HOME=$(JAVA_HOME) python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(PYDOOP_BUILD_DIR)
+	cd $< && HADOOP_HOME=$(HADOOP_HOME) python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(PYDOOP_BUILD_DIR)
 	cd $(PYDOOP_DIR) && tar czf pydoop.tgz *
 
 $(CV_TAR): $(CV_TRUNK)/setup.py $(CV_TRUNK)/cv 

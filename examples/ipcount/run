@@ -3,7 +3,8 @@
 # BEGIN_COPYRIGHT
 # END_COPYRIGHT
 
-import os, tempfile, shutil, operator
+import os, tempfile, shutil, operator, logging
+logging.basicConfig(level=logging.INFO)
 
 from ipcount import main as ipcount
 
@@ -54,6 +55,7 @@ def normalize_count(count):
 
 def main():
   count = normalize_count(run_ipcount(INPUT, EXCLUDES))
+  logging.info("checking results")
   expected_count = normalize_count(local_ipcount(INPUT, EXCLUDES))
   if count == expected_count:
     print "OK."

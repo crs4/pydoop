@@ -17,10 +17,14 @@ that, if set to 'false', makes input file non-splitable (i.e., you
 can't get more InputSplits than the number of input files).
 """
 
-import sys, os, optparse, subprocess as sp, uuid
+import sys, os, optparse, uuid, logging
+logging.basicConfig(level=logging.INFO)
 
 from pydoop.hadoop_utils import get_hadoop_exec
 import pydoop.hdfs as hdfs
+import pydoop.test_support as pts
+import pydoop.hadut as hadut
+
 import compiler
 
 
@@ -31,27 +35,13 @@ DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "../input"))
 OUTPUT = "output"
 INPUT_FORMAT = "net.sourceforge.pydoop.mapred.TextInputFormat"
 JAR_NAME = "pydoop-mapred.jar"
-BASE_MR_OPTIONS = {
+CONF = {
   "mapred.job.name": "test_rr_override",
   "mapreduce.admin.user.home.dir": os.path.expanduser("~"),
   "hadoop.pipes.java.recordreader": "false",
   "hadoop.pipes.java.recordwriter": "true",
   "mapred.input.format.class": INPUT_FORMAT,
   }
-
-
-def build_d_options(opt_dict):
-  d_options = []
-  for name, value in opt_dict.iteritems():
-    d_options.append("-D %s=%s" % (name, value))
-  return " ".join(d_options)
-
-
-def hadoop_pipes(pipes_opts, hadoop=HADOOP):
-  cmd = "%s pipes %s" % (hadoop, pipes_opts)
-  sys.stderr.write("RUNNING PIPES CMD: %r\n" % cmd)
-  p = sp.Popen(cmd, shell=True)
-  return os.waitpid(p.pid, 0)[1]
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
@@ -65,7 +55,7 @@ def make_parser():
     )
   parser.set_description(__doc__.lstrip())
   parser.add_option("-i", dest="input", metavar="STRING",
-                    help="input dir/file ['%default']", default=DEFAULT_INPUT)
+                    help="input dir ['%default']", default=DEFAULT_INPUT)
   parser.add_option("--java-rr", action="store_true",
                     help="Java RecordReader (CRASHES THE APPLICATION)")
   parser.add_option("--splitable", action="store_true",
@@ -84,29 +74,37 @@ def main():
     os.system("find . -regex '.*\(\.class\|~\|.pyc\)' -exec rm -fv {} \;")
     os.system("rm -rfv *.jar %s" % OUTPUT)
     return 0
-  
+
+  logging.info("compiling Java code")
   retval = compiler.main(["compiler.py", JAR_NAME])
   if retval:
     return retval
 
+  logging.info("copying data to HDFS")
   wd = "pydoop_test_input_format_%s" % uuid.uuid4().hex
   hdfs.mkdir(wd)
   mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
-  hdfs.put(LOCAL_MR_SCRIPT, mr_script)
+  with open(LOCAL_MR_SCRIPT) as f:
+    pipes_code = pts.add_sys_path(f.read())
+  hdfs.dump(pipes_code, mr_script)
   input_ = hdfs.path.join(wd, os.path.basename(opt.input))
   hdfs.put(opt.input, input_)
   output = hdfs.path.join(wd, uuid.uuid4().hex)
 
-  mr_options = BASE_MR_OPTIONS.copy()
+  logging.info("running MapReduce application")
+  conf = CONF.copy()
   if opt.java_rr:
-    mr_options["hadoop.pipes.java.recordreader"] = "true"
-  mr_options["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
-  d_options = build_d_options(mr_options)
-  hadoop_pipes("%s -libjars %s -program %s -input %s -output %s" % (
-    d_options, JAR_NAME, mr_script, input_, output
-    ))
-  hdfs.get(output, OUTPUT)
-  hdfs.rmr(wd)
+    conf["hadoop.pipes.java.recordreader"] = "true"
+  conf["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
+  jar_opt = ["-libjars", JAR_NAME]
+  hadut.run_pipes(mr_script, input_, output, more_args=jar_opt, properties=conf)
+
+  logging.info("checking results")
+  res = pts.collect_output(output)
+  for d in mr_script, input_, output:
+    hdfs.rmr(d)
+  local_wc = pts.LocalWordCount(opt.input)
+  logging.info(local_wc.check(res))
 
   return 0
 

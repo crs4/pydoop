@@ -15,10 +15,12 @@ NOTE: the MapReduce application launched by this script is a
       University, 2009, available at http://users.ugent.be/~klbostee.
 """
 
-import sys, os, optparse, operator, subprocess as sp, uuid
+import sys, os, optparse, operator, uuid, logging
 
 import pydoop.hdfs as hdfs
 import pydoop.hadoop_utils as hu
+import pydoop.test_support as pts
+import pydoop.hadut as hadut
 
 
 HADOOP = hu.get_hadoop_exec()
@@ -31,18 +33,6 @@ BASE_MR_OPTIONS = {
   "hadoop.pipes.java.recordreader": "true",
   "hadoop.pipes.java.recordwriter": "true",
   }
-
-
-def build_d_options(opt_dict):
-  d_options = []
-  for name, value in opt_dict.iteritems():
-    d_options.append("-D %s=%s" % (name, value))
-  return " ".join(d_options)
-
-
-def hadoop_pipes(pipes_opts, hadoop=HADOOP):
-  p = sp.Popen("%s pipes %s" % (hadoop, pipes_opts), shell=True)
-  return os.waitpid(p.pid, 0)[1]
 
 
 def collect_output(mr_out_dir):
@@ -84,14 +74,18 @@ def main(argv):
   if opt.output is not sys.stdout:
     opt.output = open(opt.output, 'w')
 
+  logging.info("copying data to HDFS")
   wd = "pydoop_test_ipcount_%s" % uuid.uuid4().hex
   hdfs.mkdir(wd)
   mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
-  hdfs.put(LOCAL_MR_SCRIPT, mr_script)
+  with open(LOCAL_MR_SCRIPT) as f:
+    pipes_code = pts.add_sys_path(f.read())
+  hdfs.dump(pipes_code, mr_script)
   input_ = hdfs.path.join(wd, os.path.basename(opt.input))
   hdfs.put(opt.input, input_)
   output = hdfs.path.join(wd, uuid.uuid4().hex)
 
+  logging.info("running MapReduce application")
   mr_options = BASE_MR_OPTIONS.copy()
   if opt.exclude_fn:
     exclude_bn = os.path.basename(opt.exclude_fn)
@@ -100,11 +94,9 @@ def main(argv):
     mr_options["mapred.cache.files"] = "%s#%s" % (exclude_fn, exclude_bn)
     mr_options["mapred.create.symlink"] = "yes"
     mr_options["ipcount.excludes"] = exclude_bn
-  d_options = build_d_options(mr_options)
-  hadoop_pipes("%s -program %s -input %s -output %s" % (
-    d_options, mr_script, input_, output
-    ))
+  hadut.run_pipes(mr_script, input_, output, properties=mr_options)
 
+  logging.info("collecting output")
   ip_list = collect_output(output)
   hdfs.rmr(wd)
   ip_list.sort(key=operator.itemgetter(1), reverse=True)
