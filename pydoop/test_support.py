@@ -43,6 +43,32 @@ def collect_output(mr_out_dir):
   return "".join(output)
 
 
+def parse_mr_output(output, vtype=str):
+  wc = {}
+  for line in output.splitlines():
+    if line.isspace():
+      continue
+    try:
+      w, c = line.split()
+      c = vtype(c)
+    except (ValueError, TypeError):
+      raise ValueError("bad output format")
+    wc[w] = c
+  return wc
+
+
+def compare_counts(c1, c2):
+  if len(c1) != len(c2):
+    print len(c1), len(c2)
+    return "number of keys differs"
+  keys = sorted(c1)
+  if sorted(c2) != keys:
+    return "key lists are different"
+  for k in keys:
+    if c1[k] != c2[k]:
+      return "values are different for key %r (%r != %r)" % (k, c1[k], c2[k])
+
+
 class LocalWordCount(object):
 
   def __init__(self, input_dir):
@@ -68,36 +94,10 @@ class LocalWordCount(object):
     return wc
 
   def check(self, output):
-    res = LocalWordCount.__compare_counts(
-      self.__parse_mr_output(output), self.expected_output
+    res = compare_counts(
+      parse_mr_output(output, vtype=int), self.expected_output
       )
     if res:
       return "ERROR: %s" % res
     else:
       return "OK."
-
-  @staticmethod
-  def __parse_mr_output(output):
-    wc = {}
-    for line in output.splitlines():
-      if line.isspace():
-        continue
-      try:
-        w, c = line.split()
-        c = int(c)
-      except (ValueError, TypeError):
-        raise ValueError("bad output format")
-      wc[w] = c
-    return wc
-
-  @staticmethod
-  def __compare_counts(c1, c2):
-    if len(c1) != len(c2):
-      print len(c1), len(c2)
-      return "number of keys differs"
-    keys = sorted(c1)
-    if sorted(c2) != keys:
-      return "key lists are different"
-    for k in keys:
-      if c1[k] != c2[k]:
-        return "values are different for key %r (%r != %r)" % (k, c1[k], c2[k])

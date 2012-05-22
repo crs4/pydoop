@@ -44,9 +44,7 @@ upload: pydoop cv dfsclean
 	$(HADOOP) dfs -put $(INPUT_DIR) $(HDFS_WORK_DIR)/input
 
 run: self_contained.py upload
-	HDFS_WORK_DIR=$(HDFS_WORK_DIR) python $< $(HDFS_WORK_DIR)/output
-	$(HADOOP) dfs -get $(HDFS_WORK_DIR)/output output
-	sort -m output/part*
+	HDFS_WORK_DIR=$(HDFS_WORK_DIR) python $< $(INPUT_DIR) $(HDFS_WORK_DIR)/output
 
 clean:
 	rm -rf $(BASE_BUILD_DIR) output
