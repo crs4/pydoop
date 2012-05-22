@@ -12,10 +12,13 @@ The purpose of this example is to demonstrate the usage of
 SequenceFileInputFormat and SequenceFileOutputFormat.
 """
 
-import os, optparse, subprocess as sp, uuid
+import os, optparse, uuid, logging
+logging.basicConfig(level=logging.INFO)
 
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
+import pydoop.test_support as pts
+import pydoop.hadut as hadut
 
 
 HADOOP = hu.get_hadoop_exec()
@@ -44,20 +47,6 @@ BASE_MR_OPTIONS = {
   }
 
 
-def build_d_options(opt_dict):
-  d_options = []
-  for name, value in opt_dict.iteritems():
-    d_options.append("-D %s=%s" % (name, value))
-  return " ".join(d_options)
-
-
-def hadoop_pipes(pipes_opts, hadoop=HADOOP):
-  cmd = "%s pipes %s" % (hadoop, pipes_opts)
-  print "running '%s'" % cmd
-  p = sp.Popen(cmd, shell=True)
-  return os.waitpid(p.pid, 0)[1]
-
-
 def make_parser():
   parser = optparse.OptionParser(usage="%prog [OPTIONS]")
   parser.add_option("-i", dest="input", metavar="STRING",
@@ -76,11 +65,11 @@ def run_wc(opt):
     })
   script, input_, output = [hdfs.path.join(WD, uuid.uuid4().hex)
                            for _ in xrange(3)]
-  hdfs.put(LOCAL_WC_SCRIPT, script)
+  with open(LOCAL_WC_SCRIPT) as f:
+    pipes_code = pts.add_sys_path(f.read())
+  hdfs.dump(pipes_code, script)
   hdfs.put(opt.input, input_)
-  hadoop_pipes("%s -program %s -input %s -output %s" % (
-    build_d_options(options), script, input_, output
-    ))
+  hadut.run_pipes(script, input_, output, properties=options)
   return output
 
 
@@ -93,24 +82,26 @@ def run_filter(opt, input_):
     "filter.occurrence.threshold": opt.threshold,
     })
   script, output = [hdfs.path.join(WD, uuid.uuid4().hex) for _ in xrange(2)]
-  hdfs.put(LOCAL_FILTER_SCRIPT, script)
-  hadoop_pipes("%s -program %s -input %s -output %s" % (
-    build_d_options(options), script, input_, output
-    ))
+  with open(LOCAL_FILTER_SCRIPT) as f:
+    pipes_code = pts.add_sys_path(f.read())
+  hdfs.dump(pipes_code, script)
+  hadut.run_pipes(script, input_, output, properties=options)
   return output
 
 
 def main():
-
   parser = make_parser()
   opt, _ = parser.parse_args()
-
   hdfs.mkdir(WD)
+  logging.info("running word count")
   wc_output = run_wc(opt)
+  logging.info("running filter")
   filter_output = run_filter(opt, wc_output)
-  hdfs.get(filter_output, OUTPUT)
-  print "output copied to %r" % (OUTPUT,)
+  logging.info("checking results")
+  res = pts.collect_output(filter_output)
   hdfs.rmr(WD)
+  local_wc = pts.LocalWordCount(opt.input, min_occurrence=opt.threshold)
+  logging.info(local_wc.check(res))
 
 
 if __name__ == "__main__":

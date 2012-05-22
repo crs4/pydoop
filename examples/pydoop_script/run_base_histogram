@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, uuid, tempfile, shutil
+import os, uuid, tempfile, shutil, logging
+logging.basicConfig(level=logging.INFO)
 import subprocess as sp
 
 import pydoop.hdfs as hdfs
@@ -14,6 +15,7 @@ LOCAL_OUTPUT = tempfile.mkdtemp()
 
 
 def main():
+  logging.info("copying data to HDFS")
   hdfs.put(LOCAL_INPUT, HDFS_INPUT)
   args = [
     PYDOOP_SCRIPT,
@@ -21,13 +23,14 @@ def main():
     HDFS_INPUT,
     HDFS_OUTPUT,
     ]
+  logging.info("running MapReduce application")
   retcode = sp.call(args)
   if retcode:
     raise RuntimeError("Error running pydoop_script")
+  logging.info("checking results")
   hdfs.get(HDFS_OUTPUT, LOCAL_OUTPUT)
   for d in HDFS_INPUT, HDFS_OUTPUT:
     hdfs.rmr(d)
-  print "output downloaded to %r" % (LOCAL_OUTPUT,)
   output_dir = os.path.join(LOCAL_OUTPUT, HDFS_OUTPUT)
   out_fnames = sorted([os.path.join(output_dir, fn)
                        for fn in os.listdir(output_dir)

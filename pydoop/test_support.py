@@ -71,8 +71,9 @@ def compare_counts(c1, c2):
 
 class LocalWordCount(object):
 
-  def __init__(self, input_dir):
+  def __init__(self, input_dir, min_occurrence=0):
     self.input_dir = input_dir
+    self.min_occurrence = min_occurrence
     self.__expected_output = None
 
   @property
@@ -91,6 +92,8 @@ class LocalWordCount(object):
           line = line.split()
           for w in line:
             wc[w] = wc.get(w, 0) + 1
+    if self.min_occurrence:
+      wc = dict(t for t in wc.iteritems() if t[1] >= self.min_occurrence)
     return wc
 
   def check(self, output):
