@@ -1,2 +1,0 @@
-(run the wc-minimal example to reproduce the error)
-Hadoop Pipes Exception: Unknown binary command 10 at src/HadoopPipes.cc:446 in virtual void HadoopPipes::BinaryProtocol::nextEvent()
