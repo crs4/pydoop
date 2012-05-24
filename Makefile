@@ -90,4 +90,4 @@ distclean: clean
 
 uninstall_user:
 	rm -rf ~/.local/lib/python$(PY_V)/site-packages/pydoop*
-	rm -f ~/.local/bin/pydoop_script
+	rm -f ~/.local/bin/pydoop

@@ -7,7 +7,7 @@ import subprocess as sp
 import pydoop.hdfs as hdfs
 
 
-PYDOOP_SCRIPT = "../../scripts/pydoop_script"
+PYDOOP_EXE = "../../scripts/pydoop"
 SCRIPT = "lowercase.py"
 with open(SCRIPT) as fi:
   text = fi.read()
@@ -22,7 +22,8 @@ def main():
   logging.info("copying data to HDFS")
   hdfs.put(LOCAL_INPUT, HDFS_INPUT)
   args = [
-    PYDOOP_SCRIPT,
+    PYDOOP_EXE,
+    "script",
     '--num-reducers', '0',
     '--kv-separator', '',
     SCRIPT,

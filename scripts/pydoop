@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
+import sys, os
+if os.path.isdir("pydoop"):
+  try:
+    sys.path.remove(os.getcwd())
+  except ValueError:
+    pass
+from pydoop.app.main import main
+
+if __name__ == "__main__":
+  main(sys.argv[1:])
