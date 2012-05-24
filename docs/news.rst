@@ -29,7 +29,7 @@ Easy Pydoop scripting
 
 We have added a new executable :ref:`pydoop_script <pydoop_script>` to the 
 Pydoop distribution to make it trivially
-simple to run write shorts scripts for simple problems.  See the 
+simple to write shorts scripts for simple problems.  See the
 :ref:`pydoop_script <pydoop_script>` page for details.
 
 

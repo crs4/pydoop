@@ -139,9 +139,9 @@ class PydoopScript(object):
     # whether to use our custom Java NoSeparatorTextOutputFormat.
     self.use_no_sep_writer = False
 
-  def parse_cmd_line(self):
+  def parse_cmd_line(self, args=None):
     self.options, self.left_over_args = self.parser.parse_known_args(
-      namespace=type(self).Args()
+      args=args, namespace=type(self).Args()
       )
     # set the job name.  Do it here so the user can override it
     self.properties['mapred.job.name'] = os.path.basename(self.options.module)
@@ -257,11 +257,17 @@ class PydoopScript(object):
         tmp.close()
 
 
-if __name__ == '__main__':
+def main(args):
   script = PydoopScript()
-  script.parse_cmd_line()
+  script.parse_cmd_line(args)
   try:
     print script.run()
   except RuntimeError as e:
     sys.stderr.write("Error running Pydoop script\n%s" % e)
-    sys.exit(1)
+    return 1
+  else:
+    return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main(sys.argv[1:]))
