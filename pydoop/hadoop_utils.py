@@ -80,6 +80,8 @@ def get_hadoop_home(fallback=DEFAULT_HADOOP_HOME):
   hadoop_home = os.getenv("HADOOP_HOME")
   if hadoop_home:
     return hadoop_home
+  if fallback:
+    return fallback
   cloudera_home = first_dir_in_glob("/usr/lib/hadoop*")
   if cloudera_home:
     return cloudera_home
@@ -89,8 +91,6 @@ def get_hadoop_home(fallback=DEFAULT_HADOOP_HOME):
   for path in os.environ["PATH"].split(os.pathsep):
     if is_exe(os.path.join(path, 'hadoop')):
       return os.path.dirname(path)
-  if fallback:
-    return fallback
   raise ValueError("Hadoop home not found, try setting HADOOP_HOME")
 
 

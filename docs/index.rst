@@ -9,24 +9,25 @@ Pydoop Documentation
 **Version:** |release|
 
 Welcome to Pydoop.  Pydoop is a package that provides a Python API for
-Hadoop MapReduce and HDFS.  As opposed to other solutions for Hadoop
-Python programming, Pydoop uses the CPython interpreter and as such
-allows you to access all the regular Python modules, some of which may
-not be available for other Python interpreters---e.g., `NumPy
-<numpy.scipy.org>`_.  Pydoop is based on Hadoop pipes, which is
-slightly faster than Hadoop streaming.  In addition, Pydoop provides a
-native Python HDFS API which, to the best of our knowledge, is not
-available in other solutions.
+`Hadoop <http://hadoop.apache.org>`_ MapReduce and HDFS.  Pydoop has
+several advantages [#pydoop]_ over Hadoop's built-in solutions for
+Python programming, i.e., Hadoop Streaming and Jython: being a CPython
+package, it allows you to access all standard library and third party
+modules, some of which may not be available for other Python
+implementations -- e.g., `NumPy <http://numpy.scipy.org>`_; in
+addition, Pydoop provides a Python HDFS API which, to the best of our
+knowledge, is not available in other solutions.
 
 
-Easy Hadoop scripting
+Easy Hadoop Scripting
 +++++++++++++++++++++
 
-In addition to its complete MapReduce API, Pydoop also provides a solution for
-easy Hadoop scripting which allows you to work in a way similar to 
-`Dumbo <https://github.com/klbostee/dumbo>`_.  This mechanism lowers the
-programming effort to the point that you may start finding yourself writing 
-simple 3-line throw-away Hadoop scripts!
+In addition to its MapReduce and HDFS API, Pydoop also provides a
+solution for easy Hadoop scripting which allows you to work in a way
+similar to `Dumbo <https://github.com/klbostee/dumbo>`_.  This
+mechanism lowers the programming effort to the point that you may
+start finding yourself writing simple 3-line throw-away Hadoop
+scripts!
 
 For simple tasks such as word counting, for instance, your code would
 look like this:
@@ -95,6 +96,15 @@ shows some of these functionalities:
 See the :ref:`tutorial <hdfs-api-examples>` for more examples.
 
 
+How to Cite
++++++++++++
+
+Pydoop is developed and maintained by researchers at `CRS4
+<http://www.crs4.it>`_ -- Distributed Computing group.  If you use
+Pydoop as part of your research work, please cite `the HPDC 2010 paper
+<http://dx.doi.org/10.1145/1851476.1851594>`_.
+
+
 Contents
 ========
 
@@ -111,9 +121,18 @@ Contents
    for_dumbo_users
 
 
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+.. rubric:: Footnotes
+
+.. [#pydoop] Simone Leo, Gianluigi Zanetti. `Pydoop: a Python
+   MapReduce and HDFS API for Hadoop.
+   <http://dx.doi.org/10.1145/1851476.1851594>`_, Proceedings Of The
+   19th ACM International Symposium On High Performance Distributed
+   Computing, page 819--825, 2010

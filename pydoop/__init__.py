@@ -19,11 +19,11 @@ import pydoop.hadoop_utils as hu
 
 try:
   from config import DEFAULT_HADOOP_HOME
+  from version import version as __version__
 except ImportError:  # should only happen at compile time
-  DEFAULT_HADOOP_HOME = None
+  DEFAULT_HADOOP_HOME = __version__ = None
 _PATH_FINDER = hu.PathFinder()
 
-__version__ = "0.6.0-rc3"
 __author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
 __author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
 __url__ = "http://pydoop.sourceforge.net"

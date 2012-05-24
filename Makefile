@@ -48,10 +48,10 @@ docs/_static/favicon.ico: logo/favicon.svg
 	convert favicon-16.png favicon-32.png favicon-64.png favicon-128.png $@
 	rm -f favicon-*.png
 
-docs: logo favicon
+docs: install_user logo favicon
 	make -C docs html
 
-docs_py:
+docs_py: install_user_py logo favicon
 	make -C docs html
 
 docs_put: docs
