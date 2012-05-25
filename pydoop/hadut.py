@@ -199,11 +199,11 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   hadoop.pipes.java.recordreader and hadoop.pipes.java.recordwriter to 'true'.
 
   This function works around a bug in Hadoop pipes that manifests itself when
-  running versions of Hadoop with security (i.e. >= 0.20.203) and using the
+  running versions of Hadoop with security (i.e., >= 0.20.203) and using the
   local file system as the default (no HDFS); see
   https://issues.apache.org/jira/browse/MAPREDUCE-4000.
-  In those set-ups, the function uses Pydoop's own pipes Submitter application.
-  You can force the use of Pydoop's Submitter by passing the argument
+  In those set-ups, the function uses Pydoop's own pipes submitter application.
+  You can force the use of Pydoop's submitter by passing the argument
   force_pydoop_submitter=True.
   """
   if properties is None:

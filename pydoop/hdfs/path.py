@@ -2,7 +2,7 @@
 # END_COPYRIGHT
 
 """
-pydoop.hdfs.path -- path name manipulations
+pydoop.hdfs.path -- Path Name Manipulations
 -------------------------------------------
 """
 

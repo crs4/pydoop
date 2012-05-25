@@ -3,6 +3,8 @@
 # export JAVA_HOME=/my/java/home
 # export HADOOP_HOME=/my/hadoop/home
 # export HADOOP_CONF_DIR=/my/hadoop/conf/dir
+# export LDFLAGS="-L/my/lib/path -R/my/lib/path"
+# export CFLAGS=-I/my/include/path
 
 make run
 make dfsclean

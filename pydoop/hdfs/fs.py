@@ -2,7 +2,7 @@
 # END_COPYRIGHT
 
 """
-pydoop.hdfs.fs -- file system handles
+pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
 

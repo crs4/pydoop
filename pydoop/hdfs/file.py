@@ -2,7 +2,7 @@
 # END_COPYRIGHT
 
 """
-pydoop.hdfs.file -- HDFS file objects
+pydoop.hdfs.file -- HDFS File Objects
 -------------------------------------
 """
 

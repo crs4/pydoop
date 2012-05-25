@@ -24,7 +24,7 @@ file system properties:
   group = supergroup
   name = hdfs://localhost:9000/user/simleo/test/hello.txt
   last_mod = 1333119543
-  replication = 2
+  replication = 1
   owner = simleo
   permissions = 420
   block_size = 67108864
@@ -47,7 +47,11 @@ file system properties:
   ...     print fi.read(3)
   ...
   hel
-    
+
+
+Low-level API
+-------------
+
 Pydoop's HDFS API can also be used at a lower level, which mirrors
 Hadoop's C API (libhdfs). The following (simplified) example shows how
 to build statistics of HDFS usage by block size by directly
@@ -83,10 +87,8 @@ to an HDFS instance:
   fs.close()
 
 Full source code for the example is located under ``examples/hdfs`` in
-the Pydoop distribution. You should be able to run the example by
+the Pydoop distribution.  You should be able to run the example by
 doing, from the Pydoop root directory::
 
   cd examples/hdfs
-  ./run.sh 2 2
-
-or whatever tree depth and span you decide to try.
+  ./run [TREE_DEPTH] [TREE_SPAN]

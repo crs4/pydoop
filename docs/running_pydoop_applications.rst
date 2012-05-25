@@ -1,6 +1,6 @@
 
 Running Pydoop Applications
-=============================
+===========================
 
 Pydoop applications are run as any other Hadoop Pipes applications
 (e.g., `C++ ones
@@ -24,7 +24,7 @@ configuration file, read from the local file system, is an xml
 document consisting of a simple name = value property list explained below.
 
 Configuration
-------------------
+-------------
 
 Here's an example of a configuration file:
 
@@ -69,24 +69,26 @@ The meaning of these properties is as follows:
   interface and it will be appended to the job log file name.
  
 ``hadoop.pipes.java.recordreader`` and ``hadoop.pipes.java.recordwriter``:
-  These remaining two properties must be set to ``true`` unless you are using 
-  your own customized RecordReader / RecordWriter written in Python.
+  These must be set to ``true`` unless you are using 
+  your own customized RecordReader/RecordWriter.
 
 In the job configuration file you can also set application-specific
 properties; their values will be accessible at run time through the 
-:class:`~pydoop.pipes.JobConf` object.  If you're using a Pydoop-based
-application, see its documentation for details.
+:class:`~pydoop.pipes.JobConf` object.
 
-Finally, you can include general Hadoop properties (e.g., ``mapred.reduce.tasks``\ ).
-See the Hadoop documentation for a list of the available properties and their
-meanings.
+Finally, you can include general Hadoop properties (e.g.,
+``mapred.reduce.tasks``\ ).  See the Hadoop documentation for a list
+of the available properties and their meanings.
 
-.. note:: You can also configure property values on the command line with the
-   syntax ``-D property.name=value``.  You may find this more convenient when
-   scripting or temporarily overriding a specific property value.
+.. note:: You can also configure property values on the command line
+   with the ``-D property.name=value`` syntax .  You may find this
+   more convenient when scripting or temporarily overriding a specific
+   property value.  If you specify all required properties with the -D
+   switches, the xml configuration file is not necessary.
+
 
 Running
----------------
+-------
 
 Before running your application, you need to perform the
 following steps:
@@ -95,10 +97,16 @@ following steps:
 
 * prepare the xml configuration file, indicating the HDFS path to the
   launcher as shown above; alternatively, you can specify the
-  launcher's path it by passing it as an argument to the ``-program my_launcher``
-  command line option or setting the property on the command line with 
-  ``-D hadoop.pipes.executable=my_launcher``;
+  launcher's path it by passing it as an argument to the ``-program
+  my_launcher`` command line option or setting the property on the
+  command line with ``-D hadoop.pipes.executable=my_launcher``;
+
+  * alternatively, set *all* properties with the -D switches as shown above
 
 * check that the ``output`` directory does not exist (it will not be
   overwritten: an error will be generated instead).
 
+The ``examples`` subdirectory of Pydoop's distribution root contains
+several examples of Python scripts that integrate all of the above
+steps into a convenient command line tool.  Documentation for the
+examples is in the :ref:`examples` section.

@@ -14,7 +14,9 @@ Minimal WordCount
 -----------------
 
 This example includes only the bare minimum required to run the
-application. The entire application consists of just 14 lines of code::
+application. The entire application consists of just 14 lines of code:
+
+.. code-block:: python
 
   from pydoop.pipes import Mapper, Reducer, Factory, runTask
   
@@ -42,35 +44,29 @@ This is a more verbose version of the above example, written with the
 purpose of demonstrating most of Pydoop's MapReduce and HDFS
 features. Specifically it shows how to:
 
- * write MapReduce components other than the required Mapper and Reducer  
- * use custom counters and send status reports to the framework
- * get job configuration parameters
- * interact with HDFS
+* write MapReduce components other than the required Mapper and Reducer  
+* use custom counters and send status reports to the framework
+* get job configuration parameters
+* interact with HDFS
  
 The RecordReader, RecordWriter and Partitioner classes are Python
-reimplementations of their default Java counterparts, the ones the
-framework uses if you don't provide your own. As such they are not
-needed for the application to work: they have been included only to
-provide a tutorial on writing additional MapReduce components.
+reimplementations of their default Java counterparts, i.e., the ones
+the framework uses if you don't provide your own. As such, they are
+not needed for the application to work: they have been included only
+to provide a tutorial on writing additional MapReduce components.
 
-For further details, take a look at the source code in the
-``examples/wordcount`` subdirectory of the Pydoop distribution.
+For further details, take a look at the code in the
+``examples/wordcount/bin`` subdirectory of the Pydoop distribution.
 
 
-Running the examples
--------------------------
+Running the Examples
+--------------------
 
-You should be able to run the examples by doing, from the pydoop root directory::
+From the Pydoop root directory, do the following::
 
-  cd examples/wordcount/test/
-  ./run_wc_minimal.sh
-
-or
-
-::
-
-  cd examples/wordcount/test/
-  ./run_wc_full.sh 
+  cd examples/wordcount
+  ./run_wc_minimal
+  ./run_wc_full 
 
 
 .. rubric:: Footnotes

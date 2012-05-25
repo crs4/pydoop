@@ -5,21 +5,16 @@ Pydoop includes several usage examples: you can find them in the
 "examples" subdirectory of the distribution root. 
 
 
-Remarks on running the examples
--------------------------------
-
-Some tips for running the examples and other Pydoop applications.
-
-Home directory
-++++++++++++++
+Home Directory
+--------------
 
 If you've installed Pydoop or other modules locally, i.e., into
 ``~/.local/lib/python2.7/site-packages``, the Python code that runs
 within Hadoop tasks might not be able to find them. This is due to the
 fact that, according to your Hadoop version or configuration, those
-tasks might run as a different user. In Hadoop 1.0, you can work
+tasks might run as a different user.  In Hadoop 1.0, you can work
 around this problem by setting the ``mapreduce.admin.user.home.dir``
-configuration parameter. In order to make Hadoop examples work under
+configuration parameter.  In order to make Hadoop examples work under
 (hopefully) any configuration, we added an automatic hack of
 ``sys.path``.
 
@@ -29,8 +24,8 @@ installed code, you must set permissions accordingly, e.g.::
     chmod -R 755 ~/.local
 
 
-Setting the environment for your program
-+++++++++++++++++++++++++++++++++++++++++++
+Setting the Environment for your Program
+----------------------------------------
 
 When working on a shared cluster where you don't have root access, you
 might have a lot of software installed in non-standard locations, such
@@ -80,15 +75,21 @@ the desired ``LD_LIBRARY_PATH`` in your ``.profile`` or ``.bashrc``\
     LD_LIBRARY_PATH = os.environ["LD_LIBRARY_PATH"]
   except KeyError:
     sys.exit("ERROR: could not get LD_LIBRARY_PATH!")
-  f = open(script)
-  code = f.read()
-  f.close()
-  of = open("%s.bak" % script, "w")
-  of.write(code)
-  of.close()
+  with open(script) as f:
+    code = f.read()
+  with open("%s.bak" % script, "w") as of:
+    of.write(code)
   if code.startswith("#!"):
     code = code.split(os.linesep, 1)[1]
   code = NEW_HEADER % (LD_LIBRARY_PATH, sys.executable) + code
-  of = open(script, "w")
-  of.write(code)
-  of.close()
+  with open(script, "w") as of:
+    of.write(code)
+
+
+Input Data
+----------
+
+Most examples, by default, take their input from a free version of
+Lewis Carrol's "Alice's Adventures in Wonderland" available at
+`Project Gutenberg <http://www.gutenberg.org>`_ (see the
+``examples/input`` sub-directory).

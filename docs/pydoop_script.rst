@@ -256,13 +256,20 @@ Writer Object
 The writer object given as the third parameter to both ``mapper`` and
 ``reducer`` functions has the following methods:
 
- * ``emit(k, v)``: pass a (k, v) key-value pair to the framework
- * ``count(what, how_many)``: add ``how_many`` to the counter named
-   ``what``.  If the counter doesn't already exist, it will be created
-   dynamically
- * ``status(msg)``: update the task status to ``msg``
- * ``progress()``: tell the framework your script is alive when it may spend
-   a long time without calling any of the writer's other methods
+* ``emit(k, v)``: pass a ``(k, v)`` key-value pair to the framework
+* ``count(what, how_many)``: add ``how_many`` to the counter named
+  ``what``.  If the counter doesn't already exist, it will be created
+  dynamically
+* ``status(msg)``: update the task status to ``msg``
+* ``progress()``: mark your task as having made progress without changing
+  the status message
+
+The latter two methods are useful for keeping your task alive in cases
+where the amount of computation to be done for a single record might
+exceed Hadoop's timeout interval: Hadoop kills a task after a number
+of milliseconds set through the ``mapred.task.timeout`` property --
+which defaults to 600000, i.e., 10 minutes -- if it neither reads an
+input, writes an output, nor updates its status string.
 
 
 Naming your Functions

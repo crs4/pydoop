@@ -78,10 +78,11 @@ tab-separated key-value pair. The problem is solved by using
 
 For further details, see the source code under ``examples/sequence_file``\ .
 
-Running the example
--------------------------
 
-You should be able to run the example by doing, from the pydoop root directory::
+Running the Example
+-------------------
+
+From the Pydoop root directory::
 
   cd examples/sequence_file
-  ./run_app.py ../input/
+  ./run
