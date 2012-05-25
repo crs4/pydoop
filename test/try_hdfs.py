@@ -1,3 +1,6 @@
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 """
 Check that reloading the hdfs module after changing
 os.environ['HADOOP_CONF_DIR'] works (i.e., Pydoop references the

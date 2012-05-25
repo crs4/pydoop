@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# BEGIN_COPYRIGHT
+# END_COPYRIGHT
+
 import os, uuid, tempfile, shutil, logging
 logging.basicConfig(level=logging.INFO)
 import subprocess as sp

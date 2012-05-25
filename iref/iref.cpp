@@ -1,3 +1,6 @@
+// BEGIN_COPYRIGHT
+// END_COPYRIGHT
+
 #include <boost/python.hpp>
 #include <iostream>
 
