@@ -1,4 +1,5 @@
-include AUTHORS CHANGES LICENSE
+include AUTHORS LICENSE VERSION
+
 include src/*.hpp
 recursive-include src/it *
 exclude src/HadoopPipes.cc
@@ -6,23 +7,21 @@ exclude src/StringUtils.cc
 exclude src/SerialUtils.cc
 exclude src/_pipes_main.cpp
 exclude src/_hdfs_main.cpp
+
 include test/all_tests_pipes.py
 include test/all_tests_hdfs.py
 include test/all_tests.py
-exclude test/test_return_iref.py
+include test/common_hdfs_tests.py
+include test/utils.py
 exclude test/test_string_lifetime.py
-include examples/README
-recursive-include examples/input *
-recursive-include examples/wordcount *
-recursive-include examples/self_contained *
-recursive-include examples/sequence_file *
-recursive-include examples/hdfs *
-recursive-include examples/ipcount *
-recursive-include examples/input_format *
+
+recursive-include examples *
 recursive-exclude examples/input_format/net/sourceforge/pydoop/mapreduce *
-recursive-include examples/pydoop_script *
+exclude examples/text_pipe_runner.py
+
 exclude pydoop/hadoop_serial.py
 exclude pydoop/text_protocol.py
 exclude pydoop/binary_protocol.py
 exclude pydoop/pipes_runner.py
+
 recursive-include docs *

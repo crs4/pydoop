@@ -1,7 +1,3 @@
-/*
-  g++ -fPIC -shared -I/usr/include/python2.6  iref.cpp  -lboost_python -o iref.so 
- */
-
 #include <boost/python.hpp>
 #include <iostream>
 
@@ -24,7 +20,7 @@ struct payload {
 
 void payload_user(bp::object payload_maker){
   typedef std::auto_ptr<payload> auto_payload;
-  std::cerr << "payload_user: -- 0 --" << std::endl;  
+  std::cerr << "payload_user: -- 0 --" << std::endl;
   bp::object pl = payload_maker(20);
   std::cerr << "payload_user: -- 1 --" << std::endl;
   payload* p = bp::extract<payload*>(pl);
@@ -35,7 +31,7 @@ void payload_user(bp::object payload_maker){
   std::cerr << "payload_user: ap.get() -> " << p << std::endl;
   ap.release();
   delete p;
-  std::cerr << "payload_user: -- 2 --" << std::endl;  
+  std::cerr << "payload_user: -- 2 --" << std::endl;
 }
 
 
