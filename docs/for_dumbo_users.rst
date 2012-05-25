@@ -6,37 +6,39 @@ Pydoop is not the only way to write Hadoop applications in Python. The
 Jython. The main disadvantages with these approaches are the
 following:
 
-#. Streaming does not provide a true API: the developer writes a
-   mapper and a reducer script that communicate with the framework via
+#. Streaming does not provide an API: the developer writes a mapper
+   and a reducer script that communicate with the framework via
    standard input/output. The programming style is therefore rather
    awkward, especially in the case of reducers, where developers must
    manually handle key switching. More importantly, there is no way to
    write a Python RecordReader, RecordWriter or Partitioner. In Hadoop
-   versions prior to 0.21, Streaming has the additional limitation of
-   only being able to process UTF-8 text records;
+   versions that do not include the `HADOOP-1722
+   <https://issues.apache.org/jira/browse/HADOOP-1722>`_ patch,
+   Streaming has the additional limitation of only being able to
+   process UTF-8 text records;
 
 #. Jython is a Java implementation of the Python language: the
    standard C implementation, in cases where ambiguity may arise, is
    referred to as "CPython". Although this approach gives access to
-   the full programming API, it is limited by the fact that CPython
+   the full Hadoop API, it is limited by the fact that CPython
    modules (including part of the standard library) cannot be used.
 
 As a consequence, few Python programmers use Streaming or Jython
 directly. A popular alternative is offered by `Dumbo
 <http://klbostee.github.com/dumbo>`_, a programming framework built as
-a wrapper around Streaming that allows for a more natural API-like
-coding style and also includes facilities to make job running
-easier. Its author, `Klaas Bosteels
-<http://users.ugent.be/~klbostee/>`_, is also the author of the patch
-that lifted the aforementioned UTF-8 restriction from
-Streaming. However, writing Python components other than the mapper,
-reducer and combiner is not possible, and there is no HDFS
-API. Pydoop, on the other hand, gives you almost complete access to
-MapReduce components (you can write a Python RecordReader,
-RecordWriter and Partitioner) and to HDFS without adding much
-complexity. As an example, in this section we will show how to rewrite
-Dumbo's tutorial example in Pydoop. Throughout the rest of this
-section we refer to examples and results from Dumbo version 0.21.28.
+a wrapper around Streaming that allows for a more elegant coding style
+and also includes facilities to make job running easier. Its author,
+Klaas Bosteels, is also the author of the aforementioned patch for
+Streaming.
+
+However, writing Python components other than the mapper, reducer and
+combiner is not possible in Dumbo, and there is no HDFS API. Pydoop,
+on the other hand, gives you almost complete access to MapReduce
+components (you can write a Python RecordReader, RecordWriter and
+Partitioner) and to HDFS without adding much complexity. As an
+example, in this section we will show how to rewrite Dumbo's tutorial
+example in Pydoop. Throughout the rest of this section we refer to
+examples and results from Dumbo version 0.21.28.
 
 
 Counting IPs from an Apache Access Log
@@ -47,55 +49,58 @@ The ``examples`` directory includes a Pydoop reimplementation of
 <http://wiki.github.com/klbostee/dumbo/short-tutorial>`_, an
 application for generating a list of the IPs that occur more
 frequently in an `Apache access log
-<http://httpd.apache.org/docs/1.3/logs.html#common>`_. Complete
-documentation for the tutorial is included in [#f1]_.
+<http://httpd.apache.org/docs/1.3/logs.html#common>`_.
 
-The Dumbo MapReduce code for the basic example is::
+The Dumbo MapReduce code for the basic example is:
 
-  def mapper(key,value):
+.. code-block:: python
+
+  def mapper(key, value):
     yield value.split(" ")[0], 1
     
-  def reducer(key,values):
+  def reducer(key, values):
     yield key, sum(values)
     
   if __name__ == "__main__":
     import dumbo
     dumbo.run(mapper, reducer, combiner=reducer)
 
-
 and it is run with::
 
-  $ dumbo start ipcount.py -hadoop /usr/local/hadoop \
-      -input access.log -output ipcounts
-  $ dumbo cat ipcounts | sort -k2,2nr | head -n 5
-
+  dumbo start ipcount.py -input access.log -output ipcounts
+  dumbo cat ipcounts | sort -k2,2nr | head -n 5
 
 With Pydoop, we could implement the above program using
-:ref:`pydoop_script`.  Write an ``ipcount_script.py`` module::
+:ref:`pydoop_script`.  Write an ``ipcount_script.py`` module:
 
-  def mapper(key,value, writer):
-    writer.emit(value.split(None, 1)[0], 1)
+.. code-block:: python
 
-  def reducer(key, ivalue, writer):
-    writer.emit(key, sum(map(int, ivalue)))
+  def mapper(key, value, writer):
+    writer.emit(value.split(" ")[0], 1)
+
+  def reducer(key, itervalues, writer):
+    writer.emit(key, sum(map(int, itervalues)))
 
 Then, run it with::
 
-  pydoop_script ipcount_script.py access.log output
+  pydoop script ipcount_script.py access.log ipcounts
   hadoop fs -cat output/part* | sort -k2,2nr | head -n 5
- 
 
-It should be noted that ``pydoop_script`` doesn't allow you to set a combiner
-class, nor do tackle more sophisticated problems, perhaps where you would need
+It should be noted that Pydoop Script doesn't allow you to set a combiner
+class, nor to tackle more sophisticated problems, perhaps where you would need
 to track a state within your mapper or reducer objects.  If you need that sort
 of functionality then step up to the full Pydoop framework.  In that case, you
-would implement the program above as follows::
+would implement the program above as follows:
 
+.. code-block:: python
+
+  #!/usr/bin/env python
+  
   import pydoop.pipes as pp
-    
+  
   class Mapper(pp.Mapper):
     def map(self, context):
-      context.emit(context.getInputValue().split(None,1)[0], "1")
+      context.emit(context.getInputValue().split(" ")[0], "1")
   
   class Reducer(pp.Reducer):
     def reduce(self, context):
@@ -103,80 +108,87 @@ would implement the program above as follows::
       while context.nextValue():
         s += int(context.getInputValue())
       context.emit(context.getInputKey(), str(s))
-    
+  
   if __name__ == "__main__":
     pp.runTask(pp.Factory(Mapper, Reducer, combiner_class=Reducer))
 
+To run the application, save the above code to ``ipcount_pydoop.py`` and run::
 
-To run the bare Pydoop program use the ``hadoop pipes`` command::
-
-  $ hadoop fs -put ipcount_pydoop.py ipcount_pydoop.py
-  $ hadoop pipes -D hadoop.pipes.java.recordreader=true \
-      -D hadoop.pipes.java.recordwriter=true \
-      -program ipcount_pydoop.py -input access.log -output output
-  $ hadoop fs -cat output/part* | sort -k2,2nr | head -n 5
-
+  hadoop fs -put ipcount_pydoop.py ipcount_pydoop.py
+  hadoop pipes \
+    -D hadoop.pipes.java.recordreader=true \
+    -D hadoop.pipes.java.recordwriter=true \
+    -program ipcount_pydoop.py \
+    -input access.log \
+    -output ipcounts
+  hadoop fs -cat output/part* | sort -k2,2nr | head -n 5
 
 It's easy enough to wrap all steps needed to execute the application
 in a driver Python script with a nice command line interface: an
-example is given by the "ipcount" program in the ``examples/ipcount``
+example is given in the ``examples/ipcount``
 directory. In particular, by leveraging Pydoop's HDFS API,
 manipulation of output files such as the one performed by the last
 command and HDFS uploads can be done within Python, without any need
-to call the Hadoop command-line programs::
+to call the Hadoop command line programs:
 
-  def print_first_n(fs, output_path, n):
+.. code-block:: python
+
+  def collect_output(mr_out_dir):
     ip_list = []
-    for entry in fs.list_directory(output_path):
-      fn = entry["name"]
-      if fn.rsplit("/",1)[-1].startswith("part"):
-        f = fs.open_file(fn)
-        for line in f:
-          ip, count = line.strip().split()
-          ip_list.append((ip, int(count)))
-        f.close()
-    ip_list.sort(key=operator.itemgetter(1), reverse=True)
-    for ip, count in ip_list[:n]:
-      print "%s\t%d" % (ip, count)
+    for fn in hdfs.ls(mr_out_dir):
+      if hdfs.path.basename(fn).startswith("part"):
+        with hdfs.open(fn) as f:
+          for line in f:
+            ip, count = line.strip().split("\t")
+            ip_list.append((ip, int(count)))
+    return ip_list
 
-To run the application via the ``ipcount`` wrapper, execute the
-following from the ``examples/ipcount`` directory::
+  ip_list = collect_output("ipcounts")
+  ip_list.sort(key=operator.itemgetter(1), reverse=True)
+  for ip, count in ip_list[:5]:
+    print "%s\t%d" % (ip, count)
 
-  $ ./ipcount input
+To run the example, do the following (from Pydoop's distribution root)::
+
+  cd examples/ipcount
+  ./run
 
 
-Input from arbitrary files
+Input from Arbitrary Files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The next step in the Dumbo tutorial shows how to get additional input
 from arbitrary files. Specifically, the application reads a file
 containing a list of IP addresses that must not be taken into account
-when building the top five list::
+when building the top five list:
+
+.. code-block:: python
 
   class Mapper:
   
     def __init__(self):
       file = open("excludes.txt", "r")
-      self.excludes = set(line[:-1] for line in file)
+      self.excludes = set(line.strip() for line in file)
       file.close()
   
     def __call__(self, key, value):
-      ip = value.partition(" ")[0]
+      ip = value.split(" ")[0]
       if not ip in self.excludes:
         yield ip, 1
 
-Pydoop's implementation is quite similar::
+Pydoop's implementation is quite similar:
+
+.. code-block:: python
 
   class Mapper(pp.Mapper):
   
     def __init__(self, context):
       super(Mapper, self).__init__(context)
-      f = open("excludes.txt")
-      self.excludes = set([line.strip() for line in f])
-      f.close()
+      with open("excludes.txt") as f:
+        self.excludes = set(line.strip() for line in f)
   
     def map(self, context):
-      ip = context.getInputValue().split(None,1)[0]
+      ip = context.getInputValue().split(None, 1)[0]
       if ip not in self.excludes:
         context.emit(ip, "1")
 
@@ -185,8 +197,7 @@ file to all cluster nodes. Dumbo takes advantage of Streaming's
 ``-file`` option which, in turn, uses `Hadoop's distributed cache
 <http://hadoop.apache.org/common/docs/r0.20.2/mapred_tutorial.html#DistributedCache>`_::
 
-  $ dumbo start ipcount.py -hadoop /usr/local/hadoop \
-      -input access.log -output ipcounts -file excludes.txt
+  $ dumbo start ipcount.py -input access.log -output ipcounts -file excludes.txt
 
 In the case of Pydoop, you can use the distributed cache by setting
 the following configuration parameters in your XML conf file:
@@ -206,14 +217,14 @@ the following configuration parameters in your XML conf file:
 Alternatively, you can set them directly as command line options for
 pipes, by adding ``-D mapred.cache.files=excludes.txt#excludes.txt -D
 mapred.create.symlink=yes`` right after the ``pipes`` command. The
-latter approach is the one we used in ipcount (check the source code
-for details). Since we made the name of the excludes file a command
-line option, in our case you would run::
+latter approach is the one we used in the example (check the code for
+details)::
 
-  $ ./ipcount -e excludes.txt input
+  cd examples/ipcount
+  python ipcount.py -e excludes.txt -i access.log -n 5
 
-The "-e" option is turned into a MapReduce JobConf parameter by
-``ipcount``. In the next section we will see how JobConf parameters
+The ``-e`` option is turned into a MapReduce JobConf parameter by the
+Python code. In the next section we will see how JobConf parameters
 are passed to the MapReduce application in both Dumbo and Pydoop.
 
 
@@ -222,7 +233,9 @@ Status Reports, Counters and Configuration Parameters
 
 Being built as a wrapper around Streaming, Dumbo sends status reports
 and counter updates to the framework via standard error. This is,
-however, hidden from the programmer::
+however, hidden from the programmer:
+
+.. code-block:: python
 
   class Mapper:
     
@@ -230,25 +243,24 @@ however, hidden from the programmer::
       self.status = "Initialization started"
       self.excludes_fn = self.params["excludes"]
       file = open(self.excludes_fn, "r")
-      self.excludes = set(line[:-1] for line in file)
+      self.excludes = set(line.strip() for line in file)
       file.close()
       self.status = "Initialization done"
   
     def __call__(self, key, value):
-      ip = value.partition(" ")[0]
+      ip = value.split(" ")[0]
       if not ip in self.excludes:
         yield ip, 1
       else:
         self.counters["Excluded lines"] += 1
 
-Note that, in the above snippet, the hardwired reference to
-"excludes.txt" has been replaced by a configuration parameter (this is
-a modification we applied to the original tutorial, which uses a
-different example). In Dumbo, values for parameters are supplied via
-the ``-param`` option: in this case, for instance, you would add
-``-param excludes=excludes.txt`` to Dumbo's command line.
+In Dumbo, values for parameters are supplied via the ``-param``
+option: in this case, for instance, you would add ``-param
+excludes=excludes.txt`` to Dumbo's command line.
 
-The Pydoop equivalent of the above is::
+The Pydoop equivalent of the above is:
+
+.. code-block:: python
 
   class Mapper(pp.Mapper):
   
@@ -259,11 +271,10 @@ The Pydoop equivalent of the above is::
       jc = context.getJobConf()
       pu.jc_configure(self, jc, "ipcount.excludes", "excludes_fn", "")
       if self.excludes_fn:
-        f = open(self.excludes_fn)
-        self.excludes = set([line.strip() for line in f])
-        f.close()
+        with open(self.excludes_fn) as f:
+          self.excludes = set(line.strip() for line in f)
       else:
-        self.excludes = set([])
+        self.excludes = set()
       context.setStatus("Initialization done")
   
     def map(self, context):
@@ -275,16 +286,16 @@ The Pydoop equivalent of the above is::
 
 The ``ipcount.excludes`` parameter is passed in the same way as any
 other configuration parameter (see the distributed cache example in
-the previous section). The dotted name convention is useful to avoid
-clashing with standard Hadoop parameters.
+the previous section).
 
 
 Input and Output Formats
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 Just like Dumbo, Pydoop has currently no support for writing Python
-input and output format classes. You can use Java input/output formats
-by setting the ``mapred.input.format.class`` and the
+input and output format classes (however, unlike Dumbo, Pydoop allows
+you to write record readers/writers). You can use Java input/output
+formats by setting the ``mapred.input.format.class`` and the
 ``mapred.output.format.class`` properties: see
 :doc:`examples/sequence_file` for an example. Note that if you write
 your own Java input/output format class, you need to pass the
@@ -304,29 +315,20 @@ Pydoop itself, to all cluster nodes, see :doc:`self_contained`\ .
 Performance
 ^^^^^^^^^^^
 
-We tested Pydoop's and Dumbo's performance with their respective
-wordcount examples from Pydoop 0.3.6 and Dumbo 0.21.28. We patched Hadoop 0.20.2
-as described in the `Building and Installing
-<http://wiki.github.com/klbostee/dumbo/building-and-installing>`_
-section of Dumbo's online documentation and rebuilt it. The test we
-ran was very similar to the one described in [#f2]_ (wordcount on 20
-GB of random English text -- average completion time over five
-iterations), but this time we used only 48 CPUs distributed over 24
-nodes and a block size of 64 MB. In [#f2]_ we found out that pre-0.21
+We tested Pydoop (version 0.3.6) and Dumbo (version 0.21.28) with
+their respective wordcount examples. The test we ran was very similar
+to the one described in [#pydoop]_ (wordcount on 20 GB of random
+English text -- average completion time over five iterations), but
+this time we used only 48 CPUs distributed over 24 nodes and a block
+size of 64 MB. In [#pydoop]_ we found out that pre-HADOOP-1722
 Streaming was about 2.6 times slower than Pydoop, while in this test
-Dumbo was only 1.9 times slower. This is likely due to the
-introduction of binary data processing in Streaming.
+Dumbo was only 1.9 times slower.
 
 
 .. rubric:: Footnotes
 
-.. [#f1] K. Bosteels, `Fuzzy techniques in the usage and construction
-         of comparison measures for music objects
-         <http://users.ugent.be/~klbostee/thesis.pdf>`_, PhD thesis,
-         Ghent University, 2009.
-.. [#f2] Simone Leo and Gianluigi Zanetti, Pydoop: a Python MapReduce
-         and HDFS API for Hadoop. In Proceedings of the `19th ACM
-         International Symposium on High Performance Distributed
-         Computing (HPDC 2010)
-         <http://hpdc2010.eecs.northwestern.edu/>`_, pages
-         819–825. ACM, 2010.
+.. [#pydoop] Simone Leo, Gianluigi Zanetti. `Pydoop: a Python
+   MapReduce and HDFS API for Hadoop.
+   <http://dx.doi.org/10.1145/1851476.1851594>`_, Proceedings Of The
+   19th ACM International Symposium On High Performance Distributed
+   Computing, page 819--825, 2010
