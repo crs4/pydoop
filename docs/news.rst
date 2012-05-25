@@ -4,8 +4,8 @@ News
 ====
 
 
-New in this Release
--------------------
+New in 0.6.0
+------------
 
 High-level HDFS API
 +++++++++++++++++++

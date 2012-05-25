@@ -14,6 +14,13 @@ regarding other Linux distributions, we expect Pydoop to work
 Linux are currently not supported.
 
 
+Get Pydoop
+----------
+
+We recommend downloading the latest release from
+https://sourceforge.net/projects/pydoop/files.
+
+
 Prerequisites
 -------------
 

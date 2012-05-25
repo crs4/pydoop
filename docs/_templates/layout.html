@@ -1,0 +1,93 @@
+{% extends "!layout.html" %}
+
+
+{%- macro mysidebar() %}
+      {%- if not embedded %}{% if not theme_nosidebar|tobool %}
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+          {%- block sidebarlogo %}
+          {%- if logo %}
+            <p class="logo"><a href="{{ pathto(master_doc) }}">
+              <img class="logo" src="{{ pathto('_static/' + logo, 1) }}" alt="Logo"/>
+            </a></p>
+          {%- endif %}
+          {%- endblock %}
+          {%- block sidebartoc %}
+          {%- if display_toc %}
+            <h3><a href="{{ pathto(master_doc) }}">{{ _('Table Of Contents') }}</a></h3>
+            {{ toc }}
+          {%- endif %}
+          {%- endblock %}
+          {%- block sidebarrel %}
+          {%- if prev %}
+            <h4>{{ _('Previous topic') }}</h4>
+            <p class="topless"><a href="{{ prev.link|e }}"
+                                  title="{{ _('previous chapter') }}">{{ prev.title }}</a></p>
+          {%- endif %}
+          {%- if next %}
+            <h4>{{ _('Next topic') }}</h4>
+            <p class="topless"><a href="{{ next.link|e }}"
+                                  title="{{ _('next chapter') }}">{{ next.title }}</a></p>
+          {%- endif %}
+          {%- endblock %}
+          {%- block sidebarsourcelink %}
+          {%- endblock %}
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="http://sourceforge.net/projects/pydoop/files/">Download page</a> </li>
+						<li> <a href="{{ pathto('installation') }}"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="{{ pathto("_static/crs4.png", 1) }}" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+
+					And generously hosted by:
+					<a href="http://sourceforge.net/projects/pydoop">
+						<img src="http://sflogo.sourceforge.net/sflogo.php?group_id=536922&amp;type=13" width="120" height="30" 
+						alt="Get Pydoop at SourceForge.net. Fast, secure and Free Open Source software downloads" />
+					</a>
+
+          {%- if customsidebar %}
+          {% include customsidebar %}
+          {%- endif %}
+          {%- block sidebarsearch %}
+          {%- if pagename != "search" %}
+          <div id="searchbox" style="display: none">
+            <h3>{{ _('Quick search') }}</h3>
+              <form class="search" action="{{ pathto('search') }}" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="{{ _('Go') }}" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              {{ _('Enter search terms or a module, class or function name.') }}
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+          {%- endif %}
+          {%- endblock %}
+        </div>
+      </div>
+      {%- endif %}{% endif %}
+{%- endmacro %}
+
+
+{% block rootrellink %}
+	<li><a href="{{ pathto('index') }}">Home</a>|&nbsp;</li>
+	<li><a href="{{ pathto('installation') }}">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://sourceforge.net/projects/pydoop/forums/forum/990018">Support</a>|&nbsp;</li>
+	<li><a href="http://sourceforge.net/projects/pydoop/">Pydoop on SF</a></li>
+{% endblock %}
+
+{# put the sidebar before the body #}
+{% block sidebar1 %}
+{{ mysidebar() }}
+{% endblock %}
+{% block sidebar2 %}{% endblock %}
