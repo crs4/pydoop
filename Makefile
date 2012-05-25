@@ -1,12 +1,6 @@
 EXPORT_DIR = /tmp/pydoop_export
-COPYRIGHT_OWNER = CRS4
-NOTICE_TEMPLATE = notice_template.txt
-COPYRIGHTER = copyrighter -n $(NOTICE_TEMPLATE) $(COPYRIGHT_OWNER)
-# install copyrighter >=0.4.0 from ac-dc/tools/copyrighter
-
-GENERATED_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc) DEFAULT_HADOOP_HOME pydoop/config.py
+GENERATED_FILES = $(wildcard src/*_main.cpp) $(wildcard src/*.cc) DEFAULT_HADOOP_HOME pydoop/config.py pydoop/version.py
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
-
 
 .PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean uninstall_user logo favicon
 
@@ -62,7 +56,6 @@ docs_view: docs
 
 dist: docs
 	rm -rf $(EXPORT_DIR) && mkdir $(EXPORT_DIR) && cp -a * $(EXPORT_DIR)
-#	$(COPYRIGHTER) -r $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
 	(cd $(EXPORT_DIR) && python setup.py sdist) && mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz . && rm -rf $(EXPORT_DIR)
