@@ -26,6 +26,14 @@ Bug Fixes and Optimizations
 Several bugs were fixed; we also introduced a few optimizations, most
 notably the automatic caching of HDFS instances.
 
+Git Repository
+++++++++++++++
+
+We have pushed our code to a `Git repository
+<http://pydoop.git.sourceforge.net/git/gitweb.cgi?p=pydoop/pydoop>`_
+hosted by Sourceforge.  See the :ref:`installation` section for
+instructions.
+
 
 New in 0.5.0
 ------------

@@ -20,6 +20,11 @@ Get Pydoop
 We recommend downloading the latest release from
 https://sourceforge.net/projects/pydoop/files.
 
+You can also get the latest code from the `Git <http://git-scm.com/>`_
+repository::
+
+  git clone git://pydoop.git.sourceforge.net/gitroot/pydoop/pydoop pydoop
+
 
 Prerequisites
 -------------
