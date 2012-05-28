@@ -25,16 +25,17 @@ import hdfs
 
 
 def inject_code(new_code, target_code):
+  """
+  Inject new_code into target_code, before the first import.
+
+  NOTE: this is just a hack to make examples work out-of-the-box, in
+  the general case it can fail in several ways.
+  """
   new_code = "{0}#---AUTO-INJECTED---{0}{1}{0}#-------------------{0}".format(
     os.linesep, os.linesep.join(new_code.strip().splitlines())
     )
-  if target_code.startswith("#!"):
-    target_code = target_code.splitlines()
-    target_code[1:1] = [new_code]
-    target_code = os.linesep.join(target_code)
-  else:
-    target_code = new_code + target_code
-  return target_code
+  pos = max(target_code.find("import"), 0)
+  return target_code[:pos] + new_code + target_code[pos:]
 
 
 def add_sys_path(target_code):
