@@ -16,7 +16,7 @@
 # 
 # END_COPYRIGHT
 
-import unittest, getpass
+import unittest, getpass, tempfile, os
 
 import pydoop.hdfs as hdfs
 from common_hdfs_tests import TestCommon, common_tests
@@ -26,11 +26,14 @@ class TestConnection(unittest.TestCase):
 
   def runTest(self):
     current_user = getpass.getuser()
+    cwd = os.getcwd()
+    os.chdir(tempfile.gettempdir())
     for user in None, current_user, "nobody":
       expected_user = current_user
       fs = hdfs.hdfs("", 0, user=user)
       self.assertEqual(fs.user, expected_user)
       fs.close()
+    os.chdir(cwd)
 
 
 class TestLocalFS(TestCommon):

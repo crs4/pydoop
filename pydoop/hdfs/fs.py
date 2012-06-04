@@ -21,7 +21,7 @@ pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
 
-import os, socket, urlparse
+import os, socket, urlparse, getpass
 
 import pydoop
 hdfs_ext = pydoop.import_version_specific_module("_hdfs")
@@ -57,10 +57,9 @@ def _get_ip(host, default=None):
 
 def _get_connection_info(host, port, user):
   fs = hdfs_ext.hdfs_fs(host, port, user)
-  wd = fs.working_directory()
-  res = urlparse.urlparse(wd)
+  res = urlparse.urlparse(fs.working_directory())
   if res.scheme == "file":
-    h, p, u = "", 0, fs.get_path_info(wd)["owner"]
+    h, p, u = "", 0, getpass.getuser()
   else:
     try:
       h, p = res.netloc.split(":")
