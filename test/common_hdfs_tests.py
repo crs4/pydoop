@@ -16,7 +16,7 @@
 # 
 # END_COPYRIGHT
 
-import sys, os, unittest, uuid
+import sys, os, unittest, uuid, shutil
 from itertools import izip
 from ctypes import create_string_buffer
 
@@ -95,6 +95,29 @@ class TestCommon(unittest.TestCase):
     self.assertFalse(self.fs.exists(path))
     self.fs.delete(parent, recursive=False)
     self.assertFalse(self.fs.exists(parent))
+
+  def copy(self):
+    local_fs = hdfs.hdfs('', 0)
+    local_wd = make_wd(local_fs)
+    from_path = os.path.join(local_wd, uuid.uuid4().hex)
+    content = uuid.uuid4().hex
+    with open(from_path, "w") as f:
+      f.write(content)
+    to_path = self._make_random_file()
+    local_fs.copy(from_path, self.fs, to_path)
+    local_fs.close()
+    with self.fs.open_file(to_path) as f:
+      self.assertEqual(f.read(), content)
+    shutil.rmtree(local_wd)
+
+  def move(self):
+    content = uuid.uuid4().hex
+    from_path = self._make_random_file(content=content)
+    to_path = self._make_random_path()
+    self.fs.move(from_path, self.fs, to_path)
+    self.assertFalse(self.fs.exists(from_path))
+    with self.fs.open_file(to_path) as f:
+      self.assertEqual(f.read(), content)
 
   def chmod(self):
     new_perm = 0777
@@ -200,9 +223,6 @@ class TestCommon(unittest.TestCase):
       self.assertEqual(chunk.value, content[offset:offset+length])
       self.assertEqual(f.tell(), 0)
 
-  def copy(self):
-    pass
-
   def copy_on_self(self):
     content = make_random_data()
     path = self._make_random_file(content=content)
@@ -210,9 +230,6 @@ class TestCommon(unittest.TestCase):
     self.fs.copy(path, self.fs, path1)
     with self.fs.open_file(path1) as f:
       self.assertEqual(f.read(), content)
-
-  def move(self):
-    pass
 
   def rename(self):
     old_path = self._make_random_file()
@@ -270,6 +287,14 @@ class TestCommon(unittest.TestCase):
         lines.append(l)
       return lines
     self.__check_readline(get_lines)
+
+  def readline_big(self):
+    for i in xrange(10, 23):
+      x = '*' * (2**i) + "\n"
+      path = self._make_random_file(content=x)
+      with self.fs.open_file(path) as f:
+        l = f.readline()
+      self.assertEqual(l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x)))
 
   def iter_lines(self):
     def get_lines_explicit(f):
@@ -337,6 +362,8 @@ def common_tests():
   return [
     'open_close',
     'delete',
+    'copy',
+    'move',
     'chmod',
     'file_attrs',
     'flush',
@@ -353,6 +380,7 @@ def common_tests():
     'get_path_info',
     'list_directory',
     'readline',
+    'readline_big',
     'iter_lines',
     'seek',
     'block_boundary',

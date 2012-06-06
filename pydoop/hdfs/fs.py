@@ -69,6 +69,15 @@ def _get_connection_info(host, port, user):
   return h, int(p), u, fs
 
 
+def _default_is_local():
+  h, _, _, fs = _get_connection_info("default", 0, "")
+  fs.close()
+  return h == ""
+
+
+DEFAULT_IS_LOCAL = _default_is_local()
+
+
 class hdfs(object):
   """
   A handle to an HDFS instance.

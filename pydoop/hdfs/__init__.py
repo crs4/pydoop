@@ -51,9 +51,7 @@ above setting.
 import os, glob
 
 import pydoop
-import path, common
-from fs import hdfs
-
+import common
 
 try:
   _ORIG_CLASSPATH
@@ -73,6 +71,8 @@ def init():
     )
 
 init()
+from fs import hdfs, DEFAULT_IS_LOCAL
+import path
 
 
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,

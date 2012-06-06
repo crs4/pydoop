@@ -41,7 +41,8 @@ class TestHDFS(unittest.TestCase):
     for path in self.local_paths:
       self.assertTrue(path.startswith("file:"))
     for path in self.hdfs_paths:
-      self.assertTrue(path.startswith("hdfs:"))
+      if not hdfs.DEFAULT_IS_LOCAL:
+        self.assertTrue(path.startswith("hdfs:"))
 
   def tearDown(self):
     fs = hdfs.hdfs("", 0)

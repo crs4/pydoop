@@ -42,7 +42,10 @@ class _HdfsPathSplitter(object):
     try:
       scheme, rest = cls.PATTERN.match(hdfs_path).groups()
     except AttributeError:
-      scheme, rest = "hdfs", hdfs_path
+      if hdfs_fs.DEFAULT_IS_LOCAL:
+        scheme, rest = "file", hdfs_path
+      else:
+        scheme, rest = "hdfs", hdfs_path
     if scheme == "hdfs":
       if rest[:2] == "//" and rest[2] != "/":
         try:
@@ -69,7 +72,8 @@ class _HdfsPathSplitter(object):
       hostname, port, path = "", 0, rest
     else:
       cls.raise_bad_path(hdfs_path, "unsupported scheme %r" % scheme)
-    path = "/%s" % path.lstrip("/")  # not handled by normpath
+    if path.startswith("/"):
+      path = "/%s" % path.lstrip("/")  # not handled by normpath
     return hostname, port, os.path.normpath(path)
 
 
@@ -130,7 +134,7 @@ def abspath(hdfs_path, user=None, local=False):
     >>> hpath.abspath('file:/tmp', local=True)
     'file:/tmp/file:/tmp'
   """
-  if local:
+  if local or hdfs_fs.DEFAULT_IS_LOCAL:
     return 'file:%s' % os.path.abspath(hdfs_path)
   hostname, port, path = split(hdfs_path, user=user)
   if hostname:

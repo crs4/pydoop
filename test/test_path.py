@@ -25,7 +25,7 @@ from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
 class TestSplit(unittest.TestCase):
 
   def good(self):
-    for p, r in [
+    cases = [
       ('hdfs://localhost:9000/', ('localhost', 9000, '/')),
       ('hdfs://localhost:9000/a/b', ('localhost', 9000, '/a/b')),
       ('hdfs://localhost/a/b', ('localhost', DEFAULT_PORT, '/a/b')),
@@ -35,29 +35,44 @@ class TestSplit(unittest.TestCase):
       ('file:///a', ('', 0, '/a')),
       ('file:/a', ('', 0, '/a')),
       ('file://localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
-      ('//localhost:9000/a/b', ('localhost', 9000, '/a/b')),
-      ('/a/b', ('default', 0, '/a/b')),
-      ('a/b', ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
-      ]:
+      ]
+    if hdfs.DEFAULT_IS_LOCAL:
+      cases.extend([
+        ('//localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
+        ('/a/b', ('', 0, '/a/b')),
+        ('a/b', ('', 0, 'a/b')),
+        ])
+    else:
+      cases.extend([
+        ('//localhost:9000/a/b', ('localhost', 9000, '/a/b')),
+        ('/a/b', ('default', 0, '/a/b')),
+        ('a/b', ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
+        ])
+    for p, r in cases:
       self.assertEqual(hdfs.path.split(p), r)
 
   def good_with_user(self):
-    for p, u, r in [
-      ('a/b', None, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
-      ('a/b', DEFAULT_USER,
-       ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
-      ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
-      ]:
+    if hdfs.DEFAULT_IS_LOCAL:
+      cases = [('a/b', u, ('', 0, 'a/b')) for u in None, DEFAULT_USER, 'foo']
+    else:
+      cases = [
+        ('a/b', None, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
+        ('a/b', DEFAULT_USER, ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
+        ('a/b', 'foo', ('default', 0, '/user/foo/a/b')),
+        ]
+    for p, u, r in cases:
       self.assertEqual(hdfs.path.split(p, u), r)
 
   def bad(self):
-    for p in [
-    'ftp://localhost:9000/',          # bad scheme
-    'hdfs://localhost:spam/',         # port is not an int
-    'hdfs://localhost:9000',          # path part is empty
-    'hdfs://localhost:9000/a:b',      # colon outside netloc
-    '/localhost:9000/a/b',            # colon outside netloc
-    ]:
+    cases = [
+      'ftp://localhost:9000/',             # bad scheme
+      'hdfs://localhost:spam/',            # port is not an int
+      'hdfs://localhost:9000',             # path part is empty
+      'hdfs://localhost:9000/a:b',         # colon outside netloc
+      ]
+    if not hdfs.DEFAULT_IS_LOCAL:
+      cases.append('/localhost:9000/a/b')  # colon outside netloc
+    for p in cases:
       self.assertRaises(ValueError, hdfs.path.split, p)
 
 
@@ -85,21 +100,28 @@ class TestAbspath(unittest.TestCase):
 
   def good(self):
     p = 'foo/bar'
+    local_abs_p = 'file:%s' % os.path.abspath(p)
     for kw, r in [
       ({"user": None, "local": False},
        '%s/user/%s/%s' % (self.root, DEFAULT_USER, p)),
       ({"user": "pydoop", "local": False},
        '%s/user/pydoop/%s' % (self.root, p)),
-      ({"user": None, "local": True},
-       'file:%s' % (os.path.abspath(p))),
+      ({"user": None, "local": True}, local_abs_p),
       ]:
-      self.assertEqual(hdfs.path.abspath(p, **kw), r)
-    p = 'file:%s' % (os.path.abspath(p))
+      if hdfs.DEFAULT_IS_LOCAL:
+        self.assertEqual(hdfs.path.abspath(p, **kw), local_abs_p)
+      else:
+        self.assertEqual(hdfs.path.abspath(p, **kw), r)
+    p = local_abs_p
+    local_abs_p = 'file:%s' % os.path.abspath(p)
     for kw, r in [
       ({"user": None, "local": False}, p),
-      ({"user": None, "local": True}, 'file:%s' % (os.path.abspath(p))),
+      ({"user": None, "local": True}, local_abs_p),
       ]:
-      self.assertEqual(hdfs.path.abspath(p, **kw), r)
+      if hdfs.DEFAULT_IS_LOCAL:
+        self.assertEqual(hdfs.path.abspath(p, **kw), local_abs_p)
+      else:
+        self.assertEqual(hdfs.path.abspath(p, **kw), r)
 
 
 class TestBasename(unittest.TestCase):

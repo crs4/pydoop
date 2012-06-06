@@ -16,36 +16,42 @@
 # 
 # END_COPYRIGHT
 
-import unittest, os, uuid, shutil, getpass, socket
+import unittest, getpass, socket
 
-from common_hdfs_tests import TestCommon, common_tests
-from utils import HDFS_HOST, HDFS_PORT, make_wd, get_bytes_per_checksum
 import pydoop.hdfs as hdfs
+from common_hdfs_tests import TestCommon, common_tests
+import utils as u
+
+
+CURRENT_USER = getpass.getuser()
 
 
 class TestConnection(unittest.TestCase):
 
   def setUp(self):
-    self.cases = [("default", 0), (HDFS_HOST, HDFS_PORT)]
-    try:
-      hdfs_ip = socket.gethostbyname(HDFS_HOST)
-    except socket.gaierror:
-      pass
-    else:
-      self.cases.append((hdfs_ip, HDFS_PORT))
+    self.hp_cases = [("default", 0)]
+    self.u_cases = [None, CURRENT_USER]
+    if not hdfs.DEFAULT_IS_LOCAL:
+      self.hp_cases.append((u.HDFS_HOST, u.HDFS_PORT))
+      self.u_cases.append("nobody")
+      try:
+        hdfs_ip = socket.gethostbyname(u.HDFS_HOST)
+      except socket.gaierror:
+        pass
+      else:
+        self.hp_cases.append((hdfs_ip, u.HDFS_PORT))
 
   def connect(self):
-    for host, port in self.cases:
-      current_user = getpass.getuser()
-      for user in None, current_user, "nobody":
-        expected_user = user or current_user
+    for host, port in self.hp_cases:
+      for user in self.u_cases:
+        expected_user = user or CURRENT_USER
         fs = hdfs.hdfs(host, port, user=user)
         self.assertEqual(fs.user, expected_user)
         fs.close()
 
   def cache(self):
-    orig_fs = hdfs.hdfs(*self.cases[0])
-    for host, port in self.cases[1:]:
+    orig_fs = hdfs.hdfs(*self.hp_cases[0])
+    for host, port in self.hp_cases[1:]:
       fs = hdfs.hdfs(host, port)
       self.assertTrue(fs.fs is orig_fs.fs)
       fs.close()
@@ -100,29 +106,6 @@ class TestHDFS(TestCommon):
     self.assertEqual(self.fs.get_path_info(path)["last_mod"], int(old_mtime))
     self.assertEqual(self.fs.get_path_info(path)["last_access"], int(old_atime))
 
-  def copy(self):
-    local_fs = hdfs.hdfs('', 0)
-    local_wd = make_wd(local_fs)
-    from_path = os.path.join(local_wd, uuid.uuid4().hex)
-    content = uuid.uuid4().hex
-    with open(from_path, "w") as f:
-      f.write(content)
-    to_path = self._make_random_file()
-    local_fs.copy(from_path, self.fs, to_path)
-    local_fs.close()
-    with self.fs.open_file(to_path) as f:
-      self.assertEqual(f.read(), content)
-    shutil.rmtree(local_wd)
-
-  def move(self):
-    content = uuid.uuid4().hex
-    from_path = self._make_random_file(content=content)
-    to_path = self._make_random_path()
-    self.fs.move(from_path, self.fs, to_path)
-    self.assertFalse(self.fs.exists(from_path))
-    with self.fs.open_file(to_path) as f:
-      self.assertEqual(f.read(), content)
-
   def block_size(self):
     for bs_MB in xrange(100, 500, 50):
       bs = bs_MB * 2**20
@@ -143,7 +126,7 @@ class TestHDFS(TestCommon):
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.
   def readline_block_boundary(self):
-    bs = get_bytes_per_checksum()
+    bs = u.get_bytes_per_checksum()
     line = "012345678\n"
     path = self._make_random_path()
     with self.fs.open_file(path, flags="w", blocksize=bs) as f:
@@ -163,14 +146,6 @@ class TestHDFS(TestCommon):
     for i, l in enumerate(lines):
       self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
 
-  def readline_big(self):
-    for i in xrange(10, 23):
-      x = '*' * (2**i) + "\n"
-      path = self._make_random_file(content=x)
-      with self.fs.open_file(path) as f:
-        l = f.readline()
-      self.assertEqual(l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x)))
-
   def get_hosts(self):
     blocksize = 4096
     N = 4
@@ -188,21 +163,19 @@ def suite():
   suite.addTest(TestConnection('connect'))
   suite.addTest(TestConnection('cache'))
   tests = common_tests()
-  tests.extend([
-    'capacity',
-    'default_block_size',
-    'used',
-    'chown',
-    'utime',
-    'copy',
-    'move',
-    'block_size',
-    'replication',
-    'set_replication',
-    'readline_block_boundary',
-    'readline_big',
-    'get_hosts'
-    ])
+  if not hdfs.DEFAULT_IS_LOCAL:
+    tests.extend([
+      'capacity',
+      'default_block_size',
+      'used',
+      'chown',
+      'utime',
+      'block_size',
+      'replication',
+      'set_replication',
+      'readline_block_boundary',
+      'get_hosts',
+      ])
   for t in tests:
     suite.addTest(TestHDFS(t))
   return suite
