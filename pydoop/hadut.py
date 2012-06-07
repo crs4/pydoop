@@ -21,7 +21,7 @@ The hadut module provides access to some Hadoop functionalities
 available via the Hadoop shell.
 """
 
-import os, subprocess, uuid
+import os, subprocess
 
 import pydoop
 import pydoop.hadoop_utils as hu
@@ -231,20 +231,11 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     use_pydoop_submit = False
     ver = pydoop.hadoop_version()
     if ver >= (0, 20, 203): # when Hadoop introduced security
-      # see if the default file system is file://
-      default_fs = hdfs.hdfs("default", 0)
-      root_path_name = default_fs.get_path_info("/")['name']
-      default_fs.close()
-      use_pydoop_submit = root_path_name.startswith("file:/")
-  if path_exists(executable):
-    hdfs_executable = executable
-  elif os.path.isfile(executable):
-    hdfs_executable = uuid.uuid4().hex
-    dfs(["-put", executable, hdfs_executable], properties)
-  else:
+      use_pydoop_submit = hdfs.DEFAULT_IS_LOCAL
+  if not path_exists(executable):
     raise ValueError("%s not found" % executable)
   args = [
-    "-program", hdfs_executable,
+    "-program", executable,
     "-input", input_path,
     "-output", output_path
     ]

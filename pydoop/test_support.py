@@ -20,8 +20,8 @@
 Miscellaneous utilities for testing.
 """
 
-import sys, os, uuid
-import hdfs
+import sys, os, uuid, tempfile
+import hdfs, hadut, utils
 
 
 def inject_code(new_code, target_code):
@@ -35,6 +35,8 @@ def inject_code(new_code, target_code):
     os.linesep, os.linesep.join(new_code.strip().splitlines())
     )
   pos = max(target_code.find("import"), 0)
+  if pos:
+    pos = target_code.rfind(os.linesep, 0, pos) + 1
   return target_code[:pos] + new_code + target_code[pos:]
 
 
@@ -57,6 +59,48 @@ def collect_output(mr_out_dir):
       with hdfs.open(fn) as f:
         output.append(f.read())
   return "".join(output)
+
+
+class PipesRunner(object):
+
+  def __init__(self, prefix="pydoop_test_", logger=None):
+    self.exe = self.input = self.output = None
+    self.logger = logger or utils.NullLogger()
+    self.local = hdfs.DEFAULT_IS_LOCAL
+    if self.local:
+      self.wd = tempfile.mkdtemp(prefix=prefix)
+    else:
+      self.wd = make_random_str(prefix=prefix)
+      hdfs.mkdir(self.wd)
+    for n in "exe", "input", "output":
+      setattr(self, n, hdfs.path.join(self.wd, n))
+
+  def clean(self):
+    if self.local and self.input:
+      os.unlink(self.input)
+    hdfs.rmr(self.wd)
+
+  def set_input(self, pipes_code, orig_input):
+    hdfs.dump(pipes_code, self.exe)
+    if self.local:
+      os.symlink(os.path.abspath(orig_input), self.input)
+    else:
+      self.logger.info("copying input data to HDFS")
+      hdfs.put(orig_input, self.input)
+
+  def run_pipes(self, **kwargs):
+    self.logger.info("running MapReduce application")
+    hadut.run_pipes(self.exe, self.input, self.output, **kwargs)
+
+  def collect_output(self):
+    self.logger.info("collecting output")
+    return collect_output(self.output)
+
+  def __str__(self):
+    res = [self.__class__.__name__]
+    for n in "exe", "input", "output":
+      res.append("  %s: %s" % (n, getattr(self, n)))
+    return os.linesep.join(res) + os.linesep
 
 
 def parse_mr_output(output, vtype=str):
