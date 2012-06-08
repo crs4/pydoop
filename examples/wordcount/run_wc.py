@@ -21,6 +21,7 @@
 import sys, argparse, logging
 logging.basicConfig(level=logging.INFO)
 
+import pydoop
 import pydoop.test_support as pts
 
 
@@ -29,6 +30,7 @@ CONF = {
   "mapred.reduce.tasks": "2",
   "mapred.job.name": "wordcount",
   }
+HADOOP_CONF_DIR = pydoop.hadoop_conf()
 
 
 def update_conf(args):
@@ -59,7 +61,7 @@ def main(argv):
   with open(args.pipes_exe) as f:
     pipes_code = pts.add_sys_path(f.read())
   runner.set_input(pipes_code, args.local_input)
-  runner.run_pipes(properties=CONF)
+  runner.run_pipes(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR)
   res = runner.collect_output()
   runner.clean()
   local_wc = pts.LocalWordCount(args.local_input)

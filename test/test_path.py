@@ -36,7 +36,7 @@ class TestSplit(unittest.TestCase):
       ('file:/a', ('', 0, '/a')),
       ('file://localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
       ]
-    if hdfs.DEFAULT_IS_LOCAL:
+    if hdfs.default_is_local():
       cases.extend([
         ('//localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
         ('/a/b', ('', 0, '/a/b')),
@@ -52,7 +52,7 @@ class TestSplit(unittest.TestCase):
       self.assertEqual(hdfs.path.split(p), r)
 
   def good_with_user(self):
-    if hdfs.DEFAULT_IS_LOCAL:
+    if hdfs.default_is_local():
       cases = [('a/b', u, ('', 0, 'a/b')) for u in None, DEFAULT_USER, 'foo']
     else:
       cases = [
@@ -70,7 +70,7 @@ class TestSplit(unittest.TestCase):
       'hdfs://localhost:9000',             # path part is empty
       'hdfs://localhost:9000/a:b',         # colon outside netloc
       ]
-    if not hdfs.DEFAULT_IS_LOCAL:
+    if not hdfs.default_is_local():
       cases.append('/localhost:9000/a/b')  # colon outside netloc
     for p in cases:
       self.assertRaises(ValueError, hdfs.path.split, p)
@@ -108,7 +108,7 @@ class TestAbspath(unittest.TestCase):
        '%s/user/pydoop/%s' % (self.root, p)),
       ({"user": None, "local": True}, local_abs_p),
       ]:
-      if hdfs.DEFAULT_IS_LOCAL:
+      if hdfs.default_is_local():
         self.assertEqual(hdfs.path.abspath(p, **kw), local_abs_p)
       else:
         self.assertEqual(hdfs.path.abspath(p, **kw), r)
@@ -118,7 +118,7 @@ class TestAbspath(unittest.TestCase):
       ({"user": None, "local": False}, p),
       ({"user": None, "local": True}, local_abs_p),
       ]:
-      if hdfs.DEFAULT_IS_LOCAL:
+      if hdfs.default_is_local():
         self.assertEqual(hdfs.path.abspath(p, **kw), local_abs_p)
       else:
         self.assertEqual(hdfs.path.abspath(p, **kw), r)

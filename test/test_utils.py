@@ -164,6 +164,7 @@ class TestHadoopUtils(unittest.TestCase):
       os.fchmod(fd, os.fstat(fd).st_mode | stat.S_IXUSR)
       fo.write("#!/bin/bash\necho Hadoop %s\n" % self.hadoop_version)
     self.orig_env = os.environ.copy()
+    self.pf = hu.PathFinder()
 
   def tearDown(self):
     os.environ.clear()
@@ -182,15 +183,15 @@ class TestHadoopUtils(unittest.TestCase):
   def test_get_hadoop_exec(self):
     # hadoop home as argument
     self.assertEqual(
-      hu.get_hadoop_exec(hadoop_home=self.hadoop_home), self.hadoop_exe
+      self.pf.hadoop_exec(hadoop_home=self.hadoop_home), self.hadoop_exe
       )
     # hadoop home from environment
     os.environ["HADOOP_HOME"] = self.hadoop_home
-    self.assertEqual(hu.get_hadoop_exec(), self.hadoop_exe)
+    self.assertEqual(self.pf.hadoop_exec(), self.hadoop_exe)
     # no hadoop home in environment
     del os.environ["HADOOP_HOME"]
     os.environ["PATH"] = self.bindir
-    hadoop_exec = hu.get_hadoop_exec()
+    hadoop_exec = self.pf.hadoop_exec()
     cmd = sp.Popen([hadoop_exec, "version"], env=self.orig_env,
                    stdout=sp.PIPE, stderr=sp.PIPE)
     out, _ = cmd.communicate()
@@ -202,10 +203,12 @@ class TestHadoopUtils(unittest.TestCase):
     vt = (0, 21, 0)
     os.environ["HADOOP_VERSION"] = vs
     for hadoop_home in None, self.hadoop_home:
-      self.assertEqual(hu.get_hadoop_version(hadoop_home=hadoop_home), vt)
+      self.assertEqual(self.pf.hadoop_version(self.hadoop_home), vs)
+      self.assertEqual(self.pf.hadoop_version_info(self.hadoop_home), vt)
     # hadoop version from executable
+    self.pf.reset()
     del os.environ["HADOOP_VERSION"]
-    self.assertEqual(hu.get_hadoop_version(hadoop_home=self.hadoop_home),
+    self.assertEqual(self.pf.hadoop_version_info(self.hadoop_home),
                      self.hadoop_version_tuple)
 
 

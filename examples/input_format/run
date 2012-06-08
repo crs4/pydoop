@@ -35,7 +35,7 @@ can't get more InputSplits than the number of input files).
 import sys, os, optparse, uuid, logging
 logging.basicConfig(level=logging.INFO)
 
-from pydoop.hadoop_utils import get_hadoop_exec
+import pydoop
 import pydoop.hdfs as hdfs
 import pydoop.test_support as pts
 import pydoop.hadut as hadut
@@ -43,7 +43,7 @@ import pydoop.hadut as hadut
 import compiler
 
 
-HADOOP = get_hadoop_exec()
+HADOOP = pydoop.hadoop_exec()
 LOCAL_MR_SCRIPT = "wordcount-rr.py"
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "../input"))

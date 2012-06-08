@@ -54,7 +54,7 @@ import pydoop.hadoop_utils as hu
 
 
 HADOOP_HOME = pydoop.hadoop_home(fallback=None)
-HADOOP_VERSION = pydoop.hadoop_version()
+HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 BOOST_PYTHON = os.getenv("BOOST_PYTHON", "boost_python")
 
 PIPES_SRC = ["pipes", "pipes_context", "pipes_test_support",
@@ -320,7 +320,7 @@ def create_full_pipes_ext(path_finder):
   include_dirs = path_finder.mapred_inc
   libraries = ["pthread", BOOST_PYTHON, "ssl"]  # FIXME: not version-dep
   return BoostExtension(
-    pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION),
+    pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION_INFO),
     ["src/%s.cpp" % n for n in PIPES_SRC],
     [],  # aux
     patches=patches,
@@ -335,7 +335,7 @@ def create_full_hdfs_ext(path_finder):
   library_dirs = get_java_library_dirs(path_finder.java_home)
   library_dirs.extend(path_finder.hdfs_link)
   return BoostExtension(
-    pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION),
+    pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION_INFO),
     ["src/%s.cpp" % n for n in HDFS_SRC],
     [],  # aux
     include_dirs=include_dirs,
@@ -477,7 +477,7 @@ class pydoop_build(distutils_build):
     java_files = [
       "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java",
       ]
-    if HADOOP_VERSION >= (1, 0, 0):
+    if HADOOP_VERSION_INFO >= (1, 0, 0):
       java_files.append("src/it/crs4/pydoop/pipes/*")
     log.info("Compiling Java classes")
     for f in java_files:

@@ -20,7 +20,6 @@ import sys, os, subprocess, glob
 import pydoop
 
 HADOOP_HOME = pydoop.hadoop_home()
-HADOOP_VERSION = pydoop.hadoop_version()
 SRC = "net/sourceforge/pydoop/mapred/TextInputFormat.java"
 CLASS = SRC.replace("java", "class")
 

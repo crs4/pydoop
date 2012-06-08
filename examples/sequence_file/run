@@ -30,13 +30,13 @@ SequenceFileInputFormat and SequenceFileOutputFormat.
 import os, optparse, uuid, logging
 logging.basicConfig(level=logging.INFO)
 
-import pydoop.hadoop_utils as hu
+import pydoop
 import pydoop.hdfs as hdfs
 import pydoop.test_support as pts
 import pydoop.hadut as hadut
 
 
-HADOOP = hu.get_hadoop_exec()
+HADOOP = pydoop.hadoop_exec()
 WD = "pydoop_test_sequence_file_%s" % uuid.uuid4().hex
 OUTPUT = "output"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"

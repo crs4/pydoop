@@ -16,12 +16,11 @@
 # 
 # END_COPYRIGHT
 
-import os, unittest
+import unittest
 
 import pydoop
 pp = pydoop.import_version_specific_module('_pipes')
 from pydoop.pipes import InputSplit
-from pydoop.hadoop_utils import get_hadoop_version
 
 example_input_splits = [
   ('\x00/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',

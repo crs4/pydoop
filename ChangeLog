@@ -1,3 +1,19 @@
+2012-06-08  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hdfs/fs.py: the default_is_local function has replaced
+	the DEFAULT_IS_LOCAL variable. The function leverages PathFinder's
+	new hadoop_params method to avoid opening an hdfs connection.
+
+	* pydoop/hadoop_utils.py: refactored, cleaned up,
+	simplified. _EnvMonitor has been removed, now you explicitly reset
+	your PathFinder object if you need to.
+	(PathFinder): new hadoop_params method reads Hadoop configuration
+	parameters into a dictionary.
+
+	* pydoop/hadut.py: added support for 'hadoop --config' equivalent.
+
+	* pydoop/test_support.py: added PipesRunner.
+
 2012-06-06    <simleo@neuron.crs4.it>
 
 	* pydoop/hdfs/fs.py: added DEFAULT_IS_LOCAL. This is a temporary

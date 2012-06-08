@@ -66,7 +66,7 @@ class PipesRunner(object):
   def __init__(self, prefix="pydoop_test_", logger=None):
     self.exe = self.input = self.output = None
     self.logger = logger or utils.NullLogger()
-    self.local = hdfs.DEFAULT_IS_LOCAL
+    self.local = hdfs.default_is_local()
     if self.local:
       self.wd = tempfile.mkdtemp(prefix=prefix)
     else:

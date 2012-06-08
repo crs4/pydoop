@@ -27,13 +27,20 @@ import pydoop.hdfs as hdfs
 
 PYDOOP_EXE = "../../scripts/pydoop"
 SCRIPT = "lowercase.py"
-with open(SCRIPT) as fi:
-  text = fi.read()
-  assert text != text.lower()
-LOCAL_INPUT = SCRIPT
+LOCAL_INPUT = "../input/alice.txt"
 HDFS_INPUT = uuid.uuid4().hex
 HDFS_OUTPUT = uuid.uuid4().hex
 LOCAL_OUTPUT = tempfile.mkdtemp()  
+
+
+def get_output_lines(output_dir):
+  lines = []
+  for fn in os.listdir(output_dir):
+    if fn.startswith("part-"):
+      with open(os.path.join(output_dir, fn)) as f:
+        for l in f:
+          lines.append(l.rstrip())
+  return lines
 
 
 def main():
@@ -57,17 +64,9 @@ def main():
   for d in HDFS_INPUT, HDFS_OUTPUT:
     hdfs.rmr(d)
   output_dir = os.path.join(LOCAL_OUTPUT, HDFS_OUTPUT)
+  result = sorted(get_output_lines(output_dir))
   with open(LOCAL_INPUT) as f:
-    expected_result = f.read().lower()
-    
-  out_fnames = sorted([os.path.join(output_dir, fn)
-                       for fn in os.listdir(output_dir)
-                       if fn.startswith("part-")])
-  out_files = map(open, out_fnames)
-  result = "".join(f.read() for f in out_files)
-  for f in out_files:
-    f.close()
-  
+    expected_result = sorted(l.lower().rstrip() for l in f)
   if result == expected_result:
     print "OK."
   else:
@@ -75,15 +74,10 @@ def main():
     for r, n in (result, 'result'), (expected_result, 'expected_result'):
       out_fn = "%s.txt" % n
       with open(out_fn, "w") as fo:
-        fo.write(r)
+        fo.write(os.linesep.join(r))
         print "wrote %r" % (out_fn,)
   shutil.rmtree(LOCAL_OUTPUT)
 
 
 if __name__ == "__main__":
   main()
-
-
-# Local Variables: **
-# mode: python **
-# End: **

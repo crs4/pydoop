@@ -46,19 +46,31 @@ __jar_name__ = 'pydoop.jar'
 
 
 def hadoop_home(fallback=DEFAULT_HADOOP_HOME):
-  return _PATH_FINDER.hadoop_home(fallback=fallback)
+  return _PATH_FINDER.hadoop_home(fallback)
 
 
-def hadoop_conf():
-  return _PATH_FINDER.hadoop_conf()
+def hadoop_exec(hadoop_home=None):
+  return _PATH_FINDER.hadoop_exec(hadoop_home)
 
 
-def hadoop_version():
-  return _PATH_FINDER.hadoop_version()
+def hadoop_version(hadoop_home=None):
+  return _PATH_FINDER.hadoop_version(hadoop_home)
 
 
-def is_cloudera():
-  return _PATH_FINDER.cloudera()
+def hadoop_version_info(hadoop_home=None):
+  return _PATH_FINDER.hadoop_version_info(hadoop_home)
+
+
+def is_cloudera(version=None, hadoop_home=None):
+  return _PATH_FINDER.cloudera(version, hadoop_home)
+
+
+def hadoop_conf(hadoop_home=None):
+  return _PATH_FINDER.hadoop_conf(hadoop_home)
+
+
+def hadoop_params(hadoop_conf=None, hadoop_home=None):
+  return _PATH_FINDER.hadoop_params(hadoop_conf, hadoop_home)
 
 
 def complete_mod_name(module, hadoop_version_tuple):
@@ -75,5 +87,5 @@ def jar_path():
 
 
 def import_version_specific_module(name):
-  low_level_mod = complete_mod_name(name, hadoop_version())
+  low_level_mod = complete_mod_name(name, hadoop_version_info())
   return import_module(low_level_mod)

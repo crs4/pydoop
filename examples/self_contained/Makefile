@@ -18,7 +18,7 @@
 
 HADOOP_HOME = $(shell python -c 'import pydoop; print pydoop.hadoop_home()')
 HADOOP_CONF_DIR = $(shell python -c 'import pydoop; print pydoop.hadoop_conf()')
-HADOOP = $(shell python -c 'import pydoop.hadoop_utils as hu; print hu.get_hadoop_exec()') --config $(HADOOP_CONF_DIR)
+HADOOP = $(shell python -c 'import pydoop; print pydoop.hadoop_exec()') --config $(HADOOP_CONF_DIR)
 
 BASE_BUILD_DIR := $(realpath .)/_build
 

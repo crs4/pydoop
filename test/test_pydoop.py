@@ -25,9 +25,10 @@ from pydoop.hadoop_utils import HadoopVersionError
 
 
 class pydoop_tc(unittest.TestCase):
-  def test_get_hadoop_version(self):
-    tp = hu.get_hadoop_version(pydoop.hadoop_home())
-    self.assertTrue( all([ type(t) == int for t in tp[0:3] ]) )
+
+  def test_hadoop_version(self):
+    ver = pydoop.hadoop_version_info()
+    self.assertTrue(all(type(_) == int for _ in ver[:3]))
 
   def test_version_tuple_with_good_strings(self):
     good_test_cases = [
@@ -37,7 +38,7 @@ class pydoop_tc(unittest.TestCase):
       '0.20.203.1-SNAPSHOT'
     ]
     for s in good_test_cases:
-      self.assertTrue( hu.version_tuple(s) is not None )
+      self.assertTrue(hu.version_tuple(s) is not None)
 
   def test_version_tuple_with_bad_strings(self):
     bad_test_cases = [
@@ -50,10 +51,10 @@ class pydoop_tc(unittest.TestCase):
       self.assertRaises(HadoopVersionError, hu.version_tuple, s)
 
   def test_version(self):
-    ver = pydoop.hadoop_version()
+    ver = pydoop.hadoop_version_info()
     self.assertTrue(ver is not None)
     self.assertTrue(len(ver) >= 3)
-    self.assertTrue( all([ type(v) == int for v in ver[0:3]]) )
+    self.assertTrue(all(type(_) == int for _ in ver[:3]))
 
   def test_home(self):
     if os.environ.has_key('HADOOP_HOME'):
@@ -75,7 +76,7 @@ class pydoop_tc(unittest.TestCase):
 
 def suite():
   suite = unittest.TestSuite()
-  suite.addTest(pydoop_tc('test_get_hadoop_version'))
+  suite.addTest(pydoop_tc('test_hadoop_version'))
   suite.addTest(pydoop_tc('test_version_tuple_with_good_strings'))
   suite.addTest(pydoop_tc('test_version_tuple_with_bad_strings'))
   suite.addTest(pydoop_tc('test_version'))

@@ -58,7 +58,6 @@ try:
 except NameError:
   _ORIG_CLASSPATH = os.getenv("CLASSPATH", "")
 
-
 def init():
   jars = (
     glob.glob(os.path.join(pydoop.hadoop_home(), "lib/*.jar")) +
@@ -71,7 +70,7 @@ def init():
     )
 
 init()
-from fs import hdfs, DEFAULT_IS_LOCAL
+from fs import hdfs, default_is_local
 import path
 
 

@@ -54,7 +54,8 @@ def _pop_generic_args(args):
   return generic_args
 
 
-def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
+def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
+            hadoop_conf_dir=None):
   """
   Run a Hadoop command.
 
@@ -63,6 +64,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
 
   .. code-block:: python
 
+    >>> import uuid
     >>> properties = {'dfs.block.size': 32*2**20}
     >>> args = ['-put', 'hadut.py', uuid.uuid4().hex]
     >>> res = run_cmd('fs', args, properties)
@@ -78,8 +80,11 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
     Exception in thread "main" java.lang.NoClassDefFoundError: foo
     ...
   """
-  hadoop = hu.get_hadoop_exec(hadoop_home=hadoop_home)
-  _args = [hadoop, cmd]
+  hadoop = pydoop.hadoop_exec(hadoop_home=hadoop_home)
+  _args = [hadoop]
+  if hadoop_conf_dir:
+    _args.extend(["--config", hadoop_conf_dir])
+  _args.append(cmd)
   if properties:
     _args.extend(_construct_property_args(properties))
   if args:
@@ -95,14 +100,15 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None):
   return output
 
 
-def get_task_trackers(properties=None):
+def get_task_trackers(properties=None, hadoop_conf_dir=None):
   """
   Get the list of task trackers in the Hadoop cluster.
 
   Each element in the returned list is in the ``(host, port)`` format.
   ``properties`` is passed to :func:`run_cmd`.
   """
-  stdout = run_cmd("job", ["-list-active-trackers"], properties)
+  stdout = run_cmd("job", ["-list-active-trackers"],
+                   properties=properties, hadoop_conf_dir=hadoop_conf_dir)
   task_trackers = []
   for l in stdout.splitlines():
     if not l:
@@ -121,16 +127,16 @@ def get_num_nodes(properties=None):
   return len(get_task_trackers(properties))
 
 
-def dfs(args=None, properties=None):
+def dfs(args=None, properties=None, hadoop_conf_dir=None):
   """
   Run Hadoop dfs/fs.
 
   ``args`` and ``properties`` are passed to :func:`run_cmd`.
   """
-  return run_cmd("dfs", args, properties)
+  return run_cmd("dfs", args, properties, hadoop_conf_dir=hadoop_conf_dir)
 
 
-def path_exists(path, properties=None):
+def path_exists(path, properties=None, hadoop_conf_dir=None):
   """
   Return ``True`` if ``path`` exists in the default HDFS, else ``False``.
 
@@ -141,13 +147,13 @@ def path_exists(path, properties=None):
   shell rather than the hdfs extension.
   """
   try:
-    dfs(["-stat", path], properties)
+    dfs(["-stat", path], properties, hadoop_conf_dir=hadoop_conf_dir)
   except RuntimeError:
     return False
   return True
 
 
-def run_jar(jar_name, more_args=None, properties=None):
+def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
   """
   Run a jar on Hadoop (``hadoop jar`` command).
   
@@ -158,7 +164,7 @@ def run_jar(jar_name, more_args=None, properties=None):
 
     >>> import glob, pydoop
     >>> hadoop_home = pydoop.hadoop_home()
-    >>> hadoop_ver = '.'.join(map(str, hu.get_hadoop_version()))
+    >>> hadoop_ver = pydoop.hadoop_version()
     >>> jar_name = glob.glob('%s/*examples*.jar' % hadoop_home)[0]
     >>> more_args = ['wordcount']
     >>> try:
@@ -172,12 +178,13 @@ def run_jar(jar_name, more_args=None, properties=None):
     args = [jar_name]
     if more_args is not None:
       args.extend(more_args)
-    return run_cmd("jar", args, properties)
+    return run_cmd("jar", args, properties, hadoop_conf_dir=hadoop_conf_dir)
   else:
     raise ValueError("Can't read jar file %s" % jar_name)
 
 
-def run_class(class_name, args=None, properties=None, classpath=None):
+def run_class(class_name, args=None, properties=None, classpath=None,
+              hadoop_conf_dir=None):
   """
   Run a class that needs the Hadoop jars in its class path.
 
@@ -196,14 +203,15 @@ def run_class(class_name, args=None, properties=None, classpath=None):
       classpath = [classpath]
     classpath_list = [cp.strip() for s in classpath for cp in s.split(":")]
     os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
-  res = run_cmd(class_name, args, properties)
+  res = run_cmd(class_name, args, properties, hadoop_conf_dir=hadoop_conf_dir)
   if old_classpath is not None:
     os.environ['HADOOP_CLASSPATH'] = old_classpath
   return res
 
 
 def run_pipes(executable, input_path, output_path, more_args=None,
-              properties=None, force_pydoop_submitter=False):
+              properties=None, force_pydoop_submitter=False,
+              hadoop_conf_dir=None):
   """
   Run a pipes command.
 
@@ -229,10 +237,10 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     use_pydoop_submit = True
   else:
     use_pydoop_submit = False
-    ver = pydoop.hadoop_version()
+    ver = pydoop.hadoop_version_info()
     if ver >= (0, 20, 203): # when Hadoop introduced security
-      use_pydoop_submit = hdfs.DEFAULT_IS_LOCAL
-  if not path_exists(executable):
+      use_pydoop_submit = hdfs.default_is_local()
+  if not path_exists(executable, hadoop_conf_dir=hadoop_conf_dir):
     raise ValueError("%s not found" % executable)
   args = [
     "-program", executable,
@@ -247,7 +255,7 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     args.extend(("-libjars", pydoop_jar))
     return run_class(submitter, args, properties, classpath=pydoop_jar)
   else:
-    return run_cmd("pipes", args, properties)
+    return run_cmd("pipes", args, properties, hadoop_conf_dir=hadoop_conf_dir)
 
 
 def find_jar(jar_name, root_path=None):

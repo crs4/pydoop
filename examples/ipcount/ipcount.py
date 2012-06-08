@@ -32,13 +32,13 @@ NOTE: the MapReduce application launched by this script is a
 
 import sys, os, optparse, operator, uuid, logging
 
+import pydoop
 import pydoop.hdfs as hdfs
-import pydoop.hadoop_utils as hu
 import pydoop.test_support as pts
 import pydoop.hadut as hadut
 
 
-HADOOP = hu.get_hadoop_exec()
+HADOOP = pydoop.hadoop_exec()
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "input"))
 LOCAL_MR_SCRIPT = "bin/ipcount.py"

@@ -31,7 +31,7 @@ class TestConnection(unittest.TestCase):
   def setUp(self):
     self.hp_cases = [("default", 0)]
     self.u_cases = [None, CURRENT_USER]
-    if not hdfs.DEFAULT_IS_LOCAL:
+    if not hdfs.default_is_local():
       self.hp_cases.append((u.HDFS_HOST, u.HDFS_PORT))
       self.u_cases.append("nobody")
       try:
@@ -163,7 +163,7 @@ def suite():
   suite.addTest(TestConnection('connect'))
   suite.addTest(TestConnection('cache'))
   tests = common_tests()
-  if not hdfs.DEFAULT_IS_LOCAL:
+  if not hdfs.default_is_local():
     tests.extend([
       'capacity',
       'default_block_size',
