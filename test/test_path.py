@@ -16,10 +16,11 @@
 # 
 # END_COPYRIGHT
 
-import os, unittest, uuid
+import os, unittest
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
+import pydoop.test_support as pts
 
 
 class TestSplit(unittest.TestCase):
@@ -133,7 +134,7 @@ class TestBasename(unittest.TestCase):
 class TestExists(unittest.TestCase):
 
   def good(self):
-    path = uuid.uuid4().hex
+    path = pts.make_random_str()
     hdfs.dump("foo\n", path)
     self.assertTrue(hdfs.path.exists(path))
     hdfs.rmr(path)

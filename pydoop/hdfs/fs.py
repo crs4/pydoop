@@ -60,6 +60,7 @@ def _get_connection_info(host, port, user):
   res = urlparse.urlparse(fs.working_directory())
   if res.scheme == "file":
     h, p, u = "", 0, getpass.getuser()
+    fs.set_working_directory(os.getcwd())  # libhdfs "remembers" old cwd
   else:
     try:
       h, p = res.netloc.split(":")
