@@ -305,6 +305,8 @@ class local_file(file):
     self.__fs = fs
     self.__name = os.path.abspath(super(local_file, self).name)
     self.__size = os.fstat(super(local_file, self).fileno()).st_size
+    self.f = self
+    self.chunk_size = 0
 
   @property
   def fs(self):
