@@ -1,3 +1,9 @@
+2012-06-15  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hdfs/file.py (local_file): changed to create dirname if
+	necessary. Now the interface should be compatible with that of
+	hdfs_file.
+
 2012-06-08  simleo  <simleo@simleo-U36SD>
 
 	* pydoop/hdfs/fs.py: the default_is_local function has replaced

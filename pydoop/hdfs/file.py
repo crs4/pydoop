@@ -301,12 +301,23 @@ class hdfs_file(object):
 class local_file(file):
 
   def __init__(self, fs, name, flags):
+    if not flags.startswith("r"):
+      local_file.__make_parents(fs, name)
     super(local_file, self).__init__(name, flags)
     self.__fs = fs
     self.__name = os.path.abspath(super(local_file, self).name)
     self.__size = os.fstat(super(local_file, self).fileno()).st_size
     self.f = self
     self.chunk_size = 0
+
+  @staticmethod
+  def __make_parents(fs, name):
+    d = os.path.dirname(name)
+    if d:
+      try:
+        fs.create_directory(d)
+      except IOError:
+        raise IOError("Cannot open file %s" % name)
 
   @property
   def fs(self):

@@ -124,7 +124,6 @@ class Writer(pp.RecordWriter):
     jc_configure(self, jc, "mapred.work.output.dir", "outdir")
     jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
     self.outfn = "%s/part-%05d" % (self.outdir, self.part)
-    hdfs.mkdir(self.outdir)  # temporary workaround
     self.file = hdfs.open(self.outfn, "w")
 
   def close(self):
