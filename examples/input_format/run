@@ -32,13 +32,11 @@ that, if set to 'false', makes input file non-splitable (i.e., you
 can't get more InputSplits than the number of input files).
 """
 
-import sys, os, optparse, uuid, logging
+import sys, os, optparse, logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
-import pydoop.hdfs as hdfs
 import pydoop.test_support as pts
-import pydoop.hadut as hadut
 
 import compiler
 
@@ -57,6 +55,7 @@ CONF = {
   "hadoop.pipes.java.recordwriter": "true",
   "mapred.input.format.class": INPUT_FORMAT,
   }
+HADOOP_CONF_DIR = pydoop.hadoop_conf()
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
@@ -81,46 +80,32 @@ def make_parser():
 
 
 def main():
-
+  logger = logging.getLogger("main")
+  logger.setLevel(logging.INFO)
   parser = make_parser()
   opt, _ = parser.parse_args()
-  
   if opt.clean:
     os.system("find . -regex '.*\(\.class\|~\|.pyc\)' -exec rm -fv {} \;")
     os.system("rm -rfv *.jar %s" % OUTPUT)
     return 0
-
-  logging.info("compiling Java code")
+  logger.info("compiling Java code")
   retval = compiler.main(["compiler.py", JAR_NAME])
   if retval:
     return retval
-
-  logging.info("copying data to HDFS")
-  wd = "pydoop_test_input_format_%s" % uuid.uuid4().hex
-  hdfs.mkdir(wd)
-  mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
+  runner = pts.PipesRunner(logger=logger)
   with open(LOCAL_MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  hdfs.dump(pipes_code, mr_script)
-  input_ = hdfs.path.join(wd, os.path.basename(opt.input))
-  hdfs.put(opt.input, input_)
-  output = hdfs.path.join(wd, uuid.uuid4().hex)
-
-  logging.info("running MapReduce application")
+  runner.set_input(pipes_code, opt.input)
   conf = CONF.copy()
   if opt.java_rr:
     conf["hadoop.pipes.java.recordreader"] = "true"
   conf["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
-  jar_opt = ["-libjars", JAR_NAME]
-  hadut.run_pipes(mr_script, input_, output, more_args=jar_opt, properties=conf)
-
-  logging.info("checking results")
-  res = pts.collect_output(output)
-  for d in mr_script, input_, output:
-    hdfs.rmr(d)
+  runner.run_pipes(more_args=["-libjars", JAR_NAME], properties=conf,
+                   hadoop_conf_dir=HADOOP_CONF_DIR)
+  res = runner.collect_output()
+  runner.clean()
   local_wc = pts.LocalWordCount(opt.input)
-  logging.info(local_wc.check(res))
-
+  logger.info(local_wc.check(res))
   return 0
 
 
