@@ -18,69 +18,84 @@
 # 
 # END_COPYRIGHT
 
-import argparse, os, random, sys, tempfile, warnings
+import argparse, os, sys, warnings, logging
+logging.basicConfig(level=logging.INFO)
 
 import pydoop
-import pydoop.hdfs
+import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
+import pydoop.test_support as pts
 
 
 PIPES_TEMPLATE = """
-import sys
-import os
+import sys, os
 sys.path.insert(0, os.getcwd())
 
 import pydoop.pipes
 import %(module)s
 
 class ContextWriter(object):
+
   def __init__(self, context):
-          self.context = context
-          self.counters = dict()
+    self.context = context
+    self.counters = {}
 
   def emit(self, k, v):
-          self.context.emit(str(k), str(v))
+    self.context.emit(str(k), str(v))
 
   def count(self, what, howmany):
-          if self.counters.has_key(what):
-                  counter = self.counters[what]
-          else:
-                  counter = self.context.getCounter('%(module)s', what)
-                  self.counters[what] = counter
-          self.context.incrementCounter(counter, howmany)
+    if self.counters.has_key(what):
+      counter = self.counters[what]
+    else:
+      counter = self.context.getCounter('%(module)s', what)
+      self.counters[what] = counter
+    self.context.incrementCounter(counter, howmany)
 
   def status(self, msg):
-          self.context.setStatus(msg)
+    self.context.setStatus(msg)
 
   def progress(self):
-          self.context.progress()
+    self.context.progress()
 
 class PydoopScriptMapper(pydoop.pipes.Mapper):
   def __init__(self, ctx):
-          super(type(self), self).__init__(ctx)
-          self.writer = ContextWriter(ctx)
+    super(type(self), self).__init__(ctx)
+    self.writer = ContextWriter(ctx)
 
   def map(self, ctx):
-          %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
 
 class PydoopScriptReducer(pydoop.pipes.Reducer):
+
   def __init__(self, ctx):
-          super(type(self), self).__init__(ctx)
-          self.writer = ContextWriter(ctx)
+    super(type(self), self).__init__(ctx)
+    self.writer = ContextWriter(ctx)
 
   @staticmethod
   def iter(ctx):
-          while ctx.nextValue():
-                  yield ctx.getInputValue()
+    while ctx.nextValue():
+      yield ctx.getInputValue()
 
   def reduce(self, ctx):
-          key = ctx.getInputKey()
-          %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
+    key = ctx.getInputKey()
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
 
-## main
-result = pydoop.pipes.runTask( pydoop.pipes.Factory(PydoopScriptMapper, PydoopScriptReducer) )
-sys.exit(0 if result else 1)
+if __name__ == '__main__':
+  result = pydoop.pipes.runTask(pydoop.pipes.Factory(
+    PydoopScriptMapper, PydoopScriptReducer
+    ))
+  sys.exit(0 if result else 1)
 """
+
+
+def find_pydoop_jar():
+  pydoop_jar_path = os.path.join(
+    os.path.dirname(pydoop.__file__), pydoop.__jar_name__
+    )
+  if os.path.exists(pydoop_jar_path):
+    return pydoop_jar_path
+  else:
+    return None
 
 
 class PydoopScript(object):
@@ -102,6 +117,8 @@ class PydoopScript(object):
       namespace.properties[name] = v
 
   def __init__(self):
+    self.logger = logging.getLogger("PydoopScript")
+    self.logger.setLevel(logging.DEBUG)  # TODO: expose as a cli param
     self.parser = argparse.ArgumentParser(
       description="Easy MapReduce scripting with Pydoop"
       )
@@ -149,10 +166,10 @@ class PydoopScript(object):
       'mapred.compress.map.output': 'true',
       'bl.libhdfs.opts': '-Xmx48m'
       }
-    self.hdfs = None
     self.options = None
     # whether to use our custom Java NoSeparatorTextOutputFormat.
     self.use_no_sep_writer = False
+    self.runner = pts.PipesRunner(prefix="pydoop_script", logger=self.logger)
 
   def parse_cmd_line(self, args=None):
     self.options, self.left_over_args = self.parser.parse_known_args(
@@ -160,8 +177,7 @@ class PydoopScript(object):
       )
     # set the job name.  Do it here so the user can override it
     self.properties['mapred.job.name'] = os.path.basename(self.options.module)
-    for k, v in self.options.properties.iteritems():
-      self.properties[k] = v
+    self.properties.update(self.options.properties)
     if self.options.num_reducers is None:
       n_red_tasks = type(self).DefaultReduceTasksPerNode * hadut.get_num_nodes()
     else:
@@ -173,103 +189,68 @@ class PydoopScript(object):
     if self.properties['mapred.textoutputformat.separator'] == '':
       self.use_no_sep_writer = True
 
-  def __write_pipes_script(self, fd):
+  def __generate_pipes_code(self):
+    lines = []
     ld_path = os.environ.get('LD_LIBRARY_PATH', None)
     pypath = os.environ.get('PYTHONPATH', '')
-    fd.write("#!/bin/bash\n")
-    fd.write('""":"\n')
+    lines.append("#!/bin/bash")
+    lines.append('""":"')
     if ld_path:
-      fd.write('export LD_LIBRARY_PATH="%s"\n' % ld_path)
+      lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
     if pypath:
-      fd.write('export PYTHONPATH="%s"\n' % pypath)
+      lines.append('export PYTHONPATH="%s"' % pypath)
     # override the script's home directory.
-    if (not self.properties.has_key("mapreduce.admin.user.home.dir") and
-        os.environ.has_key('HOME') and
+    if ("mapreduce.admin.user.home.dir" not in self.properties and
+        'HOME' in os.environ and
         not self.options.no_override_home):
-      fd.write('export HOME="%s"\n' % os.environ['HOME'])
-    fd.write('exec "%s" -u "$0" "$@"\n' % sys.executable)
-    fd.write('":"""\n')
+      lines.append('export HOME="%s"' % os.environ['HOME'])
+    lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
+    lines.append('":"""')
     template_args = {
       'module': os.path.splitext(os.path.basename(self.options.module))[0],
       'map_fn': self.options.map_fn,
       'reduce_fn': self.options.reduce_fn,
       }
-    fd.write(PIPES_TEMPLATE % template_args)
+    lines.append(PIPES_TEMPLATE % template_args)
+    return os.linesep.join(lines) + os.linesep
 
   def __validate(self):
-    if not os.access(self.options.module, os.R_OK):
-      raise RuntimeError("Can't read module file %s" % self.options.module)
-    if not self.hdfs.exists(self.options.input):
-      raise RuntimeError(
-        "Input directory %s doesn't exist." % self.options.input
-        )
-    if self.hdfs.exists(self.options.output):
-      raise RuntimeError(
-        "Output directory %s already exists" % self.options.output
-        )
-
-  def __find_pydoop_jar(self):
-    pydoop_jar_path = os.path.join(
-      os.path.dirname(pydoop.__file__), pydoop.__jar_name__
-      )
-    if os.path.exists(pydoop_jar_path):
-      return pydoop_jar_path
-    else:
-      return None
+    if not hdfs.path.exists(self.options.input):
+      raise RuntimeError("%r does not exist" % (self.options.input,))
+    if hdfs.path.exists(self.options.output):
+      raise RuntimeError("%r already exists" % (self.options.output,))
 
   def run(self):
     if self.options is None:
       raise RuntimeError("You must call parse_cmd_line before run")
-    remote_bin_dir = tempfile.mktemp(
-      prefix='pydoop_script_run_dir.', suffix=str(random.random()), dir=''
-      )
-    remote_pipes_bin = os.path.join(remote_bin_dir, 'pipes_script')
-    remote_module = os.path.join(
-      remote_bin_dir, os.path.basename(self.options.module)
-      )
-    try:
-      self.hdfs = pydoop.hdfs.hdfs('default', 0)
-      self.__validate()
-      dist_cache_parameter = "%s#%s" % (
-        remote_module, os.path.basename(remote_module)
-        )
-      if self.properties.get('mapred.cache.files', ''):
-        self.properties['mapred.cache.files'] += ',' + dist_cache_parameter
+    self.__validate()
+    module_bn = os.path.basename(self.options.module)
+    remote_module = hdfs.path.join(self.runner.wd, module_bn)
+    hdfs.put(self.options.module, remote_module)
+    dist_cache_parameter = "%s#%s" % (remote_module, module_bn)
+    #--- TODO: rewrite with setdefault ---
+    if self.properties.get('mapred.cache.files', ''):
+      self.properties['mapred.cache.files'] += ',' + dist_cache_parameter
+    else:
+      self.properties['mapred.cache.files'] = dist_cache_parameter
+    #---------------------------------------
+    pipes_args = self.left_over_args
+    if self.use_no_sep_writer:
+      pydoop_jar = find_pydoop_jar()
+      if pydoop_jar is not None:
+        self.properties[
+          'mapred.output.format.class'
+          ] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
+        pipes_args.append('-libjars')
+        pipes_args.append(pydoop_jar)
       else:
-        self.properties['mapred.cache.files'] = dist_cache_parameter
-      pipes_args = self.left_over_args
-      if self.use_no_sep_writer:
-        pydoop_jar = self.__find_pydoop_jar()
-        if pydoop_jar is not None:
-          self.properties[
-            'mapred.output.format.class'
-            ] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
-          pipes_args.append('-libjars')
-          pipes_args.append(pydoop_jar)
-        else:
-          warnings.warn(
-            "Can't find pydoop.jar, output will probably be tab-separated\n"
-            )
-      try:
-        with self.hdfs.open_file(remote_pipes_bin, 'w') as script:
-          self.__write_pipes_script(script)
-        with self.hdfs.open_file(remote_module, 'w') as module:
-          with open(self.options.module) as local_module:
-            module.write(local_module.read())
-        return hadut.run_pipes(
-          remote_pipes_bin, self.options.input, self.options.output,
-          more_args=pipes_args, properties=self.properties
+        warnings.warn(
+          "Can't find pydoop.jar, output will probably be tab-separated"
           )
-      finally:
-        try:
-          self.hdfs.delete(remote_bin_dir)
-        except IOError:
-          warnings.warn("Could not delete '%s' from HDFS" % remote_bin_dir)
-    finally:
-      if self.hdfs:
-        tmp = self.hdfs
-        self.hdfs = None
-        tmp.close()
+    pipes_code = self.__generate_pipes_code()
+    self.runner.set_input(pipes_code, self.options.input, copy_input=False)
+    self.runner.set_output(self.options.output)
+    self.runner.run_pipes(more_args=pipes_args, properties=self.properties)
 
 
 def main(args):

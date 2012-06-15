@@ -61,6 +61,7 @@ def collect_output(mr_out_dir):
   return "".join(output)
 
 
+# TODO: move to a different module, we're using it for pydoop script
 class PipesRunner(object):
 
   def __init__(self, prefix="pydoop_test_", logger=None):
@@ -80,13 +81,19 @@ class PipesRunner(object):
       os.unlink(self.input)
     hdfs.rmr(self.wd)
 
-  def set_input(self, pipes_code, orig_input):
+  def set_input(self, pipes_code, orig_input, copy_input=True):
     hdfs.dump(pipes_code, self.exe)
-    if self.local:
-      os.symlink(os.path.abspath(orig_input), self.input)
+    if copy_input:
+      if self.local:
+        os.symlink(os.path.abspath(orig_input), self.input)
+      else:
+        self.logger.info("copying input data to HDFS")
+        hdfs.put(orig_input, self.input)
     else:
-      self.logger.info("copying input data to HDFS")
-      hdfs.put(orig_input, self.input)
+      self.input = orig_input
+
+  def set_output(self, output):
+    self.output = output
 
   def run_pipes(self, **kwargs):
     self.logger.info("running MapReduce application")

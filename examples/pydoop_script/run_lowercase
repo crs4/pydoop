@@ -18,65 +18,54 @@
 # 
 # END_COPYRIGHT
 
-import uuid, tempfile, os, shutil, logging
+import os, logging
 logging.basicConfig(level=logging.INFO)
 import subprocess as sp
 
-import pydoop.hdfs as hdfs
+import pydoop.test_support as pts
 
 
 PYDOOP_EXE = "../../scripts/pydoop"
 SCRIPT = "lowercase.py"
 LOCAL_INPUT = "../input/alice.txt"
-HDFS_INPUT = uuid.uuid4().hex
-HDFS_OUTPUT = uuid.uuid4().hex
-LOCAL_OUTPUT = tempfile.mkdtemp()  
 
 
-def get_output_lines(output_dir):
-  lines = []
-  for fn in os.listdir(output_dir):
-    if fn.startswith("part-"):
-      with open(os.path.join(output_dir, fn)) as f:
-        for l in f:
-          lines.append(l.rstrip())
-  return lines
+class PydoopScriptRunner(pts.PipesRunner):
+
+  BASE_ARGS = [PYDOOP_EXE, "script"]
+
+  def set_input(self, orig_input):
+    super(PydoopScriptRunner, self).set_input("", orig_input)
+
+  def run_script(self, script, more_args=None):
+    args = self.BASE_ARGS + [script, self.input, self.output]
+    self.logger.info("running pydoop script")
+    retcode = sp.call(args + (more_args or []))
+    if retcode:
+      raise RuntimeError("Error running pydoop_script")
 
 
 def main():
-  logging.info("copying data to HDFS")
-  hdfs.put(LOCAL_INPUT, HDFS_INPUT)
-  args = [
-    PYDOOP_EXE,
-    "script",
-    '--num-reducers', '0',
-    '--kv-separator', '',
-    SCRIPT,
-    HDFS_INPUT,
-    HDFS_OUTPUT,
-    ]
-  logging.info("running MapReduce application")
-  retcode = sp.call(args)
-  if retcode:
-    raise RuntimeError("Error running pydoop_script")
-  logging.info("checking results")
-  hdfs.get(HDFS_OUTPUT, LOCAL_OUTPUT)
-  for d in HDFS_INPUT, HDFS_OUTPUT:
-    hdfs.rmr(d)
-  output_dir = os.path.join(LOCAL_OUTPUT, HDFS_OUTPUT)
-  result = sorted(get_output_lines(output_dir))
+  logger = logging.getLogger("main")
+  logger.setLevel(logging.INFO)
+  opts = ['--num-reducers', '0', '--kv-separator', '',]
+  runner = PydoopScriptRunner(logger=logger)
+  runner.set_input(LOCAL_INPUT)
+  runner.run_script(SCRIPT, more_args=opts)
+  res = sorted(runner.collect_output().splitlines())
+  runner.clean()
+  logger.info("checking results")
   with open(LOCAL_INPUT) as f:
-    expected_result = sorted(l.lower().rstrip() for l in f)
-  if result == expected_result:
+    expected_res = sorted(l.lower().rstrip() for l in f)
+  if res == expected_res:
     print "OK."
   else:
     print "ERROR"
-    for r, n in (result, 'result'), (expected_result, 'expected_result'):
+    for r, n in (res, 'result'), (expected_res, 'expected_result'):
       out_fn = "%s.txt" % n
       with open(out_fn, "w") as fo:
         fo.write(os.linesep.join(r))
         print "wrote %r" % (out_fn,)
-  shutil.rmtree(LOCAL_OUTPUT)
 
 
 if __name__ == "__main__":
