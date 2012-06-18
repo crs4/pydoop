@@ -28,6 +28,26 @@ SCRIPT = "base_histogram.py"
 LOCAL_INPUT = "example.sam"
 
 
+def get_expected_res():
+  bases = []
+  with open(LOCAL_INPUT) as f:
+    for line in f:
+      bases.append(line.split("\t", 10)[-2])
+  bases = "".join(bases)
+  # TODO: when we drop support for Python 2.6, use collections.Counter
+  return dict((b, bases.count(b)) for b in "ACGT")
+
+
+def res_as_dict(res):
+  d = {}
+  for l in res.splitlines():
+    if l.isspace():
+      continue
+    b, c = l.split()
+    d[b] = int(c)
+  return d
+
+
 def main():
   logger = logging.getLogger("main")
   logger.setLevel(logging.INFO)
@@ -36,7 +56,19 @@ def main():
   runner.run_script(SCRIPT)
   res = runner.collect_output()
   runner.clean()
-  print res
+  logger.info("checking results")
+  res = res_as_dict(res)
+  expected_res = get_expected_res()
+  if res == expected_res:
+    print "OK."
+  else:
+    print "ERROR"
+    for r, n in (res, 'result'), (expected_res, 'expected_result'):
+      out_fn = "%s.txt" % n
+      with open(out_fn, "w") as fo:
+        for b, c in sorted(r.iteritems()):
+          fo.write("%s: %s\n" % (b, c))
+        print "wrote %r" % (out_fn,)
 
 
 if __name__ == "__main__":
