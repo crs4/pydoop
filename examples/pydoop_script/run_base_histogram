@@ -18,48 +18,25 @@
 # 
 # END_COPYRIGHT
 
-import os, uuid, tempfile, shutil, logging
+import logging
 logging.basicConfig(level=logging.INFO)
-import subprocess as sp
 
-import pydoop.hdfs as hdfs
+from psrunner import PydoopScriptRunner
 
-PYDOOP_EXE = "../../scripts/pydoop"
+
 SCRIPT = "base_histogram.py"
 LOCAL_INPUT = "example.sam"
-HDFS_INPUT = uuid.uuid4().hex
-HDFS_OUTPUT = uuid.uuid4().hex
-LOCAL_OUTPUT = tempfile.mkdtemp()
 
 
 def main():
-  logging.info("copying data to HDFS")
-  hdfs.put(LOCAL_INPUT, HDFS_INPUT)
-  args = [
-    PYDOOP_EXE,
-    "script",
-    SCRIPT,
-    HDFS_INPUT,
-    HDFS_OUTPUT,
-    ]
-  logging.info("running MapReduce application")
-  retcode = sp.call(args)
-  if retcode:
-    raise RuntimeError("Error running pydoop_script")
-  logging.info("checking results")
-  hdfs.get(HDFS_OUTPUT, LOCAL_OUTPUT)
-  for d in HDFS_INPUT, HDFS_OUTPUT:
-    hdfs.rmr(d)
-  output_dir = os.path.join(LOCAL_OUTPUT, HDFS_OUTPUT)
-  out_fnames = sorted([os.path.join(output_dir, fn)
-                       for fn in os.listdir(output_dir)
-                       if fn.startswith("part-")])
-  out_files = map(open, out_fnames)
-  result = "".join(f.read() for f in out_files)
-  for f in out_files:
-    f.close()
-  print result
-  shutil.rmtree(LOCAL_OUTPUT)
+  logger = logging.getLogger("main")
+  logger.setLevel(logging.INFO)
+  runner = PydoopScriptRunner(logger=logger)
+  runner.set_input(LOCAL_INPUT)
+  runner.run_script(SCRIPT)
+  res = runner.collect_output()
+  runner.clean()
+  print res
 
 
 if __name__ == "__main__":

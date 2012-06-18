@@ -20,29 +20,11 @@
 
 import os, logging
 logging.basicConfig(level=logging.INFO)
-import subprocess as sp
-
-import pydoop.test_support as pts
+from psrunner import PydoopScriptRunner
 
 
-PYDOOP_EXE = "../../scripts/pydoop"
 SCRIPT = "lowercase.py"
 LOCAL_INPUT = "../input/alice.txt"
-
-
-class PydoopScriptRunner(pts.PipesRunner):
-
-  BASE_ARGS = [PYDOOP_EXE, "script"]
-
-  def set_input(self, orig_input):
-    super(PydoopScriptRunner, self).set_input("", orig_input)
-
-  def run_script(self, script, more_args=None):
-    args = self.BASE_ARGS + [script, self.input, self.output]
-    self.logger.info("running pydoop script")
-    retcode = sp.call(args + (more_args or []))
-    if retcode:
-      raise RuntimeError("Error running pydoop_script")
 
 
 def main():
