@@ -21,6 +21,7 @@
 import logging
 logging.basicConfig(level=logging.INFO)
 
+import pydoop.test_support as pts
 from psrunner import PydoopScriptRunner
 
 
@@ -38,26 +39,16 @@ def get_expected_res():
   return dict((b, bases.count(b)) for b in "ACGT")
 
 
-def res_as_dict(res):
-  d = {}
-  for l in res.splitlines():
-    if l.isspace():
-      continue
-    b, c = l.split()
-    d[b] = int(c)
-  return d
-
-
 def main():
   logger = logging.getLogger("main")
   logger.setLevel(logging.INFO)
   runner = PydoopScriptRunner(logger=logger)
   runner.set_input(LOCAL_INPUT)
-  runner.run_script(SCRIPT)
+  runner.run(SCRIPT)
   res = runner.collect_output()
   runner.clean()
   logger.info("checking results")
-  res = res_as_dict(res)
+  res = pts.parse_mr_output(res, vtype=int)
   expected_res = get_expected_res()
   if res == expected_res:
     print "OK."

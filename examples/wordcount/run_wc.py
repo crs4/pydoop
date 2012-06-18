@@ -22,6 +22,7 @@ import sys, argparse, logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
+import pydoop.hadut as hadut
 import pydoop.test_support as pts
 
 
@@ -57,11 +58,11 @@ def main(argv):
   update_conf(args)
   logger = logging.getLogger("main")
   logger.setLevel(logging.INFO)
-  runner = pts.PipesRunner(logger=logger)
+  runner = hadut.PipesRunner(logger=logger)
   with open(args.pipes_exe) as f:
     pipes_code = pts.add_sys_path(f.read())
   runner.set_input(pipes_code, args.local_input)
-  runner.run_pipes(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR)
+  runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR)
   res = runner.collect_output()
   runner.clean()
   local_wc = pts.LocalWordCount(args.local_input)

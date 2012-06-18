@@ -20,7 +20,7 @@
 This module contains general utility functions for application writing.
 """
 
-import logging
+import logging, uuid
 from struct import pack
 
 import pydoop
@@ -148,3 +148,7 @@ class NullLogger(logging.Logger):
     logging.Logger.__init__(self, "null")
     self.propagate = 0
     self.handlers = [NullHandler()]
+
+
+def make_random_str(prefix="pydoop_"):
+  return "%s%s" % (prefix, uuid.uuid4().hex)

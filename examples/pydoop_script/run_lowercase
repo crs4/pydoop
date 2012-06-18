@@ -33,7 +33,7 @@ def main():
   opts = ['--num-reducers', '0', '--kv-separator', '',]
   runner = PydoopScriptRunner(logger=logger)
   runner.set_input(LOCAL_INPUT)
-  runner.run_script(SCRIPT, more_args=opts)
+  runner.run(SCRIPT, more_args=opts)
   res = sorted(runner.collect_output().splitlines())
   runner.clean()
   logger.info("checking results")

@@ -21,9 +21,10 @@ The hadut module provides access to some Hadoop functionalities
 available via the Hadoop shell.
 """
 
-import os, subprocess
+import os, subprocess, tempfile
 
 import pydoop
+import pydoop.utils as utils
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 
@@ -277,6 +278,69 @@ def find_jar(jar_name, root_path=None):
     if os.path.exists(p):
       return p
   return None
+
+
+def collect_output(mr_out_dir):
+  """
+  Return all mapreduce output in ``mr_out_dir`` as a single string.
+
+  It is the caller's responsibility to ensure that the amount of data
+  retrieved fits into memory.
+  """
+  output = []
+  for fn in hdfs.ls(mr_out_dir):
+    if hdfs.path.basename(fn).startswith("part"):
+      with hdfs.open(fn) as f:
+        output.append(f.read())
+  return "".join(output)
+
+
+class PipesRunner(object):
+
+  def __init__(self, prefix="pydoop_", logger=None):
+    self.exe = self.input = self.output = None
+    self.logger = logger or utils.NullLogger()
+    self.local = hdfs.default_is_local()
+    if self.local:
+      self.wd = tempfile.mkdtemp(prefix=prefix)
+    else:
+      self.wd = utils.make_random_str(prefix=prefix)
+      hdfs.mkdir(self.wd)
+    for n in "exe", "input", "output":
+      setattr(self, n, hdfs.path.join(self.wd, n))
+
+  def clean(self):
+    if self.local and self.input:
+      os.unlink(self.input)
+    hdfs.rmr(self.wd)
+
+  def set_input(self, pipes_code, orig_input, copy_input=True):
+    hdfs.dump(pipes_code, self.exe)
+    if copy_input:
+      if self.local:
+        os.symlink(os.path.abspath(orig_input), self.input)
+      else:
+        self.logger.info("copying input data to HDFS")
+        hdfs.put(orig_input, self.input)
+    else:
+      self.input = orig_input
+
+  def set_output(self, output):
+    self.output = output
+
+  def run(self, **kwargs):
+    self.logger.info("running MapReduce application")
+    run_pipes(self.exe, self.input, self.output, **kwargs)
+
+  def collect_output(self):
+    self.logger.info("collecting output")
+    return collect_output(self.output)
+
+  def __str__(self):
+    res = [self.__class__.__name__]
+    for n in "exe", "input", "output":
+      res.append("  %s: %s" % (n, getattr(self, n)))
+    return os.linesep.join(res) + os.linesep
 
 
 if __name__ == "__main__":

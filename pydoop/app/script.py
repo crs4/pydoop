@@ -24,7 +24,6 @@ logging.basicConfig(level=logging.INFO)
 import pydoop
 import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
-import pydoop.test_support as pts
 
 
 PIPES_TEMPLATE = """
@@ -169,7 +168,7 @@ class PydoopScript(object):
     self.options = None
     # whether to use our custom Java NoSeparatorTextOutputFormat.
     self.use_no_sep_writer = False
-    self.runner = pts.PipesRunner(prefix="pydoop_script", logger=self.logger)
+    self.runner = hadut.PipesRunner(prefix="pydoop_script", logger=self.logger)
 
   def parse_cmd_line(self, args=None):
     self.options, self.left_over_args = self.parser.parse_known_args(
@@ -250,7 +249,7 @@ class PydoopScript(object):
     pipes_code = self.__generate_pipes_code()
     self.runner.set_input(pipes_code, self.options.input, copy_input=False)
     self.runner.set_output(self.options.output)
-    self.runner.run_pipes(more_args=pipes_args, properties=self.properties)
+    self.runner.run(more_args=pipes_args, properties=self.properties)
 
 
 def main(args):
