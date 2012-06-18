@@ -7,4 +7,3 @@
 # export CFLAGS=-I/my/include/path
 
 make run
-make dfsclean

@@ -40,7 +40,7 @@ try:
   HDFS_WD = os.environ["HDFS_WORK_DIR"]
 except KeyError:
   sys.exit("ERROR: HDFS_WORK_DIR not set")
-MR_SCRIPT = "%s/bin/cv" % HDFS_WD
+MR_SCRIPT = "bin/cv"
 MR_OPTIONS = {
   "mapred.job.name": "cv",
   "hadoop.pipes.java.recordreader": "true",
@@ -73,17 +73,20 @@ def check(res, expected_res):
 
 
 def main(argv):
+  logger = logging.getLogger("main")
+  logger.setLevel(logging.INFO)
   local_input = argv[1]
-  output = argv[2]
-  input_ = "%s/input" % HDFS_WD
-  with hdfs.open(MR_SCRIPT) as f:
+  with open(MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  hdfs.dump(pipes_code, MR_SCRIPT)
-  logging.info("running MapReduce application")
-  hadut.run_pipes(MR_SCRIPT, input_, output)
-  res = pts.collect_output(output)
+  runner = hadut.PipesRunner(logger=logger)
+  runner.set_input(pipes_code, local_input)
+  runner.run()
+  res = runner.collect_output()
+  runner.clean()
+  hdfs.rmr(HDFS_WD)
+  logger.info("checking results")
   expected_res = local_vc(local_input)
-  logging.info(check(res, expected_res))
+  logger.info(check(res, expected_res))
 
 
 if __name__ == "__main__":

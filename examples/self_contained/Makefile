@@ -55,17 +55,12 @@ upload: pydoop cv dfsclean
 	$(HADOOP) dfs -mkdir $(HDFS_WORK_DIR)
 	$(HADOOP) dfs -put $(PYDOOP_TAR) $(HDFS_WORK_DIR)
 	$(HADOOP) dfs -put $(CV_TAR) $(HDFS_WORK_DIR)
-	$(HADOOP) dfs -put bin $(HDFS_WORK_DIR)/bin
-	$(HADOOP) dfs -put $(INPUT_DIR) $(HDFS_WORK_DIR)/input
 
 run: self_contained.py upload
-	HDFS_WORK_DIR=$(HDFS_WORK_DIR) python $< $(INPUT_DIR) $(HDFS_WORK_DIR)/output
+	HDFS_WORK_DIR=$(HDFS_WORK_DIR) python $< $(INPUT_DIR)
 
 clean:
-	rm -rf $(BASE_BUILD_DIR) output
+	rm -rf $(BASE_BUILD_DIR)
 
 distclean: clean
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
-
-dfsclean:
-	-$(HADOOP) dfs -rmr $(HDFS_WORK_DIR)
