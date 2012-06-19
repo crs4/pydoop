@@ -30,7 +30,11 @@ LOCAL_INPUT = "../input/alice.txt"
 def main():
   logger = logging.getLogger("main")
   logger.setLevel(logging.INFO)
-  opts = ['--num-reducers', '0', '--kv-separator', '',]
+  opts = [
+    '--num-reducers', '0',
+    '--kv-separator', '',
+    '-D', 'mapred.map.tasks=4'
+    ]
   runner = PydoopScriptRunner(logger=logger)
   runner.set_input(LOCAL_INPUT)
   runner.run(SCRIPT, more_args=opts)

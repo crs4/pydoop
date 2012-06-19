@@ -18,7 +18,11 @@
 # 
 # END_COPYRIGHT
 
-import argparse, os, sys, warnings, logging
+"""
+A quick and easy to use interface for running simple MapReduce jobs.
+"""
+
+import os, sys, warnings, logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -87,6 +91,9 @@ if __name__ == '__main__':
 """
 
 
+DEFAULT_REDUCE_TASKS = 3 * hadut.get_num_nodes()
+
+
 def find_pydoop_jar():
   pydoop_jar_path = os.path.join(
     os.path.dirname(pydoop.__file__), pydoop.__jar_name__
@@ -97,96 +104,41 @@ def find_pydoop_jar():
     return None
 
 
+def kv_pair(s):
+  return s.split("=", 1)
+
+
 class PydoopScript(object):
 
-  DefaultReduceTasksPerNode = 3
-
-  class Args(argparse.Namespace):
-    def __init__(self):
-      self.properties = {}
-
-  class SetProperty(argparse.Action):
-    """
-    Used with argparse to parse arguments setting property values.
-    Creates an attribute 'property' in the results namespace containing
-    all the property-value pairs read from the command line.
-    """
-    def __call__(self, parser, namespace, value, option_string=None):
-      name, v = value.split('=', 1)
-      namespace.properties[name] = v
+  DESCRIPTION = "Easy MapReduce scripting with Pydoop"
 
   def __init__(self):
     self.logger = logging.getLogger("PydoopScript")
     self.logger.setLevel(logging.DEBUG)  # TODO: expose as a cli param
-    self.parser = argparse.ArgumentParser(
-      description="Easy MapReduce scripting with Pydoop"
-      )
-    self.parser.add_argument(
-      'module', metavar='MODULE', help='Python module file'
-      )
-    self.parser.add_argument(
-      'input', metavar='INPUT', help='hdfs input path'
-      )
-    self.parser.add_argument(
-      'output', metavar='OUTPUT', help='hdfs output path'
-      )
-    self.parser.add_argument(
-      '-m', '--map-fn', metavar='MAP', default='mapper',
-      help="Name of map function within module (default: mapper)"
-      )
-    self.parser.add_argument(
-      '-r', '--reduce-fn', metavar='RED', default='reducer',
-      help="Name of reduce function within module (default: reducer)"
-      )
-    self.parser.add_argument(
-      '-t', '--kv-separator', metavar='SEP', default='\t',
-      help="Key-value separator in final output (default: tab character)"
-      )
-    self.parser.add_argument(
-      '--num-reducers', metavar='INT', type=int,
-      help="Number of reduce tasks. Specify 0 to only perform map phase " +
-      "(default: 3 * num task trackers)"
-      )
-    self.parser.add_argument(
-      '--no-override-home', action='store_true',
-      help="Don't set the script's HOME directory to the $HOME in your " +
-      "environment.  Hadoop will set it to the value of the " +
-      "'mapreduce.admin.user.home.dir' property"
-      )
-    self.parser.add_argument(
-      '-D', metavar="PROP=VALUE", action=type(self).SetProperty,
-      help='Set a property value, such as -D mapred.compress.map.output=true'
-      )
-    # set default properties
     self.properties = {
       'hadoop.pipes.java.recordreader': 'true',
       'hadoop.pipes.java.recordwriter': 'true',
+      'mapred.cache.files': '',
       'mapred.create.symlink': 'yes',
       'mapred.compress.map.output': 'true',
       'bl.libhdfs.opts': '-Xmx48m'
       }
-    self.options = None
-    # whether to use our custom Java NoSeparatorTextOutputFormat.
-    self.use_no_sep_writer = False
+    self.args = None
     self.runner = hadut.PipesRunner(prefix="pydoop_script", logger=self.logger)
 
-  def parse_cmd_line(self, args=None):
-    self.options, self.left_over_args = self.parser.parse_known_args(
-      args=args, namespace=type(self).Args()
-      )
-    # set the job name.  Do it here so the user can override it
-    self.properties['mapred.job.name'] = os.path.basename(self.options.module)
-    self.properties.update(self.options.properties)
-    if self.options.num_reducers is None:
-      n_red_tasks = type(self).DefaultReduceTasksPerNode * hadut.get_num_nodes()
-    else:
-      n_red_tasks = self.options.num_reducers
-    self.properties['mapred.reduce.tasks'] = n_red_tasks
-    self.properties[
-      'mapred.textoutputformat.separator'
-      ] = self.options.kv_separator
-    if self.properties['mapred.textoutputformat.separator'] == '':
-      self.use_no_sep_writer = True
+  def set_args(self, args):
+    module_bn = os.path.basename(args.module)
+    self.properties['mapred.job.name'] = module_bn
+    self.properties.update(dict(args.D or []))
+    self.properties['mapred.reduce.tasks'] = args.num_reducers
+    self.properties['mapred.textoutputformat.separator'] = args.kv_separator
+    remote_module = hdfs.path.join(self.runner.wd, module_bn)
+    hdfs.put(args.module, remote_module)
+    dist_cache_parameter = "%s#%s" % (remote_module, module_bn)
+    if self.properties['mapred.cache.files']:
+      self.properties['mapred.cache.files'] += ','
+    self.properties['mapred.cache.files'] += dist_cache_parameter
+    self.args = args
 
   def __generate_pipes_code(self):
     lines = []
@@ -201,68 +153,77 @@ class PydoopScript(object):
     # override the script's home directory.
     if ("mapreduce.admin.user.home.dir" not in self.properties and
         'HOME' in os.environ and
-        not self.options.no_override_home):
+        not self.args.no_override_home):
       lines.append('export HOME="%s"' % os.environ['HOME'])
     lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
     lines.append('":"""')
     template_args = {
-      'module': os.path.splitext(os.path.basename(self.options.module))[0],
-      'map_fn': self.options.map_fn,
-      'reduce_fn': self.options.reduce_fn,
+      'module': os.path.splitext(os.path.basename(self.args.module))[0],
+      'map_fn': self.args.map_fn,
+      'reduce_fn': self.args.reduce_fn,
       }
     lines.append(PIPES_TEMPLATE % template_args)
     return os.linesep.join(lines) + os.linesep
 
   def __validate(self):
-    if not hdfs.path.exists(self.options.input):
-      raise RuntimeError("%r does not exist" % (self.options.input,))
-    if hdfs.path.exists(self.options.output):
-      raise RuntimeError("%r already exists" % (self.options.output,))
+    if not hdfs.path.exists(self.args.input):
+      raise RuntimeError("%r does not exist" % (self.args.input,))
+    if hdfs.path.exists(self.args.output):
+      raise RuntimeError("%r already exists" % (self.args.output,))
 
   def run(self):
-    if self.options is None:
-      raise RuntimeError("You must call parse_cmd_line before run")
+    if self.args is None:
+      raise RuntimeError("cannot run without args, please call set_args")
     self.__validate()
-    module_bn = os.path.basename(self.options.module)
-    remote_module = hdfs.path.join(self.runner.wd, module_bn)
-    hdfs.put(self.options.module, remote_module)
-    dist_cache_parameter = "%s#%s" % (remote_module, module_bn)
-    #--- TODO: rewrite with setdefault ---
-    if self.properties.get('mapred.cache.files', ''):
-      self.properties['mapred.cache.files'] += ',' + dist_cache_parameter
-    else:
-      self.properties['mapred.cache.files'] = dist_cache_parameter
-    #---------------------------------------
-    pipes_args = self.left_over_args
-    if self.use_no_sep_writer:
+    pipes_args = []
+    if self.properties['mapred.textoutputformat.separator'] == '':
       pydoop_jar = find_pydoop_jar()
       if pydoop_jar is not None:
         self.properties[
           'mapred.output.format.class'
           ] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
-        pipes_args.append('-libjars')
-        pipes_args.append(pydoop_jar)
+        pipes_args.extend(['-libjars', pydoop_jar])
       else:
         warnings.warn(
           "Can't find pydoop.jar, output will probably be tab-separated"
           )
     pipes_code = self.__generate_pipes_code()
-    self.runner.set_input(pipes_code, self.options.input, copy_input=False)
-    self.runner.set_output(self.options.output)
+    self.runner.set_input(pipes_code, self.args.input, copy_input=False)
+    self.runner.set_output(self.args.output)
     self.runner.run(more_args=pipes_args, properties=self.properties)
 
 
-def main(args):
+def run(args):
   script = PydoopScript()
-  script.parse_cmd_line(args)
-  try:
-    print script.run()
-  except RuntimeError as e:
-    sys.stderr.write("Error running Pydoop script\n%s" % e)
-    return 1
-  else:
-    return 0
+  script.set_args(args)
+  print script.run()
+  return 0
 
 
-if __name__ == '__main__':
-  sys.exit(main(sys.argv[1:]))
+def add_parser(subparsers):
+  parser = subparsers.add_parser("script", description=PydoopScript.DESCRIPTION)
+  parser.add_argument('module', metavar='MODULE', help='python module file')
+  parser.add_argument('input', metavar='INPUT', help='hdfs input path')
+  parser.add_argument('output', metavar='OUTPUT', help='hdfs output path')
+  parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper',
+                      help="name of map function within module")
+  parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
+                      help="name of reduce function within module")
+  parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
+                      help="output key-value separator")
+  parser.add_argument(
+    '--num-reducers', metavar='INT', type=int, default=DEFAULT_REDUCE_TASKS,
+    help="Number of reduce tasks. Specify 0 to only perform map phase"
+    )
+  parser.add_argument(
+    '--no-override-home', action='store_true',
+    help="Don't set the script's HOME directory to the $HOME in your " +
+    "environment.  Hadoop will set it to the value of the " +
+    "'mapreduce.admin.user.home.dir' property"
+    )
+  parser.add_argument(
+    '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
+    help='Set a Hadoop property, such as -D mapred.compress.map.output=true'
+    )
+  parser.set_defaults(func=run)
+  return parser
