@@ -30,7 +30,8 @@ NOTE: the MapReduce application launched by this script is a
       University, 2009, available at http://users.ugent.be/~klbostee.
 """
 
-import sys, os, optparse, operator, uuid, logging
+import sys, os, optparse, operator, logging
+logging.basicConfig(level=logging.INFO)
 
 import pydoop
 import pydoop.hdfs as hdfs
@@ -39,6 +40,7 @@ import pydoop.hadut as hadut
 
 
 HADOOP = pydoop.hadoop_exec()
+HADOOP_CONF_DIR = pydoop.hadoop_conf()
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "input"))
 LOCAL_MR_SCRIPT = "bin/ipcount.py"
@@ -50,15 +52,16 @@ BASE_MR_OPTIONS = {
   }
 
 
-def collect_output(mr_out_dir):
-  ip_list = []
-  for fn in hdfs.ls(mr_out_dir):
-    if hdfs.path.basename(fn).startswith("part"):
-      with hdfs.open(fn) as f:
-        for line in f:
-          ip, count = line.strip().split("\t")
-          ip_list.append((ip, int(count)))
-  return ip_list
+def get_mr_options(opt, wd):
+  mr_options = BASE_MR_OPTIONS.copy()
+  if opt.exclude_fn:
+    exclude_bn = os.path.basename(opt.exclude_fn)
+    exclude_fn = hdfs.path.abspath(hdfs.path.join(wd, exclude_bn))
+    hdfs.put(opt.exclude_fn, exclude_fn)
+    mr_options["mapred.cache.files"] = "%s#%s" % (exclude_fn, exclude_bn)
+    mr_options["mapred.create.symlink"] = "yes"
+    mr_options["ipcount.excludes"] = exclude_bn
+  return mr_options
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
@@ -83,43 +86,26 @@ def make_parser():
 
 
 def main(argv):
-
   parser = make_parser()
   opt, _ = parser.parse_args(argv)
   if opt.output is not sys.stdout:
     opt.output = open(opt.output, 'w')
-
-  logging.info("copying data to HDFS")
-  wd = "pydoop_test_ipcount_%s" % uuid.uuid4().hex
-  hdfs.mkdir(wd)
-  mr_script = hdfs.path.join(wd, os.path.basename(LOCAL_MR_SCRIPT))
+  logger = logging.getLogger("main")
+  logger.setLevel(logging.INFO)
+  runner = hadut.PipesRunner(logger=logger)
   with open(LOCAL_MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  hdfs.dump(pipes_code, mr_script)
-  input_ = hdfs.path.join(wd, os.path.basename(opt.input))
-  hdfs.put(opt.input, input_)
-  output = hdfs.path.join(wd, uuid.uuid4().hex)
-
-  logging.info("running MapReduce application")
-  mr_options = BASE_MR_OPTIONS.copy()
-  if opt.exclude_fn:
-    exclude_bn = os.path.basename(opt.exclude_fn)
-    exclude_fn = hdfs.path.join(wd, exclude_bn)
-    hdfs.put(opt.exclude_fn, exclude_fn)
-    mr_options["mapred.cache.files"] = "%s#%s" % (exclude_fn, exclude_bn)
-    mr_options["mapred.create.symlink"] = "yes"
-    mr_options["ipcount.excludes"] = exclude_bn
-  hadut.run_pipes(mr_script, input_, output, properties=mr_options)
-
-  logging.info("collecting output")
-  ip_list = collect_output(output)
-  hdfs.rmr(wd)
-  ip_list.sort(key=operator.itemgetter(1), reverse=True)
+  runner.set_input(pipes_code, opt.input)
+  mr_options = get_mr_options(opt, runner.wd)
+  runner.run(properties=mr_options, hadoop_conf_dir=HADOOP_CONF_DIR)
+  mr_output = runner.collect_output()
+  runner.clean()
+  d = pts.parse_mr_output(mr_output, vtype=int)
+  ip_list = sorted(d.iteritems(), key=operator.itemgetter(1), reverse=True)
   if opt.n_top:
     ip_list = ip_list[:opt.n_top]
   for ip, count in ip_list:
     opt.output.write("%s\t%d\n" % (ip, count))
-
   if opt.output is not sys.stdout:
     opt.output.close()
 

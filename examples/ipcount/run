@@ -46,7 +46,7 @@ def local_ipcount(input_fn, excludes_fn=None):
   return sorted(count.iteritems(), key=operator.itemgetter(1), reverse=True)
 
 
-def run_ipcount(input_fn, excludes_fn):
+def run_ipcount(input_fn, excludes_fn=None):
   temp_dir = tempfile.mkdtemp(prefix="pydoop_test_ipcount_")
   outfn = os.path.join(temp_dir, "ipcount.out")
   args = ["-i", input_fn, "-o", outfn, "-n", "0"]
@@ -60,7 +60,7 @@ def run_ipcount(input_fn, excludes_fn):
         ip, c = l.strip().split("\t")
         count.append((ip, int(c)))
   shutil.rmtree(temp_dir)
-  return count       
+  return count
 
 
 # we need secondary sorting on IPs for comparisons

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+examples=(
+    hdfs
+    input_format
+    pydoop_script
+    self_contained
+    ipcount
+    sequence_file
+    wordcount
+)
+
+for e in ${examples[@]}; do
+    pushd ${e}
+    echo -ne "\n *** RUNNING ${e} EXAMPLE(S) ***\n"
+    ./run
+    popd
+done

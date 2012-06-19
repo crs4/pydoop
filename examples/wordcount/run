@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./run_wc_minimal
+./run_wc_full

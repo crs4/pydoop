@@ -18,6 +18,7 @@ exclude test/test_string_lifetime.py
 recursive-include examples *
 recursive-exclude examples/input_format/net/sourceforge/pydoop/mapreduce *
 exclude examples/text_pipe_runner.py
+exclude examples/run_all
 
 exclude pydoop/hadoop_serial.py
 exclude pydoop/text_protocol.py

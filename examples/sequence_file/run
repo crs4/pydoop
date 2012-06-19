@@ -27,17 +27,16 @@ The purpose of this example is to demonstrate the usage of
 SequenceFileInputFormat and SequenceFileOutputFormat.
 """
 
-import os, optparse, uuid, logging
+import os, optparse, logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
-import pydoop.hdfs as hdfs
 import pydoop.test_support as pts
 import pydoop.hadut as hadut
 
 
 HADOOP = pydoop.hadoop_exec()
-WD = "pydoop_test_sequence_file_%s" % uuid.uuid4().hex
+HADOOP_CONF_DIR = pydoop.hadoop_conf()
 OUTPUT = "output"
 LOCAL_WC_SCRIPT = "bin/wordcount.py"
 LOCAL_FILTER_SCRIPT = "bin/filter.py"
@@ -72,23 +71,22 @@ def make_parser():
 
 
 def run_wc(opt):
+  runner = hadut.PipesRunner()
   options = BASE_MR_OPTIONS.copy()
   options.update({
     MR_JOB_NAME: "wordcount",
     MR_OUT_CLASS: "%s.SequenceFileOutputFormat" % MRLIB,
     MR_OUT_COMPRESS_TYPE: "NONE",
     })
-  script, input_, output = [hdfs.path.join(WD, uuid.uuid4().hex)
-                           for _ in xrange(3)]
   with open(LOCAL_WC_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  hdfs.dump(pipes_code, script)
-  hdfs.put(opt.input, input_)
-  hadut.run_pipes(script, input_, output, properties=options)
-  return output
+  runner.set_input(pipes_code, opt.input)
+  runner.run(properties=options, hadoop_conf_dir=HADOOP_CONF_DIR)
+  return runner.output
 
 
 def run_filter(opt, input_):
+  runner = hadut.PipesRunner()
   options = BASE_MR_OPTIONS.copy()
   options.update({
     MR_JOB_NAME: "filter",
@@ -96,27 +94,26 @@ def run_filter(opt, input_):
     MR_REDUCE_TASKS: "0",
     "filter.occurrence.threshold": opt.threshold,
     })
-  script, output = [hdfs.path.join(WD, uuid.uuid4().hex) for _ in xrange(2)]
   with open(LOCAL_FILTER_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  hdfs.dump(pipes_code, script)
-  hadut.run_pipes(script, input_, output, properties=options)
-  return output
+  runner.set_input(pipes_code, input_, copy_input=False)
+  runner.run(properties=options, hadoop_conf_dir=HADOOP_CONF_DIR)
+  return runner.output
 
 
 def main():
   parser = make_parser()
   opt, _ = parser.parse_args()
-  hdfs.mkdir(WD)
-  logging.info("running word count")
+  logger = logging.getLogger("main")
+  logger.setLevel(logging.INFO)
+  logger.info("running word count")
   wc_output = run_wc(opt)
-  logging.info("running filter")
+  logger.info("running filter")
   filter_output = run_filter(opt, wc_output)
-  logging.info("checking results")
-  res = pts.collect_output(filter_output)
-  hdfs.rmr(WD)
+  logger.info("checking results")
+  res = hadut.collect_output(filter_output)
   local_wc = pts.LocalWordCount(opt.input, min_occurrence=opt.threshold)
-  logging.info(local_wc.check(res))
+  logger.info(local_wc.check(res))
 
 
 if __name__ == "__main__":

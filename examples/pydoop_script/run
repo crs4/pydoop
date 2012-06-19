@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./run_base_histogram
+./run_lowercase
