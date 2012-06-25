@@ -2,3 +2,4 @@
 
 ./run_base_histogram
 ./run_lowercase
+./run_transpose
