@@ -275,6 +275,8 @@ class PathFinder():
     return self.__hdfs_link
 
 
+PATH_FINDER = PathFinder()
+
 # ------------------------------------------------------------------------------
 # Create extension objects.
 #
@@ -301,8 +303,8 @@ def create_basic_hdfs_ext():
   return BoostExtension(HDFS_EXT_NAME, ["src/%s.cpp" % n for n in HDFS_SRC], [])
 
 
-def create_full_pipes_ext(path_finder):
-  basedir = path_finder.hadoop_cpp_src
+def create_full_pipes_ext():
+  basedir = PATH_FINDER.hadoop_cpp_src
   serial_utils = os.path.join(basedir, "utils/impl/SerialUtils.cc")
   string_utils = os.path.join(basedir, "utils/impl/StringUtils.cc")
   pipes = os.path.join(basedir, "pipes/impl/HadoopPipes.cc")
@@ -317,7 +319,7 @@ def create_full_pipes_ext(path_finder):
       OLD_PIPES_INCLUDE: NEW_PIPES_INCLUDE,
       },
     }
-  include_dirs = path_finder.mapred_inc
+  include_dirs = PATH_FINDER.mapred_inc
   libraries = ["pthread", BOOST_PYTHON, "ssl"]  # FIXME: not version-dep
   return BoostExtension(
     pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION_INFO),
@@ -329,11 +331,11 @@ def create_full_pipes_ext(path_finder):
     )
 
 
-def create_full_hdfs_ext(path_finder):
-  include_dirs = get_java_include_dirs(path_finder.java_home)
-  include_dirs.extend(path_finder.hdfs_inc)
-  library_dirs = get_java_library_dirs(path_finder.java_home)
-  library_dirs.extend(path_finder.hdfs_link)
+def create_full_hdfs_ext():
+  include_dirs = get_java_include_dirs(PATH_FINDER.java_home)
+  include_dirs.extend(PATH_FINDER.hdfs_inc)
+  library_dirs = get_java_library_dirs(PATH_FINDER.java_home)
+  library_dirs.extend(PATH_FINDER.hdfs_link)
   return BoostExtension(
     pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION_INFO),
     ["src/%s.cpp" % n for n in HDFS_SRC],
@@ -343,7 +345,7 @@ def create_full_hdfs_ext(path_finder):
     runtime_library_dirs=library_dirs,
     libraries=["pthread", BOOST_PYTHON, "hdfs", "jvm"],
     define_macros=get_hdfs_macros(
-      os.path.join(path_finder.hdfs_inc[0], "hdfs.h")
+      os.path.join(PATH_FINDER.hdfs_inc[0], "hdfs.h")
       ),
     )
 
@@ -369,7 +371,7 @@ class BoostExtension(Extension):
     destdir = os.path.split(self.wrap_sources[0])[0]  # should be ok
     outfn = os.path.join(destdir, "%s_main.cpp" % self.module_name)
     if must_generate(outfn, self.wrap_sources):
-      log.info("generating main for %s\n" % self.name)
+      log.debug("generating main for %s\n" % self.name)
       first_half = ["#include <boost/python.hpp>"]
       second_half = ["BOOST_PYTHON_MODULE(%s){" % self.module_name]
       for fn in self.wrap_sources:
@@ -396,7 +398,7 @@ class BoostExtension(Extension):
       patched_fn = "src/%s" % os.path.basename(fn)
       # FIXME: the patch should also be listed as a prerequisite.
       if must_generate(patched_fn, [fn]):
-        log.info("copying and patching %s" % fn)
+        log.debug("copying and patching %s" % fn)
         with open(fn) as f:
           contents = f.read()
         for old, new in p.iteritems():
@@ -411,10 +413,9 @@ class build_pydoop_ext(distutils_build_ext):
 
   def finalize_options(self):
     distutils_build_ext.finalize_options(self)
-    path_finder = PathFinder()
     self.extensions = [
-      create_full_pipes_ext(path_finder),
-      create_full_hdfs_ext(path_finder),
+      create_full_pipes_ext(),
+      create_full_hdfs_ext(),
       ]
     for e in self.extensions:
       e.sources.append(e.generate_main())
@@ -464,16 +465,28 @@ class pydoop_clean(distutils_clean):
 class pydoop_build(distutils_build):
 
   def run(self):
+    log.info("hadoop_home: %r" % (HADOOP_HOME,))
+    log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO,))
+    for a in (
+      "java_home", "hadoop_cpp_src", "mapred_inc", "hdfs_inc", "hdfs_link"
+      ):
+      log.info("%s: %r" % (a, getattr(PATH_FINDER, a)))
     distutils_build.run(self)
     # build the java component
+    compile_cmd = "javac"
     classpath = ':'.join(
         glob.glob(os.path.join(HADOOP_HOME, 'hadoop-*.jar')) +
         glob.glob(os.path.join(HADOOP_HOME, 'lib', '*.jar'))
       )
+    if classpath:
+      compile_cmd += " -classpath %s" % classpath
+    else:
+      log.warn("could not set classpath, java code may not compile")
     class_dir = os.path.join(self.build_temp, 'pydoop_java')
     package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
     if not os.path.exists(class_dir):
       os.mkdir(class_dir)
+    compile_cmd += " -d '%s'" % class_dir
     java_files = [
       "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java",
       ]
@@ -481,7 +494,7 @@ class pydoop_build(distutils_build):
       java_files.append("src/it/crs4/pydoop/pipes/*")
     log.info("Compiling Java classes")
     for f in java_files:
-      compile_cmd = "javac -classpath %s -d '%s' %s" % (classpath, class_dir, f)
+      compile_cmd += " %s" % f
       log.debug("Command: %s", compile_cmd)
       ret = os.system(compile_cmd)
       if ret:

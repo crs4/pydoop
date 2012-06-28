@@ -284,8 +284,7 @@ you can either:
 * edit ``hdfs-site.xml`` in your configuration and set the
   ``dfs.permissions.supergroup`` property to one of your unix groups
   (type ``groups`` at the command prompt to see to which groups your
-  account belongs).
-
+  account belongs), then restart the Hadoop daemons:
 
 .. code-block:: xml
 
