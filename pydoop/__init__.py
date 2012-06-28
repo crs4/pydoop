@@ -45,6 +45,10 @@ __url__ = "http://pydoop.sourceforge.net"
 __jar_name__ = 'pydoop.jar'
 
 
+def reset():
+  _PATH_FINDER.reset()
+
+
 def hadoop_home(fallback=DEFAULT_HADOOP_HOME):
   return _PATH_FINDER.hadoop_home(fallback)
 
@@ -77,6 +81,7 @@ def complete_mod_name(module, hadoop_version_tuple):
   return "%s.%s_%s" % (
     __package__, module, "_".join(map(str, hadoop_version_tuple))
     )
+
 
 def jar_path():
   possible_path = os.path.join(os.path.dirname(__file__), __jar_name__)

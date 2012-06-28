@@ -148,9 +148,12 @@ class PathFinder(object):
           pass
         else:
           try:
-            self.__hadoop_version = sp.Popen(
+            out, err = sp.Popen(
               [hadoop, "version"], stdout=sp.PIPE, stderr=sp.PIPE
-              ).communicate()[0].splitlines()[0].split()[-1]
+              ).communicate()
+            if err and not out:
+              raise RuntimeError(err)
+            self.__hadoop_version = out.splitlines()[0].split()[-1]
           except (OSError, IndexError):
             pass
     if not self.__hadoop_version:
@@ -187,6 +190,7 @@ class PathFinder(object):
           self.__hadoop_conf = candidate
     if not self.__hadoop_conf:
       PathFinder.__error("hadoop conf dir", "HADOOP_CONF_DIR")
+    os.environ["HADOOP_CONF_DIR"] = self.__hadoop_conf
     return self.__hadoop_conf
 
   def hadoop_params(self, hadoop_conf=None, hadoop_home=None):
