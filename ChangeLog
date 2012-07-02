@@ -1,3 +1,9 @@
+2012-07-02  simleo  <simleo@simleo-U36SD>
+
+	* setup.py (PathFinder.hdfs_link): simplified code; now
+	from-tarball installation has precedence over debian pkg cloudera
+	installation.
+
 2012-06-15  simleo  <simleo@simleo-U36SD>
 
 	* pydoop/hdfs/file.py (local_file): changed to create dirname if

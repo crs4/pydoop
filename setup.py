@@ -264,14 +264,11 @@ class PathFinder():
       try:
         self.__hdfs_link = os.environ["HDFS_LINK"].split(os.pathsep)
       except KeyError:
-        if os.path.exists("/usr/lib/libhdfs.so"):
-          pass  # distutils always looks there, nothing to do
-        else:
-          p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "lib")
-          if os.path.isdir(p):
-            self.__hdfs_link = [p]
-          else:
-            self.__error("HDFS link paths", "HDFS_LINK")
+        p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "lib")
+        if os.path.isdir(p):
+          self.__hdfs_link = [p]
+      if not os.path.exists("/usr/lib/libhdfs.so"):
+        self.__error("HDFS link paths", "HDFS_LINK")
     return self.__hdfs_link
 
 
