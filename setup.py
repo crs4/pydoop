@@ -267,8 +267,8 @@ class PathFinder():
         p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "lib")
         if os.path.isdir(p):
           self.__hdfs_link = [p]
-      if not os.path.exists("/usr/lib/libhdfs.so"):
-        self.__error("HDFS link paths", "HDFS_LINK")
+        elif not os.path.exists("/usr/lib/libhdfs.so"):
+          self.__error("HDFS link paths", "HDFS_LINK")
     return self.__hdfs_link
 
 
