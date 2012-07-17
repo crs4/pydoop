@@ -3,6 +3,20 @@
 News
 ====
 
+New in 0.6.2
+------------
+
+Fixed several bugs triggered by using a local fs as the default fs for
+Hadoop.  This happens when you set a ``file:`` path as the value of
+``fs.default.name`` in core-site.xml.  For instance:
+
+.. code-block:: xml
+
+  <property>
+    <name>fs.default.name</name>
+    <value>file:///var/hadoop/data</value>
+  </property>
+
 
 New in 0.6.0
 ------------
