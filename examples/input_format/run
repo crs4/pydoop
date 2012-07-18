@@ -93,10 +93,12 @@ def main():
   retval = compiler.main(["compiler.py", JAR_NAME])
   if retval:
     return retval
-  runner = hadut.PipesRunner(logger=logger)
+  prefix = pts.get_wd_prefix()
+  runner = hadut.PipesRunner(prefix=prefix, logger=logger)
   with open(LOCAL_MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  runner.set_input(pipes_code, opt.input)
+  runner.set_input(opt.input, put=True)
+  runner.set_exe(pipes_code)
   conf = CONF.copy()
   if opt.java_rr:
     conf["hadoop.pipes.java.recordreader"] = "true"

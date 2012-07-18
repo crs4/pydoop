@@ -1,3 +1,8 @@
+2012-07-18  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hadut.py (PipesRunner): fixed. Now it should be usable
+	for production jobs.
+
 2012-07-02  simleo  <simleo@simleo-U36SD>
 
 	* setup.py (PathFinder.hdfs_link): simplified code; now

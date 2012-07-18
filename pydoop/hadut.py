@@ -21,7 +21,7 @@ The hadut module provides access to some Hadoop functionalities
 available via the Hadoop shell.
 """
 
-import os, subprocess, tempfile
+import os, subprocess
 
 import pydoop
 import pydoop.utils as utils
@@ -230,6 +230,9 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   You can force the use of Pydoop's submitter by passing the argument
   force_pydoop_submitter=True.
   """
+  for n, p in ("executable", executable), ("input path", input_path):
+    if not hdfs.path.exists(p):
+      raise IOError("%s not found" % n)
   if properties is None:
     properties = {}
   properties.setdefault('hadoop.pipes.java.recordreader', 'true')
@@ -241,8 +244,6 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     ver = pydoop.hadoop_version_info()
     if ver >= (0, 20, 203): # when Hadoop introduced security
       use_pydoop_submit = hdfs.default_is_local()
-  if not path_exists(executable, hadoop_conf_dir=hadoop_conf_dir):
-    raise ValueError("%s not found" % executable)
   args = [
     "-program", executable,
     "-input", input_path,
@@ -296,43 +297,84 @@ def collect_output(mr_out_dir):
 
 
 class PipesRunner(object):
+  """
+  Allows to set up and run pipes jobs, optionally automating a few
+  common tasks.
 
-  def __init__(self, prefix="pydoop_", logger=None):
-    self.exe = self.input = self.output = None
+  :type prefix: string
+  :param prefix: if specified, it must be a writable directory path
+    that all nodes can see (the latter could be an issue if the local
+    file system is used rather than HDFS)
+
+  :type logger: :class:`logging.Logger`
+  :param logger: optional logger
+
+  If ``prefix`` is set, the runner object will create a working
+  directory with that prefix and use it to store the job's input and
+  output --- the intended use is for quick application testing.  If it
+  is not set, you **must** call :meth:`set_output` with an hdfs path
+  as its argument, and ``put`` will be ignored in your call to
+  :meth:`set_input`.  In any event, the launcher script will be placed
+  in the output directory's parent (this has to be writable for the
+  job to succeed).
+  """
+  def __init__(self, prefix=None, logger=None):
+    self.wd = self.exe = self.input = self.output = None
     self.logger = logger or utils.NullLogger()
-    self.local = hdfs.default_is_local()
-    if self.local:
-      self.wd = tempfile.mkdtemp(prefix=prefix)
-    else:
+    if prefix:
       self.wd = utils.make_random_str(prefix=prefix)
       hdfs.mkdir(self.wd)
-    for n in "exe", "input", "output":
-      setattr(self, n, hdfs.path.join(self.wd, n))
+      for n in "input", "output":
+        setattr(self, n, hdfs.path.join(self.wd, n))
 
   def clean(self):
-    if self.local and self.input:
-      os.unlink(self.input)
-    hdfs.rmr(self.wd)
+    """
+    Remove the working directory, if any.
+    """
+    if self.wd:
+      hdfs.rmr(self.wd)
 
-  def set_input(self, pipes_code, orig_input, copy_input=True):
-    hdfs.dump(pipes_code, self.exe)
-    if copy_input:
-      if self.local:
-        os.symlink(os.path.abspath(orig_input), self.input)
-      else:
-        self.logger.info("copying input data to HDFS")
-        hdfs.put(orig_input, self.input)
+  def set_input(self, input_, put=False):
+    """
+    Set the input path for the job.  If ``put`` is :obj:`True`, copy
+    (local) ``input_`` to the working directory.
+    """
+    if put and self.wd:
+      self.logger.info("copying input data to HDFS")
+      hdfs.put(input_, self.input)
     else:
-      self.input = orig_input
+      self.input = input_
 
   def set_output(self, output):
+    """
+    Set the output path for the job.  Optional if the runner has been
+    instantiated with a prefix.
+    """
     self.output = output
 
+  def set_exe(self, pipes_code):
+    """
+    Dump launcher code to the distributed file system.
+    """
+    if not self.output:
+      raise RuntimeError("no output directory, can't create launcher")
+    parent = hdfs.path.dirname(self.output.rstrip("/"))
+    self.exe = hdfs.path.join(parent, utils.make_random_str(prefix="exe_"))
+    hdfs.dump(pipes_code, self.exe)
+
   def run(self, **kwargs):
+    """
+    Run the pipes job.  Keyword arguments are passed to :func:`run_pipes`.
+    """
+    if not (self.input and self.output and self.exe):
+      raise RuntimeError("setup incomplete, can't run")
     self.logger.info("running MapReduce application")
     run_pipes(self.exe, self.input, self.output, **kwargs)
 
   def collect_output(self):
+    """
+    Run :func:`collect_output` on the job's output directory.
+    """
     self.logger.info("collecting output")
     return collect_output(self.output)
 

@@ -20,7 +20,8 @@
 Miscellaneous utilities for testing.
 """
 
-import sys, os
+import sys, os, tempfile
+from hdfs import default_is_local
 
 
 def inject_code(new_code, target_code):
@@ -108,3 +109,10 @@ class LocalWordCount(object):
       return "ERROR: %s" % res
     else:
       return "OK."
+
+
+def get_wd_prefix(base="pydoop_"):
+  if default_is_local():
+    return os.path.join(tempfile.gettempdir(), "pydoop_")
+  else:
+    return base
