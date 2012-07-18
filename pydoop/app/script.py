@@ -124,9 +124,12 @@ class PydoopScript(object):
       'bl.libhdfs.opts': '-Xmx48m'
       }
     self.args = None
-    self.runner = hadut.PipesRunner(prefix="pydoop_script", logger=self.logger)
+    self.runner = None
 
   def set_args(self, args):
+    parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
+    prefix = hdfs.path.join(parent, "pydoop_script_")
+    self.runner = hadut.PipesRunner(prefix=prefix, logger=self.logger)
     module_bn = os.path.basename(args.module)
     self.properties['mapred.job.name'] = module_bn
     self.properties.update(dict(args.D or []))
@@ -188,8 +191,9 @@ class PydoopScript(object):
           "Can't find pydoop.jar, output will probably be tab-separated"
           )
     pipes_code = self.__generate_pipes_code()
-    self.runner.set_input(pipes_code, self.args.input, copy_input=False)
+    self.runner.set_input(self.args.input)
     self.runner.set_output(self.args.output)
+    self.runner.set_exe(pipes_code)
     self.runner.run(more_args=pipes_args, properties=self.properties)
 
 

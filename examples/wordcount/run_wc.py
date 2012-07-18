@@ -18,7 +18,7 @@
 # 
 # END_COPYRIGHT
 
-import sys, argparse, logging
+import sys, os, argparse, logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -32,6 +32,7 @@ CONF = {
   "mapred.job.name": "wordcount",
   }
 HADOOP_CONF_DIR = pydoop.hadoop_conf()
+PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
 def update_conf(args):
@@ -58,10 +59,11 @@ def main(argv):
   update_conf(args)
   logger = logging.getLogger("main")
   logger.setLevel(logging.INFO)
-  runner = hadut.PipesRunner(logger=logger)
+  runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
   with open(args.pipes_exe) as f:
     pipes_code = pts.add_sys_path(f.read())
-  runner.set_input(pipes_code, args.local_input)
+  runner.set_input(args.local_input, put=True)
+  runner.set_exe(pipes_code)
   runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR)
   res = runner.collect_output()
   runner.clean()

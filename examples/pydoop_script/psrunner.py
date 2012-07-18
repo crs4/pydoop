@@ -20,19 +20,21 @@
 Support module for running pydoop script examples.
 """
 
-import subprocess as sp
+import os, subprocess as sp
 import pydoop.hadut as hadut
+import pydoop.test_support as pts
 
 
 PYDOOP_EXE = "../../scripts/pydoop"
+PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
 class PydoopScriptRunner(hadut.PipesRunner):
 
   BASE_ARGS = [PYDOOP_EXE, "script"]
 
-  def set_input(self, orig_input):
-    super(PydoopScriptRunner, self).set_input("", orig_input)
+  def __init__(self, logger=None):
+    super(PydoopScriptRunner, self).__init__(prefix=PREFIX, logger=logger)
 
   def run(self, script, more_args=None):
     args = self.BASE_ARGS + [script, self.input, self.output]

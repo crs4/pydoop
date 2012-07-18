@@ -60,6 +60,8 @@ BASE_MR_OPTIONS = {
   MR_HOME_DIR: os.path.expanduser("~"),
   }
 
+PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
+
 
 def make_parser():
   parser = optparse.OptionParser(usage="%prog [OPTIONS]")
@@ -71,7 +73,7 @@ def make_parser():
 
 
 def run_wc(opt):
-  runner = hadut.PipesRunner()
+  runner = hadut.PipesRunner(prefix=PREFIX)
   options = BASE_MR_OPTIONS.copy()
   options.update({
     MR_JOB_NAME: "wordcount",
@@ -80,13 +82,14 @@ def run_wc(opt):
     })
   with open(LOCAL_WC_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  runner.set_input(pipes_code, opt.input)
+  runner.set_input(opt.input, put=True)
+  runner.set_exe(pipes_code)
   runner.run(properties=options, hadoop_conf_dir=HADOOP_CONF_DIR)
   return runner.output
 
 
 def run_filter(opt, input_):
-  runner = hadut.PipesRunner()
+  runner = hadut.PipesRunner(prefix=PREFIX)
   options = BASE_MR_OPTIONS.copy()
   options.update({
     MR_JOB_NAME: "filter",
@@ -96,7 +99,8 @@ def run_filter(opt, input_):
     })
   with open(LOCAL_FILTER_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  runner.set_input(pipes_code, input_, copy_input=False)
+  runner.set_input(input_)
+  runner.set_exe(pipes_code)
   runner.run(properties=options, hadoop_conf_dir=HADOOP_CONF_DIR)
   return runner.output
 

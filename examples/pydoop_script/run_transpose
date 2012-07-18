@@ -60,7 +60,7 @@ def main():
     '-D', 'mapred.map.tasks=2'
     ]
   runner = PydoopScriptRunner(logger=logger)
-  runner.set_input(LOCAL_INPUT)
+  runner.set_input(LOCAL_INPUT, put=True)
   runner.run(SCRIPT, more_args=opts)
   res = runner.collect_output()
   runner.clean()

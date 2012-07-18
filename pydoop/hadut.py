@@ -358,8 +358,8 @@ class PipesRunner(object):
     """
     if not self.output:
       raise RuntimeError("no output directory, can't create launcher")
-    parent = hdfs.path.dirname(self.output.rstrip("/"))
-    self.exe = hdfs.path.join(parent, utils.make_random_str(prefix="exe_"))
+    parent = hdfs.path.dirname(hdfs.path.abspath(self.output.rstrip("/")))
+    self.exe = hdfs.path.join(parent, utils.make_random_str())
     hdfs.dump(pipes_code, self.exe)
 
   def run(self, **kwargs):

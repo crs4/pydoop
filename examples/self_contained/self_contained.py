@@ -50,6 +50,7 @@ MR_OPTIONS = {
     ),
   "mapred.create.symlink": "yes",
   }
+PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
 def local_vc(input_dir):
@@ -78,8 +79,9 @@ def main(argv):
   local_input = argv[1]
   with open(MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  runner = hadut.PipesRunner(logger=logger)
-  runner.set_input(pipes_code, local_input)
+  runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
+  runner.set_input(local_input, put=True)
+  runner.set_exe(pipes_code)
   runner.run()
   res = runner.collect_output()
   runner.clean()

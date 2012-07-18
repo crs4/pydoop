@@ -50,6 +50,7 @@ BASE_MR_OPTIONS = {
   "hadoop.pipes.java.recordreader": "true",
   "hadoop.pipes.java.recordwriter": "true",
   }
+PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
 def get_mr_options(opt, wd):
@@ -92,10 +93,11 @@ def main(argv):
     opt.output = open(opt.output, 'w')
   logger = logging.getLogger("main")
   logger.setLevel(logging.INFO)
-  runner = hadut.PipesRunner(logger=logger)
+  runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
   with open(LOCAL_MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
-  runner.set_input(pipes_code, opt.input)
+  runner.set_input(opt.input, put=True)
+  runner.set_exe(pipes_code)
   mr_options = get_mr_options(opt, runner.wd)
   runner.run(properties=mr_options, hadoop_conf_dir=HADOOP_CONF_DIR)
   mr_output = runner.collect_output()

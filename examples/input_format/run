@@ -57,6 +57,7 @@ CONF = {
   "mapred.input.format.class": INPUT_FORMAT,
   }
 HADOOP_CONF_DIR = pydoop.hadoop_conf()
+PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
@@ -93,8 +94,7 @@ def main():
   retval = compiler.main(["compiler.py", JAR_NAME])
   if retval:
     return retval
-  prefix = pts.get_wd_prefix()
-  runner = hadut.PipesRunner(prefix=prefix, logger=logger)
+  runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
   with open(LOCAL_MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
   runner.set_input(opt.input, put=True)
