@@ -55,10 +55,14 @@ docs_view: docs
 	yelp docs/_build/html/index.html &
 
 dist: docs
-	rm -rf $(EXPORT_DIR) && mkdir $(EXPORT_DIR) && cp -a * $(EXPORT_DIR)
+	rm -rf $(EXPORT_DIR)
+	mkdir -p $(EXPORT_DIR)
+	git archive master | tar -x -C $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
-	(cd $(EXPORT_DIR) && python setup.py sdist) && mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz . && rm -rf $(EXPORT_DIR)
+	cd $(EXPORT_DIR) && python setup.py sdist
+	mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
+	rm -rf $(EXPORT_DIR)
 
 clean:
 	python setup.py clean

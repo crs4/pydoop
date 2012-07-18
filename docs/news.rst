@@ -3,7 +3,7 @@
 News
 ====
 
-New in 0.6.2
+New in 0.6.3
 ------------
 
 Fixed several bugs triggered by using a local fs as the default fs for
