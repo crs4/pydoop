@@ -17,7 +17,14 @@
 # END_COPYRIGHT
 
 """
-Matrix transposer
+Transpose a tab-separated text matrix.
+
+  pydoop script transpose.py matrix.txt t_matrix
+  hadoop fs -get t_matrix{,}
+  sort -mn -k1,1 -o t_matrix.txt t_matrix/part-0000*
+
+t_matrix.txt contains an additional first column with row indexes --
+this might not be a problem if it acts as input for another job.
 """
 
 import struct
@@ -25,14 +32,9 @@ import struct
 def mapper(key, value, writer):
   value = value.split()
   for i, a in enumerate(value):
-    writer.emit(struct.pack(">q", i), "%s\t%s" % (key, a))
+    writer.emit(struct.pack(">q", i), "%s%s" % (key, a))
 
 def reducer(key, ivalue, writer):
-  vector = []
-  for v in ivalue:
-    v = v.split("\t")
-    v[0] = struct.unpack(">q", v[0])[0]
-    vector.append(v)
+  vector = [(struct.unpack(">q", v[:8])[0], v[8:]) for v in ivalue]
   vector.sort()
-  vector = [v[1] for v in vector]
-  writer.emit(struct.unpack(">q", key)[0], "\t".join(vector))
+  writer.emit(struct.unpack(">q", key)[0], "\t".join(v[1] for v in vector))
