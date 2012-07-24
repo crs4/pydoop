@@ -20,6 +20,9 @@ HADOOP_HOME = $(shell python -c 'import pydoop; print pydoop.hadoop_home()')
 HADOOP_CONF_DIR = $(shell python -c 'import pydoop; print pydoop.hadoop_conf()')
 HADOOP = $(shell python -c 'import pydoop; print pydoop.hadoop_exec()') --config $(HADOOP_CONF_DIR)
 
+PYTHON_ABI_TAG ?= $(shell uname -r | grep gentoo >/dev/null && eselect python show | tr -s python -)
+BOOST_PYTHON ?= boost_python$(PYTHON_ABI_TAG)
+
 BASE_BUILD_DIR := $(realpath .)/_build
 
 PYDOOP_TRUNK := $(realpath ../..)
@@ -44,7 +47,7 @@ pydoop: $(PYDOOP_TAR)
 cv: $(CV_TAR)
 
 $(PYDOOP_TAR): $(PYDOOP_TRUNK)
-	cd $< && HADOOP_HOME=$(HADOOP_HOME) python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(PYDOOP_BUILD_DIR)
+	cd $< && HADOOP_HOME=$(HADOOP_HOME) BOOST_PYTHON=$(BOOST_PYTHON) python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(PYDOOP_BUILD_DIR)
 	cd $(PYDOOP_DIR) && tar czf pydoop.tgz *
 
 $(CV_TAR): $(CV_TRUNK)/setup.py $(CV_TRUNK)/cv 
