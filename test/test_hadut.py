@@ -34,8 +34,8 @@ class TestHadut(unittest.TestCase):
     args = [
       '-input', 'i',
       '-libjars', 'l',
-      '-output', 'o',
       '-fs', 'f',
+      '-output', 'o',
       '-jar', 'pippo'
       ]
     gargs = hadut._pop_generic_args(args)

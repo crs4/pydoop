@@ -50,7 +50,6 @@ def _pop_generic_args(args):
         raise ValueError("option %s has no value" % args[i])
       generic_args.extend(args[i:i+2])
       del args[i:i+2]
-      i -= 2
     i -= 1
   return generic_args
 
