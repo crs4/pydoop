@@ -25,6 +25,13 @@ repository::
 
   git clone git://pydoop.git.sourceforge.net/gitroot/pydoop/pydoop pydoop
 
+We also upload our releases to `PyPI <http://pypi.python.org>`_.
+After configuring your environment (see below), you should be able to
+automatically download and install Pydoop from PyPI using `pip
+<http://www.pip-installer.org>`_::
+
+  pip install pydoop
+
 
 Prerequisites
 -------------
@@ -230,6 +237,13 @@ Troubleshooting
     rpath=%(library_dirs)s
 
    and then run ``python setup.py install``.
+
+   In the case of automatic download and install with pip, try the
+   following instead::
+
+    export CPATH="/my/include/path:${CPATH}"
+    export LD_LIBRARY_PATH="/my/lib/path:${LD_LIBRARY_PATH}"
+    pip install pydoop
 
 #. Hadoop version issues. The Hadoop version selected at compile time is 
    automatically detected based on the output of running ``hadoop version``.
