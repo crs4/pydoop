@@ -5,8 +5,8 @@ recursive-include src/it *
 exclude src/HadoopPipes.cc
 exclude src/StringUtils.cc
 exclude src/SerialUtils.cc
-exclude src/_pipes_main.cpp
-exclude src/_hdfs_main.cpp
+exclude src/_pipes*main.cpp
+exclude src/_hdfs*main.cpp
 
 include test/all_tests_pipes.py
 include test/all_tests_hdfs.py

@@ -3,7 +3,14 @@
 News
 ====
 
-New in 0.6.5
+New in 0.6.6
+------------
+
+Fixed a bug that was causing the pipes runner to incorrectly preprocess
+command line options.
+
+
+New in 0.6.4
 ------------
 
 Fixed several bugs triggered by using a local fs as the default fs for

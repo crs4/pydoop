@@ -31,20 +31,7 @@ Now run it over your data::
 
   pydoop script --num-reducers 0 -t '' lowercase.py hdfs_input hdfs_output
 
-Note that:
-
-#. we want a map-only job, so we set the number of reducers to 0
-
-#. we want each output value to be written as a line of text.  Getting
-   this behavior in a pipes job is a bit tricky, because
-   TextOutputFormat --- Hadoop's default output format that writes
-   tab-separated key/value pairs --- will force the key/value
-   separator to be a tab character if
-   ``mapred.textoutputformat.separator`` is set to the empty string.
-   To get rid of the leading tab, you have to set
-   ``mapred.output.key.class`` to
-   ``org.apache.hadoop.io.NullWritable``: pydoop script does this
-   automatically when you specify an empty separator.
+Note that we want a map-only job, so we set the number of reducers to 0.
 
 
 Word Counting

@@ -22,9 +22,10 @@
 A quick and easy to use interface for running simple MapReduce jobs.
 """
 
-import os, sys, logging
+import os, sys, warnings, logging
 logging.basicConfig(level=logging.INFO)
 
+import pydoop
 import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
 
@@ -169,9 +170,16 @@ class PydoopScript(object):
     self.__validate()
     pipes_args = []
     if self.properties['mapred.textoutputformat.separator'] == '':
-      self.properties[
-        "mapred.output.key.class"
-        ] = "org.apache.hadoop.io.NullWritable"
+      pydoop_jar = pydoop.jar_path()
+      if pydoop_jar is not None:
+        self.properties[
+          'mapred.output.format.class'
+          ] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
+        pipes_args.extend(['-libjars', pydoop_jar])
+      else:
+        warnings.warn(
+          "Can't find pydoop.jar, output will probably be tab-separated"
+          )
     pipes_code = self.__generate_pipes_code()
     self.runner.set_input(self.args.input)
     self.runner.set_output(self.args.output)

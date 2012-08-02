@@ -84,9 +84,9 @@ def complete_mod_name(module, hadoop_version_tuple):
 
 
 def jar_path():
-  possible_path = os.path.join(os.path.dirname(__file__), __jar_name__)
-  if os.path.exists(possible_path):
-    return possible_path
+  path = os.path.join(os.path.dirname(__file__), __jar_name__)
+  if os.path.exists(path):
+    return path
   else:
     return None
 
