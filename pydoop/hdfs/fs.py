@@ -102,22 +102,25 @@ class hdfs(object):
   _CACHE = {}
   _ALIASES = {"host": {}, "port": {}, "user": {}}
 
-  def __canonize_hpu(self, host, port, user):
-    if user is None:
-      user = ""
+  def __canonize_hpu(self, hpu):
+    host, port, user = hpu
     host = host.strip()
     host = self._ALIASES["host"].get(host, host)
     port = self._ALIASES["port"].get(port, port)
     user = self._ALIASES["user"].get(user, user)
     return host, port, user
 
+  def __lookup(self, hpu):
+    return self._CACHE[self.__canonize_hpu(hpu)]
+
   def __init__(self, host="default", port=0, user=None, groups=None):
-    host, port, user = self.__canonize_hpu(host, port, user)
+    if user is None:
+      user = ""
     try:
-      self.__status = self._CACHE[(host, port, user)]
+      self.__status = self.__lookup((host, port, user))
     except KeyError:
       h, p, u, fs = _get_connection_info(host, port, user)
-      aliasing_info = [] if user else [("user", u, user)]
+      aliasing_info = [] if user else [("user", u, user)]  # (key, alias, name)
       if h != "":
         aliasing_info.append(("port", p, port))
       ip = _get_ip(h, None)
