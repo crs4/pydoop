@@ -93,36 +93,42 @@ class TestJoin(unittest.TestCase):
 class TestAbspath(unittest.TestCase):
 
   def setUp(self):
-    fs = hdfs.hdfs("default", 0)
-    self.host = fs.host
-    self.port = fs.port
-    fs.close()
-    self.root = "hdfs://%s:%s" % (self.host, self.port)
+    if hdfs.default_is_local():
+      self.root = "file:"
+    else:
+      fs = hdfs.hdfs("default", 0)
+      self.root = "hdfs://%s:%s" % (fs.host, fs.port)
+      fs.close()
 
-  def good(self):
+  def without_user(self):
     p = 'foo/bar'
-    local_abs_p = 'file:%s' % os.path.abspath(p)
-    for kw, r in [
-      ({"user": None, "local": False},
-       '%s/user/%s/%s' % (self.root, DEFAULT_USER, p)),
-      ({"user": "pydoop", "local": False},
-       '%s/user/pydoop/%s' % (self.root, p)),
-      ({"user": None, "local": True}, local_abs_p),
-      ]:
-      if hdfs.default_is_local():
-        self.assertEqual(hdfs.path.abspath(p, **kw), local_abs_p)
-      else:
-        self.assertEqual(hdfs.path.abspath(p, **kw), r)
-    p = local_abs_p
-    local_abs_p = 'file:%s' % os.path.abspath(p)
-    for kw, r in [
-      ({"user": None, "local": False}, p),
-      ({"user": None, "local": True}, local_abs_p),
-      ]:
-      if hdfs.default_is_local():
-        self.assertEqual(hdfs.path.abspath(p, **kw), local_abs_p)
-      else:
-        self.assertEqual(hdfs.path.abspath(p, **kw), r)
+    abs_p = hdfs.path.abspath(p, user=None, local=False)
+    if hdfs.default_is_local():
+      self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
+    else:
+      self.assertEqual(abs_p, '%s/user/%s/%s' % (self.root, DEFAULT_USER, p))
+
+  def with_user(self):
+    p = 'foo/bar'
+    abs_p = hdfs.path.abspath(p, user="pydoop", local=False)
+    if hdfs.default_is_local():
+      self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
+    else:
+      self.assertEqual(abs_p, '%s/user/pydoop/%s' % (self.root, p))
+
+  def forced_local(self):
+    p = 'foo/bar'
+    for user in None, "pydoop":
+      abs_p = hdfs.path.abspath(p, user=user, local=True)
+      self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
+
+  def already_absolute(self):
+    for p in 'file:/foo/bar', 'hdfs://localhost:9000/foo/bar':
+      for user in None, "pydoop":
+        abs_p = hdfs.path.abspath(p, user=user, local=False)
+        self.assertEqual(abs_p, p)
+        abs_p = hdfs.path.abspath(p, user=user, local=True)
+        self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
 
 
 class TestBasename(unittest.TestCase):
@@ -147,7 +153,10 @@ def suite():
   suite.addTest(TestSplit('good_with_user'))
   suite.addTest(TestSplit('bad'))
   suite.addTest(TestJoin('good'))
-  suite.addTest(TestAbspath('good'))
+  suite.addTest(TestAbspath('with_user'))
+  suite.addTest(TestAbspath('without_user'))
+  suite.addTest(TestAbspath('forced_local'))
+  suite.addTest(TestAbspath('already_absolute'))
   suite.addTest(TestBasename('good'))
   suite.addTest(TestExists('good'))
   return suite

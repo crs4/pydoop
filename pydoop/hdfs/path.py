@@ -42,10 +42,8 @@ class _HdfsPathSplitter(object):
     try:
       scheme, rest = cls.PATTERN.match(hdfs_path).groups()
     except AttributeError:
-      if hdfs_fs.default_is_local():
-        scheme, rest = "file", hdfs_path
-      else:
-        scheme, rest = "hdfs", hdfs_path
+      rest = hdfs_path
+      scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
     if scheme == "hdfs":
       if rest[:2] == "//" and rest[2] != "/":
         try:
@@ -134,15 +132,17 @@ def abspath(hdfs_path, user=None, local=False):
     >>> hpath.abspath('file:/tmp', local=True)
     'file:/tmp/file:/tmp'
   """
-  if local or hdfs_fs.default_is_local():
+  if local:
     return 'file:%s' % os.path.abspath(hdfs_path)
+  if _HdfsPathSplitter.PATTERN.match(hdfs_path):
+    return hdfs_path
   hostname, port, path = split(hdfs_path, user=user)
   if hostname:
     fs = hdfs_fs.hdfs(hostname, port)
     apath = join("hdfs://%s:%s" % (fs.host, fs.port), path)
     fs.close()
   else:
-    apath = "file:%s" % path
+    apath = "file:%s" % os.path.abspath(path)
   return apath
 
 
