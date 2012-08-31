@@ -44,10 +44,29 @@ class TestHadut(unittest.TestCase):
       args, ['-input', 'i', '-output', 'o', '-jar', 'pippo']
       )
 
+  def test_merge_csv_args(self):
+    self.assertRaises(ValueError, hadut._merge_csv_args, ['-archives'])
+    args = [
+      '-libjars', 'l1',
+      '-fs', 'f',
+      '-libjars', 'l2',
+      '-files', 'pippo',
+      ]
+    hadut._merge_csv_args(args)
+    try:
+      self.assertEqualPairSet(
+        args, ['-libjars', 'l1,l2', '-fs', 'f', '-files', 'pippo']
+        )
+    except AssertionError:
+      self.assertEqualPairSet(
+        args, ['-libjars', 'l2,l1', '-fs', 'f', '-files', 'pippo']
+        )
+
 
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestHadut('test_pop_generic_args'))
+  suite.addTest(TestHadut('test_merge_csv_args'))
   return suite
 
 

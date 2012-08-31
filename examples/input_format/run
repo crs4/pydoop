@@ -104,7 +104,7 @@ def main():
     conf["hadoop.pipes.java.recordreader"] = "true"
   conf["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
   runner.run(more_args=["-libjars", JAR_NAME], properties=conf,
-             hadoop_conf_dir=HADOOP_CONF_DIR)
+             hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
   res = runner.collect_output()
   runner.clean()
   local_wc = pts.LocalWordCount(opt.input)

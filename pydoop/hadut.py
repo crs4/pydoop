@@ -29,14 +29,14 @@ import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 
 
+#--- FIXME: perhaps we need a more sophisticated tool for setting args ---
 GENERIC_ARGS = frozenset([
   "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
   ])
 
-
-def _construct_property_args(prop_dict):
-  return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
-
+CSV_ARGS = frozenset([
+  "-files", "-libjars", "-archives"
+  ])
 
 # generic args must go before command-specific args
 def _pop_generic_args(args):
@@ -53,9 +53,33 @@ def _pop_generic_args(args):
     i -= 1
   return generic_args
 
+# -files f1 -files f2 --> -files f1,f2
+def _merge_csv_args(args):
+  merge_map = {}
+  i = len(args) - 1
+  while i >= 0:
+    if args[i] in CSV_ARGS:
+      try:
+        args[i+1]
+      except IndexError:
+        raise ValueError("option %s has no value" % args[i])
+      k, v = args[i:i+2]
+      merge_map.setdefault(k, []).append(v.strip())
+      del args[i:i+2]
+    i -= 1
+  for k, vlist in merge_map.iteritems():
+    args.extend([k, ",".join(vlist)])
+
+# FIXME: the above functions share a lot of code
+#-------------------------------------------------------------------------
+
+
+def _construct_property_args(prop_dict):
+  return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
+
 
 def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
-            hadoop_conf_dir=None):
+            hadoop_conf_dir=None, logger=None):
   """
   Run a Hadoop command.
 
@@ -80,6 +104,8 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     Exception in thread "main" java.lang.NoClassDefFoundError: foo
     ...
   """
+  if logger is None:
+    logger = utils.NullLogger()
   hadoop = pydoop.hadoop_exec(hadoop_home=hadoop_home)
   _args = [hadoop]
   if hadoop_conf_dir:
@@ -90,9 +116,11 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
   if args:
     if isinstance(args, basestring):
       args = args.split()
+    _merge_csv_args(args)
     gargs = _pop_generic_args(args)
     for seq in gargs, args:
       _args.extend(map(str, seq))
+  logger.debug("cmd: %s" % " ".join(_args))
   p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   output, error = p.communicate()
   if p.returncode:
@@ -184,7 +212,7 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
 
 
 def run_class(class_name, args=None, properties=None, classpath=None,
-              hadoop_conf_dir=None):
+              hadoop_conf_dir=None, logger=None):
   """
   Run a class that needs the Hadoop jars in its class path.
 
@@ -196,6 +224,8 @@ def run_class(class_name, args=None, properties=None, classpath=None,
     >>> print run_class(cls, args=['-help', 'report'])
     -report: Reports basic filesystem information and statistics.
   """
+  if logger is None:
+    logger = utils.NullLogger()
   old_classpath = None
   if classpath:
     old_classpath = os.getenv('HADOOP_CLASSPATH', '')
@@ -203,7 +233,8 @@ def run_class(class_name, args=None, properties=None, classpath=None,
       classpath = [classpath]
     classpath_list = [cp.strip() for s in classpath for cp in s.split(":")]
     os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
-  res = run_cmd(class_name, args, properties, hadoop_conf_dir=hadoop_conf_dir)
+  res = run_cmd(class_name, args, properties, hadoop_conf_dir=hadoop_conf_dir,
+                logger=logger)
   if old_classpath is not None:
     os.environ['HADOOP_CLASSPATH'] = old_classpath
   return res
@@ -211,7 +242,7 @@ def run_class(class_name, args=None, properties=None, classpath=None,
 
 def run_pipes(executable, input_path, output_path, more_args=None,
               properties=None, force_pydoop_submitter=False,
-              hadoop_conf_dir=None):
+              hadoop_conf_dir=None, logger=None):
   """
   Run a pipes command.
 
@@ -229,6 +260,8 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   You can force the use of Pydoop's submitter by passing the argument
   force_pydoop_submitter=True.
   """
+  if logger is None:
+    logger = utils.NullLogger()
   for n, p in ("executable", executable), ("input path", input_path):
     if not hdfs.path.exists(p):
       raise IOError("%s not found" % n)
@@ -254,9 +287,11 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     submitter = "it.crs4.pydoop.pipes.Submitter"
     pydoop_jar = pydoop.jar_path()
     args.extend(("-libjars", pydoop_jar))
-    return run_class(submitter, args, properties, classpath=pydoop_jar)
+    return run_class(submitter, args, properties, classpath=pydoop_jar,
+                     logger=logger)
   else:
-    return run_cmd("pipes", args, properties, hadoop_conf_dir=hadoop_conf_dir)
+    return run_cmd("pipes", args, properties, hadoop_conf_dir=hadoop_conf_dir,
+                   logger=logger)
 
 
 def find_jar(jar_name, root_path=None):
