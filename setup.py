@@ -329,10 +329,12 @@ def create_full_pipes_ext():
 
 
 def create_full_hdfs_ext():
-  include_dirs = get_java_include_dirs(PATH_FINDER.java_home)
-  include_dirs.extend(PATH_FINDER.hdfs_inc)
-  library_dirs = get_java_library_dirs(PATH_FINDER.java_home)
-  library_dirs.extend(PATH_FINDER.hdfs_link)
+  java_include_dirs = get_java_include_dirs(PATH_FINDER.java_home)
+  log.info("java_include_dirs: %r" % (java_include_dirs,))
+  include_dirs = java_include_dirs + PATH_FINDER.hdfs_inc
+  java_library_dirs = get_java_library_dirs(PATH_FINDER.java_home)
+  log.info("java_library_dirs: %r" % (java_library_dirs,))
+  library_dirs = java_library_dirs + PATH_FINDER.hdfs_link
   return BoostExtension(
     pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION_INFO),
     ["src/%s.cpp" % n for n in HDFS_SRC],
