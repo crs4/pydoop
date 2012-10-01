@@ -72,7 +72,8 @@ def _get_connection_info(host, port, user):
 
 def default_is_local(hadoop_conf=None, hadoop_home=None):
   params = pydoop.hadoop_params(hadoop_conf, hadoop_home)
-  return params.get('fs.default.name', '').startswith('file:')
+  default_fs = params.get('fs.default.name', params.get('fs.defaultFS', ''))
+  return default_fs.startswith('file:')
 
 
 class hdfs(object):

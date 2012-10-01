@@ -68,7 +68,7 @@ def version_tuple(version_string):
 
 
 def first_dir_in_glob(pattern):
-  for path in glob.glob(pattern):
+  for path in sorted(glob.glob(pattern)):
     if os.path.isdir(path):
       return path
 
