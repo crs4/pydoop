@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+"""
+Import Hadoop C++ pipes/utils source.
+"""
+
+import sys, os, argparse, warnings, shutil
+
+
+WANTED = {  # basename: relative location
+  "StringUtils.cc": "utils/impl",
+  "SerialUtils.cc": "utils/impl",
+  "StringUtils.hh": "utils/api/hadoop",
+  "SerialUtils.hh": "utils/api/hadoop",
+  "HadoopPipes.cc": "pipes/impl",
+  "Pipes.hh": "pipes/api/hadoop",
+  "TemplateFactory.hh": "pipes/api/hadoop",
+  }
+
+
+def get_sources(root_dir):
+  sources = {}
+  for d, _, basenames in os.walk(root_dir):
+    for bn in basenames:
+      if bn in WANTED:
+        if d.endswith(WANTED[bn]):
+          sources[bn] = os.path.join(d, bn)
+  missing = set(WANTED) - set(sources)
+  if missing:
+    warnings.warn("not found: %r" % (sorted(missing),))
+  return sources
+
+
+def make_parser():
+  parser = argparse.ArgumentParser(description=__doc__)
+  parser.add_argument('hadoop_home', metavar="HADOOP_HOME")
+  parser.add_argument("-o", "--output-dir", metavar="DIR",
+                      help="output_directory")
+  return parser
+
+
+def main(argv):
+  parser = make_parser()
+  args = parser.parse_args(argv[1:])
+  if not args.output_dir:
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+    parent_dir = os.path.dirname(this_dir)
+    args.output_dir = os.path.join(
+      parent_dir, "src", os.path.basename(args.hadoop_home.rstrip("/"))
+      )
+    ## print "output dir: %r" % (args.output_dir)
+    ## sys.exit(0)
+  sources = get_sources(args.hadoop_home)
+  for bn, p in sources.iteritems():
+    out_dir = os.path.join(args.output_dir, WANTED[bn])
+    try:
+      os.makedirs(out_dir)
+    except OSError:
+      pass
+    shutil.copy(p, out_dir)
+    print "%s -> %s" % (p, out_dir) 
+
+
+if __name__ == "__main__":
+  main(sys.argv)
