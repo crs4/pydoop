@@ -35,7 +35,7 @@ def make_parser():
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument('hadoop_home', metavar="HADOOP_HOME")
   parser.add_argument("-o", "--output-dir", metavar="DIR",
-                      help="output_directory")
+                      help="output directory")
   return parser
 
 
@@ -48,8 +48,6 @@ def main(argv):
     args.output_dir = os.path.join(
       parent_dir, "src", os.path.basename(args.hadoop_home.rstrip("/"))
       )
-    ## print "output dir: %r" % (args.output_dir)
-    ## sys.exit(0)
   sources = get_sources(args.hadoop_home)
   for bn, p in sources.iteritems():
     out_dir = os.path.join(args.output_dir, WANTED[bn])

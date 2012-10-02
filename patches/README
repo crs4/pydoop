@@ -1,0 +1,22 @@
+Patches for Hadoop C++ source code
+==================================
+
+NOTE: this doc is intended for developers, users can safely skip it.
+
+Starting from release 0.7, Pydoop includes the pipes/utils C++ source
+code for all supported Hadoop versions: this allows to sidestep the
+increasingly cumbersome automated search for C++ files, whose location
+varies greatly with the Hadoop version tag.
+
+A simple tool for importing the C++ code we need has been placed in scripts/:
+
+  $ scripts/import_src /opt/hadoop-1.0.3
+
+We store the unpatched source code under src/hadoop-<VERSION_TAG>
+(this makes it easier to spot changes when a new version is released)
+and patch it on-the-fly while building Pydoop.  Patches can also be
+applied manually by doing something like:
+
+  for v in 0.20.2 0.20.2-cdh3u4 1.0.3 2.0.0-cdh4.0.1; do
+    patch -d src/hadoop-${v} -p1 < patches/hadoop-${v}.patch;
+  done
