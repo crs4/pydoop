@@ -19,7 +19,7 @@
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, re, subprocess as sp, glob
+import os, subprocess as sp, glob
 import xml.dom.minidom
 
 try:
@@ -29,42 +29,62 @@ except ImportError:  # should only happen at compile time
 
 
 class HadoopVersionError(Exception):
-  pass
+
+  def __init__(self, version_str):
+    self.value = "unrecognized version string format: %r" % (version_str,)
+
+  def __str__(self):
+    return repr(self.value)
+
+
+class HadoopVersion(object):
+  """
+  Stores Hadoop version information.
+
+  Hadoop version strings are in the <MAIN>-<EXT> format, where <MAIN>
+  is in the typical dot-separated integers format, while <EXT> is
+  subject to a higher degree of variation.  Examples: '0.20.2',
+  '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT'.
+
+  The constructor parses the version string and stores a ``main`` and
+  an ``ext`` attribute corresponding to the aforementioned sections;
+  if the version string is not in the expected format, it raises
+  ``HadoopVersionError``.
+  """
+  def __init__(self, version_str):
+    version = version_str.split("-")
+    try:
+      self.main = tuple(map(int, version[0].split(".")))
+    except ValueError:
+      raise HadoopVersionError(version_str)
+    try:
+      self.ext = tuple(version[1].split("."))
+    except IndexError:
+      self.ext = tuple()
+
+  def is_cloudera(self):
+    return self.ext and self.ext[0].startswith("cdh")
+
+  def tuple(self):
+    return self.main + self.ext
+
+  def __str__(self):
+    s = ".".join(str(_) for _ in self.main)
+    if self.ext:
+      s = "%s-%s" % (s, ".".join(self.ext))
+    return s
 
 
 def is_exe(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
+
 def is_readable(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.R_OK)
 
 
-def version_tuple(version_string):
-  """
-  Break a version string into its components.
-
-  The first 3 elements of the tuple are converted to integers and represent
-  the major, minor, and bugfix Hadoop version numbers.  Subsequent elements,
-  if they exist, are other various appendages (e.g., SNAPSHOT, cdh3, etc.).
-
-  raises HadoopVersionError if the version string is in an unrecognized format.
-  """
-  # sample version strings: "0.20.3-cdh3", "0.20.2", "0.21.2",
-  # "0.20.203.1-SNAPSHOT", "1.0.4-SNAPSHOT"
-  error_msg = "unrecognized version string format: %r" % version_string
-  if not re.match(r"(\d+)(\.\d+)*(-.+)?", version_string):
-    raise HadoopVersionError(error_msg)
-  parts = re.split('[.-]', version_string)
-  if len(parts) < 3:
-    raise HadoopVersionError(error_msg)
-  try:
-    vt = map(int, parts[0:3])
-    if len(parts) > 3:
-      vt = vt + parts[3:]
-    vt = tuple(vt)
-  except ValueError:
-    raise HadoopVersionError(error_msg)
-  return vt
+def version_tuple(version_str):
+  return HadoopVersion(version_str).tuple()
 
 
 def first_dir_in_glob(pattern):

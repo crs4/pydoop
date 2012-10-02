@@ -174,9 +174,9 @@ class TestHadoopUtils(unittest.TestCase):
   def test_get_version_tuple(self):
     for vs, vt in [
       ("0.20.2", (0, 20, 2)),
-      ("0.20.203.0", (0, 20, 203, "0")),
-      ("0.20.3-cdh3", (0, 20, 3, "cdh3")),
-      ("0.20.203.1-SNAPSHOT", (0, 20, 203, "1", "SNAPSHOT")),
+      ("0.20.203.0", (0, 20, 203, 0)),
+      ("0.20.2-cdh3u4", (0, 20, 2, "cdh3u4")),
+      ("1.0.4-SNAPSHOT", (1, 0, 4, "SNAPSHOT")),
       ]:
       self.assertEqual(hu.version_tuple(vs), vt)
 
