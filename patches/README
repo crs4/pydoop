@@ -15,8 +15,39 @@ A simple tool for importing the C++ code we need has been placed in scripts/:
 We store the unpatched source code under src/hadoop-<VERSION_TAG>
 (this makes it easier to spot changes when a new version is released)
 and patch it on-the-fly while building Pydoop.  Patches can also be
-applied manually by doing something like:
+applied manually:
 
-  for v in 0.20.2 0.20.2-cdh3u4 1.0.3 2.0.0-cdh4.0.1; do
-    patch -d src/hadoop-${v} -p1 < patches/hadoop-${v}.patch;
-  done
+  $ patch -d src/hadoop-<VERSION_TAG> -p1 < patches/hadoop-<VERSION_TAG>.patch
+
+
+Creating patches for new Hadoop releases
+----------------------------------------
+
+Let's say Cloudera has just released CDH version 4.1.0.  We want to
+import the new C++ source and generate the corresponding patch:
+
+  $ scripts/import_src /opt/hadoop-2.0.0-cdh4.1.0
+  $ diff -urN src/hadoop-2.0.0-cdh4.{0.1,1.0}
+  diff -urN src/hadoop-2.0.0-cdh4.0.1/pipes/impl/HadoopPipes.cc src/hadoop-2.0.0-cdh4.1.0/pipes/impl/HadoopPipes.cc
+  --- src/hadoop-2.0.0-cdh4.0.1/pipes/impl/HadoopPipes.cc	2012-10-02 18:19:36.077520802 +0200
+  +++ src/hadoop-2.0.0-cdh4.1.0/pipes/impl/HadoopPipes.cc	2012-10-03 12:50:58.480571415 +0200
+  @@ -30,6 +30,7 @@
+   #include <stdlib.h>
+   #include <string.h>
+   #include <strings.h>
+  +#include <unistd.h>
+   #include <sys/socket.h>
+   #include <pthread.h>
+   #include <iostream>
+
+Lucky for us, changes from 4.0.1 are minimal.  We can try applying the
+old patch and see if it works:
+
+  $ patch -d src/hadoop-2.0.0-cdh4.1.0 -p1 < patches/hadoop-2.0.0-cdh4.0.1.patch 
+  patching file pipes/impl/HadoopPipes.cc
+  Hunk #1 succeeded at 127 (offset 1 line).
+  patching file utils/impl/SerialUtils.cc
+
+Great!  Now we can generate a proper patch for the new release:
+
+  $ git diff --relative=src/hadoop-2.0.0-cdh4.1.0 > patches/hadoop-2.0.0-cdh4.1.0.patch

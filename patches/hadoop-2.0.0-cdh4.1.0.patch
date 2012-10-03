@@ -1,8 +1,8 @@
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
-index 0e26425..3af0299 100644
+index 1d2fc95..dc4f81e 100644
 --- a/pipes/impl/HadoopPipes.cc
 +++ b/pipes/impl/HadoopPipes.cc
-@@ -126,7 +126,7 @@ namespace HadoopPipes {
+@@ -127,7 +127,7 @@ namespace HadoopPipes {
      static const char lineSeparator = '\n';
  
      void writeBuffer(const string& buffer) {
