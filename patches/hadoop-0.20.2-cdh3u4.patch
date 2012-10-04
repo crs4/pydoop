@@ -1,8 +1,16 @@
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
-index 0e26425..3af0299 100644
+index 964b025..2aab13c 100644
 --- a/pipes/impl/HadoopPipes.cc
 +++ b/pipes/impl/HadoopPipes.cc
-@@ -126,7 +126,7 @@ namespace HadoopPipes {
+@@ -30,6 +30,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <strings.h>
++#include <unistd.h>
+ #include <sys/socket.h>
+ #include <pthread.h>
+ #include <iostream>
+@@ -126,7 +127,7 @@ namespace HadoopPipes {
      static const char lineSeparator = '\n';
  
      void writeBuffer(const string& buffer) {

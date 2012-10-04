@@ -50,4 +50,10 @@ old patch and see if it works:
 
 Great!  Now we can generate a proper patch for the new release:
 
-  $ git diff --relative=src/hadoop-2.0.0-cdh4.1.0 > patches/hadoop-2.0.0-cdh4.1.0.patch
+  $ git diff --relative=src/hadoop-2.0.0-cdh4.1.0/ > patches/hadoop-2.0.0-cdh4.1.0.patch
+
+NOTE: a common pitfall when using the above command is to assume that
+--relative refers to a directory, while git interprets it as a general
+prefix.  Thus, if both src/hadoop-0.20.2 and src/hadoop-0.20.2-cdh3u4
+are present, src/hadoop-0.20.2 is a prefix for both, while
+src/hadoop-0.20.2/ is only a prefix for the former.
