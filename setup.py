@@ -465,7 +465,7 @@ class pydoop_build(distutils_build):
 
   def run(self):
     log.info("hadoop_home: %r" % (HADOOP_HOME,))
-    log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO,))
+    log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO.tuple(),))
     for a in (
       "java_home", "hadoop_cpp_src", "mapred_inc", "hdfs_inc", "hdfs_link"
       ):

@@ -63,7 +63,7 @@ class HadoopVersion(object):
       self.ext = tuple()
 
   def is_cloudera(self):
-    return self.ext and self.ext[0].startswith("cdh")
+    return bool(self.ext) and self.ext[0].startswith("cdh")
 
   def tuple(self):
     return self.main + self.ext
@@ -124,7 +124,7 @@ class PathFinder(object):
     self.__hadoop_exec = None
     self.__hadoop_conf = None
     self.__hadoop_version = None  # str
-    self.__hadoop_version_info = None  # tuple
+    self.__hadoop_version_info = None  # HadoopVersion
     self.__is_cloudera = None
     self.__hadoop_params = None
 
@@ -182,18 +182,15 @@ class PathFinder(object):
 
   def hadoop_version_info(self, hadoop_home=None):
     if not self.__hadoop_version_info:
-      self.__hadoop_version_info = version_tuple(
+      self.__hadoop_version_info = HadoopVersion(
         self.hadoop_version(hadoop_home)
         )
     return self.__hadoop_version_info
 
   def cloudera(self, version=None, hadoop_home=None):
     if not self.__is_cloudera:
-      version_info = version_tuple(version or self.hadoop_version(hadoop_home))
-      for part in version_info[3:]:
-        if part.startswith("cdh"):
-          self.__is_cloudera = True
-          break
+      version_info = HadoopVersion(version or self.hadoop_version(hadoop_home))
+      self.__is_cloudera = version_info.is_cloudera()
     return self.__is_cloudera
 
   def hadoop_conf(self, hadoop_home=None):

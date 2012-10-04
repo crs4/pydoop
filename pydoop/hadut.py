@@ -274,6 +274,7 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   else:
     use_pydoop_submit = False
     ver = pydoop.hadoop_version_info()
+    #--- FIXME, ver is not a tuple anymore ---
     if ver >= (0, 20, 203): # when Hadoop introduced security
       use_pydoop_submit = hdfs.default_is_local()
   args = [

@@ -171,14 +171,23 @@ class TestHadoopUtils(unittest.TestCase):
     os.environ.update(self.orig_env)
     shutil.rmtree(self.hadoop_home)
 
-  def test_get_version_tuple(self):
-    for vs, vt in [
-      ("0.20.2", (0, 20, 2)),
-      ("0.20.203.0", (0, 20, 203, 0)),
-      ("0.20.2-cdh3u4", (0, 20, 2, "cdh3u4")),
-      ("1.0.4-SNAPSHOT", (1, 0, 4, "SNAPSHOT")),
+  def test_HadoopVersion(self):
+    for vs, vmain, vext, is_cloudera in [
+      ("0.20.2", (0, 20, 2), (), False),
+      ("0.20.203.0", (0, 20, 203, 0), (), False),
+      ("0.20.2-cdh3u4", (0, 20, 2), ("cdh3u4",), True),
+      ("1.0.4-SNAPSHOT", (1, 0, 4), ("SNAPSHOT",), False),
       ]:
-      self.assertEqual(hu.version_tuple(vs), vt)
+      v = hu.HadoopVersion(vs)
+      self.assertEqual(v.main, vmain)
+      self.assertEqual(v.ext, vext)
+      self.assertEqual(v.is_cloudera(), is_cloudera)
+      self.assertEqual(v.tuple(), vmain+vext)
+    for s in [
+      "bla",
+      '0.20.str'
+      ]:
+      self.assertRaises(hu.HadoopVersionError, hu.version_tuple, s)
 
   def test_get_hadoop_exec(self):
     # hadoop home as argument
@@ -203,13 +212,16 @@ class TestHadoopUtils(unittest.TestCase):
     vt = (0, 21, 0)
     os.environ["HADOOP_VERSION"] = vs
     for hadoop_home in None, self.hadoop_home:
-      self.assertEqual(self.pf.hadoop_version(self.hadoop_home), vs)
-      self.assertEqual(self.pf.hadoop_version_info(self.hadoop_home), vt)
+      self.assertEqual(self.pf.hadoop_version(hadoop_home), vs)
+      vinfo = self.pf.hadoop_version_info(hadoop_home)
+      self.assertEqual(vinfo.main, vt)
+      self.assertEqual(vinfo.tuple(), vt)
     # hadoop version from executable
     self.pf.reset()
     del os.environ["HADOOP_VERSION"]
-    self.assertEqual(self.pf.hadoop_version_info(self.hadoop_home),
-                     self.hadoop_version_tuple)
+    vinfo = self.pf.hadoop_version_info(self.hadoop_home)
+    self.assertEqual(vinfo.main, self.hadoop_version_tuple)
+    self.assertEqual(vinfo.tuple(), self.hadoop_version_tuple)
 
 
 def suite():
@@ -218,7 +230,7 @@ def suite():
   suite.addTest(TestUtils('test_jc_configure_default'))
   suite.addTest(TestUtils('test_jc_configure_no_default'))
   suite.addTest(TestUtils('test_hadoop_serialization'))
-  suite.addTest(TestHadoopUtils('test_get_version_tuple'))
+  suite.addTest(TestHadoopUtils('test_HadoopVersion'))
   suite.addTest(TestHadoopUtils('test_get_hadoop_exec'))
   suite.addTest(TestHadoopUtils('test_get_hadoop_version'))
   return suite
