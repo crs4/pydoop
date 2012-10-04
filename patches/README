@@ -43,7 +43,7 @@ import the new C++ source and generate the corresponding patch:
 Lucky for us, changes from 4.0.1 are minimal.  We can try applying the
 old patch and see if it works:
 
-  $ patch -d src/hadoop-2.0.0-cdh4.1.0 -p1 < patches/hadoop-2.0.0-cdh4.0.1.patch 
+  $ patch -d src/hadoop-2.0.0-cdh4.1.0 -p1 < patches/hadoop-2.0.0-cdh4.0.1.patch
   patching file pipes/impl/HadoopPipes.cc
   Hunk #1 succeeded at 127 (offset 1 line).
   patching file utils/impl/SerialUtils.cc

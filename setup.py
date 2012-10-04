@@ -27,15 +27,13 @@ alternative path by exporting the environment variables below::
   JAVA_HOME, e.g., /opt/sun-jdk
   HADOOP_HOME, e.g., /opt/hadoop-1.0.2
   HADOOP_CPP_SRC, e.g., /usr/src/hadoop-0.20/c++
-  MAPRED_INCLUDE, HDFS_INCLUDE, HDFS_LINK: colon-separated directories
-    contaning, respectively, MapReduce header files, HDFS header files
-    and the HDFS C library.
+  HDFS_INCLUDE, HDFS_LINK: colon-separated directories contaning,
+    respectively, HDFS header files and the HDFS C library.
 
 Other relevant environment variables include::
 
   BOOST_PYTHON: name of the Boost.Python library, with the leading 'lib'
     and the trailing extension stripped. Defaults to 'boost_python'.
-
   HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
 """
 
@@ -56,55 +54,21 @@ import pydoop.hadoop_utils as hu
 HADOOP_HOME = pydoop.hadoop_home(fallback=None)
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 BOOST_PYTHON = os.getenv("BOOST_PYTHON", "boost_python")
-
-PIPES_SRC = ["pipes", "pipes_context", "pipes_test_support",
-             "pipes_serial_utils", "exceptions", "pipes_input_split"]
-HDFS_SRC = ["hdfs_fs", "hdfs_file", "hdfs_common"]
+PIPES_SRC = ["src/%s.cpp" % _ for _ in (
+  "pipes",
+  "pipes_context",
+  "pipes_test_support",
+  "pipes_serial_utils",
+  "exceptions",
+  "pipes_input_split",
+  )]
+HDFS_SRC = ["src/%s.cpp" % _ for _ in (
+  "hdfs_fs",
+  "hdfs_file",
+  "hdfs_common",
+  )]
 PIPES_EXT_NAME = "_pipes"
 HDFS_EXT_NAME = "_hdfs"
-
-
-# -------
-# PATCHES
-# -------
-
-# https://issues.apache.org/jira/browse/MAPREDUCE-1125
-OLD_DESERIALIZE_FLOAT = """void deserializeFloat(float& t, InStream& stream)
-  {
-    char buf[sizeof(float)];
-    stream.read(buf, sizeof(float));
-    XDR xdrs;
-    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
-    xdr_float(&xdrs, &t);
-  }"""
-NEW_DESERIALIZE_FLOAT = """float deserializeFloat(InStream& stream)
-  {
-    float t;
-    char buf[sizeof(float)];
-    stream.read(buf, sizeof(float));
-    XDR xdrs;
-    xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
-    xdr_float(&xdrs, &t);
-    return t;
-  }"""
-
-# Ticket #250
-OLD_WRITE_BUFFER = r"""void writeBuffer(const string& buffer) {
-      fprintf(stream, quoteString(buffer, "\t\n").c_str());
-    }"""
-NEW_WRITE_BUFFER = r"""void writeBuffer(const string& buffer) {
-      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
-    }"""
-
-# Pipes.hh and SerialUtils.hh don't include stdint.h.  Let's include it
-# in HadoopPipes.cc before it includes the other headers
-OLD_PIPES_INCLUDE = """#include "hadoop/Pipes.hh"\n"""
-NEW_PIPES_INCLUDE = """#include <stdint.h>\n#include "hadoop/Pipes.hh"\n"""
-
-OLD_SERIAL_UTILS_INCLUDE = """#include "hadoop/SerialUtils.hh"\n"""
-NEW_SERIAL_UTILS_INCLUDE = """#include <stdint.h>
-#include "hadoop/SerialUtils.hh"
-"""
 
 
 # ---------
@@ -118,6 +82,7 @@ def get_arch():
   return "i386", "32"
 
 HADOOP_ARCH_STR = "Linux-%s-%s" % get_arch()
+
 
 def get_java_include_dirs(java_home):
   p = platform.system().lower()  # Linux-specific
@@ -225,27 +190,6 @@ class PathFinder():
     return self.__hadoop_cpp_src
 
   @property
-  def mapred_inc(self):
-    if not self.__mapred_inc:
-      try:
-        self.__mapred_inc = os.environ["MAPRED_INCLUDE"].split(os.pathsep)
-      except KeyError:
-        paths = []
-        for lib in "pipes", "utils":
-          p = os.path.join(self.hadoop_cpp_src, lib, "api")
-          if os.path.isdir(p):
-            paths.append(p)
-        if len(paths) == 2:
-          self.__mapred_inc = paths
-        else:
-          p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "include")
-          if os.path.isdir(p):
-            self.__mapred_inc = [p]
-          else:
-            self.__error("MapReduce include paths", "MAPRED_INCLUDE")
-    return self.__mapred_inc
-
-  @property
   def hdfs_inc(self):
     if not self.__hdfs_inc:
       try:
@@ -292,37 +236,28 @@ PATH_FINDER = PathFinder()
 # ------------------------------------------------------------------------------
 
 def create_basic_pipes_ext():
-  return BoostExtension(PIPES_EXT_NAME, ["src/%s.cpp" % n for n in PIPES_SRC],
-                        [])
+  return BoostExtension(PIPES_EXT_NAME, PIPES_SRC, [])
 
 
 def create_basic_hdfs_ext():
-  return BoostExtension(HDFS_EXT_NAME, ["src/%s.cpp" % n for n in HDFS_SRC], [])
+  return BoostExtension(HDFS_EXT_NAME, HDFS_SRC, [])
 
 
 def create_full_pipes_ext():
-  basedir = PATH_FINDER.hadoop_cpp_src
-  serial_utils = os.path.join(basedir, "utils/impl/SerialUtils.cc")
-  string_utils = os.path.join(basedir, "utils/impl/StringUtils.cc")
-  pipes = os.path.join(basedir, "pipes/impl/HadoopPipes.cc")
-  patches = {
-    serial_utils: {
-      OLD_DESERIALIZE_FLOAT: NEW_DESERIALIZE_FLOAT,
-      OLD_SERIAL_UTILS_INCLUDE: NEW_SERIAL_UTILS_INCLUDE,
-      },
-    string_utils: {},
-    pipes: {
-      OLD_WRITE_BUFFER: NEW_WRITE_BUFFER,
-      OLD_PIPES_INCLUDE: NEW_PIPES_INCLUDE,
-      },
-    }
-  include_dirs = PATH_FINDER.mapred_inc
-  libraries = ["pthread", BOOST_PYTHON, "ssl"]  # FIXME: not version-dep
+  # FIXME: patched files break subsequent builds
+  hadoop_tag = "hadoop-%s" % HADOOP_VERSION_INFO
+  cmd = "patch -d src/{0} -p1 < patches/{0}.patch".format(hadoop_tag)
+  if os.system(cmd):
+    raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
+  basedir = "src/hadoop-%s" % HADOOP_VERSION_INFO
+  include_dirs = ["%s/%s/api" % (basedir, _) for _ in "pipes", "utils"]
+  libraries = ["pthread", BOOST_PYTHON]
+  if HADOOP_VERSION_INFO.tuple() != (0, 20, 2):
+    libraries.append("ssl")
   return BoostExtension(
     pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION_INFO),
-    ["src/%s.cpp" % n for n in PIPES_SRC],
-    [],  # aux
-    patches=patches,
+    PIPES_SRC,
+    glob.glob("%s/*/impl/*.cc" % basedir),
     include_dirs=include_dirs,
     libraries=libraries
     )
@@ -337,7 +272,7 @@ def create_full_hdfs_ext():
   library_dirs = java_library_dirs + PATH_FINDER.hdfs_link
   return BoostExtension(
     pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION_INFO),
-    ["src/%s.cpp" % n for n in HDFS_SRC],
+    HDFS_SRC,
     [],  # aux
     include_dirs=include_dirs,
     library_dirs=library_dirs,
@@ -360,11 +295,10 @@ class BoostExtension(Extension):
   """
   export_pattern = re.compile(r"void\s+export_(\w+)")
 
-  def __init__(self, name, wrap_sources, aux_sources, patches=None, **kw):
+  def __init__(self, name, wrap_sources, aux_sources, **kw):
     Extension.__init__(self, name, wrap_sources+aux_sources, **kw)
     self.module_name = self.name.rsplit(".", 1)[-1]
     self.wrap_sources = wrap_sources
-    self.patches = patches
 
   def generate_main(self):
     destdir = os.path.split(self.wrap_sources[0])[0]  # should be ok
@@ -389,24 +323,6 @@ class BoostExtension(Extension):
           outf.write("%s%s" % (line, os.linesep))
     return outfn
 
-  def generate_patched_aux(self):
-    aux = []
-    if not self.patches:
-      return aux
-    for fn, p in self.patches.iteritems():
-      patched_fn = "src/%s" % os.path.basename(fn)
-      # FIXME: the patch should also be listed as a prerequisite.
-      if must_generate(patched_fn, [fn]):
-        log.debug("copying and patching %s" % fn)
-        with open(fn) as f:
-          contents = f.read()
-        for old, new in p.iteritems():
-          contents = contents.replace(old, new)
-        with open(patched_fn, "w") as f:
-          f.write(contents)
-      aux.append(patched_fn)
-    return aux
-
 
 class build_pydoop_ext(distutils_build_ext):
 
@@ -418,7 +334,6 @@ class build_pydoop_ext(distutils_build_ext):
       ]
     for e in self.extensions:
       e.sources.append(e.generate_main())
-      e.sources.extend(e.generate_patched_aux())
 
   def build_extension(self, ext):
     try:
@@ -437,11 +352,7 @@ def create_ext_modules():
 
 class pydoop_clean(distutils_clean):
   """
-  Custom clean action that removes files generated by the build
-  process.  In particular, the build process generates _*_main.cpp
-  files for the boost extensions, and some patched Hadoop source code
-  files, all inside the src directory.  These are removed when this
-  clean action is executed.
+  Custom clean action that removes files generated by the build process.
   """
   def run(self):
     distutils_clean.run(self)
@@ -449,8 +360,7 @@ class pydoop_clean(distutils_clean):
     shutil.rmtree(os.path.join(this_dir, 'dist'), ignore_errors=True)
     pydoop_src_path = os.path.join(this_dir, 'src')
     r = re.compile('(%s|%s)_.*_main.cpp$' % (HDFS_EXT_NAME, PIPES_EXT_NAME))
-    paths = filter(r.search, os.listdir(pydoop_src_path)) + \
-            ['SerialUtils.cc', 'StringUtils.cc', 'HadoopPipes.cc']
+    paths = filter(r.search, os.listdir(pydoop_src_path))
     absolute_paths = [os.path.join(pydoop_src_path, f) for f in paths]
     for f in absolute_paths:
       if not self.dry_run:
@@ -466,9 +376,7 @@ class pydoop_build(distutils_build):
   def run(self):
     log.info("hadoop_home: %r" % (HADOOP_HOME,))
     log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO.tuple(),))
-    for a in (
-      "java_home", "hadoop_cpp_src", "mapred_inc", "hdfs_inc", "hdfs_link"
-      ):
+    for a in ("java_home", "hadoop_cpp_src", "hdfs_inc", "hdfs_link"):
       log.info("%s: %r" % (a, getattr(PATH_FINDER, a)))
     distutils_build.run(self)
     self.__build_java_component()
