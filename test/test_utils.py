@@ -183,11 +183,8 @@ class TestHadoopUtils(unittest.TestCase):
       self.assertEqual(v.ext, vext)
       self.assertEqual(v.is_cloudera(), is_cloudera)
       self.assertEqual(v.tuple(), vmain+vext)
-    for s in [
-      "bla",
-      '0.20.str'
-      ]:
-      self.assertRaises(hu.HadoopVersionError, hu.version_tuple, s)
+    for s in "bla", '0.20.str':
+      self.assertRaises(hu.HadoopVersionError, hu.HadoopVersion, s)
 
   def test_get_hadoop_exec(self):
     # hadoop home as argument

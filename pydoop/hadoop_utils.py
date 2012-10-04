@@ -83,10 +83,6 @@ def is_readable(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.R_OK)
 
 
-def version_tuple(version_str):
-  return HadoopVersion(version_str).tuple()
-
-
 def first_dir_in_glob(pattern):
   for path in sorted(glob.glob(pattern)):
     if os.path.isdir(path):
