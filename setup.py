@@ -248,10 +248,13 @@ def create_full_pipes_ext():
   patch_fn = "patches/%s.patch" % hadoop_tag
   src_dir = "src/%s" % hadoop_tag
   work_dir = "%s.patched" % src_dir
-  shutil.copytree(src_dir, work_dir)
-  cmd = "patch -d %s -N -p1 < %s" % (work_dir, patch_fn)
-  if os.system(cmd):
-    raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
+  if must_generate(work_dir, [src_dir, patch_fn]):
+    shutil.rmtree(work_dir, ignore_errors=True)
+    shutil.copytree(src_dir, work_dir)
+    os.utime(work_dir, None)
+    cmd = "patch -d %s -N -p1 < %s" % (work_dir, patch_fn)
+    if os.system(cmd):
+      raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
   include_dirs = ["%s/%s/api" % (work_dir, _) for _ in "pipes", "utils"]
   libraries = ["pthread", BOOST_PYTHON]
   if HADOOP_VERSION_INFO.tuple() != (0, 20, 2):
