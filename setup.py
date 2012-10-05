@@ -244,20 +244,22 @@ def create_basic_hdfs_ext():
 
 
 def create_full_pipes_ext():
-  # FIXME: patched files break subsequent builds
   hadoop_tag = "hadoop-%s" % HADOOP_VERSION_INFO
-  cmd = "patch -d src/{0} -p1 < patches/{0}.patch".format(hadoop_tag)
+  patch_fn = "patches/%s.patch" % hadoop_tag
+  src_dir = "src/%s" % hadoop_tag
+  work_dir = "%s.patched" % src_dir
+  shutil.copytree(src_dir, work_dir)
+  cmd = "patch -d %s -N -p1 < %s" % (work_dir, patch_fn)
   if os.system(cmd):
     raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
-  basedir = "src/hadoop-%s" % HADOOP_VERSION_INFO
-  include_dirs = ["%s/%s/api" % (basedir, _) for _ in "pipes", "utils"]
+  include_dirs = ["%s/%s/api" % (work_dir, _) for _ in "pipes", "utils"]
   libraries = ["pthread", BOOST_PYTHON]
   if HADOOP_VERSION_INFO.tuple() != (0, 20, 2):
     libraries.append("ssl")
   return BoostExtension(
     pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION_INFO),
     PIPES_SRC,
-    glob.glob("%s/*/impl/*.cc" % basedir),
+    glob.glob("%s/*/impl/*.cc" % work_dir),
     include_dirs=include_dirs,
     libraries=libraries
     )
