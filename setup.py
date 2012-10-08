@@ -26,9 +26,6 @@ alternative path by exporting the environment variables below::
 
   JAVA_HOME, e.g., /opt/sun-jdk
   HADOOP_HOME, e.g., /opt/hadoop-1.0.2
-  HADOOP_CPP_SRC, e.g., /usr/src/hadoop-0.20/c++
-  HDFS_INCLUDE, HDFS_LINK: colon-separated directories contaning,
-    respectively, HDFS header files and the HDFS C library.
 
 Other relevant environment variables include::
 
@@ -48,9 +45,12 @@ from distutils.errors import DistutilsSetupError
 from distutils import log
 
 import pydoop
-import pydoop.hadoop_utils as hu
 
 
+try:
+  JAVA_HOME = os.environ["JAVA_HOME"]
+except KeyError:
+  raise RuntimeError("java home not found, try setting JAVA_HOME")
 HADOOP_HOME = pydoop.hadoop_home(fallback=None)
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 BOOST_PYTHON = os.getenv("BOOST_PYTHON", "boost_python")
@@ -166,73 +166,6 @@ def patch_hadoop_src():
   return patched_src_dir
 
 
-class PathFinder():
-
-  def __init__(self):
-    self.__java_home = None
-    self.__hadoop_cpp_src = None
-    self.__mapred_inc = []
-    self.__hdfs_inc = []
-    self.__hdfs_link = []
-
-  def __error(self, what, env_var):
-    raise RuntimeError("%s not found, try setting %s" % (what, env_var))
-
-  @property
-  def java_home(self):
-    if not self.__java_home:
-      try:
-        self.__java_home = os.environ["JAVA_HOME"]
-      except KeyError:
-        self.__error("Java home", "JAVA_HOME")
-    return self.__java_home
-
-  @property
-  def hadoop_cpp_src(self):
-    if not self.__hadoop_cpp_src:
-      try:
-        self.__hadoop_cpp_src = os.environ["HADOOP_CPP_SRC"]
-      except KeyError:
-        src = os.path.join(HADOOP_HOME, "src", "c++")
-        if os.path.isdir(src):
-          self.__hadoop_cpp_src = src
-        else:
-          cloudera_src = hu.first_dir_in_glob("/usr/src/hadoop*/c++")
-          if cloudera_src:
-            self.__hadoop_cpp_src = cloudera_src
-          else:
-            self.__error("Hadoop source code", "HADOOP_CPP_SRC")
-    return self.__hadoop_cpp_src
-
-  @property
-  def hdfs_inc(self):
-    if not self.__hdfs_inc:
-      try:
-        self.__hdfs_inc = os.environ["HDFS_INCLUDE"].split(os.pathsep)
-      except KeyError:
-        p = os.path.join(self.hadoop_cpp_src, "libhdfs")
-        if os.path.isdir(p):
-          self.__hdfs_inc = [p]
-        else:
-          self.__error("HDFS include paths", "HDFS_INCLUDE")
-    return self.__hdfs_inc
-
-  @property
-  def hdfs_link(self):
-    if not self.__hdfs_link:
-      try:
-        self.__hdfs_link = os.environ["HDFS_LINK"].split(os.pathsep)
-      except KeyError:
-        p = os.path.join(HADOOP_HOME, "c++", HADOOP_ARCH_STR, "lib")
-        if os.path.isdir(p):
-          self.__hdfs_link = [p]
-        elif not os.path.exists("/usr/lib/libhdfs.so"):
-          self.__error("HDFS link paths", "HDFS_LINK")
-    return self.__hdfs_link
-
-
-PATH_FINDER = PathFinder()
-
 # ------------------------------------------------------------------------------
 # Create extension objects.
 #
@@ -273,23 +206,21 @@ def create_full_pipes_ext(patched_src_dir):
 
 
 def create_full_hdfs_ext(patched_src_dir):
-  patched_src_dir = "IGNORED_FOR_NOW"
-  java_include_dirs = get_java_include_dirs(PATH_FINDER.java_home)
+  java_include_dirs = get_java_include_dirs(JAVA_HOME)
   log.info("java_include_dirs: %r" % (java_include_dirs,))
-  include_dirs = java_include_dirs + PATH_FINDER.hdfs_inc
-  java_library_dirs = get_java_library_dirs(PATH_FINDER.java_home)
+  include_dirs = java_include_dirs + ["%s/libhdfs" % patched_src_dir]
+  java_library_dirs = get_java_library_dirs(JAVA_HOME)
   log.info("java_library_dirs: %r" % (java_library_dirs,))
-  library_dirs = java_library_dirs + PATH_FINDER.hdfs_link
   return BoostExtension(
     pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION_INFO),
     HDFS_SRC,
-    [],  # aux
+    glob.glob("%s/libhdfs/*.c" % patched_src_dir),
     include_dirs=include_dirs,
-    library_dirs=library_dirs,
-    runtime_library_dirs=library_dirs,
-    libraries=["pthread", BOOST_PYTHON, "hdfs", "jvm"],
+    library_dirs=java_library_dirs,
+    runtime_library_dirs=java_library_dirs,
+    libraries=["pthread", BOOST_PYTHON, "jvm"],
     define_macros=get_hdfs_macros(
-      os.path.join(PATH_FINDER.hdfs_inc[0], "hdfs.h")
+      os.path.join(patched_src_dir, "libhdfs", "hdfs.h")
       ),
     )
 
@@ -387,8 +318,7 @@ class pydoop_build(distutils_build):
   def run(self):
     log.info("hadoop_home: %r" % (HADOOP_HOME,))
     log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO.tuple(),))
-    for a in ("java_home", "hadoop_cpp_src", "hdfs_inc", "hdfs_link"):
-      log.info("%s: %r" % (a, getattr(PATH_FINDER, a)))
+    log.info("java_home: %r" % (JAVA_HOME,))
     distutils_build.run(self)
     self.__build_java_component()
 
