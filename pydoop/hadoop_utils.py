@@ -44,7 +44,7 @@ class HadoopVersion(object):
   Hadoop version strings are in the <MAIN>-<EXT> format, where <MAIN>
   is in the typical dot-separated integers format, while <EXT> is
   subject to a higher degree of variation.  Examples: '0.20.2',
-  '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT'.
+  '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT', '2.0.0-mr1-cdh4.1.0'.
 
   The constructor parses the version string and stores a ``main`` and
   an ``ext`` attribute corresponding to the aforementioned sections;
@@ -52,18 +52,21 @@ class HadoopVersion(object):
   ``HadoopVersionError``.
   """
   def __init__(self, version_str):
-    version = version_str.split("-")
+    version = version_str.split("-", 1)
     try:
       self.main = tuple(map(int, version[0].split(".")))
     except ValueError:
       raise HadoopVersionError(version_str)
     try:
-      self.ext = tuple(version[1].split("."))
+      self.ext = (version[1],)
     except IndexError:
-      self.ext = tuple()
+      self.ext = ()
 
   def is_cloudera(self):
-    return bool(self.ext) and self.ext[0].startswith("cdh")
+    for s in self.ext:
+      if "cdh" in s:
+        return True
+    return False
 
   def tuple(self):
     return self.main + self.ext
@@ -71,7 +74,7 @@ class HadoopVersion(object):
   def __str__(self):
     s = ".".join(str(_) for _ in self.main)
     if self.ext:
-      s = "%s-%s" % (s, ".".join(self.ext))
+      s = "%s-%s" % (s, self.ext[0])
     return s
 
 
@@ -164,8 +167,10 @@ class PathFinder(object):
           pass
         else:
           try:
+            env = os.environ.copy()
+            del env["HADOOP_HOME"]
             out, err = sp.Popen(
-              [hadoop, "version"], stdout=sp.PIPE, stderr=sp.PIPE
+              [hadoop, "version"], stdout=sp.PIPE, stderr=sp.PIPE, env=env,
               ).communicate()
             if err and not out:
               raise RuntimeError(err)

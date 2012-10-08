@@ -177,6 +177,7 @@ class TestHadoopUtils(unittest.TestCase):
       ("0.20.203.0", (0, 20, 203, 0), (), False),
       ("0.20.2-cdh3u4", (0, 20, 2), ("cdh3u4",), True),
       ("1.0.4-SNAPSHOT", (1, 0, 4), ("SNAPSHOT",), False),
+      ("2.0.0-mr1-cdh4.1.0", (2, 0, 0), ("mr1-cdh4.1.0",), True),
       ]:
       v = hu.HadoopVersion(vs)
       self.assertEqual(v.main, vmain)

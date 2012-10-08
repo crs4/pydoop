@@ -1,3 +1,12 @@
+2012-10-08  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hadoop_utils.py (HadoopVersion): ext part is now
+	everything after the first dash and it's not parsed anymore.
+	(PathFinder.hadoop_version): removed HADOOP_HOME from the
+	environment passed to the hadoop executable (HADOOP_HOME overrides
+	the actual Hadoop version to be used even if you call the
+	executable with its full explicit path).
+
 2012-07-18  simleo  <simleo@simleo-U36SD>
 
 	* pydoop/hadut.py (PipesRunner): fixed. Now it should be usable
