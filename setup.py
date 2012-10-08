@@ -151,6 +151,21 @@ def get_hdfs_macros(hdfs_hdr):
   return hdfs_macros
 
 
+def patch_hadoop_src():
+  hadoop_tag = "hadoop-%s" % HADOOP_VERSION_INFO
+  patch_fn = "patches/%s.patch" % hadoop_tag
+  src_dir = "src/%s" % hadoop_tag
+  patched_src_dir = "%s.patched" % src_dir
+  if must_generate(patched_src_dir, [src_dir, patch_fn]):
+    shutil.rmtree(patched_src_dir, ignore_errors=True)
+    shutil.copytree(src_dir, patched_src_dir)
+    os.utime(patched_src_dir, None)
+    cmd = "patch -d %s -N -p1 < %s" % (patched_src_dir, patch_fn)
+    if os.system(cmd):
+      raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
+  return patched_src_dir
+
+
 class PathFinder():
 
   def __init__(self):
@@ -243,32 +258,22 @@ def create_basic_hdfs_ext():
   return BoostExtension(HDFS_EXT_NAME, HDFS_SRC, [])
 
 
-def create_full_pipes_ext():
-  hadoop_tag = "hadoop-%s" % HADOOP_VERSION_INFO
-  patch_fn = "patches/%s.patch" % hadoop_tag
-  src_dir = "src/%s" % hadoop_tag
-  work_dir = "%s.patched" % src_dir
-  if must_generate(work_dir, [src_dir, patch_fn]):
-    shutil.rmtree(work_dir, ignore_errors=True)
-    shutil.copytree(src_dir, work_dir)
-    os.utime(work_dir, None)
-    cmd = "patch -d %s -N -p1 < %s" % (work_dir, patch_fn)
-    if os.system(cmd):
-      raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
-  include_dirs = ["%s/%s/api" % (work_dir, _) for _ in "pipes", "utils"]
+def create_full_pipes_ext(patched_src_dir):
+  include_dirs = ["%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"]
   libraries = ["pthread", BOOST_PYTHON]
   if HADOOP_VERSION_INFO.tuple() != (0, 20, 2):
     libraries.append("ssl")
   return BoostExtension(
     pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION_INFO),
     PIPES_SRC,
-    glob.glob("%s/*/impl/*.cc" % work_dir),
+    glob.glob("%s/*/impl/*.cc" % patched_src_dir),
     include_dirs=include_dirs,
     libraries=libraries
     )
 
 
-def create_full_hdfs_ext():
+def create_full_hdfs_ext(patched_src_dir):
+  patched_src_dir = "IGNORED_FOR_NOW"
   java_include_dirs = get_java_include_dirs(PATH_FINDER.java_home)
   log.info("java_include_dirs: %r" % (java_include_dirs,))
   include_dirs = java_include_dirs + PATH_FINDER.hdfs_inc
@@ -333,9 +338,10 @@ class build_pydoop_ext(distutils_build_ext):
 
   def finalize_options(self):
     distutils_build_ext.finalize_options(self)
+    patched_src_dir = patch_hadoop_src()
     self.extensions = [
-      create_full_pipes_ext(),
-      create_full_hdfs_ext(),
+      create_full_pipes_ext(patched_src_dir),
+      create_full_hdfs_ext(patched_src_dir),
       ]
     for e in self.extensions:
       e.sources.append(e.generate_main())

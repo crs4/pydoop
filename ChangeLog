@@ -1,5 +1,7 @@
 2012-10-08  simleo  <simleo@simleo-U36SD>
 
+	* setup.py (patch_hadoop_src): patch code moved to this new func.
+
 	* pydoop/hadoop_utils.py (HadoopVersion): ext part is now
 	everything after the first dash and it's not parsed anymore.
 	(PathFinder.hadoop_version): removed HADOOP_HOME from the
