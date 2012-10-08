@@ -15,6 +15,19 @@ WANTED = {  # basename: relative location
   "HadoopPipes.cc": "pipes/impl",
   "Pipes.hh": "pipes/api/hadoop",
   "TemplateFactory.hh": "pipes/api/hadoop",
+  #--- libhdfs, all versions ---
+  "hdfs.h": "libhdfs",
+  "hdfs.c": "libhdfs",
+  # --- libhdfs, old versions ---
+  "hdfsJniHelper.h": "libhdfs",
+  "hdfsJniHelper.c": "libhdfs",
+  # --- libhdfs, recent versions ---
+  "jni_helper.h": "libhdfs",
+  "jni_helper.c": "libhdfs",
+  "native_mini_dfs.h": "libhdfs",
+  "native_mini_dfs.c": "libhdfs",
+  "exception.h": "libhdfs",
+  "exception.c": "libhdfs",
   }
 
 
