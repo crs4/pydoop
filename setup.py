@@ -144,11 +144,41 @@ def get_hdfs_macros(hdfs_hdr):
     t = f.read()
   delete_args = re.search(r"hdfsDelete\((.+)\)", t).groups()[0].split(",")
   cas_args = re.search(r"hdfsConnectAsUser\((.+)\)", t).groups()[0].split(",")
+  ## cas_newinst = bool(re.search(r"hdfsConnectAsUserNewInstance\((.+)\)", t))
+  ## c_newinst = bool(re.search(r"hdfsConnectNewInstance\((.+)\)", t))
+  ## hflush = bool(re.search(r"hdfsHFlush\((.+)\)", t))
   if len(delete_args) > 2:
     hdfs_macros.append(("RECURSIVE_DELETE", None))
   if len(cas_args) > 3:
     hdfs_macros.append(("CONNECT_GROUP_INFO", None))
+  ## if cas_newinst:
+  ##   hdfs_macros.append(("CONNECT_AS_USER_NEW_INST", None))
+  ## if c_newinst:
+  ##   hdfs_macros.append(("CONNECT_NEW_INST", None))
+  ## if hflush:
+  ##   hdfs_macros.append(("HFLUSH", None))
   return hdfs_macros
+
+
+def have_better_tls():
+  """
+  See ${HADOOP_HOME}/hadoop-hdfs-project/hadoop-hdfs/src/CMakeLists.txt
+  """
+  return False  # FIXME: need a portable implementation
+
+
+def generate_hdfs_config(patched_src_dir):
+  """
+  Generate config.h for libhdfs.
+
+  This is only relevant for recent Hadoop versions.
+  """
+  config_fn = os.path.join(patched_src_dir, "libhdfs", "config.h")
+  with open(config_fn, "w") as f:
+    f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
+    if have_better_tls():
+      f.write("#define HAVE_BETTER_TLS\n")
+    f.write("#endif\n")
 
 
 def patch_hadoop_src():
@@ -206,6 +236,7 @@ def create_full_pipes_ext(patched_src_dir):
 
 
 def create_full_hdfs_ext(patched_src_dir):
+  generate_hdfs_config(patched_src_dir)
   java_include_dirs = get_java_include_dirs(JAVA_HOME)
   log.info("java_include_dirs: %r" % (java_include_dirs,))
   include_dirs = java_include_dirs + ["%s/libhdfs" % patched_src_dir]

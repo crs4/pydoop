@@ -168,7 +168,7 @@ class PathFinder(object):
         else:
           try:
             env = os.environ.copy()
-            del env["HADOOP_HOME"]
+            env.pop("HADOOP_HOME", None)
             out, err = sp.Popen(
               [hadoop, "version"], stdout=sp.PIPE, stderr=sp.PIPE, env=env,
               ).communicate()
