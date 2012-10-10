@@ -77,6 +77,10 @@ def hadoop_params(hadoop_conf=None, hadoop_home=None):
   return _PATH_FINDER.hadoop_params(hadoop_conf, hadoop_home)
 
 
+def hadoop_classpath(hadoop_home=None):
+  return _PATH_FINDER.hadoop_classpath(hadoop_home)
+
+
 def complete_mod_name(module, hadoop_version_info):
   return "%s.%s_%s" % (
     __package__, module, "_".join(map(str, hadoop_version_info.tuple()))

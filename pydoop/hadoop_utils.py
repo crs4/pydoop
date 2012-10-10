@@ -19,7 +19,7 @@
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, subprocess as sp, glob
+import os, subprocess as sp, glob, re
 import xml.dom.minidom
 
 try:
@@ -61,12 +61,13 @@ class HadoopVersion(object):
       self.ext = (version[1],)
     except IndexError:
       self.ext = ()
+    try:
+      self.cdh_version = int(re.search(r"cdh(\d)", self.ext[0]).groups()[0])
+    except (IndexError, AttributeError, ValueError):
+      self.cdh_version = None
 
   def is_cloudera(self):
-    for s in self.ext:
-      if "cdh" in s:
-        return True
-    return False
+    return self.cdh_version is not None
 
   def tuple(self):
     return self.main + self.ext
@@ -126,6 +127,7 @@ class PathFinder(object):
     self.__hadoop_version_info = None  # HadoopVersion
     self.__is_cloudera = None
     self.__hadoop_params = None
+    self.__hadoop_classpath = None
 
   def reset(self):
     self.__init__()
@@ -224,3 +226,19 @@ class PathFinder(object):
           pass
       self.__hadoop_params = params
     return self.__hadoop_params
+
+  def hadoop_classpath(self, hadoop_home=None):
+    if hadoop_home is None:
+      hadoop_home = self.hadoop_home()
+    if not self.__hadoop_classpath:
+      v = self.hadoop_version_info(hadoop_home)
+      if v.cdh_version < 4:
+        self.__hadoop_classpath = ':'.join(
+          glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
+          glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
+          )
+      else:  # this only covers installed-from-package CDH, not tarball
+        self.__hadoop_classpath = ':'.join(
+          glob.glob(os.path.join(hadoop_home, 'client', '*.jar'))
+          )
+    return self.__hadoop_classpath

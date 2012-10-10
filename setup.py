@@ -355,10 +355,7 @@ class pydoop_build(distutils_build):
 
   def __build_java_component(self):
     compile_cmd = "javac"
-    classpath = ':'.join(
-        glob.glob(os.path.join(HADOOP_HOME, 'hadoop-*.jar')) +
-        glob.glob(os.path.join(HADOOP_HOME, 'lib', '*.jar'))
-      )
+    classpath = pydoop.hadoop_classpath()
     if classpath:
       compile_cmd += " -classpath %s" % classpath
     else:
@@ -369,8 +366,8 @@ class pydoop_build(distutils_build):
       os.mkdir(class_dir)
     compile_cmd += " -d '%s'" % class_dir
     java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
-    if HADOOP_VERSION_INFO >= (1, 0, 0):
-      java_files.append("src/it/crs4/pydoop/pipes/*")
+    ## if HADOOP_VERSION_INFO >= (1, 0, 0):
+    ##   java_files.append("src/it/crs4/pydoop/pipes/*")
     log.info("Compiling Java classes")
     for f in java_files:
       compile_cmd += " %s" % f

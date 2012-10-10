@@ -61,12 +61,9 @@ except NameError:
 
 #--- MODULE CONFIG ---
 def init():
-  jars = (
-    glob.glob(os.path.join(pydoop.hadoop_home(), "lib/*.jar")) +
-    glob.glob(os.path.join(pydoop.hadoop_home(), "hadoop*.jar")) +
-    [pydoop.hadoop_conf()]
+  os.environ["CLASSPATH"] = "%s:%s:%s" % (
+    pydoop.hadoop_classpath(), _ORIG_CLASSPATH, pydoop.hadoop_conf()
     )
-  os.environ["CLASSPATH"] = "%s:%s" % (":".join(jars), _ORIG_CLASSPATH)
   os.environ["LIBHDFS_OPTS"] = os.getenv(
     "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
     )

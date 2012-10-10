@@ -184,6 +184,7 @@ class TestHadoopUtils(unittest.TestCase):
       self.assertEqual(v.ext, vext)
       self.assertEqual(v.is_cloudera(), is_cloudera)
       self.assertEqual(v.tuple(), vmain+vext)
+    self.assertEqual(hu.HadoopVersion("0.20.2-cdh3u4").cdh_version, 3)
     for s in "bla", '0.20.str':
       self.assertRaises(hu.HadoopVersionError, hu.HadoopVersion, s)
 
