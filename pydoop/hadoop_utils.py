@@ -236,8 +236,7 @@ class PathFinder(object):
         self.__hadoop_conf = os.environ["HADOOP_CONF_DIR"]
       except KeyError:
         if self.cloudera():
-          v = self.hadoop_version_info(hadoop_home)
-          candidate = '/etc/hadoop-%d.%d/conf' % v[0:2]
+          candidate = '/etc/hadoop/conf'
         else:
           candidate = os.path.join(hadoop_home or self.hadoop_home(), 'conf')
         if os.path.isdir(candidate):

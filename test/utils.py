@@ -16,10 +16,13 @@
 # 
 # END_COPYRIGHT
 
-import os, random, uuid, tempfile, xml.dom.minidom
+"""
+Utilities for unit tests.
+"""
+
+import os, random, uuid, tempfile
 
 import pydoop
-import pydoop.hadoop_utils as hu
 
 
 _HADOOP_HOME = pydoop.hadoop_home()
@@ -86,35 +89,7 @@ def make_random_data(size=_RANDOM_DATA_SIZE):
 
 
 def get_bytes_per_checksum():
-
-  def extract_text(nodes):
-    return str("".join([n.data for n in nodes if n.nodeType == n.TEXT_NODE]))
-
-  def extract_bpc(conf_path):
-    dom = xml.dom.minidom.parse(conf_path)
-    conf = dom.getElementsByTagName("configuration")[0]
-    props = conf.getElementsByTagName("property")
-    for p in props:
-      n = p.getElementsByTagName("name")[0]
-      if extract_text(n.childNodes) == "io.bytes.per.checksum":
-        v = p.getElementsByTagName("value")[0]
-        return int(extract_text(v.childNodes))
-    raise IOError  # for consistency, also raised by minidom.path
-
-  core_default = os.path.join(_HADOOP_HOME, "src", "core", "core-default.xml")
-  if not os.path.exists(core_default):
-    # FIXME: move source finder from setup.py to an installed module
-    cloudera_src = hu.first_dir_in_glob("/usr/src/hadoop*")
-    core_default = os.path.join(cloudera_src, "core", "core-default.xml")
-  core_site, hadoop_site = [os.path.join(_HADOOP_CONF_DIR, fn) for fn in
-                            ("core-site.xml", "hadoop-site.xml")]
-  try:
-    return extract_bpc(core_site)
-  except IOError:
-    try:
-      return extract_bpc(hadoop_site)
-    except IOError:
-      try:
-        return extract_bpc(core_default)
-      except IOError:
-        return _DEFAULT_BYTES_PER_CHECKSUM
+  params = pydoop.hadoop_params(_HADOOP_CONF_DIR, _HADOOP_HOME)
+  return int(params.get('io.bytes.per.checksum',
+                        params.get('dfs.bytes-per-checksum',
+                                   _DEFAULT_BYTES_PER_CHECKSUM)))

@@ -348,7 +348,7 @@ class pydoop_build(distutils_build):
 
   def run(self):
     log.info("hadoop_home: %r" % (HADOOP_HOME,))
-    log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO.tuple,))
+    log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
     log.info("java_home: %r" % (JAVA_HOME,))
     distutils_build.run(self)
     self.__build_java_component()
@@ -367,7 +367,8 @@ class pydoop_build(distutils_build):
     compile_cmd += " -d '%s'" % class_dir
     java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
     if HADOOP_VERSION_INFO.tuple >= (1, 0, 0):
-      java_files.append("src/it/crs4/pydoop/pipes/*")
+      if HADOOP_VERSION_INFO.cdh < (4, 0, 0):  # FIXME: not supported yet
+        java_files.append("src/it/crs4/pydoop/pipes/*")
     log.info("Compiling Java classes")
     for f in java_files:
       compile_cmd += " %s" % f
