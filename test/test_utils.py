@@ -172,19 +172,18 @@ class TestHadoopUtils(unittest.TestCase):
     shutil.rmtree(self.hadoop_home)
 
   def test_HadoopVersion(self):
-    for vs, vmain, vext, is_cloudera in [
-      ("0.20.2", (0, 20, 2), (), False),
-      ("0.20.203.0", (0, 20, 203, 0), (), False),
-      ("0.20.2-cdh3u4", (0, 20, 2), ("cdh3u4",), True),
-      ("1.0.4-SNAPSHOT", (1, 0, 4), ("SNAPSHOT",), False),
-      ("2.0.0-mr1-cdh4.1.0", (2, 0, 0), ("mr1-cdh4.1.0",), True),
+    for vs, main, cdh, ext in [
+      ("0.20.2", (0, 20, 2), (), ()),
+      ("0.20.203.0", (0, 20, 203, 0), (), ()),
+      ("0.20.2-cdh3u4", (0, 20, 2), (3, 4), ()),
+      ("1.0.4-SNAPSHOT", (1, 0, 4), (), ("SNAPSHOT",)),
+      ("2.0.0-mr1-cdh4.1.0", (2, 0, 0), (4, 1, 0), ("mr1",)),
       ]:
       v = hu.HadoopVersion(vs)
-      self.assertEqual(v.main, vmain)
-      self.assertEqual(v.ext, vext)
-      self.assertEqual(v.is_cloudera(), is_cloudera)
-      self.assertEqual(v.tuple(), vmain+vext)
-    self.assertEqual(hu.HadoopVersion("0.20.2-cdh3u4").cdh_version, 3)
+      for name, attr in ("main", main), ("cdh", cdh), ("ext", ext):
+        self.assertEqual(getattr(v, name), attr)
+      self.assertEqual(v.is_cloudera(), len(v.cdh) > 0)
+      self.assertEqual(v.tuple, main+cdh+ext)
     for s in "bla", '0.20.str':
       self.assertRaises(hu.HadoopVersionError, hu.HadoopVersion, s)
 
@@ -214,13 +213,13 @@ class TestHadoopUtils(unittest.TestCase):
       self.assertEqual(self.pf.hadoop_version(hadoop_home), vs)
       vinfo = self.pf.hadoop_version_info(hadoop_home)
       self.assertEqual(vinfo.main, vt)
-      self.assertEqual(vinfo.tuple(), vt)
+      self.assertEqual(vinfo.tuple, vt)
     # hadoop version from executable
     self.pf.reset()
     del os.environ["HADOOP_VERSION"]
     vinfo = self.pf.hadoop_version_info(self.hadoop_home)
     self.assertEqual(vinfo.main, self.hadoop_version_tuple)
-    self.assertEqual(vinfo.tuple(), self.hadoop_version_tuple)
+    self.assertEqual(vinfo.tuple, self.hadoop_version_tuple)
 
 
 def suite():

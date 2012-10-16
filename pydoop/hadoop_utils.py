@@ -41,42 +41,76 @@ class HadoopVersion(object):
   """
   Stores Hadoop version information.
 
-  Hadoop version strings are in the <MAIN>-<EXT> format, where <MAIN>
-  is in the typical dot-separated integers format, while <EXT> is
+  Hadoop version strings are in the <MAIN>-<REST> format, where <MAIN>
+  is in the typical dot-separated integers format, while <REST> is
   subject to a higher degree of variation.  Examples: '0.20.2',
   '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT', '2.0.0-mr1-cdh4.1.0'.
 
-  The constructor parses the version string and stores a ``main`` and
-  an ``ext`` attribute corresponding to the aforementioned sections;
-  if the version string is not in the expected format, it raises
-  ``HadoopVersionError``.
+  The constructor parses the version string and stores:
+
+    * a ``main`` attribute for the <MAIN> part;
+    * a ``cdh`` attribute for the cdh part, if present;
+    * an ``ext`` attribute for other appendages, if present.
+
+  If the version string is not in the expected format, it raises
+  ``HadoopVersionError``.  For consistency, all attributes are stored
+  as tuples.
   """
   def __init__(self, version_str):
-    version = version_str.split("-", 1)
+    self.__str = version_str
+    version = self.__str.split("-", 1)
     try:
       self.main = tuple(map(int, version[0].split(".")))
     except ValueError:
-      raise HadoopVersionError(version_str)
+      raise HadoopVersionError(self.__str)
+    if len(version) > 1:
+      self.cdh, self.ext = self.__parse_rest(version[1])
+    else:
+      self.cdh = self.ext = ()
+    self.__tuple = self.main + self.cdh + self.ext
+
+  def __parse_rest(self, rest_str):
+    rest = rest_str.split("-", 1)
+    rest.reverse()
+    m = re.match(r"cdh(.+)", rest[0])
+    if m is None:
+      return (), tuple(rest)
+    cdh_version_str = m.groups()[0]
+    m = re.match(r"(\d+)u(\d+)", cdh_version_str)
+    if m is None:
+      cdh_version = cdh_version_str.split(".")
+    else:
+      cdh_version = m.groups()
     try:
-      self.ext = (version[1],)
-    except IndexError:
-      self.ext = ()
-    try:
-      self.cdh_version = int(re.search(r"cdh(\d)", self.ext[0]).groups()[0])
-    except (IndexError, AttributeError, ValueError):
-      self.cdh_version = None
+      cdh_version = tuple(map(int, cdh_version))
+    except ValueError:
+      raise HadoopVersionError(self.__str)
+    return cdh_version, tuple(rest[1:])
 
   def is_cloudera(self):
-    return self.cdh_version is not None
+    return bool(self.cdh)
 
+  @property
   def tuple(self):
-    return self.main + self.ext
+    return self.__tuple
+
+  def __lt__(self, other): return self.tuple.__lt__(other.tuple)
+  def __le__(self, other): return self.tuple.__le__(other.tuple)
+  def __eq__(self, other): return self.tuple.__eq__(other.tuple)
+  def __ne__(self, other): return self.tuple.__ne__(other.tuple)
+  def __gt__(self, other): return self.tuple.__gt__(other.tuple)
+  def __ge__(self, other): return self.tuple.__ge__(other.tuple)
+
+  def tag(self):
+    parts = self.main
+    if self.cdh:
+      parts += ("cdh",) + self.cdh
+    if self.ext:
+      parts += self.ext
+    return "_".join(map(str, parts))
 
   def __str__(self):
-    s = ".".join(str(_) for _ in self.main)
-    if self.ext:
-      s = "%s-%s" % (s, self.ext[0])
-    return s
+    return self.__str
 
 
 def is_exe(fpath):
@@ -232,13 +266,14 @@ class PathFinder(object):
       hadoop_home = self.hadoop_home()
     if not self.__hadoop_classpath:
       v = self.hadoop_version_info(hadoop_home)
-      if v.cdh_version < 4:
+      if not v.cdh or v.cdh < (4, 0, 0):
         self.__hadoop_classpath = ':'.join(
           glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
           )
       else:  # this only covers installed-from-package CDH, not tarball
         self.__hadoop_classpath = ':'.join(
-          glob.glob(os.path.join(hadoop_home, 'client', '*.jar'))
+          glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
+          glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar'))
           )
     return self.__hadoop_classpath

@@ -81,12 +81,6 @@ def hadoop_classpath(hadoop_home=None):
   return _PATH_FINDER.hadoop_classpath(hadoop_home)
 
 
-def complete_mod_name(module, hadoop_version_info):
-  return "%s.%s_%s" % (
-    __package__, module, "_".join(map(str, hadoop_version_info.tuple()))
-    )
-
-
 def jar_path():
   path = os.path.join(os.path.dirname(__file__), __jar_name__)
   if os.path.exists(path):
@@ -95,6 +89,9 @@ def jar_path():
     return None
 
 
+def complete_mod_name(module):
+  return "%s.%s_%s" % (__package__, module, hadoop_version_info().tag())
+
+
 def import_version_specific_module(name):
-  low_level_mod = complete_mod_name(name, hadoop_version_info())
-  return import_module(low_level_mod)
+  return import_module(complete_mod_name(name))

@@ -1,3 +1,8 @@
+2012-10-16  simleo  <simleo@simleo-U36SD>
+
+	* pydoop/hadoop_utils.py (HadoopVersion): improved version string
+	parsing.
+
 2012-10-08  simleo  <simleo@simleo-U36SD>
 
 	* setup.py (patch_hadoop_src): patch code moved to this new func.

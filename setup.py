@@ -224,10 +224,10 @@ def create_basic_hdfs_ext():
 def create_full_pipes_ext(patched_src_dir):
   include_dirs = ["%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"]
   libraries = ["pthread", BOOST_PYTHON]
-  if HADOOP_VERSION_INFO.tuple() != (0, 20, 2):
+  if HADOOP_VERSION_INFO.tuple != (0, 20, 2):
     libraries.append("ssl")
   return BoostExtension(
-    pydoop.complete_mod_name(PIPES_EXT_NAME, HADOOP_VERSION_INFO),
+    pydoop.complete_mod_name(PIPES_EXT_NAME),
     PIPES_SRC,
     glob.glob("%s/*/impl/*.cc" % patched_src_dir),
     include_dirs=include_dirs,
@@ -243,7 +243,7 @@ def create_full_hdfs_ext(patched_src_dir):
   java_library_dirs = get_java_library_dirs(JAVA_HOME)
   log.info("java_library_dirs: %r" % (java_library_dirs,))
   return BoostExtension(
-    pydoop.complete_mod_name(HDFS_EXT_NAME, HADOOP_VERSION_INFO),
+    pydoop.complete_mod_name(HDFS_EXT_NAME),
     HDFS_SRC,
     glob.glob("%s/libhdfs/*.c" % patched_src_dir),
     include_dirs=include_dirs,
@@ -269,7 +269,7 @@ class BoostExtension(Extension):
 
   def __init__(self, name, wrap_sources, aux_sources, **kw):
     Extension.__init__(self, name, wrap_sources+aux_sources, **kw)
-    self.module_name = self.name.rsplit(".", 1)[-1]
+    self.module_name = self.name.split(".", 1)[-1]
     self.wrap_sources = wrap_sources
 
   def generate_main(self):
@@ -348,7 +348,7 @@ class pydoop_build(distutils_build):
 
   def run(self):
     log.info("hadoop_home: %r" % (HADOOP_HOME,))
-    log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO.tuple(),))
+    log.info("hadoop_version: %r" % (HADOOP_VERSION_INFO.tuple,))
     log.info("java_home: %r" % (JAVA_HOME,))
     distutils_build.run(self)
     self.__build_java_component()
@@ -366,8 +366,8 @@ class pydoop_build(distutils_build):
       os.mkdir(class_dir)
     compile_cmd += " -d '%s'" % class_dir
     java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
-    ## if HADOOP_VERSION_INFO >= (1, 0, 0):
-    ##   java_files.append("src/it/crs4/pydoop/pipes/*")
+    if HADOOP_VERSION_INFO.tuple >= (1, 0, 0):
+      java_files.append("src/it/crs4/pydoop/pipes/*")
     log.info("Compiling Java classes")
     for f in java_files:
       compile_cmd += " %s" % f
