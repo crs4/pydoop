@@ -17,6 +17,7 @@
 // END_COPYRIGHT
 
 #include <errno.h>
+#include <sstream>
 #include "hdfs_fs.hpp"
 
 
@@ -151,9 +152,13 @@ bp::list wrap_hdfs_fs::list_directory(std::string path) {
   if (hdfsExists(fs_, path.c_str()) != 0) {
     throw hdfs_exception("No such file or directory: " + path);
   }
+  errno = 0;
   res = hdfsListDirectory(fs_, path.c_str(), &num_entries);
-  if (res == NULL && errno) {
-    throw hdfs_exception("Cannot list directory " + path);
+  // for some weird reason, an empty dir generates an ESRCH error
+  if (res == NULL && errno && errno != ESRCH) {
+    std::stringstream out;
+    out << "Cannot list directory " << path << " (error " << errno << ")";
+    throw hdfs_exception(out.str());
   }
   for(std::size_t i = 0; i < num_entries; ++i) {
     l.append(list_directory_helper(&(res[i])));

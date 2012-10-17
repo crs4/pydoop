@@ -34,6 +34,10 @@ Other relevant environment variables include::
   HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
 """
 
+# ---
+# FIXME: CDH4: compile pipes ext for both yarn and mr1
+# ---
+
 import os, platform, re, glob, shutil
 from distutils.core import setup
 from distutils.extension import Extension

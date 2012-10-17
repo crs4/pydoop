@@ -273,7 +273,7 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   else:
     use_pydoop_submit = False
     ver = pydoop.hadoop_version_info()
-    if ver.tuple() != (0, 20, 2):
+    if ver.tuple != (0, 20, 2):
       use_pydoop_submit = hdfs.default_is_local()
   args = [
     "-program", executable,
