@@ -85,8 +85,6 @@ def get_arch():
     return "amd64", "64"
   return "i386", "32"
 
-HADOOP_ARCH_STR = "Linux-%s-%s" % get_arch()
-
 
 def get_java_include_dirs(java_home):
   p = platform.system().lower()  # Linux-specific
@@ -200,32 +198,7 @@ def patch_hadoop_src():
   return patched_src_dir
 
 
-# ------------------------------------------------------------------------------
-# Create extension objects.
-#
-# We first create some basic Extension objects to pass to the distutils setup
-# function.  They act as little more than placeholders, simply telling distutils
-# the name of the extension and what source files it depends on.
-#   functions:  create_basic_(pipes|hdfs)_ext
-#
-# When our build_pydoop_ext command is invoked, we build a complete extension
-# object that includes all the information required for the build process.  In
-# particular, it includes all the relevant paths.
-#
-# The reason for the two-stage process is to delay verifying paths to when
-# they're needed (build) and avoiding those checks for other commands (such
-# as clean).
-# ------------------------------------------------------------------------------
-
-def create_basic_pipes_ext():
-  return BoostExtension(PIPES_EXT_NAME, PIPES_SRC, [])
-
-
-def create_basic_hdfs_ext():
-  return BoostExtension(HDFS_EXT_NAME, HDFS_SRC, [])
-
-
-def create_full_pipes_ext(patched_src_dir):
+def create_pipes_ext(patched_src_dir):
   include_dirs = ["%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"]
   libraries = ["pthread", BOOST_PYTHON]
   if HADOOP_VERSION_INFO.tuple != (0, 20, 2):
@@ -239,7 +212,7 @@ def create_full_pipes_ext(patched_src_dir):
     )
 
 
-def create_full_hdfs_ext(patched_src_dir):
+def create_hdfs_ext(patched_src_dir):
   generate_hdfs_config(patched_src_dir)
   java_include_dirs = get_java_include_dirs(JAVA_HOME)
   log.info("java_include_dirs: %r" % (java_include_dirs,))
@@ -306,8 +279,8 @@ class build_pydoop_ext(distutils_build_ext):
     distutils_build_ext.finalize_options(self)
     patched_src_dir = patch_hadoop_src()
     self.extensions = [
-      create_full_pipes_ext(patched_src_dir),
-      create_full_hdfs_ext(patched_src_dir),
+      create_pipes_ext(patched_src_dir),
+      create_hdfs_ext(patched_src_dir),
       ]
     if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
       pass # add mrv1 ext
@@ -320,13 +293,6 @@ class build_pydoop_ext(distutils_build_ext):
     except ValueError:
       pass
     distutils_build_ext.build_extension(self, ext)
-
-
-def create_ext_modules():
-  ext_modules = []
-  ext_modules.append(create_basic_pipes_ext())
-  ext_modules.append(create_basic_hdfs_ext())
-  return ext_modules
 
 
 class pydoop_clean(distutils_clean):
@@ -424,7 +390,7 @@ setup(
     "build_ext": build_pydoop_ext,
     "clean": pydoop_clean
     },
-  ext_modules=create_ext_modules(),
+  ext_modules=[None],  # just to trigger build_ext
   scripts=["scripts/pydoop"],
   platforms=["Linux"],
   license="Apache-2.0",
