@@ -205,11 +205,12 @@ class PathFinder(object):
           try:
             env = os.environ.copy()
             env.pop("HADOOP_HOME", None)
-            out, err = sp.Popen(
+            p = sp.Popen(
               [hadoop, "version"], stdout=sp.PIPE, stderr=sp.PIPE, env=env,
-              ).communicate()
-            if err and not out:
-              raise RuntimeError(err)
+              )
+            out, err = p.communicate()
+            if p.returncode:
+              raise RuntimeError(err or out)
             self.__hadoop_version = out.splitlines()[0].split()[-1]
           except (OSError, IndexError):
             pass

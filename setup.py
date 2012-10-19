@@ -309,6 +309,8 @@ class build_pydoop_ext(distutils_build_ext):
       create_full_pipes_ext(patched_src_dir),
       create_full_hdfs_ext(patched_src_dir),
       ]
+    if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
+      pass # add mrv1 ext
     for e in self.extensions:
       e.sources.append(e.generate_main())
 
