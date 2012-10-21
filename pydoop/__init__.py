@@ -89,8 +89,10 @@ def jar_path():
     return None
 
 
-def complete_mod_name(module):
-  return "%s.%s_%s" % (__package__, module, hadoop_version_info().tag())
+def complete_mod_name(module, hadoop_vinfo=None):
+  if hadoop_vinfo is None:
+    hadoop_vinfo = hadoop_version_info()
+  return "%s.%s_%s" % (__package__, module, hadoop_vinfo.tag())
 
 
 def import_version_specific_module(name):

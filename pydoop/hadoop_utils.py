@@ -113,6 +113,18 @@ class HadoopVersion(object):
     return self.__str
 
 
+def cdh_mr1_version(version):
+  if not isinstance(version, HadoopVersion):
+    version = HadoopVersion(version)
+    rtype = str
+  else:
+    rtype = HadoopVersion
+  if not version.is_cloudera():
+    raise ValueError("%r is not a cdh version string" % (str(version),))
+  mr1_version_str = str(version).replace("cdh", "mr1-cdh")
+  return rtype(mr1_version_str)
+
+
 def is_exe(fpath):
   return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 

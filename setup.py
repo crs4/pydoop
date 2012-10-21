@@ -34,10 +34,6 @@ Other relevant environment variables include::
   HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
 """
 
-# ---
-# FIXME: CDH4: compile pipes ext for both yarn and mr1
-# ---
-
 import os, platform, re, glob, shutil
 from distutils.core import setup
 from distutils.extension import Extension
@@ -49,6 +45,7 @@ from distutils.errors import DistutilsSetupError
 from distutils import log
 
 import pydoop
+import pydoop.hadoop_utils as hu
 
 
 try:
@@ -183,8 +180,9 @@ def generate_hdfs_config(patched_src_dir):
     f.write("#endif\n")
 
 
-def patch_hadoop_src():
-  hadoop_tag = "hadoop-%s" % HADOOP_VERSION_INFO
+def patch_hadoop_src(hadoop_version_info=HADOOP_VERSION_INFO):
+  hadoop_tag = "hadoop-%s" % hadoop_version_info
+  log.info("patching source code for: %r" % (hadoop_tag,))
   patch_fn = "patches/%s.patch" % hadoop_tag
   src_dir = "src/%s" % hadoop_tag
   patched_src_dir = "%s.patched" % src_dir
@@ -198,13 +196,15 @@ def patch_hadoop_src():
   return patched_src_dir
 
 
-def create_pipes_ext(patched_src_dir):
+def create_pipes_ext(patched_src_dir, hadoop_vinfo=None):
+  if hadoop_vinfo is None:
+    hadoop_vinfo = HADOOP_VERSION_INFO
   include_dirs = ["%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"]
   libraries = ["pthread", BOOST_PYTHON]
-  if HADOOP_VERSION_INFO.tuple != (0, 20, 2):
+  if hadoop_vinfo.tuple != (0, 20, 2):
     libraries.append("ssl")
   return BoostExtension(
-    pydoop.complete_mod_name(PIPES_EXT_NAME),
+    pydoop.complete_mod_name(PIPES_EXT_NAME, hadoop_vinfo=hadoop_vinfo),
     PIPES_SRC,
     glob.glob("%s/*/impl/*.cc" % patched_src_dir),
     include_dirs=include_dirs,
@@ -283,7 +283,9 @@ class build_pydoop_ext(distutils_build_ext):
       create_hdfs_ext(patched_src_dir),
       ]
     if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
-      pass # add mrv1 ext
+      hadoop_vinfo = hu.cdh_mr1_version(HADOOP_VERSION_INFO)
+      patched_src_dir = patch_hadoop_src(hadoop_vinfo)
+      self.extensions.append(create_pipes_ext(patched_src_dir, hadoop_vinfo))
     for e in self.extensions:
       e.sources.append(e.generate_main())
 
