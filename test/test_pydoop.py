@@ -37,8 +37,7 @@ class pydoop_tc(unittest.TestCase):
     if jar_path is not None:
       self.assertTrue(os.path.exists(jar_path))
       directory, filename = os.path.split(jar_path)
-      self.assertEqual(pydoop.__jar_name__, filename)
-      # ensure the parent directory is called pydoop
+      self.assertEqual(filename, pydoop.jar_name())
       self.assertEqual('pydoop', os.path.basename(directory))
 
 

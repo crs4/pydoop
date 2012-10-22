@@ -42,7 +42,6 @@ _PATH_FINDER = hu.PathFinder()
 __author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
 __author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
 __url__ = "http://pydoop.sourceforge.net"
-__jar_name__ = 'pydoop.jar'
 
 
 def reset():
@@ -81,8 +80,16 @@ def hadoop_classpath(hadoop_home=None):
   return _PATH_FINDER.hadoop_classpath(hadoop_home)
 
 
-def jar_path():
-  path = os.path.join(os.path.dirname(__file__), __jar_name__)
+def jar_name(hadoop_vinfo=None):
+  if hadoop_vinfo is None:
+    hadoop_vinfo = hadoop_version_info()
+  return "pydoop_%s.jar" % hadoop_vinfo.tag()
+
+
+def jar_path(hadoop_vinfo=None):
+  if hadoop_vinfo is None:
+    hadoop_vinfo = hadoop_version_info()
+  path = os.path.join(os.path.dirname(__file__), jar_name(hadoop_vinfo))
   if os.path.exists(path):
     return path
   else:

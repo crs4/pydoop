@@ -90,6 +90,9 @@ class HadoopVersion(object):
   def is_cloudera(self):
     return bool(self.cdh)
 
+  def has_security(self):
+    return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
+
   @property
   def tuple(self):
     return self.__tuple
@@ -283,7 +286,7 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
           )
-      else:  # this only covers installed-from-package CDH, not tarball
+      else:  # FIXME: this only covers installed-from-package CDH, not tarball
         self.__hadoop_classpath = ':'.join(
           glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar'))

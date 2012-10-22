@@ -16,6 +16,10 @@
 # 
 # END_COPYRIGHT
 
+# TODO:
+#  1. Create patches for java pipes code
+#  2. Fix pydoop jar name for mr1-cdh4
+
 """
 Important environment variables
 -------------------------------
@@ -39,7 +43,6 @@ from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext as distutils_build_ext
 from distutils.command.clean import clean as distutils_clean
-from distutils.command.build import build as distutils_build
 from distutils.command.build_py import build_py as distutils_build_py
 from distutils.errors import DistutilsSetupError
 from distutils import log
@@ -180,20 +183,35 @@ def generate_hdfs_config(patched_src_dir):
     f.write("#endif\n")
 
 
-def patch_hadoop_src(hadoop_version_info=HADOOP_VERSION_INFO):
-  hadoop_tag = "hadoop-%s" % hadoop_version_info
-  log.info("patching source code for: %r" % (hadoop_tag,))
-  patch_fn = "patches/%s.patch" % hadoop_tag
-  src_dir = "src/%s" % hadoop_tag
-  patched_src_dir = "%s.patched" % src_dir
-  if must_generate(patched_src_dir, [src_dir, patch_fn]):
-    shutil.rmtree(patched_src_dir, ignore_errors=True)
-    shutil.copytree(src_dir, patched_src_dir)
-    os.utime(patched_src_dir, None)
-    cmd = "patch -d %s -N -p1 < %s" % (patched_src_dir, patch_fn)
-    if os.system(cmd):
-      raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
-  return patched_src_dir
+class HadoopSourcePatcher(object):
+
+  def __init__(self, hadoop_version_info=HADOOP_VERSION_INFO):
+    hadoop_tag = "hadoop-%s" % hadoop_version_info
+    log.info("patching source code for: %r" % (hadoop_tag,))
+    self.patch_fn = "patches/%s.patch" % hadoop_tag
+    self.src_dir = "src/%s" % hadoop_tag
+    self.patched_src_dir = "%s.patched" % self.src_dir
+    self.from_jtree = os.path.join(
+      self.src_dir, "org/apache/hadoop/mapred/pipes"
+      )
+    self.to_jtree = os.path.join(
+      self.patched_src_dir, "it/crs4/pydoop/pipes"
+      )
+
+  def patch(self):
+    if must_generate(self.patched_src_dir, [self.src_dir, self.patch_fn]):
+      shutil.rmtree(self.patched_src_dir, ignore_errors=True)
+      shutil.copytree(self.from_jtree, self.to_jtree)
+      for d in "libhdfs", "pipes", "utils":
+        shutil.copytree(
+          os.path.join(self.src_dir, d),
+          os.path.join(self.patched_src_dir, d)
+          )
+      os.utime(self.patched_src_dir, None)
+      cmd = "patch -d %s -N -p1 < %s" % (self.patched_src_dir, self.patch_fn)
+      if os.system(cmd):
+        raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
+    return self.patched_src_dir
 
 
 def create_pipes_ext(patched_src_dir, hadoop_vinfo=None):
@@ -273,19 +291,40 @@ class BoostExtension(Extension):
     return outfn
 
 
+class JavaLib(object):
+  """
+  Encapsulates information needed to build a Java library.
+  """
+  def __init__(self, hadoop_vinfo=HADOOP_VERSION_INFO):
+    self.hadoop_vinfo = hadoop_vinfo
+    self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
+    self.classpath = pydoop.hadoop_classpath()
+    if not self.classpath:
+      log.warn("could not set classpath, java code may not compile")
+    self.java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
+    if self.hadoop_vinfo.has_security():
+      # our fix for https://issues.apache.org/jira/browse/MAPREDUCE-4000
+      if hadoop_vinfo.cdh < (4, 0, 0):  # FIXME: not supported yet
+        self.java_files.extend(glob.glob(
+          "%s/*" % HadoopSourcePatcher(self.hadoop_vinfo).to_jtree
+          ))
+
+
 class build_pydoop_ext(distutils_build_ext):
 
   def finalize_options(self):
     distutils_build_ext.finalize_options(self)
-    patched_src_dir = patch_hadoop_src()
+    patched_src_dir = HadoopSourcePatcher(HADOOP_VERSION_INFO).patch()
     self.extensions = [
       create_pipes_ext(patched_src_dir),
       create_hdfs_ext(patched_src_dir),
       ]
+    self.java_libs = [JavaLib(HADOOP_VERSION_INFO)]
     if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
       hadoop_vinfo = hu.cdh_mr1_version(HADOOP_VERSION_INFO)
-      patched_src_dir = patch_hadoop_src(hadoop_vinfo)
+      patched_src_dir = HadoopSourcePatcher(hadoop_vinfo).patch()
       self.extensions.append(create_pipes_ext(patched_src_dir, hadoop_vinfo))
+      self.java_libs.append(JavaLib(hadoop_vinfo))
     for e in self.extensions:
       e.sources.append(e.generate_main())
 
@@ -295,6 +334,41 @@ class build_pydoop_ext(distutils_build_ext):
     except ValueError:
       pass
     distutils_build_ext.build_extension(self, ext)
+
+  def run(self):
+    log.info("hadoop_home: %r" % (HADOOP_HOME,))
+    log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
+    log.info("java_home: %r" % (JAVA_HOME,))
+    distutils_build_ext.run(self)
+    for jlib in self.java_libs:
+      self.__build_java_lib(jlib)
+
+  def __build_java_lib(self, jlib):
+    compile_cmd = "javac -classpath %s" % jlib.classpath
+    class_dir = os.path.join(self.build_temp, 'pydoop_java')
+    package_path = os.path.join(self.build_lib, 'pydoop', pydoop.jar_name())
+    if not os.path.exists(class_dir):
+      os.mkdir(class_dir)
+    compile_cmd += " -d '%s'" % class_dir
+    log.info("Compiling Java classes")
+    for f in jlib.java_files:
+      compile_cmd += " %s" % f
+      log.debug("Command: %s", compile_cmd)
+      ret = os.system(compile_cmd)
+      if ret:
+        raise DistutilsSetupError(
+          "Error compiling java component.  Command: %s" % compile_cmd
+          )
+    package_cmd = "jar -cf %(package_path)s -C %(class_dir)s ./it" % {
+      'package_path': package_path, 'class_dir': class_dir
+      }
+    log.info("Packaging Java classes")
+    log.debug("Command: %s", package_cmd)
+    ret = os.system(package_cmd)
+    if ret:
+      raise DistutilsSetupError(
+        "Error packaging java component.  Command: %s" % package_cmd
+        )
 
 
 class pydoop_clean(distutils_clean):
@@ -316,52 +390,6 @@ class pydoop_clean(distutils_clean):
             os.remove(f)
         except OSError as e:
           log.warn("Error removing file: %s" % e)
-
-
-class pydoop_build(distutils_build):
-
-  def run(self):
-    log.info("hadoop_home: %r" % (HADOOP_HOME,))
-    log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
-    log.info("java_home: %r" % (JAVA_HOME,))
-    distutils_build.run(self)
-    self.__build_java_component()
-
-  def __build_java_component(self):
-    compile_cmd = "javac"
-    classpath = pydoop.hadoop_classpath()
-    if classpath:
-      compile_cmd += " -classpath %s" % classpath
-    else:
-      log.warn("could not set classpath, java code may not compile")
-    class_dir = os.path.join(self.build_temp, 'pydoop_java')
-    package_path = os.path.join(self.build_lib, 'pydoop', pydoop.__jar_name__)
-    if not os.path.exists(class_dir):
-      os.mkdir(class_dir)
-    compile_cmd += " -d '%s'" % class_dir
-    java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
-    if HADOOP_VERSION_INFO.tuple >= (1, 0, 0):
-      if HADOOP_VERSION_INFO.cdh < (4, 0, 0):  # FIXME: not supported yet
-        java_files.append("src/it/crs4/pydoop/pipes/*")
-    log.info("Compiling Java classes")
-    for f in java_files:
-      compile_cmd += " %s" % f
-      log.debug("Command: %s", compile_cmd)
-      ret = os.system(compile_cmd)
-      if ret:
-        raise DistutilsSetupError(
-          "Error compiling java component.  Command: %s" % compile_cmd
-          )
-    package_cmd = "jar -cf %(package_path)s -C %(class_dir)s ./it" % {
-      'package_path': package_path, 'class_dir': class_dir
-      }
-    log.info("Packaging Java classes")
-    log.debug("Command: %s", package_cmd)
-    ret = os.system(package_cmd)
-    if ret:
-      raise DistutilsSetupError(
-        "Error packaging java component.  Command: %s" % package_cmd
-        )
 
 
 class pydoop_build_py(distutils_build_py):
@@ -387,7 +415,6 @@ setup(
     "pydoop.app",
     ],
   cmdclass={
-    "build": pydoop_build,
     "build_py": pydoop_build_py,
     "build_ext": build_pydoop_ext,
     "clean": pydoop_clean
