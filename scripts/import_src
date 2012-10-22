@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Import Hadoop C++ pipes/utils source.
+Import Hadoop pipes/utils source code.
 """
 
 import sys, os, argparse, warnings, shutil
@@ -28,6 +28,17 @@ WANTED = {  # basename: relative location
   "native_mini_dfs.c": "libhdfs",
   "exception.h": "libhdfs",
   "exception.c": "libhdfs",
+  # --- java pipes ---
+  "Application.java": "org/apache/hadoop/mapred/pipes",
+  "BinaryProtocol.java": "org/apache/hadoop/mapred/pipes",
+  "DownwardProtocol.java": "org/apache/hadoop/mapred/pipes",
+  "OutputHandler.java": "org/apache/hadoop/mapred/pipes",
+  "PipesMapRunner.java": "org/apache/hadoop/mapred/pipes",
+  "PipesNonJavaInputFormat.java": "org/apache/hadoop/mapred/pipes",
+  "PipesPartitioner.java": "org/apache/hadoop/mapred/pipes",
+  "PipesReducer.java": "org/apache/hadoop/mapred/pipes",
+  "Submitter.java": "org/apache/hadoop/mapred/pipes",
+  "UpwardProtocol.java": "org/apache/hadoop/mapred/pipes",
   }
 
 
