@@ -20,6 +20,7 @@ import unittest, tempfile, os, stat, shutil, logging
 import subprocess as sp
 
 import pydoop
+from pydoop.jc import jc_wrapper
 import pydoop.utils as pu
 import pydoop.hadoop_utils as hu
 pp = pydoop.import_version_specific_module('_pipes')
@@ -222,6 +223,87 @@ class TestHadoopUtils(unittest.TestCase):
     self.assertEqual(vinfo.tuple, self.hadoop_version_tuple)
 
 
+class TestJcWrapper(unittest.TestCase):
+  def setUp(self):
+    self.data = {
+      'int': '2',
+      'float': '3.0',
+      'bool_t': 't',
+      'bool_T': 'T',
+      'bool_true': 'true',
+      'bool_True': 'TRUE',
+      'bool_TRUE': 'TRUE',
+      'bool_1': '1',
+      'bool_f': 'f',
+      'bool_F': 'F',
+      'bool_false': 'false',
+      'bool_False': 'False',
+      'bool_FALSE': 'FALSE',
+      'bool_0': '0',
+      'str': 'str',
+    }
+    self.jc = pp.get_JobConf_object(self.data)
+    self.wrapper = jc_wrapper(self.jc)
+
+  def test_has_key(self):
+    self.assertTrue(self.wrapper.has_key('int'))
+    self.assertFalse(self.wrapper.has_key('no_key'))
+
+  def test_simple_fetch(self):
+    self.assertEqual('str', self.wrapper['str'])
+
+  def test_fetch_missing(self):
+    self.assertRaises(IndexError, lambda x: self.wrapper[x], 'no_key')
+
+  def test_simple_get(self):
+    self.assertEqual("2", self.wrapper.get('int'))
+    self.assertIsNone(self.wrapper.get('no_key'))
+    # ensure caching doesn't cause problems
+    self.assertEqual("2", self.wrapper.get('int'))
+    self.assertIsNone(self.wrapper.get('no_key'))
+
+  def test_simple_get_default(self):
+    self.assertEqual("default", self.wrapper.get('no_key', "default"))
+
+  def test_get_boolean(self):
+    for k in ('bool_t', 'bool_T', 'bool_true', 'bool_True', 'bool_TRUE', 'bool_1'):
+      self.assertEqual(True, self.wrapper.get_boolean(k))
+      
+    for k in ('bool_f', 'bool_F', 'bool_false', 'bool_False', 'bool_FALSE', 'bool_0'):
+      self.assertEqual(False, self.wrapper.get_boolean(k))
+    # repeat to test cache
+    for k in ('bool_f', 'bool_F', 'bool_false', 'bool_False', 'bool_FALSE', 'bool_0'):
+      self.assertEqual(False, self.wrapper.get_boolean(k))
+
+  def test_get_bad_boolean(self):
+    self.assertRaises(ValueError, self.wrapper.get_boolean, 'float')
+
+  def test_get_int(self):
+    self.assertEqual(2, self.wrapper.get_int('int'))
+    # cache test
+    self.assertEqual(2, self.wrapper.get_int('int'))
+
+  def test_get_bad_int(self):
+    self.assertRaises(ValueError, self.wrapper.get_int, 'bool_f')
+
+  def test_get_float_as_int(self):
+    self.assertEqual(3, self.wrapper.get_int('float'))
+
+  def test_get_missing_int(self):
+    self.assertRaises(IndexError, self.wrapper.get_int, 'no_key')
+
+  def test_get_float(self):
+    self.assertEqual(3.0, self.wrapper.get_float('float'))
+
+  def test_get_bad_float(self):
+    self.assertRaises(ValueError, self.wrapper.get_float, 'bool_f')
+
+  def test_get_int_as_float(self):
+    self.assertEqual(2.0, self.wrapper.get_float('int'))
+
+  def test_get_missing_float(self):
+    self.assertRaises(IndexError, self.wrapper.get_float, 'no_key')
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestUtils('test_jc_configure_plain'))
@@ -231,8 +313,22 @@ def suite():
   suite.addTest(TestHadoopUtils('test_HadoopVersion'))
   suite.addTest(TestHadoopUtils('test_get_hadoop_exec'))
   suite.addTest(TestHadoopUtils('test_get_hadoop_version'))
+  suite.addTest(TestJcWrapper('test_has_key'))
+  suite.addTest(TestJcWrapper('test_simple_fetch'))
+  suite.addTest(TestJcWrapper('test_fetch_missing'))
+  suite.addTest(TestJcWrapper('test_simple_get'))
+  suite.addTest(TestJcWrapper('test_simple_get_default'))
+  suite.addTest(TestJcWrapper('test_get_boolean'))
+  suite.addTest(TestJcWrapper('test_get_bad_boolean'))
+  suite.addTest(TestJcWrapper('test_get_int'))
+  suite.addTest(TestJcWrapper('test_get_bad_int'))
+  suite.addTest(TestJcWrapper('test_get_float_as_int'))
+  suite.addTest(TestJcWrapper('test_get_missing_int'))
+  suite.addTest(TestJcWrapper('test_get_float'))
+  suite.addTest(TestJcWrapper('test_get_bad_float'))
+  suite.addTest(TestJcWrapper('test_get_int_as_float'))
+  suite.addTest(TestJcWrapper('test_get_missing_float'))
   return suite
-
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)
