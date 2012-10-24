@@ -274,8 +274,9 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     use_pydoop_submit = False
     ver = pydoop.hadoop_version_info()
     if ver.has_security():
-      if ver.cdh < (4, 0, 0):  # FIXME: not supported yet
-        use_pydoop_submit = hdfs.default_is_local()
+      if ver.cdh >= (4, 0, 0) and not ver.ext and hdfs.default_is_local():
+        raise RuntimeError("mrv2 on local fs not supported yet")  # FIXME
+      use_pydoop_submit = hdfs.default_is_local()
   args = [
     "-program", executable,
     "-input", input_path,
