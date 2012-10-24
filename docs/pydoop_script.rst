@@ -234,6 +234,8 @@ in your input data.  It receives 3 parameters:
    you can ignore it
 #. value: the line of text to be processed
 #. writer object: a Python object to write output and count values (see below)
+#. optionally, a jc_wrapper conf object: a Python object from which to fetch
+   configuration property values (see below).
 
 
 Reducer
@@ -246,6 +248,8 @@ produced by your map function.  It also receives 3 parameters:
 #. values iterable: iterate over this parameter to see all the values emitted
    for the current key
 #. writer object: a writer object identical to the one given to the map function
+#. optionally, a jc_wrapper conf object: a Python object from which to fetch
+   configuration property values (see below).
 
 The key and value your emit from your reducer will be joined by the key-value
 separator and written to the final output.  You may customize the key-value
@@ -273,6 +277,14 @@ of milliseconds set through the ``mapred.task.timeout`` property --
 which defaults to 600000, i.e., 10 minutes -- if it neither reads an
 input, writes an output, nor updates its status string.
 
+
+Accessing parameters
+......................
+
+If desired, Pydoop Script lets you access the values of your programs configuration
+properties through a dict-like configuration object, which gets passed as the
+fourth parameter to your functions (if available).  To see the methods
+available check out the :ref:`api<pydoop-jc>`.
 
 Naming your Functions
 .....................
