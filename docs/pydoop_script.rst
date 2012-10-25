@@ -303,10 +303,11 @@ input, writes an output, nor updates its status string.
 Accessing Parameters
 ......................
 
-If desired, Pydoop Script lets you access the values of your programs configuration
-properties through a dict-like configuration object, which gets passed as the
-fourth parameter to your functions (if available).  To see the methods
-available check out the :ref:`api<pydoop-jc>`.
+If desired, Pydoop Script lets you access the values of your programs
+configuration properties through a dict-like configuration object, which gets
+passed as the fourth parameter to your functions (if the function accepts 4
+parameters instead of 3).  To see the methods available check out the
+:ref:`api<pydoop-jc>`.
 
 Naming your Functions
 .....................
