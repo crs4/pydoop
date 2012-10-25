@@ -25,7 +25,7 @@ import pydoop.hadut as hadut
 import pydoop.test_support as pts
 
 
-PYDOOP_EXE = "../../scripts/pydoop"
+PYDOOP_EXE = os.path.join(os.path.dirname(__file__), "../../scripts/pydoop")
 PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
