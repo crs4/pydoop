@@ -66,11 +66,17 @@ class jobconf_tc(unittest.TestCase):
     self.assertEqual(o.getInt('int'), int(d['int']))
     self.assertEqual(o.getBoolean('bool'), d['bool'] == 'true')
 
+  def test_missing_key(self):
+    jc = pp.get_JobConf_object({})
+    self.assertRaises(RuntimeError, jc.get, 'no_key')
+
+
 
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(jobconf_tc('test_override_from_python'))
   suite.addTest(jobconf_tc('test_override_from_cpluplus'))
+  suite.addTest(jobconf_tc('test_missing_key'))
   return suite
 
 
