@@ -22,6 +22,7 @@ available via the Hadoop shell.
 """
 
 import os, subprocess
+import shlex
 
 import pydoop
 import pydoop.utils as utils
@@ -115,7 +116,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     _args.extend(_construct_property_args(properties))
   if args:
     if isinstance(args, basestring):
-      args = args.split()
+      args = shlex.split(args)
     _merge_csv_args(args)
     gargs = _pop_generic_args(args)
     for seq in gargs, args:
