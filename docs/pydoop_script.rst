@@ -83,6 +83,26 @@ Then run it::
 The counter value will show on the JobTracker's job page and will be present in
 the job logs.
 
+Grepping (and accepting parameters)
+.....................................
+
+As a bit of a contrived example, suppose you wanted to select all lines
+containing a substring to be given at run time.  Create a module ``grep.py``:
+
+.. code-block:: python
+
+  def mapper(_, text, writer, conf): # notice the fourth 'conf' argument
+    if text.find(conf['grep-expression']) >= 0:
+      writer.emit("", text)
+
+Then run it::
+
+  pydoop script --num-reducers 0 -t '' -D grep-expression=my_substring grep.py hdfs_input hdfs_output
+
+Here we set the job property ``grep-expression`` to ``my_substring`` using the
+``-D`` argument.  Also, as in the first case, we want a map-only job and we
+don't want a delimiter between output key (empty) and value.
+
 
 Measuring Nucleic Acid Composition of a DNA Sample
 ..................................................
