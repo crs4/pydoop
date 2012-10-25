@@ -254,8 +254,9 @@ in your input data.  It receives 3 parameters:
    you can ignore it
 #. value: the line of text to be processed
 #. writer object: a Python object to write output and count values (see below)
-#. optionally, a jc_wrapper conf object: a Python object from which to fetch
-   configuration property values (see `Accessing Parameters` below).
+#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object: a Python object from
+   which to fetch configuration property values (see `Accessing Parameters`_
+   below).
 
 
 Reducer
@@ -268,8 +269,9 @@ produced by your map function.  It also receives 3 parameters:
 #. values iterable: iterate over this parameter to see all the values emitted
    for the current key
 #. writer object: a writer object identical to the one given to the map function
-#. optionally, a jc_wrapper conf object: a Python object from which to fetch
-   configuration property values (see `Accessing Parameters` below).
+#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object: a Python object from
+   which to fetch configuration property values (see `Accessing Parameters`_
+   below).
 
 The key and value your emit from your reducer will be joined by the key-value
 separator and written to the final output.  You may customize the key-value
