@@ -25,7 +25,7 @@ class jc_wrapper(object):
     Use the ``[]`` operator to get the original conf string value for property ``k``.
 
     :param k: name of the property.
-    :raises IndexError: if the requested property doesn't exist.
+    :raises KeyError: if the requested property doesn't exist.
   """
   INT = 1
   FLOAT = 2
@@ -53,11 +53,12 @@ class jc_wrapper(object):
     Get the original conf string value for property ``k``.
 
     :param k: name of the property.
-    :raises IndexError: if the requested property doesn't exist.
+    :raises KeyError: if the requested property doesn't exist.
     """
-    if not self.jc.hasKey(k):
-      raise IndexError("No such configuration key: %s" % k)
-    return self.jc.get(k)
+    try:
+      return self.jc.get(k)
+    except RuntimeError:
+      raise KeyError("No such configuration key: %s" % k)
 
   def get(self, k, default=None):
     """
@@ -69,30 +70,34 @@ class jc_wrapper(object):
     """
     if self.jc.hasKey(k):
       return self.jc.get(k)
+      # LP: I suspect that checking for the key twice (once in hasKey and once in jc.get
+      # may be faster than relying on the exception thrown by jc.get, which needs to
+      # cross the python-c++ boundary.  So, I implemented the above with an if rather
+      # than a try/except.
     else:
       return default
 
-  def get_int(self, k):
+  def get_int(self, k, default=0):
     """
     Fetch the property named ``k`` and convert it to an ``int``.
 
     :param k: name of the property.
-    :raises IndexError: if the requested property doesn't exist.
+    :param default: value to return if the requested property doesn't exist.
     :raises ValueError: if the value can't be converted to an ``int``.
     """
-    return self.__fetch_through_cache(self.INT, k)
+    return self.__fetch_through_cache(self.INT, k, default)
 
-  def get_float(self, k):
+  def get_float(self, k, default=0.0):
     """
     Fetch the property named ``k`` and convert it to a ``float``.
 
     :param k: name of the property.
-    :raises IndexError: if the requested property doesn't exist.
+    :param default: value to return if the requested property doesn't exist.
     :raises ValueError: if the value can't be converted to a ``float``.
     """
-    return self.__fetch_through_cache(self.FLOAT, k)
+    return self.__fetch_through_cache(self.FLOAT, k, default)
 
-  def get_boolean(self, k):
+  def get_boolean(self, k, default=False):
     """
     Fetch the property named ``k`` and convert it to a ``bool``.
 
@@ -100,18 +105,23 @@ class jc_wrapper(object):
     Similarly, 'f', 'false' and '0' are accepted for False.
 
     :param k: name of the property.
-    :raises IndexError: if the requested property doesn't exist.
+    :param default: value to return if the requested property doesn't exist.
     :raises ValueError: if the value can't be converted to a ``bool``.
     """
-    return self.__fetch_through_cache(self.BOOL, k)
+    return self.__fetch_through_cache(self.BOOL, k, default)
 
-  def __fetch_and_cache(self, value_type, key):
+  def __fetch_and_cache(self, value_type, key, default):
     """
     Fetch the raw string value from the JobConf and interpret
     it as the type specified by value_type.  The result is cached
     in self.cache, along with the specified type, so subsequent
     queries can re-use it.
+
+    Precondition:  the key must not already be in the cache
     """
+    if not self.jc.hasKey(key):
+      return default
+    raw_value = self.jc.get(key)
     # The JobConf can't return None for any parameter value.  An empty value
     # is returned as an empty string.
     if value_type == self.INT:
@@ -128,29 +138,28 @@ class jc_wrapper(object):
       # 
       # In [7]: timeit.timeit('int(float("123.3"))', number=10000000)
       # Out[7]: 2.7725789546966553
-      value = int(float(self[key]))
+      value = int(float(raw_value))
     elif value_type == self.FLOAT:
-      value = float(self[key])
+      value = float(raw_value)
     elif value_type == self.BOOL:
-      string = self[key]
-      if string:
-        if string.lower() in ('f', 'false', '0'):
+      if raw_value:
+        if raw_value.lower() in ('f', 'false', '0'):
           value = False
-        elif string.lower() in ('t', 'true', '1'):
+        elif raw_value.lower() in ('t', 'true', '1'):
           value = True
         else:
-          raise ValueError("Unrecognized boolean value '%s'" % string)
+          raise ValueError("Unrecognized boolean value '%s'" % raw_value)
       else:
-        raise ValueError("Unrecognized boolean value '%s'" % string)
+        raise ValueError("Unrecognized boolean value '%s'" % raw_value)
     else:
       raise ValueError("Unrecognized value_type argument %s" % value_type)
 
     self.cache[key] = (value_type, value)
     return value
 
-  def __fetch_through_cache(self, value_type, key):
+  def __fetch_through_cache(self, value_type, key, default):
     t = self.cache.get(key)
     if t and t[0] == value_type:
         return t[1]
     else:
-      return self.__fetch_and_cache(value_type, key)
+      return self.__fetch_and_cache(value_type, key, default)

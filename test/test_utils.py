@@ -253,7 +253,7 @@ class TestJcWrapper(unittest.TestCase):
     self.assertEqual('str', self.wrapper['str'])
 
   def test_fetch_missing(self):
-    self.assertRaises(IndexError, lambda x: self.wrapper[x], 'no_key')
+    self.assertRaises(KeyError, lambda x: self.wrapper[x], 'no_key')
 
   def test_simple_get(self):
     self.assertEqual("2", self.wrapper.get('int'))
@@ -278,6 +278,9 @@ class TestJcWrapper(unittest.TestCase):
   def test_get_bad_boolean(self):
     self.assertRaises(ValueError, self.wrapper.get_boolean, 'float')
 
+  def test_get_missing_boolean(self):
+    self.assertEqual(True, self.wrapper.get_boolean('no_key', True))
+
   def test_get_int(self):
     self.assertEqual(2, self.wrapper.get_int('int'))
     # cache test
@@ -290,7 +293,7 @@ class TestJcWrapper(unittest.TestCase):
     self.assertEqual(3, self.wrapper.get_int('float'))
 
   def test_get_missing_int(self):
-    self.assertRaises(IndexError, self.wrapper.get_int, 'no_key')
+    self.assertEqual(42, self.wrapper.get_int('no_key', 42))
 
   def test_get_float(self):
     self.assertEqual(3.0, self.wrapper.get_float('float'))
@@ -302,7 +305,7 @@ class TestJcWrapper(unittest.TestCase):
     self.assertEqual(2.0, self.wrapper.get_float('int'))
 
   def test_get_missing_float(self):
-    self.assertRaises(IndexError, self.wrapper.get_float, 'no_key')
+    self.assertEqual(42.0, self.wrapper.get_float('no_key', 42.0))
 
 def suite():
   suite = unittest.TestSuite()
@@ -320,6 +323,7 @@ def suite():
   suite.addTest(TestJcWrapper('test_simple_get_default'))
   suite.addTest(TestJcWrapper('test_get_boolean'))
   suite.addTest(TestJcWrapper('test_get_bad_boolean'))
+  suite.addTest(TestJcWrapper('test_get_missing_boolean'))
   suite.addTest(TestJcWrapper('test_get_int'))
   suite.addTest(TestJcWrapper('test_get_bad_int'))
   suite.addTest(TestJcWrapper('test_get_float_as_int'))
