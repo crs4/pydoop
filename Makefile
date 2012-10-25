@@ -1,5 +1,4 @@
 EXPORT_DIR = /tmp/pydoop_export
-GENERATED_FILES = $(wildcard src/*_main.cpp) DEFAULT_HADOOP_HOME pydoop/config.py pydoop/version.py
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
 .PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean uninstall_user logo favicon
@@ -66,8 +65,6 @@ dist: docs
 
 clean:
 	python setup.py clean
-	rm -rf build src/*.patched
-	rm -f $(GENERATED_FILES)
 	rm -f docs/_static/logo.png docs/_static/favicon.ico
 	make -C docs clean
 	make -C examples/self_contained clean
