@@ -19,12 +19,22 @@
 class jc_wrapper(object):
   """
   Simple JobConf wrapper to cache type-converted items.
+
+  .. method:: jc_wrapper[k]
+
+    Use the ``[]`` operator to get the original conf string value for property ``k``.
+
+    :param k: name of the property.
+    :raises IndexError: if the requested property doesn't exist.
   """
   INT = 1
   FLOAT = 2
   BOOL = 3
 
   def __init__(self, jc):
+    """
+    :param jc:  the ``pydoop.pipes.JobConf`` object to be wrapped
+    """
     self.jc = jc
     # in the cache, we store type-converted values as
     #   (TYPE_CODE, value)
@@ -32,16 +42,18 @@ class jc_wrapper(object):
 
   def has_key(self, k):
     """
-    Test for the presence of the property k in the configuration.
+    Test for the presence of the property ``k`` in the configuration.
+
+    :param k: name of the property.
     """
     return self.jc.hasKey(k)
 
   def __getitem__(self, k):
-    # XXX: how to document the [] operator?
     """
-    Returns the original conf string.
+    Get the original conf string value for property ``k``.
 
-    Raises IndexError if the key doesn't exist
+    :param k: name of the property.
+    :raises IndexError: if the requested property doesn't exist.
     """
     if not self.jc.hasKey(k):
       raise IndexError("No such configuration key: %s" % k)
@@ -49,8 +61,11 @@ class jc_wrapper(object):
 
   def get(self, k, default=None):
     """
-    Returns the original conf string, if k exists in the configuration.
+    Returns the original conf string, if ``k`` exists in the configuration.
     Else returns the value of the argument `default`
+    
+    :param k: name of the property.
+    :param default: value to return if the requested property doesn't exist.
     """
     if self.jc.hasKey(k):
       return self.jc.get(k)
@@ -59,31 +74,34 @@ class jc_wrapper(object):
 
   def get_int(self, k):
     """
-    Fetch the property named k and convert it to an ``int``.
+    Fetch the property named ``k`` and convert it to an ``int``.
 
-    Raises an ``IndexError`` if the requested property doesn't exist.
-    Raises a ``ValueError`` if the value can't be converted to an ``int``.
+    :param k: name of the property.
+    :raises IndexError: if the requested property doesn't exist.
+    :raises ValueError: if the value can't be converted to an ``int``.
     """
     return self.__fetch_through_cache(self.INT, k)
 
   def get_float(self, k):
     """
-    Fetch the property named k and convert it to a ``float``.
+    Fetch the property named ``k`` and convert it to a ``float``.
 
-    Raises an ``IndexError`` if the requested property doesn't exist.
-    Raises a ``ValueError`` if the value can't be converted to a ``float``.
+    :param k: name of the property.
+    :raises IndexError: if the requested property doesn't exist.
+    :raises ValueError: if the value can't be converted to a ``float``.
     """
     return self.__fetch_through_cache(self.FLOAT, k)
 
   def get_boolean(self, k):
     """
-    Fetch the property named k and convert it to a ``bool``.
-
-    Raises an ``IndexError`` if the requested property doesn't exist.
-    Raises a ``ValueError`` if the value can't be converted to a ``bool``.
+    Fetch the property named ``k`` and convert it to a ``bool``.
 
     The values 't', 'true', and '1' (upper or lower case) are accepted for True.
     Similarly, 'f', 'false' and '0' are accepted for False.
+
+    :param k: name of the property.
+    :raises IndexError: if the requested property doesn't exist.
+    :raises ValueError: if the value can't be converted to a ``bool``.
     """
     return self.__fetch_through_cache(self.BOOL, k)
 
@@ -94,7 +112,8 @@ class jc_wrapper(object):
     in self.cache, along with the specified type, so subsequent
     queries can re-use it.
     """
-    # XXX: can the JobConf return None for parameters?
+    # The JobConf can't return None for any parameter value.  An empty value
+    # is returned as an empty string.
     if value_type == self.INT:
       # tests show that converting a string to float and then to int is
       # faster than converting directly to int
