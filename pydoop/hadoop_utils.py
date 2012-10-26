@@ -168,6 +168,8 @@ class PathFinder(object):
   """
   Encapsulates the logic to find paths and other info required by Pydoop.
   """
+  CLOUDERA_HADOOP_EXEC = "/usr/bin/hadoop"
+
   def __init__(self):
     self.__hadoop_home = None
     self.__hadoop_exec = None
@@ -200,9 +202,14 @@ class PathFinder(object):
 
   def hadoop_exec(self, hadoop_home=None):
     if not self.__hadoop_exec:
-      fn = os.path.join(hadoop_home or self.hadoop_home(), "bin", "hadoop")
-      if is_exe(fn):
-        self.__hadoop_exec = fn
+      # allow overriding of package-installed hadoop exec
+      if not (hadoop_home or os.getenv("HADOOP_HOME")):
+        if is_exe(self.CLOUDERA_HADOOP_EXEC):
+          self.__hadoop_exec = self.CLOUDERA_HADOOP_EXEC
+      else:
+        fn = os.path.join(hadoop_home or self.hadoop_home(), "bin", "hadoop")
+        if is_exe(fn):
+          self.__hadoop_exec = fn
     if not self.__hadoop_exec:
       PathFinder.__error("hadoop executable", "HADOOP_HOME or PATH")
     return self.__hadoop_exec
