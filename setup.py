@@ -67,8 +67,6 @@ HDFS_SRC = ["src/%s.cpp" % n for n in (
   "hdfs_file",
   "hdfs_common",
   )]
-PIPES_EXT_NAME = "_pipes"
-HDFS_EXT_NAME = "_hdfs"
 GARBAGE_FN = "GARBAGE"
 
 
@@ -182,6 +180,10 @@ def have_better_tls():
   return False  # FIXME: need a portable implementation
 
 
+# ------------
+# BUILD ENGINE
+# ------------
+
 class HadoopSourcePatcher(object):
 
   def __init__(self, hadoop_version_info=HADOOP_VERSION_INFO):
@@ -235,46 +237,6 @@ class HadoopSourcePatcher(object):
     return self.patched_src_dir
 
 
-def create_pipes_ext(patched_src_dir, hadoop_vinfo=None):
-  if hadoop_vinfo is None:
-    hadoop_vinfo = HADOOP_VERSION_INFO
-  include_dirs = ["%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"]
-  libraries = ["pthread", BOOST_PYTHON]
-  if hadoop_vinfo.tuple != (0, 20, 2):
-    libraries.append("ssl")
-  return BoostExtension(
-    pydoop.complete_mod_name(PIPES_EXT_NAME, hadoop_vinfo=hadoop_vinfo),
-    PIPES_SRC,
-    glob.glob("%s/*/impl/*.cc" % patched_src_dir),
-    include_dirs=include_dirs,
-    libraries=libraries
-    )
-
-
-def create_hdfs_ext(patched_src_dir):
-  java_include_dirs = get_java_include_dirs(JAVA_HOME)
-  log.info("java_include_dirs: %r" % (java_include_dirs,))
-  include_dirs = java_include_dirs + ["%s/libhdfs" % patched_src_dir]
-  java_library_dirs = get_java_library_dirs(JAVA_HOME)
-  log.info("java_library_dirs: %r" % (java_library_dirs,))
-  return BoostExtension(
-    pydoop.complete_mod_name(HDFS_EXT_NAME),
-    HDFS_SRC,
-    glob.glob("%s/libhdfs/*.c" % patched_src_dir),
-    include_dirs=include_dirs,
-    library_dirs=java_library_dirs,
-    runtime_library_dirs=java_library_dirs,
-    libraries=["pthread", BOOST_PYTHON, "jvm"],
-    define_macros=get_hdfs_macros(
-      os.path.join(patched_src_dir, "libhdfs", "hdfs.h")
-      ),
-    )
-
-
-# ---------------------------------------
-# Custom distutils extension and commands
-# ---------------------------------------
-
 class BoostExtension(Extension):
   """
   Customized Extension class that generates the necessary Boost.Python
@@ -313,11 +275,45 @@ class BoostExtension(Extension):
     return outfn
 
 
+def create_pipes_ext(patched_src_dir, pipes_ext_name):
+  include_dirs = [
+    "%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"
+    ]
+  libraries = ["pthread", BOOST_PYTHON]
+  if HADOOP_VERSION_INFO.tuple != (0, 20, 2):
+    libraries.append("ssl")
+  return BoostExtension(
+    pipes_ext_name,
+    PIPES_SRC,
+    glob.glob("%s/*/impl/*.cc" % patched_src_dir),
+    include_dirs=include_dirs,
+    libraries=libraries
+    )
+
+
+def create_hdfs_ext(patched_src_dir, hdfs_ext_name):
+  java_include_dirs = get_java_include_dirs(JAVA_HOME)
+  log.info("java_include_dirs: %r" % (java_include_dirs,))
+  include_dirs = java_include_dirs + ["%s/libhdfs" % patched_src_dir]
+  java_library_dirs = get_java_library_dirs(JAVA_HOME)
+  log.info("java_library_dirs: %r" % (java_library_dirs,))
+  return BoostExtension(
+    hdfs_ext_name,
+    HDFS_SRC,
+    glob.glob("%s/libhdfs/*.c" % patched_src_dir),
+    include_dirs=include_dirs,
+    library_dirs=java_library_dirs,
+    runtime_library_dirs=java_library_dirs,
+    libraries=["pthread", BOOST_PYTHON, "jvm"],
+    define_macros=get_hdfs_macros(
+      os.path.join(patched_src_dir, "libhdfs", "hdfs.h")
+      ),
+    )
+
+
 class JavaLib(object):
-  """
-  Encapsulates information needed to build a Java library.
-  """
-  def __init__(self, hadoop_vinfo=HADOOP_VERSION_INFO):
+
+  def __init__(self, hadoop_vinfo, pipes_src_dir):
     self.hadoop_vinfo = hadoop_vinfo
     self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
     self.classpath = pydoop.hadoop_classpath()
@@ -328,28 +324,89 @@ class JavaLib(object):
       if hadoop_vinfo.cdh >= (4, 0, 0) and not hadoop_vinfo.ext:
         return  # TODO: add support for mrv2
       # add our fix for https://issues.apache.org/jira/browse/MAPREDUCE-4000
-      self.java_files.extend(glob.glob(
-        "%s/*" % HadoopSourcePatcher(self.hadoop_vinfo).to_jtree
+      self.java_files.extend(glob.glob("%s/*" % pipes_src_dir))
+
+
+class ExtensionManager(object):
+
+  PIPES_EXT_BASENAME = "_pipes"
+  HDFS_EXT_BASENAME = "_hdfs"
+
+  def __init__(self):
+    self.mr1_vinfo = None
+    self.pipes_mr1_ext_name = None
+    self.hdfs_mr1_ext_name = None
+    self.mr1_patcher = None
+    #--
+    self.pipes_ext_name = pydoop.complete_mod_name(
+      self.PIPES_EXT_BASENAME, hadoop_vinfo=HADOOP_VERSION_INFO
+      )
+    self.hdfs_ext_name = pydoop.complete_mod_name(
+      self.HDFS_EXT_BASENAME, hadoop_vinfo=HADOOP_VERSION_INFO
+      )
+    self.patcher = HadoopSourcePatcher(HADOOP_VERSION_INFO)
+    #--
+    if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
+      self.mr1_vinfo = hu.cdh_mr1_version(HADOOP_VERSION_INFO)
+      self.pipes_mr1_ext_name = pydoop.complete_mod_name(
+        self.PIPES_EXT_BASENAME, hadoop_vinfo=self.mr1_vinfo
+        )
+      self.hdfs_mr1_ext_name = pydoop.complete_mod_name(
+        self.HDFS_EXT_BASENAME, hadoop_vinfo=self.mr1_vinfo
+        )
+      self.mr1_patcher = HadoopSourcePatcher(self.mr1_vinfo)
+    #--
+    self.patched_src_dir = None
+    self.patched_java_src_dir = None
+    self.mr1_patched_src_dir = None
+    self.mr1_patched_java_src_dir = None
+
+  def patch_src(self):
+    self.patched_src_dir = self.patcher.patch()
+    self.patched_java_src_dir = self.patcher.to_jtree
+    if self.mr1_vinfo:
+      self.mr1_patched_src_dir = self.mr1_patcher.patch()
+      self.mr1_patched_java_src_dir = self.mr1_patcher.to_jtree
+
+  def create_pipes_extensions(self):
+    extensions = [create_pipes_ext(self.patched_src_dir, self.pipes_ext_name)]
+    if self.mr1_vinfo:
+      extensions.append(create_pipes_ext(
+        self.mr1_patched_src_dir, self.pipes_mr1_ext_name
         ))
+    for e in extensions:
+      e.sources.append(e.generate_main())
+    return extensions
+
+  def create_hdfs_extensions(self):
+    extensions = [create_hdfs_ext(self.patched_src_dir, self.hdfs_ext_name)]
+    if self.mr1_vinfo:
+      extensions.append(create_hdfs_ext(
+        # NOT a bug: we want non-mr1 code with a _mr1 suffix in the ext name
+        self.patched_src_dir, self.hdfs_mr1_ext_name
+        ))
+    for e in extensions:
+      e.sources.append(e.generate_main())
+    return extensions
+
+  def create_extensions(self):
+    return self.create_pipes_extensions() + self.create_hdfs_extensions()
+
+  def create_java_libs(self):
+    java_libs = [JavaLib(HADOOP_VERSION_INFO, self.patched_java_src_dir)]
+    if self.mr1_vinfo:
+      java_libs.append(JavaLib(self.mr1_vinfo, self.mr1_patched_java_src_dir))
+    return java_libs
 
 
 class BuildExt(build_ext):
 
   def finalize_options(self):
     build_ext.finalize_options(self)
-    patched_src_dir = HadoopSourcePatcher(HADOOP_VERSION_INFO).patch()
-    self.extensions = [
-      create_pipes_ext(patched_src_dir),
-      create_hdfs_ext(patched_src_dir),
-      ]
-    self.java_libs = [JavaLib(HADOOP_VERSION_INFO)]
-    if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
-      hadoop_vinfo = hu.cdh_mr1_version(HADOOP_VERSION_INFO)
-      patched_src_dir = HadoopSourcePatcher(hadoop_vinfo).patch()
-      self.extensions.append(create_pipes_ext(patched_src_dir, hadoop_vinfo))
-      self.java_libs.append(JavaLib(hadoop_vinfo))
-    for e in self.extensions:
-      e.sources.append(e.generate_main())
+    ext_manager = ExtensionManager()
+    ext_manager.patch_src()
+    self.extensions = ext_manager.create_extensions()
+    self.java_libs = ext_manager.create_java_libs()
 
   def build_extension(self, ext):
     try:
