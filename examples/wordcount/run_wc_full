@@ -2,4 +2,5 @@
 
 python run_wc.py bin/wordcount-full.py ../input \
     -D hadoop.pipes.java.recordreader=false \
-    -D hadoop.pipes.java.recordwriter=false
+    -D hadoop.pipes.java.recordwriter=false \
+    -D pydoop.hdfs.user=${USER}

@@ -123,8 +123,9 @@ class Writer(pp.RecordWriter):
     jc_configure_int(self, jc, "mapred.task.partition", "part")
     jc_configure(self, jc, "mapred.work.output.dir", "outdir")
     jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
+    jc_configure(self, jc, "pydoop.hdfs.user", "hdfs_user", None)
     self.outfn = "%s/part-%05d" % (self.outdir, self.part)
-    self.file = hdfs.open(self.outfn, "w")
+    self.file = hdfs.open(self.outfn, "w", user=self.hdfs_user)
 
   def close(self):
     self.logger.debug("closing open handles")

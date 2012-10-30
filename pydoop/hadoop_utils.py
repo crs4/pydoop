@@ -294,6 +294,7 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
           )
       else:  # FIXME: this only covers installed-from-package CDH, not tarball
+        hadoop_home = "/usr/lib/hadoop"
         mr1_home = "/usr/lib/hadoop-0.20-mapreduce"
         self.__hadoop_classpath = ':'.join(
           glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
