@@ -60,11 +60,13 @@ class TestCommon(unittest.TestCase):
     return path
 
   def failUnlessRaisesExternal(self, excClass, callableObj, *args, **kwargs):
-    sys.stderr.write(
-      "\n--- TESTING EXTERNAL EXCEPTION, ERROR MESSAGES ARE EXPECTED ---\n")
-    self.failUnlessRaises(excClass, callableObj, *args, **kwargs)
-    sys.stderr.write(
-      "--- DONE TESTING EXTERNAL EXCEPTION ---------------------------\n")
+    with open(os.devnull, "w") as dev_null:
+      old_stderr = os.dup(sys.stderr.fileno())
+      os.dup2(dev_null.fileno(), sys.stderr.fileno())
+      try:
+        self.failUnlessRaises(excClass, callableObj, *args, **kwargs)
+      finally:
+        os.dup2(old_stderr, sys.stderr.fileno())
 
   assertRaisesExternal = failUnlessRaisesExternal
 
