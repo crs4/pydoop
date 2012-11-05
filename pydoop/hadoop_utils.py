@@ -302,3 +302,19 @@ class PathFinder(object):
           glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
           )
     return self.__hadoop_classpath
+
+  def find(self):
+    info = {}
+    for a in (
+      "hadoop_exec",
+      "hadoop_version_info",
+      "hadoop_home",
+      "hadoop_conf",
+      "hadoop_params",
+      "hadoop_classpath",
+      ):
+      try:
+        info[a] = getattr(self, a)()
+      except ValueError:
+        info[a] = None
+    return info

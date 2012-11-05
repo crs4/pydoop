@@ -39,7 +39,6 @@ import pydoop.test_support as pts
 import pydoop.hadut as hadut
 
 
-HADOOP = pydoop.hadoop_exec()
 HADOOP_CONF_DIR = pydoop.hadoop_conf()
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "input"))
@@ -92,14 +91,16 @@ def main(argv):
   if opt.output is not sys.stdout:
     opt.output = open(opt.output, 'w')
   logger = logging.getLogger("main")
-  logger.setLevel(logging.INFO)
+  logger.setLevel(logging.DEBUG)
   runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
   with open(LOCAL_MR_SCRIPT) as f:
     pipes_code = pts.add_sys_path(f.read())
   runner.set_input(opt.input, put=True)
   runner.set_exe(pipes_code)
   mr_options = get_mr_options(opt, runner.wd)
-  runner.run(properties=mr_options, hadoop_conf_dir=HADOOP_CONF_DIR)
+  runner.run(
+    properties=mr_options, hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger
+    )
   mr_output = runner.collect_output()
   runner.clean()
   d = pts.parse_mr_output(mr_output, vtype=int)
