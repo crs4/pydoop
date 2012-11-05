@@ -225,7 +225,9 @@ class PydoopScript(object):
     self.runner.set_input(self.args.input)
     self.runner.set_output(self.args.output)
     self.runner.set_exe(pipes_code)
-    self.runner.run(more_args=pipes_args, properties=self.properties)
+    self.runner.run(
+      more_args=pipes_args, properties=self.properties, logger=self.logger
+      )
 
 
 def run(args):

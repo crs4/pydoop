@@ -17,12 +17,11 @@
 # END_COPYRIGHT
 
 """
-Convert text to upper or lower case.
+Convert text to upper or lower case.  By default, the program will
+switch text to upper case.  Set the config property
+'caseswitch.case=lower' if you prefer to switch to lower case.
 
 Set --kv-separator to the empty string when running this example.
-
-By default, the program will switch text to upper case.  Set the config property
-'caseswitch.case=lower' if you prefer to switch to lower case.
 """
 
 def mapper(_, record, writer, conf):

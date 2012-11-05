@@ -18,12 +18,14 @@
 
 """
 Emit strings that contain the substring provided by the property
-'grep-expression' (script raises an exception if the property is missing).
+'grep-expression' (script raises an exception if the property is
+missing).  We use the fourth 'conf' argument to retrieve the custom
+'grep-expression' parameter.
 
 When running this example, set --kv-separator to the empty string and
 --num-reducers 0.
 """
-def mapper(_, text, writer, conf): # notice the fourth 'conf' argument
-  print "conf['grep-expression']:", conf['grep-expression']
+
+def mapper(_, text, writer, conf):
   if text.find(conf['grep-expression']) >= 0:
     writer.emit("", text)

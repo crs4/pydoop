@@ -1,5 +1,6 @@
 #!/bin/bash
 
-./run_base_histogram
-./run_lowercase
-./run_transpose
+for s in base_histogram lowercase transpose grep caseswitch; do
+    echo "running ${s}"
+    ./run_${s}
+done
