@@ -253,6 +253,7 @@ class hdfs(object):
     :param to_hdfs: the handle to destination filesystem
     :type to_path: string
     :param to_path: the path of the destination file
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     if isinstance(to_hdfs, self.__class__):
@@ -265,6 +266,7 @@ class hdfs(object):
 
     :type path: string
     :param path: the path of the directory
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.create_directory(path)
@@ -287,7 +289,7 @@ class hdfs(object):
     :param path: the path of the file or directory
     :type recursive: bool
     :param recursive: if path is directory, delete it recursively when True;
-      raise IOError when False and directory is non-empty
+    :raises: IOError when False and directory is non-empty
     """
     _complain_ifclosed(self.closed)
     return self.fs.delete(path, recursive)
@@ -330,6 +332,7 @@ class hdfs(object):
     :param path: a path in the filesystem
     :rtype: dict
     :return: path information
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.get_path_info(path)
@@ -342,6 +345,7 @@ class hdfs(object):
     :param path: the path of the directory
     :rtype: list
     :return: list of files and directories in ``path``
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.list_directory(path)
@@ -356,6 +360,7 @@ class hdfs(object):
     :param to_hdfs: the handle to destination filesystem
     :type to_path: string
     :param to_path: the path of the destination file
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     if isinstance(to_hdfs, self.__class__):
@@ -370,6 +375,7 @@ class hdfs(object):
     :param from_path: the path of the source file
     :type to_path: string
     :param to_path: the path of the destination file    
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.rename(from_path, to_path)
@@ -382,6 +388,7 @@ class hdfs(object):
     :param path: the path of the file
     :type replication: int
     :param replication: the replication value
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.set_replication(path, replication)
@@ -393,6 +400,7 @@ class hdfs(object):
 
     :type path: string
     :param path: the path of the directory
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.set_working_directory(path)
@@ -521,6 +529,7 @@ class hdfs(object):
     :param mtime: new modification time in seconds
     :type atime: int
     :param atime: new access time in seconds
+    :raises: IOError
     """
     _complain_ifclosed(self.closed)
     return self.fs.utime(path, int(mtime), int(atime))
