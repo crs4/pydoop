@@ -131,6 +131,44 @@ class TestCommon(unittest.TestCase):
     self.fs.chmod(path, old_perm)
     self.assertEqual(self.fs.get_path_info(path)["permissions"], old_perm)
 
+  def __set_and_check_perm(self, path, new_mode, expected_mode):
+    self.fs.chmod(path, new_mode)
+    perm = self.fs.get_path_info(path)["permissions"]
+    self.assertEqual(expected_mode, perm)
+
+  def chmod_w_string(self):
+    path = self._make_random_dir()
+    self.fs.chmod(path, 0500)
+
+    # test each user
+    self.__set_and_check_perm(path, "u+w", 0700)
+    self.__set_and_check_perm(path, "g+w", 0720)
+    self.__set_and_check_perm(path, "o+w", 0722)
+
+    # each permission mode
+    self.__set_and_check_perm(path, "o+r", 0726)
+    self.__set_and_check_perm(path, "o+x", 0727)
+
+    # subtract operation, and multiple permission modes
+    self.__set_and_check_perm(path, "o-rwx", 0720)
+
+    # multiple users
+    self.__set_and_check_perm(path, "ugo-rwx", 0000)
+
+    # 'a' user
+    self.__set_and_check_perm(path, "a+r", 0444)
+
+    # blank user
+    # The blank 'user' should respect the user's umask
+    umask = os.umask(0007)
+    self.fs.chmod(path, "+w")
+    perm = self.fs.get_path_info(path)["permissions"]
+    os.umask(umask)
+    self.assertEqual(0664, perm)
+
+    # assignment op
+    self.__set_and_check_perm(path, "a=rwx", 0777)
+
   def file_attrs(self):
     path = self._make_random_path()
     with self.fs.open_file(path, os.O_WRONLY) as f:
@@ -367,6 +405,7 @@ def common_tests():
     'copy',
     'move',
     'chmod',
+    'chmod_w_string',
     'file_attrs',
     'flush',
     'read',

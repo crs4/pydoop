@@ -271,3 +271,19 @@ def ls(hdfs_path, user=None):
   """
   dir_list = lsl(hdfs_path, user)
   return [d["name"] for d in dir_list]
+
+
+def chmod(hdfs_path, mode, user=None):
+  """
+  Change file mode bits.
+
+  :type path: string
+  :param path: the path to the file or directory
+  :type mode: int
+  :param mode: the bitmask to set it to (e.g., 0777)
+  """
+  host, port, path_ = path.split(hdfs_path, user)
+  fs = hdfs(host, port, user)
+  retval = fs.chmod(path_, mode)
+  fs.close()
+  return retval
