@@ -18,6 +18,7 @@
 
 import unittest, tempfile, os
 from itertools import izip
+import stat
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import BUFSIZE
@@ -191,6 +192,11 @@ class TestHDFS(unittest.TestCase):
       hdfs.rmr(t1.name)
       self.assertEqual(len(hdfs.ls(wd)), 0)
 
+  def chmod(self):
+    with tempfile.NamedTemporaryFile() as f:
+      hdfs.chmod("file://" + f.name, 444)
+      s = os.stat(f.name)
+      self.assertEqual(444, stat.S_IMODE(s.st_mode))
 
 
 def suite():
@@ -205,6 +211,7 @@ def suite():
   suite.addTest(TestHDFS("put"))
   suite.addTest(TestHDFS("get"))
   suite.addTest(TestHDFS("rmr"))
+  suite.addTest(TestHDFS("chmod"))
   return suite
 
 
