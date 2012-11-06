@@ -187,9 +187,10 @@ def have_better_tls():
 class HadoopSourcePatcher(object):
 
   def __init__(self, hadoop_version_info=HADOOP_VERSION_INFO):
-    hadoop_tag = "hadoop-%s" % hadoop_version_info
-    self.patch_fn = "patches/%s.patch" % hadoop_tag
-    self.src_dir = "src/%s" % hadoop_tag
+    self.hadoop_version_info = hadoop_version_info
+    self.hadoop_tag = "hadoop-%s" % self.hadoop_version_info
+    self.patch_fn = "patches/%s.patch" % self.hadoop_tag
+    self.src_dir = "src/%s" % self.hadoop_tag
     self.patched_src_dir = "%s.patched" % self.src_dir
     self.from_jtree = os.path.join(
       self.patched_src_dir, "org/apache/hadoop/mapred/pipes"
@@ -198,7 +199,58 @@ class HadoopSourcePatcher(object):
       self.patched_src_dir, "it/crs4/pydoop/pipes"
       )
 
-  def generate_hdfs_config(self):
+  def __link_closest_tag(self):
+    available, cmp_attr = self.__get_available_versions()
+    closest_vinfo = self.__get_closest_version(available, cmp_attr)
+    if closest_vinfo is None:
+      raise RuntimeError(
+        "none of the supported versions is close enough to %s" %
+        self.hadoop_version_info
+        )
+    closest_tag = "hadoop-%s" % closest_vinfo
+    old_wd = os.getcwd()
+    os.chdir("src")
+    os.symlink(closest_tag, self.hadoop_tag)
+    os.chdir("../patches")
+    os.symlink("%s.patch" % closest_tag, "%s.patch" % self.hadoop_tag)
+    os.chdir(old_wd)
+    with open(GARBAGE_FN, "a") as fo:
+      fo.write("src/%s\n" % self.hadoop_tag)
+      fo.write("patches/%s.patch\n" % self.hadoop_tag)
+    return closest_tag
+
+  def __get_available_versions(self):
+    pattern = re.compile(r"^hadoop-.+\d$")
+    available = [
+      hu.HadoopVersion(fn.split("-", 1)[1])
+      for fn in os.listdir("src")
+      if pattern.match(fn) and "mr1" not in fn
+      ]
+    if self.hadoop_version_info.is_cloudera():
+      available = [
+        vinfo for vinfo in available
+        if vinfo.is_cloudera() and vinfo.main == self.hadoop_version_info.main
+        ]
+      cmp_attr = "cdh"
+    else:
+      available = [vinfo for vinfo in available if not vinfo.is_cloudera()]
+      cmp_attr = "main"
+    return available, cmp_attr
+
+  def __get_closest_version(self, available, cmp_attr):
+    vkey = getattr(self.hadoop_version_info, cmp_attr)
+    candidate_map = {}
+    for vinfo in available:
+      k = getattr(vinfo, cmp_attr)
+      if len(k) == len(vkey):
+        candidate_map[k] = vinfo
+    # try minor version match first, then major, then give up
+    for i in xrange(-1, -3, -1):
+      for k, vinfo in candidate_map.iteritems():
+        if k[:i] == vkey[:i]:
+          return vinfo
+
+  def __generate_hdfs_config(self):
     """
     Generate config.h for libhdfs.
 
@@ -211,7 +263,7 @@ class HadoopSourcePatcher(object):
         f.write("#define HAVE_BETTER_TLS\n")
       f.write("#endif\n")
 
-  def convert_pkg(self):
+  def __convert_pkg(self):
     assert os.path.isdir(self.from_jtree)
     os.makedirs(self.to_jtree)
     for bn in os.listdir(self.from_jtree):
@@ -224,14 +276,20 @@ class HadoopSourcePatcher(object):
 
   def patch(self):
     if must_generate(self.patched_src_dir, [self.src_dir, self.patch_fn]):
+      if not os.path.isdir(self.src_dir):
+        closest_tag = self.__link_closest_tag()
+        assert os.path.isfile(self.patch_fn)
+        log.warn("*** WARNING: %s NOT SUPPORTED, TRYING %s ***" % (
+          self.hadoop_tag, closest_tag
+          ))
       log.info("patching source code %r" % (self.src_dir,))
       shutil.rmtree(self.patched_src_dir, ignore_errors=True)
       shutil.copytree(self.src_dir, self.patched_src_dir)
       cmd = "patch -d %s -N -p1 < %s" % (self.patched_src_dir, self.patch_fn)
       if os.system(cmd):
         raise DistutilsSetupError("Error applying patch.  Command: %s" % cmd)
-      self.generate_hdfs_config()
-      self.convert_pkg()
+      self.__generate_hdfs_config()
+      self.__convert_pkg()
       with open(GARBAGE_FN, "a") as fo:
         fo.write(self.patched_src_dir + "\n")
     return self.patched_src_dir
