@@ -147,6 +147,57 @@ class TestExists(unittest.TestCase):
     self.assertFalse(hdfs.path.exists(path))
 
 
+class TestVarious(unittest.TestCase):
+
+  def test_kind(self):
+    path = utils.make_random_str()
+    self.assertTrue(hdfs.path.kind(path) is None)
+    try:
+      hdfs.dump("foo\n", path)
+      self.assertEqual('file', hdfs.path.kind(path))
+      hdfs.rmr(path)
+      hdfs.mkdir(path)
+      self.assertEqual('directory', hdfs.path.kind(path))
+    finally:
+      try:
+        # clean up
+        hdfs.rmr(path)
+      except IOError:
+        pass
+
+  def test_isfile(self):
+    path = utils.make_random_str()
+    self.assertFalse(hdfs.path.isfile(path))
+    try:
+      hdfs.dump("foo\n", path)
+      self.assertTrue(hdfs.path.isfile(path))
+      hdfs.rmr(path)
+      hdfs.mkdir(path)
+      self.assertFalse(hdfs.path.isfile(path))
+    finally:
+      try:
+        # clean up
+        hdfs.rmr(path)
+      except IOError:
+        pass
+
+
+  def test_isdir(self):
+    path = utils.make_random_str()
+    self.assertFalse(hdfs.path.isdir(path))
+    try:
+      hdfs.dump("foo\n", path)
+      self.assertFalse(hdfs.path.isdir(path))
+      hdfs.rmr(path)
+      hdfs.mkdir(path)
+      self.assertTrue(hdfs.path.isdir(path))
+    finally:
+      try:
+        # clean up
+        hdfs.rmr(path)
+      except IOError:
+        pass
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -159,6 +210,7 @@ def suite():
   suite.addTest(TestAbspath('already_absolute'))
   suite.addTest(TestBasename('good'))
   suite.addTest(TestExists('good'))
+  suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestVarious))
   return suite
 
 
