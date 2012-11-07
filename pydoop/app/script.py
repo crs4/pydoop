@@ -146,7 +146,6 @@ class PydoopScript(object):
 
   def __init__(self):
     self.logger = logging.getLogger("PydoopScript")
-    self.logger.setLevel(logging.DEBUG)  # TODO: expose as a cli param
     self.properties = {
       'hadoop.pipes.java.recordreader': 'true',
       'hadoop.pipes.java.recordwriter': 'true',
@@ -164,6 +163,7 @@ class PydoopScript(object):
     """
     Configures the pydoop script run, based on the arguments provided.
     """
+    self.logger.setLevel(getattr(logging, args.log_level))
     parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
     # Make ourselves a random working directory for this job.
     # We'll place our script inside it, and from there Hadoop will read it
@@ -329,6 +329,10 @@ def add_parser(subparsers):
   parser.add_argument(
     '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
     help='Set a Hadoop property, such as -D mapred.compress.map.output=true'
+    )
+  parser.add_argument(
+    '--log-level', metavar="LEVEL", default="INFO", help="Logging level",
+    choices=[ "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL" ]
     )
   parser.set_defaults(func=run)
   return parser
