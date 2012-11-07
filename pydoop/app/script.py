@@ -304,9 +304,7 @@ class PydoopScript(object):
 def run(args):
   script = PydoopScript()
   script.set_args(args)
-  output = script.run()
-  if output:
-    print output
+  script.run()
   return 0
 
 
