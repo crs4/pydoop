@@ -271,6 +271,10 @@ class PydoopScript(object):
     hdfs.put(self.args.module, self.remote_module)
     hdfs.chmod(self.remote_module, "a+r")
     self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
+    self.logger.debug("Created remote paths:")
+    self.logger.debug(self.remote_wd)
+    self.logger.debug(self.remote_exe)
+    self.logger.debug(self.remote_module)
 
   def run(self):
     if self.args is None:
@@ -293,6 +297,7 @@ class PydoopScript(object):
       hadut.run_pipes(self.remote_exe, self.args.input, self.args.output,
         more_args=pipes_args, properties=self.properties, logger=self.logger
         )
+      self.logger.info("Done")
     finally:
       self.__clean_wd()
 
