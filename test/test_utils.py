@@ -257,10 +257,10 @@ class TestJcWrapper(unittest.TestCase):
 
   def test_simple_get(self):
     self.assertEqual("2", self.wrapper.get('int'))
-    self.assertIsNone(self.wrapper.get('no_key'))
+    self.assertTrue(self.wrapper.get('no_key') is None)
     # ensure caching doesn't cause problems
     self.assertEqual("2", self.wrapper.get('int'))
-    self.assertIsNone(self.wrapper.get('no_key'))
+    self.assertTrue(self.wrapper.get('no_key') is None)
 
   def test_simple_get_default(self):
     self.assertEqual("default", self.wrapper.get('no_key', "default"))
