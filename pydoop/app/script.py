@@ -28,6 +28,7 @@ logging.basicConfig(level=logging.INFO)
 import pydoop
 import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
+import pydoop.utils as utils
 
 
 PIPES_TEMPLATE = """
@@ -155,24 +156,67 @@ class PydoopScript(object):
       'bl.libhdfs.opts': '-Xmx48m'
       }
     self.args = None
-    self.runner = None
+    self.remote_wd = None
+    self.remote_module = None
+    self.remote_exe = None
 
   def set_args(self, args):
+    """
+    Configures the pydoop script run, based on the arguments provided.
+    """
     parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
-    prefix = hdfs.path.join(parent, "pydoop_script_")
-    self.runner = hadut.PipesRunner(prefix=prefix, logger=self.logger)
+    # Make ourselves a random working directory for this job.
+    # We'll place our script inside it, and from there Hadoop will read it
+    # into the distributed cache.
+    self.remote_wd = hdfs.path.join(parent, utils.make_random_str(prefix="pydoop_script_"))
+    self.remote_exe = hdfs.path.join(self.remote_wd, utils.make_random_str(prefix="exe"))
     module_bn = os.path.basename(args.module)
+    self.remote_module = hdfs.path.join(self.remote_wd, module_bn)
+    # Set all required properties
+    dist_cache_parameter = "%s#%s" % (self.remote_module, module_bn)
     self.properties['mapred.job.name'] = module_bn
     self.properties.update(dict(args.D or []))
     self.properties['mapred.reduce.tasks'] = args.num_reducers
     self.properties['mapred.textoutputformat.separator'] = args.kv_separator
-    remote_module = hdfs.path.join(self.runner.wd, module_bn)
-    hdfs.put(args.module, remote_module)
-    dist_cache_parameter = "%s#%s" % (remote_module, module_bn)
     if self.properties['mapred.cache.files']:
       self.properties['mapred.cache.files'] += ','
     self.properties['mapred.cache.files'] += dist_cache_parameter
     self.args = args
+
+  def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
+    """
+    Checks all directories above the remote module and verifies that they have
+    all allow entering by all users.  If the method finds a directory that doesn't
+    allow all users to enter it then warns the user.
+
+    The reasoning behind this is mainly aimed at set-ups with a centralized
+    Hadoop cluster, accessed by all users, and where the hadoop tasktracker
+    user is not a superuser; an example may be if you're running a shared
+    Hadoop without HDFS (using only a POSIX shared file system).  The task
+    tracker correctly changes user to the job requester's user for most
+    operations, but not when initializing the distributed cache, so jobs who
+    want to placed files not accessible by the hadoop user into dist cache fail.
+    """
+    # warn if the remote module path may be unreadable
+    host, port, path = hdfs.path.split(abs_remote_path)
+    if host == '' and port == 0: # local file system
+      host_port = "file:///"
+    else:
+      # XXX: this won't work with any scheme other than hdfs:// (e.g., s3)
+      host_port = "hdfs://%s:%s/" % (host, port)
+    # break up the path
+    path_pieces = path.strip('/').split(os.path.sep)
+    fs = hdfs.hdfs(host, port)
+    # iterate through all path components
+    for i in xrange(0, len(path_pieces)):
+      part = os.path.join(host_port, os.path.sep.join(path_pieces[0:i+1]))
+      permissions = fs.get_path_info(part)['permissions']
+      if permissions & 0111 != 0111:
+        self.logger.warning(
+          "the remote module %s may not be readable\n" +
+          "by task tracker when initializing then distributed cache.\n" +
+          "The permissions on path %s are %s", abs_remote_path, part, oct(permissions))
+        break
 
   def __generate_pipes_code(self):
     lines = []
@@ -205,6 +249,29 @@ class PydoopScript(object):
     if hdfs.path.exists(self.args.output):
       raise RuntimeError("%r already exists" % (self.args.output,))
 
+  def __clean_wd(self):
+    if self.remote_wd:
+      try:
+        self.logger.debug("Removing temporary working directory %s", self.remote_wd)
+        hdfs.rmr(self.remote_wd)
+      except IOError:
+        pass
+
+  def __setup_remote_paths(self):
+    pipes_code = self.__generate_pipes_code()
+    # Actually create the remote working directory and copy the module into it
+    # Note:  the script has to be readable by hadoop; though this may not generally
+    # be a problem on HDFS, where the hadoop user is usually the superuser, things
+    # may be different if our working directory is on a shared POSIX filesystem.
+    # Therefore, we make the directory and the script accessible by all.
+    hdfs.mkdir(self.remote_wd)
+    hdfs.chmod(self.remote_wd, "a+rx")
+    hdfs.dump(pipes_code, self.remote_exe)
+    hdfs.chmod(self.remote_exe, "a+rx")
+    hdfs.put(self.args.module, self.remote_module)
+    hdfs.chmod(self.remote_module, "a+r")
+    self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
+
   def run(self):
     if self.args is None:
       raise RuntimeError("cannot run without args, please call set_args")
@@ -221,14 +288,13 @@ class PydoopScript(object):
         warnings.warn(
           "Can't find pydoop.jar, output will probably be tab-separated"
           )
-    pipes_code = self.__generate_pipes_code()
-    self.runner.set_input(self.args.input)
-    self.runner.set_output(self.args.output)
-    self.runner.set_exe(pipes_code)
-    self.runner.run(
-      more_args=pipes_args, properties=self.properties, logger=self.logger
-      )
-
+    try:
+      self.__setup_remote_paths()
+      hadut.run_pipes(self.remote_exe, self.args.input, self.args.output,
+        more_args=pipes_args, properties=self.properties, logger=self.logger
+        )
+    finally:
+      self.__clean_wd()
 
 def run(args):
   script = PydoopScript()
