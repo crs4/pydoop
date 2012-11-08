@@ -223,13 +223,14 @@ class HadoopSourcePatcher(object):
     available = [
       hu.HadoopVersion(fn.split("-", 1)[1])
       for fn in os.listdir("src")
-      if pattern.match(fn) and "mr1" not in fn
+      if pattern.match(fn)
       ]
     if self.hadoop_version_info.is_cloudera():
-      available = [
-        vinfo for vinfo in available
-        if vinfo.is_cloudera() and vinfo.main == self.hadoop_version_info.main
-        ]
+      available = [vinfo for vinfo in available if (
+        vinfo.is_cloudera() and
+        vinfo.main == self.hadoop_version_info.main and
+        vinfo.ext == self.hadoop_version_info.ext
+        )]
       cmp_attr = "cdh"
     else:
       available = [vinfo for vinfo in available if not vinfo.is_cloudera()]
@@ -243,11 +244,14 @@ class HadoopSourcePatcher(object):
       k = getattr(vinfo, cmp_attr)
       if len(k) == len(vkey):
         candidate_map[k] = vinfo
-    # try minor version match first, then major, then give up
-    for i in xrange(-1, -3, -1):
-      for k, vinfo in candidate_map.iteritems():
-        if k[:i] == vkey[:i]:
-          return vinfo
+    for i in xrange(-1, -len(vkey), -1):
+      selection = [
+        (abs(k[i]-vkey[i]), vinfo)
+        for (k, vinfo) in candidate_map.iteritems()
+        if k[:i] == vkey[:i]
+        ]
+      if selection:
+        return min(selection)[1]
 
   def __generate_hdfs_config(self):
     """
@@ -274,13 +278,13 @@ class HadoopSourcePatcher(object):
           ))
 
   def patch(self):
+    if not os.path.isdir(self.src_dir):
+      closest_tag = self.__link_closest_tag()
+      assert os.path.isfile(self.patch_fn)
+      log.warn("*** WARNING: %s NOT SUPPORTED, TRYING %s ***" % (
+        self.hadoop_tag, closest_tag
+        ))
     if must_generate(self.patched_src_dir, [self.src_dir, self.patch_fn]):
-      if not os.path.isdir(self.src_dir):
-        closest_tag = self.__link_closest_tag()
-        assert os.path.isfile(self.patch_fn)
-        log.warn("*** WARNING: %s NOT SUPPORTED, TRYING %s ***" % (
-          self.hadoop_tag, closest_tag
-          ))
       log.info("patching source code %r" % (self.src_dir,))
       shutil.rmtree(self.patched_src_dir, ignore_errors=True)
       shutil.copytree(self.src_dir, self.patched_src_dir)

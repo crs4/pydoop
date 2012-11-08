@@ -64,7 +64,7 @@ dist: docs
 	rm -rf $(EXPORT_DIR)
 
 clean:
-	python setup.py clean
+	python setup.py clean --all
 	rm -f docs/_static/logo.png docs/_static/favicon.ico
 	make -C docs clean
 	make -C examples/self_contained clean
