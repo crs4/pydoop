@@ -224,6 +224,7 @@ class TestHadoopUtils(unittest.TestCase):
 
 
 class TestJcWrapper(unittest.TestCase):
+
   def setUp(self):
     self.data = {
       'int': '2',
@@ -266,13 +267,18 @@ class TestJcWrapper(unittest.TestCase):
     self.assertEqual("default", self.wrapper.get('no_key', "default"))
 
   def test_get_boolean(self):
-    for k in ('bool_t', 'bool_T', 'bool_true', 'bool_True', 'bool_TRUE', 'bool_1'):
+    for k in (
+      'bool_t', 'bool_T', 'bool_true', 'bool_True', 'bool_TRUE', 'bool_1'
+      ):
       self.assertEqual(True, self.wrapper.get_boolean(k))
-      
-    for k in ('bool_f', 'bool_F', 'bool_false', 'bool_False', 'bool_FALSE', 'bool_0'):
+    for k in (
+      'bool_f', 'bool_F', 'bool_false', 'bool_False', 'bool_FALSE', 'bool_0'
+      ):
       self.assertEqual(False, self.wrapper.get_boolean(k))
     # repeat to test cache
-    for k in ('bool_f', 'bool_F', 'bool_false', 'bool_False', 'bool_FALSE', 'bool_0'):
+    for k in (
+      'bool_f', 'bool_F', 'bool_false', 'bool_False', 'bool_FALSE', 'bool_0'
+      ):
       self.assertEqual(False, self.wrapper.get_boolean(k))
 
   def test_get_bad_boolean(self):
@@ -307,6 +313,7 @@ class TestJcWrapper(unittest.TestCase):
   def test_get_missing_float(self):
     self.assertEqual(42.0, self.wrapper.get_float('no_key', 42.0))
 
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestUtils('test_jc_configure_plain'))
@@ -333,6 +340,7 @@ def suite():
   suite.addTest(TestJcWrapper('test_get_int_as_float'))
   suite.addTest(TestJcWrapper('test_get_missing_float'))
   return suite
+
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=2)

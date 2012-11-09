@@ -175,7 +175,8 @@ def exists(hdfs_path, user=None):
 def kind(path, user=None):
   """
   Get the kind of item that the path references.
-  Returns None if the path doesn't exist.
+
+  Return None if the path doesn't exist.
   """
   hostname, port, path = split(path, user=user)
   fs = hdfs_fs.hdfs(hostname, port)
@@ -186,8 +187,10 @@ def kind(path, user=None):
   finally:
     fs.close()
 
+
 def isdir(path, user=None):
   return kind(path, user) == 'directory'
+
 
 def isfile(path, user=None):
   return kind(path, user) == 'file'

@@ -34,7 +34,7 @@ Other relevant environment variables include::
   HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
 """
 
-import os, platform, re, glob, shutil, errno
+import os, platform, re, glob, shutil, itertools
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command.build_ext import build_ext
@@ -46,8 +46,6 @@ from distutils import log
 import pydoop
 import pydoop.hadoop_utils as hu
 
-import itertools
-import sys
 
 try:
   JAVA_HOME = os.environ["JAVA_HOME"]
@@ -78,9 +76,10 @@ HDFS_SRC = ["src/%s.cpp" % n for n in (
 def rm_rf(path, dry_run=False):
   """
   Remove a file or directory tree.
+
   Won't throw an exception, even if the removal fails.
   """
-  print >> sys.stdout, "removing", path
+  log.info("removing %s" % path)
   if dry_run:
     return
   try:
@@ -520,34 +519,21 @@ class BuildPy(build_py):
 class Clean(clean):
 
   def run(self):
-    # ensure we're at the base path of the pydoop project
-    os.chdir(os.path.abspath(os.path.dirname(__file__)))
     clean.run(self)
-    # Files generally produced by the build process
-    # src/*.patched
-    # all symlinks under src/ and patches/
-    # others...
     garbage_list = [
       "DEFAULT_HADOOP_HOME",
       "pydoop/config.py",
       "pydoop/version.py",
     ]
-    if self.all:
-      garbage_list.extend( (
-       "docs/_build",
-       "docs/_static/logo.png",
-       "docs/_static/favicon.ico",
-       ))
-    # add all patched versions of the pipes code
     garbage_list.extend(glob.iglob("src/*.patched"))
-    # Add all symlinks in patches/ and src/ (they're the ones we generate for version compatibility).
-    # Below I use glob instead of os.listdir since it automatically gives me the full relative paths
-    garbage_list.extend(p for p in itertools.chain(glob.iglob('./src/*'), glob.iglob('./patches/*')) if os.path.islink(p))
-    # Finally, add the patched _{hdfs,pipes}_HADOOP_VERSION_main.cpp files
+    garbage_list.extend(p for p in itertools.chain(
+      glob.iglob('src/*'), glob.iglob('patches/*')
+      ) if os.path.islink(p))
     garbage_list.extend(glob.iglob('./src/_hdfs_*_main.cpp'))
     garbage_list.extend(glob.iglob('./src/_pipes_*_main.cpp'))
     for p in garbage_list:
       rm_rf(p, self.dry_run)
+
 
 setup(
   name="pydoop",

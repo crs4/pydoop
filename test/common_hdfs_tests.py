@@ -139,33 +139,25 @@ class TestCommon(unittest.TestCase):
   def chmod_w_string(self):
     path = self._make_random_dir()
     self.fs.chmod(path, 0500)
-
-    # test each user
+    # each user
     self.__set_and_check_perm(path, "u+w", 0700)
     self.__set_and_check_perm(path, "g+w", 0720)
     self.__set_and_check_perm(path, "o+w", 0722)
-
     # each permission mode
     self.__set_and_check_perm(path, "o+r", 0726)
     self.__set_and_check_perm(path, "o+x", 0727)
-
     # subtract operation, and multiple permission modes
     self.__set_and_check_perm(path, "o-rwx", 0720)
-
     # multiple users
     self.__set_and_check_perm(path, "ugo-rwx", 0000)
-
     # 'a' user
     self.__set_and_check_perm(path, "a+r", 0444)
-
-    # blank user
-    # The blank 'user' should respect the user's umask
+    # blank user -- should respect the user's umask
     umask = os.umask(0007)
     self.fs.chmod(path, "+w")
     perm = self.fs.get_path_info(path)["permissions"]
     os.umask(umask)
     self.assertEqual(0664, perm)
-
     # assignment op
     self.__set_and_check_perm(path, "a=rwx", 0777)
 

@@ -16,13 +16,19 @@
 # 
 # END_COPYRIGHT
 
+"""
+Provides a wrapper for the JobConf object.
+"""
+
+
 class jc_wrapper(object):
   """
   Simple JobConf wrapper to cache type-converted items.
 
   .. method:: jc_wrapper[k]
 
-    Use the ``[]`` operator to get the original conf string value for property ``k``.
+    Use the ``[]`` operator to get the original conf string value for
+    property ``k``.
 
     :param k: name of the property.
     :raises KeyError: if the requested property doesn't exist.
@@ -33,12 +39,10 @@ class jc_wrapper(object):
 
   def __init__(self, jc):
     """
-    :param jc:  the ``pydoop.pipes.JobConf`` object to be wrapped
+    :param jc:  the ``pydoop.pipes.JobConf`` object to be wrapped.
     """
     self.jc = jc
-    # in the cache, we store type-converted values as
-    #   (TYPE_CODE, value)
-    self.cache = {}
+    self.cache = {}  # TYPE_CODE: TYPE_CONVERTED_VALUE
 
   def has_key(self, k):
     """
@@ -62,18 +66,19 @@ class jc_wrapper(object):
 
   def get(self, k, default=None):
     """
-    Returns the original conf string, if ``k`` exists in the configuration.
-    Else returns the value of the argument `default`
+    Return the original conf string, if ``k`` exists in the configuration.
+    Else return the value of the argument `default`.
     
     :param k: name of the property.
     :param default: value to return if the requested property doesn't exist.
     """
     if self.jc.hasKey(k):
       return self.jc.get(k)
-      # LP: I suspect that checking for the key twice (once in hasKey and once in jc.get
-      # may be faster than relying on the exception thrown by jc.get, which needs to
-      # cross the python-c++ boundary.  So, I implemented the above with an if rather
-      # than a try/except.
+      # LP: I suspect that checking for the key twice (once in hasKey
+      # and once in jc.get) may be faster than relying on the
+      # exception thrown by jc.get, which needs to cross the
+      # python-c++ boundary.  So, I implemented the above with an if
+      # rather than a try/except.
     else:
       return default
 
@@ -101,8 +106,8 @@ class jc_wrapper(object):
     """
     Fetch the property named ``k`` and convert it to a ``bool``.
 
-    The values 't', 'true', and '1' (upper or lower case) are accepted for True.
-    Similarly, 'f', 'false' and '0' are accepted for False.
+    The values 't', 'true', and '1' (upper or lower case) are accepted
+    for True.  Similarly, 'f', 'false' and '0' are accepted for False.
 
     :param k: name of the property.
     :param default: value to return if the requested property doesn't exist.
@@ -153,13 +158,12 @@ class jc_wrapper(object):
         raise ValueError("Unrecognized boolean value '%s'" % raw_value)
     else:
       raise ValueError("Unrecognized value_type argument %s" % value_type)
-
     self.cache[key] = (value_type, value)
     return value
 
   def __fetch_through_cache(self, value_type, key, default):
     t = self.cache.get(key)
     if t and t[0] == value_type:
-        return t[1]
+      return t[1]
     else:
       return self.__fetch_and_cache(value_type, key, default)

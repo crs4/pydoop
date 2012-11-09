@@ -21,9 +21,8 @@ pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
 
-import os, socket, urlparse, getpass
+import os, socket, urlparse, getpass, re
 import operator as ops
-import re
 
 import pydoop
 hdfs_ext = pydoop.import_version_specific_module("_hdfs")
@@ -446,32 +445,32 @@ class hdfs(object):
     os.umask(current_umask)
     return current_umask
 
-
   def __compute_mode_from_string(self, path, mode_string):
     """
-    Scan a unix-style mode string and apply it to ``old_mode``.
+    Scan a unix-style mode string and apply it to ``path``.
 
-    :param mode_string: see `man chmod` for details. `X`, `s` and `t` modes are not supported, nor are
-      `u`, `g`, `o`.
-      The string should match the following regular expression:  `[ugoa]*[-+=]([rwx]*)'.
-    :return:  a new mode integer resulting from applying the mode string to `old_mode`.
-    :raises ValueError:  if `mode_string` is invalid.
+    :param mode_string: see ``man chmod`` for details. ``X``, ``s``
+      and ``t`` modes are not supported.  The string should match the
+      following regular expression: ``[ugoa]*[-+=]([rwx]*)``.
+    :return: a new mode integer resulting from applying ``mode_string``
+      to ``path``.
+    :raises ValueError: if ``mode_string`` is invalid.
     """
     Char_to_perm_byte = {'r':4, 'w':2, 'x':1}
     Fields = (('u', 6), ('g', 3), ('o', 0))
-
+    #--
     m = re.match("\s*([ugoa]*)([-+=])([rwx]*)\s*", mode_string)
     if not m:
       raise ValueError("Invalid mode string %s" % mode_string)
     who = m.group(1)
     what_op = m.group(2)
     which_perm = m.group(3)
-
+    #--
     old_mode = self.fs.get_path_info(path)['permissions']
     # The mode to be applied by the operation, repeated three times in a list,
     # for user, group, and other respectively.  Initially these are identical,
     # but some may change if we have to respect the umask setting.
-    op_perm = [reduce(ops.ior, [ Char_to_perm_byte[c] for c in which_perm ])]*3
+    op_perm = [reduce(ops.ior, [Char_to_perm_byte[c] for c in which_perm])] * 3
     if 'a' in who:
       who = 'ugo'
     elif who == '':
@@ -480,12 +479,12 @@ class hdfs(object):
       inverted_umask = ~self.__get_umask()
       for i, field in enumerate(Fields):
         op_perm[i] &= (inverted_umask >> field[1]) & 0x7
-
     # for each user, compute the permission bit and set it in the mode
     new_mode = 0
     for i, tpl in enumerate(Fields):
       field, shift = tpl
-      old = (old_mode >> shift) & 0x7 # shift by the bits specified for the field, then keep only the 3 lowest bits
+      # shift by the bits specified for the field; keep only the 3 lowest bits
+      old = (old_mode >> shift) & 0x7
       if field in who:
         if what_op == '-':
           new = old & ~op_perm[i]
@@ -500,7 +499,6 @@ class hdfs(object):
         new = old
       new_mode |= new << shift
     return new_mode
-
 
   def chmod(self, path, mode):
     """

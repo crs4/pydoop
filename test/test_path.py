@@ -147,7 +147,7 @@ class TestExists(unittest.TestCase):
     self.assertFalse(hdfs.path.exists(path))
 
 
-class TestVarious(unittest.TestCase):
+class TestKind(unittest.TestCase):
 
   def test_kind(self):
     path = utils.make_random_str()
@@ -160,7 +160,6 @@ class TestVarious(unittest.TestCase):
       self.assertEqual('directory', hdfs.path.kind(path))
     finally:
       try:
-        # clean up
         hdfs.rmr(path)
       except IOError:
         pass
@@ -176,11 +175,9 @@ class TestVarious(unittest.TestCase):
       self.assertFalse(hdfs.path.isfile(path))
     finally:
       try:
-        # clean up
         hdfs.rmr(path)
       except IOError:
         pass
-
 
   def test_isdir(self):
     path = utils.make_random_str()
@@ -193,10 +190,10 @@ class TestVarious(unittest.TestCase):
       self.assertTrue(hdfs.path.isdir(path))
     finally:
       try:
-        # clean up
         hdfs.rmr(path)
       except IOError:
         pass
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -210,7 +207,7 @@ def suite():
   suite.addTest(TestAbspath('already_absolute'))
   suite.addTest(TestBasename('good'))
   suite.addTest(TestExists('good'))
-  suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestVarious))
+  suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 
 
