@@ -3,6 +3,34 @@
 News
 ====
 
+New in 0.7.0-rc1
+----------------
+
+* Works with CDH4, with the following limitations:
+
+  * support for MapReduce v1 only
+  * CDH4 must be installed from dist-specific packages (no tarball)
+
+* Tested with the latest releases of other Hadoop versions
+
+  * Apache Hadoop 0.20.2, 1.0.4
+  * CDH 3u5, 4.1.2
+
+* Simpler build process
+
+  * the source code we need is now included, rather than searched for
+    at compile time
+
+* Pydoop scripts can now accept user-defined configuration parameters
+
+  * New examples show how to use the new feature
+
+* New wrapper object makes it easier to interact with the JobConf
+* New hdfs.path functions: isdir, isfile, kind
+* HDFS: support for string description of permission modes in chmod
+* Several bug fixes
+
+
 New in 0.6.6
 ------------
 

@@ -44,9 +44,14 @@ In order to build and install Pydoop, you need the following software:
 * either of the following:
 
   * `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2
-  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0 (tested with 1.0.3)
+  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0 (tested with 1.0.4)
   * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 3
-    (tested with update 4)
+    (tested with cdh3u4 and cdh3u5)
+  * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 4
+    (tested with cdh4.1.2)
+
+    * currently, only mrv1 is supported
+    * CDH4 must be installed from dist-specific packages (no tarball)
 
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library)
@@ -65,7 +70,7 @@ On Ubuntu
 On Debian/Ubuntu you can install the dependencies with the following
 command::
 
-  sudo apt-get install python libboost-python-dev openssl
+  sudo apt-get install libboost-python-dev openssl
 
 
 On Gentoo
@@ -83,93 +88,42 @@ done via the ``BOOST_PYTHON`` environment variable. For instance::
   export BOOST_PYTHON=boost_python-2.7
 
 
-Building Instructions
-----------------------
+Installation
+------------
 
-Depending on how you installed Hadoop, you'll have to follow the instructions
-in one of the following sections.
+Set the ``JAVA_HOME`` environment variable to your JDK installation
+directory, e.g.::
 
+  export JAVA_HOME=/usr/local/java/jdk
 
-Hadoop Installed from Tarball
-.............................
+If you have installed Hadoop from a tarball, set the ``HADOOP_HOME``
+environment variable so that it points to where the tarball was
+extracted, e.g.::
 
-If you have installed either Apache or Cloudera Hadoop from a tarball,
-follow the instructions in this section.
+  export HADOOP_HOME=/opt/hadoop-1.0.4
 
-Set the ``HADOOP_HOME`` environment variable so that it points to where the
-Hadoop tarball was extracted::
-
-  export HADOOP_HOME=<path to Hadoop directory>
-
-Then, in the same shell::
+The above step is not necessary if you installed CDH from
+dist-specific packages.  Build Pydoop with the following commands::
 
   tar xzf pydoop-*.tar.gz
   cd pydoop-*
   python setup.py build
 
-
-Hadoop Installed from Cloudera Debian Packages
-..............................................
-
-If you have installed Hadoop on Debian/Ubuntu using the packages
-Cloudera provides, you have to make sure that the source code is
-installed as well::
-
-  sudo apt-get install libhdfs0-dev hadoop-source
-
-Then you can unpack and build Pydoop as shown above.
-
-
-Other Setup
-...........
-
-If the build fails, it's probably because setup.py can't find some component
-critical to the building process:  the Java installation, the Hadoop
-installation, or the Hadoop source code.  We can override the paths where
-setup.py searches with the environment variables below:
-
-* JAVA_HOME, e.g., ``/opt/sun-jdk``
-* HADOOP_HOME, e.g., ``/opt/hadoop-1.0.3``
-* HADOOP_CPP_SRC, e.g., ``/usr/src/hadoop-0.20/c++``
-* MAPRED_INCLUDE, HDFS_INCLUDE, HDFS_LINK: colon-separated directories
-  contaning, respectively, MapReduce header files, HDFS header files
-  and the HDFS C library.
-
-
-Installation
-------------
-
-In the same shell you used to run the build (in particular, with the same
-environment variables still set), run one of the following installation
-commands in the Pydoop distribution directory.
-
-
-System-wide Installation
-........................
-
-To install in the system's ``/usr/lib`` space, run the following::
+For a system-wide installation, run the following::
 
   sudo python setup.py install --skip-build
 
+For a user-local installation::
 
-User-local Installation
-.......................
+  python setup.py install --skip-build --user
 
-To install to your current user's home directory::
-
-  python setup.py install --user
-
-The package is installed in ``~/.local/lib/python2.7/site-packages``.
+The latter installs Pydoop in ``~/.local/lib/python2.X/site-packages``.
 This may be a particularly handy solution if your home directory is
 accessible on the entire cluster.
 
+To install to an arbitrary path::
 
-Installing to Another Location
-..............................
-
-::
-
-  python setup.py install --home <path>
+  python setup.py install --skip-build --home <PATH>
 
 
 .. _multiple_hadoop_versions:
@@ -181,7 +135,7 @@ Multiple Hadoop Versions
 
   The following instructions apply to installations from
   tarballs. Running a package-based Hadoop installation together with
-  a "from-tarball" one is **not** supported.
+  a "from-tarball" one is neither advised not supported.
 
 If you'd like to use your Pydoop installation with multiple versions of Hadoop,
 you will need to rebuild the modules for each version of Hadoop.
@@ -199,7 +153,9 @@ Example::
   export HADOOP_HOME=/opt/hadoop-0.20.2
   python setup.py install --user
 
-  export HADOOP_HOME=/opt/hadoop-1.0.3
+  python setup.py clean --all
+
+  export HADOOP_HOME=/opt/hadoop-1.0.4
   python setup.py install --user
 
 At run time, the appropriate version of the Pydoop modules will be
@@ -209,8 +165,7 @@ directory from the environment or by looking into standard paths, it
 falls back to a default location that is hardwired at compile time:
 the setup script looks for a file named ``DEFAULT_HADOOP_HOME`` in the
 current working directory; if the file does not exist, it is created
-and filled with the path to the current Hadoop home (at compile time,
-Pydoop must *always* know where the Hadoop home is).
+and filled with the path to the current Hadoop home.
 
 
 .. _troubleshooting:
@@ -238,8 +193,9 @@ Troubleshooting
 
    and then run ``python setup.py install``.
 
-   In the case of automatic download and install with pip, try the
-   following instead::
+   Finally, you can achieve the same result by manipulating the
+   environment.  This is particularly useful in the case of automatic
+   download and install with pip::
 
     export CPATH="/my/include/path:${CPATH}"
     export LD_LIBRARY_PATH="/my/lib/path:${LD_LIBRARY_PATH}"
@@ -250,7 +206,7 @@ Troubleshooting
    If this fails for any reason, you can provide the correct version string
    through the ``HADOOP_VERSION`` environment variable, e.g.::
 
-     export HADOOP_VERSION="1.0.3"
+     export HADOOP_VERSION="1.0.4"
 
 
 Testing your Installation
@@ -262,14 +218,14 @@ unit tests to verify that everything works fine.
 **IMPORTANT NOTICE:** in order to run HDFS tests you must:
 
 #. make sure that Pydoop is able to detect your Hadoop home and
-   configuration directories. If auto-detection fails, try setting the
-   ``HADOOP_HOME`` and ``HADOOP_CONF_DIR`` environment variables to
-   the appropriate locations;
+   configuration directories.  If auto-detection fails, try setting
+   the ``HADOOP_HOME`` and ``HADOOP_CONF_DIR`` environment variables
+   to the appropriate locations;
 
 #. since one of the test cases tests the connection to an HDFS
    instance with *explicitly set* host and port, if in your case these
    are different from, respectively, "localhost" and 9000 (8020 for
-   CDH-based installations), you must set the ``HDFS_HOST`` and
+   package-based CDH), you must set the ``HDFS_HOST`` and
    ``HDFS_PORT`` environment variables accordingly;
 
 #. start HDFS::
