@@ -22,7 +22,7 @@
 A quick and easy to use interface for running simple MapReduce jobs.
 """
 
-import os, sys, warnings, logging
+import os, sys, warnings, logging, argparse
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 """
 
 
-DEFAULT_REDUCE_TASKS = 3 * hadut.get_num_nodes()
+DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 
 
 def kv_pair(s):
@@ -313,7 +313,11 @@ def run(args):
 
 
 def add_parser(subparsers):
-  parser = subparsers.add_parser("script", description=PydoopScript.DESCRIPTION)
+  parser = subparsers.add_parser(
+    "script",
+    description=PydoopScript.DESCRIPTION,
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
   parser.add_argument('module', metavar='MODULE', help='python module file')
   parser.add_argument('input', metavar='INPUT', help='hdfs input path')
   parser.add_argument('output', metavar='OUTPUT', help='hdfs output path')

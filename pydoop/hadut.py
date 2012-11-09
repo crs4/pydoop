@@ -21,8 +21,7 @@ The hadut module provides access to some Hadoop functionalities
 available via the Hadoop shell.
 """
 
-import os, subprocess
-import shlex
+import os, subprocess, shlex
 
 import pydoop
 import pydoop.utils as utils
@@ -129,31 +128,45 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
   return output
 
 
-def get_task_trackers(properties=None, hadoop_conf_dir=None):
+def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
   """
   Get the list of task trackers in the Hadoop cluster.
 
   Each element in the returned list is in the ``(host, port)`` format.
   ``properties`` is passed to :func:`run_cmd`.
+
+  If ``offline`` is True, try getting the list of task trackers from
+  the 'slaves' file in Hadoop's configuration directory (no attempt is
+  made to contact the Hadoop daemons).  In this case, ports are set to 0.
   """
-  stdout = run_cmd("job", ["-list-active-trackers"],
-                   properties=properties, hadoop_conf_dir=hadoop_conf_dir)
-  task_trackers = []
-  for l in stdout.splitlines():
-    if not l:
-      continue
-    l = l.split(":")
-    task_trackers.append((l[0].split("_")[1], int(l[-1])))
+  if offline:
+    if not hadoop_conf_dir:
+      hadoop_conf_dir = pydoop.hadoop_conf()
+      slaves = os.path.join(hadoop_conf_dir, "slaves")
+    try:
+      with open(slaves) as f:
+        task_trackers = [(l.strip(), 0) for l in f]
+    except IOError:
+      task_trackers = []
+  else:
+    stdout = run_cmd("job", ["-list-active-trackers"],
+                     properties=properties, hadoop_conf_dir=hadoop_conf_dir)
+    task_trackers = []
+    for l in stdout.splitlines():
+      if not l:
+        continue
+      l = l.split(":")
+      task_trackers.append((l[0].split("_")[1], int(l[-1])))
   return task_trackers
 
 
-def get_num_nodes(properties=None):
+def get_num_nodes(properties=None, hadoop_conf_dir=None, offline=False):
   """
   Get the number of task trackers in the Hadoop cluster.
 
   ``properties`` is passed to :func:`get_task_trackers`.
   """
-  return len(get_task_trackers(properties))
+  return len(get_task_trackers(properties, hadoop_conf_dir, offline))
 
 
 def dfs(args=None, properties=None, hadoop_conf_dir=None):
