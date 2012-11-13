@@ -100,7 +100,9 @@ class hdfs(object):
   **Note:** when connecting to the local file system, ``user`` is
   ignored (i.e., it will always be the current UNIX user).
   """
-  SUPPORTED_OPEN_MODES = frozenset([os.O_RDONLY, os.O_WRONLY, "r", "w"])
+  SUPPORTED_OPEN_MODES = frozenset([
+    os.O_RDONLY, os.O_WRONLY, os.O_WRONLY|os.O_APPEND, "r", "w", "a"
+    ])
   _CACHE = {}
   _ALIASES = {"host": {}, "port": {}, "user": {}}
 
@@ -221,12 +223,16 @@ class hdfs(object):
         flags = "r"
       elif flags == os.O_WRONLY:
         flags = "w"
+      elif flags == os.O_WRONLY|os.O_APPEND:
+        flags = "a"
       return local_file(self, path, flags)
     path = str(path)  # the C API does not handle unicodes
     if flags == "r":
       flags = os.O_RDONLY
     elif flags == "w":
       flags = os.O_WRONLY
+    elif flags == "a":
+      flags = os.O_WRONLY|os.O_APPEND
     return hdfs_file(
       self.fs.open_file(path, flags, buff_size, replication, blocksize),
       self, path, flags, readline_chunk_size

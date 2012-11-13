@@ -21,7 +21,7 @@ from itertools import izip
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
-from utils import make_wd, make_random_data, get_bytes_per_checksum
+from utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
 
 
 class TestCommon(unittest.TestCase):
@@ -60,13 +60,7 @@ class TestCommon(unittest.TestCase):
     return path
 
   def failUnlessRaisesExternal(self, excClass, callableObj, *args, **kwargs):
-    with open(os.devnull, "w") as dev_null:
-      old_stderr = os.dup(sys.stderr.fileno())
-      os.dup2(dev_null.fileno(), sys.stderr.fileno())
-      try:
-        self.failUnlessRaises(excClass, callableObj, *args, **kwargs)
-      finally:
-        os.dup2(old_stderr, sys.stderr.fileno())
+    silent_call(self.failUnlessRaises, excClass, callableObj, *args, **kwargs)
 
   assertRaisesExternal = failUnlessRaisesExternal
 
@@ -80,8 +74,6 @@ class TestCommon(unittest.TestCase):
         f.close()
         self.assertTrue(f.closed)
         self.assertRaises(ValueError, f.read)
-    path = self._make_random_file()
-    self.assertRaises(ValueError, self.fs.open_file, path, "a")
     path = self._make_random_path()
     self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
 
@@ -228,6 +220,21 @@ class TestCommon(unittest.TestCase):
       bytes_written = fo.write_chunk(chunk)
       self.assertEqual(bytes_written, len(content))
     return path
+
+  def append(self):
+    content, update = make_random_data(), make_random_data()
+    path = self._make_random_path()
+    with self.fs.open_file(path, "w") as fo:
+      fo.write(content)
+    try:
+      with silent_call(self.fs.open_file, path, "a") as fo:
+        fo.write(update)
+    except IOError:
+      sys.stderr.write("NOT SUPPORTED ... ")
+      return
+    else:
+      with self.fs.open_file(path) as fi:
+        self.assertEqual(fi.read(), content+update)
 
   def tell(self):
     offset = 3
@@ -403,6 +410,7 @@ def common_tests():
     'read',
     'read_chunk',
     'write_chunk',
+    'append',
     'tell',
     'pread',
     'pread_chunk',

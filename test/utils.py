@@ -20,7 +20,7 @@
 Utilities for unit tests.
 """
 
-import os, random, uuid, tempfile
+import sys, os, random, uuid, tempfile
 
 import pydoop
 
@@ -38,6 +38,10 @@ try:
 except ValueError:
   raise ValueError("Environment variable HDFS_PORT must be an int")
 
+_FD_MAP = {
+  "stdout": sys.stdout.fileno(),
+  "stderr": sys.stderr.fileno(),
+  }
 
 class FSTree(object):
   """
@@ -93,3 +97,17 @@ def get_bytes_per_checksum():
   return int(params.get('io.bytes.per.checksum',
                         params.get('dfs.bytes-per-checksum',
                                    _DEFAULT_BYTES_PER_CHECKSUM)))
+
+
+def silent_call(func, *args, **kwargs):
+  with open(os.devnull, "w") as dev_null:
+    cache = {}
+    for s in "stdout", "stderr":
+      cache[s] = os.dup(_FD_MAP[s])
+      os.dup2(dev_null.fileno(), _FD_MAP[s])
+    try:
+      ret = func(*args, **kwargs)
+    finally:
+      for s in "stdout", "stderr":
+        os.dup2(cache[s], _FD_MAP[s])
+  return ret
