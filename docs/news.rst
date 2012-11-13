@@ -3,6 +3,14 @@
 News
 ====
 
+New in 0.7.0-rc2
+----------------
+
+* Support for HDFS append open mode
+
+  * fails if your Hadoop version and/or configuration does not support
+    HDFS append
+
 New in 0.7.0-rc1
 ----------------
 
