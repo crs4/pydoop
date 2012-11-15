@@ -70,7 +70,7 @@ On Ubuntu
 On Debian/Ubuntu you can install the dependencies with the following
 command::
 
-  sudo apt-get install libboost-python-dev openssl
+  sudo apt-get install libboost-python-dev libssl-dev
 
 
 On Gentoo
