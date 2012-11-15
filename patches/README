@@ -10,7 +10,7 @@ varies greatly with the Hadoop version tag.
 
 A simple tool for importing the C++ code we need has been placed in scripts/:
 
-  $ scripts/import_src /opt/hadoop-1.0.3
+  $ dev_tools/import_src /opt/hadoop-1.0.3
 
 We store the unpatched source code under src/hadoop-<VERSION_TAG>
 (this makes it easier to spot changes when a new version is released)
@@ -26,7 +26,7 @@ Creating patches for new Hadoop releases
 Let's say Cloudera has just released CDH version 4.1.0.  We want to
 import the new C++ source and generate the corresponding patch:
 
-  $ scripts/import_src /opt/hadoop-2.0.0-cdh4.1.0
+  $ dev_tools/import_src /opt/hadoop-2.0.0-cdh4.1.0
   $ diff -urN src/hadoop-2.0.0-cdh4.{0.1,1.0}
   diff -urN src/hadoop-2.0.0-cdh4.0.1/pipes/impl/HadoopPipes.cc src/hadoop-2.0.0-cdh4.1.0/pipes/impl/HadoopPipes.cc
   --- src/hadoop-2.0.0-cdh4.0.1/pipes/impl/HadoopPipes.cc	2012-10-02 18:19:36.077520802 +0200
