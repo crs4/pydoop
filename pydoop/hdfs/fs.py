@@ -108,18 +108,23 @@ class hdfs(object):
 
   def __canonize_hpu(self, hpu):
     host, port, user = hpu
-    host = host.strip()
     host = self._ALIASES["host"].get(host, host)
     port = self._ALIASES["port"].get(port, port)
     user = self._ALIASES["user"].get(user, user)
     return host, port, user
 
   def __lookup(self, hpu):
-    return self._CACHE[self.__canonize_hpu(hpu)]
+    if hpu[0]:
+      hpu = self.__canonize_hpu(hpu)
+    return self._CACHE[hpu]
 
   def __init__(self, host="default", port=0, user=None, groups=None):
+    host = host.strip()
     if user is None:
       user = ""
+    if not host:
+      port = 0
+      user = user or getpass.getuser()
     try:
       self.__status = self.__lookup((host, port, user))
     except KeyError:
