@@ -3,6 +3,12 @@
 News
 ====
 
+
+New in 0.7.0-rc3
+----------------
+
+* Fixed a bug in the hdfs instance caching method
+
 New in 0.7.0-rc2
 ----------------
 
