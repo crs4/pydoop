@@ -1,7 +1,7 @@
 EXPORT_DIR = /tmp/pydoop_export
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
-.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist clean distclean uninstall_user logo favicon
+.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist debian clean distclean uninstall_user logo favicon
 
 all: build
 
@@ -63,6 +63,11 @@ dist: docs
 	mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
 	rm -rf $(EXPORT_DIR)
 
+debian: dist
+	mkdir sandbox
+	tar -xz -C sandbox -f pydoop-*.tar.gz
+	cd sandbox/pydoop-* && fakeroot dpkg-buildpackage
+
 clean:
 	python setup.py clean --all
 	rm -f docs/_static/logo.png docs/_static/favicon.ico
@@ -74,6 +79,8 @@ clean:
 distclean: clean
 	rm -rf $(EXPORT_DIR)
 	make -C examples/self_contained distclean
+	rm -rf pydoop-*
+	rm -rf sandbox
 
 uninstall_user:
 	rm -rf ~/.local/lib/python$(PY_V)/site-packages/pydoop*
