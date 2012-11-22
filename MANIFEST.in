@@ -30,3 +30,5 @@ exclude pydoop/binary_protocol.py
 exclude pydoop/pipes_runner.py
 
 recursive-include docs *
+
+recursive-include debian *

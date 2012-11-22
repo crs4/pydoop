@@ -10,7 +10,7 @@ Homepage: http://pydoop.sourceforge.net
 Package: pydoop
 Section: misc
 Architecture: amd64
-Depends: ${python:Depends} ${shlibs:Depends}, ${misc:Depends}, hadoop-0.20-conf-pseudo, hadoop-client
+Depends: ${python:Depends}, ${shlibs:Depends}, ${misc:Depends}, hadoop-0.20-conf-pseudo, hadoop-client
 Description: Pydoop: a Python MapReduce and HDFS API for Hadoop
  Pydoop provides a MapReduce and HDFS API for Hadoop that allows
  object-oriented Java-style MapReduce programming in CPython as well
