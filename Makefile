@@ -41,10 +41,11 @@ docs/_static/favicon.ico: logo/favicon.svg
 	convert favicon-16.png favicon-32.png favicon-64.png favicon-128.png $@
 	rm -f favicon-*.png
 
-docs: logo favicon
+# pydoop must be installed for sphinx autodoc to work
+docs: install_user logo favicon
 	make -C docs html
 
-docs_py: logo favicon
+docs_py: install_user_py logo favicon
 	make -C docs html
 
 docs_put: docs
@@ -54,9 +55,7 @@ docs_view: docs
 	yelp docs/_build/html/index.html &
 
 dist: docs
-	rm -rf $(EXPORT_DIR)
-	mkdir -p $(EXPORT_DIR)
-	git archive master | tar -x -C $(EXPORT_DIR)
+	./dev_tools/git_export -o $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
 	cd $(EXPORT_DIR) && python setup.py sdist
@@ -66,7 +65,7 @@ dist: docs
 debian: dist
 	mkdir sandbox
 	tar -xz -C sandbox -f pydoop-*.tar.gz
-	cd sandbox/pydoop-* && fakeroot dpkg-buildpackage
+	cd sandbox/pydoop-* && fakeroot dpkg-buildpackage -us -uc
 
 clean:
 	python setup.py clean --all

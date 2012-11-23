@@ -15,10 +15,8 @@ import sys, os, datetime
 
 CURRENT_YEAR = datetime.datetime.now().year
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path[1:1] = [ os.path.abspath('../pydoop') ]
+# No need to hack the path, we install before building docs
+## sys.path[1:1] = [ os.path.abspath('../pydoop') ]
 
 # -- General configuration -----------------------------------------------------
 
