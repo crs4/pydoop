@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+
+"""
+Unpack debian packages -- a quick shortcut for debug purposes.
+"""
+
+import sys, os, argparse, shutil, subprocess as sp
+
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(THIS_DIR)
+DEFAULT_FROM_DIR = os.path.join(PARENT_DIR, "sandbox")
+DEFAULT_TO_DIR = os.path.join(PARENT_DIR, "temp")
+
+
+def get_pkg_map(from_dir):
+  pkg_map = {}
+  for fn in os.listdir(from_dir):
+    if fn.endswith(".deb"):
+      tag = fn.split("_", 1)[0]
+      pkg_map[tag] = os.path.abspath(os.path.join(from_dir, fn))
+  return pkg_map
+
+
+def unpack(pkg_map, to_dir):
+  if os.path.isdir(to_dir):
+    shutil.rmtree(to_dir)
+  os.makedirs(to_dir)
+  for tag, fn in pkg_map.iteritems():
+    d = os.path.join(to_dir, tag)
+    os.makedirs(d)
+    old_wd = os.getcwd()
+    os.chdir(d)
+    print "unpacking %s to %s" % (fn, d)
+    sp.check_call("ar x %s" % fn, shell=True)
+    sp.check_call("tar xf data.tar.gz", shell=True)
+    sp.check_call("tar xf control.tar.gz", shell=True)
+    os.chdir(old_wd)
+
+
+def make_parser():
+  parser = argparse.ArgumentParser(description=__doc__)
+  parser.add_argument("-i", "--input-dir", metavar="DIR",
+                      help="input directory", default=DEFAULT_FROM_DIR)
+  parser.add_argument("-o", "--output-dir", metavar="DIR",
+                      help="output directory", default=DEFAULT_TO_DIR)
+  return parser
+
+
+def main(argv):
+  parser = make_parser()
+  args = parser.parse_args(argv[1:])
+  pkg_map = get_pkg_map(args.input_dir)
+  unpack(pkg_map, args.output_dir)
+
+
+if __name__ == "__main__":
+  main(sys.argv)
