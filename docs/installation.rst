@@ -13,9 +13,13 @@ regarding other Linux distributions, we expect Pydoop to work
 (possibly with some tweaking) on them as well. Platforms other than
 Linux are currently not supported.
 
+.. _get_pydoop:
 
 Get Pydoop
 ----------
+
+Source Distribution
+...................
 
 We recommend downloading the latest release from
 https://sourceforge.net/projects/pydoop/files.
@@ -31,6 +35,13 @@ automatically download and install Pydoop from PyPI using `pip
 <http://www.pip-installer.org>`_::
 
   pip install pydoop
+
+
+Debian/Ubuntu Package
+.....................
+
+Download the latest .deb package from
+https://sourceforge.net/projects/pydoop/files.
 
 
 Prerequisites
@@ -67,10 +78,32 @@ a complete HowTo.
 On Ubuntu
 .........
 
-On Debian/Ubuntu you can install the dependencies with the following
-command::
+On Ubuntu you should install the .deb package (see the :ref:`Get
+Pydoop <get_pydoop>` section).  Currently, we support the following
+setup:
 
-  sudo apt-get install libboost-python-dev libssl-dev
+* Ubuntu 12.04.1 LTS (Precise Pangolin), 64-bit
+* Python 2.7
+* CDH4.1.2
+* Oracle JDK 6
+
+To install CDH4 with mrv1, install ``hadoop-0.20-conf-pseudo`` and
+``hadoop-client`` from the CDH4 repository, following `Cloudera's
+instructions
+<https://ccp.cloudera.com/display/CDH4DOC/CDH4+Installation#CDH4Installation-Step2%3AInstallCDH4withMRv1>`_.
+
+To install Oracle JDK 6, you can follow `these instructions
+<http://superuser.com/questions/353983/how-do-i-install-the-sun-java-sdk-in-ubuntu-11-10-oneric-and-later-versions>`_.
+If you install the JDK with a different method, make sure that your
+Java package provides the ``sun-java6-jdk`` virtual dependency.
+
+To install Pydoop, run::
+
+  sudo dpkg -i python-pydoop_*.deb
+
+If you want to compile Pydoop from source, run the following first::
+
+  sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
 
 
 On Gentoo
@@ -88,8 +121,10 @@ done via the ``BOOST_PYTHON`` environment variable. For instance::
   export BOOST_PYTHON=boost_python-2.7
 
 
-Installation
-------------
+Building and Installing
+-----------------------
+
+You can skip this section if you installed Pydoop from the .deb package.
 
 Set the ``JAVA_HOME`` environment variable to your JDK installation
 directory, e.g.::
