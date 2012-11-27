@@ -1,4 +1,4 @@
-python-pydoop (0.7.0-rc3-0ubuntu1) precise; urgency=low
+python-pydoop (0.7.0-1) unstable; urgency=low
 
   * Initial Release.
 

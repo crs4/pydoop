@@ -3,6 +3,11 @@
 News
 ====
 
+New in 0.7.0
+------------
+
+* Added Debian package
+
 
 New in 0.7.0-rc3
 ----------------
