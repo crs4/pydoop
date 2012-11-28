@@ -98,12 +98,16 @@ The Boost Python library is included in the main Ubuntu repository::
 To install CDH4 with mrv1, install ``hadoop-0.20-conf-pseudo`` and
 ``hadoop-client`` from the CDH4 repository, following `Cloudera's
 instructions
-<https://ccp.cloudera.com/display/CDH4DOC/CDH4+Installation#CDH4Installation-Step2%3AInstallCDH4withMRv1>`_.
+<https://ccp.cloudera.com/display/CDH4DOC/CDH4+Installation>`_.
 
 To install Oracle JDK 6, you can follow `these instructions
 <http://superuser.com/questions/353983/how-do-i-install-the-sun-java-sdk-in-ubuntu-11-10-oneric-and-later-versions>`_.
 If you install the JDK with a different method, make sure that your
 Java package provides the ``sun-java6-jdk`` virtual dependency.
+
+Finally, on Ubuntu Pydoop depends on the python-support package::
+
+  sudo apt-get install python-support
 
 To install Pydoop, run::
 
