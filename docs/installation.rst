@@ -75,8 +75,11 @@ installing Pydoop and your MapReduce application to all cluster nodes
 a complete HowTo.
 
 
-On Ubuntu
-.........
+Installation
+------------
+
+Ubuntu
+......
 
 On Ubuntu you should install the .deb package (see the :ref:`Get
 Pydoop <get_pydoop>` section).  Currently, we support the following
@@ -84,8 +87,13 @@ setup:
 
 * Ubuntu 12.04.1 LTS (Precise Pangolin), 64-bit
 * Python 2.7
+* Boost.Python 1.46.1
 * CDH4.1.2
 * Oracle JDK 6
+
+The Boost Python library is included in the main Ubuntu repository::
+
+  sudo apt-get install libboost-python1.46.1
 
 To install CDH4 with mrv1, install ``hadoop-0.20-conf-pseudo`` and
 ``hadoop-client`` from the CDH4 repository, following `Cloudera's
@@ -101,30 +109,26 @@ To install Pydoop, run::
 
   sudo dpkg -i python-pydoop_*.deb
 
-If you want to compile Pydoop from source, run the following first::
+
+Installation from Source
+........................
+
+Before compiling and installing Pydoop, install all missing dependencies.
+
+On Ubuntu::
 
   sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
 
-
-On Gentoo
-.........
-
-We haven't released an ebuild for Pydoop yet. Emerge dependencies as follows::
+On Gentoo::
 
   echo 'dev-libs/boost python' >> /etc/portage/package.use
   emerge boost openssl
 
-If you're using Boost version 1.48 or newer, you need to specify the
+If you're using Boost version 1.48 or newer, you may need to specify the
 name of your Boost.Python library in order to build Pydoop. This is
 done via the ``BOOST_PYTHON`` environment variable. For instance::
 
   export BOOST_PYTHON=boost_python-2.7
-
-
-Building and Installing
------------------------
-
-You can skip this section if you installed Pydoop from the .deb package.
 
 Set the ``JAVA_HOME`` environment variable to your JDK installation
 directory, e.g.::
