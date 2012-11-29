@@ -206,7 +206,8 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
 
     >>> import glob, pydoop
     >>> hadoop_home = pydoop.hadoop_home()
-    >>> hadoop_ver = pydoop.hadoop_version()
+    >>> v = pydoop.hadoop_version_info()
+    >>> if v.cdh >= (4, 0, 0): hadoop_home += '-0.20-mapreduce'
     >>> jar_name = glob.glob('%s/*examples*.jar' % hadoop_home)[0]
     >>> more_args = ['wordcount']
     >>> try:
