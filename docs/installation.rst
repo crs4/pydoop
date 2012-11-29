@@ -111,7 +111,31 @@ Finally, on Ubuntu Pydoop depends on the python-support package::
 
 To install Pydoop, run::
 
-  sudo dpkg -i python-pydoop_*.deb
+  sudo dpkg -i <PATH_TO_PYDOOP_DEB_PKG>
+
+The following is a complete walkthrough that merges all of the above
+instructions (tested on an empty box):
+
+.. code-block:: bash
+
+  # install canonical dependencies
+  sudo apt-get install libboost-python1.46.1 python-support
+  # remove openjdk if necessary
+  sudo apt-get purge openjdk*
+  # add repositories for CDH4 and Oracle Java
+  sudo sh -c "echo 'deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-cdh4 contrib' > /etc/apt/sources.list.d/cloudera.list"
+  sudo sh -c "echo 'deb-src http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-cdh4 contrib' >> /etc/apt/sources.list.d/cloudera.list"
+  sudo apt-get install curl
+  curl -s http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh/archive.key | sudo apt-key add -
+  sudo apt-get install python-software-properties
+  sudo add-apt-repository ppa:eugenesan/java
+  sudo apt-get update
+  # install Oracle Java and CDH4 with mrv1
+  sudo apt-get install oracle-java6-installer
+  cd /usr/lib/jvm && sudo ln -s java-6-oracle java-6-sun
+  sudo apt-get install hadoop-0.20-conf-pseudo hadoop-client
+  # install Pydoop
+  sudo dpkg -i <PATH_TO_PYDOOP_DEB_PKG>
 
 
 Installation from Source
