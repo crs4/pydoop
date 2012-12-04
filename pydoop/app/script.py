@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2012 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -100,7 +100,7 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
     setup_script_object(self, 'map', %(module)s.%(map_fn)s, ctx)
- 
+
   def without_conf(self, ctx):
     # old style map function, without the conf parameter
     %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
@@ -127,13 +127,30 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
     key = ctx.getInputKey()
     %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer, self.conf)
 
+class PydoopScriptCombiner(pydoop.pipes.Combiner):
+  def __init__(self, ctx):
+    super(type(self), self).__init__(ctx)
+    setup_script_object(self, 'combiner', %(module)s.%(combiner_fn)s, ctx)
+
+  @staticmethod
+  def iter(ctx):
+    while ctx.nextValue():
+      yield ctx.getInputValue()
+
+  def without_conf(self, ctx):
+    key = ctx.getInputKey()
+    %(module)s.%(combiner_fn)s(key, PydoopScriptCombiner.iter(ctx), self.writer)
+
+  def with_conf(self, ctx):
+    key = ctx.getInputKey()
+    %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer, self.conf)
+
 if __name__ == '__main__':
   result = pydoop.pipes.runTask(pydoop.pipes.Factory(
-    PydoopScriptMapper, PydoopScriptReducer
-    ))
+    PydoopScriptMapper, PydoopScriptReducer, record_reader_class=None,
+    record_writer_class=None, combiner_class=%(combiner_wp)s, partitioner_class=None))
   sys.exit(0 if result else 1)
 """
-
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 
@@ -236,6 +253,9 @@ class PydoopScript(object):
       'module': os.path.splitext(os.path.basename(self.args.module))[0],
       'map_fn': self.args.map_fn,
       'reduce_fn': self.args.reduce_fn,
+      'combiner_fn': self.args.combiner_fn,
+      'combiner_wp' : ('PydoopScriptCombiner' if self.args.combiner_fn
+                       else 'None')
       }
     lines.append(PIPES_TEMPLATE % template_args)
     return os.linesep.join(lines) + os.linesep
@@ -324,6 +344,8 @@ def add_parser(subparsers):
   parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper',
                       help="name of map function within module")
   parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
+                      help="name of reduce function within module")
+  parser.add_argument('-c', '--combiner-fn', metavar='COM', default=None,
                       help="name of reduce function within module")
   parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
                       help="output key-value separator")
