@@ -27,7 +27,7 @@ https://sourceforge.net/projects/pydoop/files.
 You can also get the latest code from the `Git <http://git-scm.com/>`_
 repository::
 
-  git clone git://pydoop.git.sourceforge.net/gitroot/pydoop/pydoop pydoop
+  git clone git://git.code.sf.net/p/pydoop/code pydoop
 
 We also upload our releases to `PyPI <http://pypi.python.org>`_.
 After configuring your environment (see below), you should be able to
