@@ -130,7 +130,7 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 class PydoopScriptCombiner(pydoop.pipes.Combiner):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
-    setup_script_object(self, 'combiner', %(module)s.%(combiner_fn)s, ctx)
+    setup_script_object(self, 'reduce', %(module)s.%(combiner_fn)s, ctx)
 
   @staticmethod
   def iter(ctx):
