@@ -55,6 +55,34 @@ Run the example::
 
   pydoop script wordcount.py hdfs_input hdfs_output
 
+Pydoop Script supports combiners too. 
+
+.. code-block:: python
+
+  def mapper(_, text, writer):
+    for word in text.split():
+      writer.emit(word, 1)
+
+  def reducer(word, count, writer):
+    writer.emit(word, sum(map(int, count)))
+
+  def combiner(word, count, writer):
+    writer.count('Combiner calls count', 1)
+    reducer(word, writer)
+
+Run the example::
+
+  pydoop script -c combiner wordcount.py hdfs_input hdfs_output
+
+Note that we need to use the '-c' flag to explicitely activate the
+combiner. In default, no combiner will be called.
+
+One thing to remember is that the current hadoop pipes architecture
+runs the combiner under the hood of the executable run by pipes and it
+does not update the 'combiner' counters of the general hadoop
+framework. So, even if it is running, the 'combiner' counters will be
+left to zero.
+
 
 Word Count with Total Number of Words
 .....................................
@@ -141,8 +169,14 @@ If you can specify your algorithm in two simple functions that have no state
 or have a simple state that can be stored in module variables, then you can
 consider using Pydoop Script.
 
+Pydoop Script allows also the definition of a 
+
+
+
 If you need something more sophisticated, then consider using the full Pydoop
 API.
+
+
 
 
 Usage
@@ -168,6 +202,9 @@ Command line options are shown in the following table.
 +--------+--------------------+-----------------------------------------------+
 | ``-r`` | ``--reduce-fn``    | Name of reduce function within module         |
 |        |                    | (default: reducer)                            |
++--------+--------------------+-----------------------------------------------+
+| ``-c`` | ``--combine-fn``   | Name of combine function within module        |
+|        |                    | (default: None)                               |
 +--------+--------------------+-----------------------------------------------+
 | ``-t`` | ``--kv-separator`` | Key-value separator string in final output    |
 |        |                    | (default: <tab> character)                    |
@@ -259,6 +296,22 @@ in your input data.  It receives 3 parameters:
    which to fetch configuration property values (see `Accessing Parameters`_
    below).
 
+Combiner
+........
+
+The ``combiner`` function will be called for each unique key value
+produced by your map function.  It also receives 3 parameters:
+
+#. key: the key produced by your map function
+#. values iterable: iterate over this parameter to see all the values emitted
+   for the current key
+#. writer object: a writer object identical to the one given to the map function
+#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object: a Python object from
+   which to fetch configuration property values (see `Accessing Parameters`_
+   below).
+
+The key and value your emit from your combiner will be piped to the reducer.
+
 
 Reducer
 .......
@@ -314,10 +367,11 @@ parameters instead of 3).  To see the methods available check out the
 Naming your Functions
 .....................
 
-If you'd like to give your map and reduce functions names different from
-``mapper`` and ``reducer``, you may do so, but you must tell the script tool.
-Use the ``--map-fn`` and ``--reduce-fn`` command line arguments to select your
-customized names.
+If you'd like to give your map and reduce functions names different
+from ``mapper`` and ``reducer``, you may do so, but you must tell the
+script tool.  Use the ``--map-fn`` and ``--reduce-fn`` command line
+arguments to select your customized names. Combiner function can only
+be assigned by using explicitly the flag ``--combine-fn``.
 
 
 Map-only Jobs

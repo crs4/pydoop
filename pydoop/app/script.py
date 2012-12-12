@@ -103,11 +103,13 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
 
   def without_conf(self, ctx):
     # old style map function, without the conf parameter
-    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer)
 
   def with_conf(self, ctx):
     # new style map function, without the conf parameter
-    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer, self.conf)
 
 class PydoopScriptReducer(pydoop.pipes.Reducer):
   def __init__(self, ctx):
@@ -121,11 +123,13 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 
   def without_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer)
 
   def with_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
 
 class PydoopScriptCombiner(pydoop.pipes.Combiner):
   def __init__(self, ctx):
@@ -139,11 +143,13 @@ class PydoopScriptCombiner(pydoop.pipes.Combiner):
 
   def without_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(combiner_fn)s(key, PydoopScriptCombiner.iter(ctx), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(combiner_fn)s(key, PydoopScriptCombiner.iter(ctx), writer)
 
   def with_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
 
 if __name__ == '__main__':
   result = pydoop.pipes.runTask(pydoop.pipes.Factory(
