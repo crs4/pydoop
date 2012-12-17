@@ -1,3 +1,5 @@
+.. _input_format_example:
+
 Writing a Custom InputFormat
 ============================
 
