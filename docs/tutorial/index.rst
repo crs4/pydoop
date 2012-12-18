@@ -18,44 +18,12 @@ knowledge, is not available in other solutions.
    :maxdepth: 2
 
    pydoop_script
+   mapred_api
 
 
 .. note::
 
   TODO: the following docs must be moved to their own sections
-
-Full-fledged Hadoop API
-+++++++++++++++++++++++
-
-For more complex applications, you can use the :ref:`full API
-<api-docs>`.  Here is how how a word count would look:
-
-.. code-block:: python
-
-  from pydoop.pipes import Mapper, Reducer, Factory, runTask
-
-  class WordCountMapper(Mapper):
-
-    def __init__(self, context):
-      super(Mapper, self).__init__(context)
-      context.setStatus("initializing")
-      self.input_words = context.getCounter("WORDCOUNT", "INPUT_WORDS")
-
-    def map(self, context):
-      words = context.getInputValue().split()
-      for w in words:
-        context.emit(w, "1")
-      context.incrementCounter(self.input_words, len(words))
-
-  class WordCountReducer(Reducer):
-
-    def reduce(self, context):
-      s = 0
-      while context.nextValue():
-        s += int(context.getInputValue())
-      context.emit(context.getInputKey(), str(s))
-
-  runTask(Factory(WordCountMapper, WordCountReducer))
 
 
 High-level HDFS API

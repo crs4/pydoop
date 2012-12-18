@@ -24,10 +24,10 @@ wordcount. See wordcount-full.py for an example that uses counters,
 RecordReader, etc.
 """
 
-from pydoop.pipes import Mapper, Reducer, Factory, runTask
+import pydoop.pipes as pp
 
 
-class WordCountMapper(Mapper):
+class Mapper(pp.Mapper):
 
   def map(self, context):
     words = context.getInputValue().split()
@@ -35,7 +35,7 @@ class WordCountMapper(Mapper):
       context.emit(w, "1")
 
 
-class WordCountReducer(Reducer):
+class Reducer(pp.Reducer):
 
   def reduce(self, context):
     s = 0
@@ -45,4 +45,4 @@ class WordCountReducer(Reducer):
 
 
 if __name__ == "__main__":
-  runTask(Factory(WordCountMapper, WordCountReducer))
+  pp.runTask(pp.Factory(Mapper, Reducer))

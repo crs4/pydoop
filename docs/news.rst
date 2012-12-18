@@ -125,9 +125,8 @@ make migration between Hadoop versions easier for our users.
 Easy Pydoop Scripting
 +++++++++++++++++++++
 
-We have added a :ref:`command line tool <pydoop_script>` to make it
-trivially simple to write shorts scripts for simple problems.  See the
-:ref:`Pydoop Script <pydoop_script>` page for details.
+We have added a :ref:`command line tool <pydoop_script_tutorial>` to make it
+trivially simple to write shorts scripts for simple problems.
 
 Supported Python Versions
 +++++++++++++++++++++++++

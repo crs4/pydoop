@@ -71,7 +71,7 @@ and it is run with::
   dumbo cat ipcounts | sort -k2,2nr | head -n 5
 
 With Pydoop, we could implement the above program using
-:ref:`pydoop_script`.  Write an ``ipcount_script.py`` module:
+:ref:`pydoop_script_tutorial`.  Write an ``ipcount_script.py`` module:
 
 .. code-block:: python
 

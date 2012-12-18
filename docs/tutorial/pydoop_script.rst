@@ -39,8 +39,9 @@ Examples
 The following examples show how to use Pydoop Script for common
 problems.  More examples can be found in the
 ``examples/pydoop_script`` subdirectory of Pydoop's source
-distribution root.  A `more detailed guide on Pydoop Script
-<pydoop_script_guide>` is also available.
+distribution root.  The :ref:`Pydoop Script Guide
+<pydoop_script_guide>` contains more detailed information on writing
+and running programs.
 
 Word Count
 ++++++++++
