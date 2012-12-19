@@ -43,14 +43,23 @@ distribution root.  The :ref:`Pydoop Script Guide
 <pydoop_script_guide>` contains more detailed information on writing
 and running programs.
 
+.. _word_count:
+
 Word Count
 ++++++++++
+
+The word count example can be considered as the "hello world" of
+MapReduce.  A simple application that counts the occurrence of each
+word in a set of text files, it is included in both the original
+MapReduce paper [#]_ and in the Hadoop documentation as a MapReduce
+programming tutorial.  The Pydoop Script implementation requires only
+five lines of code:
 
 .. code-block:: python
 
   def mapper(_, text, writer):
     for word in text.split():
-      writer.emit(word, 1)
+      writer.emit(word, "1")
 
   def reducer(word, icounts, writer):
     writer.emit(word, sum(map(int, icounts)))
@@ -70,7 +79,7 @@ this last "global" count we can use Hadoop counters:
   def mapper(_, text, writer):
     wordlist = text.split()
     for word in wordlist:
-      writer.emit(word, 1)
+      writer.emit(word, "1")
     writer.count("num words", len(wordlist))
 
   def reducer(word, count, writer):
@@ -126,4 +135,11 @@ state or have a simple state that can be stored in module variables,
 then you can consider using Pydoop Script.
 
 If you need something more sophisticated, then consider using the
-:ref:`full Pydoop API <api-docs>`.
+:ref:`full Pydoop API <api_tutorial>`.
+
+
+.. rubric:: Footnotes
+
+.. [#] J. Dean and S. Ghemawat, *MapReduce: simplified data processing
+       on large clusters*, in OSDI '04: 6th Symposium on Operating
+       Systems Design and Implementation, 2004

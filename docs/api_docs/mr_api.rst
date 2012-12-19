@@ -1,3 +1,5 @@
+.. _mr_api:
+
 :mod:`pydoop.pipes` --- MapReduce API
 =====================================
 
