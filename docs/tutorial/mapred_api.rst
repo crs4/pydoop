@@ -201,12 +201,102 @@ pass the class object to the factory:
 .. code-block:: python
 
   if __name__ == "__main__":
-    pp.runTask(pp.Factory(Mapper, Reducer, record_reader_class=Reader)
+    pp.runTask(pp.Factory(Mapper, Reducer, record_reader_class=Reader))
 
 Finally, when running the program, the hadoop pipes call must set the
 ``hadoop.pipes.java.recordreader`` option to ``false``.
 
+Record Writer
+-------------
+
+The record writer writes key/value pairs to output files.  The default
+behavior is to write one tab-separated key/value pair per line; if you
+want to do something different, you have to write a custom
+:class:`~pydoop.pipes.RecordWriter`:
+
+.. code-block:: python
+
+  import pydoop.pipes as pp
+  import pydoop.hdfs as hdfs
+  from pydoop.utils import jc_configure, jc_configure_int
+
+  class Writer(pp.RecordWriter):
+
+    def __init__(self, context):
+      super(Writer, self).__init__(context)
+      jc = context.getJobConf()
+      jc_configure_int(self, jc, "mapred.task.partition", "part")
+      jc_configure(self, jc, "mapred.work.output.dir", "outdir")
+      jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
+      jc_configure(self, jc, "pydoop.hdfs.user", "hdfs_user", None)
+      self.outfn = "%s/part-%05d" % (self.outdir, self.part)
+      self.file = hdfs.open(self.outfn, "w", user=self.hdfs_user)
+
+    def close(self):
+      self.file.close()
+      self.file.fs.close()
+
+    def emit(self, key, value):
+      self.file.write("%s%s%s\n" % (key, self.sep, value))
+
+The above example, which simply reproduces the default behavior, also
+shows how to get job configuration parameters: the ones starting with
+"mapred" are standard Hadoop parameters, while "pydoop.hdfs.user" is a
+custom parameter defined by the application developer.  To set the
+key-value separator and the hdfs user, for instance, the application
+could be run as::
+
+  hadoop pipes \
+    -D hadoop.pipes.java.recordwriter=false \
+    -D mapred.textoutputformat.separator=@ \
+    -D pydoop.hdfs.user=myuser \
+    [...]
+
+Note that we had to set ``hadoop.pipes.java.recordwriter`` to
+``false``, as we did for the record reader in the previous section.
+
+Since we want to use our own record reader, we have to pass the class
+object to the factory:
+
+.. code-block:: python
+
+  if __name__ == "__main__":
+    pp.runTask(pp.Factory(Mapper, Reducer, record_writer_class=Writer))
+
+Partitioner
+-----------
+
+The :class:`~pydoop.pipes.Partitioner` assigns intermediate keys to
+reducers: the default is to select the reducer on the basis of a hash
+function of the key.  The following example reproduces the default
+behavior:
+
+.. code-block:: python
+
+  import sys
+  import pydoop.pipes as pp
+
+  class Partitioner(pp.Partitioner):
+  
+    def __init__(self, context):
+      super(Partitioner, self).__init__(context)
+
+    def partition(self, key, numOfReduces):
+      reducer_id = (hash(key) & sys.maxint) % numOfReduces
+      return reducer_id
+
+  if __name__ == "__main__":
+    pp.runTask(pp.Factory(Mapper, Reducer, partitioner_class=Partitioner))
+
+The framework calls the :meth:`~pydoop.pipes.Partitioner.partition`
+method passing the total number of reducers to it, and expects the
+chosen reducer ID as the return value.
+
+Combiner
+--------
+
+The combiner is functionally identical to a reducer, but it is run locally.
 
 .. note::
 
-  TODO: more components
+  TO BE CONTINUED
