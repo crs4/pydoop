@@ -16,8 +16,8 @@ The rest of this section serves as an introduction to MapReduce
 programming with Pydoop; the :ref:`API reference <mr_api>` has
 all the details.
 
-Mapper and Reducer
-------------------
+Mappers and Reducers
+--------------------
 
 The Pydoop API is object-oriented: the application developer writes a
 :class:`~pydoop.pipes.Mapper` class, whose core job is performed by
@@ -119,8 +119,8 @@ In addition, the final values of all counters are listed in the
 command line output of the job (note that the list also includes Hadoop's
 default counters).
 
-Record Reader
--------------
+Record Readers and Writers
+--------------------------
 
 By default, Hadoop assumes you want to process plain text and splits
 input data into text lines.  If you need to process binary data, or
@@ -206,9 +206,6 @@ pass the class object to the factory:
 Finally, when running the program, the hadoop pipes call must set the
 ``hadoop.pipes.java.recordreader`` option to ``false``.
 
-Record Writer
--------------
-
 The record writer writes key/value pairs to output files.  The default
 behavior is to write one tab-separated key/value pair per line; if you
 want to do something different, you have to write a custom
@@ -263,8 +260,8 @@ object to the factory:
   if __name__ == "__main__":
     pp.runTask(pp.Factory(Mapper, Reducer, record_writer_class=Writer))
 
-Partitioner
------------
+Partitioners and Combiners
+--------------------------
 
 The :class:`~pydoop.pipes.Partitioner` assigns intermediate keys to
 reducers: the default is to select the reducer on the basis of a hash
@@ -281,22 +278,31 @@ behavior:
     def __init__(self, context):
       super(Partitioner, self).__init__(context)
 
-    def partition(self, key, numOfReduces):
-      reducer_id = (hash(key) & sys.maxint) % numOfReduces
+    def partition(self, key, n_red):
+      reducer_id = (hash(key) & sys.maxint) % n_red
       return reducer_id
 
-  if __name__ == "__main__":
-    pp.runTask(pp.Factory(Mapper, Reducer, partitioner_class=Partitioner))
-
 The framework calls the :meth:`~pydoop.pipes.Partitioner.partition`
-method passing the total number of reducers to it, and expects the
-chosen reducer ID as the return value.
+method passing it the total number of reducers ``n_red``, and expects
+the chosen reducer ID --- in the ``[0, ..., n_red-1]`` range --- as
+the return value.
 
-Combiner
---------
+The combiner is functionally identical to a reducer, but it is run
+locally, on the key-value stream output by a single mapper.  Although
+nothing prevents the combiner from processing values differently from
+the reducer, the former, provided that the reduce function is
+associative and idempotent, is typically configured to be the same as
+the latter, in order to perform local aggregation and thus help cut
+down network traffic.
 
-The combiner is functionally identical to a reducer, but it is run locally.
+The following snippet shows how to set the partitioner and combiner
+(here we use the reducer as the combiner) classes:
 
-.. note::
+.. code-block:: python
 
-  TO BE CONTINUED
+  if __name__ == "__main__":
+    pp.runTask(pp.Factory(
+      Mapper, Reducer,
+      partitioner_class=Partitioner,
+      combiner_class=Reducer,
+      ))
