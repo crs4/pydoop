@@ -49,7 +49,8 @@ we considered a situation where a MapReduce task needs to emit the raw
 bytes of an integer value.
 
 We wrote a trivial application that reads input from a previous
-:doc:`wordcount` run and filters out words whose count falls below a
+:ref:`word count <word_count>` run and filters out
+words whose count falls below a
 configurable threshold. Of course, the filter could have been directly
 applied to the wordcount reducer: the job has been artificially split
 into two runs to give a ``SequenceFile`` read / write example.

@@ -70,7 +70,8 @@ To run the above program, save it to a "wordcount" file and execute::
     -program wordcount -input input -output output
 
 See the section on :ref:`running Pydoop programs<running_apps>` for
-more details.
+more details.  Source code for the word count example is located under
+``examples/wordcount`` in the Pydoop distribution.
 
 Counters and Status Updates
 ---------------------------

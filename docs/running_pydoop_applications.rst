@@ -86,6 +86,34 @@ of the available properties and their meanings.
    property value.  If you specify all required properties with the -D
    switches, the xml configuration file is **not** necessary.
 
+Setting the Environment for your Program
+----------------------------------------
+
+When working on a shared cluster where you don't have root access, you
+might have a lot of software installed in non-standard locations, such
+as your home directory. Since non-interactive ssh connections do not
+usually preserve your environment, you might lose some essential
+setting like ``LD_LIBRARY_PATH``\ .
+
+A quick way to fix this is to insert a snippet like this one at the start of
+your launcher program:
+
+.. code-block:: bash
+
+  #!/bin/sh
+
+  """:"
+  export LD_LIBRARY_PATH="my/lib/path:${LD_LIBRARY_PATH}"
+  exec /path/to/pyexe/python -u $0 $@
+  ":"""
+
+  # Python code for the launcher follows
+
+In this way, the launcher is run as a shell script that does some
+exports and then executes Python on itself. Note that sh code is
+protected by a Python comment, so that it's not considered when the
+script is interpreted by Python.
+
 Running
 -------
 
