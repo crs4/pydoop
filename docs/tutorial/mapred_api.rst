@@ -69,6 +69,9 @@ To run the above program, save it to a "wordcount" file and execute::
     -D hadoop.pipes.java.recordwriter=true \
     -program wordcount -input input -output output
 
+See the section on :ref:`running Pydoop programs<running_apps>` for
+more details.
+
 Counters and Status Updates
 ---------------------------
 
