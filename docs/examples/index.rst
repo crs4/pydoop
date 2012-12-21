@@ -8,6 +8,5 @@ Examples
 
    intro
    wordcount
-   hdfs
    sequence_file
    input_format

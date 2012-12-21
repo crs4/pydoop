@@ -1,11 +1,11 @@
-.. _hdfs-api-examples:
+.. _hdfs_api_tutorial:
 
-HDFS API
-========
+The HDFS API
+============
 
-The HDFS API allows you to connect to an HDFS installation, read and
-write files and get information on files, directories and global
-file system properties:
+The :ref:`HDFS API <hdfs-api>` allows you to connect to an HDFS
+installation, read and write files and get information on files,
+directories and global file system properties:
 
 .. code-block:: python
 
@@ -53,14 +53,16 @@ Low-level API
 -------------
 
 Pydoop's HDFS API can also be used at a lower level, which mirrors
-Hadoop's C API (libhdfs). The following (simplified) example shows how
-to build statistics of HDFS usage by block size by directly
+Hadoop's C HDFS API (libhdfs). The following example
+shows how to build statistics of HDFS usage by block size by directly
 instantiating an ``hdfs`` object, which represents an open connection
 to an HDFS instance:
 
 .. code-block:: python
 
   import pydoop.hdfs as hdfs
+
+  ROOT = "pydoop_test_tree"
 
   def treewalker(fs, root_info):
     yield root_info
@@ -80,11 +82,12 @@ to an HDFS instance:
       stats[bs] = stats.get(bs, 0) + size
     return stats
 
-  fs = hdfs.hdfs()
-  root = "%s/tree_test" % (fs.working_directory())
-  for k, v in usage_by_bs(fs, root).iteritems():
-    print "%.1f\t%d" % (k, v)
-  fs.close()
+  if __name__ == "__main__":
+    fs = hdfs.hdfs()
+    print "BS (MB)\tBYTES USED"
+    for k, v in sorted(usage_by_bs(fs, ROOT).iteritems()):
+      print "%d\t%d" % (k/2**20, v)
+    fs.close()
 
 Full source code for the example is located under ``examples/hdfs`` in
 the Pydoop distribution.  You should be able to run the example by
@@ -92,3 +95,5 @@ doing, from the Pydoop root directory::
 
   cd examples/hdfs
   ./run [TREE_DEPTH] [TREE_SPAN]
+
+See the :ref:`HDFS API reference <hdfs-api>` for a complete feature list.

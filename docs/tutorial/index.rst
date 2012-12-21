@@ -18,30 +18,8 @@ knowledge, is not available in other solutions.
    :maxdepth: 2
 
    pydoop_script
+   hdfs_api
    mapred_api
-
-
-.. note::
-
-  TODO: the following docs must be moved to their own sections
-
-
-High-level HDFS API
-+++++++++++++++++++
-
-Pydoop includes a high-level :ref:`HDFS API <hdfs-api>` that
-simplifies common tasks such as copying files and directories,
-navigating through the file system, etc.  Here is a brief snippet that
-shows some of these functionalities:
-
-.. code-block:: python
-
-  >>> import pydoop.hdfs as hdfs
-  >>> hdfs.mkdir("test")
-  >>> hdfs.dump("hello", "test/hello.txt")
-  >>> hdfs.cp("test", "test.copy")
-
-See the :ref:`tutorial <hdfs-api-examples>` for more examples.
 
 
 .. rubric:: Footnotes
