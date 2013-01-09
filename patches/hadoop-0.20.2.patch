@@ -1,3 +1,15 @@
+diff --git a/libhdfs/hdfsJniHelper.c b/libhdfs/hdfsJniHelper.c
+index 6d1a39f..b00e299 100644
+--- a/libhdfs/hdfsJniHelper.c
++++ b/libhdfs/hdfsJniHelper.c
+@@ -15,7 +15,6 @@
+  */
+ 
+ #include <string.h> 
+-#include <error.h>
+ #include "hdfsJniHelper.h"
+ 
+ static pthread_mutex_t hdfsHashMutex = PTHREAD_MUTEX_INITIALIZER;
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
 index e250730..9b70e3a 100644
 --- a/pipes/impl/HadoopPipes.cc
