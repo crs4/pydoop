@@ -52,6 +52,7 @@ try:
 except KeyError:
   raise RuntimeError("java home not found, try setting JAVA_HOME")
 HADOOP_HOME = pydoop.hadoop_home(fallback=None)
+SYSTEM = platform.system().lower()
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 BOOST_PYTHON = os.getenv("BOOST_PYTHON", "boost_python")
 PIPES_SRC = ["src/%s.cpp" % n for n in (
@@ -93,21 +94,22 @@ def rm_rf(path, dry_run=False):
 
 def get_arch():
   bits, _ = platform.architecture()
+  if SYSTEM == 'darwin':
+    return "",""
   if bits == "64bit":
     return "amd64", "64"
   return "i386", "32"
 
 
 def get_java_include_dirs(java_home):
-  p = platform.system().lower()  # Linux-specific
   java_inc = os.path.join(java_home, "include")
-  java_platform_inc = "%s/%s" % (java_inc, p)
+  java_platform_inc = "%s/%s" % (java_inc, SYSTEM)
   return [java_inc, java_platform_inc]
 
 
 def get_java_library_dirs(java_home):
   a = get_arch()[0]
-  return [os.path.join(java_home, "jre/lib/%s/server" % a)]
+  return [os.path.join(java_home, "jre/lib", a, "server")]
 
 
 def mtime(fn):

@@ -25,6 +25,13 @@
 
 #include <stdint.h>
 #include <hadoop/Pipes.hh>
+
+#ifdef __APPLE__
+
+#include "mac_support.hpp"
+
+#endif
+
 #include <boost/python.hpp>
 
 

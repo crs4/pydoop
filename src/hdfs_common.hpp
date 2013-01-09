@@ -23,6 +23,11 @@
 #include <exception>
 
 #include "hdfs.h"
+
+#ifdef __APPLE__
+#include "mac_support.hpp"
+#endif
+
 #include <boost/python.hpp>
 
 namespace bp = boost::python;

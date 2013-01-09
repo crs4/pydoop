@@ -21,6 +21,11 @@
 
 #include <string>
 #include "hadoop/SerialUtils.hh"
+
+#ifdef __APPLE__
+#include "mac_support.hpp"
+#endif
+
 #include <boost/python.hpp>
 
 namespace bp = boost::python;
