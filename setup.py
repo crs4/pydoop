@@ -93,9 +93,9 @@ def rm_rf(path, dry_run=False):
 
 
 def get_arch():
-  bits, _ = platform.architecture()
   if SYSTEM == 'darwin':
-    return "",""
+    return "", ""
+  bits, _ = platform.architecture()
   if bits == "64bit":
     return "amd64", "64"
   return "i386", "32"
