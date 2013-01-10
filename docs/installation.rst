@@ -10,8 +10,12 @@ Pydoop has been tested on `Gentoo <http://www.gentoo.org>`_, `Ubuntu
 <http://www.ubuntu.com>`_ and `CentOS
 <http://www.centos.org>`_. Although we currently have no information
 regarding other Linux distributions, we expect Pydoop to work
-(possibly with some tweaking) on them as well. Platforms other than
-Linux are currently not supported.
+(possibly with some tweaking) on them as well.
+
+We also have a :ref:`walkthrough <osx>` for compiling and installing
+on `Apple OS X Mountain Lion <http://www.apple.com/osx>`_.
+
+Other platforms are not supported.
 
 .. _get_pydoop:
 
@@ -191,6 +195,38 @@ accessible on the entire cluster.
 To install to an arbitrary path::
 
   python setup.py install --skip-build --home <PATH>
+
+.. _osx:
+
+Installation on Apple OS X Mountain Lion
+----------------------------------------
+
+To build Pydoop on OS X you need the following prerequisites:
+
+* `Oracle JDK
+  <http://www.oracle.com/technetwork/java/javase/overview/index.html>`_
+  (follow Downloads -> JDK and select the .dmg package for OS X);
+* Command line tools for Xcode from the `Apple Developer Tools
+  <https://developer.apple.com/downloads>`_;
+* `Homebrew <http://mxcl.github.com/homebrew>`_.
+
+Install Boost and Hadoop via Homebrew::
+
+  brew install boost
+  brew install hadoop
+
+You may follow `this guide
+<http://ragrawal.wordpress.com/2012/04/28/installing-hadoop-on-mac-osx-lion>`_
+for Hadoop installation and configuration.
+
+Set up the build environment::
+
+  export HADOOP_HOME=/usr/local/Cellar/hadoop/1.1.1/libexec
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_10.jdk/Contents/Home
+  export BOOST_PYTHON=boost_python-mt
+
+Compile and install Pydoop from source as explained in the previous
+section.
 
 
 .. _multiple_hadoop_versions:

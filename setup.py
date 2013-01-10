@@ -52,6 +52,7 @@ try:
 except KeyError:
   raise RuntimeError("java home not found, try setting JAVA_HOME")
 HADOOP_HOME = pydoop.hadoop_home(fallback=None)
+SYSTEM = platform.system().lower()
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 BOOST_PYTHON = os.getenv("BOOST_PYTHON", "boost_python")
 PIPES_SRC = ["src/%s.cpp" % n for n in (
@@ -92,6 +93,8 @@ def rm_rf(path, dry_run=False):
 
 
 def get_arch():
+  if SYSTEM == 'darwin':
+    return "", ""
   bits, _ = platform.architecture()
   if bits == "64bit":
     return "amd64", "64"
@@ -99,15 +102,14 @@ def get_arch():
 
 
 def get_java_include_dirs(java_home):
-  p = platform.system().lower()  # Linux-specific
   java_inc = os.path.join(java_home, "include")
-  java_platform_inc = "%s/%s" % (java_inc, p)
+  java_platform_inc = "%s/%s" % (java_inc, SYSTEM)
   return [java_inc, java_platform_inc]
 
 
 def get_java_library_dirs(java_home):
   a = get_arch()[0]
-  return [os.path.join(java_home, "jre/lib/%s/server" % a)]
+  return [os.path.join(java_home, "jre/lib", a, "server")]
 
 
 def mtime(fn):
@@ -467,6 +469,8 @@ class BuildExt(build_ext):
   def build_extension(self, ext):
     try:
       self.compiler.compiler_so.remove("-Wstrict-prototypes")
+      if SYSTEM == 'darwin':
+        self.compiler.linker_so.extend(["-rpath", os.path.join(JAVA_HOME, 'jre/lib/server')])
     except ValueError:
       pass
     build_ext.build_extension(self, ext)
