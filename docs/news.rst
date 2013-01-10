@@ -3,6 +3,17 @@
 News
 ====
 
+New in 0.8.0
+------------
+
+* Added support for Apple OS X Mountain Lion
+* Added support for Hadoop 1.1.1
+* Patches now include a fix for `HDFS-829
+  <https://issues.apache.org/jira/browse/HDFS-829>`_
+* Restructured docs
+
+  * A separate tutorial section collects and expands introductory material
+
 New in 0.7.0
 ------------
 
