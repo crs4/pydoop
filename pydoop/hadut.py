@@ -1,19 +1,19 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2012 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -100,7 +100,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     ...     run_cmd('foo')
     ... except RuntimeError as e:
     ...     print e
-    ... 
+    ...
     Exception in thread "main" java.lang.NoClassDefFoundError: foo
     ...
   """
@@ -198,7 +198,7 @@ def path_exists(path, properties=None, hadoop_conf_dir=None):
 def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
   """
   Run a jar on Hadoop (``hadoop jar`` command).
-  
+
   ``more_args`` (after prepending ``jar_name``) and ``properties`` are
   passed to :func:`run_cmd`.
 
@@ -214,7 +214,7 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
     ...     run_jar(jar_name, more_args=more_args)
     ... except RuntimeError as e:
     ...     print e
-    ... 
+    ...
     Usage: wordcount <in> <out>
   """
   if hu.is_readable(jar_name):
@@ -331,19 +331,33 @@ def find_jar(jar_name, root_path=None):
   return None
 
 
-def collect_output(mr_out_dir):
+def collect_output(mr_out_dir, out_file=None):
   """
-  Return all mapreduce output in ``mr_out_dir`` as a single string.
+  Return all mapreduce output in ``mr_out_dir``.
 
-  It is the caller's responsibility to ensure that the amount of data
-  retrieved fits into memory.
+  It will append the output to ``out_file`` if provided. Otherwise, it
+  will return the result as a single string.  It is the caller's
+  responsibility to ensure that the amount of data retrieved fits into
+  memory.
+
   """
-  output = []
-  for fn in hdfs.ls(mr_out_dir):
-    if hdfs.path.basename(fn).startswith("part"):
-      with hdfs.open(fn) as f:
-        output.append(f.read())
-  return "".join(output)
+  if out_file is None:
+    output = []
+    for fn in hdfs.ls(mr_out_dir):
+      if hdfs.path.basename(fn).startswith("part"):
+        with hdfs.open(fn) as f:
+          output.append(f.read())
+    return "".join(output)
+  else:
+    block_size=10**23 # 8MB
+    with open(out_file, 'a') as o:
+      for fn in hdfs.ls(mr_out_dir):
+        if hdfs.path.basename(fn).startswith("part"):
+          with hdfs.open(fn) as f:
+            data = f.read(block_size)
+            while len(data) > 0:
+              o.write(data)
+              data = f.read(block_size)
 
 
 class PipesRunner(object):
@@ -421,12 +435,13 @@ class PipesRunner(object):
     self.logger.info("running MapReduce application")
     run_pipes(self.exe, self.input, self.output, **kwargs)
 
-  def collect_output(self):
+  def collect_output(self, out_file=None):
     """
     Run :func:`collect_output` on the job's output directory.
     """
-    self.logger.info("collecting output")
-    return collect_output(self.output)
+    self.logger.info("collecting output%s"%(
+        " to %s" % out_file if out_file else ''))
+    return collect_output(self.output, out_file)
 
   def __str__(self):
     res = [self.__class__.__name__]

@@ -1,0 +1,227 @@
+#!/usr/bin/env python
+# BEGIN_COPYRIGHT
+#
+# Copyright 2012 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
+"""
+FIXME
+"""
+
+import hashlib
+
+
+import pydoop.hdfs as hdfs
+
+class Catalog(object):
+      FIELDS = 'name owner group size permissions last_mod md5'.split()
+      def __init__(self):
+            self.contents = []
+      def __len__(self):
+            return len(self.contents)
+      def add(self, fobj):
+            self.contents.append(fobj)
+
+      @classmethod
+      def format(cls, fobj):
+            w = map(str, map(fobj.get, cls.FIELDS))
+            return '\t'.join(w)
+
+def compute_md5(fs, hdfs_path):
+      block_size = 2**20
+      m = hashlib.md5()
+      path = hdfs.path.split(hdfs_path)[-1]
+      with fs.open_file(path) as f:
+            data = f.read(block_size)
+            while data:
+                  m.update(data)
+                  data = f.read(block_size)
+      return m.hexdigest()
+
+def isdir(fs, d):
+  try:
+    info = fs.get_path_info(d)
+  except IOError:
+    return False
+  return info['kind'] == 'directory'
+
+class Scanner(object):
+      def __init__(self, fs, root, catalog):
+            #-- <pre-requisites>
+            root_info = fs.get_path_info(root)
+            assert(root_info['kind'] == 'directory')
+            #--</pre-requisites>
+            self.fs = fs
+            self.root = root
+            self.catalog = catalog
+            self.children = []
+            self.depth = 0
+
+      def leaves(self):
+            if self.depth > 0:
+                  return sum(map(lambda c: c.leaves(), self.children), [])
+            else:
+                  return [self.root]
+
+      def can_go_deeper(self):
+            if self.depth == 0:
+                  return True
+            for child in self.children:
+                  if child.can_go_deeper():
+                        return True
+            return False
+
+      def scan_level_zero(self):
+            self.children = []
+            for info in self.fs.list_directory(self.root):
+                  if info['kind'] == 'directory':
+                        child = Scanner(self.fs, info['name'], self.catalog)
+                        self.children.append(child)
+                  else:
+                        info['md5'] = compute_md5(self.fs, info['name'])
+                        self.catalog.add(info)
+
+      def go_deeper(self):
+            if self.depth == 0:
+                  self.scan_level_zero()
+            else:
+                  for child in self.children:
+                        child.go_deeper()
+            self.depth += 1
+
+      def go_to_depth(self, depth):
+            if self.depth >= depth:
+                  return
+            while self.depth < depth:
+                  self.go_deeper()
+
+
+def build_catalog(fs, root, catalog, max_depth=None, max_size=None):
+      scanner = Scanner(fs, root, catalog)
+      while (scanner.can_go_deeper()
+             and (max_size  is None or len(catalog) <= max_size)
+             and (max_depth is None or scanner.depth < max_depth)):
+            scanner.go_deeper()
+      return scanner
+
+#--------------------------------------------------------------------
+# pydoop script mapper and driver
+
+class MRCatalog(Catalog):
+      def __init__(self, writer):
+            self.counter = 0
+            self.writer = writer
+
+      def __len__(self):
+            return self.counter
+
+      def add(self, fobj):
+            self.writer.emit('', self.format(fobj))
+            self.counter += 1
+
+def mapper(_, root, writer):
+      root = root.strip()
+      mr_catalog = MRCatalog(writer)
+      host, port, path = hdfs.path.split(root)
+      fs = hdfs.hdfs(host, port)
+      build_catalog(fs, path, mr_catalog)
+      fs.close()
+
+def run_hadoop_job(script, n_tasks, roots_fname, out_fname):
+  logger = logging.getLogger("run_hadoop_job")
+  logger.setLevel(logging.DEBUG)
+  opts = [
+    '--num-reducers', '0',
+    '--kv-separator', '',
+    '-D', 'mapred.map.tasks={}'.format(n_tasks),
+    ]
+  runner = PydoopScriptRunner(logger=logger)
+  runner.set_input(roots_fname, put=True)
+  runner.run(script, more_args=opts)
+  runner.collect_output(out_fname)
+  runner.clean()
+
+
+
+#---------------------------------------------------------------------
+
+def make_parser():
+      parser = argparse.ArgumentParser(
+            description="""
+File system scanner
+
+FIXME
+
+""",
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+            )
+      parser.add_argument('-d', '--directory', metavar='DIR', help='top dir')
+      parser.add_argument('--max-depth', metavar='MAX_DEPTH',
+                          type=int,
+                          default=-1,
+                          help='maximal local scan depth')
+      parser.add_argument('--max-size', metavar='MAX_SIZE',
+                          type=int,
+                          default=-1,
+                          help='maximal catalog size')
+      parser.add_argument('--cat-file', metavar='CAT_FILE',
+                          default='catalog.list',
+                          help='filename')
+      parser.add_argument("--hadoop", help="will fork off an hadoop if needed",
+                          action="store_true")
+      return parser
+
+
+def main(argv=None):
+      logger = logging.getLogger("main")
+      parser = make_parser()
+      args = parser.parse_args(argv)
+      root = args.directory
+      max_depth = args.max_depth if args.max_depth >= 0 else None
+      max_size  = args.max_size  if args.max_size >= 0  else None
+      cat_file_name  = args.cat_file
+      root_list_file_name = 'roots.list'
+
+      fs = hdfs.hdfs('')
+      if not isdir(fs, args.directory):
+            sys.exit("%r does not exist" % root)
+      fs.set_working_directory(args.directory)
+      root = "{}".format(fs.working_directory())
+      catalog = Catalog()
+      scanner = build_catalog(fs, root, catalog, max_depth, max_size)
+      fs.close()
+      leaves = scanner.leaves()
+      with open(cat_file_name, 'w') as o:
+            o.write('\t'.join(Catalog.FIELDS) + '\n')
+            if len(catalog) > 0:
+                  logger.info('dumping {} catalog entries'.format(len(catalog)))
+                  for x in catalog.contents:
+                        o.write(Catalog.format(x) + '\n')
+      logger.info('done with scalar part. {} leaves left'.format(len(leaves)))
+      if len(leaves) > 0:
+            with open(root_list_file_name, 'w') as o:
+                  for x in leaves:
+                        o.write('{}\n'.format(x))
+            if args.hadoop:
+                  run_hadoop_job(parser.prog, len(leaves), root_list_file_name,
+                                 cat_file_name)
+
+if __name__ == "__main__":
+      import sys, logging, tempfile, argparse
+      logging.basicConfig(level=logging.INFO)
+      from psrunner import PydoopScriptRunner
+      main()
+
