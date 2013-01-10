@@ -469,6 +469,8 @@ class BuildExt(build_ext):
   def build_extension(self, ext):
     try:
       self.compiler.compiler_so.remove("-Wstrict-prototypes")
+      if SYSTEM == 'darwin':
+        self.compiler.linker_so.extend(["-rpath", os.path.join(JAVA_HOME, 'jre/lib/server')])
     except ValueError:
       pass
     build_ext.build_extension(self, ext)
