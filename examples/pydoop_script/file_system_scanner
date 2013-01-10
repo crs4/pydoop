@@ -148,7 +148,8 @@ def run_hadoop_job(script, n_tasks, roots_fname, out_fname):
     '--kv-separator', '',
     '-D', 'mapred.map.tasks={}'.format(n_tasks),
     ]
-  runner = PydoopScriptRunner(logger=logger)
+
+  runner = PydoopScriptRunner(logger=logger, prefix='pydoop_')
   runner.set_input(roots_fname, put=True)
   runner.run(script, more_args=opts)
   runner.collect_output(out_fname)
@@ -195,21 +196,24 @@ def main(argv=None):
       cat_file_name  = args.cat_file
       root_list_file_name = 'roots.list'
 
-      fs = hdfs.hdfs('')
-      if not isdir(fs, args.directory):
+      host, port, path = hdfs.path.split(root)
+      fs = hdfs.hdfs(host, port)
+      if not isdir(fs, path):
             sys.exit("%r does not exist" % root)
-      fs.set_working_directory(args.directory)
+      fs.set_working_directory(path)
       root = "{}".format(fs.working_directory())
+      logger.info('root: {}'.format(root))
       catalog = Catalog()
       scanner = build_catalog(fs, root, catalog, max_depth, max_size)
       fs.close()
-      leaves = scanner.leaves()
+      #
       with open(cat_file_name, 'w') as o:
             o.write('\t'.join(Catalog.FIELDS) + '\n')
             if len(catalog) > 0:
                   logger.info('dumping {} catalog entries'.format(len(catalog)))
                   for x in catalog.contents:
                         o.write(Catalog.format(x) + '\n')
+      leaves = scanner.leaves()
       logger.info('done with scalar part. {} leaves left'.format(len(leaves)))
       if len(leaves) > 0:
             with open(root_list_file_name, 'w') as o:
@@ -222,6 +226,6 @@ def main(argv=None):
 if __name__ == "__main__":
       import sys, logging, tempfile, argparse
       logging.basicConfig(level=logging.INFO)
-      from psrunner import PydoopScriptRunner
+      from pydoop.hadut import PydoopScriptRunner
       main()
 

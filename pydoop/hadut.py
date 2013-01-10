@@ -450,6 +450,29 @@ class PipesRunner(object):
     return os.linesep.join(res) + os.linesep
 
 
+class PydoopScriptRunner(PipesRunner):
+  """
+  Specialization of PipesRunner to support the set up and running of
+  pydoop_script jobs.
+  """
+  #  http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+  PYDOOP_PATH=None
+  for path in os.environ['PATH'].split(os.pathsep):
+    path = path.strip('"')
+    exe_file = os.path.expanduser(os.path.join(path, 'pydoop'))
+    if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
+      PYDOOP_PATH=exe_file
+      break
+
+  def run(self, script, more_args=None, pydoop_exe=PYDOOP_PATH):
+    args = [pydoop_exe, "script"] + [script, self.input, self.output]
+    self.logger.info("running pydoop script")
+    self.logger.debug("{} and {}".format(args, (more_args or [])))
+    retcode = subprocess.call(args + (more_args or []))
+    if retcode:
+      raise RuntimeError("Error running pydoop_script")
+
+
 if __name__ == "__main__":
   import doctest
   FLAGS = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
