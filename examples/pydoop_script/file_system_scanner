@@ -220,7 +220,8 @@ def main(argv=None):
                   for x in leaves:
                         o.write('{}\n'.format(x))
             if args.hadoop:
-                  run_hadoop_job(parser.prog, len(leaves), root_list_file_name,
+                  run_hadoop_job(__file__, len(leaves),
+                                 root_list_file_name,
                                  cat_file_name)
 
 if __name__ == "__main__":
