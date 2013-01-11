@@ -120,7 +120,6 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     gargs = _pop_generic_args(args)
     for seq in gargs, args:
       _args.extend(map(str, seq))
-  logger.debug("cmd: %s" % " ".join(_args))
   p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   output, error = p.communicate()
   if p.returncode:
@@ -467,7 +466,6 @@ class PydoopScriptRunner(PipesRunner):
   def run(self, script, more_args=None, pydoop_exe=PYDOOP_PATH):
     args = [pydoop_exe, "script"] + [script, self.input, self.output]
     self.logger.info("running pydoop script")
-    self.logger.debug("{} and {}".format(args, (more_args or [])))
     retcode = subprocess.call(args + (more_args or []))
     if retcode:
       raise RuntimeError("Error running pydoop_script")
