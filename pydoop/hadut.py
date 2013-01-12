@@ -348,7 +348,7 @@ def collect_output(mr_out_dir, out_file=None):
           output.append(f.read())
     return "".join(output)
   else:
-    block_size=2**23 # 8MB
+    block_size=2**24 # 16MB
     with open(out_file, 'a') as o:
       for fn in hdfs.ls(mr_out_dir):
         if hdfs.path.basename(fn).startswith("part"):
