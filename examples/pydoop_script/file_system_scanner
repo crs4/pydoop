@@ -28,14 +28,19 @@ FIELDS = 'name owner group size permissions last_mod md5'.split()
 AVE_REC_SIZE = 200 # average
 CHUNK_SIZE = 2**26 # 64MB
 
-def format_info(info):
+def pack_info(info):
       w = map(str, map(info.get, FIELDS))
       return '\t'.join(w)
 
-def compute_md5(fs, hdfs_path):
+def unpack_info(line):
+      return dict(zip(FIELDS, line.split('\t')))
+
+def compute_md5(fname, fs=None):
+      host, port, path = hdfs.path.split(fname)
+      if fs is None:
+            fs = hdfs.hdfs(host, port)
       block_size = CHUNK_SIZE
       m = hashlib.md5()
-      path = hdfs.path.split(hdfs_path)[-1]
       with fs.open_file(path) as f:
             data = f.read(block_size)
             while data:
@@ -43,22 +48,15 @@ def compute_md5(fs, hdfs_path):
                   data = f.read(block_size)
       return m.hexdigest()
 
-def get_info(fname):
-      host, port, path = hdfs.path.split(fname)
-      fs = hdfs.hdfs(host, port)
-      info = fs.get_path_info(path)
-      info['md5'] = compute_md5(fs, path)
-      return info
-
 def isdir(fs, d):
-  try:
-    info = fs.get_path_info(d)
-  except IOError:
-    return False
-  return info['kind'] == 'directory'
+      try:
+            info = fs.get_path_info(d)
+      except IOError:
+            return False
+      return info['kind'] == 'directory'
 
 class Scanner(object):
-      def __init__(self, fs, root, catalog):
+      def __init__(self, fs, root, catalog, hash=False):
             #-- <pre-requisites>
             root_info = fs.get_path_info(root)
             assert(root_info['kind'] == 'directory')
@@ -66,6 +64,7 @@ class Scanner(object):
             self.fs = fs
             self.root = root
             self.catalog = catalog
+            self.hash = hash
             self.children = []
             self.depth = 0
 
@@ -87,10 +86,13 @@ class Scanner(object):
             self.children = []
             for info in self.fs.list_directory(self.root):
                   if info['kind'] == 'directory':
-                        child = Scanner(self.fs, info['name'], self.catalog)
+                        child = Scanner(self.fs, info['name'], self.catalog,
+                                        self.hash)
                         self.children.append(child)
                   else:
-                        self.catalog.append(info['name'])
+                        info['md5'] = compute_md5(info['name'], self.fs)\
+                                      if self.hash else ''
+                        self.catalog.append(info)
 
       def go_deeper(self):
             if self.depth == 0:
@@ -101,8 +103,8 @@ class Scanner(object):
             self.depth += 1
 
 
-def build_catalog(fs, root, catalog, max_depth=None, max_size=None):
-      scanner = Scanner(fs, root, catalog)
+def build_catalog(fs, root, catalog, hash=False, max_depth=None, max_size=None):
+      scanner = Scanner(fs, root, catalog, hash)
       while (scanner.can_go_deeper()
              and (max_size  is None or len(catalog) <= max_size)
              and (max_depth is None or scanner.depth < max_depth)):
@@ -116,7 +118,7 @@ class Catalog(object):
       def __init__(self, writer):
             self.writer = writer
       def append(self, x):
-            self.writer.emit('', x)
+            self.writer.emit('', pack_info(x))
 
 def catalog_mapper(_, root, writer):
       root = root.strip()
@@ -126,42 +128,15 @@ def catalog_mapper(_, root, writer):
       build_catalog(fs, path, catalog)
       fs.close()
 
-def hash_mapper(_, fname, writer):
-      fname = fname.strip()
-      writer.status('processing {}'.format(fname))
-      info = get_info(fname)
-      writer.emit('', format_info(info))
+def hash_mapper(_, pinfo, writer):
+      info = unpack_info(pinfo.strip())
+      writer.emit(info['name'], pinfo)
 
-
-def run_catalog_hadoop_job(script, n_tasks, roots_fname, out_fname):
-  logger = logging.getLogger("run_catalog_hadoop_job")
-  logger.setLevel(logging.DEBUG)
-  opts = [
-        '--map-fn', 'catalog_mapper',
-        '--num-reducers', '0',
-        '--kv-separator', '',
-        '-D', 'mapred.map.tasks={}'.format(n_tasks),
-        ]
-  runner = PydoopScriptRunner(logger=logger, prefix='pydoop_')
-  runner.set_input(roots_fname, put=True)
-  runner.run(script, more_args=opts)
-  runner.collect_output(out_fname)
-  runner.clean()
-
-def run_hash_hadoop_job(script, n_tasks, cat_list_fname, out_fname):
-  logger = logging.getLogger("run_hash_hadoop_job")
-  logger.setLevel(logging.DEBUG)
-  opts = [
-        '--map-fn', 'hash_mapper',
-        '--num-reducers', '0',
-        '--kv-separator', '',
-        '-D', 'mapred.map.tasks={}'.format(n_tasks),
-        ]
-  runner = PydoopScriptRunner(logger=logger, prefix='pydoop_')
-  runner.set_input(cat_list_fname, put=True)
-  runner.run(script, more_args=opts)
-  runner.collect_output(out_fname)
-  runner.clean()
+def hash_reducer(fname, lpinfo, writer):
+      info = unpack_info(lpinfo.next())
+      writer.status('processing {}'.format(info['name']))
+      info['md5'] = compute_md5(info['name'])
+      writer.emit('', pack_info(info))
 
 #---------------------------------------------------------------------
 
@@ -193,13 +168,15 @@ FIXME
                           help='filename')
       parser.add_argument("--hadoop", help="will fork off an hadoop if needed",
                           action="store_true")
+      parser.add_argument('--hadoop-dir', metavar='HADOOP_DIR',
+                          help='hadoop output dir')
       parser.add_argument("--hash", help="will compute hash",
                           action="store_true")
       return parser
 
 
-def gather_file_list(args, root, cat_file_name, max_depth, max_size):
-      logger = logging.getLogger("gather_file_list")
+def gather_catalog(root, max_depth, max_size, hash, cat_fname):
+      logger = logging.getLogger("gather_catalog")
       host, port, path = hdfs.path.split(root)
       fs = hdfs.hdfs(host, port)
       if not isdir(fs, path):
@@ -208,64 +185,68 @@ def gather_file_list(args, root, cat_file_name, max_depth, max_size):
       root = "{}".format(fs.working_directory())
       logger.info('root: {}'.format(root))
       catalog = []
-      scanner = build_catalog(fs, root, catalog, max_depth, max_size)
+      scanner = build_catalog(fs, root, catalog, max_depth, max_size, hash)
       fs.close()
       #
-      with open(cat_file_name, 'w') as o:
+      with open(cat_fname, 'w') as o:
             if len(catalog) > 0:
                   logger.info('dumping {} catalog entries'.format(len(catalog)))
                   for x in catalog:
-                        o.write(x + '\n')
-      leaves = scanner.leaves()
-      logger.info('done with scalar part. {} leaves left'.format(len(leaves)))
-      _, tmp_fname = tempfile.mkstemp()
-      if len(leaves) > 0:
-            with open(tmp_fname, 'w') as o:
-                  for x in leaves:
-                        o.write('{}\n'.format(x))
-            if args.hadoop:
-                  run_catalog_hadoop_job(__file__, len(leaves),
-                                         tmp_fname,
-                                         cat_file_name)
-      os.unlink(tmp_fname)
-
-def compute_hash(args, file_name_list, files_catalog_file):
-      logger = logging.getLogger("compute_hash")
-      if not args.hadoop:
-            logger.info('reading list from {}'.format(file_name_list))
-            logger.info('writing to {}'.format(files_catalog_file))
-            with open(files_catalog_file, 'w') as o:
-                  o.write('\t'.join(FIELDS) + '\n')
-                  with open(file_name_list) as f:
-                        for fname in f:
-                              info = get_info(fname)
-                              o.write(format_info(info) + '\n')
-      else:
-            with open(files_catalog_file, 'w') as o:
-                  o.write('\t'.join(FIELDS) + '\n')
-            default_n_tasks = 1 + (os.stat(file_name_list).st_size/AVE_REC_SIZE)
-            n_tasks = args.n_tasks if args.n_tasks > 0 else default_n_tasks
-            run_hash_hadoop_job( __file__, n_tasks, file_name_list,
-                                 files_catalog_file)
+                        o.write(pack_info(x) + '\n')
+      return scanner.leaves()
 
 def main(argv=None):
       logger = logging.getLogger("main")
       parser = make_parser()
       args = parser.parse_args(argv)
+      cat_fname = args.cat_file
       root = args.directory
       max_depth = args.max_depth if args.max_depth >= 0 else None
       max_size  = args.max_size  if args.max_size >= 0  else None
-      cat_file_name = args.cat_file
 
-      if args.hash:
-            _, tmp_file = tempfile.mkstemp()
-            gather_file_list(args, root, tmp_file, max_depth, max_size)
-            compute_hash(args, tmp_file, cat_file_name)
-            os.unlink(tmp_file)
+      if not args.hadoop:
+            lvs = gather_catalog(root, max_depth, max_size, args.hash,
+                                 cat_fname)
+            logger.info('there are {} leaves left.'.format(len(lvs)))
       else:
-            gather_file_list(args, root, cat_file_name, max_depth, max_size)
+            hroot = args.hadoop_dir
+            n_tasks = args.n_tasks
+            runner = PydoopScriptRunner(hroot, logger=logger)
+            _, tmp_cat_file = tempfile.mkstemp()
+            leaves = gather_catalog(root, max_depth, max_size, False,
+                                    tmp_cat_file)
+            if len(leaves) > 0:
+                  _, roots_file = tempfile.mkstemp()
+                  with open(roots_file, 'w') as o:
+                        for l in leaves:
+                              o.write(l + '\n')
+                  runner.set_input(roots_file, put=True)
+                  runner.run(__file__, more_args=[
+                        '--map-fn', 'catalog_mapper',
+                        '--num-reducers', '0',
+                        '--kv-separator', '',
+                        '-D', 'mapred.map.tasks={}'.format(n_tasks),
+                        ])
+                  os.unlink(roots_file)
+            else:
+                  out_dir = hdfs.path.join(runner.wd, 'out_info')
+                  hdfs.mkdir(out_dir)
+                  runner.set_output(out_dir)
+            hdfs.put(tmp_cat_file, runner.output)
 
+            if args.hash:
+                  out_dir = hdfs.path.join(runner.wd, 'out_hashed')
+                  runner.set_input(runner.output)
+                  runner.set_output(out_dir)
 
+                  runner.run(__file__, more_args=[
+                        '--map-fn', 'hash_mapper',
+                        '--reduce-fn', 'hash_reducer',
+                        '--num-reducers', str(n_tasks),
+                        '--kv-separator', '',
+                        ])
+            runner.collect_output(cat_fname)
+            runner.clean()
 
 if __name__ == "__main__":
       import sys, os, logging, tempfile, argparse

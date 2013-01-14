@@ -407,6 +407,7 @@ class PipesRunner(object):
       hdfs.put(input_, self.input)
     else:
       self.input = input_
+      self.logger.info("assigning input to %s" % self.input)
 
   def set_output(self, output):
     """
@@ -414,6 +415,7 @@ class PipesRunner(object):
     instantiated with a prefix.
     """
     self.output = output
+    self.logger.info("assigning output to %s" % self.output)
 
   def set_exe(self, pipes_code):
     """
