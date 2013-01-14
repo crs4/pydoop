@@ -40,8 +40,8 @@ except ImportError:  # should only happen at compile time
 _PATH_FINDER = hu.PathFinder()
 _HADOOP_INFO = _PATH_FINDER.find()  # fill the cache ASAP
 
-__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
-__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
+__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu, Francesco Cabras"
+__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>, <francesco.cabras@crs4.it>"
 __url__ = "http://pydoop.sourceforge.net"
 
 

@@ -459,12 +459,13 @@ class ExtensionManager(object):
 
 class BuildExt(build_ext):
 
+  EXT_MANAGER = ExtensionManager()
+
   def finalize_options(self):
     build_ext.finalize_options(self)
-    ext_manager = ExtensionManager()
-    ext_manager.patch_src()
-    self.extensions = ext_manager.create_extensions()
-    self.java_libs = ext_manager.create_java_libs()
+    self.EXT_MANAGER.patch_src()
+    self.extensions = self.EXT_MANAGER.create_extensions()
+    self.java_libs = self.EXT_MANAGER.create_java_libs()
 
   def build_extension(self, ext):
     try:
@@ -539,6 +540,17 @@ class Clean(clean):
       rm_rf(p, self.dry_run)
 
 
+# Actual ext_modules are created on the fly.  We use a dummy object to:
+#   1. Trigger build_ext
+#   2. Make egg_info happy (PIP installation)
+DUMMY_EXT_MODULES = []
+for attr_name in (
+  "pipes_ext_name", "hdfs_ext_name", "pipes_mr1_ext_name", "hdfs_mr1_ext_name"
+  ):
+  attr = getattr(BuildExt.EXT_MANAGER, attr_name)
+  if attr is not None:
+    DUMMY_EXT_MODULES.append((attr, None))
+
 setup(
   name="pydoop",
   version=get_version_string(),
@@ -558,7 +570,7 @@ setup(
     "build_ext": BuildExt,
     "clean": Clean,
     },
-  ext_modules=[None],  # just to trigger build_ext
+  ext_modules=DUMMY_EXT_MODULES,
   scripts=["scripts/pydoop"],
   platforms=["Linux"],
   license="Apache-2.0",
