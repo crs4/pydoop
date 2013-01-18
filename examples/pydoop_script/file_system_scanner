@@ -133,10 +133,13 @@ def hash_mapper(_, pinfo, writer):
       info = unpack_info(pinfo.strip())
       writer.emit(info['name'], pinfo)
 
-def hash_reducer(fname, lpinfo, writer):
+def hash_reducer(fname, lpinfo, writer, jc):
+      prefix = jc.get('fscanner.path.prefix', '')
       info = unpack_info(lpinfo.next())
       writer.status('processing {}'.format(info['name']))
       info['md5'] = compute_md5(info['name'])
+      if prefix != '':
+            info['name'] = info['name'].replace(prefix, "${PREFIX}", 1)
       writer.emit('', pack_info(info))
 
 #---------------------------------------------------------------------
@@ -170,6 +173,7 @@ FIXME
       parser.add_argument("--hadoop", help="will fork off an hadoop if needed",
                           action="store_true")
       parser.add_argument('--hadoop-dir', metavar='HADOOP_DIR',
+                          default='fscanner',
                           help='hadoop output dir')
       parser.add_argument("--hash", help="will compute hash",
                           action="store_true")
@@ -237,6 +241,7 @@ def main(argv=None):
                   runner.set_output(out_dir)
             hdfs.put(tmp_cat_file, runner.output)
 
+            prefix = os.path.dirname(root)
             if args.hash:
                   logger.info('using hadoop to gather file info.')                  
                   out_dir = hdfs.path.join(runner.wd, 'out_hashed')
@@ -248,7 +253,10 @@ def main(argv=None):
                         '--reduce-fn', 'hash_reducer',
                         '--num-reducers', str(n_tasks),
                         '--kv-separator', '',
+                        '-D', 'fscanner.path.prefix={}'.format(prefix),
                         ])
+            with open(cat_fname, 'w') as o:
+                  o.write('\t'.join(FIELDS) + '\n')
             runner.collect_output(cat_fname)
             runner.clean()
 
