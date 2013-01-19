@@ -139,7 +139,7 @@ def hash_reducer(fname, lpinfo, writer, jc):
       writer.status('processing {}'.format(info['name']))
       info['md5'] = compute_md5(info['name'])
       if prefix != '':
-            info['name'] = info['name'].replace(prefix, "${PREFIX}", 1)
+            info['name'] = info['name'].replace(prefix, "./", 1)
       writer.emit('', pack_info(info))
 
 #---------------------------------------------------------------------
@@ -243,7 +243,7 @@ def main(argv=None):
 
             prefix = os.path.dirname(root)
             if args.hash:
-                  logger.info('using hadoop to gather file info.')                  
+                  logger.info('using hadoop to gather file info.')
                   out_dir = hdfs.path.join(runner.wd, 'out_hashed')
                   runner.set_input(runner.output)
                   runner.set_output(out_dir)
