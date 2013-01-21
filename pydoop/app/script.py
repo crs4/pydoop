@@ -103,11 +103,13 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
 
   def without_conf(self, ctx):
     # old style map function, without the conf parameter
-    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer)
 
   def with_conf(self, ctx):
     # new style map function, without the conf parameter
-    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer, self.conf)
 
 class PydoopScriptReducer(pydoop.pipes.Reducer):
   def __init__(self, ctx):
@@ -121,19 +123,40 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 
   def without_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer)
 
   def with_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
+
+class PydoopScriptCombiner(pydoop.pipes.Combiner):
+  def __init__(self, ctx):
+    super(type(self), self).__init__(ctx)
+    setup_script_object(self, 'reduce', %(module)s.%(combiner_fn)s, ctx)
+
+  @staticmethod
+  def iter(ctx):
+    while ctx.nextValue():
+      yield ctx.getInputValue()
+
+  def without_conf(self, ctx):
+    key = ctx.getInputKey()
+    writer = ContextWriter(ctx)
+    %(module)s.%(combiner_fn)s(key, PydoopScriptCombiner.iter(ctx), writer)
+
+  def with_conf(self, ctx):
+    key = ctx.getInputKey()
+    writer = ContextWriter(ctx)
+    %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
 
 if __name__ == '__main__':
   result = pydoop.pipes.runTask(pydoop.pipes.Factory(
-    PydoopScriptMapper, PydoopScriptReducer
-    ))
+    PydoopScriptMapper, PydoopScriptReducer, record_reader_class=None,
+    record_writer_class=None, combiner_class=%(combiner_wp)s, partitioner_class=None))
   sys.exit(0 if result else 1)
 """
-
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 
@@ -239,6 +262,9 @@ class PydoopScript(object):
       'module': os.path.splitext(self.remote_module_bn)[0],
       'map_fn': self.args.map_fn,
       'reduce_fn': self.args.reduce_fn,
+      'combiner_fn': self.args.combiner_fn,
+      'combiner_wp' : ('PydoopScriptCombiner' if self.args.combiner_fn
+                       else 'None')
       }
     lines.append(PIPES_TEMPLATE % template_args)
     return os.linesep.join(lines) + os.linesep
@@ -327,6 +353,8 @@ def add_parser(subparsers):
   parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper',
                       help="name of map function within module")
   parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
+                      help="name of reduce function within module")
+  parser.add_argument('-c', '--combiner-fn', metavar='COM', default=None,
                       help="name of reduce function within module")
   parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
                       help="output key-value separator")

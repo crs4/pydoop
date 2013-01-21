@@ -67,6 +67,36 @@ five lines of code:
 Notice that in the reducer we had to convert the values to ``int``
 since all data come in as strings.
 
+Pydoop Script supports combiners too. 
+
+.. code-block:: python
+
+  def mapper(_, text, writer):
+    for word in text.split():
+      writer.emit(word, 1)
+
+  def reducer(word, count, writer):
+    writer.emit(word, sum(map(int, count)))
+
+  def combiner(word, count, writer):
+    writer.count('Combiner calls count', 1)
+    reducer(word, writer)
+
+Run the example::
+
+  pydoop script -c combiner wordcount.py hdfs_input hdfs_output
+
+Note that we need to use the '-c' flag to explicitely activate the
+combiner. In default, no combiner will be called.
+
+One thing to remember is that the current hadoop pipes architecture
+runs the combiner under the hood of the executable run by pipes and it
+does not update the 'combiner' counters of the general hadoop
+framework. So, even if it is running, the 'combiner' counters will be
+left to zero.
+
+
+
 Word Count with Total Number of Words
 +++++++++++++++++++++++++++++++++++++
 

@@ -26,6 +26,9 @@ Options are shown in the following table.
 | ``-r`` | ``--reduce-fn``    | Name of reduce function within module         |
 |        |                    | (default: reducer)                            |
 +--------+--------------------+-----------------------------------------------+
+| ``-c`` | ``--combine-fn``   | Name of combine function within module        |
+|        |                    | (default: None)                               |
++--------+--------------------+-----------------------------------------------+
 | ``-t`` | ``--kv-separator`` | Key-value separator string in final output    |
 |        |                    | (default: <tab> character)                    |
 +--------+--------------------+-----------------------------------------------+
@@ -112,6 +115,24 @@ in your input data.  It receives 3 parameters:
    to fetch configuration property values (see `Accessing Parameters`_
    below).
 
+Combiner
++++++++
+
+The ``combiner`` function will be called for each unique key value
+produced by your map function.  It also receives 3 parameters:
+
+#. key: the key produced by your map function
+#. values iterable: iterate over this parameter to see all the values emitted
+   for the current key
+#. writer object: a writer object identical to the one given to the map function
+#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object: a Python object from
+   which to fetch configuration property values (see `Accessing Parameters`_
+   below).
+
+The key and value your emit from your combiner will be piped to the reducer.
+
+
+
 Reducer
 +++++++
 
@@ -166,7 +187,9 @@ Naming your Functions
 If you'd like to give your map and reduce functions names different
 from ``mapper`` and ``reducer``, you may do so, but you must tell the
 script tool.  Use the ``--map-fn`` and ``--reduce-fn`` command line
-arguments to select your customized names.
+arguments to select your customized names. Combiner function can only
+be assigned by using explicitly the flag ``--combine-fn``.
+
 
 
 Map-only Jobs
