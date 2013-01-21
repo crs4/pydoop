@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2013 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -100,7 +100,7 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
     setup_script_object(self, 'map', %(module)s.%(map_fn)s, ctx)
- 
+
   def without_conf(self, ctx):
     # old style map function, without the conf parameter
     %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
@@ -159,6 +159,7 @@ class PydoopScript(object):
     self.args = None
     self.remote_wd = None
     self.remote_module = None
+    self.remote_module_bn = None
     self.remote_exe = None
 
   def set_args(self, args):
@@ -174,8 +175,10 @@ class PydoopScript(object):
       self.remote_wd, utils.make_random_str(prefix="exe")
       )
     module_bn = os.path.basename(args.module)
-    self.remote_module = hdfs.path.join(self.remote_wd, module_bn)
-    dist_cache_parameter = "%s#%s" % (self.remote_module, module_bn)
+    self.remote_module_bn = utils.make_random_str(prefix="pydoop_script_",
+                                                  postfix=".py")
+    self.remote_module = hdfs.path.join(self.remote_wd, self.remote_module_bn)
+    dist_cache_parameter = "%s#%s" % (self.remote_module, self.remote_module_bn)
     self.properties['mapred.job.name'] = module_bn
     self.properties.update(dict(args.D or []))
     self.properties['mapred.reduce.tasks'] = args.num_reducers
@@ -233,7 +236,7 @@ class PydoopScript(object):
     lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
     lines.append('":"""')
     template_args = {
-      'module': os.path.splitext(os.path.basename(self.args.module))[0],
+      'module': os.path.splitext(self.remote_module_bn)[0],
       'map_fn': self.args.map_fn,
       'reduce_fn': self.args.reduce_fn,
       }
