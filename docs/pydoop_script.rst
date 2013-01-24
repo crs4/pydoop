@@ -116,9 +116,9 @@ in your input data.  It receives 3 parameters:
    below).
 
 Combiner
-+++++++
+++++++++
 
-The ``combiner`` function will be called for each unique key value
+The ``combiner`` function will be called for each unique key-value pair
 produced by your map function.  It also receives 3 parameters:
 
 #. key: the key produced by your map function
@@ -129,9 +129,7 @@ produced by your map function.  It also receives 3 parameters:
    which to fetch configuration property values (see `Accessing Parameters`_
    below).
 
-The key and value your emit from your combiner will be piped to the reducer.
-
-
+The key-value pair emitted by your combiner will be piped to the reducer.
 
 Reducer
 +++++++
@@ -187,9 +185,8 @@ Naming your Functions
 If you'd like to give your map and reduce functions names different
 from ``mapper`` and ``reducer``, you may do so, but you must tell the
 script tool.  Use the ``--map-fn`` and ``--reduce-fn`` command line
-arguments to select your customized names. Combiner function can only
-be assigned by using explicitly the flag ``--combine-fn``.
-
+arguments to select your customized names.  Combiner functions can only
+be assigned by explicitly setting the ``--combine-fn`` flag.
 
 
 Map-only Jobs
