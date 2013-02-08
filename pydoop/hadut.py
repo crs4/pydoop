@@ -330,33 +330,35 @@ def find_jar(jar_name, root_path=None):
   return None
 
 
+def iter_mr_out_files(mr_out_dir):
+  for fn in hdfs.ls(mr_out_dir):
+    if hdfs.path.basename(fn).startswith("part"):
+      yield fn
+
+
 def collect_output(mr_out_dir, out_file=None):
   """
   Return all mapreduce output in ``mr_out_dir``.
 
-  It will append the output to ``out_file`` if provided. Otherwise, it
-  will return the result as a single string.  It is the caller's
-  responsibility to ensure that the amount of data retrieved fits into
-  memory.
-
+  Append the output to ``out_file`` if provided.  Otherwise, return
+  the result as a single string (it is the caller's responsibility to
+  ensure that the amount of data retrieved fits into memory).
   """
   if out_file is None:
     output = []
-    for fn in hdfs.ls(mr_out_dir):
-      if hdfs.path.basename(fn).startswith("part"):
-        with hdfs.open(fn) as f:
-          output.append(f.read())
+    for fn in iter_mr_out_files(mr_out_dir):
+      with hdfs.open(fn) as f:
+        output.append(f.read())
     return "".join(output)
   else:
-    block_size=2**24 # 16MB
+    block_size = 16777216
     with open(out_file, 'a') as o:
-      for fn in hdfs.ls(mr_out_dir):
-        if hdfs.path.basename(fn).startswith("part"):
-          with hdfs.open(fn) as f:
+      for fn in iter_mr_out_files(mr_out_dir):
+        with hdfs.open(fn) as f:
+          data = f.read(block_size)
+          while len(data) > 0:
+            o.write(data)
             data = f.read(block_size)
-            while len(data) > 0:
-              o.write(data)
-              data = f.read(block_size)
 
 
 class PipesRunner(object):
@@ -440,8 +442,9 @@ class PipesRunner(object):
     """
     Run :func:`collect_output` on the job's output directory.
     """
-    self.logger.info("collecting output%s"%(
-        " to %s" % out_file if out_file else ''))
+    self.logger.info("collecting output%s" % (
+      " to %s" % out_file if out_file else ''
+      ))
     return collect_output(self.output, out_file)
 
   def __str__(self):
@@ -454,19 +457,18 @@ class PipesRunner(object):
 class PydoopScriptRunner(PipesRunner):
   """
   Specialization of PipesRunner to support the set up and running of
-  pydoop_script jobs.
+  pydoop script jobs.
   """
-  #  http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
-  PYDOOP_PATH=None
+  PYDOOP_EXE = None
   for path in os.environ['PATH'].split(os.pathsep):
     path = path.strip('"')
     exe_file = os.path.expanduser(os.path.join(path, 'pydoop'))
     if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
-      PYDOOP_PATH=exe_file
+      PYDOOP_EXE = exe_file
       break
 
-  def run(self, script, more_args=None, pydoop_exe=PYDOOP_PATH):
-    args = [pydoop_exe, "script"] + [script, self.input, self.output]
+  def run(self, script, more_args=None, pydoop_exe=PYDOOP_EXE):
+    args = [pydoop_exe, "script", script, self.input, self.output]
     self.logger.info("running pydoop script")
     retcode = subprocess.call(args + (more_args or []))
     if retcode:

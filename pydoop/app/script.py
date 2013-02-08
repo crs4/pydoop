@@ -198,8 +198,9 @@ class PydoopScript(object):
       self.remote_wd, utils.make_random_str(prefix="exe")
       )
     module_bn = os.path.basename(args.module)
-    self.remote_module_bn = utils.make_random_str(prefix="pydoop_script_",
-                                                  postfix=".py")
+    self.remote_module_bn = utils.make_random_str(
+      prefix="pydoop_script_", postfix=".py"
+      )
     self.remote_module = hdfs.path.join(self.remote_wd, self.remote_module_bn)
     dist_cache_parameter = "%s#%s" % (self.remote_module, self.remote_module_bn)
     self.properties['mapred.job.name'] = module_bn
