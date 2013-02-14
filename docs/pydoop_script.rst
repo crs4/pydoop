@@ -3,6 +3,13 @@
 Pydoop Script User Guide
 ========================
 
+Pydoop Script is the easiest way to write simple MapReduce programs
+for Hadoop.  With Pydoop Script, you only need to write a map and/or a reduce
+functions and the system will take care of the rest.
+
+For a full explanation please see the :ref:`tutorial <pydoop_script_tutorial>`.
+
+
 Command Line Tool
 -----------------
 
