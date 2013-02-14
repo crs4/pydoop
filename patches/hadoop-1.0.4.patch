@@ -55,7 +55,7 @@ index 9d41dc3..f3e405d 100644
      // attempt. 
      File stdout = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDOUT);
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
-index 964b025..2aab13c 100644
+index 964b025..10f054f 100644
 --- a/pipes/impl/HadoopPipes.cc
 +++ b/pipes/impl/HadoopPipes.cc
 @@ -30,6 +30,7 @@
@@ -75,6 +75,35 @@ index 964b025..2aab13c 100644
      }
  
    public:
+@@ -802,14 +803,20 @@ namespace HadoopPipes {
+       if (numReduces != 0) { 
+         reducer = factory->createCombiner(*this);
+         partitioner = factory->createPartitioner(*this);
+-      }
+-      if (reducer != NULL) {
+-        int64_t spillSize = 100;
+-        if (jobConf->hasKey("io.sort.mb")) {
+-          spillSize = jobConf->getInt("io.sort.mb");
+-        }
+-        writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
+-                                   uplink, partitioner, numReduces);
++	if (reducer != NULL) {
++	  int64_t spillSize = 100;
++	  if (jobConf->hasKey("io.sort.mb")) {
++	    spillSize = jobConf->getInt("io.sort.mb");
++	  }
++	  writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
++				     uplink, partitioner, numReduces);
++	} 
++      } else {
++	if (jobConf->hasKey("hadoop.pipes.java.recordwriter")) {
++	  if (jobConf->get("hadoop.pipes.java.recordwriter") == "false") {
++	    writer = factory->createRecordWriter(*this);
++	  }
++	}
+       }
+       hasTask = true;
+     }
 diff --git a/utils/impl/SerialUtils.cc b/utils/impl/SerialUtils.cc
 index 03d009b..3736373 100644
 --- a/utils/impl/SerialUtils.cc
