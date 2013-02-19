@@ -189,8 +189,14 @@ def kind(path, user=None):
 
 
 def isdir(path, user=None):
+	"""
+	Return True if ``path`` refers to a directory; False otherwise.
+	"""
   return kind(path, user) == 'directory'
 
 
 def isfile(path, user=None):
+	"""
+	Return True if ``path`` refers to a file; False otherwise.
+	"""
   return kind(path, user) == 'file'
