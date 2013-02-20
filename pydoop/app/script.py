@@ -314,7 +314,11 @@ class PydoopScript(object):
       raise RuntimeError("cannot run without args, please call set_args")
     self.__validate()
     pipes_args = []
-    if self.properties['mapred.textoutputformat.separator'] == '':
+    # Check to see whether a null output field separator was requested,
+    # If it was, and an output format wasn't explicitly requested, then
+    # use our NoSeparatorTextOutputFormat output format.
+    if self.properties['mapred.textoutputformat.separator'] == '' and\
+        self.properties.get('mapred.output.format.class', '') == '':
       pydoop_jar = pydoop.jar_path()
       if pydoop_jar is not None:
         self.properties[
