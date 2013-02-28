@@ -1,0 +1,135 @@
+diff --git a/libhdfs/hdfsJniHelper.c b/libhdfs/hdfsJniHelper.c
+index f7bf5e4..d7fbd8d 100644
+--- a/libhdfs/hdfsJniHelper.c
++++ b/libhdfs/hdfsJniHelper.c
+@@ -15,7 +15,6 @@
+  */
+ 
+ #include <string.h> 
+-#include <error.h>
+ #include "hdfsJniHelper.h"
+ 
+ static pthread_mutex_t hdfsHashMutex = PTHREAD_MUTEX_INITIALIZER;
+diff --git a/org/apache/hadoop/mapred/pipes/Application.java b/org/apache/hadoop/mapred/pipes/Application.java
+index 9d41dc3..f3e405d 100644
+--- a/org/apache/hadoop/mapred/pipes/Application.java
++++ b/org/apache/hadoop/mapred/pipes/Application.java
+@@ -48,6 +48,7 @@ import org.apache.hadoop.mapred.RecordReader;
+ import org.apache.hadoop.mapred.Reporter;
+ import org.apache.hadoop.mapred.TaskAttemptID;
+ import org.apache.hadoop.mapred.TaskLog;
++import org.apache.hadoop.mapred.TaskTracker;
+ import org.apache.hadoop.mapreduce.security.SecureShuffleUtils;
+ import org.apache.hadoop.mapreduce.security.TokenCache;
+ import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
+@@ -95,14 +96,21 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
+     env.put("hadoop.pipes.command.port", 
+             Integer.toString(serverSocket.getLocalPort()));
+     
++    TaskAttemptID taskid = TaskAttemptID.forName(conf.get("mapred.task.id"));
++
++    // get the task's working directory
++    String workDir = TaskTracker.getLocalTaskDir(conf.getUser(),
++            taskid.getJobID().toString(),
++            taskid.getTaskID().toString());
++
+     //Add token to the environment if security is enabled
+     Token<JobTokenIdentifier> jobToken = TokenCache.getJobToken(conf
+         .getCredentials());
+     // This password is used as shared secret key between this application and
+     // child pipes process
+     byte[]  password = jobToken.getPassword();
+-    String localPasswordFile = new File(".") + Path.SEPARATOR
+-        + "jobTokenPassword";
++
++    String localPasswordFile = new File(workDir, "jobTokenPassword").getAbsolutePath();
+     writePasswordToLocalFile(localPasswordFile, password, conf);
+     env.put("hadoop.pipes.shared.secret.location", localPasswordFile);
+  
+@@ -120,7 +128,6 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
+     }
+     cmd.add(executable);
+     // wrap the command in a stdout/stderr capture
+-    TaskAttemptID taskid = TaskAttemptID.forName(conf.get("mapred.task.id"));
+     // we are starting map/reduce task of the pipes job. this is not a cleanup
+     // attempt. 
+     File stdout = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDOUT);
+diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
+index 964b025..10f054f 100644
+--- a/pipes/impl/HadoopPipes.cc
++++ b/pipes/impl/HadoopPipes.cc
+@@ -30,6 +30,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <strings.h>
++#include <unistd.h>
+ #include <sys/socket.h>
+ #include <pthread.h>
+ #include <iostream>
+@@ -126,7 +127,7 @@ namespace HadoopPipes {
+     static const char lineSeparator = '\n';
+ 
+     void writeBuffer(const string& buffer) {
+-      fprintf(stream, quoteString(buffer, "\t\n").c_str());
++      fprintf(stream, "%s", quoteString(buffer, "\t\n").c_str());
+     }
+ 
+   public:
+@@ -802,14 +803,20 @@ namespace HadoopPipes {
+       if (numReduces != 0) { 
+         reducer = factory->createCombiner(*this);
+         partitioner = factory->createPartitioner(*this);
+-      }
+-      if (reducer != NULL) {
+-        int64_t spillSize = 100;
+-        if (jobConf->hasKey("io.sort.mb")) {
+-          spillSize = jobConf->getInt("io.sort.mb");
+-        }
+-        writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
+-                                   uplink, partitioner, numReduces);
++	if (reducer != NULL) {
++	  int64_t spillSize = 100;
++	  if (jobConf->hasKey("io.sort.mb")) {
++	    spillSize = jobConf->getInt("io.sort.mb");
++	  }
++	  writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
++				     uplink, partitioner, numReduces);
++	} 
++      } else {
++	if (jobConf->hasKey("hadoop.pipes.java.recordwriter")) {
++	  if (jobConf->get("hadoop.pipes.java.recordwriter") == "false") {
++	    writer = factory->createRecordWriter(*this);
++	  }
++	}
+       }
+       hasTask = true;
+     }
+diff --git a/utils/impl/SerialUtils.cc b/utils/impl/SerialUtils.cc
+index 03d009b..3736373 100644
+--- a/utils/impl/SerialUtils.cc
++++ b/utils/impl/SerialUtils.cc
+@@ -19,6 +19,7 @@
+ #include "hadoop/StringUtils.hh"
+ 
+ #include <errno.h>
++#include <stdint.h>
+ #include <rpc/types.h>
+ #include <rpc/xdr.h>
+ #include <string>
+@@ -252,13 +253,15 @@ namespace HadoopUtils {
+     stream.write(buf, sizeof(float));
+   }
+ 
+-  void deserializeFloat(float& t, InStream& stream)
++  float deserializeFloat(InStream& stream)
+   {
++    float t;
+     char buf[sizeof(float)];
+     stream.read(buf, sizeof(float));
+     XDR xdrs;
+     xdrmem_create(&xdrs, buf, sizeof(float), XDR_DECODE);
+     xdr_float(&xdrs, &t);
++    return t;
+   }
+ 
+   void serializeString(const std::string& t, OutStream& stream)
