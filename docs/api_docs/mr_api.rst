@@ -129,12 +129,12 @@ methods related to the job's current configuration and state.
 
    .. method:: hasKey(key)
 
-   Return True if ``key`` is a configuration parameter.
+   Return :obj:`True` if ``key`` is a configuration parameter.
 
    :param key: the name of a configuration parameter
    :type key: string
    :rtype: bool
-   :return: True if ``key`` is present in this JobConf object.
+   :return: :obj:`True` if ``key`` is present in this JobConf object.
 
    .. method:: get(key)
       
