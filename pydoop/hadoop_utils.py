@@ -19,8 +19,9 @@
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, subprocess as sp, glob, re
-import xml.dom.minidom
+import os, subprocess as sp, glob, re, warnings
+import xml.dom.minidom as dom
+from xml.parsers.expat import ExpatError
 
 try:
   from config import DEFAULT_HADOOP_HOME
@@ -35,6 +36,10 @@ class HadoopVersionError(Exception):
 
   def __str__(self):
     return repr(self.value)
+
+
+class HadoopXMLError(Exception):
+  pass
 
 
 class HadoopVersion(object):
@@ -142,19 +147,31 @@ def first_dir_in_glob(pattern):
       return path
 
 
+def extract_text(node):
+  return "".join(
+    c.data.strip() for c in node.childNodes if c.nodeType == c.TEXT_NODE
+    )
+
+
 def parse_hadoop_conf_file(fn):
   items = []
-  dom = xml.dom.minidom.parse(fn)
-  conf = dom.getElementsByTagName("configuration")[0]
-  props = conf.getElementsByTagName("property")
+  try:
+    doc = dom.parse(fn)
+  except ExpatError as e:
+    raise HadoopXMLError("not a valid XML file (%s)" % e)
+  conf = doc.documentElement
+  if conf.nodeName != "configuration":
+    raise HadoopXMLError("not a valid Hadoop configuration file")
+  props = [n for n in conf.childNodes if n.nodeName == "property"]
+  nv = {}
   for p in props:
-    kv = []
-    for tag_name in "name", "value":
-      e = p.getElementsByTagName(tag_name)[0]
-      kv.append("".join(
-        n.data.strip() for n in e.childNodes if n.nodeType == n.TEXT_NODE
-        ))
-    items.append(tuple(kv))
+    for n in p.childNodes:
+      if n.childNodes:
+        nv[n.nodeName] = extract_text(n)
+    try:
+      items.append((nv["name"], nv["value"]))
+    except KeyError:
+      pass
   return dict(items)
 
 
@@ -278,8 +295,8 @@ class PathFinder(object):
         fn = os.path.join(hadoop_conf, "%s-site.xml" % n)
         try:
           params.update(parse_hadoop_conf_file(fn))
-        except IOError:
-          pass
+        except (IOError, HadoopXMLError) as e:
+          warnings.warn("skipped %s: %s" % (fn, e))
       self.__hadoop_params = params
     return self.__hadoop_params
 
