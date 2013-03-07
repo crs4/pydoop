@@ -19,7 +19,7 @@
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, subprocess as sp, glob, re, warnings
+import os, subprocess as sp, glob, re
 import xml.dom.minidom as dom
 from xml.parsers.expat import ExpatError
 
@@ -296,7 +296,7 @@ class PathFinder(object):
         try:
           params.update(parse_hadoop_conf_file(fn))
         except (IOError, HadoopXMLError) as e:
-          warnings.warn("skipped %s: %s" % (fn, e))
+          pass  # silently ignore, as in Hadoop
       self.__hadoop_params = params
     return self.__hadoop_params
 
