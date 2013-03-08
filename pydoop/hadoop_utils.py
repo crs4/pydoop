@@ -185,7 +185,11 @@ class PathFinder(object):
   """
   Encapsulates the logic to find paths and other info required by Pydoop.
   """
-  CLOUDERA_HADOOP_EXEC = "/usr/bin/hadoop"
+  CDH_HADOOP_EXEC = "/usr/bin/hadoop"
+  CDH_HADOOP_HOME_PKG = "/usr/lib/hadoop"
+  CDH_HADOOP_HOME_PARCEL = first_dir_in_glob(
+    "/opt/cloudera/parcels/CDH-*/lib/hadoop"
+    )
 
   def __init__(self):
     self.__hadoop_home = None
@@ -221,8 +225,8 @@ class PathFinder(object):
     if not self.__hadoop_exec:
       # allow overriding of package-installed hadoop exec
       if not (hadoop_home or os.getenv("HADOOP_HOME")):
-        if is_exe(self.CLOUDERA_HADOOP_EXEC):
-          self.__hadoop_exec = self.CLOUDERA_HADOOP_EXEC
+        if is_exe(self.CDH_HADOOP_EXEC):
+          self.__hadoop_exec = self.CDH_HADOOP_EXEC
       else:
         fn = os.path.join(hadoop_home or self.hadoop_home(), "bin", "hadoop")
         if is_exe(fn):
@@ -310,9 +314,14 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
           )
-      else:  # FIXME: this only covers installed-from-package CDH, not tarball
-        hadoop_home = "/usr/lib/hadoop"
-        mr1_home = "/usr/lib/hadoop-0.20-mapreduce"
+      else:  # FIXME: this does not cover from-tarball installation
+        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
+          hadoop_home = self.CDH_HADOOP_HOME_PKG
+        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
+          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
+        else:
+          raise RuntimeError("unsupported CDH deployment")
+        mr1_home = "%s-0.20-mapreduce" % hadoop_home
         self.__hadoop_classpath = ':'.join(
           glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
