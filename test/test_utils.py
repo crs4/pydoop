@@ -18,6 +18,8 @@
 
 import unittest, tempfile, os, stat, shutil, logging
 import subprocess as sp
+from xml.dom.minidom import getDOMImplementation
+DOM_IMPL = getDOMImplementation()
 
 import pydoop
 from pydoop.jc import jc_wrapper
@@ -157,6 +159,8 @@ class TestHadoopUtils(unittest.TestCase):
     self.hadoop_version = "0.20.2"
     self.hadoop_version_tuple = (0, 20, 2)
     self.hadoop_home = tempfile.mkdtemp(prefix="pydoop_test_")
+    self.hadoop_conf = os.path.join(self.hadoop_home, "conf")
+    os.mkdir(self.hadoop_conf)
     self.bindir = os.path.join(self.hadoop_home, "bin")
     os.mkdir(self.bindir)
     self.hadoop_exe = os.path.join(self.bindir, "hadoop")
@@ -221,6 +225,32 @@ class TestHadoopUtils(unittest.TestCase):
     vinfo = self.pf.hadoop_version_info(self.hadoop_home)
     self.assertEqual(vinfo.main, self.hadoop_version_tuple)
     self.assertEqual(vinfo.tuple, self.hadoop_version_tuple)
+
+  def test_get_hadoop_params(self):
+    self.__check_params()
+    self.__check_params('', {})
+    self.__check_params('<?xml version="1.0"?>', {})
+    doc = DOM_IMPL.createDocument(None, "configuration", None)
+    self.__check_params(doc.toxml(), {})
+    root = doc.documentElement
+    prop = root.appendChild(doc.createElement("property"))
+    self.__check_params(doc.toxml(), {})
+    for s in "name", "value":
+      n = prop.appendChild(doc.createElement(s))
+      n.appendChild(doc.createTextNode(s.upper()))
+    self.__check_params(doc.toxml(), {"NAME": "VALUE"})
+
+  def __check_params(self, xml_content=None, expected=None):
+    if expected is None:
+      expected = {}
+    xml_fn = os.path.join(self.hadoop_conf, "core-site.xml")
+    if os.path.exists(xml_fn):
+      os.remove(xml_fn)
+    if xml_content is not None:
+      with open(xml_fn, "w") as fo:
+        fo.write(xml_content)
+    params = self.pf.hadoop_params(hadoop_conf=self.hadoop_conf)
+    self.assertEqual(params, expected)
 
 
 class TestJcWrapper(unittest.TestCase):
@@ -323,6 +353,7 @@ def suite():
   suite.addTest(TestHadoopUtils('test_HadoopVersion'))
   suite.addTest(TestHadoopUtils('test_get_hadoop_exec'))
   suite.addTest(TestHadoopUtils('test_get_hadoop_version'))
+  suite.addTest(TestHadoopUtils('test_get_hadoop_params'))
   suite.addTest(TestJcWrapper('test_has_key'))
   suite.addTest(TestJcWrapper('test_simple_fetch'))
   suite.addTest(TestJcWrapper('test_fetch_missing'))

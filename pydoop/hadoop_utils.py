@@ -20,7 +20,8 @@
 # rely on extension modules.
 
 import os, subprocess as sp, glob, re
-import xml.dom.minidom
+import xml.dom.minidom as dom
+from xml.parsers.expat import ExpatError
 
 try:
   from config import DEFAULT_HADOOP_HOME
@@ -35,6 +36,10 @@ class HadoopVersionError(Exception):
 
   def __str__(self):
     return repr(self.value)
+
+
+class HadoopXMLError(Exception):
+  pass
 
 
 class HadoopVersion(object):
@@ -142,19 +147,31 @@ def first_dir_in_glob(pattern):
       return path
 
 
+def extract_text(node):
+  return "".join(
+    c.data.strip() for c in node.childNodes if c.nodeType == c.TEXT_NODE
+    )
+
+
 def parse_hadoop_conf_file(fn):
   items = []
-  dom = xml.dom.minidom.parse(fn)
-  conf = dom.getElementsByTagName("configuration")[0]
-  props = conf.getElementsByTagName("property")
+  try:
+    doc = dom.parse(fn)
+  except ExpatError as e:
+    raise HadoopXMLError("not a valid XML file (%s)" % e)
+  conf = doc.documentElement
+  if conf.nodeName != "configuration":
+    raise HadoopXMLError("not a valid Hadoop configuration file")
+  props = [n for n in conf.childNodes if n.nodeName == "property"]
+  nv = {}
   for p in props:
-    kv = []
-    for tag_name in "name", "value":
-      e = p.getElementsByTagName(tag_name)[0]
-      kv.append("".join(
-        n.data.strip() for n in e.childNodes if n.nodeType == n.TEXT_NODE
-        ))
-    items.append(tuple(kv))
+    for n in p.childNodes:
+      if n.childNodes:
+        nv[n.nodeName] = extract_text(n)
+    try:
+      items.append((nv["name"], nv["value"]))
+    except KeyError:
+      pass
   return dict(items)
 
 
@@ -168,7 +185,11 @@ class PathFinder(object):
   """
   Encapsulates the logic to find paths and other info required by Pydoop.
   """
-  CLOUDERA_HADOOP_EXEC = "/usr/bin/hadoop"
+  CDH_HADOOP_EXEC = "/usr/bin/hadoop"
+  CDH_HADOOP_HOME_PKG = "/usr/lib/hadoop"
+  CDH_HADOOP_HOME_PARCEL = first_dir_in_glob(
+    "/opt/cloudera/parcels/CDH-*/lib/hadoop"
+    )
 
   def __init__(self):
     self.__hadoop_home = None
@@ -204,8 +225,8 @@ class PathFinder(object):
     if not self.__hadoop_exec:
       # allow overriding of package-installed hadoop exec
       if not (hadoop_home or os.getenv("HADOOP_HOME")):
-        if is_exe(self.CLOUDERA_HADOOP_EXEC):
-          self.__hadoop_exec = self.CLOUDERA_HADOOP_EXEC
+        if is_exe(self.CDH_HADOOP_EXEC):
+          self.__hadoop_exec = self.CDH_HADOOP_EXEC
       else:
         fn = os.path.join(hadoop_home or self.hadoop_home(), "bin", "hadoop")
         if is_exe(fn):
@@ -278,8 +299,8 @@ class PathFinder(object):
         fn = os.path.join(hadoop_conf, "%s-site.xml" % n)
         try:
           params.update(parse_hadoop_conf_file(fn))
-        except IOError:
-          pass
+        except (IOError, HadoopXMLError) as e:
+          pass  # silently ignore, as in Hadoop
       self.__hadoop_params = params
     return self.__hadoop_params
 
@@ -293,9 +314,14 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
           )
-      else:  # FIXME: this only covers installed-from-package CDH, not tarball
-        hadoop_home = "/usr/lib/hadoop"
-        mr1_home = "/usr/lib/hadoop-0.20-mapreduce"
+      else:  # FIXME: this does not cover from-tarball installation
+        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
+          hadoop_home = self.CDH_HADOOP_HOME_PKG
+        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
+          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
+        else:
+          raise RuntimeError("unsupported CDH deployment")
+        mr1_home = "%s-0.20-mapreduce" % hadoop_home
         self.__hadoop_classpath = ':'.join(
           glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
           glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +

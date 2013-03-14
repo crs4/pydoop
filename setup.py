@@ -375,8 +375,6 @@ class JavaLib(object):
     self.hadoop_vinfo = hadoop_vinfo
     self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
     self.classpath = pydoop.hadoop_classpath()
-    if not self.classpath:
-      log.warn("could not set classpath, java code may not compile")
     self.java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
     if self.hadoop_vinfo.has_security():
       if hadoop_vinfo.cdh >= (4, 0, 0) and not hadoop_vinfo.ext:
@@ -486,7 +484,11 @@ class BuildExt(build_ext):
 
   def __build_java_lib(self, jlib):
     log.info("Building java code for hadoop-%s" % jlib.hadoop_vinfo)
-    compile_cmd = "javac -classpath %s" % jlib.classpath
+    compile_cmd = "javac"
+    if jlib.classpath:
+      compile_cmd += " -classpath %s" % jlib.classpath
+    else:
+      log.warn("WARNING: could not set classpath, java code may not compile")
     class_dir = os.path.join(self.build_temp, "pipes-%s" % jlib.hadoop_vinfo)
     package_path = os.path.join(self.build_lib, "pydoop", jlib.jar_name)
     if not os.path.exists(class_dir):

@@ -159,6 +159,8 @@ if __name__ == '__main__':
 """
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
+DEFAULT_OUTPUT_FORMAT = "org.apache.hadoop.mapred.TextOutputFormat"
+NOSEP_OUTPUT_FORMAT = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
 
 
 def kv_pair(s):
@@ -314,17 +316,19 @@ class PydoopScript(object):
       raise RuntimeError("cannot run without args, please call set_args")
     self.__validate()
     pipes_args = []
-    if self.properties['mapred.textoutputformat.separator'] == '':
-      pydoop_jar = pydoop.jar_path()
-      if pydoop_jar is not None:
-        self.properties[
-          'mapred.output.format.class'
-          ] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
-        pipes_args.extend(['-libjars', pydoop_jar])
-      else:
-        warnings.warn(
-          "Can't find pydoop.jar, output will probably be tab-separated"
-          )
+    output_format = self.properties.get(
+      'mapred.output.format.class', DEFAULT_OUTPUT_FORMAT
+      )
+    if output_format == DEFAULT_OUTPUT_FORMAT:
+      if self.properties['mapred.textoutputformat.separator'] == '':
+        pydoop_jar = pydoop.jar_path()
+        if pydoop_jar is not None:
+          self.properties['mapred.output.format.class'] = NOSEP_OUTPUT_FORMAT
+          pipes_args.extend(['-libjars', pydoop_jar])
+        else:
+          warnings.warn(
+            "Can't find pydoop.jar, output will probably be tab-separated"
+            )
     try:
       self.__setup_remote_paths()
       hadut.run_pipes(self.remote_exe, self.args.input, self.args.output,

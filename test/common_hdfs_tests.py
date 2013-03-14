@@ -222,9 +222,10 @@ class TestCommon(unittest.TestCase):
     return path
 
   def append(self):
+    replication = 1  # see https://issues.apache.org/jira/browse/HDFS-3091
     content, update = make_random_data(), make_random_data()
     path = self._make_random_path()
-    with self.fs.open_file(path, "w") as fo:
+    with self.fs.open_file(path, "w", replication=replication) as fo:
       fo.write(content)
     try:
       with silent_call(self.fs.open_file, path, "a") as fo:

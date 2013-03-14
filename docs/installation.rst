@@ -167,6 +167,16 @@ directory, e.g.::
 
   export JAVA_HOME=/usr/local/java/jdk
 
+.. note::
+
+  If you don't know where your Java home is, try finding the actual
+  path of the ``java`` executable and stripping the trailing
+  ``/jre/bin/java``::
+
+    $ readlink -f $(which java)
+    /usr/lib/jvm/java-6-oracle/jre/bin/java
+    $ export JAVA_HOME=/usr/lib/jvm/java-6-oracle
+
 If you have installed Hadoop from a tarball, set the ``HADOOP_HOME``
 environment variable so that it points to where the tarball was
 extracted, e.g.::
