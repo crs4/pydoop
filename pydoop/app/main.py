@@ -34,7 +34,7 @@ def make_parser():
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
   parser.add_argument('-V', '--version', action='version', version=version,
-                      help='specify pydoop version')
+                      help='print version number and exit')
   subparsers = parser.add_subparsers(help="sub-commands")
   for n in SUBMOD_NAMES:
     mod = importlib.import_module("%s.%s" % (__package__, n))
