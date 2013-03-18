@@ -293,9 +293,9 @@ def move(src, dest, user=None):
   """
   Move or rename src to dest.
   """
-  src_host, src_port, src_path    = path.split(src, user)
+  src_host, src_port, src_path = path.split(src, user)
   dest_host, dest_port, dest_path = path.split(dest, user)
-  src_fs  = hdfs(src_host, src_port, user)
+  src_fs = hdfs(src_host, src_port, user)
   dest_fs = hdfs(dest_host, dest_port, user)
   try:
     retval = src_fs.move(src_path, dest_fs, dest_path)

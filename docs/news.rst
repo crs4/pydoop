@@ -14,7 +14,7 @@ New in 0.9.0
 * Added support for Cloudera from-parcels layout (as installed by
   Cloudera Manager)
 
-* Added ``move`` to the ``hdfs`` module
+* Added :func:`pydoop.hdfs.move`
 
 * Record writers can now be used in map-only jobs
 

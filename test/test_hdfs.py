@@ -198,6 +198,16 @@ class TestHDFS(unittest.TestCase):
       s = os.stat(f.name)
       self.assertEqual(444, stat.S_IMODE(s.st_mode))
 
+  def move(self):
+    for wd in self.local_wd, self.hdfs_wd:
+      t1 = self.__make_tree(wd)
+      t2 = [_ for _ in t1.children if _.kind == 1][0]
+      f2 = t2.children[0]
+      hdfs.move(f2.name, t1.name)
+      ls = [os.path.basename(_) for _ in hdfs.ls(t1.name)]
+      self.assertTrue(os.path.basename(f2.name) in ls)
+      self.assertEqual(len(hdfs.ls(t2.name)), 0)
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -212,6 +222,7 @@ def suite():
   suite.addTest(TestHDFS("get"))
   suite.addTest(TestHDFS("rmr"))
   suite.addTest(TestHDFS("chmod"))
+  suite.addTest(TestHDFS("move"))
   return suite
 
 
