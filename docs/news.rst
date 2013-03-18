@@ -3,6 +3,22 @@
 News
 ====
 
+New in 0.9.0
+------------
+
+* Added explicit support for:
+
+  * Apache Hadoop 1.1.2
+  * CDH 4.2.0
+
+* Added support for Cloudera from-parcels layout (as installed by
+  Cloudera Manager)
+
+* Added :func:`pydoop.hdfs.move`
+
+* Record writers can now be used in map-only jobs
+
+
 New in 0.8.1
 ------------
 

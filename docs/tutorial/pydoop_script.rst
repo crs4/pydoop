@@ -24,11 +24,11 @@ reducer functions:
     # your computation here
     writer.emit(output_key, output_value)
 
-Upload your input data to HDFS:
+Upload your input data to HDFS::
 
   hadoop fs -put input hdfs_input
 
-Run the pydoop script program:
+Run the pydoop script program::
 
   pydoop script script.py hdfs_input hdfs_output
 
@@ -66,6 +66,29 @@ five lines of code:
 
 Notice that in the reducer we had to convert the values to ``int``
 since all data come in as strings.
+
+A few more lines allow to set a combiner for local aggregation:
+
+.. code-block:: python
+
+  def combiner(word, icounts, writer):
+    writer.count('combiner calls', 1)
+    reducer(word, icounts, writer)
+
+Run the example with::
+
+  pydoop script -c combiner wordcount.py hdfs_input hdfs_output
+
+Note that we need to explicitly set the ``-c`` flag to activate the
+combiner.  By default, no combiner is called.
+
+One thing to remember is that the current Hadoop Pipes architecture
+runs the combiner under the hood of the executable run by ``pipes``,
+so it does not update the "combiner" counters of the general Hadoop
+framework.  Thus, if you run the above script, you'll get a value of 0
+for "Combine input/output records" in the "Map-Reduce Framework"
+group, but the "combiner calls" counter should be updated correctly.
+
 
 Word Count with Total Number of Words
 +++++++++++++++++++++++++++++++++++++

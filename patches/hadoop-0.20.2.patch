@@ -11,7 +11,7 @@ index 6d1a39f..b00e299 100644
  
  static pthread_mutex_t hdfsHashMutex = PTHREAD_MUTEX_INITIALIZER;
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
-index e250730..9b70e3a 100644
+index e250730..320725d 100644
 --- a/pipes/impl/HadoopPipes.cc
 +++ b/pipes/impl/HadoopPipes.cc
 @@ -30,6 +30,7 @@
@@ -31,6 +31,35 @@ index e250730..9b70e3a 100644
      }
  
    public:
+@@ -698,14 +699,20 @@ namespace HadoopPipes {
+       if (numReduces != 0) { 
+         reducer = factory->createCombiner(*this);
+         partitioner = factory->createPartitioner(*this);
+-      }
+-      if (reducer != NULL) {
+-        int64_t spillSize = 100;
+-        if (jobConf->hasKey("io.sort.mb")) {
+-          spillSize = jobConf->getInt("io.sort.mb");
+-        }
+-        writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
+-                                   uplink, partitioner, numReduces);
++	if (reducer != NULL) {
++	  int64_t spillSize = 100;
++	  if (jobConf->hasKey("io.sort.mb")) {
++	    spillSize = jobConf->getInt("io.sort.mb");
++	  }
++	  writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
++				     uplink, partitioner, numReduces);
++	} 
++      } else {
++	if (jobConf->hasKey("hadoop.pipes.java.recordwriter")) {
++	  if (jobConf->get("hadoop.pipes.java.recordwriter") == "false") {
++	    writer = factory->createRecordWriter(*this);
++	  }
++	}
+       }
+       hasTask = true;
+     }
 diff --git a/utils/impl/SerialUtils.cc b/utils/impl/SerialUtils.cc
 index 03d009b..3736373 100644
 --- a/utils/impl/SerialUtils.cc

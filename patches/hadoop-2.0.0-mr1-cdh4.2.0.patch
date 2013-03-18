@@ -1,31 +1,41 @@
+diff --git a/libhdfs/hdfsJniHelper.c b/libhdfs/hdfsJniHelper.c
+index f7bf5e4..d7fbd8d 100644
+--- a/libhdfs/hdfsJniHelper.c
++++ b/libhdfs/hdfsJniHelper.c
+@@ -15,7 +15,6 @@
+  */
+ 
+ #include <string.h> 
+-#include <error.h>
+ #include "hdfsJniHelper.h"
+ 
+ static pthread_mutex_t hdfsHashMutex = PTHREAD_MUTEX_INITIALIZER;
 diff --git a/org/apache/hadoop/mapred/pipes/Application.java b/org/apache/hadoop/mapred/pipes/Application.java
-index 8d4d259..44fbeff 100644
+index 9d41dc3..f3e405d 100644
 --- a/org/apache/hadoop/mapred/pipes/Application.java
 +++ b/org/apache/hadoop/mapred/pipes/Application.java
-@@ -47,6 +47,7 @@ import org.apache.hadoop.mapred.RecordReader;
+@@ -48,6 +48,7 @@ import org.apache.hadoop.mapred.RecordReader;
  import org.apache.hadoop.mapred.Reporter;
  import org.apache.hadoop.mapred.TaskAttemptID;
  import org.apache.hadoop.mapred.TaskLog;
 +import org.apache.hadoop.mapred.TaskTracker;
- import org.apache.hadoop.mapreduce.MRJobConfig;
- import org.apache.hadoop.mapreduce.filecache.DistributedCache;
  import org.apache.hadoop.mapreduce.security.SecureShuffleUtils;
-@@ -95,6 +96,14 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
-     env.put("TMPDIR", System.getProperty("java.io.tmpdir"));
-     env.put(Submitter.PORT, 
+ import org.apache.hadoop.mapreduce.security.TokenCache;
+ import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
+@@ -95,14 +96,21 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
+     env.put("hadoop.pipes.command.port", 
              Integer.toString(serverSocket.getLocalPort()));
-+
-+    TaskAttemptID taskid = 
-+      TaskAttemptID.forName(conf.get(MRJobConfig.TASK_ATTEMPT_ID));
+     
++    TaskAttemptID taskid = TaskAttemptID.forName(conf.get("mapred.task.id"));
 +
 +    // get the task's working directory
 +    String workDir = TaskTracker.getLocalTaskDir(conf.getUser(),
 +            taskid.getJobID().toString(),
 +            taskid.getTaskID().toString());
-     
++
      //Add token to the environment if security is enabled
      Token<JobTokenIdentifier> jobToken = TokenCache.getJobToken(conf
-@@ -102,8 +111,8 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
+         .getCredentials());
      // This password is used as shared secret key between this application and
      // child pipes process
      byte[]  password = jobToken.getPassword();
@@ -36,20 +46,27 @@ index 8d4d259..44fbeff 100644
      writePasswordToLocalFile(localPasswordFile, password, conf);
      env.put("hadoop.pipes.shared.secret.location", localPasswordFile);
   
-@@ -122,8 +131,6 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
+@@ -120,7 +128,6 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
+     }
+     cmd.add(executable);
      // wrap the command in a stdout/stderr capture
+-    TaskAttemptID taskid = TaskAttemptID.forName(conf.get("mapred.task.id"));
      // we are starting map/reduce task of the pipes job. this is not a cleanup
      // attempt. 
--    TaskAttemptID taskid = 
--      TaskAttemptID.forName(conf.get(MRJobConfig.TASK_ATTEMPT_ID));
      File stdout = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDOUT);
-     File stderr = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDERR);
-     long logLength = TaskLog.getTaskLogLength(conf);
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
-index 1d2fc95..dc4f81e 100644
+index 964b025..10f054f 100644
 --- a/pipes/impl/HadoopPipes.cc
 +++ b/pipes/impl/HadoopPipes.cc
-@@ -127,7 +127,7 @@ namespace HadoopPipes {
+@@ -30,6 +30,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <strings.h>
++#include <unistd.h>
+ #include <sys/socket.h>
+ #include <pthread.h>
+ #include <iostream>
+@@ -126,7 +127,7 @@ namespace HadoopPipes {
      static const char lineSeparator = '\n';
  
      void writeBuffer(const string& buffer) {
@@ -58,6 +75,35 @@ index 1d2fc95..dc4f81e 100644
      }
  
    public:
+@@ -802,14 +803,20 @@ namespace HadoopPipes {
+       if (numReduces != 0) { 
+         reducer = factory->createCombiner(*this);
+         partitioner = factory->createPartitioner(*this);
+-      }
+-      if (reducer != NULL) {
+-        int64_t spillSize = 100;
+-        if (jobConf->hasKey("io.sort.mb")) {
+-          spillSize = jobConf->getInt("io.sort.mb");
+-        }
+-        writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
+-                                   uplink, partitioner, numReduces);
++	if (reducer != NULL) {
++	  int64_t spillSize = 100;
++	  if (jobConf->hasKey("io.sort.mb")) {
++	    spillSize = jobConf->getInt("io.sort.mb");
++	  }
++	  writer = new CombineRunner(spillSize * 1024 * 1024, this, reducer, 
++				     uplink, partitioner, numReduces);
++	} 
++      } else {
++	if (jobConf->hasKey("hadoop.pipes.java.recordwriter")) {
++	  if (jobConf->get("hadoop.pipes.java.recordwriter") == "false") {
++	    writer = factory->createRecordWriter(*this);
++	  }
++	}
+       }
+       hasTask = true;
+     }
 diff --git a/utils/impl/SerialUtils.cc b/utils/impl/SerialUtils.cc
 index 03d009b..3736373 100644
 --- a/utils/impl/SerialUtils.cc

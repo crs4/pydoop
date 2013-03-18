@@ -167,6 +167,16 @@ directory, e.g.::
 
   export JAVA_HOME=/usr/local/java/jdk
 
+.. note::
+
+  If you don't know where your Java home is, try finding the actual
+  path of the ``java`` executable and stripping the trailing
+  ``/jre/bin/java``::
+
+    $ readlink -f $(which java)
+    /usr/lib/jvm/java-6-oracle/jre/bin/java
+    $ export JAVA_HOME=/usr/lib/jvm/java-6-oracle
+
 If you have installed Hadoop from a tarball, set the ``HADOOP_HOME``
 environment variable so that it points to where the tarball was
 extracted, e.g.::
@@ -210,9 +220,16 @@ To build Pydoop on OS X you need the following prerequisites:
   <https://developer.apple.com/downloads>`_;
 * `Homebrew <http://mxcl.github.com/homebrew>`_.
 
-Install Boost and Hadoop via Homebrew::
+Install Boost::
 
-  brew install boost
+  brew install boost --build-from-source
+
+See `the common issues section of the Homebrew docs
+<https://github.com/mxcl/homebrew/wiki/Common-Issues>`_ for more info
+on why we need the ``--build-from-source`` switch.
+
+Install Hadoop::
+
   brew install hadoop
 
 You may follow `this guide
@@ -221,8 +238,8 @@ for Hadoop installation and configuration.
 
 Set up the build environment::
 
-  export HADOOP_HOME=/usr/local/Cellar/hadoop/1.1.1/libexec
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_10.jdk/Contents/Home
+  export HADOOP_HOME=/usr/local/Cellar/hadoop/1.1.2/libexec
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_11.jdk/Contents/Home
   export BOOST_PYTHON=boost_python-mt
 
 Compile and install Pydoop from source as explained in the previous

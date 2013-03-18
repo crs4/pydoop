@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2013 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -100,14 +100,16 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
     setup_script_object(self, 'map', %(module)s.%(map_fn)s, ctx)
- 
+
   def without_conf(self, ctx):
     # old style map function, without the conf parameter
-    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer)
 
   def with_conf(self, ctx):
     # new style map function, without the conf parameter
-    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer, self.conf)
 
 class PydoopScriptReducer(pydoop.pipes.Reducer):
   def __init__(self, ctx):
@@ -121,21 +123,44 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 
   def without_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer)
+    writer = ContextWriter(ctx)
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer)
 
   def with_conf(self, ctx):
     key = ctx.getInputKey()
-    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), self.writer, self.conf)
+    writer = ContextWriter(ctx)
+    %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
+
+class PydoopScriptCombiner(pydoop.pipes.Combiner):
+  def __init__(self, ctx):
+    super(type(self), self).__init__(ctx)
+    setup_script_object(self, 'reduce', %(module)s.%(combiner_fn)s, ctx)
+
+  @staticmethod
+  def iter(ctx):
+    while ctx.nextValue():
+      yield ctx.getInputValue()
+
+  def without_conf(self, ctx):
+    key = ctx.getInputKey()
+    writer = ContextWriter(ctx)
+    %(module)s.%(combiner_fn)s(key, PydoopScriptCombiner.iter(ctx), writer)
+
+  def with_conf(self, ctx):
+    key = ctx.getInputKey()
+    writer = ContextWriter(ctx)
+    %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
 
 if __name__ == '__main__':
   result = pydoop.pipes.runTask(pydoop.pipes.Factory(
-    PydoopScriptMapper, PydoopScriptReducer
-    ))
+    PydoopScriptMapper, PydoopScriptReducer, record_reader_class=None,
+    record_writer_class=None, combiner_class=%(combiner_wp)s, partitioner_class=None))
   sys.exit(0 if result else 1)
 """
 
-
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
+DEFAULT_OUTPUT_FORMAT = "org.apache.hadoop.mapred.TextOutputFormat"
+NOSEP_OUTPUT_FORMAT = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
 
 
 def kv_pair(s):
@@ -159,6 +184,7 @@ class PydoopScript(object):
     self.args = None
     self.remote_wd = None
     self.remote_module = None
+    self.remote_module_bn = None
     self.remote_exe = None
 
   def set_args(self, args):
@@ -174,8 +200,11 @@ class PydoopScript(object):
       self.remote_wd, utils.make_random_str(prefix="exe")
       )
     module_bn = os.path.basename(args.module)
-    self.remote_module = hdfs.path.join(self.remote_wd, module_bn)
-    dist_cache_parameter = "%s#%s" % (self.remote_module, module_bn)
+    self.remote_module_bn = utils.make_random_str(
+      prefix="pydoop_script_", postfix=".py"
+      )
+    self.remote_module = hdfs.path.join(self.remote_wd, self.remote_module_bn)
+    dist_cache_parameter = "%s#%s" % (self.remote_module, self.remote_module_bn)
     self.properties['mapred.job.name'] = module_bn
     self.properties.update(dict(args.D or []))
     self.properties['mapred.reduce.tasks'] = args.num_reducers
@@ -233,9 +262,12 @@ class PydoopScript(object):
     lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
     lines.append('":"""')
     template_args = {
-      'module': os.path.splitext(os.path.basename(self.args.module))[0],
+      'module': os.path.splitext(self.remote_module_bn)[0],
       'map_fn': self.args.map_fn,
       'reduce_fn': self.args.reduce_fn,
+      'combiner_fn': self.args.combiner_fn,
+      'combiner_wp' : ('PydoopScriptCombiner' if self.args.combiner_fn
+                       else 'None')
       }
     lines.append(PIPES_TEMPLATE % template_args)
     return os.linesep.join(lines) + os.linesep
@@ -284,17 +316,19 @@ class PydoopScript(object):
       raise RuntimeError("cannot run without args, please call set_args")
     self.__validate()
     pipes_args = []
-    if self.properties['mapred.textoutputformat.separator'] == '':
-      pydoop_jar = pydoop.jar_path()
-      if pydoop_jar is not None:
-        self.properties[
-          'mapred.output.format.class'
-          ] = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
-        pipes_args.extend(['-libjars', pydoop_jar])
-      else:
-        warnings.warn(
-          "Can't find pydoop.jar, output will probably be tab-separated"
-          )
+    output_format = self.properties.get(
+      'mapred.output.format.class', DEFAULT_OUTPUT_FORMAT
+      )
+    if output_format == DEFAULT_OUTPUT_FORMAT:
+      if self.properties['mapred.textoutputformat.separator'] == '':
+        pydoop_jar = pydoop.jar_path()
+        if pydoop_jar is not None:
+          self.properties['mapred.output.format.class'] = NOSEP_OUTPUT_FORMAT
+          pipes_args.extend(['-libjars', pydoop_jar])
+        else:
+          warnings.warn(
+            "Can't find pydoop.jar, output will probably be tab-separated"
+            )
     try:
       self.__setup_remote_paths()
       hadut.run_pipes(self.remote_exe, self.args.input, self.args.output,
@@ -324,6 +358,8 @@ def add_parser(subparsers):
   parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper',
                       help="name of map function within module")
   parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
+                      help="name of reduce function within module")
+  parser.add_argument('-c', '--combiner-fn', metavar='COM', default=None,
                       help="name of reduce function within module")
   parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
                       help="output key-value separator")
