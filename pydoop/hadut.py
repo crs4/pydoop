@@ -29,6 +29,8 @@ import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 
 
+GLOB_CHARS = frozenset('*,?[]{}')
+
 #--- FIXME: perhaps we need a more sophisticated tool for setting args ---
 GENERIC_ARGS = frozenset([
   "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
@@ -275,9 +277,10 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   """
   if logger is None:
     logger = utils.NullLogger()
-  for n, p in ("executable", executable), ("input path", input_path):
-    if not hdfs.path.exists(p):
-      raise IOError("%s not found" % n)
+  if not hdfs.path.exists(executable):
+    raise IOError("executable %s not found" % executable)
+  if not hdfs.path.exists(input_path) and not(set(input_path) & GLOB_CHARS):
+    raise IOError("input path %s not found" % input_path)
   if properties is None:
     properties = {}
   properties.setdefault('hadoop.pipes.java.recordreader', 'true')
