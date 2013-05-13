@@ -58,8 +58,30 @@ class HadoopVersion(object):
     * an ``ext`` attribute for other appendages, if present.
 
   If the version string is not in the expected format, it raises
-  ``HadoopVersionError``.  For consistency, all attributes are stored
-  as tuples.
+  ``HadoopVersionError``.  For consistency:
+
+  * all attributes are stored as tuples
+  * a minor version number is added to 'non-canonical' cdh version (if
+    possible, this is done in a way that preserves ordering)
+
+  CDH3 releases::
+
+    [...]
+    0.20.2+320
+    0.20.2+737
+    0.20.2-CDH3B4
+    0.20.2-cdh3u0
+    0.20.2-cdh3u1
+    [...]
+
+  CDH4 releases::
+
+    0.23.0-cdh4b1
+    0.23.1-cdh4.0.0b2
+    2.0.0-cdh4.0.0
+    2.0.0-cdh4.0.1
+    2.0.0-cdh4.1.0
+    [...]
   """
   def __init__(self, version_str):
     self.__str = version_str
@@ -75,13 +97,22 @@ class HadoopVersion(object):
     self.__tuple = self.main + self.cdh + self.ext
 
   def __parse_rest(self, rest_str):
-    if "+" in self.__str:  # older CDH3 versions
+    # older CDH3 releases
+    if "+" in self.__str:
       try:
         rest = int(rest_str)
       except ValueError:
         raise HadoopVersionError(self.__str)
       else:
-        return (3, -1, rest), ()
+        return (3, 0, rest), ()
+    # special cases
+    elif rest_str == "CDH3B4":
+      return (3, 1, 0), ("b4")
+    elif rest_str == "cdh4b1":
+      return (4, 0, 0), ("b1",)
+    elif rest_str == "cdh4.0.0b2":
+      return (4, 0, 0), ("b2",)
+    # "canonical" version tags
     rest = rest_str.split("-", 1)
     rest.reverse()
     m = re.match(r"cdh(.+)", rest[0])
@@ -97,6 +128,10 @@ class HadoopVersion(object):
       cdh_version = tuple(map(int, cdh_version))
     except ValueError:
       raise HadoopVersionError(self.__str)
+    else:
+      if len(cdh_version) == 2:
+        assert cdh_version[0] == 3
+        cdh_version = cdh_version[0], 2, cdh_version[1]
     return cdh_version, tuple(rest[1:])
 
   def is_cloudera(self):
