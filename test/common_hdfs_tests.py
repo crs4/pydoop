@@ -16,7 +16,7 @@
 # 
 # END_COPYRIGHT
 
-import sys, os, unittest, uuid, shutil
+import sys, os, unittest, uuid, shutil, operator
 from itertools import izip
 from ctypes import create_string_buffer
 
@@ -388,6 +388,31 @@ class TestCommon(unittest.TestCase):
         chunk = f.read(CHUNK_SIZE)
         self.assertEqual(len(chunk), expected_len)
 
+  def walk(self):
+    new_d, new_f = self._make_random_dir(), self._make_random_file()
+    for top in new_d, new_f:
+      self.assertEqual(list(self.fs.walk(top)), [self.fs.get_path_info(top)])
+    top = new_d
+    cache = [top]
+    for _ in xrange(2):
+      cache.append(self._make_random_file(where=top))
+    parent = self._make_random_dir(where=top)
+    cache.append(parent)
+    for _ in xrange(2):
+      cache.append(self._make_random_file(where=parent))
+    child = self._make_random_dir(where=parent)
+    cache.append(child)
+    for _ in xrange(2):
+      cache.append(self._make_random_file(where=child))
+    infos = list(self.fs.walk(top))
+    expected_infos = [self.fs.get_path_info(p) for p in cache]
+    self.assertEqual(len(infos), len(expected_infos))
+    for l in infos, expected_infos:
+      l.sort(key=operator.itemgetter("name"))
+    self.assertEqual(infos, expected_infos)
+    nonexistent_walk = self.fs.walk(self._make_random_path())
+    self.assertRaises(IOError, nonexistent_walk.next)
+
   def __check_path_info(self, info, **expected_values):
     keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
             'permissions', 'block_size', 'last_access', 'size')
@@ -426,4 +451,5 @@ def common_tests():
     'iter_lines',
     'seek',
     'block_boundary',
+    'walk',
     ]

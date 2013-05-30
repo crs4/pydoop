@@ -25,18 +25,9 @@ import pydoop.hdfs as hdfs
 from common import isdir, MB, TEST_ROOT
 
 
-def treewalker(fs, root_info):
-  yield root_info
-  if root_info['kind'] == 'directory':
-    for info in fs.list_directory(root_info['name']):
-      for item in treewalker(fs, info):
-        yield item
-
-
 def usage_by_bs(fs, root):
   stats = {}
-  root_info = fs.get_path_info(root)
-  for info in treewalker(fs, root_info):
+  for info in fs.walk(root):
     if info['kind'] == 'directory':
       continue
     bs = int(info['block_size'])
