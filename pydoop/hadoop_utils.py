@@ -19,7 +19,7 @@
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, subprocess as sp, glob, re
+import os, subprocess as sp, glob, re, platform
 import xml.dom.minidom as dom
 from xml.parsers.expat import ExpatError
 
@@ -27,6 +27,7 @@ try:
   from config import DEFAULT_HADOOP_HOME
 except ImportError:  # should only happen at compile time
   DEFAULT_HADOOP_HOME = None
+SYSTEM = platform.system().lower()
 
 
 class HadoopVersionError(Exception):
@@ -40,6 +41,15 @@ class HadoopVersionError(Exception):
 
 class HadoopXMLError(Exception):
   pass
+
+
+def get_arch():
+  if SYSTEM == 'darwin':
+    return "", ""
+  bits, _ = platform.architecture()
+  if bits == "64bit":
+    return "amd64", "64"
+  return "i386", "32"
 
 
 class HadoopVersion(object):
@@ -241,6 +251,7 @@ class PathFinder(object):
     self.__hadoop_version_info = None  # HadoopVersion
     self.__is_cloudera = None
     self.__hadoop_params = None
+    self.__hadoop_native = None
     self.__hadoop_classpath = None
 
   def reset(self):
@@ -346,6 +357,25 @@ class PathFinder(object):
       self.__hadoop_params = params
     return self.__hadoop_params
 
+  def hadoop_native(self, hadoop_home=None):
+    if hadoop_home is None:
+      hadoop_home = self.hadoop_home()
+    if not self.__hadoop_native:
+      v = self.hadoop_version_info(hadoop_home)
+      if not v.cdh or v.cdh < (4, 0, 0):
+        self.__hadoop_native = os.path.join(
+          hadoop_home, 'lib', 'native', 'Linux-%s-%s' % get_arch()
+          )
+      else:  # FIXME: this does not cover from-tarball installation
+        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
+          hadoop_home = self.CDH_HADOOP_HOME_PKG
+        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
+          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
+        else:
+          raise RuntimeError("unsupported CDH deployment")
+        self.__hadoop_native = os.path.join(hadoop_home, 'lib', 'native')
+    return self.__hadoop_native
+
   def hadoop_classpath(self, hadoop_home=None):
     if hadoop_home is None:
       hadoop_home = self.hadoop_home()
@@ -369,6 +399,7 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
           glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
           )
+      self.__hadoop_classpath += ":" + self.hadoop_native()
     return self.__hadoop_classpath
 
   def find(self):

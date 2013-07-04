@@ -66,7 +66,7 @@ def init():
     )
   os.environ["LIBHDFS_OPTS"] = os.getenv(
     "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
-    )
+    ) + " -Djava.library.path=%s" % pydoop.hadoop_native()
 
 init()
 
