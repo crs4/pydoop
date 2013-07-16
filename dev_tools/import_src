@@ -2,6 +2,13 @@
 
 """
 Import Hadoop pipes/utils source code.
+
+NOTE: starting from cdh4.3, there is a single Hadoop tarball with both
+mr2 and mr1 code. The latter is located in:
+${HADOOP_HOME}/src/hadoop-mapreduce1-project/. To fetch the code for
+mrv1, run import_src ${HADOOP_HOME}/src/hadoop-mapreduce1-project; to
+fetch the code for mrv2, run import_src ${HADOOP_HOME} --skip-dir
+hadoop-mapreduce1-project.
 """
 
 import sys, os, argparse, warnings, shutil
@@ -42,9 +49,11 @@ WANTED = {  # basename: relative location
   }
 
 
-def get_sources(root_dir):
+def get_sources(root_dir, skip=None):
   sources = {}
   for d, _, basenames in os.walk(root_dir):
+    if skip in d.split(os.sep):
+      continue
     for bn in basenames:
       if bn in WANTED:
         if d.endswith(WANTED[bn]):
@@ -60,6 +69,8 @@ def make_parser():
   parser.add_argument('hadoop_home', metavar="HADOOP_HOME")
   parser.add_argument("-o", "--output-dir", metavar="DIR",
                       help="output directory")
+  parser.add_argument("-s", "--skip-dir", metavar="DIR",
+                      help="skip directories with this basename")
   return parser
 
 
@@ -72,7 +83,9 @@ def main(argv):
     args.output_dir = os.path.join(
       parent_dir, "src", os.path.basename(args.hadoop_home.rstrip("/"))
       )
-  sources = get_sources(args.hadoop_home)
+  if args.skip_dir:
+    args.skip_dir = os.path.basename(args.skip_dir)
+  sources = get_sources(args.hadoop_home, skip=args.skip_dir)
   for bn, p in sources.iteritems():
     out_dir = os.path.join(args.output_dir, WANTED[bn])
     try:
