@@ -57,10 +57,24 @@ index 8d4d259..060ed26 100644
      File stderr = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDERR);
      long logLength = TaskLog.getTaskLogLength(conf);
 diff --git a/pipes/impl/HadoopPipes.cc b/pipes/impl/HadoopPipes.cc
-index 1d2fc95..c5e2a95 100644
+index 1d2fc95..fdb50c2 100644
 --- a/pipes/impl/HadoopPipes.cc
 +++ b/pipes/impl/HadoopPipes.cc
-@@ -127,7 +127,7 @@ namespace HadoopPipes {
+@@ -83,6 +83,13 @@ namespace HadoopPipes {
+     }
+   };
+ 
++char* _get_command_port(){
++	char* mapreduce_command_port = getenv("mapreduce.pipes.command.port");
++  if(mapreduce_command_port != NULL)
++    return mapreduce_command_port;
++  return getenv("hadoop.pipes.command.port");
++  }
++
+   class DownwardProtocol {
+   public:
+     virtual void start(int protocol) = 0;
+@@ -127,7 +134,7 @@ namespace HadoopPipes {
      static const char lineSeparator = '\n';
  
      void writeBuffer(const string& buffer) {
@@ -69,7 +83,7 @@ index 1d2fc95..c5e2a95 100644
      }
  
    public:
-@@ -803,14 +803,20 @@ namespace HadoopPipes {
+@@ -803,14 +810,20 @@ namespace HadoopPipes {
        if (numReduces != 0) { 
          reducer = factory->createCombiner(*this);
          partitioner = factory->createPartitioner(*this);
@@ -98,6 +112,24 @@ index 1d2fc95..c5e2a95 100644
        }
        hasTask = true;
      }
+@@ -1042,7 +1055,7 @@ namespace HadoopPipes {
+    */
+   void* ping(void* ptr) {
+     TaskContextImpl* context = (TaskContextImpl*) ptr;
+-    char* portStr = getenv("mapreduce.pipes.command.port");
++    char* portStr = _get_command_port();
+     int MAX_RETRIES = 3;
+     int remaining_retries = MAX_RETRIES;
+     while (!context->isDone()) {
+@@ -1095,7 +1108,7 @@ namespace HadoopPipes {
+     try {
+       TaskContextImpl* context = new TaskContextImpl(factory);
+       Protocol* connection;
+-      char* portStr = getenv("mapreduce.pipes.command.port");
++      char* portStr = _get_command_port();
+       int sock = -1;
+       FILE* stream = NULL;
+       FILE* outStream = NULL;
 diff --git a/utils/impl/SerialUtils.cc b/utils/impl/SerialUtils.cc
 index 03d009b..3736373 100644
 --- a/utils/impl/SerialUtils.cc
