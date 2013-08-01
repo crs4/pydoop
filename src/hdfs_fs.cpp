@@ -1,19 +1,19 @@
 // BEGIN_COPYRIGHT
-// 
+//
 // Copyright 2009-2013 CRS4.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
 // of the License at
-// 
+//
 //   http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
-// 
+//
 // END_COPYRIGHT
 
 #include <errno.h>
@@ -73,7 +73,7 @@ void wrap_hdfs_fs::unlink(const std::string& path, const bool recursive) {
 
 void wrap_hdfs_fs::copy(const std::string& path, wrap_hdfs_fs& dst_fs,
 			const std::string& dst_path) {
-  exec_and_trap_error(int, 
+  exec_and_trap_error(int,
 		      hdfsCopy(fs_, path.c_str(), dst_fs.fs_, dst_path.c_str()),
 		      "Cannot copy " + path + " to filesystem on "
 		        + dst_fs.host_);
@@ -81,7 +81,7 @@ void wrap_hdfs_fs::copy(const std::string& path, wrap_hdfs_fs& dst_fs,
 
 void wrap_hdfs_fs::move(const std::string& path, wrap_hdfs_fs& dst_fs,
 			const std::string& dst_path) {
-  exec_and_trap_error(int, 
+  exec_and_trap_error(int,
 		      hdfsMove(fs_, path.c_str(), dst_fs.fs_, dst_path.c_str()),
 		      "Cannot move " + path + " to filesystem on " +
 		        dst_fs.host_);
@@ -89,7 +89,7 @@ void wrap_hdfs_fs::move(const std::string& path, wrap_hdfs_fs& dst_fs,
 
 void wrap_hdfs_fs::rename(const std::string& old_path,
 			  const std::string& new_path) {
-  exec_and_trap_error(int, 
+  exec_and_trap_error(int,
 		      hdfsRename(fs_, old_path.c_str(), new_path.c_str()),
 		      "Cannot rename " + old_path + " to " + new_path);
 }
@@ -106,19 +106,19 @@ std::string wrap_hdfs_fs::get_working_directory() {
 }
 
 void wrap_hdfs_fs::set_working_directory(const std::string& path) {
-  exec_and_trap_error(int, 
+  exec_and_trap_error(int,
 		      hdfsSetWorkingDirectory(fs_, path.c_str()),
 		      "Cannot set working directory to " + path);
 }
 
 void wrap_hdfs_fs::create_directory(const std::string& path) {
-  exec_and_trap_error(int, 
+  exec_and_trap_error(int,
 		      hdfsCreateDirectory(fs_, path.c_str()),
 		      "Cannot create directory " + path);
 }
 
 void wrap_hdfs_fs::set_replication(const std::string& path, int replication){
-  exec_and_trap_error(int, 
+  exec_and_trap_error(int,
 		      hdfsSetReplication(fs_, path.c_str(), replication),
 		      "Cannot set replication of " + path);
 }
@@ -220,9 +220,13 @@ void wrap_hdfs_fs::utime(const std::string& path, long mtime, long atime) {
 		      "Cannot utime " + path);
 }
 
-wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags, 
-					int buffer_size, int replication, 
+wrap_hdfs_file* wrap_hdfs_fs::open_file(std::string path, int flags,
+					int buffer_size, int replication,
 					int blocksize) {
+#ifdef SET_BLOCKSIZE_DISABLED
+  if (blocksize != 0)
+    throw hdfs_exception("Setting blocksize client side is not allowed ");
+#endif
   const char* c_path = (path.size() > 0) ? path.c_str() : NULL;
   hdfsFile f = hdfsOpenFile(fs_, c_path, flags, buffer_size,
 			    replication, blocksize);
