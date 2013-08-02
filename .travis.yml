@@ -7,15 +7,20 @@ jdk:
   - oraclejdk7
 
 env:
-  HADOOP_VERSION=0.20.2
-  HADOOP_VERSION=1.0.4
-  HADOOP_VERSION=1.1.2
+  - HADOOP_VERSION=0.20.2
+  - HADOOP_VERSION=1.0.4
+  - HADOOP_VERSION=1.1.2
   
 before_install:
   - sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
+  - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa 
+  - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
   - wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz
   - tar xf hadoop-$HADOOP_VERSION.tar.gz
   - export HADOOP_HOME=`pwd`/hadoop-$HADOOP_VERSION
+  - $HADOOP_HOME/bin/hadoop namenode -format
+  - $HADOOP_HOME/bin/start-all.sh
+  - $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait
 
 install:
   - python setup.py install
