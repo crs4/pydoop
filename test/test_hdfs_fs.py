@@ -51,6 +51,7 @@ class TestConnection(unittest.TestCase):
         fs.close()
 
   def cache(self):
+    hdfs.hdfs._CACHE.clear()
     orig_fs = hdfs.hdfs(*self.hp_cases[0])
     for host, port in self.hp_cases[1:]:
       fs = hdfs.hdfs(host, port)

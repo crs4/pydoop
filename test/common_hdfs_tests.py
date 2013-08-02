@@ -54,8 +54,6 @@ class TestCommon(unittest.TestCase):
     kwargs["flags"] = "w"
     content = content or make_random_data()
     path = self._make_random_path(where=where)
-    if pydoop.hadoop_version_info().has_deprecated_bs():
-      kwargs['blocksize'] = 0
     with self.fs.open_file(path, **kwargs) as fo:
       i = 0
       bytes_written = 0
