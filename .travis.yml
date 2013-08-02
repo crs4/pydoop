@@ -1,0 +1,24 @@
+language: python
+python:
+  - "2.7"
+# command to install dependencies
+
+jdk:
+  - oraclejdk7
+
+env:
+  HADOOP_VERSION=0.20.2
+  HADOOP_VERSION=1.0.4
+  HADOOP_VERSION=1.1.2
+  
+before_install:
+  - sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
+  - wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz
+  - tar xf hadoop-$HADOOP_VERSION.tar.gz
+  - export HADOOP_HOME=`pwd`/hadoop-$HADOOP_VERSION
+
+install:
+  - python setup.py install
+# command to run tests
+script: 
+  - python test/all_tests.py
