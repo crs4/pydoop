@@ -1,0 +1,21 @@
+# NOTE: with security-enabled Hadoop versions this example compiles
+# fine, but running it fails with a "Server failed to authenticate"
+# error. For some reason, rebuilding libhadoop{pipes,utils} from
+# source solves the problem.
+HADOOP_HOME := /usr/lib/hadoop-0.20-mapreduce
+CXXFLAGS := -I$(HADOOP_HOME)/include
+LDFLAGS := -L$(HADOOP_HOME)/lib/native/Linux-amd64-64
+LDLIBS := -lhadooppipes -lhadooputils -lpthread
+LDLIBS := $(LDLIBS) -lcrypto -lssl
+
+build: WordCount
+
+run: build
+	hadoop fs -put WordCount WordCount
+	hadoop fs -put ../../input WordCountInput
+	hadoop pipes -conf WordCount.xml -input WordCountInput -output WordCountOutput
+	hadoop fs -get WordCountOutput WordCountOutput
+	hadoop fs -rmr 'WordCount*'
+
+clean:
+	rm -rf WordCount WordCountOutput

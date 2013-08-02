@@ -200,8 +200,14 @@ class PydoopScript(object):
       self.remote_wd, utils.make_random_str(prefix="exe")
       )
     module_bn = os.path.basename(args.module)
+    _, ext = module_ext = os.path.splitext(module_bn)
+    # If the module doesn't have an extension, assume it should be .py
+    # This could happen, for instance, if someone loads an executable module
+    # as a script.  We can't blindly add .py though since the module may be a .pyc
+    if not ext:
+      ext = '.py'
     self.remote_module_bn = utils.make_random_str(
-      prefix="pydoop_script_", postfix=".py"
+      prefix="pydoop_script_", postfix=ext
       )
     self.remote_module = hdfs.path.join(self.remote_wd, self.remote_module_bn)
     dist_cache_parameter = "%s#%s" % (self.remote_module, self.remote_module_bn)

@@ -76,9 +76,15 @@ class TestHDFS(unittest.TestCase):
       ):
       for p in paths:
         hdfs.dump(self.data, p)
-        self.assertEqual(path_transform(ls_func(p)[0]), p)
-      dir_list = [path_transform(p) for p in ls_func(wd)]
-      self.assertEqual(set(dir_list), set(paths))
+      test_dir = "%s/%s" % (wd, "test_dir")
+      test_path = "%s/%s" % (test_dir, "test_path")
+      hdfs.dump(self.data, test_path)
+      paths.append(test_dir)
+      for recursive in False, True:
+        if recursive:
+          paths.append(test_path)
+        dir_list = [path_transform(p) for p in ls_func(wd, recursive=recursive)]
+        self.assertEqual(sorted(dir_list), sorted(paths))
 
   def lsl(self):
     self.__ls(hdfs.lsl, lambda x: x["name"])

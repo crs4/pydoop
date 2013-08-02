@@ -1,24 +1,25 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2013 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 import unittest, getpass, socket
 
 import pydoop.hdfs as hdfs
+import pydoop
 from common_hdfs_tests import TestCommon, common_tests
 import utils as u
 
@@ -50,6 +51,7 @@ class TestConnection(unittest.TestCase):
         fs.close()
 
   def cache(self):
+    hdfs.hdfs._CACHE.clear()
     orig_fs = hdfs.hdfs(*self.hp_cases[0])
     for host, port in self.hp_cases[1:]:
       fs = hdfs.hdfs(host, port)
@@ -61,7 +63,7 @@ class TestConnection(unittest.TestCase):
 
 
 class TestHDFS(TestCommon):
-  
+
   def __init__(self, target):
     TestCommon.__init__(self, target, 'default', 0)
 
@@ -107,10 +109,11 @@ class TestHDFS(TestCommon):
     self.assertEqual(self.fs.get_path_info(path)["last_access"], int(old_atime))
 
   def block_size(self):
-    for bs_MB in xrange(100, 500, 50):
-      bs = bs_MB * 2**20
-      path = self._make_random_file(blocksize=bs)
-      self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
+    if not pydoop.hadoop_version_info().has_deprecated_bs():
+      for bs_MB in xrange(100, 500, 50):
+        bs = bs_MB * 2**20
+        path = self._make_random_file(blocksize=bs)
+        self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
 
   def replication(self):
     for r in xrange(1, 6):
@@ -126,10 +129,16 @@ class TestHDFS(TestCommon):
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.
   def readline_block_boundary(self):
-    bs = u.get_bytes_per_checksum()
+    kwargs = {}
+    if pydoop.hadoop_version_info().has_deprecated_bs():
+      bs = hdfs.fs.hdfs().default_block_size()
+    else:
+      bs = u.get_bytes_per_checksum()
+      kwargs['blocksize'] = bs
+
     line = "012345678\n"
     path = self._make_random_path()
-    with self.fs.open_file(path, flags="w", blocksize=bs) as f:
+    with self.fs.open_file(path, flags="w", **kwargs) as f:
       bytes_written = lines_written = 0
       while bytes_written < bs + 1:
         f.write(line)
@@ -147,10 +156,15 @@ class TestHDFS(TestCommon):
       self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
 
   def get_hosts(self):
-    blocksize = 4096
+    kwargs = {}
+    if pydoop.hadoop_version_info().has_deprecated_bs():
+      blocksize = hdfs.fs.hdfs().default_block_size()
+    else:
+      blocksize = 4096
+      kwargs['blocksize'] = blocksize
     N = 4
     content = "x" * blocksize * N
-    path = self._make_random_file(content=content, blocksize=blocksize)
+    path = self._make_random_file(content=content, **kwargs)
     start = 0
     for i in xrange(N):
       length = blocksize * i + 1

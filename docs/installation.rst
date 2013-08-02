@@ -106,8 +106,10 @@ instructions
 
 To install Oracle JDK 6, you can follow `these instructions
 <http://superuser.com/questions/353983/how-do-i-install-the-sun-java-sdk-in-ubuntu-11-10-oneric-and-later-versions>`_.
-If you install the JDK with a different method, make sure that your
-Java package provides the ``sun-java6-jdk`` virtual dependency.
+Another option is to create a local repository with `oab
+<https://github.com/flexiondotorg/oab-java6>`_.  Whatever method you
+choose, make sure that your Java package provides the
+``sun-java6-jdk`` virtual dependency.
 
 Finally, on Ubuntu Pydoop depends on the python-support package::
 
@@ -236,14 +238,20 @@ You may follow `this guide
 <http://ragrawal.wordpress.com/2012/04/28/installing-hadoop-on-mac-osx-lion>`_
 for Hadoop installation and configuration.
 
-Set up the build environment::
+Set ``JAVA_HOME`` according to your JDK installation, e.g.::
+
+  export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_17.jdk/Contents/Home
+
+To install Pydoop via Homebrew::
+
+  brew tap samueljohn/python
+  brew install pydoop
+
+To compile and install from source, follow the instructions in the
+previous section, configuring the environment as follows::
 
   export HADOOP_HOME=/usr/local/Cellar/hadoop/1.1.2/libexec
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_11.jdk/Contents/Home
   export BOOST_PYTHON=boost_python-mt
-
-Compile and install Pydoop from source as explained in the previous
-section.
 
 
 .. _multiple_hadoop_versions:

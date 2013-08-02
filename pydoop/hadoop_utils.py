@@ -1,25 +1,25 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2013 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
 
-import os, subprocess as sp, glob, re
+import os, subprocess as sp, glob, re, platform
 import xml.dom.minidom as dom
 from xml.parsers.expat import ExpatError
 
@@ -27,6 +27,7 @@ try:
   from config import DEFAULT_HADOOP_HOME
 except ImportError:  # should only happen at compile time
   DEFAULT_HADOOP_HOME = None
+SYSTEM = platform.system().lower()
 
 
 class HadoopVersionError(Exception):
@@ -40,6 +41,15 @@ class HadoopVersionError(Exception):
 
 class HadoopXMLError(Exception):
   pass
+
+
+def get_arch():
+  if SYSTEM == 'darwin':
+    return "", ""
+  bits, _ = platform.architecture()
+  if bits == "64bit":
+    return "amd64", "64"
+  return "i386", "32"
 
 
 class HadoopVersion(object):
@@ -58,12 +68,34 @@ class HadoopVersion(object):
     * an ``ext`` attribute for other appendages, if present.
 
   If the version string is not in the expected format, it raises
-  ``HadoopVersionError``.  For consistency, all attributes are stored
-  as tuples.
+  ``HadoopVersionError``.  For consistency:
+
+  * all attributes are stored as tuples
+  * a minor version number is added to 'non-canonical' cdh version (if
+    possible, this is done in a way that preserves ordering)
+
+  CDH3 releases::
+
+    [...]
+    0.20.2+320
+    0.20.2+737
+    0.20.2-CDH3B4
+    0.20.2-cdh3u0
+    0.20.2-cdh3u1
+    [...]
+
+  CDH4 releases::
+
+    0.23.0-cdh4b1
+    0.23.1-cdh4.0.0b2
+    2.0.0-cdh4.0.0
+    2.0.0-cdh4.0.1
+    2.0.0-cdh4.1.0
+    [...]
   """
   def __init__(self, version_str):
     self.__str = version_str
-    version = self.__str.split("-", 1)
+    version = re.split(r"[-+]", self.__str, maxsplit=1)
     try:
       self.main = tuple(map(int, version[0].split(".")))
     except ValueError:
@@ -75,6 +107,22 @@ class HadoopVersion(object):
     self.__tuple = self.main + self.cdh + self.ext
 
   def __parse_rest(self, rest_str):
+    # older CDH3 releases
+    if "+" in self.__str:
+      try:
+        rest = int(rest_str)
+      except ValueError:
+        raise HadoopVersionError(self.__str)
+      else:
+        return (3, 0, rest), ()
+    # special cases
+    elif rest_str == "CDH3B4":
+      return (3, 1, 0), ("b4")
+    elif rest_str == "cdh4b1":
+      return (4, 0, 0), ("b1",)
+    elif rest_str == "cdh4.0.0b2":
+      return (4, 0, 0), ("b2",)
+    # "canonical" version tags
     rest = rest_str.split("-", 1)
     rest.reverse()
     m = re.match(r"cdh(.+)", rest[0])
@@ -90,10 +138,17 @@ class HadoopVersion(object):
       cdh_version = tuple(map(int, cdh_version))
     except ValueError:
       raise HadoopVersionError(self.__str)
+    else:
+      if len(cdh_version) == 2:
+        assert cdh_version[0] == 3
+        cdh_version = cdh_version[0], 2, cdh_version[1]
     return cdh_version, tuple(rest[1:])
 
   def is_cloudera(self):
     return bool(self.cdh)
+
+  def has_deprecated_bs(self):
+    return self.cdh[:2] == (4, 3)
 
   def has_security(self):
     return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
@@ -199,6 +254,7 @@ class PathFinder(object):
     self.__hadoop_version_info = None  # HadoopVersion
     self.__is_cloudera = None
     self.__hadoop_params = None
+    self.__hadoop_native = None
     self.__hadoop_classpath = None
 
   def reset(self):
@@ -304,6 +360,25 @@ class PathFinder(object):
       self.__hadoop_params = params
     return self.__hadoop_params
 
+  def hadoop_native(self, hadoop_home=None):
+    if hadoop_home is None:
+      hadoop_home = self.hadoop_home()
+    if not self.__hadoop_native:
+      v = self.hadoop_version_info(hadoop_home)
+      if not v.cdh or v.cdh < (4, 0, 0):
+        self.__hadoop_native = os.path.join(
+          hadoop_home, 'lib', 'native', 'Linux-%s-%s' % get_arch()
+          )
+      else:  # FIXME: this does not cover from-tarball installation
+        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
+          hadoop_home = self.CDH_HADOOP_HOME_PKG
+        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
+          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
+        else:
+          raise RuntimeError("unsupported CDH deployment")
+        self.__hadoop_native = os.path.join(hadoop_home, 'lib', 'native')
+    return self.__hadoop_native
+
   def hadoop_classpath(self, hadoop_home=None):
     if hadoop_home is None:
       hadoop_home = self.hadoop_home()
@@ -327,6 +402,7 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
           glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
           )
+      self.__hadoop_classpath += ":" + self.hadoop_native()
     return self.__hadoop_classpath
 
   def find(self):

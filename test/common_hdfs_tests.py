@@ -1,28 +1,28 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2013 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
-import sys, os, unittest, uuid, shutil
+import sys, os, unittest, uuid, shutil, operator
 from itertools import izip
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
+import pydoop
 from utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
-
 
 class TestCommon(unittest.TestCase):
 
@@ -55,8 +55,14 @@ class TestCommon(unittest.TestCase):
     content = content or make_random_data()
     path = self._make_random_path(where=where)
     with self.fs.open_file(path, **kwargs) as fo:
-      bytes_written = fo.write(content)
-      self.assertEqual(bytes_written, len(content))
+      i = 0
+      bytes_written = 0
+      bufsize = hdfs.common.BUFSIZE
+      while i < len(content):
+        bytes_written += fo.write(content[i:i+bufsize])
+        i += bufsize
+
+    self.assertEqual(bytes_written, len(content))
     return path
 
   def failUnlessRaisesExternal(self, excClass, callableObj, *args, **kwargs):
@@ -376,10 +382,21 @@ class TestCommon(unittest.TestCase):
     path = self._make_random_path()
     CHUNK_SIZE = 10
     N = 2
-    bs = N * get_bytes_per_checksum()
+    kwargs = {}
+    if pydoop.hadoop_version_info().has_deprecated_bs():
+        bs = hdfs.fs.hdfs().default_block_size()
+    else:
+        bs = N * get_bytes_per_checksum()
+        kwargs['blocksize'] = bs
     total_data_size = 2 * bs
-    with self.fs.open_file(path, "w", blocksize=bs) as f:
-      f.write(make_random_data(total_data_size))
+    with self.fs.open_file(path, "w", **kwargs) as f:
+      data = make_random_data(total_data_size)
+      i = 0
+      bufsize = hdfs.common.BUFSIZE
+      while i < len(data):
+        f.write(data[i:i+bufsize])
+        i += bufsize
+
     with self.fs.open_file(path) as f:
       p = total_data_size - CHUNK_SIZE
       for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data_size-1:
@@ -387,6 +404,31 @@ class TestCommon(unittest.TestCase):
         f.seek(pos)
         chunk = f.read(CHUNK_SIZE)
         self.assertEqual(len(chunk), expected_len)
+
+  def walk(self):
+    new_d, new_f = self._make_random_dir(), self._make_random_file()
+    for top in new_d, new_f:
+      self.assertEqual(list(self.fs.walk(top)), [self.fs.get_path_info(top)])
+    top = new_d
+    cache = [top]
+    for _ in xrange(2):
+      cache.append(self._make_random_file(where=top))
+    parent = self._make_random_dir(where=top)
+    cache.append(parent)
+    for _ in xrange(2):
+      cache.append(self._make_random_file(where=parent))
+    child = self._make_random_dir(where=parent)
+    cache.append(child)
+    for _ in xrange(2):
+      cache.append(self._make_random_file(where=child))
+    infos = list(self.fs.walk(top))
+    expected_infos = [self.fs.get_path_info(p) for p in cache]
+    self.assertEqual(len(infos), len(expected_infos))
+    for l in infos, expected_infos:
+      l.sort(key=operator.itemgetter("name"))
+    self.assertEqual(infos, expected_infos)
+    nonexistent_walk = self.fs.walk(self._make_random_path())
+    self.assertRaises(IOError, nonexistent_walk.next)
 
   def __check_path_info(self, info, **expected_values):
     keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
@@ -426,4 +468,5 @@ def common_tests():
     'iter_lines',
     'seek',
     'block_boundary',
+    'walk',
     ]

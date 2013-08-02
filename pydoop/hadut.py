@@ -29,6 +29,8 @@ import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 
 
+GLOB_CHARS = frozenset('*,?[]{}')
+
 #--- FIXME: perhaps we need a more sophisticated tool for setting args ---
 GENERIC_ARGS = frozenset([
   "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
@@ -77,6 +79,23 @@ def _merge_csv_args(args):
 def _construct_property_args(prop_dict):
   return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
 
+class RunCmdError(RuntimeError): # inherits from RuntimeError for backwards compatibility
+  """
+  This exception is raised by run_cmd and all functions that make use of it to
+  indicate that the call failed (returned non-zero).
+  """
+  def __init__(self, returncode, cmd, output=None):
+    RuntimeError.__init__(self, output)
+    self.returncode = returncode
+    self.cmd = cmd
+
+  def __str__(self):
+    m = RuntimeError.__str__(self)
+    if m:
+      return m # mimic old run_cmd behaviour
+    else:
+      return "Command '%s' returned non-zero exit status %d" % (self.cmd, self.returncode)
+
 
 def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
             hadoop_conf_dir=None, logger=None):
@@ -84,7 +103,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
   Run a Hadoop command.
 
   If the command succeeds, return its output; if it fails, raise a
-  ``RuntimeError`` with its error output as the message.
+  ``RunCmdError`` with its error output as the message.
 
   .. code-block:: python
 
@@ -98,7 +117,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     -report: Reports basic filesystem information and statistics.
     >>> try:
     ...     run_cmd('foo')
-    ... except RuntimeError as e:
+    ... except RunCmdError as e:
     ...     print e
     ...
     Exception in thread "main" java.lang.NoClassDefFoundError: foo
@@ -123,7 +142,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
   p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   output, error = p.communicate()
   if p.returncode:
-    raise RuntimeError(error)
+    raise RunCmdError(p.returncode, ' '.join(_args), error)
   return output
 
 
@@ -211,7 +230,7 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
     >>> more_args = ['wordcount']
     >>> try:
     ...     run_jar(jar_name, more_args=more_args)
-    ... except RuntimeError as e:
+    ... except RunCmdError as e:
     ...     print e
     ...
     Usage: wordcount <in> <out>
@@ -275,9 +294,10 @@ def run_pipes(executable, input_path, output_path, more_args=None,
   """
   if logger is None:
     logger = utils.NullLogger()
-  for n, p in ("executable", executable), ("input path", input_path):
-    if not hdfs.path.exists(p):
-      raise IOError("%s not found" % n)
+  if not hdfs.path.exists(executable):
+    raise IOError("executable %s not found" % executable)
+  if not hdfs.path.exists(input_path) and not(set(input_path) & GLOB_CHARS):
+    raise IOError("input path %s not found" % input_path)
   if properties is None:
     properties = {}
   properties.setdefault('hadoop.pipes.java.recordreader', 'true')

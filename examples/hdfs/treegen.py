@@ -22,6 +22,7 @@ Generate an HDFS tree containing files of different block size.
 
 import sys, random
 import pydoop.hdfs as hdfs
+import pydoop
 from common import isdir, MB, TEST_ROOT
 
 
@@ -34,9 +35,14 @@ def treegen(fs, root, depth, span):
       path = "%s/%d_%d" % (root, depth, i)
       kind = 'file' if i else 'directory'
       if kind == 'file':
-        bs = random.sample(BS_RANGE, 1)[0]
+        kwargs = {}
+        if pydoop.hadoop_version_info().has_deprecated_bs():
+          bs = hdfs.fs.hdfs().default_block_size()
+        else:
+          bs = random.sample(BS_RANGE, 1)[0]
+          kwargs['blocksize'] = bs
         sys.stderr.write("%s %s %d\n" % (kind[0].upper(), path, (bs/MB)))
-        with fs.open_file(path, "w", blocksize=bs) as f:
+        with fs.open_file(path, "w", **kwargs) as f:
           f.write(path)
       else:
         sys.stderr.write("%s %s 0\n" % (kind[0].upper(), path))

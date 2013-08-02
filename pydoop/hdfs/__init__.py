@@ -66,7 +66,7 @@ def init():
     )
   os.environ["LIBHDFS_OPTS"] = os.getenv(
     "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
-    )
+    ) + " -Djava.library.path=%s" % pydoop.hadoop_native()
 
 init()
 
@@ -246,30 +246,40 @@ def rmr(hdfs_path, user=None):
   return retval
 
 
-def lsl(hdfs_path, user=None):
+def lsl(hdfs_path, user=None, recursive=False):
   """
   Return a list of dictionaries of file properties.
 
-  If ``hdfs_path`` is a directory, each list item corresponds to a
-  file or directory contained by it; if it is a file, there is only
-  one item corresponding to the file itself.
+  If ``hdfs_path`` is a file, there is only one item corresponding to
+  the file itself; if it is a directory and ``recursive`` is
+  :obj:`False`, each list item corresponds to a file or directory
+  contained by it; if it is a directory and ``recursive`` is
+  :obj:`True`, the list contains one item for every file or directory
+  in the tree rooted at ``hdfs_path``.
   """
   host, port, path_ = path.split(hdfs_path, user)
   fs = hdfs(host, port, user)
-  dir_list = fs.list_directory(path_)
+  if not recursive:
+    dir_list = fs.list_directory(path_)
+  else:
+    treewalk = fs.walk(path_)
+    top = treewalk.next()
+    if top['kind'] == 'directory':
+      dir_list = list(treewalk)
+    else:
+      dir_list = [top]
   fs.close()
   return dir_list
 
 
-def ls(hdfs_path, user=None):
+def ls(hdfs_path, user=None, recursive=False):
   """
   Return a list of hdfs paths.
 
-  If ``hdfs_path`` is a directory, each list item corresponds to a
-  file or directory contained by it; if it is a file, there is only
-  one item corresponding to the file itself.
+  Works in the same way as :func:`lsl`, except for the fact that list
+  items are hdfs paths instead of dictionaries of properties.
   """
-  dir_list = lsl(hdfs_path, user)
+  dir_list = lsl(hdfs_path, user, recursive)
   return [d["name"] for d in dir_list]
 
 

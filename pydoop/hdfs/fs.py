@@ -542,3 +542,24 @@ class hdfs(object):
     """
     _complain_ifclosed(self.closed)
     return self.fs.utime(path, int(mtime), int(atime))
+
+  def walk(self, top):
+    """
+    Generate infos for all paths in the tree rooted at ``top`` (included).
+
+    The ``top`` parameter can be either an HDFS path string or a
+    dictionary of properties as returned by :meth:`get_path_info`.
+
+    :type top: string or dict
+    :param top: an HDFS path or path info dict
+    :rtype: iterator
+    :return: path infos of files and directories in the tree rooted at ``top``
+    :raises: IOError
+    """
+    if isinstance(top, basestring):
+      top = self.get_path_info(top)
+    yield top
+    if top['kind'] == 'directory':
+      for info in self.list_directory(top['name']):
+        for item in self.walk(info):
+          yield item

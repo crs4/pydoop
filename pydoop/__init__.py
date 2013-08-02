@@ -77,6 +77,10 @@ def hadoop_params(hadoop_conf=None, hadoop_home=None):
   return _PATH_FINDER.hadoop_params(hadoop_conf, hadoop_home)
 
 
+def hadoop_native(hadoop_home=None):
+  return _PATH_FINDER.hadoop_native(hadoop_home)
+
+
 def hadoop_classpath(hadoop_home=None):
   return _PATH_FINDER.hadoop_classpath(hadoop_home)
 

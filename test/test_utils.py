@@ -154,7 +154,6 @@ class TestUtils(unittest.TestCase):
 
 
 class TestHadoopUtils(unittest.TestCase):
-
   def setUp(self):
     self.hadoop_version = "0.20.2"
     self.hadoop_version_tuple = (0, 20, 2)
@@ -180,16 +179,17 @@ class TestHadoopUtils(unittest.TestCase):
     for vs, main, cdh, ext in [
       ("0.20.2", (0, 20, 2), (), ()),
       ("0.20.203.0", (0, 20, 203, 0), (), ()),
-      ("0.20.2-cdh3u4", (0, 20, 2), (3, 4), ()),
+      ("0.20.2-cdh3u4", (0, 20, 2), (3, 2, 4), ()),
       ("1.0.4-SNAPSHOT", (1, 0, 4), (), ("SNAPSHOT",)),
       ("2.0.0-mr1-cdh4.1.0", (2, 0, 0), (4, 1, 0), ("mr1",)),
+      ("0.20.2+320", (0, 20, 2), (3, 0, 320), ()),
       ]:
       v = hu.HadoopVersion(vs)
       for name, attr in ("main", main), ("cdh", cdh), ("ext", ext):
         self.assertEqual(getattr(v, name), attr)
       self.assertEqual(v.is_cloudera(), len(v.cdh) > 0)
       self.assertEqual(v.tuple, main+cdh+ext)
-    for s in "bla", '0.20.str':
+    for s in "bla", '0.20.str', '0.20.2+str':
       self.assertRaises(hu.HadoopVersionError, hu.HadoopVersion, s)
 
   def test_get_hadoop_exec(self):
