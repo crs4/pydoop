@@ -111,3 +111,4 @@ def silent_call(func, *args, **kwargs):
       for s in "stdout", "stderr":
         os.dup2(cache[s], _FD_MAP[s])
   return ret
+  

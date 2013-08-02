@@ -1,7 +1,7 @@
 #include "hadoop/Pipes.hh"
 #include "hadoop/TemplateFactory.hh"
 #include "hadoop/StringUtils.hh"
-
+#include <stdlib.h>
 
 class Mapper: public HadoopPipes::Mapper {
 private:
@@ -38,5 +38,22 @@ public:
 
 
 int main(int argc, char *argv[]) {
+  char * hadoop_command_port;
+	char * mapreduce_command_port;
+
+  hadoop_command_port = getenv("hadoop.pipes.command.port");
+	mapreduce_command_port = getenv("mapreduce.pipes.command.port");
+
+
+  if(hadoop_command_port != NULL && mapreduce_command_port == NULL){
+    setenv("mapreduce.pipes.command.port", hadoop_command_port, 1);
+
+  }
+
+  if(hadoop_command_port == NULL && mapreduce_command_port != NULL){
+    setenv("hadoop.pipes.command.port", mapreduce_command_port, 1);
+
+  }
+
   return HadoopPipes::runTask(HadoopPipes::TemplateFactory<Mapper, Reducer>());
 }
