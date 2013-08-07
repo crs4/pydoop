@@ -23,18 +23,14 @@ before_install:
   - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa 
   - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
   - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
-  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then 
-        wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz; 
-        tar xf hadoop-$HADOOP_VERSION.tar.gz;
-        export HADOOP_HOME=`pwd`/hadoop-$HADOOP_VERSION;
-        $HADOOP_HOME/bin/hadoop namenode -format;
-        $HADOOP_HOME/bin/start-all.sh;
-        HADOOP_HOME/bin/hadoop dfsadmin -safemode wait;
-   fi  
-   - if [[ "$HADOOP_VERSION" == *cdh* ]]; then 
-        wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; 
-        then sudo dpkg -i cdh4-repository_1.0_all.deb; 
-   fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz; fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then tar xf hadoop-$HADOOP_VERSION.tar.gz; fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOP_VERSION; fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
+  - if [[ "$HADOOP_VERSION" == *cdh* ]]; then wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; fi
+  - if [[ "$HADOOP_VERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
 
 install:
   - python setup.py install
