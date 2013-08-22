@@ -29,7 +29,7 @@ before_install:
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then tar xf hadoop-$HADOOP_VERSION.tar.gz; fi
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOP_VERSION; fi
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
-  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site-xml; fi
+  - if [[ "$HADOOP_VERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site.xml; fi
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
   - if [[ "$HADOOP_VERSION" == *cdh* ]]; then wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; fi
