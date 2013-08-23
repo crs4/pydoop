@@ -36,7 +36,7 @@ before_install:
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
   - if [[ "$HADOOP_VERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
   
-  - if [[ "$HADOOP_VERSION" == *cdh* ]]; then export HADOOP_HOME=/usr/lib/hadoop; fi
+  #- if [[ "$HADOOP_VERSION" == *cdh* ]]; then export HADOOP_HOME=/usr/lib/hadoop; fi
   - if [[ "$HADOOP_VERSION" == *cdh* ]]; then wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOP_VERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOP_VERSION" == *cdh* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-client; fi
