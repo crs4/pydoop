@@ -23,13 +23,12 @@ before_install:
   - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
   - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
   - sudo groupadd admin
-  - #sudo usermod -a -G admin $USER
   - sudo usermod -g admin $USER
-  - groups $USER
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then tar xf hadoop-$HADOOPVERSION.tar.gz; fi
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site.xml; fi
+  #- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site.xml; fi
+  -echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site.xml
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_HOME/conf/core-site.xml; fi 
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_HOME/conf/mapred-site.xml; fi 
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
