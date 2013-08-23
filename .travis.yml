@@ -23,7 +23,7 @@ before_install:
   - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
   - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
   - sudo groupadd admin
-  - sudo usermod -g admin $USER
+  - sudo usermod  -a -G admin $USER
   - groups $USER
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then tar xf hadoop-$HADOOPVERSION.tar.gz; fi
