@@ -39,7 +39,9 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-client; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 666 /etc/hadoop/conf/hdfs-site.xml; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' < /etc/hadoop/conf/hdfs-site.xml > /etc/hadoop/conf/hdfs-site.xml  ; cat  /etc/hadoop/conf/hdfs-site.xml; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' < /etc/hadoop/conf/hdfs-site.xml > /etc/hadoop/conf/hdfs-site.xml; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat  /etc/hadoop/conf/hdfs-site.xml; fi
+
 install:
   - python setup.py install
 # command to run tests
