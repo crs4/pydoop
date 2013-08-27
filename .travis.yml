@@ -48,7 +48,7 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/core-site.xml; fi
   #- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml; fi
 
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" >  /etc/hadoop/conf/hdfs-site.xml; fi
+  #- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" >  /etc/hadoop/conf/hdfs-site.xml; fi
 
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/hdfs-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts;fi
