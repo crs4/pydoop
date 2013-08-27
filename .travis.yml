@@ -47,6 +47,7 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts;fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hosts; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo /etc/init.d/networking restart; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 777 /var/lib/hadoop-hdfs/cache/hdfs/dfs/name; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; cat /var/log/hadoop-hdfs/hadoop-hdfs-*; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then hadoop dfsadmin -safemode wait; fi
 install:
