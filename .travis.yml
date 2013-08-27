@@ -40,10 +40,9 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /var/log/hadoop-hdfs/hadoop-hdfs-namenode-*; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 666 /etc/hadoop/conf/*.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml; fi
-
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/core-site.xml; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 666 /etc/hadoop/conf/hdfs-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/hdfs-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; fi
