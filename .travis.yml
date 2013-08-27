@@ -37,6 +37,7 @@ before_install:
   
   #- if [[ "$HADOOPVERSION" == *cdh* ]]; then export HADOOP_HOME=/usr/lib/hadoop; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then mkdir -p /tmp/hadoop-hdfs/dfs/name; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then ls -la /tmp/hadoop-hdfs/dfs/name; fi
 
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
