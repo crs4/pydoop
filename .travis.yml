@@ -44,6 +44,7 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/core-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/hdfs-site.xml; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sed "s/localhost/ localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts;fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hosts; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then hostname; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; cat /var/log/hadoop-hdfs/hadoop-hdfs-*; fi
