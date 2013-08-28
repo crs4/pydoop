@@ -44,7 +44,7 @@ before_install:
 #  - if [[ "$HADOOPVERSION" == *cdh* ]]; then wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; fi
 #  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/debian/archive.key | sudo aptkey add -; fi
+  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/debian/archive.key | sudo apt-key add -; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client; fi
 #  - if [[ "$HADOOPVERSION" == *cdh* ]]; then for i in "hadoop" "hadoop-yarn" "hadoop-mapreduce" "hadoop-0.20-mapreduce" "hadoop-0.20-mapreduce-jobtracker" "hadoop-hdfs" "hadoop-hdfs-datanode" "hadoop-hdfs-namenode" "hadoop-hdfs-secondarynamenode" "hadoop-client"; do wget http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh/pool/contrib/h/hadoop/$i\_$HADOOPVERSION\_all.deb; sudo dpkg -i $i\_$HADOOPVERSION\_all.deb;done; fi
   
