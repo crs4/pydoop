@@ -61,6 +61,8 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hosts; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo /etc/init.d/networking restart; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo -u hdfs hadoop namenode -format -force; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then ls /etc/hadoop/conf/; fi
+  - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/hadoop-env.sh; fi
   - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; fi
   - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo service hadoop-0.20-datanode restart; sudo service hadoop-0.20-namenode restart; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then hadoop dfsadmin -safemode wait; fi	
