@@ -14,9 +14,6 @@ env:
   - HADOOPVERSION=1.1.2
   - HADOOPVERSION=cdh4.2.0
   - HADOOPVERSION=cdh4.3.0
-  #- HADOOPVERSION=2.0.0-mr1-cdh4.3.0
-  #- HADOOPVERSION=2.0.0-cdh4.2.0
-  #- HADOOPVERSION=2.0.0-cdh4.3.0
   
 before_install:
   - sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
@@ -35,35 +32,22 @@ before_install:
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
   - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
-  
-  #- if [[ "$HADOOPVERSION" == *cdh* ]]; then export HADOOP_HOME=/usr/lib/hadoop; fi
+
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then mkdir -p /tmp/hadoop-hdfs/dfs/name; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then chmod 777 /tmp/hadoop-hdfs/ -R; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then ls -la /tmp/hadoop-hdfs/dfs/name; fi
-
-#  - if [[ "$HADOOPVERSION" == *cdh* ]]; then wget http://archive.cloudera.com/cdh4/one-click-install/precise/amd64/cdh4-repository_1.0_all.deb; fi
-#  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo dpkg -i cdh4-repository_1.0_all.deb; fi
   - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -; fi
   - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/debian/archive.key | sudo apt-key add -; fi
   - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-conf-pseudo; fi
-#  - if [[ "$HADOOPVERSION" == *cdh* ]]; then for i in "hadoop" "hadoop-yarn" "hadoop-mapreduce" "hadoop-0.20-mapreduce" "hadoop-0.20-mapreduce-jobtracker" "hadoop-hdfs" "hadoop-hdfs-datanode" "hadoop-hdfs-namenode" "hadoop-hdfs-secondarynamenode" "hadoop-client"; do wget http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh/pool/contrib/h/hadoop/$i\_$HADOOPVERSION\_all.deb; sudo dpkg -i $i\_$HADOOPVERSION\_all.deb;done; fi
-  
+  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-conf-pseudo; fi  
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 666 /etc/hadoop/conf/*.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/core-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml; fi
-
-  #- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" >  /etc/hadoop/conf/hdfs-site.xml; fi
-
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/hdfs-site.xml; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts;fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hosts; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo /etc/init.d/networking restart; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo -u hdfs hadoop namenode -format -force; fi
   - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then echo $JAVA_HOME; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then JH=${JAVA_HOME//\//\\\/};sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; cat /etc/hadoop/conf/hadoop-env.sh; fi
+  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then JH=${JAVA_HOME//\//\\\/};sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; fi
   - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo service hadoop-0.20-datanode restart; sudo service hadoop-0.20-namenode restart; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then hadoop dfsadmin -safemode wait; fi	
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then hdfs="sudo -u hdfs hadoop fs"; ${hdfs} -mkdir /tmp; ${hdfs} -chmod 1777 /tmp; ${hdfs} -mkdir /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred;${hdfs} -mkdir  /user/$USER;${hdfs} -chown $USER /user/$USER;fi
