@@ -26,4 +26,4 @@ Tests performed on the following installations:
  - cdh 4.2.0
  - cdh 4.3.0
 
-[![Build Status](https://travis-ci.org/mdrio/pydoop.png)](https://travis-ci.org/mdrio/pydoop)
+[![Build Status](https://travis-ci.org/crs4/pydoop.png)](https://travis-ci.org/crs4/pydoop)
