@@ -61,8 +61,6 @@ before_install:
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hosts; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo /etc/init.d/networking restart; fi
   - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo -u hdfs hadoop namenode -format -force; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then ls /etc/hadoop/conf/; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then cat /etc/hadoop/conf/hadoop-env.sh; fi
   - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; fi
   - if [[ "$HADOOPVERSION" == *cdh3* ]]; then echo $JAVA_HOME; fi
   - if [[ "$HADOOPVERSION" == *cdh3* ]]; then JH=${JAVA_HOME//\//\\\/};sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; cat /etc/hadoop/conf/hadoop-env.sh; fi
