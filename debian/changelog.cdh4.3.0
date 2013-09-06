@@ -1,0 +1,17 @@
+python-pydoop (0.9.0-1) unstable; urgency=low
+
+  * Packages Pydoop 0.9.0 for CDH 4.2.0.
+
+ -- simleo <simleo@simleo-U36SD>  Thu, 07 Feb 2013 14:27:37 +0100
+
+python-pydoop (0.8.1-1) unstable; urgency=low
+
+  * Packages Pydoop 0.8.1 for CDH 4.1.3.
+
+ -- simleo <simleo@simleo-U36SD>  Thu, 07 Feb 2013 14:27:37 +0100
+
+python-pydoop (0.7.0-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- CRS4 <simone.leo@crs4.it>  Wed, 14 Nov 2012 17:26:49 +0100
