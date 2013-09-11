@@ -11,7 +11,10 @@ import os, sys, re, subprocess, shutil
 hadoop_version = pydoop.hadoop_version_info()
 if not hadoop_version.is_cloudera():
   sys.exit('Package deb only for cloudera dist, found hadoop %s instead'%pydoop.hadoop_version())
-cdh_version = '{0}.{1}.{2}'.format(*pydoop.hadoop_version_info().tuple[-3:])
+if pydoop.hadoop_version_info().tuple[-3] == 3:
+  cdh_version = '{0}u{1}'.format(pydoop.hadoop_version_info().tuple[-3], pydoop.hadoop_version_info().tuple[-1])
+else:
+  cdh_version = '{0}.{1}.{2}'.format(*pydoop.hadoop_version_info().tuple[-3:])
 
 deb_path = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(deb_path, '../VERSION'), 'r') as f:
