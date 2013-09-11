@@ -1,0 +1,17 @@
+Source: python-pydoop
+Section: python
+Priority: extra
+Maintainer: CRS4 <simone.leo@crs4.it>
+Build-Depends: debhelper (>= 8.0.0), python-all-dev (>= 2.7), libboost-python-dev (>=1.40), libssl-dev, python-sphinx,  sun-java6-jdk, devscripts, inkscape
+X-Python-Version: >= 2.6
+Standards-Version: 3.9.2
+Homepage: http://pydoop.sourceforge.net
+
+Package: python-pydoop
+Section: python
+Architecture: amd64
+Depends: ${python:Depends}, ${shlibs:Depends}, hadoop-0.20-conf-pseudo
+Description: Pydoop: a Python MapReduce and HDFS API for Hadoop
+ Pydoop provides a MapReduce and HDFS API for Hadoop that allows
+ object-oriented Java-style MapReduce programming in CPython as well
+ as HDFS access.

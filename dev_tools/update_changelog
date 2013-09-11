@@ -21,6 +21,10 @@ path_ch = os.path.join(deb_path, '../debian/changelog')
 shutil.copyfile('{0}.cdh{1}'.format(path_ch, cdh_version),
   path_ch)
 
+path_control = os.path.join(deb_path, '../debian/control')
+shutil.copyfile('{0}.cdh{1}'.format(path_control, pydoop.hadoop_version_info().tuple[-3]),
+  path_control)
+
 with open(path_ch, 'r') as f:
   last_version = re.search('(\d+\.\d+\.\d+)', f.read()).group(0)
 
