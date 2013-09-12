@@ -55,6 +55,7 @@ docs_view: docs
 	yelp docs/_build/html/index.html &
 
 dist: docs
+	./dev_tools/update_changelog
 	./dev_tools/git_export -o $(EXPORT_DIR)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/

@@ -579,6 +579,9 @@ setup(
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Intended Audience :: Developers",
     ],
+  data_files=[
+     ('config', ['README.md']),
+  ],
   )
 
 # vim: set sw=2 ts=2 et
