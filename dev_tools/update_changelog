@@ -21,8 +21,7 @@ with open(os.path.join(deb_path, '../VERSION'), 'r') as f:
   new_version = f.read().strip()
 
 path_ch = os.path.join(deb_path, '../debian/changelog')
-shutil.copyfile('{0}.cdh{1}'.format(path_ch, cdh_version),
-  path_ch)
+path_ch_for_cdh = '{0}.cdh{1}'.format(path_ch, cdh_version)
 
 path_control = os.path.join(deb_path, '../debian/control')
 shutil.copyfile('{0}.cdh{1}'.format(path_control, pydoop.hadoop_version_info().tuple[-3]),
@@ -35,7 +34,7 @@ args_dch = [
   "dch",  
   "Packages Pydoop {0} for cdh{1}".format(new_version, cdh_version),
   "-c",
-  path_ch          
+  path_ch_for_cdh
 ]
 if new_version == last_version:
   args_dch.append("-i")
@@ -44,3 +43,5 @@ else:
                    "{0}-cdh{1}".format(new_version, cdh_version)
 ])
 subprocess.call(args_dch)
+shutil.copyfile(path_ch_for_cdh,
+  path_ch)
