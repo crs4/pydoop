@@ -31,7 +31,7 @@ https://sourceforge.net/projects/pydoop/files.
 You can also get the latest code from the `Git <http://git-scm.com/>`_
 repository::
 
-  git clone git://git.code.sf.net/p/pydoop/code pydoop
+  git clone https://github.com/crs4/pydoop.git
 
 We also upload our releases to `PyPI <http://pypi.python.org>`_.
 After configuring your environment (see below), you should be able to
@@ -60,10 +60,11 @@ In order to build and install Pydoop, you need the following software:
 
   * `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2
   * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0 (tested with 1.0.4)
+  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.1 (tested with 1.1.2)
   * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 3
     (tested with cdh3u4 and cdh3u5)
   * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 4
-    (tested with cdh4.1.2)
+    (tested with cdh4.2.0 and cdh4.3.0), with the following limitations:
 
     * currently, only mrv1 is supported
     * CDH4 must be installed from dist-specific packages (no tarball)
@@ -71,7 +72,7 @@ In order to build and install Pydoop, you need the following software:
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library)
 
-* `OpenSSL <http://www.openssl.org>`_ (not required with Hadoop 0.20)
+* `OpenSSL <http://www.openssl.org>`_ (not required with Hadoop 0.20.2)
 
 These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
@@ -86,41 +87,29 @@ Ubuntu
 ......
 
 On Ubuntu you should install the .deb package (see the :ref:`Get
-Pydoop <get_pydoop>` section).  Currently, we support the following
-setup:
+Pydoop <get_pydoop>` section) corresponding to the CDH version you are
+running (if you are using Apache Hadoop, try :ref:`building Pydoop
+from source<from_source>` instead).  Our .deb packages have been
+tested on 64-bit Ubuntu 12.04 LTS (Precise Pangolin) with the
+following prerequisites installed:
 
-* Ubuntu 12.04.1 LTS (Precise Pangolin), 64-bit
-* Python 2.7
+* Python 2.7, with python-support
 * Boost.Python 1.46.1
-* CDH4.1.2
+* CDH
 * Oracle JDK 6
 
-The Boost Python library is included in the main Ubuntu repository::
+  * Follow `these instructions
+    <http://superuser.com/questions/353983/how-do-i-install-the-sun-java-sdk-in-ubuntu-11-10-oneric-and-later-versions>`_.
+    Another option is to create a local repository with `oab
+    <https://github.com/flexiondotorg/oab-java6>`_.
 
-  sudo apt-get install libboost-python1.46.1
-
-To install CDH4 with mrv1, install ``hadoop-0.20-conf-pseudo`` and
-``hadoop-client`` from the CDH4 repository, following `Cloudera's
-instructions
-<https://ccp.cloudera.com/display/CDH4DOC/CDH4+Installation>`_.
-
-To install Oracle JDK 6, you can follow `these instructions
-<http://superuser.com/questions/353983/how-do-i-install-the-sun-java-sdk-in-ubuntu-11-10-oneric-and-later-versions>`_.
-Another option is to create a local repository with `oab
-<https://github.com/flexiondotorg/oab-java6>`_.  Whatever method you
-choose, make sure that your Java package provides the
-``sun-java6-jdk`` virtual dependency.
-
-Finally, on Ubuntu Pydoop depends on the python-support package::
-
-  sudo apt-get install python-support
-
-To install Pydoop, run::
+If the above prerequisites are satisfied, you should be able to
+install Pydoop by doing::
 
   sudo dpkg -i <PATH_TO_PYDOOP_DEB_PKG>
 
-The following is a complete walkthrough that merges all of the above
-instructions (tested on an empty box):
+The following is a complete walkthrough for CDH4 that merges all of
+the above instructions (tested on an empty box):
 
 .. code-block:: bash
 
@@ -143,6 +132,8 @@ instructions (tested on an empty box):
   # install Pydoop
   sudo dpkg -i <PATH_TO_PYDOOP_DEB_PKG>
 
+
+.. _from_source:
 
 Installation from Source
 ........................
@@ -207,6 +198,7 @@ accessible on the entire cluster.
 To install to an arbitrary path::
 
   python setup.py install --skip-build --home <PATH>
+
 
 .. _osx:
 
@@ -300,6 +292,13 @@ and filled with the path to the current Hadoop home.
 
 Troubleshooting
 ---------------
+
+#. "java home not found" error, with ``JAVA_HOME`` properly exported: try
+   setting ``JAVA_HOME`` in ``hadoop-env.sh``
+
+#. "libjvm.so not found" error: try the following::
+
+    export LD_LIBRARY_PATH="${JAVA_HOME}/jre/lib/amd64/server:${LD_LIBRARY_PATH}"
 
 #. non-standard include/lib directories: the setup script looks for
    includes and libraries in standard places -- read ``setup.py`` for
