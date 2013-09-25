@@ -13,3 +13,17 @@ the following paper:
 
 Please use the above citation if you wish to reference Pydoop in a
 scientific paper.
+
+Travis Build Status
+-------------------
+Tests performed on the following installations:
+
+ - hadoop 0.20.2
+ - hadoop 1.0.4
+ - hadoop 1.1.2
+ - cdh 3u4
+ - cdh 3u5
+ - cdh 4.2.0
+ - cdh 4.3.0
+
+[![Build Status](https://travis-ci.org/crs4/pydoop.png)](https://travis-ci.org/crs4/pydoop)

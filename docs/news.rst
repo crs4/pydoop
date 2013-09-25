@@ -3,6 +3,24 @@
 News
 ====
 
+New in 0.10.0
+-------------
+
+ * Added support for CDH 4.3.0
+
+ * Added a :meth:`~pydoop.hdfs.fs.hdfs.walk` method to hdfs instances
+   (works similarly to ``os.walk`` from Python's standard library)
+
+ * The Hadoop version parser is now more flexible.  It should be able
+   to parse version strings for all CDH releases, including older ones
+   (note that most of them are **not** supported)
+
+ * Pydoop script can now handle modules whose file name has no extension
+
+ * Fixed "unable to load native-hadoop library" problem (thanks to
+   Liam Slusser)
+
+
 New in 0.9.0
 ------------
 
