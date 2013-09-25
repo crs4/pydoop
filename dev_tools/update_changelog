@@ -10,7 +10,8 @@ import os, sys, re, subprocess, shutil
 
 hadoop_version = pydoop.hadoop_version_info()
 if not hadoop_version.is_cloudera():
-  sys.exit('Package deb only for cloudera dist, found hadoop %s instead'%pydoop.hadoop_version())
+  print 'Hadoop is non-CDH (%s), nothing to do.' % pydoop.hadoop_version()
+  sys.exit(0)  # don't break "make dist"
 if pydoop.hadoop_version_info().tuple[-3] == 3:
   cdh_version = '{0}u{1}'.format(pydoop.hadoop_version_info().tuple[-3], pydoop.hadoop_version_info().tuple[-1])
 else:
