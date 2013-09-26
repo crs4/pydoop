@@ -69,8 +69,6 @@ after_success: |
   # Credentials (if needed)
   username = 'travis.ci.rs4'
   password = '$secure'
-
-
   part = MIMEText('Hello!')
   msg.attach(part)
 
