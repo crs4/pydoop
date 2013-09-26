@@ -1,58 +1,94 @@
 language: python
-python:
-  - "2.7"
-# command to install dependencies
-
-jdk:
-  - oraclejdk7
-
-env:
+script: 
+- python test/all_tests.py
+env: 
+  global: 
+    secure: AZnJnn2bQJ4v/unjnvE0pw7y7EEkmU9MBUn5RjHx9PnhNOFUfGa07tGlPIeRUhmLRSsuLjqTqQrPJnsc6lJuvNnigVz62IUhHLAiF9E5oaHcy2tg3zWyac/pSbgMqwv/k7cZ74YWTL+L5P8otvGhV3JxTBU5O9gMm8gieqExsFw=
+  matrix: 
   - HADOOPVERSION=0.20.2
   - HADOOPVERSION=cdh3u4
   - HADOOPVERSION=cdh3u5
   - HADOOPVERSION=1.0.4
   - HADOOPVERSION=1.1.2
+  - HADOOPVERSION=1.2.1
   - HADOOPVERSION=cdh4.2.0
   - HADOOPVERSION=cdh4.3.0
-  
-before_install:
-  - sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
-  - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa 
-  - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
-  - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
-  - sudo groupadd admin
-  - sudo usermod  -a -G admin $USER
-  - groups $USER
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then tar xf hadoop-$HADOOPVERSION.tar.gz; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site.xml; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_HOME/conf/core-site.xml; fi 
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_HOME/conf/mapred-site.xml; fi 
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
-  - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
+before_install: 
+- sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
+- ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
+- cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
+- echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
+- sudo groupadd admin
+- sudo usermod  -a -G admin $USER
+- groups $USER
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then tar xf hadoop-$HADOOPVERSION.tar.gz; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_HOME/conf/hdfs-site.xml; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_HOME/conf/core-site.xml; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_HOME/conf/mapred-site.xml; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then mkdir -p /tmp/hadoop-hdfs/dfs/name; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then chmod 777 /tmp/hadoop-hdfs/ -R; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then ls -la /tmp/hadoop-hdfs/dfs/name; fi
+- if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -; fi
+- if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/debian/archive.key | sudo apt-key add -; fi
+- if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client; fi
+- if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-conf-pseudo; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 666 /etc/hadoop/conf/*.xml; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts;fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo /etc/init.d/networking restart; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo -u hdfs hadoop namenode -format -force; fi
+- if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; fi
+- if [[ "$HADOOPVERSION" == *cdh3* ]]; then JH=${JAVA_HOME//\//\\\/};sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; fi
+- if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo service hadoop-0.20-datanode restart; sudo service hadoop-0.20-namenode restart; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then hadoop dfsadmin -safemode wait; fi
+- if [[ "$HADOOPVERSION" == *cdh* ]]; then hdfs="sudo -u hdfs hadoop fs"; ${hdfs} -mkdir /tmp; ${hdfs} -chmod 1777 /tmp; ${hdfs} -mkdir /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred;${hdfs} -mkdir  /user/$USER;${hdfs} -chown $USER /user/$USER;fi
 
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then mkdir -p /tmp/hadoop-hdfs/dfs/name; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then chmod 777 /tmp/hadoop-hdfs/ -R; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then ls -la /tmp/hadoop-hdfs/dfs/name; fi
-  - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/debian/archive.key | sudo apt-key add -; fi
-  - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo apt-get update; sudo apt-get install hadoop-0.20-conf-pseudo; fi  
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo chmod 666 /etc/hadoop/conf/*.xml; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts;fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo /etc/init.d/networking restart; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then sudo -u hdfs hadoop namenode -format -force; fi
-  - if [[ "$HADOOPVERSION" == *cdh4* ]]; then sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then JH=${JAVA_HOME//\//\\\/};sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; fi
-  - if [[ "$HADOOPVERSION" == *cdh3* ]]; then sudo service hadoop-0.20-datanode restart; sudo service hadoop-0.20-namenode restart; fi
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then hadoop dfsadmin -safemode wait; fi	
-  - if [[ "$HADOOPVERSION" == *cdh* ]]; then hdfs="sudo -u hdfs hadoop fs"; ${hdfs} -mkdir /tmp; ${hdfs} -chmod 1777 /tmp; ${hdfs} -mkdir /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred;${hdfs} -mkdir  /user/$USER;${hdfs} -chown $USER /user/$USER;fi
-install:
-  - python setup.py install
-# command to run tests
-script: 
-  - python test/all_tests.py
+install: 
+- python setup.py install
+
+after_success: |
+ - make debian
+ - python -c "import smtplib
+import glob
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+fromaddr = 'pmax8080@gmail.com'
+toaddrs  = 'pmax8080@gmail.com'
+msg = MIMEMultipart()
+msg['Subject'] = 'New pydoop deb'
+msg['From'] = 'travis.ci.rs4@gmail.com'
+msg['To'] = 'travis.ci.rs4@gmail.com'
+
+# Credentials (if needed)
+username = 'travis.ci.rs4'
+password = '$secure'
+
+
+part = MIMEText('Hello!')
+msg.attach(part)
+ 
+# This is the binary part(The Attachment):
+deb_file_name = glob.glob('sandbox/*.deb')[0]
+part = MIMEApplication(open(deb_file_name,'rb').read())
+part.add_header('Content-Disposition', 'attachment', filename=deb_file_name)
+msg.attach(part)
+
+# The actual mail send
+server = smtplib.SMTP('smtp.gmail.com:587')
+server.starttls()
+server.login(username,password)
+server.sendmail(msg['From'], msg['To'], msg.as_string())
+server.quit()"
+
+jdk: 
+- oraclejdk7
+python: 
+- "2.7"
