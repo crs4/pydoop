@@ -54,39 +54,38 @@ install:
 
 after_success: |
  - make debian
- - python -c "import smtplib
-import glob
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+  python -c "import smtplib, glob
+  from email.mime.application import MIMEApplication
+  from email.mime.multipart import MIMEMultipart
+  from email.mime.text import MIMEText
 
-fromaddr = 'pmax8080@gmail.com'
-toaddrs  = 'pmax8080@gmail.com'
-msg = MIMEMultipart()
-msg['Subject'] = 'New pydoop deb'
-msg['From'] = 'travis.ci.rs4@gmail.com'
-msg['To'] = 'travis.ci.rs4@gmail.com'
+  fromaddr = 'pmax8080@gmail.com'
+  toaddrs  = 'pmax8080@gmail.com'
+  msg = MIMEMultipart()
+  msg['Subject'] = 'New pydoop deb'
+  msg['From'] = 'travis.ci.rs4@gmail.com'
+  msg['To'] = 'travis.ci.rs4@gmail.com'
 
-# Credentials (if needed)
-username = 'travis.ci.rs4'
-password = '$secure'
+  # Credentials (if needed)
+  username = 'travis.ci.rs4'
+  password = '$secure'
 
 
-part = MIMEText('Hello!')
-msg.attach(part)
- 
-# This is the binary part(The Attachment):
-deb_file_name = glob.glob('sandbox/*.deb')[0]
-part = MIMEApplication(open(deb_file_name,'rb').read())
-part.add_header('Content-Disposition', 'attachment', filename=deb_file_name)
-msg.attach(part)
+  part = MIMEText('Hello!')
+  msg.attach(part)
 
-# The actual mail send
-server = smtplib.SMTP('smtp.gmail.com:587')
-server.starttls()
-server.login(username,password)
-server.sendmail(msg['From'], msg['To'], msg.as_string())
-server.quit()"
+  # This is the binary part(The Attachment):
+  deb_file_name = glob.glob('sandbox/*.deb')[0]
+  part = MIMEApplication(open(deb_file_name,'rb').read())
+  part.add_header('Content-Disposition', 'attachment', filename=deb_file_name)
+  msg.attach(part)
+
+  # The actual mail send
+  server = smtplib.SMTP('smtp.gmail.com:587')
+  server.starttls()
+  server.login(username,password)
+  server.sendmail(msg['From'], msg['To'], msg.as_string())
+  server.quit()"
 
 jdk: 
 - oraclejdk7
