@@ -52,10 +52,10 @@ before_install:
 install: 
 - python setup.py install
 
-after_success: |
-  make debian
-  python -c "
-  import smtplib, glob
+
+
+send_mail: &send_mail |
+  python -c "import smtplib, glob
   from email.mime.application import MIMEApplication
   from email.mime.multipart import MIMEMultipart
   from email.mime.text import MIMEText
@@ -86,7 +86,12 @@ after_success: |
   server.sendmail(msg['From'], msg['To'], msg.as_string())
   server.quit()"
 
+after_success:
+ - make debian
+ - *send_mail
+
 jdk: 
 - oraclejdk7
 python: 
 - "2.7"
+
