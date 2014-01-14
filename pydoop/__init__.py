@@ -48,13 +48,16 @@ __url__ = "http://pydoop.sourceforge.net"
 def reset():
   _PATH_FINDER.reset()
 
-
 def hadoop_home(fallback=DEFAULT_HADOOP_HOME):
   return _PATH_FINDER.hadoop_home(fallback)
 
 
 def hadoop_exec(hadoop_home=None):
   return _PATH_FINDER.hadoop_exec(hadoop_home)
+
+
+def mapred_exec(hadoop_home=None):
+  return _PATH_FINDER.mapred_exec(hadoop_home)
 
 
 def hadoop_version(hadoop_home=None):

@@ -45,7 +45,7 @@ class TestCommon(unittest.TestCase):
   # also an implicit test for the create_directory method
   def _make_random_dir(self, where=None):
     path = self._make_random_path(where=where)
-    self.fs.create_directory(path)
+    res = self.fs.create_directory(path)
     self.assertTrue(self.fs.exists(path))
     return path
 
@@ -294,6 +294,7 @@ class TestCommon(unittest.TestCase):
 
   def list_directory(self):
     new_d = self._make_random_dir()
+    
     self.assertEqual(self.fs.list_directory(new_d), [])
     paths = [self._make_random_file(where=new_d) for _ in xrange(3)]
     paths.sort(key=os.path.basename)
