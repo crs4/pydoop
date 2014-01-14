@@ -139,6 +139,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     gargs = _pop_generic_args(args)
     for seq in gargs, args:
       _args.extend(map(str, seq))
+  logger.info('args %s, cmd %s, properties %s', _args, cmd, properties)
   p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   output, error = p.communicate()
   if p.returncode:
@@ -266,6 +267,7 @@ def run_class(class_name, args=None, properties=None, classpath=None,
       classpath = [classpath]
     classpath_list = [cp.strip() for s in classpath for cp in s.split(":")]
     os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
+    logger.debug('HADOOP_CLASSPATH %s',  os.environ['HADOOP_CLASSPATH'] )
   res = run_cmd(class_name, args, properties, hadoop_conf_dir=hadoop_conf_dir,
                 logger=logger)
   if old_classpath is not None:
@@ -322,7 +324,8 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     submitter = "it.crs4.pydoop.pipes.Submitter"
     pydoop_jar = pydoop.jar_path()
     args.extend(("-libjars", pydoop_jar))
-    return run_class(submitter, args, properties, classpath=pydoop_jar,
+    return run_class(submitter, args, properties, 
+    classpath=pydoop_jar,
                      logger=logger)
   else:
     return run_cmd("pipes", args, properties, hadoop_conf_dir=hadoop_conf_dir,
@@ -465,6 +468,7 @@ class PipesRunner(object):
     self.logger.info("collecting output%s" % (
       " to %s" % out_file if out_file else ''
       ))
+    self.logger.info("self.output %s", self.output)
     return collect_output(self.output, out_file)
 
   def __str__(self):

@@ -153,6 +153,9 @@ class HadoopVersion(object):
   def has_security(self):
     return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
 
+  def has_variable_isplit_encoding(self):
+	  return self.tuple >= (2,0,0) and not self.is_cloudera()
+	
   @property
   def tuple(self):
     return self.__tuple
@@ -249,6 +252,7 @@ class PathFinder(object):
   def __init__(self):
     self.__hadoop_home = None
     self.__hadoop_exec = None
+    self.__mapred_exec = None
     self.__hadoop_conf = None
     self.__hadoop_version = None  # str
     self.__hadoop_version_info = None  # HadoopVersion
@@ -276,6 +280,19 @@ class PathFinder(object):
     if not self.__hadoop_home:
       PathFinder.__error("hadoop home", "HADOOP_HOME")
     return self.__hadoop_home
+
+  def mapred_exec(self, hadoop_home=None):
+    if not self.__mapred_exec:
+      if not (hadoop_home or os.getenv("HADOOP_HOME")):
+        if is_exe(self.CDH_HADOOP_EXEC):
+          self.__mapred_exec = self.CDH_HADOOP_EXEC
+      else:
+        mapred = os.path.join(hadoop_home or self.hadoop_home(), "bin", "mapred")
+        if os.path.exists(mapred):
+          self.__mapred_exec = mapred
+        else:
+          self.__mapred_exec = self.hadoop_exec(hadoop_home)
+    return self.__mapred_exec
 
   def hadoop_exec(self, hadoop_home=None):
     if not self.__hadoop_exec:
@@ -385,10 +402,19 @@ class PathFinder(object):
     if not self.__hadoop_classpath:
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
-        self.__hadoop_classpath = ':'.join(
-          glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
-          glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
-          )
+        if v.tuple[:2] == (2,2):
+          self.__hadoop_classpath = ':'.join(
+            glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/hdfs', '*.jar')) +
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/', '*.jar')) +
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/lib', '*.jar')) + 
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/mapreduce', '*.jar')) 
+            )
+        else:
+          self.__hadoop_classpath = ':'.join(
+            glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
+            glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
+            )
       else:  # FIXME: this does not cover from-tarball installation
         if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
           hadoop_home = self.CDH_HADOOP_HOME_PKG

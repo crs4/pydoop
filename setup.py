@@ -141,6 +141,14 @@ def write_version(filename="pydoop/version.py"):
       f.write("version='%s'\n" % version)
 
 
+# https://issues.apache.org/jira/browse/MAPREDUCE-375 -- integrated in 0.21.0
+def get_pipes_macros(hadoop_version):
+  pipes_macros = []
+  if hadoop_version.has_variable_isplit_encoding():
+    pipes_macros.append(("VINT_ISPLIT_FILENAME", None))
+  return pipes_macros
+
+
 def get_hdfs_macros(hdfs_hdr):
   """
   Search libhdfs headers for specific features.
@@ -338,7 +346,8 @@ def create_pipes_ext(patched_src_dir, pipes_ext_name):
     PIPES_SRC,
     glob.glob("%s/*/impl/*.cc" % patched_src_dir),
     include_dirs=include_dirs,
-    libraries=libraries
+    libraries=libraries,
+    define_macros=get_pipes_macros(HADOOP_VERSION_INFO)
     )
 
 
@@ -492,7 +501,7 @@ class BuildExt(build_ext):
     log.info("Compiling Java classes")
     for f in jlib.java_files:
       compile_cmd += " %s" % f
-    log.debug("Command: %s", compile_cmd)
+    log.info("Command: %s", compile_cmd)
     ret = os.system(compile_cmd)
     if ret:
       raise DistutilsSetupError(
@@ -502,7 +511,7 @@ class BuildExt(build_ext):
       'package_path': package_path, 'class_dir': class_dir
       }
     log.info("Packaging Java classes")
-    log.debug("Command: %s", package_cmd)
+    log.info("Command: %s", package_cmd)
     ret = os.system(package_cmd)
     if ret:
       raise DistutilsSetupError(
