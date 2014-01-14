@@ -35,8 +35,8 @@ before_install:
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; fi
 - if [[ "$HADOOPVERSION" == 2.2.* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop; else if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/conf; fi; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_CONF_DIR/hdfs-site.xml; fi
-- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_HOME/conf/core-site.xml; fi
-- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_HOME/conf/mapred-site.xml; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_CONF_DIR/core-site.xml; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_CONF_DIR/conf/mapred-site.xml; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/start-all.sh; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
