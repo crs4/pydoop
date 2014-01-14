@@ -40,7 +40,7 @@ before_install:
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_CONF_DIR/mapred-site.xml; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop namenode -format; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_BIN/start-all.sh; fi
-- if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_BIN/hadoop dfsadmin -safemode wait; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait; fi
 - if [[ "$HADOOPVERSION" == *cdh* ]]; then mkdir -p /tmp/hadoop-hdfs/dfs/name; fi
 - if [[ "$HADOOPVERSION" == *cdh* ]]; then chmod 777 /tmp/hadoop-hdfs/ -R; fi
 - if [[ "$HADOOPVERSION" == *cdh* ]]; then ls -la /tmp/hadoop-hdfs/dfs/name; fi
