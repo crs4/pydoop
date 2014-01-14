@@ -30,10 +30,10 @@ before_install:
 - sudo groupadd admin
 - sudo usermod  -a -G admin $USER
 - groups $USER
-- if [[ "$HADOOPVERSION" == 2.2.* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop; else if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/conf; fi; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://mirror.nohup.it/apache/hadoop/common/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then tar xf hadoop-$HADOOPVERSION.tar.gz; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; fi
+- if [[ "$HADOOPVERSION" == 2.2.* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop; else if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/conf; fi; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property> <property><name>dfs.replication</name><value>1</value></property></configuration>" > $HADOOP_CONF_DIR/hdfs-site.xml; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_HOME/conf/core-site.xml; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_HOME/conf/mapred-site.xml; fi
