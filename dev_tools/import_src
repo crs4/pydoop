@@ -46,6 +46,7 @@ WANTED = {  # basename: relative location
   "PipesReducer.java": "org/apache/hadoop/mapred/pipes",
   "Submitter.java": "org/apache/hadoop/mapred/pipes",
   "UpwardProtocol.java": "org/apache/hadoop/mapred/pipes",
+  "LocalJobRunner.java": "org/apache/hadoop/mapred",
   }
 
 
