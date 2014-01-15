@@ -383,9 +383,13 @@ class PathFinder(object):
     if not self.__hadoop_native:
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
-        self.__hadoop_native = os.path.join(
-          hadoop_home, 'lib', 'native', 'Linux-%s-%s' % get_arch()
-          )
+        if v.tuple[:2] == (2,2):
+          self.__hadoop_native = os.path.join(
+            hadoop_home, 'lib', 'native')
+        else:
+          self.__hadoop_native = os.path.join(
+            hadoop_home, 'lib', 'native', 'Linux-%s-%s' % get_arch()
+            )
       else:  # FIXME: this does not cover from-tarball installation
         if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
           hadoop_home = self.CDH_HADOOP_HOME_PKG
