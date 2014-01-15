@@ -30,7 +30,7 @@ before_install:
 - sudo groupadd admin
 - sudo usermod  -a -G admin $USER
 - groups $USER
-- if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://mirror.nohup.it/apache/hadoop/common/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
+- if [[ "$HADOOPVERSION" != *cdh* ]]; then wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then tar xf hadoop-$HADOOPVERSION.tar.gz; fi
 - if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; fi
 - if [[ "$HADOOPVERSION" == 2.2.* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop; export HADOOP_BIN=$HADOOP_HOME/sbin; export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native; export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib";else if [[ "$HADOOPVERSION" != *cdh* ]]; then export HADOOP_CONF_DIR=$HADOOP_HOME/conf; export HADOOP_BIN=$HADOOP_HOME/bin; fi; fi
