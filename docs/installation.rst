@@ -394,6 +394,22 @@ If you can't acquire superuser privileges to run the tests, just keep in mind
 that the failures reported may be due to this reason.
 
 
+Hadoop 2.2.0
+....................
+
+In Hadoop 2.2.0 it is necessary to edit ``hdfs-site.xml`` and set dfs.namenode.fs-limits.min-block-size to a low value:
+
+.. code-block:: xml
+
+  <property>
+    <name>dfs.namenode.fs-limits.min-block-size</name>
+    <value>512</value>
+  </property>
+
+
+then restart Hadoop daemons.
+
+
 .. rubric:: Footnotes
 
 .. [#] To make Pydoop work with Python 2.6 you need to install the
