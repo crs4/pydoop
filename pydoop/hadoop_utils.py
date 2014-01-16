@@ -355,7 +355,13 @@ class PathFinder(object):
         if self.cloudera():
           candidate = '/etc/hadoop/conf'
         else:
-          candidate = os.path.join(hadoop_home or self.hadoop_home(), 'conf')
+          if not hadoop_home:
+            hadoop_home = self.hadoop_home()
+          v = self.hadoop_version_info(hadoop_home)
+          if v.main >= (2, 0, 0):
+            candidate = os.path.join(hadoop_home, 'etc', 'hadoop')
+          else:
+            candidate = os.path.join(hadoop_home, 'conf')
         if os.path.isdir(candidate):
           self.__hadoop_conf = candidate
     if not self.__hadoop_conf:
@@ -383,7 +389,7 @@ class PathFinder(object):
     if not self.__hadoop_native:
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
-        if v.tuple[:2] == (2,2):
+        if v.main >= (2, 0, 0):
           self.__hadoop_native = os.path.join(
             hadoop_home, 'lib', 'native')
         else:
@@ -406,7 +412,7 @@ class PathFinder(object):
     if not self.__hadoop_classpath:
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
-        if v.tuple[:2] == (2,2):
+        if v.main >= (2, 0, 0):
           self.__hadoop_classpath = ':'.join(
             glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/hdfs', '*.jar')) +
