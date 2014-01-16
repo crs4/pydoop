@@ -1,10 +1,7 @@
-include AUTHORS LICENSE VERSION
+include AUTHORS LICENSE VERSION README.md
 
 include src/*.hpp
 recursive-include src/it *
-exclude src/HadoopPipes.cc
-exclude src/StringUtils.cc
-exclude src/SerialUtils.cc
 exclude src/_pipes*main.cpp
 exclude src/_hdfs*main.cpp
 graft src/hadoop-*

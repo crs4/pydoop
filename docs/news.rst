@@ -3,11 +3,12 @@
 News
 ====
 
-New in 0.11.0
+New in 0.11.1
 -------------
 
- * Added support for hadoop 1.2.1 and  hadoop 2.2.0
-   
+ * Added support for hadoop 2.2.0
+ * Added support for hadoop 1.2.1
+
    
 New in 0.10.0
 -------------
