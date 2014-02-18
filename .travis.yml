@@ -19,6 +19,7 @@ env:
   - HADOOPVERSION=cdh4.2.0
   - HADOOPVERSION=cdh4.3.0
   - HADOOPVERSION=cdh4.4.0
+  - HADOOPVERSION=cdh4.5.0
 python: 
 - "2.7"
 install: 
