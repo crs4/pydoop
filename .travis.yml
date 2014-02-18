@@ -62,5 +62,6 @@ before_install:
 - if [[ "$HADOOPVERSION" == *cdh* ]]; then hadoop dfsadmin -safemode wait; fi
 - if [[ "$HADOOPVERSION" == *cdh* ]]; then hdfs="sudo -u hdfs hadoop fs"; ${hdfs} -mkdir /tmp; ${hdfs} -chmod 1777 /tmp; ${hdfs} -mkdir /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; ${hdfs} -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred;${hdfs} -mkdir  /user/$USER;${hdfs} -chown $USER /user/$USER;fi
 script: 
+- examples/run_all
 - python test/all_tests.py
 language: python
