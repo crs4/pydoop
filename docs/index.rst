@@ -27,7 +27,6 @@ Contents
    examples/index
    self_contained
    for_dumbo_users
-   gsoc_ideas_list
 
 
 How to Cite
