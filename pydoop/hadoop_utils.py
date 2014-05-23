@@ -154,8 +154,8 @@ class HadoopVersion(object):
     return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
 
   def has_variable_isplit_encoding(self):
-	  return self.tuple >= (2,0,0) and not self.is_cloudera()
-	
+	  return self.tuple >= (2,0,0)
+    	    
   @property
   def tuple(self):
     return self.__tuple
@@ -426,18 +426,22 @@ class PathFinder(object):
             glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
             )
       else:  # FIXME: this does not cover from-tarball installation
-        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
-          hadoop_home = self.CDH_HADOOP_HOME_PKG
-        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
-          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
+        if self.is_yarn():
+          self.__hadoop_classpath = ':'.join(glob.glob("/usr/lib/hadoop*/*.jar") + glob.glob("/usr/lib/hadoop*/lib/*.jar"))
         else:
-          raise RuntimeError("unsupported CDH deployment")
-        mr1_home = "%s-0.20-mapreduce" % hadoop_home
-        self.__hadoop_classpath = ':'.join(
-          glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
-          glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
-          glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
-          )
+          if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
+            hadoop_home = self.CDH_HADOOP_HOME_PKG
+          elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
+            hadoop_home = self.CDH_HADOOP_HOME_PARCEL
+          else:
+            raise RuntimeError("unsupported CDH deployment")
+          mr1_home = "%s-0.20-mapreduce" % hadoop_home
+          self.__hadoop_classpath = ':'.join(
+            glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
+            glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
+            glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
+            )
+        
       self.__hadoop_classpath += ":" + self.hadoop_native()
     return self.__hadoop_classpath
 
@@ -456,3 +460,7 @@ class PathFinder(object):
       except ValueError:
         info[a] = None
     return info
+    
+  def is_yarn(self, hadoop_conf=None, hadoop_home=None):
+    return self.hadoop_params(hadoop_conf, hadoop_home).get('mapreduce.framework.name').lower() == 'yarn'
+    

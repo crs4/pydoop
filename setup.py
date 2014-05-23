@@ -483,8 +483,8 @@ class BuildExt(build_ext):
     log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
     log.info("java_home: %r" % (JAVA_HOME,))
     build_ext.run(self)
-    for jlib in self.java_libs:
-      self.__build_java_lib(jlib)
+    #for jlib in self.java_libs:
+     # self.__build_java_lib(jlib)
 
   def __build_java_lib(self, jlib):
     log.info("Building java code for hadoop-%s" % jlib.hadoop_vinfo)
