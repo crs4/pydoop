@@ -462,5 +462,5 @@ class PathFinder(object):
     return info
     
   def is_yarn(self, hadoop_conf=None, hadoop_home=None):
-    return self.hadoop_params(hadoop_conf, hadoop_home).get('mapreduce.framework.name').lower() == 'yarn'
+    return self.hadoop_params(hadoop_conf, hadoop_home).get('mapreduce.framework.name', '').lower() == 'yarn'
     
