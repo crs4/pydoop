@@ -25,7 +25,8 @@ env:
   - HADOOPVERSION=cdh4.5.0
 python: 
 - "2.7"
-install: 
+install:
+- export LD_PRELOAD=/lib/x86_64-linux-gnu/libssl.so.1.0.0
 - python setup.py install
 before_install: 
 - sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
