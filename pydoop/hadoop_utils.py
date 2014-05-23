@@ -148,7 +148,7 @@ class HadoopVersion(object):
     return bool(self.cdh)
 
   def has_deprecated_bs(self):
-    return self.cdh[:2] == (4, 3)
+    return self.cdh[:2] >= (4, 3)
 
   def has_security(self):
     return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
