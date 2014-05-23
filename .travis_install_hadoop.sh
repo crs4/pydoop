@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+#set -e
 
 if [[ "$1" != *cdh* ]]; #standard hadoop distribution
     then
