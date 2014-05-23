@@ -338,9 +338,9 @@ def create_pipes_ext(patched_src_dir, pipes_ext_name):
   include_dirs = [
     "%s/%s/api" % (patched_src_dir, _) for _ in "pipes", "utils"
     ]
-  libraries = ["pthread", BOOST_PYTHON]
-  if HADOOP_VERSION_INFO.tuple != (0, 20, 2):
-    libraries.append("ssl")
+  libraries = ["pthread", BOOST_PYTHON, "ssl"]
+  #if HADOOP_VERSION_INFO.tuple != (0, 20, 2):
+    #libraries.append("ssl")
   return BoostExtension(
     pipes_ext_name,
     PIPES_SRC,
