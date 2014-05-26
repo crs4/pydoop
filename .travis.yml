@@ -39,6 +39,6 @@ before_install:
 - . .travis_install_hadoop.sh $HADOOPVERSION
 
 script:
-- export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
+- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
 - python test/all_tests.py
 language: python
