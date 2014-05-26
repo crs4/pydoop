@@ -154,7 +154,7 @@ class HadoopVersion(object):
     return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
 
   def has_variable_isplit_encoding(self):
-	  return self.tuple > (0, 20, 2)
+	  return self.tuple >= (2,0,0) and not self.is_cloudera()
     	    
   @property
   def tuple(self):
