@@ -49,6 +49,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         
         for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
         sudo rm /tmp/hadoop* -rf
+        sudo rm /var/lib/hadoop* -rf
         
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
@@ -63,9 +64,9 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i start; done   
         hadoop dfsadmin -safemode wait;
         sudo jps
-        sudo service hadoop-0.20-mapreduce-jobtracker restart;
-        sudo service hadoop-0.20-mapreduce-tasktracker restart;
-        sudo jps
+        #sudo service hadoop-0.20-mapreduce-jobtracker restart;
+        #sudo service hadoop-0.20-mapreduce-tasktracker restart;
+        #sudo jps
         cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
