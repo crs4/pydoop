@@ -47,7 +47,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         sudo /etc/init.d/networking restart
         sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>mapred.job.tracker</name><value>localhost:9001</value></property><property><name>mapred.local.dir</name><value>/tmp/mapred_data</value></property></configuration>" > /etc/hadoop/conf/mapred-site.xml;
         
-        
+        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
         sudo rm /tmp/hadoop* -rf
         
         sudo mkdir /tmp/mapred_data
@@ -60,7 +60,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
                 sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
         fi
         
-        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i restart; done   
+        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i start; done   
         hadoop dfsadmin -safemode wait;
         cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
         hdfs="sudo -u hdfs hadoop fs"; 
