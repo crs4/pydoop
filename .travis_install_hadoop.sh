@@ -62,6 +62,8 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         
         for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i start; done   
         hadoop dfsadmin -safemode wait;
+        sudo service hadoop-0.20-mapreduce-jobtracker start;
+        sudo service hadoop-0.20-mapreduce-tasktracker start;
         sudo jps
         cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
         hdfs="sudo -u hdfs hadoop fs"; 
