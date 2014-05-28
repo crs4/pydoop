@@ -49,7 +49,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         
         for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
         sudo rm /tmp/hadoop* -rf
-        sudo rm /var/lib/hadoop* -rf
+        sudo rm /var/lib/hadoop-hdfs/* -rf
         
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
