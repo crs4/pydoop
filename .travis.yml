@@ -1,9 +1,6 @@
 jdk: 
 - oraclejdk7
 after_success: 
-- cd examples
-- ./run_all
-- cd ../
 - sudo apt-get install debhelper python-all-dev libboost-python-dev libssl-dev python-sphinx devscripts inkscape
 - make debian
 - cd sandbox
@@ -39,6 +36,10 @@ before_install:
 - . .travis_install_hadoop.sh $HADOOPVERSION
 
 script:
+- sudo jps
 - #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
-- python test/all_tests.py
+- #python test/all_tests.py
+- cd examples
+- ./run_all
+- cd ../
 language: python
