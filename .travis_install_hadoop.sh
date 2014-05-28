@@ -32,7 +32,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         if [[ "$1" == *cdh4* ]]; 
             then 
                 sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$1 contrib";  curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -; 
-                sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client;
+                sudo apt-get update; sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client hadoop-0.20-mapreduce-tasktracker;
         else if [[ "$1" == *cdh3* ]];
             then
                 sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$1 contrib";  curl -s http://archive.cloudera.com/debian/archive.key | sudo apt-key add -;
@@ -57,8 +57,9 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
                 sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
         fi
         
-        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i restart; done        
+        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i restart; done   
         hadoop dfsadmin -safemode wait;
+        cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
         ${hdfs} -chmod 1777 /tmp; 
