@@ -52,10 +52,9 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
             then 
                 JH=${JAVA_HOME//\//\\\/};
                 sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
-            fi
-        
-        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i restart; done
         fi
+        
+        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i restart; done        
         hadoop dfsadmin -safemode wait;
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
