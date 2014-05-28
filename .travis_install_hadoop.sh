@@ -48,8 +48,8 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>mapred.job.tracker</name><value>localhost:9001</value></property><property><name>mapred.local.dir</name><value>/tmp/mapred_data</value></property></configuration>" > /etc/hadoop/conf/mapred-site.xml;
         
         for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
-        sudo rm /tmp/hadoop* -rf
-        sudo rm /var/lib/hadoop-hdfs/* -rf
+        #sudo rm /tmp/hadoop* -rf
+        #sudo rm /var/lib/hadoop-hdfs/* -rf
         
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
