@@ -68,9 +68,9 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         hadoop dfsadmin -safemode wait;
         sudo jps
         cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
-        sudo service hadoop-0.20-mapreduce-jobtracker restart;
-        sudo service hadoop-0.20-mapreduce-tasktracker restart;
-        sudo jps
+        #sudo service hadoop-0.20-mapreduce-jobtracker restart;
+        #sudo service hadoop-0.20-mapreduce-tasktracker restart;
+        #sudo jps
         
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
