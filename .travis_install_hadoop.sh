@@ -46,10 +46,12 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts
         sudo /etc/init.d/networking restart
         sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>mapred.job.tracker</name><value>localhost:9001</value></property><property><name>mapred.local.dir</name><value>/tmp/mapred_data</value></property></configuration>" > /etc/hadoop/conf/mapred-site.xml;
-        sudo mkdir /tmp/mapred_data
-        sudo chown -R mapred:hadoop /tmp/mapred_data
+        
         
         sudo rm /tmp/hadoop* -rf
+        
+        sudo mkdir /tmp/mapred_data
+        sudo chown -R mapred:hadoop /tmp/mapred_data
         sudo -u hdfs hadoop namenode -format -force
         
         if [[ "$1" == *cdh3* ]];
