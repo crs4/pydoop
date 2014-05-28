@@ -1,5 +1,5 @@
 #!/bin/bash
-#set -e
+set -e
 
 if [[ "$1" != *cdh* ]]; #standard hadoop distribution
     then
@@ -44,17 +44,17 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml
         sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
         sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts
+        sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > /etc/hadoop/conf/mapred-site.xml;
         sudo /etc/init.d/networking restart
         sudo -u hdfs hadoop namenode -format -force
-        if [[ "$1" == *cdh4* ]];
-            then 
-            sudo service hadoop-hdfs-datanode restart; sudo service hadoop-hdfs-namenode restart; 
-        else if [[ "$1" == *cdh3* ]];
+        
+        if [[ "$1" == *cdh3* ]];
             then 
                 JH=${JAVA_HOME//\//\\\/};
                 sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
-                sudo service hadoop-0.20-datanode restart; sudo service hadoop-0.20-namenode restart
-            fi    
+            fi
+        
+        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i restart; done
         fi
         hadoop dfsadmin -safemode wait;
         hdfs="sudo -u hdfs hadoop fs"; 
