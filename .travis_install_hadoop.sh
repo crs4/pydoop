@@ -69,8 +69,8 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         hadoop dfsadmin -safemode wait;
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
-        ${hdfs} -chmod 1777 /tmp -R; 
-        ${hdfs} -chmod 1777 / -R; 
+        ${hdfs} -chmod 1777 /tmp; 
+        
         ${hdfs} -mkdir /var/lib/hadoop-hdfs/cache/mapred/mapred/staging; 
         ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging;
         ${hdfs} -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred;
