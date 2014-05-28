@@ -49,6 +49,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
         
+        sudo rm /tmp/hadoop* -rf
         sudo -u hdfs hadoop namenode -format -force
         
         if [[ "$1" == *cdh3* ]];
