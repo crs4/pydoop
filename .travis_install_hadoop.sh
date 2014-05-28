@@ -54,8 +54,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
         
-        sudo -u hdfs hadoop fs -mkdir /tmp/mapred/system
-        sudo -u hdfs hadoop fs -chown mapred:hadoop /tmp/mapred/system
+        
         
         sudo -u hdfs hadoop namenode -format -force
         
@@ -79,5 +78,8 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging;
         ${hdfs} -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred;
         ${hdfs} -mkdir  /user/$USER;
-        ${hdfs} -chown $USER /user/$USER;        
+        ${hdfs} -chown $USER /user/$USER;
+        
+        sudo -u hdfs hadoop fs -mkdir /tmp/mapred/system
+        sudo -u hdfs hadoop fs -chown mapred:hadoop /tmp/mapred/system        
 fi
