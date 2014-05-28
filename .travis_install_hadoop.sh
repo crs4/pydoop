@@ -64,13 +64,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
                 sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
         fi
         
-        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i start; done   
-        hadoop dfsadmin -safemode wait;
-        sudo jps
-        cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
-        #sudo service hadoop-0.20-mapreduce-jobtracker restart;
-        #sudo service hadoop-0.20-mapreduce-tasktracker restart;
-        #sudo jps
+        
         
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
@@ -84,4 +78,13 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         
         sudo -u hdfs hadoop fs -mkdir /tmp/mapred/system
         sudo -u hdfs hadoop fs -chown mapred:hadoop /tmp/mapred/system        
+        
+        
+        for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i start; done   
+        hadoop dfsadmin -safemode wait;
+        sudo jps
+        cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
+        #sudo service hadoop-0.20-mapreduce-jobtracker restart;
+        #sudo service hadoop-0.20-mapreduce-tasktracker restart;
+        #sudo jps
 fi
