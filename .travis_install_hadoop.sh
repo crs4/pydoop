@@ -53,11 +53,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
-        
-        
-        
-        
-        
+
         if [[ "$1" == *cdh3* ]];
             then 
                 JH=${JAVA_HOME//\//\\\/};
