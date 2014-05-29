@@ -3,7 +3,7 @@
 examples=(
     hdfs
     input_format
-    pydoop_script
+    #pydoop_script
     self_contained
     ipcount
     sequence_file
