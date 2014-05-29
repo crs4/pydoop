@@ -56,7 +56,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
         
         
         
-        sudo -u hdfs hadoop namenode -format -force
+        
         
         if [[ "$1" == *cdh3* ]];
             then 
@@ -64,6 +64,7 @@ if [[ "$1" != *cdh* ]]; #standard hadoop distribution
                 sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
         fi
         
+        sudo -u hdfs hadoop namenode -format -force
         
         for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
         hadoop dfsadmin -safemode wait;
