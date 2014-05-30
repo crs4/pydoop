@@ -47,7 +47,7 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
         fi
         
         
-        if [[ "!$YARN" ]];
+        if ! [[ "$YARN" ]];
 			then				
 				sudo chmod 666 /etc/hadoop/conf/*.xml
 				sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml
