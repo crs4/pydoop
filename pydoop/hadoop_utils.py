@@ -156,7 +156,7 @@ class HadoopVersion(object):
   def has_variable_isplit_encoding(self):
 	  pf = PathFinder()
 	  #return self.tuple >= (2,0,0) and not self.is_cloudera()
-	  return self.tuple >= ((2,0,0) and not self.is_cloudera()) or pf.is_yarn()
+	  return (self.tuple >= (2,0,0) and not self.is_cloudera()) or pf.is_yarn()
     	    
   @property
   def tuple(self):
