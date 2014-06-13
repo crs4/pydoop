@@ -61,10 +61,10 @@
      <name>yarn.application.classpath</name>
      <value>
         $HADOOP_CONF_DIR,
-        /home/mauro/pydoop/hadoop-2.2.0/share/hadoop/common/*,/home/mauro/pydoop/hadoop-2.2.0/share/hadoop/common/lib/*,
-        /home/mauro/pydoop/hadoop-2.2.0/share/hadoop/hdfs/*,$/home/mauro/pydoop/hadoop-2.2.0/share/hadoop/hdfs/lib/*,
-        /home/mauro/pydoop/hadoop-2.2.0/share/hadoop/mapreduce/*,$/home/mauro/pydoop/hadoop-2.2.0/share/hadoop/mapreduce/lib/*,
-        /home/mauro/pydoop/hadoop-2.2.0/share/hadoop/yarn/*,/home/mauro/pydoop/hadoop-2.2.0/share/hadoop/yarn/lib/*
+        $HADOOP_HOME/share/hadoop/common/*,$HADOOP_HOME/share/hadoop/common/lib/*,
+        $HADOOP_HOME/share/hadoop/hdfs/*,$$HADOOP_HOME/share/hadoop/hdfs/lib/*,
+        $HADOOP_HOME/share/hadoop/mapreduce/*,$$HADOOP_HOME/share/hadoop/mapreduce/lib/*,
+        $HADOOP_HOME/share/hadoop/yarn/*,$HADOOP_HOME/share/hadoop/yarn/lib/*
      </value>
   </property>
 </configuration>
