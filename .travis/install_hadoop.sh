@@ -3,7 +3,7 @@
 
 if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
     then
-        wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
+        #wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
         tar xf hadoop-$HADOOPVERSION.tar.gz
         export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; 
         if [[ "$HADOOPVERSION" == 2.2.* ]];
@@ -22,8 +22,8 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 
                 
             fi
-        echo "export HADOOP_HOME=$HADOOP_HOME" >> $HADOOP_CONF_DIR/hadoop_env.sh
-	echo "export JAVA_HOME=$JAVA_HOME" >> $HADOOP_CONF_DIR/hadoop_env.sh
+        echo "export HADOOP_HOME=$HADOOP_HOME" >> $HADOOP_CONF_DIR/hadoop-env.sh
+	echo "export JAVA_HOME=$JAVA_HOME" >> $HADOOP_CONF_DIR/hadoop-env.sh
         
 	$HADOOP_HOME/bin/hadoop namenode -format;
         $HADOOP_BIN/start-all.sh; 
