@@ -62,8 +62,8 @@
      <value>
         $HADOOP_CONF_DIR,
         $HADOOP_HOME/share/hadoop/common/*,$HADOOP_HOME/share/hadoop/common/lib/*,
-        $HADOOP_HOME/share/hadoop/hdfs/*,$$HADOOP_HOME/share/hadoop/hdfs/lib/*,
-        $HADOOP_HOME/share/hadoop/mapreduce/*,$$HADOOP_HOME/share/hadoop/mapreduce/lib/*,
+        $HADOOP_HOME/share/hadoop/hdfs/*,$HADOOP_HOME/share/hadoop/hdfs/lib/*,
+        $HADOOP_HOME/share/hadoop/mapreduce/*,$HADOOP_HOME/share/hadoop/mapreduce/lib/*,
         $HADOOP_HOME/share/hadoop/yarn/*,$HADOOP_HOME/share/hadoop/yarn/lib/*
      </value>
   </property>
