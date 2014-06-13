@@ -8,7 +8,7 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
         export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; 
         if [[ "$HADOOPVERSION" == 2.2.* ]];
             then
-                export HADOOP_CONF_DIR=`pwd`/.travis/hadoop-$HADOOP_HOME-conf/; 
+                export HADOOP_CONF_DIR=`pwd`/.travis/hadoop-$HADOOPVERSION-conf/; 
                 export HADOOP_BIN=$HADOOP_HOME/sbin; 
                 export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native; 
                 export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib";
