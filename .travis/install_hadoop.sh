@@ -3,7 +3,7 @@
 
 if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
     then
-        wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
+        #wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
         tar xf hadoop-$HADOOPVERSION.tar.gz
         export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; 
         if [[ "$HADOOPVERSION" == 2.2.* ]];
@@ -15,11 +15,14 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
             else 
                 export HADOOP_CONF_DIR=$HADOOP_HOME/conf; 
                 export HADOOP_BIN=$HADOOP_HOME/bin;
+
+		echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property><property><name>dfs.replication</name><value>1</value></property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property><property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property></configuration>" > $HADOOP_CONF_DIR/hdfs-site.xml;
+	        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_CONF_DIR/core-site.xml;
+	        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_CONF_DIR/mapred-site.xml;
+
                 
             fi
-        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property><property><name>dfs.replication</name><value>1</value></property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property><property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property></configuration>" > $HADOOP_CONF_DIR/hdfs-site.xml;
-        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_CONF_DIR/core-site.xml;
-        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_CONF_DIR/mapred-site.xml;
+        
         $HADOOP_HOME/bin/hadoop namenode -format;
         $HADOOP_BIN/start-all.sh; 
         $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait;
