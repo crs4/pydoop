@@ -9,7 +9,7 @@ env:
   global: 
     secure: d1kOuK3dSEs2nNZdGFNcY9KLI5PuWOv7xq9V1b+/+rzhi/BezsvEAjRw+7SeVa/sBk5LcKuKtW06Mjst0npXk487TpQpuLSNzUbX1aaTw4+oG0iJWKeK559iiMs+MBSFYvC6XPts5DkNM+hn5KmhuzCTHBotCv7ZB9Zmuj/ULsg=
   matrix: 
-  - HADOOPVERSION=0.20.2
+  - #HADOOPVERSION=0.20.2
   - #HADOOPVERSION=cdh3u4
   - #HADOOPVERSION=cdh3u5
   - #HADOOPVERSION=1.0.4
@@ -17,8 +17,8 @@ env:
   - #HADOOPVERSION=1.2.1
   - HADOOPVERSION=2.2.0
   - #HADOOPVERSION=cdh4.2.0
-  - HADOOPVERSION=cdh4.3.0
-  - HADOOPVERSION=cdh4.3.0 YARN=true
+  - #HADOOPVERSION=cdh4.3.0
+  - #HADOOPVERSION=cdh4.3.0 YARN=true
   - #HADOOPVERSION=cdh4.4.0
   - #HADOOPVERSION=cdh4.5.0
 python: 
@@ -34,12 +34,12 @@ before_install:
 - sudo groupadd admin
 - sudo usermod  -a -G admin $USER
 - groups $USER
-- . .travis_install_hadoop.sh $HADOOPVERSION
+- . .travis/install_hadoop.sh
 
 script:
-- sudo jps
+- #sudo jps
 - #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
-- #python test/all_tests.py
+- python test/all_tests.py
 - cd examples
 - ./run_all
 - cd ../
