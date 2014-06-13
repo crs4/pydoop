@@ -3,7 +3,7 @@
 
 if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
     then
-        wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
+        #wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
         tar xf hadoop-$HADOOPVERSION.tar.gz
         export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION; 
         if [[ "$HADOOPVERSION" == 2.2.* ]];
