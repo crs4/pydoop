@@ -34,4 +34,8 @@ echo "Computing usage by block size..."
 python treewalk.py || exit 1
 
 echo "Cleaning up..."
-hadoop fs -rmr ${TEST_ROOT}
+if  [[ "$HADOOP_HOME" ]];
+	then $HADOOP_HOME/bin/hadoop fs -rmr ${TEST_ROOT}
+	else hadoop fs -rmr ${TEST_ROOT}
+
+fi

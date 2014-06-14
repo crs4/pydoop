@@ -9,12 +9,12 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
         if [[ "$HADOOPVERSION" == 2.2.* ]];
             then
                 export HADOOP_CONF_DIR=`pwd`/.travis/hadoop-$HADOOPVERSION-conf/; 
-                export HADOOP_BIN=$HADOOP_HOME/sbin; 
+                export HADOOP_BIN=$HADOOP_HOME/sbin/; 
                 export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native; 
                 export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib";
             else 
                 export HADOOP_CONF_DIR=$HADOOP_HOME/conf; 
-                export HADOOP_BIN=$HADOOP_HOME/bin;
+                export HADOOP_BIN=$HADOOP_HOME/bin/;
 
 		echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property><property><name>dfs.replication</name><value>1</value></property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property><property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property></configuration>" > $HADOOP_CONF_DIR/hdfs-site.xml;
 	        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_CONF_DIR/core-site.xml;
