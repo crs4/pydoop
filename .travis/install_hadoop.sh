@@ -50,8 +50,8 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
             fi
         fi
         
-	sudo chmod 666 /etc/hadoop/conf/
-	sudo chmod 666 /etc/hadoop/conf/*.xml        
+	sudo chmod 777 /etc/hadoop/conf/ -R
+	sudo chmod 777 /etc/hadoop/conf/*.xml        
 	sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml; sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
 
         if ! [[ "$YARN" ]];
