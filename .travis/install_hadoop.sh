@@ -81,18 +81,14 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
         sudo -u hdfs hadoop namenode -format -force
         
 
-	if [[ "$HADOOPVERSION" == *cdh3* ]]; then
-        	sudo /etc/init.d/hadoop-0.20-namenode start;
-		sudo /etc/init.d/hadoop-0.20-datanode start;	
-		sudo /etc/init.d/hadoop-0.20-secondarynamenode start;				
 			
 
-	else
-		for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
 
-	fi
-        
+	for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
+	
         hadoop dfsadmin -safemode wait;
+	sudo jps
+
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
         ${hdfs} -chmod 1777 /tmp; 
@@ -124,11 +120,6 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 			${hdfs} -mkdir /tmp/mapred/system
 			${hdfs} -chown mapred:hadoop /tmp/mapred/system
 			
-			sudo jps
-			cat /var/log/hadoop-0.20-mapreduce/hadoop-hadoop-jobtracker-*.log
-			sudo service hadoop-0.20-mapreduce-jobtracker restart;
-			sudo service hadoop-0.20-mapreduce-tasktracker restart;
-			sudo jps
 		fi        
         
 fi
