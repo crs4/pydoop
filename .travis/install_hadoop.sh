@@ -80,7 +80,18 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 	sudo echo "export JAVA_HOME=$JAVA_HOME" >> /etc/hadoop/conf/hadoop-env.sh
         sudo -u hdfs hadoop namenode -format -force
         
-        for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
+
+	if [[ "$HADOOPVERSION" == *cdh3* ]]; then
+        	sudo /etc/init.d/hadoop-0.20-namenode start;
+		sudo /etc/init.d/hadoop-0.20-datanode start;	
+		sudo /etc/init.d/hadoop-0.20-secondarynamenode start;				
+			
+
+	else
+		for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
+
+	fi
+        
         hadoop dfsadmin -safemode wait;
         hdfs="sudo -u hdfs hadoop fs"; 
         ${hdfs} -mkdir /tmp; 
