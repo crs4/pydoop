@@ -70,12 +70,13 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 		
 		for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
         
-        if [[ "$HADOOPVERSION" == *cdh3* ]];
-            then 
-                JH=${JAVA_HOME//\//\\\/};
-                sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
-        fi
+        #if [[ "$HADOOPVERSION" == *cdh3* ]];
+         #   then 
+          #      JH=${JAVA_HOME//\//\\\/};
+           #     sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh; 
+        #fi
         
+	sudo echo "export JAVA_HOME=$JAVA_HOME" >> /etc/hadoop/conf/hadoop-env.sh
         sudo -u hdfs hadoop namenode -format -force
         
         for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x start ; done
