@@ -84,7 +84,7 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 			
 
 
-	for x in `cd /etc/init.d ; ls hadoop-namenode*` ; do sudo service $x start ; done
+	for x in `cd /etc/init.d ; ls hadoop-*namenode` ; do sudo service $x start ; done
 	
         hadoop dfsadmin -safemode wait;
 	sudo jps
