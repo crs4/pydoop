@@ -120,8 +120,8 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 			${hdfs} -mkdir /tmp/mapred/system
 			${hdfs} -chown mapred:hadoop /tmp/mapred/system
 
-			for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
 			
 		fi        
-        
+	
+	for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
 fi
