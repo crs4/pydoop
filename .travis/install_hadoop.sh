@@ -67,9 +67,9 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 				sudo mkdir /tmp/mapred_data
 				sudo chown -R mapred:hadoop /tmp/mapred_data
 		
-		fi
-		
-		for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
+	fi
+	
+	for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
         
         #if [[ "$HADOOPVERSION" == *cdh3* ]];
          #   then 
@@ -84,7 +84,7 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 			
 
 
-	for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
+	for x in `cd /etc/init.d ; ls hadoop-namenode*` ; do sudo service $x start ; done
 	
         hadoop dfsadmin -safemode wait;
 	sudo jps
@@ -119,6 +119,8 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 			
 			${hdfs} -mkdir /tmp/mapred/system
 			${hdfs} -chown mapred:hadoop /tmp/mapred/system
+
+			for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
 			
 		fi        
         
