@@ -62,6 +62,9 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
 				#sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts
 				#sudo /etc/init.d/networking restart
 				sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>mapred.job.tracker</name><value>localhost:9001</value></property><property><name>mapred.local.dir</name><value>/tmp/mapred_data</value></property></configuration>" > /etc/hadoop/conf/mapred-site.xml;
+
+				sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property><property><name>dfs.replication</name><value>1</value></property><property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property></configuration>" > /etc/hadoop/conf/hdfs-site.xml;
+
 				#sudo rm /tmp/hadoop* -rf
 				#sudo rm /var/lib/hadoop-hdfs/* -rf
 				sudo mkdir /tmp/mapred_data
