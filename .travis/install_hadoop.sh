@@ -81,7 +81,7 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
         #fi
         
 	sudo echo "export JAVA_HOME=$JAVA_HOME" >> /etc/hadoop/conf/hadoop-env.sh
-	sudo rm /tmp/hadoop-hdfs/dfs/name   
+	sudo rm /tmp/hadoop-hdfs/dfs/name -rf
 	sudo -u hdfs hadoop namenode -format
         
 
