@@ -132,8 +132,8 @@ class StreamRunner(object):
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
             elif cmd == 'runReduce':
-                piped_output = args
-                self.run_reduce(piped_output)
+                part, piped_output = args
+                self.run_reduce(part, piped_output)
     def run_map(self, input_split, n_reduces, piped_input):
         factory, ctx = self.factory, self.ctx
         reader = factory.create_record_reader(ctx)
@@ -145,14 +145,14 @@ class StreamRunner(object):
         for ctx.key, ctx.value in reader:
             mapper.map(ctx)
         mapper.close()
-    def run_reduce(self, piped_output):
+    def run_reduce(self, part, piped_output):
         factory, ctx = self.factory, self.ctx        
         writer = factory.create_record_writer(ctx)
         if writer is None and piped_output:
             raise PydoopError('RecordWriter not defined')
         ctx.writer = writer            
         reducer = factory.create_reducer(ctx)
-        kvs_stream = get_key_values_stream(cmd_stream)
+        kvs_stream = get_key_values_stream(self.cmd_stream)
         for ctx.key, ctx.values in kvs_stream:
             reducer.reduce(ctx)
         reducer.close()

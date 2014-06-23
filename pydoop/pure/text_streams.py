@@ -1,4 +1,5 @@
 from streams import DownStreamFilter, UpStreamFilter
+from string_utils import quote_string, unquote_string
 
 class TextDownStreamFilter(DownStreamFilter):
     """
@@ -22,8 +23,14 @@ class TextDownStreamFilter(DownStreamFilter):
         return self.convert_message(parts[0], parts[1:])
 
 class TextUpStreamFilter(UpStreamFilter):
+    SEP   = '\t'
+    EOL   = '\n'
     def __init__(self, stream):
         super(TextUpStreamFilter, self).__init__(stream)
     def send(self, cmd, *args):
-        print 'sending {}[{}]'.format(cmd, args)
-        
+        self.stream.write(cmd)
+        for a in args:
+            self.stream.write(self.SEP)
+            self.stream.write(quote_string(str(a)))
+        self.stream.write(self.EOL)
+            
