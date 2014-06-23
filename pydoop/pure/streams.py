@@ -113,29 +113,3 @@ def get_key_value_stream(stream):
             raise ProtocolError('out of order command: {}'.format(cmd))
     raise StopIteration
 
-def stream_runner(factory, ctx, stream, up_link):
-    BROKEN
-    for cmd, args in stream:
-        if cmd == 'setJobConf':
-            ctx.set_job_conf(args)
-        elif cmd == 'runMap':
-            mapper = factory.make_mapper(ctx)
-            reader = factory.make_reader(ctx, xxx)
-            reader = reader if reader else get_key_value_stream(stream)
-            ctx.writer = make_combiner(factory, up_link)
-            for ctx.key, ctx.value in reader:
-                mapper.map(ctx)
-            mapper.close()
-            ctx.close()
-            return
-        elif cmd == 'runReducer':
-            reducer = factory.make_reducer(ctx)
-            ctx.writer = factory.make_writer(up_link, xxx)
-            kvs_stream = get_key_values_stream(stream)
-            for ctx.key, ctx.values in kvs_stream:
-                reducer.reduce(ctx)
-            reducer.close()
-            ctx.close()            
-            return
-        else:
-            raise ProtocolError('out of order command: {}'.format(cmd))
