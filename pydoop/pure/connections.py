@@ -17,6 +17,7 @@ class Connections(object):
         self.cmd_stream.close()
         self.up_link.flush()
         self.up_link.close()
+        
 
 def open_playback_connections(cmd_file, out_file):
     in_stream  = open(cmd_file, 'r')

@@ -20,3 +20,10 @@ class TextDownStreamFilter(DownStreamFilter):
             raise StopIteration
         parts = line.split(self.SEP)
         return self.convert_message(parts[0], parts[1:])
+
+class TextUpStreamFilter(UpStreamFilter):
+    def __init__(self, stream):
+        super(TextUpStreamFilter, self).__init__(stream)
+    def send(self, cmd, *args):
+        print 'sending {}[{}]'.format(cmd, args)
+        

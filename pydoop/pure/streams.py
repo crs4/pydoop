@@ -20,9 +20,6 @@ class StreamFilter(object):
         self.stream.flush()
     def close(self):
         self.stream.close()
-    @abstractmethod
-    def next(self):
-        pass
 
 class DownStreamFilter(StreamFilter):
     
@@ -52,10 +49,19 @@ class DownStreamFilter(StreamFilter):
         else:
             raise ProtocolError('Unrecognized command %s' % cmd)
 
+    @abstractmethod
+    def next(self):
+        pass
+        
+
 class UpStreamFilter(StreamFilter):
     CMD_TABLE = {}
     def convert_message(self, cmd, args):
         pass
+    @abstractmethod
+    def send(self):
+        pass
+    
 
 class PushBackStream(object):
     def __init__(self, stream):

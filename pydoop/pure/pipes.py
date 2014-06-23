@@ -1,8 +1,10 @@
 import connections
 
 from api import Context, JobConf, PydoopError, RecordWriter
+from api import MapContext, ReduceContext
 from streams import get_key_value_stream, get_key_values_stream
 import sys
+import os
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -35,7 +37,7 @@ class CombineRunner(RecordWriter):
         self.data.clear()
         self.used_bytes = 0
 
-class TaskContext(Context, MapContext, ReduceContext):
+class TaskContext(MapContext, ReduceContext):
     def __init__(self, up_link):
         self.up_link = up_link
         self.writer = None
@@ -48,6 +50,9 @@ class TaskContext(Context, MapContext, ReduceContext):
         self.input_split = None
         self.key_class = None
         self.value_class = None
+    def close(self):
+        if self.writer:
+            self.writer.close()
     def set_combiner(self, factory, input_split, n_reduces):
         self.input_split = input_split
         self.n_reduces = n_reduces
@@ -154,16 +159,16 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None):
-    try:
+    #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
         context = TaskContext(connections.up_link)
         stream_runner = StreamRunner(factory, context, connections.cmd_stream)
         stream_runner.run()
         context.close()
-        connections.shutdown()
+        connections.close()
         return True
-    except Exception as e:
-        sys.stderr.write('Hadoop Pipes Exception: %s' % e)
-        return False
+    # except Exception as e:
+    #     sys.stderr.write('Hadoop Pipes Exception: %s' % e)
+    #     return False
     

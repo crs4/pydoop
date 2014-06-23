@@ -42,7 +42,7 @@ class Counter(object):
 class JobConf(dict):
     """Configuration properties assigned to this job."""
     def __init__(self, values):
-        if not 1 & len(values):
+        if 1 & len(values):
             raise PydoopError('JobConf.__init__: len(values) should be even')
         super(JobConf, self).__init__(zip(values[::2], values[1::2]))
     
