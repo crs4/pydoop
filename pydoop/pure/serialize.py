@@ -22,12 +22,18 @@ def serialize_int(t, stream):
         stream.write(struct.pack('>Q', t)[-size:])
     return
 
+def read_buffer(n, stream):
+    buff = stream.read(n)
+    if len(buff) != n:
+        raise EOFError
+    return buff
+
 def deserialize_int(stream):
-    b = struct.unpack('b', stream.read(1))[0]
+    b = struct.unpack('b', read_buffer(1, stream))[0]
     if b >= -112:
         return b
     (negative, l) = (True, -120 - b) if b < -120 else (False, -112 - b)
-    q = struct.unpack('>Q', '\x00' * (8 - l) + stream.read(l))[0]
+    q = struct.unpack('>Q', '\x00' * (8 - l) + read_buffer(l, stream))[0]
     return q^-1 if negative else q
 
 def serialize_float(t, stream):
@@ -42,7 +48,7 @@ def deserialize_float(stream):
     slightly different than the original value packed.
     """
     SIZE_OF_FLOAT = 4
-    buf = stream.read(SIZE_OF_FLOAT)
+    buf = read_buffer(SIZE_OF_FLOAT, stream)
     up = xdrlib.Unpacker(buf)
     return up.unpack_float()
 
@@ -53,13 +59,19 @@ def serialize_string(s, stream):
 
 def deserialize_string(stream):
     l = deserialize_int(stream)
-    return stream.read(l)
+    return read_buffer(l, stream)
+
+def serialize_bool(v, stream):
+    serialize_int(int(v), stream)
+
+def deserialize_bool(stream):
+    return bool(deserialize_int(stream))
 
 
 SERIALIZE_MAP = {int : serialize_int, str : serialize_string,
-                 float : serialize_float}
+                 float : serialize_float, bool : serialize_bool}
 DESERIALIZE_MAP = {int : deserialize_int, str : deserialize_string,
-                   float : deserialize_float}
+                   float : deserialize_float, bool : deserialize_bool}
 def serialize(v, stream):
     return SERIALIZE_MAP[type(v)](v, stream)
 def deserialize(t, stream):
