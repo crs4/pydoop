@@ -55,5 +55,13 @@ def deserialize_string(stream):
     l = deserialize_int(stream)
     return stream.read(l)
 
-    
+
+SERIALIZE_MAP = {int : serialize_int, str : serialize_string,
+                 float : serialize_float}
+DESERIALIZE_MAP = {int : deserialize_int, str : deserialize_string,
+                   float : deserialize_float}
+def serialize(v, stream):
+    return SERIALIZE_MAP[type(v)](v, stream)
+def deserialize(t, stream):
+    return DESERIALIZE_MAP[t](stream)
 
