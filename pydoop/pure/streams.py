@@ -6,9 +6,6 @@ class ProtocolError(Exception):
 class ProtocolAbort(ProtocolError):
     pass
 
-def toBool(s):
-    return s.lower().find('true') > -1
-
 class StreamFilter(object):
     __metaclass__ = ABCMeta
     
@@ -22,35 +19,13 @@ class StreamFilter(object):
         self.stream.close()
 
 class DownStreamFilter(StreamFilter):
-    
-    CMD_TABLE = {'mapItem'     : ('mapItem', 2, None),
-                 'reduceValue' : ('reduceValue', 1, None),
-                 'reduceKey'   : ('reduceKey', 1, None),
-                 'start'       : ('start', 1, lambda p: [int(p[0]),]),
-                 'setJobConf'  : ('setJobConf', None, None),
-                 'setInputTypes': ('setInputTypes', 2, None),
-                 'runMap' : ('runMap', 3,
-                             lambda p: [p[0], int(p[1]), toBool(p[2])]),
-                 'runReduce' : ('runReduce', 2,
-                                lambda p: [int(p[0]), toBool(p[1])]),
-                 'abort' : ('abort', 0, None),
-                 'close' : ('close', 0, None),
-                 }
-
-    @classmethod
-    def convert_message(cls, cmd, args):
-        if cmd in cls.CMD_TABLE:
-            cmd, nargs, converter = cls.CMD_TABLE[cmd]
-            assert nargs is None or len(args) == nargs
-            if cmd == 'abort':
-                raise ProtocolAbort('received an abort request')
-            args = args if converter is None else converter(args)
-            return cmd, tuple(args) if args else None
-        else:
-            raise ProtocolError('Unrecognized command %s' % cmd)
 
     @abstractmethod
     def next(self):
+        """Get next command issued received from the DownStream.
+           The result is in the form (cmd_name, args) where args could be
+           either None or the tuple of command arguments.
+        """
         pass
         
 
