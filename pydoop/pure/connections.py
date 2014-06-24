@@ -6,6 +6,7 @@ import sys
 import os
 import socket
 
+
 BUF_SIZE = 128 * 1024
 
 class Connections(object):
@@ -28,6 +29,76 @@ def open_playback_connections(cmd_file, out_file):
 def open_file_connections(istream=sys.stdin, ostream=sys.stdout):
     return Connections(TextDownStreamFilter(istream),
                        TextUpStreamFilter(ostream))
+
+class HadoopServer(object):
+    def __init__(self, port, data_file):
+        """
+        each line of data_file is in the form key\tvalue\n
+        """
+        self.port = port
+        self.data_file = data_file
+    def run(self):
+        # listens to port for client connections
+        # service client and collect output
+    def run_map(self, down_stream, up_stream):
+        down_stream.send('start', 0)
+        down_stream.send('runMap', 'isplit', 1, False)        
+        down_streams, up_streams = [down_stream], [up_stream]
+        all_read, all_written = False, False
+        while True:
+            if all_read and all_written:
+                return
+            rlist, wlist, elist = select.select(up_streams, down_streams, [])
+            if wlist:
+                l = self.data_file.readline()
+                if len(l) > 0:
+                    k, v = l.strip().split('\t')
+                    down_stream.send('mapItem', k, v)
+                else:
+                    down_stream.send('close')
+                    down_streams.remove(down_stream)
+                    all_written = True
+            if rlist:
+                cmd, args = up_stream.next()
+                if cmd == 'close':
+                    up_streams.remove(up_stream)
+                    all_read = True
+                elif cmd == 'output':
+                    k, v = args
+                    self.data.setdefault(k, []).append(v)
+    def run_reduce(self, down_stream, up_stream):
+        down_stream.send('start', 0)
+        down_stream.send('runReduce', 1, 1)        
+        down_streams, up_streams = [down_stream], [up_stream]
+        all_read, all_written = False, False
+
+        def iter_object():
+            for k in self.data:
+                yield ('reduceKey', (k,))
+                for v in self.data[k]:
+                    yield ('reduceValue', (v,))
+        iobj = iter_object()
+        while True:
+            if all_read and all_written:
+                return
+            rlist, wlist, elist = select.select(up_streams, down_streams, [])
+            if wlist:
+                try:
+                    (cmd, args) = iobj.next()
+                    down_streams.send(cmd, args)
+                except StopIteration:
+                    all_written = True
+                    down_stream.send('close')                    
+                    down_streams.remove(down_stream)
+            if rlist:
+                cmd, args = up_stream.next()
+                if cmd == 'close':
+                    up_streams.remove(up_stream)
+                    all_read = True
+                elif cmd == 'output':
+                    k, v = args
+                    self.result[k] = v
+                                    
         
 class NetworkConnections(Connections):
     class LifeThread(object):
@@ -68,8 +139,9 @@ class NetworkConnections(Connections):
 def open_network_connections(port):
     s = socket.socket()
     s.connect(('', socket.htons(port))) # loopback
-    in_stream  = os.fdopen(s.fileno(), 'r', bufsize=BUF_SIZE)
-    out_stream = os.fdopen(s.fileno(), 'w', bufsize=BUF_SIZE)
+    in_stream  = os.fdopen(os.dup(s.fileno()), 'r', bufsize=BUF_SIZE)
+    out_stream = os.fdopen(os.dup(s.fileno()), 'w', bufsize=BUF_SIZE)
     return NetworkConnections(BinaryDownStreamFilter(in_stream),
                               BinaryUpStreamFilter(out_stream), s, port)
+
 
