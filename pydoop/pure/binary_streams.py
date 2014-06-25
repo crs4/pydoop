@@ -46,7 +46,7 @@ class BinaryWriter(object):
         
     def __init__(self, stream):
         self.stream = stream
-    def write(self, vals):
+    def send(self, *vals):
         serialize(self.CMD_CODE[vals[0]], self.stream)
         if vals[0] == 'setJobConf':
             serialize(len(vals[1:]), self.stream)
