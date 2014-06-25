@@ -23,29 +23,28 @@ import sys
 sys.path.insert(0, '../../')
 
 from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
-from pydoop.pure.pipes import run_task
-
-from pydoop.pure.string_utils import unquote_string
-from test_text_stream import stream_writer
+from pydoop.pure.pipes import PipesRunner
 import itertools as it
 
-stream_1 = [
-    ('start', 0),
-    ('setJobConf', 'key1', 'value1', 'key2', 'value2'),
-    ('setInputTypes', 'key_type', 'value_type'),
-    ('runMap', 'input_split', 0, False),
-    ('mapItem', 'key1', 'the blue fox jumps on the table'),
-    ('mapItem', 'key1', 'a yellow fox turns around'),
-    ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
-    ('close',),            
-    ]
-
+data = \
+"""1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
+1	sitting on the riverbank with her elder sister, when she notices a
+1	talking, clothed White Rabbit with a pocket watch run past. She
+1	follows it down a rabbit hole when suddenly she falls a long way to a
+1	curious hall with many locked doors of all sizes. She finds a small
+1	key to a door too small for her to fit through, but through it she
+1	sees an attractive garden. She then discovers a bottle on a table
+1	labelled "DRINK ME," the contents of which cause her to shrink too
+1	small to reach the key which she has left on the table. She eats a
+1	cake with "EAT ME" written on it in currants as the chapter closes.
+"""
 
 class TMapper(Mapper):
     def __init__(self, ctx):
         self.ctx = ctx
     def map(self, ctx):
-        words = ctx.value.split()
+        words = ''.join(c for c in ctx.value
+                        if c.isalnum() or c == ' ').lower().split()
         for w in words:
             ctx.emit(w, '1')
 class TReducer(Reducer):
@@ -76,69 +75,31 @@ class TFactory(Factory):
         return None if not self.rrclass else self.rrclass(context)
     def create_record_writer(self, context):
         return None if not self.rwclass else self.rwclass(context)
-
-class SortAndShuffle(object):
-    def __init__(self):
-        self.data = {}
-        self.buffer = []
-        self.out_stream = None
-    def process(self, msg):
-        parts = msg.split('\t')
-        if parts[0] == 'output':
-            key = unquote_string(parts[1])
-            value = unquote_string(parts[2])
-            self.data.setdefault(key, []).append(value)
-    def write(self, s):
-        self.buffer.append(s)
-        if s.endswith('\n'):
-           msg = ''.join(self.buffer)
-           self.buffer = []
-           self.process(msg)
-    def flush(self):
-        pass
-    def close(self):
-        self.out_stream = self.get_reduce_stream()
-    def readline(self):
-        try:
-            return self.out_stream.next()
-        except StopIteration:
-            return ''
-
-    def get_reduce_stream(self):
-        yield 'runReduce\t0\t0\n'
-        for k in self.data:
-            yield 'reduceKey\t%s\n' % k
-            for v in self.data[k]:
-                yield 'reduceValue\t%s\n' % v
-        yield 'close\n'
-
-
+        
 class TestFramework(unittest.TestCase):
 
     def setUp(self):
-        fname = 'foo.txt'
-        stream_writer(fname, stream_1)
-        self.stream = open(fname, 'r')
+        self.fname = 'alice.txt'
+        with open(self.fname, 'w') as f:
+            f.write(data)
 
     def test_map_only(self):
-        factory = TFactory()
-        with open('foo_map_only.out', 'w') as o:
-            run_task(factory, istream=self.stream, ostream=o)
-        
+        job_conf = {'this.is.not.used' : '22'}
+        pr = PipesRunner(TFactory())
+        with open(self.fname, 'r') as fin, open('map_only.out', 'w') as fout:
+            pr.run(fin, fout, job_conf, 0)
+
     def test_map_reduce(self):
-        factory = TFactory()
-        sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas)
-        with open('foo_map_reduce.out', 'w') as o:        
-            run_task(factory, istream=sas, ostream=o)
+        job_conf = {'this.is.not.used' : '22'}
+        pr = PipesRunner(TFactory())
+        with open(self.fname, 'r') as fin, open('map_reduce.out', 'w') as fout:
+            pr.run(fin, fout, job_conf, 1)
 
     def test_map_combiner_reduce(self):
-        factory = TFactory(combiner=TReducer)
-        sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas)
-        with open('foo_map_combiner_reduce.out', 'w') as o:        
-            run_task(factory, istream=sas, ostream=o)
-        
+        job_conf = {'this.is.not.used' : '22'}
+        pr = PipesRunner(TFactory(combiner=TReducer))
+        with open(self.fname, 'r') as fin, open('map_combiner_reduce.out', 'w') as fout:
+            pr.run(fin, fout, job_conf, 1)
 
 def suite():
   suite = unittest.TestSuite()
