@@ -38,7 +38,7 @@ if [[ "$HADOOPVERSION" != *cdh* ]]; #standard hadoop distribution
                 sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$HADOOPVERSION contrib";  curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -; 
                 sudo apt-get update; 
                 if [[ "$YARN" ]];
-					then sudo apt-get install hadoop-conf-pseudo;
+					then sudo apt-get install hadoop-conf-pseudo hadoop-0.20-mapreduce-jobtracker hadoop-client hadoop-0.20-mapreduce-tasktracker;
 				else
 					sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client hadoop-0.20-mapreduce-tasktracker;
                 fi

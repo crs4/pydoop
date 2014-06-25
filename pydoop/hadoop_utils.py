@@ -428,8 +428,14 @@ class PathFinder(object):
             glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
             )
       else:  # FIXME: this does not cover from-tarball installation
+        mr1_home = "%s-0.20-mapreduce" % hadoop_home
         if self.is_yarn():
-          self.__hadoop_classpath = ':'.join(glob.glob("/usr/lib/hadoop*/*.jar") + glob.glob("/usr/lib/hadoop*/lib/*.jar"))
+          self.__hadoop_classpath = ':'.join(
+            glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) + 
+            glob.glob(os.path.join(mr1_home, 'hadoop*.jar')) +
+            glob.glob("/usr/lib/hadoop*/*.jar") + 
+            glob.glob("/usr/lib/hadoop*/lib/*.jar")           
+          )
         else:
           if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
             hadoop_home = self.CDH_HADOOP_HOME_PKG
@@ -437,7 +443,7 @@ class PathFinder(object):
             hadoop_home = self.CDH_HADOOP_HOME_PARCEL
           else:
             raise RuntimeError("unsupported CDH deployment")
-          mr1_home = "%s-0.20-mapreduce" % hadoop_home
+          
           self.__hadoop_classpath = ':'.join(
             glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
             glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
