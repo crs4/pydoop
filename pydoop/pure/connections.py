@@ -40,6 +40,7 @@ class HadoopServer(object):
     def run(self):
         # listens to port for client connections
         # service client and collect output
+        pass
     def run_map(self, down_stream, up_stream):
         down_stream.send('start', 0)
         down_stream.send('runMap', 'isplit', 1, False)        
