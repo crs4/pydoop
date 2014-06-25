@@ -76,4 +76,3 @@ def serialize(v, stream):
     return SERIALIZE_MAP[type(v)](v, stream)
 def deserialize(t, stream):
     return DESERIALIZE_MAP[t](stream)
-
