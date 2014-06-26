@@ -25,6 +25,8 @@ sys.path.insert(0, '../../')
 from pydoop.pure.api import Mapper, Reducer, Factory
 from pydoop.pure.pipes import PipesRunner
 
+from common import WDTestCase
+
 
 DATA = \
 """1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
@@ -91,30 +93,34 @@ class TFactory(Factory):
         return None if not self.rwclass else self.rwclass(context)
 
 
-class TestFramework(unittest.TestCase):
+class TestFramework(WDTestCase):
 
     def setUp(self):
-        self.fname = 'alice.txt'
-        with open(self.fname, 'w') as f:
-            f.write(DATA)
+        super(TestFramework, self).setUp()
+        self.fname = self._mkfn('alice.txt')
+        with open(self.fname, 'w') as fo:
+            fo.write(DATA)
 
     def test_map_only(self):
         job_conf = {'this.is.not.used' : '22'}
         pr = PipesRunner(TFactory())
-        with open(self.fname, 'r') as fin, open('map_only.out', 'w') as fout:
-            pr.run(fin, fout, job_conf, 0)
+        with open(self.fname, 'r') as fin:
+            with self._mkf('map_only.out') as fout:
+                pr.run(fin, fout, job_conf, 0)
 
     def test_map_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
         pr = PipesRunner(TFactory())
-        with open(self.fname, 'r') as fin, open('map_reduce.out', 'w') as fout:
-            pr.run(fin, fout, job_conf, 1)
+        with open(self.fname, 'r') as fin:
+            with self._mkf('map_reduce.out') as fout:
+                pr.run(fin, fout, job_conf, 1)
 
     def test_map_combiner_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
         pr = PipesRunner(TFactory(combiner=TReducer))
-        with open(self.fname, 'r') as fin, open('map_combiner_reduce.out', 'w') as fout:
-            pr.run(fin, fout, job_conf, 1)
+        with open(self.fname, 'r') as fin:
+            with self._mkf('map_combiner_reduce.out') as fout:
+                pr.run(fin, fout, job_conf, 1)
 
 
 def suite():

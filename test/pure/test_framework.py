@@ -27,6 +27,8 @@ from pydoop.pure.pipes import run_task
 from pydoop.pure.string_utils import unquote_string
 from test_text_stream import stream_writer
 
+from common import WDTestCase
+
 
 STREAM_1 = [
     ('start', 0),
@@ -107,9 +109,9 @@ class SortAndShuffle(object):
     def write(self, s):
         self.buffer.append(s)
         if s.endswith('\n'):
-           msg = ''.join(self.buffer)
-           self.buffer = []
-           self.process(msg)
+            msg = ''.join(self.buffer)
+            self.buffer = []
+            self.process(msg)
 
     def flush(self):
         pass
@@ -132,41 +134,46 @@ class SortAndShuffle(object):
         yield 'close\n'
 
 
-class TestFramework(unittest.TestCase):
+class TestFramework(WDTestCase):
 
     def setUp(self):
-        fname = 'foo.txt'
+        super(TestFramework, self).setUp()
+        fname = self._mkfn('foo.txt')
         stream_writer(fname, STREAM_1)
         self.stream = open(fname, 'r')
 
+    def tearDown(self):
+        self.stream.close()
+        super(TestFramework, self).tearDown()
+
     def test_map_only(self):
         factory = TFactory()
-        with open('foo_map_only.out', 'w') as o:
+        with self._mkf('foo_map_only.out') as o:
             run_task(factory, istream=self.stream, ostream=o)
 
     def test_map_reduce(self):
         factory = TFactory()
         sas = SortAndShuffle()
         run_task(factory, istream=self.stream, ostream=sas)
-        with open('foo_map_reduce.out', 'w') as o:
+        with self._mkf('foo_map_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o)
 
     def test_map_combiner_reduce(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
         run_task(factory, istream=self.stream, ostream=sas)
-        with open('foo_map_combiner_reduce.out', 'w') as o:
+        with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o)
 
 
 def suite():
-  suite = unittest.TestSuite()
-  suite.addTest(TestFramework('test_map_only'))
-  suite.addTest(TestFramework('test_map_reduce'))
-  suite.addTest(TestFramework('test_map_combiner_reduce'))
-  return suite
+    suite = unittest.TestSuite()
+    suite.addTest(TestFramework('test_map_only'))
+    suite.addTest(TestFramework('test_map_reduce'))
+    suite.addTest(TestFramework('test_map_combiner_reduce'))
+    return suite
 
 
 if __name__ == '__main__':
-  runner = unittest.TextTestRunner(verbosity=2)
-  runner.run((suite()))
+    runner = unittest.TextTestRunner(verbosity=2)
+    runner.run((suite()))

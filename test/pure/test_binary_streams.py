@@ -26,6 +26,8 @@ from pydoop.pure.streams import ProtocolError
 from pydoop.pure.binary_streams import BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryWriter
 
+from common import WDTestCase
+
 
 STREAM_1 = [
     ('start', 0),
@@ -52,19 +54,20 @@ def stream_writer(fname, data):
             bw.send(*vals)
 
 
-class TestBinaryStream(unittest.TestCase):
+class TestBinaryStream(WDTestCase):
 
     def test_downlink(self):
-        fname = 'foo.bin'
+        fname = self._mkfn('foo.bin')
         stream_writer(fname, STREAM_1)
-        stream = BinaryDownStreamFilter(open(fname, 'r'))
-        try:
-            for (cmd, args), vals in it.izip(stream, STREAM_1):
-                self.assertEqual(cmd, vals[0])
-                self.assertTrue((len(vals) == 1 and not args)
-                                or (vals[1:] == args))
-        except ProtocolError as e:
-            print 'error -- %s' % e
+        with open(fname, 'r') as f:
+            stream = BinaryDownStreamFilter(f)
+            try:
+                for (cmd, args), vals in it.izip(stream, STREAM_1):
+                    self.assertEqual(cmd, vals[0])
+                    self.assertTrue((len(vals) == 1 and not args)
+                                    or (vals[1:] == args))
+            except ProtocolError as e:
+                print 'error -- %s' % e
 
 
 def suite():
