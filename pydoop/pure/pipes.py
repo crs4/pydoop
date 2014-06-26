@@ -1,36 +1,39 @@
+import sys, os
+
 import connections
-
-from api import Context, JobConf, PydoopError, RecordWriter
-from api import MapContext, ReduceContext
+from api import JobConf, PydoopError, RecordWriter, MapContext, ReduceContext
 from streams import get_key_value_stream, get_key_values_stream
-from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
+from binary_streams import BinaryWriter, BinaryDownStreamFilter
 
-import sys
-import os
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
 MAPREDUCE_TASK_IO_SORT_MB_KEY = "mapreduce.task.io.sort.mb"
 MAPREDUCE_TASK_IO_SORT_MB = 100
 
+
 class CombineRunner(RecordWriter):
+
     def __init__(self, spill_bytes, context, reducer):
         self.spill_bytes = spill_bytes
         self.used_bytes = 0
         self.data = {}
         self.ctx = context
         self.reducer = reducer
+
     def emit(self, key, value):
-        # FIXME I am assuming that we can neglect the dict and list overhead 
+        # FIXME I am assuming that we can neglect the dict and list overhead
         self.used_bytes += sys.getsizeof(key)
         self.used_bytes += sys.getsizeof(value)
         self.data.setdefault(key, []).append(value)
         if self.used_bytes >= self.spill_bytes:
             self.spill_all()
+
     def close(self):
         self.spill_all()
+
     def spill_all(self):
-        ctx = self.ctx        
+        ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
         for ctx.key, ctx.values in self.data.iteritems():
@@ -39,7 +42,9 @@ class CombineRunner(RecordWriter):
         self.data.clear()
         self.used_bytes = 0
 
+
 class TaskContext(MapContext, ReduceContext):
+
     def __init__(self, up_link):
         self.up_link = up_link
         self.writer = None
@@ -52,9 +57,11 @@ class TaskContext(MapContext, ReduceContext):
         self.input_split = None
         self.key_class = None
         self.value_class = None
+
     def close(self):
         if self.writer:
             self.writer.close()
+
     def set_combiner(self, factory, input_split, n_reduces):
         self.input_split = input_split
         self.n_reduces = n_reduces
@@ -65,6 +72,7 @@ class TaskContext(MapContext, ReduceContext):
                                                MAPREDUCE_TASK_IO_SORT_MB)
             self.writer = CombineRunner(spill_size * 1024 * 1024,
                                         self, reducer) if reducer else None
+
     def emit(self, key, value):
         self.progress()
         if self.writer:
@@ -73,38 +81,51 @@ class TaskContext(MapContext, ReduceContext):
             part = self.partitioner.partition(key, self.n_reduces)
             self.up_link.send('partitionedOutput', key, value)
         else:
-            self.up_link.send('output', key, value)            
+            self.up_link.send('output', key, value)
+
     def set_job_conf(self, vals):
         self.job_conf = JobConf(vals)
+
     def get_job_conf(self):
         return self.job_conf
+
     def get_input_key(self):
         return self.key
+
     def get_input_value(self):
         return self.value
+
     def progress(self):
         pass
+
     def set_status(self, status):
         pass
+
     def get_counter(self, group, name):
         pass
+
     def increment_counter(self, counter, amount):
         pass
+
     def get_input_split(self):
         return self.input_split
+
     def get_input_key_class(self):
         return self.input_key_class
+
     def get_input_value_class(self):
         return self.input_value_class
+
     def next_value(self):
         pass
+
 
 def resolve_connections(port=None, istream=None, ostream=None,
                         cmd_file=None,
                         cmd_port_key=CMD_PORT_KEY,
                         cmd_file_key=CMD_FILE_KEY):
     """
-    Selects appropriate connection streams and protocol.
+    Select appropriate connection streams and protocol.
     """
     port = port if port else os.getenv(cmd_port_key)
     cmd_file = cmd_file if cmd_file else os.getenv(cmd_file_key)
@@ -116,16 +137,19 @@ def resolve_connections(port=None, istream=None, ostream=None,
         conn = connections.open_playback_connections(cmd_file, out_file)
     else:
         istream = sys.stdin if istream is None else istream
-        ostream = sys.stdout if ostream is None else ostream        
+        ostream = sys.stdout if ostream is None else ostream
         conn = connections.open_file_connections(istream=istream,
                                                  ostream=ostream)
     return conn
 
+
 class StreamRunner(object):
+
     def __init__(self, factory, context, cmd_stream):
         self.factory = factory
         self.ctx = context
         self.cmd_stream = cmd_stream
+
     def run(self):
         for cmd, args in self.cmd_stream:
             if cmd == 'setJobConf':
@@ -136,6 +160,7 @@ class StreamRunner(object):
             elif cmd == 'runReduce':
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
+
     def run_map(self, input_split, n_reduces, piped_input):
         factory, ctx = self.factory, self.ctx
         reader = factory.create_record_reader(ctx)
@@ -147,12 +172,13 @@ class StreamRunner(object):
         for ctx.key, ctx.value in reader:
             mapper.map(ctx)
         mapper.close()
+
     def run_reduce(self, part, piped_output):
-        factory, ctx = self.factory, self.ctx        
+        factory, ctx = self.factory, self.ctx
         writer = factory.create_record_writer(ctx)
         if writer is None and piped_output:
             raise PydoopError('RecordWriter not defined')
-        ctx.writer = writer            
+        ctx.writer = writer
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream)
         for ctx.key, ctx.values in kvs_stream:
@@ -170,16 +196,19 @@ def run_task(factory, port=None, istream=None, ostream=None):
         context.close()
         connections.close()
         return True
-    except Exception as e:
+    except StandardError as e:
         sys.stderr.write('Hadoop Pipes Exception: %s' % e)
         return False
 
-#----------------------------------------------------------------------
+
 class TrivialRecordWriter(object):
+
     def __init__(self, stream):
         self.stream = stream
+
     def output(self, key, value):
         self.stream.write('{}\t{}\n'.format(key, value))
+
     def send(self, cmd, *vals):
         if cmd == 'output':
             key, value = vals
@@ -187,15 +216,20 @@ class TrivialRecordWriter(object):
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
 
+
 class SortAndShuffle(dict):
+
     def send(self, *args):
         if args[0] == 'output':
             key, value = args[1:]
             self.setdefault(key, []).append(value)
-     
+
+
 class PipesRunner(object):
+
     def __init__(self, factory):
         self.factory = factory
+
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               piped_input=False):
         fname = 'down_stream_map.bin'
@@ -211,6 +245,7 @@ class PipesRunner(object):
                 k, v = l.strip().split('\t')
                 down_stream.send('mapItem', k, v)
         return BinaryDownStreamFilter(open(fname))
+
     def write_reduce_down_stream(self, sas, job_conf, reducer,
                                  piped_output=False):
         fname = 'down_stream_reduce.bin'
@@ -226,14 +261,16 @@ class PipesRunner(object):
                 for v in sas[k]:
                     down_stream.send('reduceValue', v)
         return BinaryDownStreamFilter(open(fname))
+
     def run_task(self, dstream, ustream):
         context = TaskContext(ustream)
         stream_runner = StreamRunner(self.factory, context, dstream)
         stream_runner.run()
         context.close()
+
     def run(self, file_in, file_out, job_conf, num_reducers):
         dstream = self.write_map_down_stream(file_in, job_conf, num_reducers)
-        rec_writer_stream = TrivialRecordWriter(file_out)        
+        rec_writer_stream = TrivialRecordWriter(file_out)
         if num_reducers == 0:
             self.run_task(dstream, rec_writer_stream)
         else:
@@ -241,4 +278,3 @@ class PipesRunner(object):
             self.run_task(dstream, sas)
             rstream = self.write_reduce_down_stream(sas, job_conf, num_reducers)
             self.run_task(rstream, rec_writer_stream)
-                
