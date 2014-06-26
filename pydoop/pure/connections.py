@@ -123,35 +123,31 @@ class HadoopServer(object):
                 elif cmd == 'output':
                     k, v = args
                     self.result[k] = v
-
+        
+class LifeThread(object):
+    def __init__(self, all_done, port, max_tries=3):
+        self.all_done = all_done
+        self.port = port
+        self.max_tries = max_tries
+    def __call__(self):
+        while True:
+            if self.all_done.wait(5):
+                break
+            else:
+                for _ in range(self.max_tries):
+                    try:
+                        s = socket.socket()
+                        s.connect(('', socket.htons(self.port)))
+                        break
+                    except error as e:
+                        print 'error: %s' % e
+                else:
+                    os._exit(1)
+                # FIXME protect with a try the next two...
+                s.shutdown(SHUT_RDWR)
+                s.close()
 
 class NetworkConnections(Connections):
-
-    class LifeThread(object):
-
-        def __init__(self, all_done, port, max_tries=3):
-            self.all_done = all_done
-            self.port = port
-            self.max_tries = max_tries
-
-        def __call__(self):
-            while True:
-                if self.all_done.wait(5):
-                    break
-                else:
-                    for _ in range(self.max_tries):
-                        try:
-                            s = socket.socket()
-                            s.connect(('', socket.htons(self.port)))
-                            break
-                        except error as e:
-                            print 'error: %s' % e
-                    else:
-                        os._exit(1)
-                    # FIXME protect with a try the next two...
-                    s.shutdown(SHUT_RDWR)
-                    s.close()
-
     def __init__(self, cmd_stream, up_link, sock, port):
         super(NetworkConnections, self).__init__(cmd_stream, up_link)
         self.all_done = Event()
@@ -169,7 +165,7 @@ class NetworkConnections(Connections):
 
 def open_network_connections(port):
     s = socket.socket()
-    s.connect(('', socket.htons(port)))  # loopback
+    s.connect(('localhost', socket.htons(port))) # loopback
     in_stream  = os.fdopen(os.dup(s.fileno()), 'r', bufsize=BUF_SIZE)
     out_stream = os.fdopen(os.dup(s.fileno()), 'w', bufsize=BUF_SIZE)
     return NetworkConnections(BinaryDownStreamFilter(in_stream),
