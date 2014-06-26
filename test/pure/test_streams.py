@@ -64,7 +64,6 @@ def get_stream(data):
 
 class TestStream(unittest.TestCase):
 
-    #### FIXME: this has no counterpart in the API ####
     ## def test_abort(self):
     ##     with self.assertRaises(ProtocolAbort):
     ##         DownStreamFilter.convert_message('abort', [])
@@ -103,7 +102,7 @@ class TestStream(unittest.TestCase):
             
 def suite():
   suite = unittest.TestSuite()
-  suite.addTest(TestStream('test_abort'))  
+  # suite.addTest(TestStream('test_abort'))
   suite.addTest(TestStream('test_get_key_value_stream'))
   suite.addTest(TestStream('test_get_key_values_stream'))
   suite.addTest(TestStream('test_get_key_values_stream2'))    
