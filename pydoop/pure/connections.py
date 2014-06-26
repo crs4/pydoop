@@ -33,7 +33,6 @@ class Connections(object):
         self.up_link = up_link
 
     def close(self):
-        self.cmd_stream.flush()
         self.cmd_stream.close()
         self.up_link.flush()
         self.up_link.close()
