@@ -1,4 +1,5 @@
-from pipes import TaskContext, StreamRunner
+from pipes import TaskContext, StreamRunner, CMD_PORT_KEY
+from api import PydoopError
 from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +14,8 @@ class TrivialRecordWriter(object):
         if cmd == 'output':
             key, value = vals
             self.output(key, value)
+        elif cmd == 'done':
+            self.stream.close()
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
 
