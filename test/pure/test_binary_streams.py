@@ -25,6 +25,8 @@ sys.path.insert(0, '../../')
 from pydoop.pure.streams import ProtocolError
 from pydoop.pure.binary_streams import BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryWriter
+from pydoop.pure.binary_streams import BinaryUpStreamFilter
+from pydoop.pure.binary_streams import BinaryUpStreamDecoder
 
 from common import WDTestCase
 
@@ -46,13 +48,25 @@ STREAM_1 = [
     ('close',),
     ]
 
+STREAM_2 = [
+    ('status',  'I am ok'),
+    ('registerCounter', 1 , 'group', 'name'),
+    ('incrementCounter', 1 , 289189289),
+    ('progress', 0.5),
+    ('output', 'key1', 'value1'),
+    ('output', 'key2', 'value2'),
+    ('output', 'key3', 'value3'),
+    ('output', 'key4', 'value4'),
+    ('status',  'I am still ok'),    
+    ('done',),
+    ]
+
 
 def stream_writer(fname, data):
     with open(fname, 'w') as f:
         bw = BinaryWriter(f)
         for vals in data:
             bw.send(*vals)
-
 
 class TestBinaryStream(WDTestCase):
 
@@ -69,10 +83,23 @@ class TestBinaryStream(WDTestCase):
             except ProtocolError as e:
                 print 'error -- %s' % e
 
+    def test_uplink(self):
+        fname = self._mkfn('foo.bin')
+        with open(fname, 'w') as f:
+            w = BinaryUpStreamFilter(f)
+            for vals in STREAM_2:
+                w.send(*vals)
+        with open(fname, 'r') as f:
+            cmd_stream = BinaryUpStreamDecoder(f)
+            for (cmd, args), vals in it.izip(cmd_stream, STREAM_2):
+                self.assertEqual(cmd, vals[0])
+                self.assertTrue((len(vals) == 1 and not args)
+                                    or (vals[1:] == args))                
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestBinaryStream('test_downlink'))
+    suite.addTest(TestBinaryStream('test_uplink'))    
     return suite
 
 

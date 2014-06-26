@@ -130,6 +130,7 @@ class BinaryUpStreamFilter(UpStreamFilter):
         super(BinaryUpStreamFilter, self).__init__(stream)
 
     def send(self, cmd, *args):
+        stream = self.stream
         cmd_code, types, processor = self.UPFLOW_TABLE[cmd]
         serialize(cmd_code, stream)
         for t, v in zip(types, args):
@@ -138,3 +139,9 @@ class BinaryUpStreamFilter(UpStreamFilter):
             else:
                 assert t == type(v)
                 serialize(v, stream)
+
+class BinaryUpStreamDecoder(BinaryDownStreamFilter):
+    DFLOW_TABLE = dict(
+        ((t[0], (k, t[1], t[2]))
+         for k, t in BinaryUpStreamFilter.UPFLOW_TABLE.iteritems()))
+        
