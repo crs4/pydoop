@@ -26,6 +26,7 @@ from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
 from pydoop.pure.simulator import HadoopSimulatorLocal
 import itertools as it
 import logging
+from collections import Counter
 
 from common import WDTestCase
 
@@ -43,6 +44,8 @@ DATA = \
 1	cake with "EAT ME" written on it in currants as the chapter closes.
 """
 
+COUNTS = Counter(''.join(c for c in DATA.replace('1\t', ' ')
+                           if c.isalnum() or c == ' ').lower().split())
 
 class TMapper(Mapper):
 
@@ -109,20 +112,33 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf('map_only.out') as fout:
                 hs.run(fin, fout, job_conf, 0)
-
+        
+                
     def test_map_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
         hs = HadoopSimulatorLocal(TFactory())
+        foname = 'map_reduce.out'
         with open(self.fname, 'r') as fin:
-            with self._mkf('map_reduce.out') as fout:
+            with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
+        with open(self._mkfn(foname)) as f:
+            for l in f:
+                k, c = l.strip().split()
+                self.assertEqual(COUNTS[k], int(c))
+
 
     def test_map_combiner_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
         hs = HadoopSimulatorLocal(TFactory(combiner=TReducer))
+        foname = 'map_combiner_reduce.out'
         with open(self.fname, 'r') as fin:
-            with self._mkf('map_combiner_reduce.out') as fout:
+            with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
+        with open(self._mkfn(foname)) as f:
+            for l in f:
+                k, c = l.strip().split()
+                self.assertEqual(COUNTS[k], int(c))
+                
 
 def suite():
     suite = unittest.TestSuite()
