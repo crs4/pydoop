@@ -20,6 +20,7 @@ import sys, os
 
 import connections
 from api import JobConf, PydoopError, RecordWriter, MapContext, ReduceContext
+from api import PydoopError
 from streams import get_key_value_stream, get_key_values_stream
 from binary_streams import BinaryWriter, BinaryDownStreamFilter
 
@@ -79,7 +80,7 @@ class TaskContext(MapContext, ReduceContext):
     def close(self):
         if self.writer:
             self.writer.close()
-        self.up_link.send('close')
+        self.up_link.send('done')
 
     def set_combiner(self, factory, input_split, n_reduces):
         self.input_split = input_split
