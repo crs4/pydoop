@@ -22,8 +22,9 @@ import unittest, itertools as it
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.api import Mapper, Reducer, Factory
-from pydoop.pure.pipes import PipesRunner
+from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
+from pydoop.pure.simulator import HadoopSimulatorLocal
+import itertools as it
 
 from common import WDTestCase
 
@@ -103,25 +104,24 @@ class TestFramework(WDTestCase):
 
     def test_map_only(self):
         job_conf = {'this.is.not.used' : '22'}
-        pr = PipesRunner(TFactory())
+        hs = HadoopSimulatorLocal(TFactory())
         with open(self.fname, 'r') as fin:
             with self._mkf('map_only.out') as fout:
-                pr.run(fin, fout, job_conf, 0)
+                hs.run(fin, fout, job_conf, 0)
 
     def test_map_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
-        pr = PipesRunner(TFactory())
+        hs = HadoopSimulatorLocal(TFactory())
         with open(self.fname, 'r') as fin:
             with self._mkf('map_reduce.out') as fout:
-                pr.run(fin, fout, job_conf, 1)
+                hs.run(fin, fout, job_conf, 1)
 
     def test_map_combiner_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
-        pr = PipesRunner(TFactory(combiner=TReducer))
+        hs = HadoopSimulatorLocal(TFactory(combiner=TReducer))
         with open(self.fname, 'r') as fin:
             with self._mkf('map_combiner_reduce.out') as fout:
-                pr.run(fin, fout, job_conf, 1)
-
+                hs.run(fin, fout, job_conf, 1)
 
 def suite():
     suite = unittest.TestSuite()
