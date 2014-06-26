@@ -25,6 +25,7 @@ sys.path.insert(0, '../../')
 from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
 from pydoop.pure.simulator import HadoopSimulatorLocal
 import itertools as it
+import logging
 
 from common import WDTestCase
 
@@ -93,7 +94,7 @@ class TFactory(Factory):
     def create_record_writer(self, context):
         return None if not self.rwclass else self.rwclass(context)
 
-
+loglevel = logging.INFO
 class TestFramework(WDTestCase):
 
     def setUp(self):
