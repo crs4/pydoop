@@ -64,9 +64,10 @@ def get_stream(data):
 
 class TestStream(unittest.TestCase):
 
-    def test_abort(self):
-        with self.assertRaises(ProtocolAbort):
-            DownStreamFilter.convert_message('abort', [])
+    #### FIXME: this has no counterpart in the API ####
+    ## def test_abort(self):
+    ##     with self.assertRaises(ProtocolAbort):
+    ##         DownStreamFilter.convert_message('abort', [])
 
     def test_get_key_value_stream(self):
         stream = get_stream(stream_1_data)

@@ -49,7 +49,7 @@ def stream_writer(fname, data):
     with open(fname, 'w') as f:
         bw = BinaryWriter(f)
         for vals in data:
-            bw.write(vals)
+            bw.send(*vals)
 
 class TestBinaryStream(unittest.TestCase):
 
