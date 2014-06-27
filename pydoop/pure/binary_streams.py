@@ -139,6 +139,7 @@ class BinaryUpStreamFilter(UpStreamFilter):
             else:
                 assert t == type(v)
                 serialize(v, stream)
+        stream.flush()                
 
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
     DFLOW_TABLE = dict(

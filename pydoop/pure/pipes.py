@@ -24,6 +24,10 @@ from api import PydoopError
 from streams import get_key_value_stream, get_key_values_stream
 from binary_streams import BinaryWriter, BinaryDownStreamFilter
 
+import logging
+logging.basicConfig()
+logger = logging.getLogger('pipes')
+logger.setLevel(logging.CRITICAL)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -171,17 +175,22 @@ class StreamRunner(object):
         self.cmd_stream = cmd_stream
 
     def run(self):
+        logger.debug('start running')
         for cmd, args in self.cmd_stream:
             if cmd == 'setJobConf':
                 self.ctx.set_job_conf(args)
             elif cmd == 'runMap':
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
+                break # we can bail out, there is nothing more to do.
             elif cmd == 'runReduce':
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
+                break # we can bail out, there is nothing more to do.
+        logger.debug('done running')                
 
     def run_map(self, input_split, n_reduces, piped_input):
+        logger.debug('start run_map')        
         factory, ctx = self.factory, self.ctx
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input:
@@ -192,8 +201,10 @@ class StreamRunner(object):
         for ctx.key, ctx.value in reader:
             mapper.map(ctx)
         mapper.close()
+        logger.debug('done run_map')                
 
     def run_reduce(self, part, piped_output):
+        logger.debug('start run_reduce')                
         factory, ctx = self.factory, self.ctx
         writer = factory.create_record_writer(ctx)
         if writer is None and piped_output:
@@ -204,7 +215,7 @@ class StreamRunner(object):
         for ctx.key, ctx.values in kvs_stream:
             reducer.reduce(ctx)
         reducer.close()
-
+        logger.debug('done run_reduce')                
 
 def run_task(factory, port=None, istream=None, ostream=None):
     try:

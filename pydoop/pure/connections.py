@@ -22,6 +22,10 @@ from threading import Thread, Event
 from text_streams import TextDownStreamFilter, TextUpStreamFilter
 from binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('connections')
+
 
 BUF_SIZE = 128 * 1024
 
@@ -54,6 +58,7 @@ class LifeThread(object):
         self.all_done = all_done
         self.port = port
         self.max_tries = max_tries
+        self.logger = logger.getChild('LifeThread')
     def __call__(self):
         while True:
             if self.all_done.wait(5):
@@ -62,36 +67,40 @@ class LifeThread(object):
                 for _ in range(self.max_tries):
                     try:
                         s = socket.socket()
-                        s.connect(('', socket.htons(self.port)))
+                        s.connect(('localhost', self.port))
                         break
-                    except error as e:
-                        print 'error: %s' % e
+                    except Exception as e:
+                        self.logger.error('error: {}'.format(e))
                 else:
+                    self.logger.critical('server appears to be dead.')          
                     os._exit(1)
                 # FIXME protect with a try the next two...
-                s.shutdown(SHUT_RDWR)
+                s.shutdown(socket.SHUT_RDWR)
                 s.close()
 
 class NetworkConnections(Connections):
     def __init__(self, cmd_stream, up_link, sock, port):
+        self.logger = logging.getLogger('NetworkConnections')        
         super(NetworkConnections, self).__init__(cmd_stream, up_link)
         self.all_done = Event()
         self.socket = sock
         self.life_thread = Thread(target=LifeThread(self.all_done, port))
         self.life_thread.start()
+        
 
     def close(self):
         super(NetworkConnections, self).close()
         self.all_done.set()
         self.life_thread.join()
-        self.socket.shutdown(SHUT_RDWR)
+        self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
+
 
 
 def open_network_connections(port):
     s = socket.socket()
-    s.connect(('localhost', socket.htons(port))) # loopback
-    in_stream  = os.fdopen(os.dup(s.fileno()), 'r', bufsize=BUF_SIZE)
-    out_stream = os.fdopen(os.dup(s.fileno()), 'w', bufsize=BUF_SIZE)
+    s.connect(('localhost', port))
+    in_stream  = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
+    out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
     return NetworkConnections(BinaryDownStreamFilter(in_stream),
                               BinaryUpStreamFilter(out_stream), s, port)

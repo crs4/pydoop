@@ -4,10 +4,12 @@ from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryUpStreamDecoder
 import SocketServer
 import threading
+import os
 
 import logging
 logging.basicConfig(level=logging.INFO)
-        
+
+DEFAULT_SLEEP_DELTA = 3
 
 class TrivialRecordWriter(object):
     def __init__(self, stream):
@@ -22,6 +24,8 @@ class TrivialRecordWriter(object):
             self.stream.close()
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
+    def close(self):
+        self.stream.close()
 
 class SortAndShuffle(dict):
     def output(self, key, value):
@@ -30,11 +34,13 @@ class SortAndShuffle(dict):
         if args[0] == 'output':
             key, value = args[1:]
             self.setdefault(key, []).append(value)
+    def close(self):
+        pass
 
 class CommandThread(threading.Thread):
-    def __init__(self, cmd_stream, ostream, logger):
+    def __init__(self, down_bytes, ostream, logger):
         super(CommandThread, self).__init__()        
-        self.cmd_stream = cmd_stream
+        self.down_bytes = down_bytes
         self.ostream = ostream
         self.logger = logger
         self.logger.debug('initialized')
@@ -42,39 +48,49 @@ class CommandThread(threading.Thread):
         chunk_size = 128 * 1024
         self.logger.debug('started')        
         while True:
-            buf = self.cmd_stream.read(chunk_size)
+            buf = self.down_bytes.read(chunk_size)
             if len(buf) == 0:
                 break
             self.ostream.write(buf)
-            self.stream.flush()            
-        self.logger.debug('done')                
+            self.ostream.flush()
+        self.logger.debug('done')
+
+class ResultThread(threading.Thread):
+    def __init__(self, up_bytes, ostream, logger):
+        super(ResultThread, self).__init__()        
+        self.up_bytes = up_bytes
+        self.ostream = ostream
+        self.logger = logger
+        self.logger.debug('initialized')
+    def run(self):
+        up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
+        for cmd, args in up_cmd_stream:
+            if cmd == 'output':
+                key, value = args
+                self.ostream.output(key, value)
+            elif cmd == 'done':
+                self.ostream.close()
+                self.logger.debug('closed ostream')
+                break
+            elif cmd == 'progress':
+                (progress,) = args
+                self.logger.info('progress:{}'.format(progress))
+        self.logger.debug('done with ResultThread')
+
             
 class HadoopThreadHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.server.logger.debug('handler started')
-        cmd_thread = CommandThread(self.server.cmd_stream, self.wfile,
-                                   self.server.logger.getChild('CommandStream'))
+        cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
+                                   self.server.logger.getChild('CommandThread'))
+        res_thread = ResultThread(self.rfile, self.server.out_writer,
+                                  self.server.logger.getChild('ResultThread'))
         cmd_thread.start()
-        up_cmd_stream = BinaryUpStreamDecoder(self.rfile)
-        for cmd, args in up_cmd_stream:
-            if cmd == 'output':
-                key, value = args
-                self.server.out_writer.output(key, value)
-            elif cmd == 'done':
-                self.server.out_writer.close()
-                break
-            elif cmd == 'progress':
-                (progress,) = args
-                self.server.logger.info('progress:{}'.format(progress))
+        res_thread.start()
         cmd_thread.join()
-        server.shutdown()
-
-    def run_map(self, down_stream, up_stream):
-        pass
-    def run_reduce(self, down_stream, up_stream):
-        pass
-                                    
-        
+        self.server.logger.debug('cmd_thread returned.')
+        res_thread.join()
+        self.server.logger.debug('res_thread returned.')        
     
 class HadoopServer(SocketServer.TCPServer):
     """
@@ -97,14 +113,18 @@ class HadoopServer(SocketServer.TCPServer):
         out_writer is an object with a .send() method that can handle 'output'
         and  'done' commands.
         """
-        super(HadoopServer, self).__init__((host, port), HadoopThreadHandler)
         self.logger = logger if logger\
                              else logging.getLogger('HadoopServer')
         self.logger.setLevel(loglevel)
-        self.logger.debug('initialized.')
         self.down_bytes = down_bytes
         self.out_writer = out_writer
-        self.num_reducers = num_reducers
+        # old style class
+        SocketServer.TCPServer.__init__(self, (host, port), HadoopThreadHandler)
+        self.logger.debug('initialized on ({}, {})'.format(host, port))
+
+    def get_port(self):
+        return self.socket.getsockname()[1]
+        
 
 #-------------------------------------------------------------------------
 class HadoopSimulator(object):
@@ -128,6 +148,7 @@ class HadoopSimulator(object):
             for l in file_in:
                 k, v = l.strip().split('\t')
                 down_stream.send('mapItem', k, v)
+            down_stream.send('close')
         return open(fname)
     
     def write_reduce_down_stream(self, sas, job_conf, reducer,
@@ -144,6 +165,7 @@ class HadoopSimulator(object):
                 down_stream.send('reduceKey', k)
                 for v in sas[k]:
                     down_stream.send('reduceValue', v)
+            down_stream.send('close')                    
         return open(fname)
     
 class HadoopSimulatorLocal(HadoopSimulator):
@@ -161,49 +183,50 @@ class HadoopSimulatorLocal(HadoopSimulator):
         dstream = BinaryDownStreamFilter(bytes_flow)
         rec_writer_stream = TrivialRecordWriter(file_out)        
         if num_reducers == 0:
-            self.logger.debug('running a map only job')                    
+            self.logger.info('running a map only job')                    
             self.run_task(dstream, rec_writer_stream)
         else:
-            self.logger.debug('running a map reduce job')
+            self.logger.info('running a map reduce job')
             sas = SortAndShuffle()
-            self.logger.debug('running mapper')            
+            self.logger.info('running mapper')            
             self.run_task(dstream, sas)
             bytes_flow = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers)
             rstream = BinaryDownStreamFilter(bytes_flow)            
-            self.logger.debug('running reducer')                        
+            self.logger.info('running reducer')                        
             self.run_task(rstream, rec_writer_stream)
-        self.logger.debug('run done.')
+        self.logger.info('run done.')
 
 class HadoopSimulatorNetwork(HadoopSimulator):
     """
-    This is a debugging support simulator class that uses network connextions
+    This is a debugging support simulator class that uses network connections
     to communicate to a user-provided pipes program.
 
     It implements a reasonably close aproximation of the 'real'
     Hadoop-pipes setup.
-
-    
-
     """
-    def __init__(self, program=None, port=9999,
-                 logger=None, loglevel=logging.INFO):
+    def __init__(self, program=None, logger=None, loglevel=logging.INFO,
+                 sleep_delta=DEFAULT_SLEEP_DELTA):
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
-        self.port = port
         self.program = program
+        self.sleep_delta = sleep_delta
         
     def run_task(self, down_bytes, out_writer):
         self.logger.debug('run_task: started HadoopServer')
-        server = HadoopServer(self.port, down_bytes, out_writer,
+        server = HadoopServer(0, down_bytes, out_writer,
                               logger=self.logger.getChild('HadoopServer'),
                               loglevel=self.logger.getEffectiveLevel())
-        os.setenv(CMD_PORT_KEY, self.port)
-        cmd_line = "(sleep 5; %s)&" % self.program
-        sys.system(cmd_line)
-        server.serve_forever() # 
+        port = server.get_port()
+        self.logger.debug('serving on port: {}'.format(port))        
+        os.environ[CMD_PORT_KEY] = str(port)
+        self.logger.info('delaying {} {} secs'.format(self.program,
+                                                      self.sleep_delta))
+        cmd_line = "(sleep {}; {})&".format(self.sleep_delta, self.program)
+        os.system(cmd_line)
+        server.handle_request()
         self.logger.debug('run_task: finished with HadoopServer')
                  
-    def run(self, file_in, file_out, job_conf, num_reducers):
+    def run(self, file_in, file_out, job_conf, num_reducers=1):
         self.logger.debug('run start')        
         down_bytes = self.write_map_down_stream(file_in, job_conf, num_reducers)
         record_writer = TrivialRecordWriter(file_out)
@@ -217,6 +240,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             self.run_task(down_bytes, sas)
             down_bytes = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers)
+            self.logger.debug('running reducer')            
             self.run_task(down_bytes, record_writer)
         self.logger.debug('run done.')                         
         

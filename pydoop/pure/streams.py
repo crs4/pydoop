@@ -111,6 +111,7 @@ class KeyValuesStream(object):
     def get_value_stream(stream):
         for cmd, args in stream:
             if cmd == 'close':
+                stream.push_back((cmd, args))                
                 raise StopIteration
             elif cmd == 'reduceValue':
                 yield args[0]
