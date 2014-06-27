@@ -299,7 +299,7 @@ class hdfs(object):
     :param path: the path of the file or directory
     :type recursive: bool
     :param recursive: if path is directory, delete it recursively when True;
-    :raises: IOError when False and directory is non-empty
+    :raises: IOError when ``recursive`` is False and directory is non-empty
     """
     _complain_ifclosed(self.closed)
     return self.fs.delete(path, recursive)
