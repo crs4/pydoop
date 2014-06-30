@@ -154,10 +154,9 @@ class HadoopVersion(object):
     return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
 
   def has_variable_isplit_encoding(self):
-	  pf = PathFinder()
-	  #return self.tuple >= (2,0,0) and not self.is_cloudera()
-	  return (self.tuple >= (2,0,0) and not self.is_cloudera()) or pf.is_yarn()
-    	    
+    pf = PathFinder()
+    return (self.tuple >= (2,0,0) and not self.is_cloudera()) or pf.is_yarn()
+
   @property
   def tuple(self):
     return self.__tuple
@@ -433,8 +432,8 @@ class PathFinder(object):
           self.__hadoop_classpath = ':'.join(
             glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) + 
             glob.glob(os.path.join(mr1_home, 'hadoop*.jar')) +
-            glob.glob("/usr/lib/hadoop*/*.jar") + 
-            glob.glob("/usr/lib/hadoop*/lib/*.jar")           
+            glob.glob(os.path.join(hadoop_home, "*.jar")) +
+            glob.glob(os.path.join(hadoop_home, "lib/*.jar"))
           )
         else:
           if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
@@ -471,4 +470,3 @@ class PathFinder(object):
     
   def is_yarn(self, hadoop_conf=None, hadoop_home=None):
     return self.hadoop_params(hadoop_conf, hadoop_home).get('mapreduce.framework.name', '').lower() == 'yarn'
-    
