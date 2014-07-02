@@ -61,10 +61,8 @@ In order to build and install Pydoop, you need the following software:
   * `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2, 1.0.4,
     1.1.2, 1.2.1 or 2.2.0
   * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_
-    version 3u4, 3u5, 4.2.0 or 4.3.0, with the following limitations:
-
-    * currently, only mrv1 is supported
-    * CDH4 must be installed from dist-specific packages (no tarball)
+    version 3u{4,5} or 4.{2,3,4,5}.0, installed from dist-specific
+    packages or Cloudera Manager parcels (no tarball)
 
 * `Boost <http://www.boost.org>`_ version 1.40 or later (only the Python
   library)
@@ -411,7 +409,7 @@ then restart Hadoop daemons.
 
 
 Using Pydoop with YARN
-....................
+......................
 
 Since Hadoop 2.* and CDH 4.* it is possible to run YARN, the next generation MapReduce framework. Using Pydoop with YARN does not require any further configuration -- of course, you need a properly configured Hadoop cluster, see:
  - http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/ClusterSetup.html
