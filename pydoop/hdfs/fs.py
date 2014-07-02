@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 # 
-# Copyright 2009-2013 CRS4.
+# Copyright 2009-2014 CRS4.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -299,7 +299,7 @@ class hdfs(object):
     :param path: the path of the file or directory
     :type recursive: bool
     :param recursive: if path is directory, delete it recursively when True;
-    :raises: IOError when False and directory is non-empty
+    :raises: IOError when ``recursive`` is False and directory is non-empty
     """
     _complain_ifclosed(self.closed)
     return self.fs.delete(path, recursive)

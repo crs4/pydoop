@@ -58,13 +58,10 @@ In order to build and install Pydoop, you need the following software:
 
 * either of the following:
 
-  * `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2
-  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0 (tested with 1.0.4)
-  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.1 (tested with 1.1.2)
-  * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 3
-    (tested with cdh3u4 and cdh3u5)
-  * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_ version 4
-    (tested with cdh4.2.0 and cdh4.3.0), with the following limitations:
+  * `Apache Hadoop <http://hadoop.apache.org>`_ version 0.20.2, 1.0.4,
+    1.1.2, 1.2.1 or 2.2.0
+  * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_
+    version 3u4, 3u5, 4.2.0 or 4.3.0, with the following limitations:
 
     * currently, only mrv1 is supported
     * CDH4 must be installed from dist-specific packages (no tarball)
@@ -78,6 +75,9 @@ These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
 (or to an NFS share) is *not* required: see :doc:`self_contained` for
 a complete HowTo.
+
+Other versions of Hadoop may or may not work depending on how
+different they are from the ones listed above.
 
 
 Installation
@@ -408,6 +408,15 @@ In Hadoop 2.2.0 it is necessary to edit ``hdfs-site.xml`` and set dfs.namenode.f
 
 
 then restart Hadoop daemons.
+
+
+Using Pydoop with YARN
+....................
+
+Since Hadoop 2.* and CDH 4.* it is possible to run YARN, the next generation MapReduce framework. Using Pydoop with YARN does not require any further configuration -- of course, you need a properly configured Hadoop cluster, see:
+ - http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/ClusterSetup.html
+ - http://www.cloudera.com/content/cloudera-content/cloudera-docs/CDH4/4.3.0/CDH4-Installation-Guide/cdh4ig_topic_11_4.html
+
 
 
 .. rubric:: Footnotes

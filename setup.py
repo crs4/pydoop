@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2013 CRS4.
+# Copyright 2009-2014 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -470,12 +470,13 @@ class BuildExt(build_ext):
   def build_extension(self, ext):
     try:
       self.compiler.compiler_so.remove("-Wstrict-prototypes")
-      if hu.SYSTEM == 'darwin':
-        self.compiler.linker_so.extend(
-          ["-Wl,-rpath", os.path.join(JAVA_HOME, 'jre/lib/server')]
-          )
     except ValueError:
       pass
+    if hu.SYSTEM == 'darwin':
+      self.compiler.linker_so.extend(
+        ["-Wl,-rpath", os.path.join(JAVA_HOME, 'jre/lib/server')]
+        )
+    self.compiler.linker_so.append("-Wl,--no-as-needed")
     build_ext.build_extension(self, ext)
 
   def run(self):

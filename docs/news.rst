@@ -3,6 +3,14 @@
 News
 ====
 
+
+New in 0.12.0
+-------------
+
+ * YARN is now fully supported
+ * Added support for CDH 4.4.0 and CDH 4.5.0
+
+
 New in 0.11.1
 -------------
 

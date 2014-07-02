@@ -27,6 +27,7 @@ Contents
    examples/index
    self_contained
    for_dumbo_users
+   ideas_list
 
 
 How to Cite
