@@ -410,6 +410,15 @@ In Hadoop 2.2.0 it is necessary to edit ``hdfs-site.xml`` and set dfs.namenode.f
 then restart Hadoop daemons.
 
 
+Using Pydoop with YARN
+....................
+
+Since Hadoop 2.* and CDH 4.* it is possible to run YARN, the next generation MapReduce framework. Using Pydoop with YARN does not require any further configuration -- of course, you need a properly configured Hadoop cluster, see:
+ - http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/ClusterSetup.html
+ - http://www.cloudera.com/content/cloudera-content/cloudera-docs/CDH4/4.3.0/CDH4-Installation-Guide/cdh4ig_topic_11_4.html
+
+
+
 .. rubric:: Footnotes
 
 .. [#] To make Pydoop work with Python 2.6 you need to install the
