@@ -1,10 +1,13 @@
-from pipes import TaskContext, StreamRunner, CMD_PORT_KEY
+from pipes import TaskContext, StreamRunner, CMD_PORT_KEY, SECRET_LOCATION_KEY
 from api import PydoopError
 from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryUpStreamDecoder
+from pydoop.pure.string_utils import create_digest
 import SocketServer
 import threading
 import os
+import tempfile
+import uuid
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -65,7 +68,10 @@ class ResultThread(threading.Thread):
     def run(self):
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
         for cmd, args in up_cmd_stream:
-            if cmd == 'output':
+            self.logger.debug('cmd:{} args:{}'.format(cmd, args))            
+            if cmd == 'authenticationResp':
+                self.logger.debug('got an authenticationResp: {}'.format(args))
+            elif cmd == 'output':
                 key, value = args
                 self.ostream.output(key, value)
             elif cmd == 'done':
@@ -133,12 +139,18 @@ class HadoopSimulator(object):
                              else logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(loglevel)
         self.logger.debug('initialized.')
+
+    def write_authorization(self, stream, authorization):
+        if authorization is not None:
+            digest, challenge = authorization
+            stream.send('authenticationReq', digest, challenge)
         
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
-                              piped_input=False):
+                              piped_input=False, authorization=None):
         fname = 'down_stream_map.bin'
         with open(fname, 'w') as f:
             down_stream = BinaryWriter(f)
+            self.write_authorization(down_stream, authorization)
             down_stream.send('start', 0)
             down_stream.send('setJobConf',
                              *sum([[k, v] for k, v in job_conf.iteritems()],
@@ -152,10 +164,11 @@ class HadoopSimulator(object):
         return open(fname)
     
     def write_reduce_down_stream(self, sas, job_conf, reducer,
-                                 piped_output=False):
+                                 piped_output=False, authorization=None):
         fname = 'down_stream_reduce.bin'
         with open(fname, 'w') as f:
             down_stream = BinaryWriter(f)
+            self.write_authorization(down_stream, authorization)
             down_stream.send('start', 0)
             down_stream.send('setJobConf',
                              *sum([[k, v] for k, v in job_conf.iteritems()],
@@ -210,6 +223,11 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
         self.program = program
         self.sleep_delta = sleep_delta
+        tfile = tempfile.NamedTemporaryFile(delete=False)        
+        self.tmp_file = tfile.name
+        self.password = uuid.uuid4().hex
+        tfile.write(self.password)
+        tfile.close()
         
     def run_task(self, down_bytes, out_writer):
         self.logger.debug('run_task: started HadoopServer')
@@ -217,8 +235,10 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                               logger=self.logger.getChild('HadoopServer'),
                               loglevel=self.logger.getEffectiveLevel())
         port = server.get_port()
-        self.logger.debug('serving on port: {}'.format(port))        
+        self.logger.debug('serving on port: {}'.format(port))
+        self.logger.debug('secret location: {}'.format(self.tmp_file))
         os.environ[CMD_PORT_KEY] = str(port)
+        os.environ[SECRET_LOCATION_KEY] = self.tmp_file
         self.logger.info('delaying {} {} secs'.format(self.program,
                                                       self.sleep_delta))
         cmd_line = "(sleep {}; {})&".format(self.sleep_delta, self.program)
@@ -227,8 +247,12 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         self.logger.debug('run_task: finished with HadoopServer')
                  
     def run(self, file_in, file_out, job_conf, num_reducers=1):
-        self.logger.debug('run start')        
-        down_bytes = self.write_map_down_stream(file_in, job_conf, num_reducers)
+        self.logger.debug('run start')
+        challenge = 'what? me worry?'
+        digest = create_digest(self.password, challenge)
+        auth = (digest, challenge)
+        down_bytes = self.write_map_down_stream(file_in, job_conf, num_reducers,
+                                                authorization=auth)
         record_writer = TrivialRecordWriter(file_out)
         if num_reducers == 0:
             self.logger.debug('running a map only job')                    
@@ -239,10 +263,11 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             self.logger.debug('running mapper')
             self.run_task(down_bytes, sas)
             down_bytes = self.write_reduce_down_stream(sas, job_conf,
-                                                       num_reducers)
+                                                       num_reducers,
+                                                       authorization=auth)
             self.logger.debug('running reducer')            
             self.run_task(down_bytes, record_writer)
-        self.logger.debug('run done.')                         
-        
+        self.logger.debug('run done.')
+        os.unlink(self.tmp_file)
     
         
