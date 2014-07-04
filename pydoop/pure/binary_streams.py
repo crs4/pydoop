@@ -94,7 +94,7 @@ class BinaryDownStreamFilter(DownStreamFilter):
         REDUCE_VALUE: ('reduceValue', [str], None),
         CLOSE: ('close', [], None),
         ABORT: ('abort', [], None),
-        AUTHENTICATION_REQ: ('authenticationRequest', [str, str], None)
+        AUTHENTICATION_REQ: ('authenticationReq', [str, str], None)
         }
 
     def __init__(self, stream):
