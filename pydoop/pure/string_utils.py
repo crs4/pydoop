@@ -16,6 +16,10 @@
 #
 # END_COPYRIGHT
 
+import hmac
+import hashlib
+import base64
+
 QUOTE_MAP = {
     '\\': '\\\\',
     '\t': '\\t',
@@ -47,3 +51,9 @@ def unquote_string(in_string):
     s = in_string.replace('\\\\', '\\X')
     parts = s.split('\\')
     return ''.join([parts[0]] + [unquote_head(p) for p in parts[1:]])
+
+def create_digest(key, msg):
+    h = hmac.new(key, msg, hashlib.sha1)
+    return base64.b64encode(h.digest())
+    
+    
