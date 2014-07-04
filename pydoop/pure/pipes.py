@@ -195,8 +195,10 @@ class StreamRunner(object):
     def run(self):
         logger.debug('start running')
         for cmd, args in self.cmd_stream:
-            if cmd == 'authenticationRequest':
+            if cmd == 'authenticationReq':
                 digest, challenge = args
+                logger.debug(
+                    'authenticationReq: {}, {}'.format(digest, challenge))
                 if self.fails_to_authenticate(digest, challenge):
                     logger.critical('Server failed to authenticate. Exiting')
                     break # bailing out
@@ -222,6 +224,7 @@ class StreamRunner(object):
             return True
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
+        logger.debug('authenticationResp: {}'.format(response_digest))        
         self.ctx.up_link.send('authenticationResp', response_digest)
         return False
 
