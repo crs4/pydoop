@@ -23,7 +23,7 @@ from text_streams import TextDownStreamFilter, TextUpStreamFilter
 from binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
 logger = logging.getLogger('connections')
 
 
