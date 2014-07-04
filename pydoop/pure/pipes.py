@@ -23,6 +23,7 @@ from api import JobConf, PydoopError, RecordWriter, MapContext, ReduceContext
 from api import PydoopError
 from streams import get_key_value_stream, get_key_values_stream
 from binary_streams import BinaryWriter, BinaryDownStreamFilter
+from string_utils import create_digest
 
 import logging
 logging.basicConfig()
@@ -31,9 +32,10 @@ logger.setLevel(logging.CRITICAL)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
+SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
+
 MAPREDUCE_TASK_IO_SORT_MB_KEY = "mapreduce.task.io.sort.mb"
 MAPREDUCE_TASK_IO_SORT_MB = 100
-
 
 class CombineRunner(RecordWriter):
 
@@ -173,11 +175,32 @@ class StreamRunner(object):
         self.factory = factory
         self.ctx = context
         self.cmd_stream = cmd_stream
+        self.password = None
+        self.authenticated = False
+        self.get_password()
+
+    def get_password(self):
+        pfile_name = os.getenv(SECRET_LOCATION_KEY)
+        logger.debug('{}:{}'.format(SECRET_LOCATION_KEY, pfile_name))
+        if pfile_name is None:
+            self.password = None
+            return
+        try:
+            with open(pfile_name) as f:
+                self.password = f.read()
+                logger.debug('password:{}'.format(self.password))
+        except IOError:
+            logger.error('Could not open the password file')
 
     def run(self):
         logger.debug('start running')
         for cmd, args in self.cmd_stream:
-            if cmd == 'setJobConf':
+            if cmd == 'authenticationRequest':
+                digest, challenge = args
+                if self.fails_to_authenticate(digest, challenge):
+                    logger.critical('Server failed to authenticate. Exiting')
+                    break # bailing out
+            elif cmd == 'setJobConf':
                 self.ctx.set_job_conf(args)
             elif cmd == 'runMap':
                 input_split, n_reduces, piped_input = args
@@ -187,7 +210,20 @@ class StreamRunner(object):
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
                 break # we can bail out, there is nothing more to do.
-        logger.debug('done running')                
+        logger.debug('done running')
+
+    def fails_to_authenticate(self, digest, challenge):
+        if self.password is None:
+            logger.info('No password, I assume we are in playback mode')
+            self.authenticated = True
+            return False
+        expected_digest = create_digest(self.password, challenge)
+        if expected_digest != digest:
+            return True
+        self.authenticated = True
+        response_digest = create_digest(self.password, digest)
+        self.ctx.up_link.send('authenticationResp', response_digest)
+        return False
 
     def run_map(self, input_split, n_reduces, piped_input):
         logger.debug('start run_map')        
@@ -215,7 +251,8 @@ class StreamRunner(object):
         for ctx.key, ctx.values in kvs_stream:
             reducer.reduce(ctx)
         reducer.close()
-        logger.debug('done run_reduce')                
+        logger.debug('done run_reduce')
+
 
 def run_task(factory, port=None, istream=None, ostream=None):
     try:
