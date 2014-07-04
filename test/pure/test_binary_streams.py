@@ -61,6 +61,11 @@ STREAM_2 = [
     ('done',),
     ]
 
+MAP_JAVA_DOWNLINK_DATA='./data/mapper_downlink.data'
+RED_JAVA_DOWNLINK_DATA='./data/reducer_downlink.data'
+MAP_CMD_OUT='mapper_cmd.txt'
+RED_CMD_OUT='reducer_cmd.txt'
+
 
 def stream_writer(fname, data):
     with open(fname, 'w') as f:
@@ -83,6 +88,17 @@ class TestBinaryStream(WDTestCase):
             except ProtocolError as e:
                 print 'error -- %s' % e
 
+    def test_on_java_downlink_data(self):
+        def decode(istream, ostream):
+            cmd_stream = BinaryDownStreamFilter(istream)
+            for (cmd, args) in cmd_stream:
+                ostream.write('cmd: {}, args: {}\n'.format(cmd, args))
+        for i, o in ((MAP_JAVA_DOWNLINK_DATA, MAP_CMD_OUT),
+                     (RED_JAVA_DOWNLINK_DATA, RED_CMD_OUT)):
+            with open(i, 'r') as f:
+                with open(o, 'w') as w:
+                    decode(f, w)
+
     def test_uplink(self):
         fname = self._mkfn('foo.bin')
         with open(fname, 'w') as f:
@@ -94,11 +110,13 @@ class TestBinaryStream(WDTestCase):
             for (cmd, args), vals in it.izip(cmd_stream, STREAM_2):
                 self.assertEqual(cmd, vals[0])
                 self.assertTrue((len(vals) == 1 and not args)
-                                    or (vals[1:] == args))                
+                                    or (vals[1:] == args))
+
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestBinaryStream('test_downlink'))
+    suite.addTest(TestBinaryStream('test_on_java_downlink_data'))
     suite.addTest(TestBinaryStream('test_uplink'))    
     return suite
 
