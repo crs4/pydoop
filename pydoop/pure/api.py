@@ -88,14 +88,26 @@ class Context(object):
     """
     __metaclass__ = ABCMeta
 
+    @property
+    def job_conf(self):
+        return self.get_job_conf()
+
     @abstractmethod
     def get_job_conf(self):
         pass
 
+    @property
+    def key(self):
+        return self.get_input_key()
+    
     @abstractmethod
     def get_input_key(self):
         pass
 
+    @property
+    def value(self):
+        return self.get_input_value()
+    
     @abstractmethod
     def get_input_value(self):
         pass
@@ -123,14 +135,26 @@ class Context(object):
 
 class MapContext(Context):
 
+    @property
+    def input_split(self):
+        return self.get_input_split()
+
     @abstractmethod
     def get_input_split(self):
         pass
 
+    @property
+    def input_key_class(self):
+        return self.get_input_key_class()
+    
     @abstractmethod
     def get_input_key_class(self):
         pass
 
+    @property
+    def input_value_class(self):
+        return self.get_input_value_class()
+        
     @abstractmethod
     def get_input_value_class(self):
         pass
@@ -138,6 +162,14 @@ class MapContext(Context):
 
 class ReduceContext(Context):
 
+    @property
+    def values(self):
+        return self.get_input_values()
+    
+    @abstractmethod
+    def get_input_values(self):
+        pass
+    
     @abstractmethod
     def next_value(self):
         pass
