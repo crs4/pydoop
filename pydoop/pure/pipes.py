@@ -61,7 +61,7 @@ class CombineRunner(RecordWriter):
         ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
-        for ctx.key, ctx.values in self.data.iteritems():
+        for ctx._key, ctx._values in self.data.iteritems():
             self.reducer.reduce(ctx)
         ctx.writer = writer
         self.data.clear()
@@ -74,14 +74,14 @@ class TaskContext(MapContext, ReduceContext):
         self.up_link = up_link
         self.writer = None
         self.partitioner = None
-        self.job_conf = None
-        self.key = None
-        self.value = None
+        self._job_conf = None
+        self._key = None
+        self._value = None
         self.n_reduces = None
-        self.values = None
-        self.input_split = None
-        self.key_class = None
-        self.value_class = None
+        self._values = None
+        self._input_split = None
+        self._input_key_class = None
+        self._input_value_class = None
 
     def close(self):
         if self.writer:
@@ -89,13 +89,13 @@ class TaskContext(MapContext, ReduceContext):
         self.up_link.send('done')
 
     def set_combiner(self, factory, input_split, n_reduces):
-        self.input_split = input_split
+        self._input_split = input_split
         self.n_reduces = n_reduces
         if self.n_reduces > 0:
             self.partitioner = factory.create_partitioner(self)
             reducer = factory.create_combiner(self)
-            spill_size = self.job_conf.get_int(MAPREDUCE_TASK_IO_SORT_MB_KEY,
-                                               MAPREDUCE_TASK_IO_SORT_MB)
+            spill_size = self._job_conf.get_int(MAPREDUCE_TASK_IO_SORT_MB_KEY,
+                                                MAPREDUCE_TASK_IO_SORT_MB)
             self.writer = CombineRunner(spill_size * 1024 * 1024,
                                         self, reducer) if reducer else None
 
@@ -110,17 +110,20 @@ class TaskContext(MapContext, ReduceContext):
             self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
-        self.job_conf = JobConf(vals)
+        self._job_conf = JobConf(vals)
 
     def get_job_conf(self):
-        return self.job_conf
+        return self._job_conf
 
     def get_input_key(self):
-        return self.key
+        return self._key
 
     def get_input_value(self):
-        return self.value
+        return self._value
 
+    def get_input_values(self):
+        return self._values
+    
     def progress(self):
         pass
 
@@ -134,13 +137,13 @@ class TaskContext(MapContext, ReduceContext):
         pass
 
     def get_input_split(self):
-        return self.input_split
+        return self._input_split
 
     def get_input_key_class(self):
-        return self.input_key_class
+        return self._input_key_class
 
     def get_input_value_class(self):
-        return self.input_value_class
+        return self._input_value_class
 
     def next_value(self):
         pass
@@ -237,7 +240,7 @@ class StreamRunner(object):
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
-        for ctx.key, ctx.value in reader:
+        for ctx._key, ctx._value in reader:
             mapper.map(ctx)
         mapper.close()
         logger.debug('done run_map')                
@@ -251,7 +254,7 @@ class StreamRunner(object):
         ctx.writer = writer
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream)
-        for ctx.key, ctx.values in kvs_stream:
+        for ctx._key, ctx._values in kvs_stream:
             reducer.reduce(ctx)
         reducer.close()
         logger.debug('done run_reduce')
