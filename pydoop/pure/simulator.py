@@ -1,5 +1,6 @@
-from pipes import TaskContext, StreamRunner, CMD_PORT_KEY, SECRET_LOCATION_KEY
-from api import PydoopError
+from pydoop.pure.pipes import TaskContext, StreamRunner
+from pydoop.pure.pipes import CMD_PORT_KEY, SECRET_LOCATION_KEY
+from pydoop.pure.api import PydoopError
 from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryUpStreamDecoder
 from pydoop.pure.string_utils import create_digest
@@ -10,7 +11,7 @@ import tempfile
 import uuid
 
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.CRITICAL)
 
 DEFAULT_SLEEP_DELTA = 3
 
@@ -111,7 +112,7 @@ class HadoopServer(SocketServer.TCPServer):
     
     """
     def __init__(self, port, down_bytes, out_writer,
-                 host='localhost', logger=None, loglevel=logging.INFO):
+                 host='localhost', logger=None, loglevel=logging.CRITICAL):
         """
         down_bytes is the stream of bytes produced by the binary encoding
         of a command stream.
@@ -134,7 +135,7 @@ class HadoopServer(SocketServer.TCPServer):
 
 #-------------------------------------------------------------------------
 class HadoopSimulator(object):
-    def __init__(self, logger=None, loglevel=logging.INFO):
+    def __init__(self, logger=None, loglevel=logging.CRITICAL):
         self.logger = logger if logger\
                              else logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(loglevel)
@@ -182,7 +183,7 @@ class HadoopSimulator(object):
         return open(fname)
     
 class HadoopSimulatorLocal(HadoopSimulator):
-    def __init__(self, factory, logger=None, loglevel=logging.INFO):
+    def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
     def run_task(self, dstream, ustream):
@@ -218,7 +219,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     It implements a reasonably close aproximation of the 'real'
     Hadoop-pipes setup.
     """
-    def __init__(self, program=None, logger=None, loglevel=logging.INFO,
+    def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
                  sleep_delta=DEFAULT_SLEEP_DELTA):
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
         self.program = program

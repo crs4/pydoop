@@ -97,7 +97,7 @@ class TFactory(Factory):
     def create_record_writer(self, context):
         return None if not self.rwclass else self.rwclass(context)
 
-loglevel = logging.INFO
+loglevel = logging.CRITICAL
 class TestFramework(WDTestCase):
 
     def setUp(self):
