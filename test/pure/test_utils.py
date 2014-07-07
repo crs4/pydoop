@@ -22,7 +22,14 @@ import unittest
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.string_utils import quote_string, unquote_string
+from pydoop.pure.string_utils import quote_string, unquote_string, create_digest
+from pydoop.pure.string_utils import create_digest
+from pydoop.pure.serialize import deserialize
+from pydoop.pure.binary_streams import BinaryDownStreamFilter
+
+
+JOB_TOKEN='./data/jobToken'
+MAP_JAVA_DOWNLINK_DATA='./data/mapper_downlink.data'
 
 class TestUtils(unittest.TestCase):
 
@@ -31,10 +38,29 @@ class TestUtils(unittest.TestCase):
                   'dsjfkjewrwerwerwe8239489238492\n \t dfasd \\',
                   'jdsfkj\\hsdjhfjh\\\t\n']:
             self.assertEqual(x, unquote_string(quote_string(x)))
+    def test_digest(self):
+        with open(JOB_TOKEN) as f:
+            magic = f.read(4)
+            prot  = deserialize(int, f)
+            n = deserialize(int, f)
+            label = deserialize(str, f)
+            job = deserialize(str, f)
+            passwd = deserialize(str, f)
+        with open(MAP_JAVA_DOWNLINK_DATA) as istream:
+            cmd_stream = BinaryDownStreamFilter(istream)
+            cmd, args = cmd_stream.next()
+        self.assertEqual(cmd, 'authenticationReq')
+        xdigest    = '5bMR7RdwmkLvK582eYWEK8X6jDA='
+        xchallenge = '1593317824749889452062285518813742155'
+        digest, challenge = args
+        self.assertEqual(digest, xdigest)
+        self.assertEqual(challenge, xchallenge) 
+        self.assertEqual(digest, create_digest(passwd, challenge))
 
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestUtils('test_quote'))
+  suite.addTest(TestUtils('test_digest'))  
   return suite
 
 
