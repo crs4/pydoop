@@ -235,6 +235,11 @@ class StreamRunner(object):
     def run_map(self, input_split, n_reduces, piped_input):
         logger.debug('start run_map')        
         factory, ctx = self.factory, self.ctx
+
+        cmd, args = self.cmd_stream.next()
+        if cmd == "setInputTypes" and piped_input:
+            ctx._input_key_class, ctx._input_value_class = args
+
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input:
             raise PydoopError('RecordReader not defined')
