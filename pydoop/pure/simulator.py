@@ -1,9 +1,12 @@
 from pydoop.pure.pipes import TaskContext, StreamRunner
-from pydoop.pure.pipes import CMD_PORT_KEY, SECRET_LOCATION_KEY
+
 from pydoop.pure.api import PydoopError
 from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryUpStreamDecoder
 from pydoop.pure.string_utils import create_digest
+
+
+
 import SocketServer
 import threading
 import os
@@ -12,6 +15,11 @@ import uuid
 
 import logging
 logging.basicConfig(level=logging.CRITICAL)
+
+
+CMD_PORT_KEY = "mapreduce.pipes.command.port"
+CMD_FILE_KEY = "mapreduce.pipes.commandfile"
+SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
 
 DEFAULT_SLEEP_DELTA = 3
 

@@ -26,16 +26,14 @@ from binary_streams import BinaryWriter, BinaryDownStreamFilter
 from string_utils import create_digest
 
 import logging
+
+from environment_keys import *
+
 logging.basicConfig()
 logger = logging.getLogger('pipes')
 logger.setLevel(logging.CRITICAL)
 
-CMD_PORT_KEY = "mapreduce.pipes.command.port"
-CMD_FILE_KEY = "mapreduce.pipes.commandfile"
-SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
 
-MAPREDUCE_TASK_IO_SORT_MB_KEY = "mapreduce.task.io.sort.mb"
-MAPREDUCE_TASK_IO_SORT_MB = 100
 
 class CombineRunner(RecordWriter):
 
@@ -149,15 +147,17 @@ class TaskContext(MapContext, ReduceContext):
         pass
 
 
+
 def resolve_connections(port=None, istream=None, ostream=None,
                         cmd_file=None,
-                        cmd_port_key=CMD_PORT_KEY,
-                        cmd_file_key=CMD_FILE_KEY):
+                        cmd_port_key=None,
+                        cmd_file_key=None):
     """
     Select appropriate connection streams and protocol.
     """
-    port = port if port else os.getenv(cmd_port_key)
-    cmd_file = cmd_file if cmd_file else os.getenv(cmd_file_key)
+    port = port if port else resolve_environment_port()
+    cmd_file = cmd_file if cmd_file else resolve_environment_file()
+
     if port is not None:
         port = int(port)
         conn = connections.open_network_connections(port)
@@ -183,8 +183,9 @@ class StreamRunner(object):
         self.get_password()
 
     def get_password(self):
-        pfile_name = os.getenv(SECRET_LOCATION_KEY)
-        logger.debug('{}:{}'.format(SECRET_LOCATION_KEY, pfile_name))
+        secret_location_key = resolve_environment_secret_location_key()
+        pfile_name = resolve_environment_secret_location(secret_location_key)
+        logger.debug('{}:{}'.format(secret_location_key, pfile_name))
         if pfile_name is None:
             self.password = None
             return
