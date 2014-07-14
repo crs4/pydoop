@@ -237,7 +237,7 @@ class StreamRunner(object):
         factory, ctx = self.factory, self.ctx
 
         cmd, args = self.cmd_stream.next()
-        if cmd == "setInputTypes" and piped_input:
+        if cmd == "setInputTypes":
             ctx._input_key_class, ctx._input_value_class = args
 
         reader = factory.create_record_reader(ctx)

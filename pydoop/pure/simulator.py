@@ -5,8 +5,6 @@ from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryUpStreamDecoder
 from pydoop.pure.string_utils import create_digest
 
-
-
 import SocketServer
 import threading
 import os
@@ -14,8 +12,8 @@ import tempfile
 import uuid
 
 import logging
-logging.basicConfig(level=logging.CRITICAL)
 
+logging.basicConfig(level=logging.CRITICAL)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -23,11 +21,14 @@ SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
 
 DEFAULT_SLEEP_DELTA = 3
 
+
 class TrivialRecordWriter(object):
     def __init__(self, stream):
         self.stream = stream
+
     def output(self, key, value):
         self.stream.write('{}\t{}\n'.format(key, value))
+
     def send(self, cmd, *vals):
         if cmd == 'output':
             key, value = vals
@@ -36,29 +37,35 @@ class TrivialRecordWriter(object):
             self.stream.close()
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
+
     def close(self):
         self.stream.close()
+
 
 class SortAndShuffle(dict):
     def output(self, key, value):
         self.setdefault(key, []).append(value)
+
     def send(self, *args):
         if args[0] == 'output':
             key, value = args[1:]
             self.setdefault(key, []).append(value)
+
     def close(self):
         pass
 
+
 class CommandThread(threading.Thread):
     def __init__(self, down_bytes, ostream, logger):
-        super(CommandThread, self).__init__()        
+        super(CommandThread, self).__init__()
         self.down_bytes = down_bytes
         self.ostream = ostream
         self.logger = logger
         self.logger.debug('initialized')
+
     def run(self):
         chunk_size = 128 * 1024
-        self.logger.debug('started')        
+        self.logger.debug('started')
         while True:
             buf = self.down_bytes.read(chunk_size)
             if len(buf) == 0:
@@ -67,17 +74,19 @@ class CommandThread(threading.Thread):
             self.ostream.flush()
         self.logger.debug('done')
 
+
 class ResultThread(threading.Thread):
     def __init__(self, up_bytes, ostream, logger):
-        super(ResultThread, self).__init__()        
+        super(ResultThread, self).__init__()
         self.up_bytes = up_bytes
         self.ostream = ostream
         self.logger = logger
         self.logger.debug('initialized')
+
     def run(self):
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
         for cmd, args in up_cmd_stream:
-            self.logger.debug('cmd:{} args:{}'.format(cmd, args))            
+            self.logger.debug('cmd:{} args:{}'.format(cmd, args))
             if cmd == 'authenticationResp':
                 self.logger.debug('got an authenticationResp: {}'.format(args))
             elif cmd == 'output':
@@ -92,7 +101,7 @@ class ResultThread(threading.Thread):
                 self.logger.info('progress:{}'.format(progress))
         self.logger.debug('done with ResultThread')
 
-            
+
 class HadoopThreadHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.server.logger.debug('handler started')
@@ -105,8 +114,9 @@ class HadoopThreadHandler(SocketServer.StreamRequestHandler):
         cmd_thread.join()
         self.server.logger.debug('cmd_thread returned.')
         res_thread.join()
-        self.server.logger.debug('res_thread returned.')        
-    
+        self.server.logger.debug('res_thread returned.')
+
+
 class HadoopServer(SocketServer.TCPServer):
     """
     A fake Hadoop server for debugging support.
@@ -119,6 +129,7 @@ class HadoopServer(SocketServer.TCPServer):
       server.serve_forever()
     
     """
+
     def __init__(self, port, down_bytes, out_writer,
                  host='localhost', logger=None, loglevel=logging.CRITICAL):
         """
@@ -128,8 +139,8 @@ class HadoopServer(SocketServer.TCPServer):
         out_writer is an object with a .send() method that can handle 'output'
         and  'done' commands.
         """
-        self.logger = logger if logger\
-                             else logging.getLogger('HadoopServer')
+        self.logger = logger if logger \
+            else logging.getLogger('HadoopServer')
         self.logger.setLevel(loglevel)
         self.down_bytes = down_bytes
         self.out_writer = out_writer
@@ -139,13 +150,13 @@ class HadoopServer(SocketServer.TCPServer):
 
     def get_port(self):
         return self.socket.getsockname()[1]
-        
 
-#-------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
 class HadoopSimulator(object):
     def __init__(self, logger=None, loglevel=logging.CRITICAL):
-        self.logger = logger if logger\
-                             else logging.getLogger(self.__class__.__name__)
+        self.logger = logger if logger \
+            else logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(loglevel)
         self.logger.debug('initialized.')
 
@@ -153,8 +164,10 @@ class HadoopSimulator(object):
         if authorization is not None:
             digest, challenge = authorization
             stream.send('authenticationReq', digest, challenge)
-        
+
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
+                              input_key_type='org.apache.hadoop.io.LongWritable',
+                              input_value_type='org.apache.hadoop.io.Text',
                               piped_input=False, authorization=None):
         fname = 'down_stream_map.bin'
         with open(fname, 'w') as f:
@@ -163,15 +176,16 @@ class HadoopSimulator(object):
             down_stream.send('start', 0)
             down_stream.send('setJobConf',
                              *sum([[k, v] for k, v in job_conf.iteritems()],
-                                  []))
+                                 []))
             down_stream.send('runMap', 'fake_isplit', num_reducers,
                              piped_input)
+            down_stream.send('setInputTypes', input_key_type, input_value_type)
             for l in file_in:
                 k, v = l.strip().split('\t')
                 down_stream.send('mapItem', k, v)
             down_stream.send('close')
         return open(fname)
-    
+
     def write_reduce_down_stream(self, sas, job_conf, reducer,
                                  piped_output=False, authorization=None):
         fname = 'down_stream_reduce.bin'
@@ -181,43 +195,47 @@ class HadoopSimulator(object):
             down_stream.send('start', 0)
             down_stream.send('setJobConf',
                              *sum([[k, v] for k, v in job_conf.iteritems()],
-                                  []))
+                                 []))
             down_stream.send('runReduce', reducer, piped_output)
             for k in sas:
                 down_stream.send('reduceKey', k)
                 for v in sas[k]:
                     down_stream.send('reduceValue', v)
-            down_stream.send('close')                    
+            down_stream.send('close')
         return open(fname)
-    
+
+
 class HadoopSimulatorLocal(HadoopSimulator):
     def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
+
     def run_task(self, dstream, ustream):
         context = TaskContext(ustream)
         stream_runner = StreamRunner(self.factory, context, dstream)
         stream_runner.run()
         context.close()
+
     def run(self, file_in, file_out, job_conf, num_reducers):
-        self.logger.debug('run start')        
+        self.logger.debug('run start')
         bytes_flow = self.write_map_down_stream(file_in, job_conf, num_reducers)
         dstream = BinaryDownStreamFilter(bytes_flow)
-        rec_writer_stream = TrivialRecordWriter(file_out)        
+        rec_writer_stream = TrivialRecordWriter(file_out)
         if num_reducers == 0:
-            self.logger.info('running a map only job')                    
+            self.logger.info('running a map only job')
             self.run_task(dstream, rec_writer_stream)
         else:
             self.logger.info('running a map reduce job')
             sas = SortAndShuffle()
-            self.logger.info('running mapper')            
+            self.logger.info('running mapper')
             self.run_task(dstream, sas)
             bytes_flow = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers)
-            rstream = BinaryDownStreamFilter(bytes_flow)            
-            self.logger.info('running reducer')                        
+            rstream = BinaryDownStreamFilter(bytes_flow)
+            self.logger.info('running reducer')
             self.run_task(rstream, rec_writer_stream)
         self.logger.info('run done.')
+
 
 class HadoopSimulatorNetwork(HadoopSimulator):
     """
@@ -227,17 +245,18 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     It implements a reasonably close aproximation of the 'real'
     Hadoop-pipes setup.
     """
+
     def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
                  sleep_delta=DEFAULT_SLEEP_DELTA):
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
         self.program = program
         self.sleep_delta = sleep_delta
-        tfile = tempfile.NamedTemporaryFile(delete=False)        
+        tfile = tempfile.NamedTemporaryFile(delete=False)
         self.tmp_file = tfile.name
         self.password = uuid.uuid4().hex
         tfile.write(self.password)
         tfile.close()
-        
+
     def run_task(self, down_bytes, out_writer):
         self.logger.debug('run_task: started HadoopServer')
         server = HadoopServer(0, down_bytes, out_writer,
@@ -254,7 +273,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         os.system(cmd_line)
         server.handle_request()
         self.logger.debug('run_task: finished with HadoopServer')
-                 
+
     def run(self, file_in, file_out, job_conf, num_reducers=1):
         self.logger.debug('run start')
         challenge = 'what? me worry?'
@@ -264,7 +283,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                                                 authorization=auth)
         record_writer = TrivialRecordWriter(file_out)
         if num_reducers == 0:
-            self.logger.debug('running a map only job')                    
+            self.logger.debug('running a map only job')
             self.run_task(down_bytes, record_writer)
         else:
             self.logger.debug('running a map reduce job')
@@ -274,7 +293,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             down_bytes = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers,
                                                        authorization=auth)
-            self.logger.debug('running reducer')            
+            self.logger.debug('running reducer')
             self.run_task(down_bytes, record_writer)
         self.logger.debug('run done.')
         os.unlink(self.tmp_file)
