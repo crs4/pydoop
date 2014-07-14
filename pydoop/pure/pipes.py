@@ -241,22 +241,24 @@ class StreamRunner(object):
             ctx._input_key_class, ctx._input_value_class = args
 
         reader = factory.create_record_reader(ctx)
-        if reader is None and piped_input:
+        if reader is None and piped_input is None:
             raise PydoopError('RecordReader not defined')
+
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
         for ctx._key, ctx._value in reader:
             mapper.map(ctx)
         mapper.close()
-        logger.debug('done run_map')                
+        logger.debug('done run_map')
 
     def run_reduce(self, part, piped_output):
-        logger.debug('start run_reduce')                
+        logger.debug('start run_reduce')
         factory, ctx = self.factory, self.ctx
         writer = factory.create_record_writer(ctx)
-        if writer is None and piped_output:
+        if writer is None and piped_output is None:
             raise PydoopError('RecordWriter not defined')
+
         ctx.writer = writer
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream)
