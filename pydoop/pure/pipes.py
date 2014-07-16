@@ -130,14 +130,17 @@ class TaskContext(MapContext, ReduceContext):
     
     def progress(self):
         if not self.up_link:
+            logger.debug("UpLink is None")
             return
         now = int(round(time.time() * 1000))
-        if now - self._last_progress > 1000:
+        if logger.level == logging.DEBUG or now - self._last_progress > 1000:
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
+                logger.debug("Sending status %s" % self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
+            logger.debug("Sending progress float %s" % self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -261,14 +264,19 @@ class StreamRunner(object):
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise PydoopError('RecordReader not defined')
+        send_progress = reader is not None
 
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
         for ctx._key, ctx._value in reader:
             logger.debug("key: %s, value: %s " % (ctx.key, ctx.value))
+            if send_progress:
+                ctx._progress_float = reader.get_progress()
+                logger.debug("Progress updated to %s " % ctx._progress_float)
+                ctx.progress()
+                pass
             mapper.map(ctx)
-
         mapper.close()
         logger.debug('done run_map')
 

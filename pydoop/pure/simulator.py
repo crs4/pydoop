@@ -1,5 +1,5 @@
 from pydoop.pure.pipes import TaskContext, StreamRunner
-
+from pydoop.pure.api import RecordReader
 from pydoop.pure.api import PydoopError
 from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.pure.binary_streams import BinaryUpStreamDecoder
@@ -13,7 +13,7 @@ import uuid
 
 import logging
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.DEBUG)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -25,6 +25,8 @@ DEFAULT_SLEEP_DELTA = 3
 class TrivialRecordWriter(object):
     def __init__(self, stream):
         self.stream = stream
+        self.logger = logging.getLogger("TrivialRecordWriter")
+        self.logger.setLevel(logging.DEBUG)
 
     def output(self, key, value):
         self.stream.write('{}\t{}\n'.format(key, value))
@@ -33,6 +35,12 @@ class TrivialRecordWriter(object):
         if cmd == 'output':
             key, value = vals
             self.output(key, value)
+        elif cmd == 'status':
+            value = vals[0]
+            self.logger.debug("Sending %s: %s" % (cmd, value))
+        elif cmd == 'progress':
+            value = vals[0]
+            self.logger.debug("Sending %s: %s" % (cmd, value))
         elif cmd == 'done':
             self.stream.close()
         else:
@@ -40,6 +48,33 @@ class TrivialRecordWriter(object):
 
     def close(self):
         self.stream.close()
+
+
+def reader_iterator(max=10):
+    for i in range(1, max+1):
+        yield i, "The string %s" % i
+
+
+class TrivialRecordReader(RecordReader):
+
+    def __init__(self, context):
+        self.context = context
+        self.max = 10
+        self.current = None
+        self.iter = reader_iterator(self.max)
+
+    def __iter__(self):
+        return self
+
+    def close(self):
+        pass
+
+    def get_progress(self):
+        return 0 if not self.current else float(self.current[0])/self.max
+
+    def next(self):
+        self.current = self.iter.next()
+        return self.current
 
 
 class SortAndShuffle(dict):
@@ -99,6 +134,9 @@ class ResultThread(threading.Thread):
             elif cmd == 'progress':
                 (progress,) = args
                 self.logger.info('progress:{}'.format(progress))
+            elif cmd == 'status':
+                (status,) = args
+                self.logger.info('status message: %s' % status)
         self.logger.debug('done with ResultThread')
 
 
@@ -180,10 +218,11 @@ class HadoopSimulator(object):
             down_stream.send('runMap', 'fake_isplit', num_reducers,
                              piped_input)
             down_stream.send('setInputTypes', input_key_type, input_value_type)
-            for l in file_in:
-                k, v = l.strip().split('\t')
-                down_stream.send('mapItem', k, v)
-            down_stream.send('close')
+            if file_in:
+                for l in file_in:
+                    k, v = l.strip().split('\t')
+                    down_stream.send('mapItem', k, v)
+                down_stream.send('close')
         return open(fname)
 
     def write_reduce_down_stream(self, sas, job_conf, reducer,
@@ -206,6 +245,7 @@ class HadoopSimulator(object):
 
 
 class HadoopSimulatorLocal(HadoopSimulator):
+
     def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory

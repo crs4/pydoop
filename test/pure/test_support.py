@@ -24,6 +24,7 @@ sys.path.insert(0, '../../')
 
 from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
 from pydoop.pure.simulator import HadoopSimulatorLocal
+from pydoop.pure.simulator import TrivialRecordReader
 import itertools as it
 import logging
 from collections import Counter
@@ -112,8 +113,14 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf('map_only.out') as fout:
                 hs.run(fin, fout, job_conf, 0)
-        
-                
+
+    def test_record_reader(self):
+        job_conf = {'this.is.not.used': '22'}
+        hs = HadoopSimulatorLocal(TFactory(record_reader=TrivialRecordReader))
+        foname = 'map_reduce.out'
+        with self._mkf(foname) as fout:
+            hs.run(None, fout, job_conf, 0)
+
     def test_map_reduce(self):
         job_conf = {'this.is.not.used' : '22'}
         hs = HadoopSimulatorLocal(TFactory())
@@ -145,6 +152,7 @@ def suite():
     suite.addTest(TestFramework('test_map_only'))
     suite.addTest(TestFramework('test_map_reduce'))
     suite.addTest(TestFramework('test_map_combiner_reduce'))
+    suite.addTest(TestFramework('test_record_reader'))
     return suite
 
 if __name__ == '__main__':
