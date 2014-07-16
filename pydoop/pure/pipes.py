@@ -28,10 +28,10 @@ from string_utils import create_digest
 import logging
 
 from environment_keys import *
-
+import time
 logging.basicConfig()
 logger = logging.getLogger('pipes')
-logger.setLevel(logging.CRITICAL)
+logger.setLevel(logging.DEBUG)
 
 
 
@@ -80,6 +80,11 @@ class TaskContext(MapContext, ReduceContext):
         self._input_split = None
         self._input_key_class = None
         self._input_value_class = None
+        self._status = None
+        self._status_set = False
+        self._progress_float = 0.0
+        self._last_progress = 0
+
 
     def close(self):
         if self.writer:
@@ -98,6 +103,7 @@ class TaskContext(MapContext, ReduceContext):
                                         self, reducer) if reducer else None
 
     def emit(self, key, value):
+        logger.debug("Emitting... %s,%s" % (key, value))
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
@@ -123,10 +129,21 @@ class TaskContext(MapContext, ReduceContext):
         return self._values
     
     def progress(self):
-        pass
+        if not self.up_link:
+            return
+        now = int(round(time.time() * 1000))
+        if now - self._last_progress > 1000:
+            self._last_progress = now
+            if self._status_set:
+                self.up_link.send("status", self._status)
+                self._status_set = False
+            self.up_link.send("progress", self._progress_float)
 
     def set_status(self, status):
-        pass
+        self._status = status
+        self._status_set = True
+        self.progress()
+
 
     def get_counter(self, group, name):
         pass
@@ -240,6 +257,7 @@ class StreamRunner(object):
         if cmd == "setInputTypes":
             ctx._input_key_class, ctx._input_value_class = args
 
+        logger.debug("After setInputTypes: %s, %s" % (ctx.input_key_class, ctx.input_value_class))
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise PydoopError('RecordReader not defined')
@@ -248,7 +266,9 @@ class StreamRunner(object):
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
         for ctx._key, ctx._value in reader:
+            logger.debug("key: %s, value: %s " % (ctx.key, ctx.value))
             mapper.map(ctx)
+
         mapper.close()
         logger.debug('done run_map')
 
