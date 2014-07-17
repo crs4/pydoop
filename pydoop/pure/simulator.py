@@ -27,6 +27,7 @@ class TrivialRecordWriter(object):
         self.stream = stream
         self.logger = logging.getLogger("TrivialRecordWriter")
         self.logger.setLevel(logging.DEBUG)
+        self.counters = {}
 
     def output(self, key, value):
         self.stream.write('{}\t{}\n'.format(key, value))
@@ -41,6 +42,15 @@ class TrivialRecordWriter(object):
         elif cmd == 'progress':
             value = vals[0]
             self.logger.debug("Sending %s: %s" % (cmd, value))
+        elif cmd == 'registerCounter':
+            cid, group, name = vals
+            self.logger.debug("Sending command %s => %s" % (cmd, cid))
+            self.counters[cid] = 0
+        elif cmd == 'incrementCounter':
+            cid, increment = vals
+            self.counters[cid] += int(increment)
+            self.output("COUNTER_" + str(cid), self.counters[cid])
+            self.logger.debug("Writing %s: %s" % (cid, self.counters[cid]))
         elif cmd == 'done':
             self.stream.close()
         else:
@@ -137,6 +147,8 @@ class ResultThread(threading.Thread):
             elif cmd == 'status':
                 (status,) = args
                 self.logger.info('status message: %s' % status)
+            elif cmd == 'registerCounter':
+                self.logger.info("Registering Counter %s")
         self.logger.debug('done with ResultThread')
 
 
@@ -220,6 +232,7 @@ class HadoopSimulator(object):
             down_stream.send('setInputTypes', input_key_type, input_value_type)
             if file_in:
                 for l in file_in:
+                    print "Line: %s" % l
                     k, v = l.strip().split('\t')
                     down_stream.send('mapItem', k, v)
                 down_stream.send('close')
@@ -250,6 +263,9 @@ class HadoopSimulatorLocal(HadoopSimulator):
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
 
+    def get_counter(self, group, name):
+        return self.counters.get(group+"_"+name, None)
+
     def run_task(self, dstream, ustream):
         context = TaskContext(ustream)
         stream_runner = StreamRunner(self.factory, context, dstream)
@@ -258,9 +274,11 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
     def run(self, file_in, file_out, job_conf, num_reducers):
         self.logger.debug('run start')
+
         bytes_flow = self.write_map_down_stream(file_in, job_conf, num_reducers)
         dstream = BinaryDownStreamFilter(bytes_flow)
         rec_writer_stream = TrivialRecordWriter(file_out)
+
         if num_reducers == 0:
             self.logger.info('running a map only job')
             self.run_task(dstream, rec_writer_stream)
@@ -337,5 +355,3 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             self.run_task(down_bytes, record_writer)
         self.logger.debug('run done.')
         os.unlink(self.tmp_file)
-    
-        

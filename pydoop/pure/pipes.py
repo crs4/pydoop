@@ -6,7 +6,7 @@
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -24,19 +24,19 @@ from api import PydoopError
 from streams import get_key_value_stream, get_key_values_stream
 from binary_streams import BinaryWriter, BinaryDownStreamFilter
 from string_utils import create_digest
+from api import Counter
 
 import logging
 
 from environment_keys import *
 import time
+
 logging.basicConfig()
 logger = logging.getLogger('pipes')
 logger.setLevel(logging.DEBUG)
 
 
-
 class CombineRunner(RecordWriter):
-
     def __init__(self, spill_bytes, context, reducer):
         self.spill_bytes = spill_bytes
         self.used_bytes = 0
@@ -67,7 +67,6 @@ class CombineRunner(RecordWriter):
 
 
 class TaskContext(MapContext, ReduceContext):
-
     def __init__(self, up_link):
         self.up_link = up_link
         self.writer = None
@@ -84,7 +83,7 @@ class TaskContext(MapContext, ReduceContext):
         self._status_set = False
         self._progress_float = 0.0
         self._last_progress = 0
-
+        self._registered_counters = []
 
     def close(self):
         if self.writer:
@@ -127,7 +126,7 @@ class TaskContext(MapContext, ReduceContext):
 
     def get_input_values(self):
         return self._values
-    
+
     def progress(self):
         if not self.up_link:
             logger.debug("UpLink is None")
@@ -147,12 +146,14 @@ class TaskContext(MapContext, ReduceContext):
         self._status_set = True
         self.progress()
 
-
     def get_counter(self, group, name):
-        pass
+        counter_id = len(self._registered_counters)
+        self._registered_counters.append(counter_id)
+        self.up_link.send("registerCounter", counter_id, group, name)
+        return Counter(counter_id)
 
     def increment_counter(self, counter, amount):
-        pass
+        self.up_link.send("incrementCounter", counter.get_id(), amount)
 
     def get_input_split(self):
         return self._input_split
@@ -165,7 +166,6 @@ class TaskContext(MapContext, ReduceContext):
 
     def next_value(self):
         pass
-
 
 
 def resolve_connections(port=None, istream=None, ostream=None,
@@ -193,7 +193,6 @@ def resolve_connections(port=None, istream=None, ostream=None,
 
 
 class StreamRunner(object):
-
     def __init__(self, factory, context, cmd_stream):
         self.factory = factory
         self.ctx = context
@@ -225,17 +224,17 @@ class StreamRunner(object):
                     'authenticationReq: {}, {}'.format(digest, challenge))
                 if self.fails_to_authenticate(digest, challenge):
                     logger.critical('Server failed to authenticate. Exiting')
-                    break # bailing out
+                    break  # bailing out
             elif cmd == 'setJobConf':
                 self.ctx.set_job_conf(args)
             elif cmd == 'runMap':
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
-                break # we can bail out, there is nothing more to do.
+                break  # we can bail out, there is nothing more to do.
             elif cmd == 'runReduce':
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
-                break # we can bail out, there is nothing more to do.
+                break  # we can bail out, there is nothing more to do.
         logger.debug('done running')
 
     def fails_to_authenticate(self, digest, challenge):
@@ -248,12 +247,12 @@ class StreamRunner(object):
             return True
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
-        logger.debug('authenticationResp: {}'.format(response_digest))        
+        logger.debug('authenticationResp: {}'.format(response_digest))
         self.ctx.up_link.send('authenticationResp', response_digest)
         return False
 
     def run_map(self, input_split, n_reduces, piped_input):
-        logger.debug('start run_map')        
+        logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
 
         cmd, args = self.cmd_stream.next()
