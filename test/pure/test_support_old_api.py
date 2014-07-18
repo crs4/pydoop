@@ -21,9 +21,8 @@ import unittest, itertools as it
 # FIXME
 import sys
 
-sys.path.insert(0, '../../')
 
-from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
+from pydoop.pipes import Mapper, Reducer, Partitioner, Factory
 from pydoop.pure.simulator import HadoopSimulatorLocal
 from pydoop.pure.simulator import TrivialRecordReader
 import itertools as it
@@ -54,7 +53,7 @@ class TMapper(Mapper):
         self.ctx = ctx
 
     def map(self, ctx):
-        words = ''.join(c for c in ctx.value
+        words = ''.join(c for c in ctx.getInputValue()
                         if c.isalnum() or c == ' ').lower().split()
         for w in words:
             ctx.emit(w, '1')
@@ -65,23 +64,24 @@ class TReducer(Reducer):
         self.ctx = ctx
 
     def reduce(self, ctx):
-        s = sum(it.imap(int, ctx.values))
-        ctx.emit(ctx.key, str(s))
+        s = sum(it.imap(int, ctx.getInputValues()))
+        ctx.emit(ctx.getInputKey(), str(s))
 
 
 class TReducerWithCounters(Reducer):
     def __init__(self, ctx):
         self.ctx = ctx
-        ctx.get_counter("p", "n")
         self.counters = {}
-        for n in COUNTS.keys():
-            self.counters[n] = self.ctx.get_counter("DEFAULT", n)
+        self.outputWords = self.ctx.getCounter("DEFAULT", "OUTPUTWORD")
+        self.logger = logging.getLogger("TReducerWithCounters")
 
     def reduce(self, ctx):
-        s = sum(it.imap(int, ctx.values))
-        ctx.emit(ctx.key, str(s))
-        counter = self.counters[ctx.key]
-        ctx.increment_counter(counter, s)
+        s = 0
+        while ctx.nextValue():
+          s += int(ctx.getInputValue())
+        ctx.emit(ctx.getInputKey(), str(s))
+        self.logger.debug("Incrementing: %s=>%s" % (ctx.getInputValue(), s))
+        ctx.incrementCounter(self.outputWords, s)
 
 
 class TFactory(Factory):
@@ -159,15 +159,15 @@ class TestFramework(WDTestCase):
                 hs.run(fin, fout, job_conf, 1)
 
         with open(self._mkfn(foname)) as f:
+            sum = 0
+            counter_value = 0
             for l in f:
                 k, c = l.strip().split()
                 if "COUNTER_" in k:
-                    ck = int(k[8:]) - 1
-                    key = COUNTS.keys()[ck]
-                    #print "%s --> %s %s" % (ck, key, int(c))
-                    self.assertEqual(COUNTS[key], int(c))
+                    counter_value = int(c)
+                    self.assertEqual(sum, counter_value)
                 else:
-                    #print "%s --> %s" % (k, int(c))
+                    sum += int(c)
                     self.assertEqual(COUNTS[k], int(c))
 
 

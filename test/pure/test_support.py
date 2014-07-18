@@ -18,7 +18,7 @@
 
 import unittest, itertools as it
 
-#FIXME
+# FIXME
 import sys
 
 sys.path.insert(0, '../../')
