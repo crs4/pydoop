@@ -165,7 +165,11 @@ class TaskContext(MapContext, ReduceContext):
         return self._input_value_class
 
     def next_value(self):
-        pass
+        try:
+            self._value = self._values.next()
+            return True
+        except StopIteration:
+            return False
 
 
 def resolve_connections(port=None, istream=None, ostream=None,

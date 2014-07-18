@@ -6,7 +6,7 @@
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -53,30 +53,47 @@ class Counter(object):
     """
     An interface to the Hadoop counters infrastructure.
     """
+
     def __init__(self, counter_id):
         self.id = counter_id
 
     def get_id(self):
         return self.id
 
+    def getId(self):
+        return self.get_id()
+
 
 class JobConf(dict):
     """
     Configuration properties assigned to this job.
     """
+
     def __init__(self, values):
         if 1 & len(values):
             raise PydoopError('JobConf.__init__: len(values) should be even')
         super(JobConf, self).__init__(zip(values[::2], values[1::2]))
 
+    def hasKey(self, key):
+        return self.has_key(key)
+
     def get_int(self, key, default=None):
         return int(self.get(key, default))
+
+    def getInt(self, key, default=None):
+        return self.get_int(key, default)
 
     def get_float(self, key, default=None):
         return float(self.get(key, default))
 
+    def getFloat(self, key, default=None):
+        return self.get_float(key, default)
+
     def get_bool(self, key, default=None):
         return bool(self.get(key, default))
+
+    def getBoolean(self, key, default=None):
+        return self.get_bool(key, default)
 
 
 class Context(object):
@@ -96,21 +113,30 @@ class Context(object):
     def get_job_conf(self):
         pass
 
+    def getJobConf(self):
+        return self.get_job_conf()
+
     @property
     def key(self):
         return self.get_input_key()
-    
+
     @abstractmethod
     def get_input_key(self):
         pass
 
+    def getInputKey(self):
+        return self.get_input_key()
+
     @property
     def value(self):
         return self.get_input_value()
-    
+
     @abstractmethod
     def get_input_value(self):
         pass
+
+    def getInputValue(self):
+        return self.get_input_value()
 
     @abstractmethod
     def emit(self, key, value):
@@ -124,17 +150,25 @@ class Context(object):
     def set_status(self, status):
         pass
 
+    def setStatus(self, status):
+        return self.set_status(status)
+
     @abstractmethod
     def get_counter(self, group, name):
         pass
+
+    def getCounter(self, group, name):
+        return self.get_counter(group, name)
 
     @abstractmethod
     def increment_counter(self, counter, amount):
         pass
 
+    def incrementCounter(self, counter, amount):
+        return self.increment_counter(counter, amount)
+
 
 class MapContext(Context):
-
     @property
     def input_split(self):
         return self.get_input_split()
@@ -143,36 +177,50 @@ class MapContext(Context):
     def get_input_split(self):
         pass
 
+    def getInputSplit(self):
+        return self.get_input_split()
+
     @property
     def input_key_class(self):
         return self.get_input_key_class()
-    
+
     @abstractmethod
     def get_input_key_class(self):
         pass
 
+    def getInputKeyClass(self):
+        return self.get_input_key_class()
+
     @property
     def input_value_class(self):
         return self.get_input_value_class()
-        
+
     @abstractmethod
     def get_input_value_class(self):
         pass
 
+    def getInputValueClass(self):
+        return self.get_input_value_class()
+
 
 class ReduceContext(Context):
-
     @property
     def values(self):
         return self.get_input_values()
-    
+
     @abstractmethod
     def get_input_values(self):
         pass
-    
+
+    def getInputValues(self):
+        return self.get_input_values()
+
     @abstractmethod
     def next_value(self):
         pass
+
+    def nextValue(self):
+        return self.next_value()
 
 
 class Closable(object):
@@ -181,7 +229,6 @@ class Closable(object):
 
 
 class Mapper(Closable):
-
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -190,7 +237,6 @@ class Mapper(Closable):
 
 
 class Reducer(Closable):
-
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -199,7 +245,6 @@ class Reducer(Closable):
 
 
 class Partitioner(object):
-
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -209,7 +254,6 @@ class Partitioner(object):
 
 
 class RecordReader(Closable):
-
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -228,9 +272,11 @@ class RecordReader(Closable):
         """
         pass
 
+    def getProgress(self):
+        return self.get_progress()
+
 
 class RecordWriter(Closable):
-
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -239,7 +285,6 @@ class RecordWriter(Closable):
 
 
 class Factory(object):
-
     __metaclass__ = ABCMeta
 
     @abstractmethod
