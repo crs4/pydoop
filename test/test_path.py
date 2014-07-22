@@ -23,6 +23,14 @@ from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
 import pydoop.utils as utils
 
 
+# something outside the latin-1 range
+UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+
+
+def uni_last(tup):
+  return tup[:-1] + (tup[-1]+UNI_CHR,)
+
+
 class TestSplit(unittest.TestCase):
 
   def good(self):
@@ -51,6 +59,8 @@ class TestSplit(unittest.TestCase):
         ])
     for p, r in cases:
       self.assertEqual(hdfs.path.split(p), r)
+    for p, r in cases[1:]:
+      self.assertEqual(hdfs.path.split(p+UNI_CHR), uni_last(r))
 
   def good_with_user(self):
     if hdfs.default_is_local():
@@ -63,6 +73,7 @@ class TestSplit(unittest.TestCase):
         ]
     for p, u, r in cases:
       self.assertEqual(hdfs.path.split(p, u), r)
+      self.assertEqual(hdfs.path.split(p+UNI_CHR, u), uni_last(r))
 
   def bad(self):
     cases = [
@@ -80,14 +91,17 @@ class TestSplit(unittest.TestCase):
 class TestJoin(unittest.TestCase):
 
   def good(self):
-    for p, r in [
+    cases = [
       (('/foo', 'bar', 'tar'), '/foo/bar/tar'),
       (('/foo/', 'bar/', 'tar/'), '/foo/bar/tar'),
       (('/foo/', 'hdfs://host:9000/bar/', 'tar/'), 'hdfs://host:9000/bar/tar'),
       (('/foo/', 'file:/bar/', 'tar/'), 'file:/bar/tar'),
       (('/foo/', 'file:///bar/', 'tar/'), 'file:///bar/tar'),
-      ]:
+      ]
+    for p, r in cases:
       self.assertEqual(hdfs.path.join(*p), r)
+    p, r = cases[0]
+    self.assertEqual(hdfs.path.join(*uni_last(p)), r+UNI_CHR)
 
 
 class TestAbspath(unittest.TestCase):
@@ -99,100 +113,110 @@ class TestAbspath(unittest.TestCase):
       fs = hdfs.hdfs("default", 0)
       self.root = "hdfs://%s:%s" % (fs.host, fs.port)
       fs.close()
+    self.p = 'foo/bar'
+    self.u_p = self.p + UNI_CHR
 
   def without_user(self):
-    p = 'foo/bar'
-    abs_p = hdfs.path.abspath(p, user=None, local=False)
-    if hdfs.default_is_local():
-      self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
-    else:
-      self.assertEqual(abs_p, '%s/user/%s/%s' % (self.root, DEFAULT_USER, p))
+    for p in self.p, self.u_p:
+      abs_p = hdfs.path.abspath(p, user=None, local=False)
+      if hdfs.default_is_local():
+        self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
+      else:
+        self.assertEqual(abs_p, '%s/user/%s/%s' % (self.root, DEFAULT_USER, p))
 
   def with_user(self):
-    p = 'foo/bar'
-    abs_p = hdfs.path.abspath(p, user="pydoop", local=False)
-    if hdfs.default_is_local():
-      self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
-    else:
-      self.assertEqual(abs_p, '%s/user/pydoop/%s' % (self.root, p))
+    for p in self.p, self.u_p:
+      abs_p = hdfs.path.abspath(p, user="pydoop", local=False)
+      if hdfs.default_is_local():
+        self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
+      else:
+        self.assertEqual(abs_p, '%s/user/pydoop/%s' % (self.root, p))
 
   def forced_local(self):
-    p = 'foo/bar'
-    for user in None, "pydoop":
-      abs_p = hdfs.path.abspath(p, user=user, local=True)
-      self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
-
-  def already_absolute(self):
-    for p in 'file:/foo/bar', 'hdfs://localhost:9000/foo/bar':
+    for p in self.p, self.u_p:
       for user in None, "pydoop":
-        abs_p = hdfs.path.abspath(p, user=user, local=False)
-        self.assertEqual(abs_p, p)
         abs_p = hdfs.path.abspath(p, user=user, local=True)
         self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
+
+  def already_absolute(self):
+    for base_p in 'file:/foo/bar', 'hdfs://localhost:9000/foo/bar':
+      for p in base_p, base_p + UNI_CHR:
+        for user in None, "pydoop":
+          abs_p = hdfs.path.abspath(p, user=user, local=False)
+          self.assertEqual(abs_p, p)
+          abs_p = hdfs.path.abspath(p, user=user, local=True)
+          self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
 
 
 class TestBasename(unittest.TestCase):
 
   def good(self):
-    self.assertEqual(hdfs.path.basename("hdfs://localhost:9000/foo/bar"), "bar")
+    p, bn = "hdfs://localhost:9000/foo/bar", "bar"
+    self.assertEqual(hdfs.path.basename(p), bn)
+    self.assertEqual(hdfs.path.basename(p+UNI_CHR), bn+UNI_CHR)
 
 
 class TestExists(unittest.TestCase):
 
   def good(self):
-    path = utils.make_random_str()
-    hdfs.dump("foo\n", path)
-    self.assertTrue(hdfs.path.exists(path))
-    hdfs.rmr(path)
-    self.assertFalse(hdfs.path.exists(path))
+    base_path = utils.make_random_str()
+    for path in base_path, base_path + UNI_CHR:
+      hdfs.dump("foo\n", path)
+      self.assertTrue(hdfs.path.exists(path))
+      hdfs.rmr(path)
+      self.assertFalse(hdfs.path.exists(path))
 
 
 class TestKind(unittest.TestCase):
 
+  def setUp(self):
+    self.path = utils.make_random_str()
+    self.u_path = self.path + UNI_CHR
+
   def test_kind(self):
-    path = utils.make_random_str()
-    self.assertTrue(hdfs.path.kind(path) is None)
-    try:
-      hdfs.dump("foo\n", path)
-      self.assertEqual('file', hdfs.path.kind(path))
-      hdfs.rmr(path)
-      hdfs.mkdir(path)
-      self.assertEqual('directory', hdfs.path.kind(path))
-    finally:
+    for path in self.path, self.u_path:
+      self.assertTrue(hdfs.path.kind(path) is None)
       try:
+        hdfs.dump("foo\n", path)
+        self.assertEqual('file', hdfs.path.kind(path))
         hdfs.rmr(path)
-      except IOError:
-        pass
+        hdfs.mkdir(path)
+        self.assertEqual('directory', hdfs.path.kind(path))
+      finally:
+        try:
+          hdfs.rmr(path)
+        except IOError:
+          pass
 
   def test_isfile(self):
-    path = utils.make_random_str()
-    self.assertFalse(hdfs.path.isfile(path))
-    try:
-      hdfs.dump("foo\n", path)
-      self.assertTrue(hdfs.path.isfile(path))
-      hdfs.rmr(path)
-      hdfs.mkdir(path)
+    for path in self.path, self.u_path:
       self.assertFalse(hdfs.path.isfile(path))
-    finally:
       try:
+        hdfs.dump("foo\n", path)
+        self.assertTrue(hdfs.path.isfile(path))
         hdfs.rmr(path)
-      except IOError:
-        pass
+        hdfs.mkdir(path)
+        self.assertFalse(hdfs.path.isfile(path))
+      finally:
+        try:
+          hdfs.rmr(path)
+        except IOError:
+          pass
 
   def test_isdir(self):
-    path = utils.make_random_str()
-    self.assertFalse(hdfs.path.isdir(path))
-    try:
-      hdfs.dump("foo\n", path)
+    for path in self.path, self.u_path:
       self.assertFalse(hdfs.path.isdir(path))
-      hdfs.rmr(path)
-      hdfs.mkdir(path)
-      self.assertTrue(hdfs.path.isdir(path))
-    finally:
       try:
+        hdfs.dump("foo\n", path)
+        self.assertFalse(hdfs.path.isdir(path))
         hdfs.rmr(path)
-      except IOError:
-        pass
+        hdfs.mkdir(path)
+        self.assertTrue(hdfs.path.isdir(path))
+      finally:
+        try:
+          hdfs.rmr(path)
+        except IOError:
+          pass
 
 
 def suite():
