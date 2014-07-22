@@ -22,7 +22,14 @@ from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
+from pydoop.hdfs.common import encode_path, decode_path
+
 from utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
+
+
+# something outside the latin-1 range
+UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+
 
 class TestCommon(unittest.TestCase):
 
@@ -40,7 +47,7 @@ class TestCommon(unittest.TestCase):
     self.fs.close()
 
   def _make_random_path(self, where=None):
-    return "%s/%s" % (where or self.wd, uuid.uuid4().hex)
+    return "%s/%s_%s" % (where or self.wd, uuid.uuid4().hex, UNI_CHR)
 
   # also an implicit test for the create_directory method
   def _make_random_dir(self, where=None):
@@ -288,9 +295,11 @@ class TestCommon(unittest.TestCase):
     cwd = self.fs.working_directory()
     new_d = self._make_random_path()  # does not need to exist
     self.fs.set_working_directory(new_d)
-    self.assertEqual(self.fs.working_directory(), new_d)
+    self.assertEqual(self.fs.working_directory(), encode_path(new_d))
+    self.assertEqual(self.fs.working_directory(decode=True), new_d)
     self.fs.set_working_directory(cwd)
     self.assertEqual(self.fs.working_directory(), cwd)
+    self.assertEqual(self.fs.working_directory(decode=True), decode_path(cwd))
 
   def list_directory(self):
     new_d = self._make_random_dir()
