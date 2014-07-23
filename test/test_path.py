@@ -16,15 +16,15 @@
 # 
 # END_COPYRIGHT
 
+# pylint: disable=W0311
+
 import os, unittest
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
-import pydoop.utils as utils
+from pydoop.utils import make_random_str
 
-
-# something outside the latin-1 range
-UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+from utils import UNI_CHR
 
 
 def uni_last(tup):
@@ -159,7 +159,7 @@ class TestBasename(unittest.TestCase):
 class TestExists(unittest.TestCase):
 
   def good(self):
-    base_path = utils.make_random_str()
+    base_path = make_random_str()
     for path in base_path, base_path + UNI_CHR:
       hdfs.dump("foo\n", path)
       self.assertTrue(hdfs.path.exists(path))
@@ -170,7 +170,7 @@ class TestExists(unittest.TestCase):
 class TestKind(unittest.TestCase):
 
   def setUp(self):
-    self.path = utils.make_random_str()
+    self.path = make_random_str()
     self.u_path = self.path + UNI_CHR
 
   def test_kind(self):
