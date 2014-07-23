@@ -43,6 +43,10 @@ _FD_MAP = {
   "stderr": sys.stderr.fileno(),
   }
 
+# something outside the latin-1 range
+UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+
+
 class FSTree(object):
   """
   >>> t = FSTree('root')
@@ -111,4 +115,3 @@ def silent_call(func, *args, **kwargs):
       for s in "stdout", "stderr":
         os.dup2(cache[s], _FD_MAP[s])
   return ret
-  

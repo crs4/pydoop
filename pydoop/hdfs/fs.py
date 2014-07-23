@@ -16,6 +16,8 @@
 # 
 # END_COPYRIGHT
 
+# pylint: disable=W0311
+
 """
 pydoop.hdfs.fs -- File System Handles
 -------------------------------------
@@ -120,6 +122,8 @@ class hdfs(object):
 
   def __init__(self, host="default", port=0, user=None, groups=None):
     host = host.strip()
+    raw_host = host
+    host = common.encode_host(host)
     if user is None:
       user = ""
     if not host:
@@ -138,6 +142,8 @@ class hdfs(object):
       else:
         ip = h
       aliasing_info.append(("host", ip, host))
+      if raw_host != host:
+        aliasing_info.append(("host", ip, raw_host))
       for k, true_x, x in aliasing_info:
         if true_x != x:
           self._ALIASES[k][x] = true_x
@@ -231,17 +237,16 @@ class hdfs(object):
       elif flags == os.O_WRONLY|os.O_APPEND:
         flags = "a"
       return local_file(self, path, flags)
-    path = str(path)  # the C API does not handle unicodes
     if flags == "r":
       flags = os.O_RDONLY
     elif flags == "w":
       flags = os.O_WRONLY
     elif flags == "a":
       flags = os.O_WRONLY|os.O_APPEND
-    return hdfs_file(
-      self.fs.open_file(path, flags, buff_size, replication, blocksize),
-      self, path, flags, readline_chunk_size
+    f = self.fs.open_file(
+      common.encode_path(path), flags, buff_size, replication, blocksize
       )
+    return hdfs_file(f, self, path, flags, readline_chunk_size)
 
   def capacity(self):
     """
@@ -268,7 +273,9 @@ class hdfs(object):
     _complain_ifclosed(self.closed)
     if isinstance(to_hdfs, self.__class__):
       to_hdfs = to_hdfs.fs
-    return self.fs.copy(from_path, to_hdfs, to_path)
+    return self.fs.copy(
+      common.encode_path(from_path), to_hdfs, common.encode_path(to_path)
+      )
 
   def create_directory(self, path):
     """
@@ -279,7 +286,7 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.create_directory(path)
+    return self.fs.create_directory(common.encode_path(path))
 
   def default_block_size(self):
     """
@@ -302,7 +309,7 @@ class hdfs(object):
     :raises: IOError when ``recursive`` is False and directory is non-empty
     """
     _complain_ifclosed(self.closed)
-    return self.fs.delete(path, recursive)
+    return self.fs.delete(common.encode_path(path), recursive)
 
   def exists(self, path):
     """
@@ -314,7 +321,7 @@ class hdfs(object):
     :return: True if ``path`` exists, else False
     """
     _complain_ifclosed(self.closed)
-    return self.fs.exists(path)
+    return self.fs.exists(common.encode_path(path))
 
   def get_hosts(self, path, start, length):
     """
@@ -332,7 +339,7 @@ class hdfs(object):
     :return: list of hosts that store the block
     """
     _complain_ifclosed(self.closed)
-    return self.fs.get_hosts(path, start, length)
+    return self.fs.get_hosts(common.encode_path(path), start, length)
   
   def get_path_info(self, path):
     """
@@ -345,7 +352,10 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.get_path_info(path)
+    info = self.fs.get_path_info(common.encode_path(path))
+    if isinstance(path, unicode):
+      info['name'] = common.decode_path(info['name'])
+    return info
 
   def list_directory(self, path):
     """
@@ -358,7 +368,12 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.list_directory(path)
+    ls = self.fs.list_directory(common.encode_path(path))
+    if isinstance(path, unicode):
+      decode_path = common.decode_path  # speed hack
+      for info in ls:
+        info['name'] = decode_path(info['name'])
+    return ls
   
   def move(self, from_path, to_hdfs, to_path):
     """
@@ -375,7 +390,9 @@ class hdfs(object):
     _complain_ifclosed(self.closed)
     if isinstance(to_hdfs, self.__class__):
       to_hdfs = to_hdfs.fs
-    return self.fs.move(from_path, to_hdfs, to_path)
+    return self.fs.move(
+      common.encode_path(from_path), to_hdfs, common.encode_path(to_path)
+      )
     
   def rename(self, from_path, to_path):
     """
@@ -388,7 +405,9 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.rename(from_path, to_path)
+    return self.fs.rename(
+      common.encode_path(from_path), common.encode_path(to_path)
+      )
 
   def set_replication(self, path, replication):
     """
@@ -401,7 +420,7 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.set_replication(path, replication)
+    return self.fs.set_replication(common.encode_path(path), replication)
   
   def set_working_directory(self, path):
     """
@@ -413,7 +432,7 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.set_working_directory(path)
+    return self.fs.set_working_directory(common.encode_path(path))
 
   def used(self):
     """
@@ -425,15 +444,18 @@ class hdfs(object):
     _complain_ifclosed(self.closed)
     return self.fs.used()
   
-  def working_directory(self):
+  def working_directory(self, decode=False):
     """
     Get the current working directory.
-    
-    :rtype: str
+
+    :type decode: bool
+    :param decode: if :obj:`True`, return the wd as a Unicode object
+    :rtype: str or unicode
     :return: current working directory
     """
     _complain_ifclosed(self.closed)
-    return self.fs.working_directory()
+    wd = self.fs.working_directory()
+    return common.decode_path(wd) if decode else wd
 
   def chown(self, path, user='', group=''):
     """
@@ -448,7 +470,7 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.chown(path, user, group)
+    return self.fs.chown(common.encode_path(path), user, group)
 
   @staticmethod
   def __get_umask():
@@ -522,6 +544,7 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
+    path = common.encode_path(path)
     if isinstance(mode, basestring):
       mode_ = self.__compute_mode_from_string(path, mode)
     else:
@@ -541,7 +564,7 @@ class hdfs(object):
     :raises: IOError
     """
     _complain_ifclosed(self.closed)
-    return self.fs.utime(path, int(mtime), int(atime))
+    return self.fs.utime(common.encode_path(path), int(mtime), int(atime))
 
   def walk(self, top):
     """
