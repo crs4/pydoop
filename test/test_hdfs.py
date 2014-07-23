@@ -16,19 +16,21 @@
 # 
 # END_COPYRIGHT
 
+# pylint: disable=W0311
+
 import unittest, tempfile, os
 from itertools import izip
 import stat
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import BUFSIZE
-from utils import make_random_data, FSTree
+from utils import UNI_CHR, make_random_data, FSTree
 
 
 class TestHDFS(unittest.TestCase):
 
   def setUp(self):
-    wd = tempfile.mkdtemp()
+    wd = tempfile.mkdtemp(suffix='_%s' % UNI_CHR)
     wd_bn = os.path.basename(wd)
     self.local_wd = "file:%s" % wd
     fs = hdfs.hdfs("default", 0)
@@ -199,7 +201,7 @@ class TestHDFS(unittest.TestCase):
       self.assertEqual(len(hdfs.ls(wd)), 0)
 
   def chmod(self):
-    with tempfile.NamedTemporaryFile() as f:
+    with tempfile.NamedTemporaryFile(suffix='_%s' % UNI_CHR) as f:
       hdfs.chmod("file://" + f.name, 444)
       s = os.stat(f.name)
       self.assertEqual(444, stat.S_IMODE(s.st_mode))

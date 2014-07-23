@@ -16,6 +16,8 @@
 # 
 # END_COPYRIGHT
 
+# pylint: disable=W0311
+
 """
 pydoop.hdfs.fs -- File System Handles
 -------------------------------------
@@ -120,6 +122,8 @@ class hdfs(object):
 
   def __init__(self, host="default", port=0, user=None, groups=None):
     host = host.strip()
+    raw_host = host
+    host = common.encode_host(host)
     if user is None:
       user = ""
     if not host:
@@ -138,6 +142,8 @@ class hdfs(object):
       else:
         ip = h
       aliasing_info.append(("host", ip, host))
+      if raw_host != host:
+        aliasing_info.append(("host", ip, raw_host))
       for k, true_x, x in aliasing_info:
         if true_x != x:
           self._ALIASES[k][x] = true_x

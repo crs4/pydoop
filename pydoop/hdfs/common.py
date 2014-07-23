@@ -34,3 +34,15 @@ def decode_path(path):
     if isinstance(path, str):
         path = path.decode('utf-8')
     return path
+
+
+def encode_host(host):
+    if isinstance(host, unicode):
+        host = host.encode('idna')
+    return host
+
+
+def decode_host(host):
+    if isinstance(host, str):
+        host = host.decode('idna')
+    return host
