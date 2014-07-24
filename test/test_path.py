@@ -77,6 +77,7 @@ class TestSplit(unittest.TestCase):
 
   def bad(self):
     cases = [
+      '',                                  # not allowed in the Java API
       'ftp://localhost:9000/',             # bad scheme
       'hdfs://localhost:spam/',            # port is not an int
       'hdfs://localhost:9000',             # path part is empty

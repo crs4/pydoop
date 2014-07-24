@@ -39,6 +39,8 @@ class _HdfsPathSplitter(object):
 
   @classmethod
   def split(cls, hdfs_path, user):
+    if not hdfs_path:
+      cls.raise_bad_path(hdfs_path, "empty")
     try:
       scheme, rest = cls.PATTERN.match(hdfs_path).groups()
     except AttributeError:
