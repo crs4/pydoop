@@ -220,6 +220,35 @@ class TestKind(unittest.TestCase):
           pass
 
 
+class TestExpand(unittest.TestCase):
+
+  def expanduser(self):
+    for pre in '~', '~%s' % DEFAULT_USER:
+      for rest in '', '/d':
+        p = '%s%s' % (pre, rest)
+        if hdfs.default_is_local():
+          self.assertEqual(hdfs.path.expanduser(p), os.path.expanduser(p))
+        else:
+          exp_res = '/user/%s%s' % (DEFAULT_USER, rest)
+          self.assertEqual(hdfs.path.expanduser(p), exp_res)
+
+  def expanduser_no_expansion(self):
+    for pre in ('hdfs://host:1', 'file://', ''):
+      for rest in ('/~', '/~foo', 'd/~', 'd/~foo'):
+        p = '%s%s' % (pre, rest)
+        self.assertEqual(hdfs.path.expanduser(p), p)
+
+  def expandvars(self):
+    k, v = 'PYDOOP_TEST_K', 'PYDOOP_TEST_V'
+    p = 'hdfs://host:1/${%s}' % k
+    os.environ[k] = v
+    exp_res = '%s/%s' % (p.rsplit('/', 1)[0], v)
+    try:
+      self.assertEqual(hdfs.path.expandvars(p), exp_res)
+    finally:
+      del os.environ[k]
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -232,6 +261,9 @@ def suite():
   suite.addTest(TestAbspath('already_absolute'))
   suite.addTest(TestBasename('good'))
   suite.addTest(TestExists('good'))
+  suite.addTest(TestExpand('expanduser'))
+  suite.addTest(TestExpand('expanduser_no_expansion'))
+  suite.addTest(TestExpand('expandvars'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 
