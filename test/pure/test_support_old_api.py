@@ -20,9 +20,11 @@ import unittest, itertools as it
 
 # FIXME
 import sys
+sys.path.insert(0, '../../')
 
 
-from pydoop.pipes import Mapper, Reducer, Partitioner, Factory
+#from pydoop.pipes import Mapper, Reducer, Partitioner, Factory
+from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
 from pydoop.pure.simulator import HadoopSimulatorLocal
 from pydoop.pure.simulator import TrivialRecordReader
 import itertools as it
