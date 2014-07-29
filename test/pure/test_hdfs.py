@@ -20,6 +20,11 @@ import unittest, tempfile, os
 from itertools import izip
 import stat
 
+#FIXME
+import sys
+sys.path.insert(0, '../../')
+
+
 import pydoop.pure.hdfs as hdfs
 from pydoop.pure.hdfs.common import BUFSIZE
 from utils import make_random_data, FSTree
