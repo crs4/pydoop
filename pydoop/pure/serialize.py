@@ -18,6 +18,54 @@
 
 """
 Serialization routines based on Hadoop's SerialUtils.cc.
+
+
+Expected usage:
+
+.. code-block:: python
+
+   import pydoop.serialize as ps
+
+   class Foo(object):
+       def __init__(self, x, y, z):
+           assert (isinstance(x, int) and isinstance(y, float)
+                   and isinstance(z, str))
+           self.x, self.y, self.z = x, y, z
+       @classmethod
+       def read(cls, stream):
+           x = ps.deserialize_int(stream)
+           y = ps.deserialize_float(stream)
+           z = ps.deserialize_str(stream)
+           return Foo(x, y, z)
+
+   ps.register_serializer(Foo, Foo.read)
+   ps.register_deserializer('org.apache.hadoop.io.VIntWritable',
+                            ps.deserialize_int)
+
+   # in the reader code:
+   class Reader(..):
+       def __init__(self, ctx):
+           self.ctx = ctx
+       def next(self):
+           ....
+           key = ...
+           # defaults to no changes if it does not have a deserializer for that
+           # type
+           key = ps.deserialize(self.ctx.input_key_type, key)
+           value = ps.deserialize(self.ctx.input_value_type, value)
+           return key, value
+
+   # in the TaskContext code:
+   ...
+   def emit(self, key, value):
+       ...
+       # if there is noting registered for type(key), try __str__
+       up_link.send('ouput', serialize(key), serialize(value))
+
+We also expect to be able to support something like the following::
+
+ pydoop script my_mr.py  --type-conversion=(VIntWritable,pydoop.serialize.VInt)
+
 """
 
 from __future__ import division
@@ -39,13 +87,11 @@ def serialize_int(t, stream):
         stream.write(struct.pack('>Q', t)[-size:])
     return
 
-
 def read_buffer(n, stream):
     buff = stream.read(n)
     if len(buff) != n:
         raise EOFError
     return buff
-
 
 def deserialize_int(stream):
     b = struct.unpack('b', read_buffer(1, stream))[0]
@@ -55,12 +101,10 @@ def deserialize_int(stream):
     q = struct.unpack('>Q', '\x00' * (8 - l) + read_buffer(l, stream))[0]
     return q^-1 if negative else q
 
-
 def serialize_float(t, stream):
     p = xdrlib.Packer()
     p.pack_float(t)
     stream.write(p.get_buffer())
-
 
 def deserialize_float(stream):
     """
@@ -79,15 +123,12 @@ def serialize_string(s, stream):
     if len(s) > 0:
         stream.write(s)
 
-
 def deserialize_string(stream):
     l = deserialize_int(stream)
     return read_buffer(l, stream)
 
-
 def serialize_bool(v, stream):
     serialize_int(int(v), stream)
-
 
 def deserialize_bool(stream):
     return bool(deserialize_int(stream))
@@ -112,3 +153,8 @@ def serialize(v, stream):
 
 def deserialize(t, stream):
     return DESERIALIZE_MAP[t](stream)
+
+
+
+
+ 
