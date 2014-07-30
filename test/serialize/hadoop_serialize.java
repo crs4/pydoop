@@ -6,6 +6,8 @@
  * functions.
  *
  */
+
+import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableUtils;
 
 import java.io.BufferedOutputStream;
@@ -32,6 +34,10 @@ public class hadoop_serialize {
 		WritableUtils.writeVLong(os, 42L);
 		WritableUtils.writeVLong(os, 424242L);
 		WritableUtils.writeVLong(os, 4242424242L);
+
+		System.out.println("Text.write \"I'm a Text object\"");
+		Text t = new Text("I'm a Text object");
+		t.write(os);
 
 		System.out.println("WritableUtils.writeString \"hello world\"");
 		WritableUtils.writeString(os, "hello world");
