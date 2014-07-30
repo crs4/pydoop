@@ -22,10 +22,10 @@ import unittest
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.string_utils import quote_string, unquote_string, create_digest
-from pydoop.pure.string_utils import create_digest
-from pydoop.pure.serialize import deserialize
-from pydoop.pure.binary_streams import BinaryDownStreamFilter
+from pydoop.mapreduce.string_utils import quote_string, unquote_string
+from pydoop.mapreduce.string_utils import create_digest
+from pydoop.mapreduce.serialize import deserialize
+from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
 
 
 JOB_TOKEN='./data/jobToken'

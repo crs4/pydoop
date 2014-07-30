@@ -16,15 +16,16 @@
 #
 # END_COPYRIGHT
 
-import unittest, itertools as it
+import unittest
+import itertools as it
 
 #FIXME
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.api import Mapper, Reducer, Factory
-from pydoop.pure.pipes import run_task
-from pydoop.pure.string_utils import unquote_string
+from pydoop.mapreduce.api import Mapper, Reducer, Factory
+from pydoop.mapreduce.pipes import run_task
+from pydoop.mapreduce.string_utils import unquote_string
 from test_text_stream import stream_writer
 
 from common import WDTestCase

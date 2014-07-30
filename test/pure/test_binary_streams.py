@@ -16,17 +16,18 @@
 #
 # END_COPYRIGHT
 
-import unittest, itertools as it
+import unittest
+import itertools as it
 
 #FIXME
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.streams import ProtocolError
-from pydoop.pure.binary_streams import BinaryDownStreamFilter
-from pydoop.pure.binary_streams import BinaryWriter
-from pydoop.pure.binary_streams import BinaryUpStreamFilter
-from pydoop.pure.binary_streams import BinaryUpStreamDecoder
+from pydoop.mapreduce.streams import ProtocolError
+from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
+from pydoop.mapreduce.binary_streams import BinaryWriter
+from pydoop.mapreduce.binary_streams import BinaryUpStreamFilter
+from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 
 from common import WDTestCase
 

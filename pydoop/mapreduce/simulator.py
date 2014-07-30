@@ -1,17 +1,17 @@
-from pydoop.pure.pipes import TaskContext, StreamRunner
-from pydoop.pure.api import RecordReader
-from pydoop.pure.api import PydoopError
-from pydoop.pure.binary_streams import BinaryWriter, BinaryDownStreamFilter
-from pydoop.pure.binary_streams import BinaryUpStreamDecoder
-from pydoop.pure.string_utils import create_digest
-
 import SocketServer
 import threading
 import os
 import tempfile
 import uuid
-
 import logging
+
+from pydoop.mapreduce.pipes import TaskContext, StreamRunner
+from pydoop.mapreduce.api import RecordReader
+from pydoop.mapreduce.api import PydoopError
+from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
+from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
+from pydoop.mapreduce.string_utils import create_digest
+
 
 logging.basicConfig(level=logging.DEBUG)
 

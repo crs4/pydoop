@@ -16,13 +16,16 @@
 #
 # END_COPYRIGHT
 
-import sys, os, socket
+import sys
+import os
+import socket
 from threading import Thread, Event
-
-from text_streams import TextDownStreamFilter, TextUpStreamFilter
-from binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
-
 import logging
+
+from pydoop.mapreduce.text_streams import TextDownStreamFilter, TextUpStreamFilter
+from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
+
+
 logging.basicConfig(level=logging.CRITICAL)
 logger = logging.getLogger('connections')
 

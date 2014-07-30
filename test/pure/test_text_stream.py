@@ -16,14 +16,15 @@
 #
 # END_COPYRIGHT
 
-import unittest, itertools as it
+import unittest
+import itertools as it
 
 #FIXME
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.streams import ProtocolError
-from pydoop.pure.text_streams import TextDownStreamFilter
+from pydoop.mapreduce.streams import ProtocolError
+from pydoop.mapreduce.text_streams import TextDownStreamFilter
 
 from common import WDTestCase
 

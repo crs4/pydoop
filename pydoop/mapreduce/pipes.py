@@ -16,20 +16,18 @@
 #
 # END_COPYRIGHT
 
-import sys, os
+import sys
+import logging
+import time
 
 import connections
-from api import JobConf, PydoopError, RecordWriter, MapContext, ReduceContext
+from api import JobConf, RecordWriter, MapContext, ReduceContext
 from api import PydoopError
-from streams import get_key_value_stream, get_key_values_stream
-from binary_streams import BinaryWriter, BinaryDownStreamFilter
+from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
 from string_utils import create_digest
 from api import Counter
-
-import logging
-
 from environment_keys import *
-import time
+
 
 logging.basicConfig()
 logger = logging.getLogger('pipes')

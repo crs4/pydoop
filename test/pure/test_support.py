@@ -16,16 +16,16 @@
 #
 # END_COPYRIGHT
 
-import unittest, itertools as it
+import unittest
 
 # FIXME
 import sys
 
 sys.path.insert(0, '../../')
 
-from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
-from pydoop.pure.simulator import HadoopSimulatorLocal
-from pydoop.pure.simulator import TrivialRecordReader
+from pydoop.mapreduce.api import Mapper, Reducer, Factory
+from pydoop.mapreduce.simulator import HadoopSimulatorLocal
+from pydoop.mapreduce.simulator import TrivialRecordReader
 import itertools as it
 import logging
 from collections import Counter

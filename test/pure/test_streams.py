@@ -16,16 +16,17 @@
 #
 # END_COPYRIGHT
 
-import unittest, itertools as it
+import unittest
+import itertools as it
 
 #FIXME
 import sys
 sys.path.insert(0, '../../')
 
-from pydoop.pure.streams import ProtocolAbort
-from pydoop.pure.streams import DownStreamFilter
-from pydoop.pure.streams import get_key_value_stream
-from pydoop.pure.streams import get_key_values_stream
+from pydoop.mapreduce.streams import ProtocolAbort
+from pydoop.mapreduce.streams import DownStreamFilter
+from pydoop.mapreduce.streams import get_key_value_stream
+from pydoop.mapreduce.streams import get_key_values_stream
 
 
 STREAM_1_DATA = [

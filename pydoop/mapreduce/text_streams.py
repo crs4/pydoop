@@ -16,7 +16,7 @@
 #
 # END_COPYRIGHT
 
-from streams import DownStreamFilter, UpStreamFilter
+from streams import DownStreamFilter, UpStreamFilter, ProtocolAbort, ProtocolError
 from string_utils import quote_string
 
 

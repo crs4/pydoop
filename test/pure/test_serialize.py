@@ -16,13 +16,15 @@
 #
 # END_COPYRIGHT
 
-import unittest, cStringIO, random
+import unittest
+import cStringIO
+import random
 
 #FIXME
 import sys
 sys.path.insert(0, '../../')
 
-import pydoop.pure.serialize as srl
+import pydoop.mapreduce.serialize as srl
 
 
 class TestSerialize(unittest.TestCase):
