@@ -295,29 +295,29 @@ def stat(path, user=None):
   return retval
 
 
-def getatime(path):
+def getatime(path, user=None):
   """
   Get time of last access of ``path``.
   """
-  return stat(path).st_atime
+  return stat(path, user=user).st_atime
 
 
-def getmtime(path):
+def getmtime(path, user=None):
   """
   Get time of last modification of ``path``.
   """
-  return stat(path).st_ctime
+  return stat(path, user=user).st_ctime
 
 
-def getctime(path):
+def getctime(path, user=None):
   """
   Get time of creation / last metadata change of ``path``.
   """
-  return stat(path).st_ctime
+  return stat(path, user=user).st_ctime
 
 
-def getsize(path):
+def getsize(path, user=None):
   """
   Get size, in bytes, of ``path``.
   """
-  return stat(path).st_size
+  return stat(path, user=user).st_size
