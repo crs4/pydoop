@@ -137,12 +137,12 @@ def deserialize_bool(stream):
     return bool(deserialize_vint(stream))
 
 def serialize_bytes(s, stream):
-    serialize_int(len(s), stream)
+    serialize_vint(len(s), stream)
     if len(s) > 0:
         stream.write(s)
 
 def deserialize_bytes(stream):
-    l = deserialize_int(stream)
+    l = deserialize_vint(stream)
     return read_buffer(l, stream)
 
 def serialize_text(s, stream):
@@ -150,12 +150,12 @@ def serialize_text(s, stream):
         data = s.encode('UTF-8')
     else:
         data = s
-    serialize_int(len(data), stream)
+    serialize_vint(len(data), stream)
     if len(data) > 0:
         stream.write(data)
 
 def deserialize_text(stream):
-    l = deserialize_int(stream)
+    l = deserialize_vint(stream)
     return unicode(read_buffer(l, stream), 'UTF-8')
 
 def serialize_string(s, stream):

@@ -44,10 +44,10 @@ def readString(stream):
     return unicode(buf, 'UTF-8')
 
 def readVInt(stream):
-    return pser.deserialize_int(stream)
+    return pser.deserialize_vint(stream)
 
 def readVLong(stream):
-    return pser.deserialize_int(stream)
+    return pser.deserialize_vint(stream)
 
 def writeString(stream, s):
     """
@@ -65,7 +65,7 @@ def writeString(stream, s):
         stream.write(data)
 
 def writeVInt(stream, i):
-    pser.serialize_int(i, stream)
+    pser.serialize_vint(i, stream)
 
 def writeVLong(stream, i):
-    pser.serialize_int(i, stream)
+    pser.serialize_vint(i, stream)
