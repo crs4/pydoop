@@ -164,31 +164,6 @@ def deserialize_text(stream):
     l = deserialize_vint(stream)
     return unicode(read_buffer(l, stream), 'UTF-8')
 
-def serialize_string(s, stream):
-    p = xdrlib.Packer()
-    p.pack_int(len(s))
-    stream.write(p.get_buffer())
-    if len(s) > 0:
-        stream.write(s)
-
-def deserialize_string(stream):
-    l = deserialize_int(stream)
-    return read_buffer(l, stream)
-
-def serialize_string_compressed(s, stream):
-    """
-    This is the wire format used by hadoop pipes.
-    The string length is encoded using VInt.
-    """
-    serialize_vint(len(s), stream)
-    if len(s) > 0:
-        stream.write(s)
-
-def deserialize_string_compressed(stream):
-    l = deserialize_vint(stream)
-    return read_buffer(l, stream)
-
-
 class SerializerStore(object):
     def __init__(self):
         self.serialize_map = {}
@@ -234,8 +209,6 @@ DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.BytesWritable',
                                     deserialize_bytes)
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.Text',
                                     deserialize_text)
-DEFAULT_STORE.register_deserializer('java.lang.String',
-                                    deserialize_string)
 
 def register_serializer(class_id, ser_func):
     DEFAULT_STORE.register_serializer(class_id, ser_func)
