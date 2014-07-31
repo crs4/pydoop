@@ -142,6 +142,12 @@ def serialize_bytes(s, stream):
         stream.write(s)
 
 def deserialize_bytes(stream):
+    """
+    This is the wire format generically used by hadoop pipes.
+    The data length is encoded using VInt.  Note that Text is encoded in UTF-8
+    (so use deserialize_text) and complex objects can implement their own
+    serialization -- within the (data length, data) stream structure.
+    """
     l = deserialize_vint(stream)
     return read_buffer(l, stream)
 
