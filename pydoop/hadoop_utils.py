@@ -438,7 +438,7 @@ class PathFinder(object):
           glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
           glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
           )
-      self.__hadoop_classpath += ":" + self.hadoop_native()
+      self.__hadoop_classpath += ":" + self.hadoop_native() + ":" + self.hadoop_conf()
     return self.__hadoop_classpath
 
   def find(self):

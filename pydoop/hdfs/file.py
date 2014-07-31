@@ -23,7 +23,7 @@ pydoop.hdfs.file -- HDFS File Objects
 
 import os
 
-import common
+from pydoop.hdfs import common
 
 
 def _complain_ifclosed(closed):

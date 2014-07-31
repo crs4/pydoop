@@ -21,14 +21,17 @@ pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
 
-import os, socket, urlparse, getpass, re
+import os
+import socket
+import urlparse
+import getpass
+import re
 import operator as ops
 
 import pydoop
-
 import common
 from file import hdfs_file, local_file
-from hadoop import get_implementation_instance
+from pydoop.hdfs.hadoop import get_implementation_instance
 
 
 class _FSStatus(object):

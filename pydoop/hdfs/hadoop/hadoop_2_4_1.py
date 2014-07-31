@@ -1,19 +1,13 @@
 __author__ = 'kikkomep'
 
 import os
-import re
-import array
 import logging
 
-import operator as ops
 from pydoop.pure.hdfs.common import BUFSIZE
-from pydoop.pure.bridge.factory import JavaWrapperFactory
-from pydoop.pure.hdfs.hadoop import wrap_class_instance
-from pydoop.pure.hdfs.hadoop import wrap_class
-from pydoop.pure.hdfs.hadoop import get_hadoop_version
-from pydoop.pure.hdfs.hadoop.hdfs import FileSystem
-from pydoop.pure.hdfs.hadoop.hdfs import File
-from ctypes import create_string_buffer
+from pydoop.hdfs.hadoop import wrap_class_instance
+from pydoop.hdfs.hadoop import wrap_class
+from pydoop.hdfs.hadoop.hdfs import FileSystem
+from pydoop.hdfs.hadoop.hdfs import File
 
 
 logging.basicConfig(level=logging.DEBUG)

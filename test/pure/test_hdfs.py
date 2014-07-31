@@ -16,17 +16,20 @@
 # 
 # END_COPYRIGHT
 
-import unittest, tempfile, os
+import unittest
+import tempfile
+import os
 from itertools import izip
 import stat
+
 
 #FIXME
 import sys
 sys.path.insert(0, '../../')
 
-
-import pydoop.pure.hdfs as hdfs
-from pydoop.pure.hdfs.common import BUFSIZE
+import pydoop
+import pydoop.hdfs as hdfs
+from pydoop.hdfs.common import BUFSIZE
 from utils import make_random_data, FSTree
 
 
@@ -144,26 +147,26 @@ class TestHDFS(unittest.TestCase):
     copy_on_wd = "%s/src_dir_copy" % wd
     copy_on_copy_on_wd = "%s/src_dir" % copy_on_wd
     hdfs.cp(src_dir, copy_on_wd)
-    self.assertTrue(hdfs.path.exists(copy_on_wd))
+    self.assertTrue(pydoop.hdfs.path.exists(copy_on_wd))
     hdfs.cp(src_dir, copy_on_wd)
-    self.assertTrue(hdfs.path.exists(copy_on_copy_on_wd))
+    self.assertTrue(pydoop.hdfs.path.exists(copy_on_copy_on_wd))
     self.assertRaises(IOError, hdfs.cp, src_dir, copy_on_wd)
 
   def __cp_recursive(self, wd):
     src_t = self.__make_tree(wd)
     src = src_t.name
     copy_on_wd = "%s_copy" % src
-    src_bn, copy_on_wd_bn = [hdfs.path.basename(d) for d in (src, copy_on_wd)]
+    src_bn, copy_on_wd_bn = [pydoop.hdfs.path.basename(d) for d in (src, copy_on_wd)]
     hdfs.cp(src, copy_on_wd)
     for t in src_t.walk():
       copy_name = t.name.replace(src_bn, copy_on_wd_bn)
-      self.assertTrue(hdfs.path.exists(copy_name))
+      self.assertTrue(pydoop.hdfs.path.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
     hdfs.cp(src, copy_on_wd)
     for t in src_t.walk():
       copy_name = t.name.replace(src_bn, "%s/%s" % (copy_on_wd_bn, src_bn))
-      self.assertTrue(hdfs.path.exists(copy_name))
+      self.assertTrue(pydoop.hdfs.path.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
 
@@ -179,7 +182,7 @@ class TestHDFS(unittest.TestCase):
       self.__cp_recursive(wd)
 
   def put(self):
-    src = hdfs.path.split(self.local_paths[0])[-1]
+    src = pydoop.hdfs.path.split(self.local_paths[0])[-1]
     dest = self.hdfs_paths[0]
     with open(src, "w") as f:
       f.write(self.data)
@@ -190,7 +193,7 @@ class TestHDFS(unittest.TestCase):
 
   def get(self):
     src = self.hdfs_paths[0]
-    dest = hdfs.path.split(self.local_paths[0])[-1]
+    dest = pydoop.hdfs.path.split(self.local_paths[0])[-1]
     hdfs.dump(self.data, src)
     hdfs.get(src, dest)
     with open(dest) as fi:

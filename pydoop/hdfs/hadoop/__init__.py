@@ -4,21 +4,22 @@ import os
 import logging
 import importlib
 
-from pydoop.pure.bridge.factory import JavaWrapperFactory
+from pydoop.hadoop_utils import PathFinder
+from pydoop.utils.bridge.factory import JavaWrapperFactory
 
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("pydoop.pure.hadoop")
 
 # Hadoop ClassPath detection
-HADOOP_CLASSPATH = os.environ.get("HADOOP_CLASSPATH")
+HADOOP_CLASSPATH = PathFinder().hadoop_classpath()
+
 if HADOOP_CLASSPATH is None:
     raise EnvironmentError(
         "HADOOP_CLASSPATH not found! Use hadoop classpath to detect it and to set it into your environment")
 
 # Adds the HADOOP_CLASSPATH to the default Java CLASSPATH
 CLASSPATH = os.environ.get("CLASSPATH", ".") + ":" + HADOOP_CLASSPATH
-
 HADOOP_VERSION_INFO_JAVA_CLASS = "org.apache.hadoop.util.VersionInfo"
 
 # the factory instance for creating Python wrappers of Java classes
@@ -52,6 +53,7 @@ def get_hadoop_version():
     """
     version_info = wrap_class(HADOOP_VERSION_INFO_JAVA_CLASS)
     return version_info.getVersion()
+    # return PathFinder().hadoop_version()
 
 
 def get_implementation_instance(class_name_prefix, *args, **kwargs):
@@ -71,7 +73,7 @@ def get_implementation_module():
 
 # Loads the proper version of the hadoop hdfs wrapper
 HADOOP_VERSION = get_hadoop_version()
-HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.pure.hdfs.hadoop.hadoop_" + HADOOP_VERSION.replace(".", "_")
+HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.hdfs.hadoop.hadoop_" + HADOOP_VERSION.replace(".", "_")
 HADOOP_HDFS_IMPL_SUFFIX = "Impl"
 
 logger.debug("HADOOP_HDFS_WRAPPER_MODULE: %s" % HADOOP_HDFS_WRAPPER_MODULE_NAME)

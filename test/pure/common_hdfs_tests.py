@@ -16,11 +16,16 @@
 #
 # END_COPYRIGHT
 
-import sys, os, unittest, uuid, shutil, operator
+import sys
+import os
+import unittest
+import uuid
+import shutil
+import operator
 from itertools import izip
 from ctypes import create_string_buffer
 
-import pydoop.pure.hdfs as hdfs
+import pydoop.hdfs as hdfs
 import pydoop
 from utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
 
@@ -57,7 +62,7 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, **kwargs) as fo:
             i = 0
             bytes_written = 0
-            bufsize = hdfs.common.BUFSIZE
+            bufsize = pydoop.hdfs.common.BUFSIZE
             while i < len(content):
                 bytes_written += fo.write(content[i:i + bufsize])
                 i += bufsize
@@ -402,7 +407,7 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, "w", **kwargs) as f:
             data = make_random_data(total_data_size)
             i = 0
-            bufsize = hdfs.common.BUFSIZE
+            bufsize = pydoop.hdfs.common.BUFSIZE
             while i < len(data):
                 f.write(data[i:i + bufsize])
                 i += bufsize

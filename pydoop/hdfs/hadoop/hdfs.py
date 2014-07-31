@@ -1,13 +1,8 @@
-from ctypes import create_string_buffer
-
 __author__ = 'kikkomep'
-
 
 from abc import abstractmethod
 
-
-
-from pydoop.pure.hdfs.hadoop import get_implementation_instance
+from pydoop.hdfs.hadoop import get_implementation_instance
 
 
 class FileSystem(object):
@@ -176,8 +171,6 @@ if __name__ == '__main__':
     print "the working directory: %s " % fs.get_working_directory()
     #fs.create_directory("pippo")
 
-
-    from pydoop.pure.hdfs.hadoop import get_hadoop_version
 
     #fs.copy("LICENSE", ".", "L1")
     fs.chown("foo", "kikkomep", "users")
