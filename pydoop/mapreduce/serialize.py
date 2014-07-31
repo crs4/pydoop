@@ -199,12 +199,15 @@ class SerializerStore(object):
 DEFAULT_STORE = SerializerStore()
 
 DEFAULT_STORE.register_serializer(int, serialize_vint)
-DEFAULT_STORE.register_serializer(str, serialize_string_compressed)
+DEFAULT_STORE.register_serializer(str, serialize_text)
+DEFAULT_STORE.register_serializer(unicode, serialize_text)
 DEFAULT_STORE.register_serializer(float, serialize_float)
 DEFAULT_STORE.register_serializer(bool, serialize_bool)
 
 DEFAULT_STORE.register_deserializer(int, deserialize_vint)
-DEFAULT_STORE.register_deserializer(str, deserialize_string_compressed)
+# Careful!  Use unicode if you're deserializing Text, unless you're sure it's ASCII!
+DEFAULT_STORE.register_deserializer(str, deserialize_bytes)
+DEFAULT_STORE.register_deserializer(unicode, deserialize_text)
 DEFAULT_STORE.register_deserializer(float, deserialize_float)
 DEFAULT_STORE.register_deserializer(bool, deserialize_bool)
 
@@ -217,11 +220,14 @@ DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.FloatWritable',
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.BooleanWritable',
                                     deserialize_bool)
 DEFAULT_STORE.register_deserializer('BytesOnWire',
-                                    deserialize_string_compressed)
+                                    deserialize_bytes)
+# BytesWritable actually writes its length as a 4-byte integer (network order),
+# but the pipes' BinaryProtocol serializes it "manually" rather than calling
+# BytesWritable.write and uses a VInt for the size rather than a fixed-sized one.
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.BytesWritable',
-                                    deserialize_string)
+                                    deserialize_bytes)
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.Text',
-                                    deserialize_string_compressed)
+                                    deserialize_text)
 DEFAULT_STORE.register_deserializer('java.lang.String',
                                     deserialize_string)
 
