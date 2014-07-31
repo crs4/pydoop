@@ -231,6 +231,12 @@ DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.Text',
 DEFAULT_STORE.register_deserializer('java.lang.String',
                                     deserialize_string)
 
+def register_serializer(class_id, ser_func):
+    DEFAULT_STORE.register_serializer(class_id, ser_func)
+
+def register_deserializer(class_id, deser_func):
+    DEFAULT_STORE.register_deserializer(class_id, deser_func)
+
 def serialize(v, stream, type_id=None):
     type_id = type_id if not type_id is None else type(v)
     return DEFAULT_STORE.serializer(type_id)(v, stream)
