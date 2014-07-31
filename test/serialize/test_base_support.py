@@ -37,17 +37,17 @@ class TestSerialize(unittest.TestCase):
         stream.seek(0)
         for a in array:
             self.assertEqual(a, self.deserialize(stream))
-    def test_int_compressed(self):
-        self.serialize = srl.serialize_int_compressed
-        self.deserialize = srl.deserialize_int_compressed
+    def test_vint(self):
+        self.serialize = srl.serialize_vint
+        self.deserialize = srl.deserialize_vint
         self.test_array(range(-16782,16782))
         self.test_array(random.sample(xrange(-18999289888, 18999289888), 10000))
-        
+
     def test_int(self):
         self.serialize = srl.serialize_int
         self.deserialize = srl.deserialize_int
         self.test_array(range(-16782,16782))
-        
+
     def test_float(self):
         stream = self.stream
         numbers  = [random.uniform(-100000, 100000) for _ in range(10000)]
@@ -66,7 +66,7 @@ class TestSerialize(unittest.TestCase):
         self.serialize = srl.serialize_string
         self.deserialize = srl.deserialize_string
         self.test_array(open(__file__).readlines())
-        
+
     def test_string_compressed(self):
         self.serialize = srl.serialize_string_compressed
         self.deserialize = srl.deserialize_string_compressed
@@ -104,7 +104,7 @@ class TestSerialize(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestSerialize('test_int'))
-    suite.addTest(TestSerialize('test_int_compressed'))
+    suite.addTest(TestSerialize('test_vint'))
     suite.addTest(TestSerialize('test_float'))
     suite.addTest(TestSerialize('test_string'))
     suite.addTest(TestSerialize('test_string_compressed'))    

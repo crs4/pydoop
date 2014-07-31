@@ -92,7 +92,7 @@ def deserialize_int(stream):
     up = xdrlib.Unpacker(buf)
     return up.unpack_int()
 
-def serialize_int_compressed(t, stream):
+def serialize_vint(t, stream):
     if -112 <= t <= 127:
         stream.write(struct.pack('b', t))
     else:
@@ -106,7 +106,7 @@ def serialize_int_compressed(t, stream):
         stream.write(struct.pack('>Q', t)[-size:])
     return
 
-def deserialize_int_compressed(stream):
+def deserialize_vint(stream):
     b = struct.unpack('b', read_buffer(1, stream))[0]
     if b >= -112:
         return b
@@ -130,11 +130,11 @@ def deserialize_float(stream):
     up = xdrlib.Unpacker(buf)
     return up.unpack_float()
 
-def serialize_bool_compressed(v, stream):
-    serialize_int_compressed(int(v), stream)
+def serialize_bool(v, stream):
+    serialize_vint(int(v), stream)
 
-def deserialize_bool_compressed(stream):
-    return bool(deserialize_int_compressed(stream))
+def deserialize_bool(stream):
+    return bool(deserialize_vint(stream))
 
 def serialize_bytes(s, stream):
     serialize_int(len(s), stream)
@@ -164,7 +164,7 @@ def serialize_string(s, stream):
     stream.write(p.get_buffer())
     if len(s) > 0:
         stream.write(s)
-        
+
 def deserialize_string(stream):
     l = deserialize_int(stream)
     return read_buffer(l, stream)
@@ -174,12 +174,12 @@ def serialize_string_compressed(s, stream):
     This is the wire format used by hadoop pipes.
     The string length is encoded using VInt.
     """
-    serialize_int_compressed(len(s), stream)
+    serialize_vint(len(s), stream)
     if len(s) > 0:
         stream.write(s)
 
 def deserialize_string_compressed(stream):
-    l = deserialize_int_compressed(stream)
+    l = deserialize_vint(stream)
     return read_buffer(l, stream)
 
 
@@ -198,24 +198,24 @@ class SerializerStore(object):
 
 DEFAULT_STORE = SerializerStore()
 
-DEFAULT_STORE.register_serializer(int, serialize_int_compressed)
+DEFAULT_STORE.register_serializer(int, serialize_vint)
 DEFAULT_STORE.register_serializer(str, serialize_string_compressed)
 DEFAULT_STORE.register_serializer(float, serialize_float)
-DEFAULT_STORE.register_serializer(bool, serialize_bool_compressed)
+DEFAULT_STORE.register_serializer(bool, serialize_bool)
 
-DEFAULT_STORE.register_deserializer(int, deserialize_int_compressed)
+DEFAULT_STORE.register_deserializer(int, deserialize_vint)
 DEFAULT_STORE.register_deserializer(str, deserialize_string_compressed)
 DEFAULT_STORE.register_deserializer(float, deserialize_float)
-DEFAULT_STORE.register_deserializer(bool, deserialize_bool_compressed)
+DEFAULT_STORE.register_deserializer(bool, deserialize_bool)
 
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.VIntWritable',
-                                    deserialize_int_compressed)
+                                    deserialize_vint)
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.VLongWritable',
-                                    deserialize_int_compressed)
+                                    deserialize_vint)
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.FloatWritable',
                                     deserialize_float)
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.BooleanWritable',
-                                    deserialize_bool_compressed)
+                                    deserialize_bool)
 DEFAULT_STORE.register_deserializer('BytesOnWire',
                                     deserialize_string_compressed)
 DEFAULT_STORE.register_deserializer('org.apache.hadoop.io.BytesWritable',
