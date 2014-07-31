@@ -22,9 +22,9 @@ import unittest, imp
 TEST_MODULE_NAMES = [
   'test_binary_streams',
   'test_framework',
-  'test_serialize',
   'test_streams',
   'test_support',
+  'test_support_old_api',  
   'test_text_stream',
   'test_utils',
   ]
