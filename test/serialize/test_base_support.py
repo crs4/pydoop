@@ -19,10 +19,14 @@
 import unittest, cStringIO, random
 
 #FIXME
+import os
 import sys
-sys.path.insert(0, '../../')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 
 import pydoop.mapreduce.serialize as srl
+import pydoop.mapreduce.jwritable_utils as wu
+from serialize.test_serialize import _get_java_output_stream
 
 class TestSerialize(unittest.TestCase):
 
@@ -86,6 +90,8 @@ class TestSerialize(unittest.TestCase):
                 self.assertEqual(v, x)
 
     def test_hadoop_base_types(self):
+        srl.register_deserializer('WUString', wu.readString)
+
         values = [('org.apache.hadoop.io.VIntWritable', 42),
                   ('org.apache.hadoop.io.VIntWritable', 4242),
                   ('org.apache.hadoop.io.VIntWritable', 424242),
@@ -94,12 +100,14 @@ class TestSerialize(unittest.TestCase):
                   ('org.apache.hadoop.io.VLongWritable', 42),
                   ('org.apache.hadoop.io.VLongWritable', 424242),
                   ('org.apache.hadoop.io.VLongWritable', 4242424242),
-                  ('java.lang.String', "hello world"),
-                  ('java.lang.String', "This file contains: writeVInt of 42, 4242, 424242, 42424242, -42; writeVLong of 42, 424242, 4242424242; 2 writeString calls")]
-        with open('java_ostream.bin') as f:
-            for t, v in values:
-                x = srl.deserialize(t, f)
-                self.assertEqual(v, x)
+                  ('WUString', "hello world"),
+                  ('WUString', u"oggi \u00e8 gioved\u00ec"),
+                  ('org.apache.hadoop.io.Text', u"\u00e0 Text object"),
+                  ]
+        java_stream = _get_java_output_stream()
+        for t, v in values:
+            x = srl.deserialize(t, java_stream)
+            self.assertEqual(v, x)
 
 def suite():
     suite = unittest.TestSuite()

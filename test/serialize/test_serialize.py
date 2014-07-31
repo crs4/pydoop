@@ -36,9 +36,9 @@ import pydoop
 import pydoop.mapreduce.serialize as srl
 import pydoop.mapreduce.jwritable_utils as wu
 
+HadoopSerializeClass = 'hadoop_serialize'
 
 class TestSerialize(unittest.TestCase):
-    HadoopSerializeClass = 'hadoop_serialize'
 
     def setUp(self):
         self.stream = StringIO.StringIO()
@@ -46,20 +46,20 @@ class TestSerialize(unittest.TestCase):
     def test_int(self):
         stream = self.stream
         for i in range(-16782,16782):
-            srl.serialize_int(i, stream)
+            srl.serialize_vint(i, stream)
         stream.seek(0)
         for i in range(-16782,16782):
-            x = srl.deserialize_int(stream)
+            x = srl.deserialize_vint(stream)
             self.assertEqual(i, x)
 
     def test_int_big(self):
         stream = self.stream
         numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
         for i in numbers:
-            srl.serialize_int(i, stream)
+            srl.serialize_vint(i, stream)
         stream.seek(0)
         for i in numbers:
-            x = srl.deserialize_int(stream)
+            x = srl.deserialize_vint(stream)
             self.assertEqual(i, x)
 
     def test_float(self):
@@ -113,7 +113,7 @@ class TestSerialize(unittest.TestCase):
                 self.assertEqual(v, x)
 
     def test_deserializing_java_output(self):
-        byte_stream = self._get_java_output_stream()
+        byte_stream = _get_java_output_stream()
 
         # read integers
         self.assertEqual(42, wu.readVInt(byte_stream))
@@ -156,16 +156,15 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(42, wu.readVInt(self.stream))
         self.assertEqual(4000000000, wu.readVLong(self.stream))
 
-    @staticmethod
-    def _get_java_output_stream():
-        this_directory = os.path.abspath(os.path.dirname(__file__))
-        classpath = '.:%s' % pydoop.hadoop_classpath()
-        output = subprocess.check_output(
-                ['java', '-cp', classpath, TestSerialize.HadoopSerializeClass],
-                cwd=this_directory,
-                stderr=open('/dev/null', 'w'))
-        stream = StringIO.StringIO(output)
-        return stream
+def _get_java_output_stream():
+    this_directory = os.path.abspath(os.path.dirname(__file__))
+    classpath = '.:%s' % pydoop.hadoop_classpath()
+    output = subprocess.check_output(
+            ['java', '-cp', classpath, HadoopSerializeClass],
+            cwd=this_directory,
+            stderr=open('/dev/null', 'w'))
+    stream = StringIO.StringIO(output)
+    return stream
 
 
 def suite():
