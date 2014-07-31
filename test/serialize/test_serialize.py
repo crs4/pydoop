@@ -33,8 +33,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
 import pydoop
-import pydoop.pure.serialize as srl
-import pydoop.pure.jwritable_utils as wu
+import pydoop.mapreduce.serialize as srl
+import pydoop.mapreduce.jwritable_utils as wu
 
 
 class TestSerialize(unittest.TestCase):

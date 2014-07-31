@@ -20,7 +20,7 @@
 Python equivalents for Hadoop's WritableUtils
 """
 
-import pydoop.pure.serialize as pser
+import pydoop.mapreduce.serialize as pser
 import struct
 
 
