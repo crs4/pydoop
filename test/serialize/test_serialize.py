@@ -103,13 +103,7 @@ class TestSerialize(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestSerialize('test_int'))
-    suite.addTest(TestSerialize('test_int_big'))
-    suite.addTest(TestSerialize('test_float'))
-    suite.addTest(TestSerialize('test_string'))
-    suite.addTest(TestSerialize('test_mixture'))
-    return suite
+    return unittest.TestLoader().loadTestsFromTestCase(TestSerialize)
 
 
 if __name__ == '__main__':
