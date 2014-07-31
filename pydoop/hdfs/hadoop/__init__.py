@@ -9,7 +9,7 @@ from pydoop.utils.bridge.factory import JavaWrapperFactory
 
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("pydoop.pure.hadoop")
+logger = logging.getLogger("pydoop.hdfs.hadoop")
 
 # Hadoop ClassPath detection
 HADOOP_CLASSPATH = PathFinder().hadoop_classpath()

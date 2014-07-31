@@ -570,7 +570,7 @@ setup(
     "pydoop",
     "pydoop.hdfs",
     "pydoop.app",
-    "pydoop.pure"
+    "pydoop.mapreduce"
     ],
   cmdclass={
     "build_py": BuildPy,

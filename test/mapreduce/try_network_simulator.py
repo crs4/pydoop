@@ -23,8 +23,8 @@ FOOBAR_PY = \
 
 import sys
 sys.path.insert(0, '../../')
-from pydoop.pure.api import Mapper, Reducer, Partitioner, Factory
-from pydoop.pure.pipes import run_task
+from pydoop.mapreduce.api import Mapper, Reducer, Partitioner, Factory
+from pydoop.mapreduce.pipes import run_task
 import itertools as it
 class TMapper(Mapper):
     def __init__(self, ctx):
