@@ -20,16 +20,20 @@
 # END_COPYRIGHT
 
 import unittest, StringIO, random
+import os
+import subprocess
 
 #FIXME
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
+import pydoop
 import pydoop.pure.serialize as srl
 import pydoop.pure.jwritable_utils as wu
 
 
 class TestSerialize(unittest.TestCase):
+    HadoopSerializeClass = 'hadoop_serialize'
 
     def setUp(self):
         self.stream = StringIO.StringIO()
@@ -105,6 +109,30 @@ class TestSerialize(unittest.TestCase):
                 x = srl.deserialize_string(stream)
                 self.assertEqual(v, x)
 
+    def test_deserializing_java_output(self):
+        byte_stream = self._get_java_output_stream()
+
+        # read integers
+        self.assertEqual(42, wu.readVInt(byte_stream))
+        self.assertEqual(4242, wu.readVInt(byte_stream))
+        self.assertEqual(424242, wu.readVInt(byte_stream))
+        self.assertEqual(42424242, wu.readVInt(byte_stream))
+        self.assertEqual(-42, wu.readVInt(byte_stream))
+
+        # longs
+        self.assertEqual(42, wu.readVLong(byte_stream))
+        self.assertEqual(424242, wu.readVLong(byte_stream))
+        self.assertEqual(4242424242, wu.readVLong(byte_stream))
+
+        # strings
+        # first one is plain ASCII
+        self.assertEqual(u"hello world", wu.readString(byte_stream))
+        # second has accented characters
+        self.assertEqual(u"oggi è giovedì", wu.readString(byte_stream))
+
+        # final piece is an encoded Text object
+        self.assertEqual(u"à Text object", srl.deserialize_string(byte_stream))
+
     def test_wu_ascii_string(self):
         # test for self-consistency
         wu.writeString(self.stream, "simple")
@@ -124,6 +152,17 @@ class TestSerialize(unittest.TestCase):
         self.stream.seek(0)
         self.assertEqual(42, wu.readVInt(self.stream))
         self.assertEqual(4000000000, wu.readVLong(self.stream))
+
+    @staticmethod
+    def _get_java_output_stream():
+        this_directory = os.path.abspath(os.path.dirname(__file__))
+        classpath = '.:%s' % pydoop.hadoop_classpath()
+        output = subprocess.check_output(
+                ['java', '-cp', classpath, TestSerialize.HadoopSerializeClass],
+                cwd=this_directory,
+                stderr=open('/dev/null', 'w'))
+        stream = StringIO.StringIO(output)
+        return stream
 
 
 def suite():
