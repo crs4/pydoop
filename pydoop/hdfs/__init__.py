@@ -313,3 +313,10 @@ def move(src, dest, user=None):
   finally:
     src_fs.close()
     dest_fs.close()
+
+
+def stat(hdfs_path, user=None):
+  """
+  Call :func:`.path.stat` on ``path``.
+  """
+  return path.stat(hdfs_path, user=user)

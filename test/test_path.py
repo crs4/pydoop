@@ -18,7 +18,8 @@
 
 # pylint: disable=W0311
 
-import os, unittest
+import os, unittest, tempfile
+from numbers import Number
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
@@ -249,6 +250,72 @@ class TestExpand(unittest.TestCase):
       del os.environ[k]
 
 
+class TestStat(unittest.TestCase):
+
+  NMAP = {
+    'st_mode': 'permissions',
+    'st_uid': 'owner',
+    'st_gid': 'group',
+    'st_size': 'size',
+    'st_atime': 'last_access',
+    'st_mtime': 'last_mod',
+    'st_blksize': 'block_size',
+    }
+
+  def stat(self):
+    bn = '%s%s' % (make_random_str(), UNI_CHR)
+    fs = hdfs.hdfs("default", 0)
+    p = "hdfs://%s:%s/user/%s/%s" % (fs.host, fs.port, DEFAULT_USER, bn)
+    with fs.open_file(bn, 'w') as fo:
+      fo.write(make_random_str())
+    info = fs.get_path_info(bn)
+    fs.close()
+    s = hdfs.path.stat(p)
+    for n1, n2 in self.NMAP.iteritems():
+      attr = getattr(s, n1, None)
+      self.assertFalse(attr is None)
+      self.assertEqual(attr, info[n2])
+    self.__check_extra_args(s, info)
+    self.__check_wrapper_funcs(p)
+    hdfs.rmr(p)
+
+  def stat_on_local(self):
+    wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
+    p_ = os.path.join(wd_, make_random_str())
+    wd, p = ('file:%s' % _ for _ in (wd_, p_))
+    fs = hdfs.hdfs("", 0)
+    with fs.open_file(p_, 'w') as fo:
+      fo.write(make_random_str())
+    info = fs.get_path_info(p_)
+    fs.close()
+    s = hdfs.path.stat(p)
+    os_s = os.stat(p_)
+    for n in dir(s):
+      if n.startswith('st_'):
+        try:
+          exp_v = getattr(os_s, n)
+        except AttributeError:
+          try:
+            exp_v = info[self.NMAP[n]]
+          except KeyError:
+            continue
+          self.assertEqual(getattr(s, n), exp_v)
+    self.__check_extra_args(s, info)
+    self.__check_wrapper_funcs(p)
+    hdfs.rmr(wd)
+
+  def __check_extra_args(self, stat_res, path_info):
+    for n in 'kind', 'name', 'replication':
+      attr = getattr(stat_res, '%s' % n, None)
+      self.assertFalse(attr is None)
+      self.assertEqual(attr, path_info[n])
+
+  def __check_wrapper_funcs(self, path):
+    for n in 'getatime', 'getmtime', 'getctime', 'getsize':
+      func = getattr(hdfs.path, n)
+      self.assertTrue(isinstance(func(path), Number))
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -264,6 +331,8 @@ def suite():
   suite.addTest(TestExpand('expanduser'))
   suite.addTest(TestExpand('expanduser_no_expansion'))
   suite.addTest(TestExpand('expandvars'))
+  suite.addTest(TestStat('stat'))
+  suite.addTest(TestStat('stat_on_local'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 

@@ -27,6 +27,49 @@ import common
 import fs as hdfs_fs
 
 
+class StatResult(object):
+  """
+  Mimics the object type returned by ``os.stat``.
+
+  Objects of this class are instantiated from dictionaries with the
+  same structure as the ones returned by :meth:`~.fs.hdfs.get_path_info`.
+
+  Attributes starting with ``st_`` have the same meaning as the
+  corresponding ones in the object returned by ``os.stat``, although
+  some of them may not make sense for an HDFS path (in this case,
+  their value will be set to 0).  In addition, the ``kind``, ``name``
+  and ``replication`` attributes are available, with the same values
+  as in the input dict.
+  """
+  def __init__(self, path_info):
+    self.st_mode = path_info['permissions']
+    self.st_ino = 0
+    self.st_dev = 0L
+    self.st_nlink = 1
+    self.st_uid = path_info['owner']
+    self.st_gid = path_info['group']
+    self.st_size = path_info['size']
+    self.st_atime = path_info['last_access']
+    self.st_mtime = path_info['last_mod']
+    self.st_ctime = 0
+    #--
+    n, r = divmod(path_info['size'], path_info['block_size'])
+    self.st_blocks = n + (r != 0)
+    self.st_blksize = path_info['block_size']
+    #--
+    self.kind = path_info['kind']
+    self.name = path_info['name']
+    self.replication = path_info['replication']
+
+  def __repr__(self):
+    names = [_ for _ in dir(self) if _.startswith('st_')]
+    names.extend(['kind', 'name', 'replication'])
+    return '%s(%s)' % (
+      self.__class__.__name__,
+      ', '.join('%s=%s' % (_, getattr(self, _)) for _ in names)
+      )
+
+
 class _HdfsPathSplitter(object):
 
   PATTERN = re.compile(r"([a-z0-9+.-]+):(.*)")
@@ -225,3 +268,56 @@ def expandvars(path):
   Expand environment variables in ``path``.
   """
   return os.path.expandvars(path)
+
+
+def _update_stat(st, path_):
+    try:
+      os_st = os.stat(path_)
+    except OSError:
+      pass
+    else:
+      for name in dir(os_st):
+        if name.startswith('st_'):
+          setattr(st, name, getattr(os_st, name))
+
+
+def stat(path, user=None):
+  """
+  Performs the equivalent of ``os.stat`` on ``path``, returning a
+  :class:`StatResult` object.
+  """
+  host, port, path_ = split(path, user)
+  fs = hdfs_fs.hdfs(host, port, user)
+  retval = StatResult(fs.get_path_info(path_))
+  if not host:
+    _update_stat(retval, path_)
+  fs.close()
+  return retval
+
+
+def getatime(path):
+  """
+  Get time of last access of ``path``.
+  """
+  return stat(path).st_atime
+
+
+def getmtime(path):
+  """
+  Get time of last modification of ``path``.
+  """
+  return stat(path).st_ctime
+
+
+def getctime(path):
+  """
+  Get time of creation / last metadata change of ``path``.
+  """
+  return stat(path).st_ctime
+
+
+def getsize(path):
+  """
+  Get size, in bytes, of ``path``.
+  """
+  return stat(path).st_size
