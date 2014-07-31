@@ -316,6 +316,26 @@ class TestStat(unittest.TestCase):
       self.assertTrue(isinstance(func(path), Number))
 
 
+class TestIsSomething(unittest.TestCase):
+
+  def isabs(self):
+    for p in 'hdfs://host:1/foo', 'file:/foo':
+      self.assertTrue(hdfs.path.isabs(p))
+    self.assertFalse(hdfs.path.isabs('foo'))
+
+  def islink(self):
+    wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
+    wd = 'file:%s' % wd_
+    self.assertFalse(hdfs.path.islink(wd))
+    link = os.path.join(wd_, make_random_str())
+    os.symlink(wd_, link)
+    self.assertTrue(hdfs.path.islink('file:%s' % link))
+    hdfs.rmr(wd)
+
+  def ismount(self):
+    self.assertFalse(hdfs.path.ismount('hdfs://host:1/foo'))
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -333,6 +353,9 @@ def suite():
   suite.addTest(TestExpand('expandvars'))
   suite.addTest(TestStat('stat'))
   suite.addTest(TestStat('stat_on_local'))
+  suite.addTest(TestIsSomething('isabs'))
+  suite.addTest(TestIsSomething('islink'))
+  suite.addTest(TestIsSomething('ismount'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 

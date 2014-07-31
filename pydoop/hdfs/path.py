@@ -16,6 +16,8 @@
 # 
 # END_COPYRIGHT
 
+# pylint: disable=W0311
+
 """
 pydoop.hdfs.path -- Path Name Manipulations
 -------------------------------------------
@@ -321,3 +323,34 @@ def getsize(path, user=None):
   Get size, in bytes, of ``path``.
   """
   return stat(path, user=user).st_size
+
+
+def isabs(path):
+  """
+  Return :obj:`True` if ``path`` is absolute.
+  """
+  return path.startswith('file:') or path.startswith('hdfs:')
+
+
+def islink(path, user=None):
+  """
+  Return :obj:`True` if ``path`` is a symbolic link.
+
+  Currently this function always returns :obj:`False` for non-local paths.
+  """
+  host, _, path_ = split(path, user)
+  if host:
+    return False  # libhdfs does not support fs.FileStatus.isSymlink()
+  return os.path.islink(path_)
+
+
+def ismount(path):
+  """
+  Return :obj:`True` if ``path`` is a mount point.
+
+  This function always returns :obj:`False` for non-local paths.
+  """
+  host, _, path_ = split(path, None)
+  if host:
+    return False
+  return os.path.ismount(path_)
