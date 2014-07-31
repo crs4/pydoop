@@ -1,7 +1,7 @@
 __author__ = 'kikkomep'
 
 import jpype
-from pydoop.pure.bridge.factory import ClassLoader
+from pydoop.utils.bridge.factory import ClassLoader
 
 
 class JPypeClassLoader(ClassLoader):

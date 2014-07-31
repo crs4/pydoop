@@ -1,7 +1,7 @@
 __author__ = 'kikkomep'
 
 import jnius
-from pydoop.pure.bridge.factory import ClassLoader
+from pydoop.utils.bridge.factory import ClassLoader
 
 
 class PyjniusClassLoader(ClassLoader):

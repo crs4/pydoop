@@ -11,7 +11,7 @@ class JavaWrapperFactory(object):
 
     def __init__(self,
                  java_bridge_name="JPype",
-                 java_bridge_package="pydoop.pure.bridge",
+                 java_bridge_package="pydoop.utils.bridge",
                  classpath=None, opts=""):
 
         self._classpath = None
