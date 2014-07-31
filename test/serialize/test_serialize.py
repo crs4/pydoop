@@ -1,3 +1,6 @@
+
+# vim: set fileencoding: utf-8
+
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -16,19 +19,20 @@
 #
 # END_COPYRIGHT
 
-import unittest, cStringIO, random
+import unittest, StringIO, random
 
 #FIXME
 import sys
-sys.path.insert(0, '../../')
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
 import pydoop.pure.serialize as srl
+import pydoop.pure.jwritable_utils as wu
 
 
 class TestSerialize(unittest.TestCase):
 
     def setUp(self):
-        self.stream = cStringIO.StringIO()
+        self.stream = StringIO.StringIO()
 
     def test_int(self):
         stream = self.stream
@@ -100,6 +104,26 @@ class TestSerialize(unittest.TestCase):
             elif isinstance(v, str):
                 x = srl.deserialize_string(stream)
                 self.assertEqual(v, x)
+
+    def test_wu_ascii_string(self):
+        # test for self-consistency
+        wu.writeString(self.stream, "simple")
+        self.stream.seek(0)
+        self.assertEqual(u"simple", wu.readString(self.stream))
+
+    def test_wu_nonascii_string(self):
+        # test for self-consistency
+        wu.writeString(self.stream, u"àéìòù")
+        self.stream.seek(0)
+        self.assertEqual(u"àéìòù", wu.readString(self.stream))
+
+    def test_wu_ints(self):
+        # test for self-consistency
+        wu.writeVInt(self.stream, 42)
+        wu.writeVLong(self.stream, 4000000000)
+        self.stream.seek(0)
+        self.assertEqual(42, wu.readVInt(self.stream))
+        self.assertEqual(4000000000, wu.readVLong(self.stream))
 
 
 def suite():
