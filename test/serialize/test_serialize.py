@@ -19,6 +19,11 @@
 #
 # END_COPYRIGHT
 
+
+# to compile the Java program used by test_deserializing_java_output:
+#
+#    javac -cp $(hadoop classpath) hadoop_serialize.java
+
 import unittest, StringIO, random
 import os
 import subprocess
@@ -75,16 +80,14 @@ class TestSerialize(unittest.TestCase):
         N = 10
         stream = self.stream
         with open(__file__) as f:
-            s = f.read()
+            s = unicode(f.read(), 'utf-8')
         t = s
         for _ in range(N):
-            t = t[::-1]
-            srl.serialize_string(t, stream)
+            srl.serialize_text(t, stream)
         stream.seek(0)
         t = s
         for _ in range(N):
-            t = t[::-1]
-            s1 = srl.deserialize_string(stream)
+            s1 = srl.deserialize_text(stream)
             self.assertEqual(t, s1)
 
     def test_mixture(self):
@@ -96,7 +99,7 @@ class TestSerialize(unittest.TestCase):
             elif isinstance(v, float):
                 srl.serialize_float(v, stream)
             elif isinstance(v, str):
-                srl.serialize_string(v, stream)
+                srl.serialize_text(v, stream)
         stream.seek(0)
         for v in vals:
             if isinstance(v, int):
@@ -106,7 +109,7 @@ class TestSerialize(unittest.TestCase):
                 x = srl.deserialize_float(stream)
                 self.assertTrue(abs(v-x)/abs(v+x) < 1e-6)
             elif isinstance(v, str):
-                x = srl.deserialize_string(stream)
+                x = srl.deserialize_text(stream)
                 self.assertEqual(v, x)
 
     def test_deserializing_java_output(self):
@@ -131,7 +134,7 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(u"oggi è giovedì", wu.readString(byte_stream))
 
         # final piece is an encoded Text object
-        self.assertEqual(u"à Text object", srl.deserialize_string(byte_stream))
+        self.assertEqual(u"à Text object", srl.deserialize_text(byte_stream))
 
     def test_wu_ascii_string(self):
         # test for self-consistency

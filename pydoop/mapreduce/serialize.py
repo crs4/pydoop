@@ -136,6 +136,27 @@ def serialize_bool_compressed(v, stream):
 def deserialize_bool_compressed(stream):
     return bool(deserialize_int_compressed(stream))
 
+def serialize_bytes(s, stream):
+    serialize_int(len(s), stream)
+    if len(s) > 0:
+        stream.write(s)
+
+def deserialize_bytes(stream):
+    l = deserialize_int(stream)
+    return read_buffer(l, stream)
+
+def serialize_text(s, stream):
+    if isinstance(s, unicode):
+        data = s.encode('UTF-8')
+    else:
+        data = s
+    serialize_int(len(data), stream)
+    if len(data) > 0:
+        stream.write(data)
+
+def deserialize_text(stream):
+    l = deserialize_int(stream)
+    return unicode(read_buffer(l, stream), 'UTF-8')
 
 def serialize_string(s, stream):
     p = xdrlib.Packer()
