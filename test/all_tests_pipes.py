@@ -20,7 +20,6 @@ import unittest, imp
 
 
 TEST_MODULE_NAMES = [
-  "test_basics",
   "test_exceptions",
   "test_utils",
   "test_task_context",
