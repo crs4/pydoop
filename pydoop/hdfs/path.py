@@ -354,3 +354,36 @@ def ismount(path):
   if host:
     return False
   return os.path.ismount(path_)
+
+
+def normcase(path):
+  return path  # we only support Linux
+
+
+def normpath(path, user=None):
+  """
+  Normalize ``path``, collapsing redundant separators and up-level refs.
+  """
+  # normalization is included in split
+  host, port, path_ = split(path, user)
+  if not isabs(path):
+    return path_
+  if host:
+    return join("hdfs://%s:%s" % (host, port), path_)
+  else:
+    return "file:%s" % path_
+
+
+def realpath(path, user=None):
+  """
+  Return ``path`` with symlinks resolved.
+
+  Currently this function returns non-local paths unchanged.
+  """
+  host, _, path_ = split(path, user)
+  if host:
+    return path  # do nothing until we fix link support in the back-end
+  retval = os.path.realpath(path_)
+  if path.startswith('file:'):
+    retval = 'file:%s' % retval
+  return retval

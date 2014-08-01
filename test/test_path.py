@@ -336,6 +336,26 @@ class TestIsSomething(unittest.TestCase):
     self.assertFalse(hdfs.path.ismount('hdfs://host:1/foo'))
 
 
+class TestNorm(unittest.TestCase):
+
+  def normpath(self):
+    for pre in '', 'file:', 'hdfs://host:1':
+      post = '/a/./b/c/../../foo'
+      npost = '/a/foo'
+      self.assertEqual(hdfs.path.normpath(pre+post), pre + npost)
+
+
+class TestReal(unittest.TestCase):
+
+  def realpath(self):
+    wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
+    wd = 'file:%s' % wd_
+    link = os.path.join(wd_, make_random_str())
+    os.symlink(wd_, link)
+    self.assertEqual(hdfs.path.realpath('file:%s' % link), 'file:%s' % wd_)
+    hdfs.rmr(wd)
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -356,6 +376,8 @@ def suite():
   suite.addTest(TestIsSomething('isabs'))
   suite.addTest(TestIsSomething('islink'))
   suite.addTest(TestIsSomething('ismount'))
+  suite.addTest(TestNorm('normpath'))
+  suite.addTest(TestReal('realpath'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 
