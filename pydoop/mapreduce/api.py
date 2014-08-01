@@ -229,38 +229,108 @@ class Closable(object):
 
 
 class Mapper(Closable):
+    """
+    Maps input key/value pairs to a set of intermediate key/value pairs.
+    """
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def map(self, context):
+        """
+        Called once for each key/value pair in the input
+        split. Applications must override this, emitting an output
+        key/value pair through the context.
+
+        :param context: the :class:`MapContext` object passed by the
+          framework, used to get the input key/value pair and emit the
+          output key/value pair.
+        """
         assert isinstance(context, MapContext)
+
+    def close(self):
+        """
+        Called after the mapper has finished its job.
+
+        Overriding this method is **not** required.
+        """
+        pass
 
 
 class Reducer(Closable):
+    """
+    Reduces a set of intermediate values which share a key to a
+    (possibly) smaller set of values.
+    """
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def reduce(self, context):
+        """
+        Called once for each key. Applications must override this, emitting an
+        output key/value pair through the context.
+
+        :param context: the :class:`ReduceContext` object passed by the framework,
+        used to get the input key and corresponding set of values and
+        emit the output key/value pair.
+        """
         assert isinstance(context, ReduceContext)
+
+    def close(self):
+        """
+        Called after the reducer has finished its job.
+
+        Overriding this method is **not** required.
+        """
+    pass
 
 
 class Partitioner(object):
+    """
+    Controls the partitioning of intermediate keys output by the
+    :class:`Mapper`\ . The key (or a subset of it) is used to derive the
+    partition, typically by a hash function. The total number of
+    partitions is the same as the number of reduce tasks for the
+    job. Hence this controls which of the ``m`` reduce tasks the
+    intermediate key (and hence the record) is sent to for reduction.
+    """
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def partition(self, key, num_of_reduces):
+        """
+        Get the partition number for ``key`` given the total number of
+        partitions, i.e., the number of reduce tasks for the
+        job. Applications must override this.
+
+        :param key: the key of the key/value pair being dispatched
+        :type key: string
+        :param numOfReduces: the total number of reduces.
+        :type numOfReduces: int
+        :rtype: int
+        :return: the partition number for ``key``\ .
+        """
         assert isinstance(key, str)
         assert isinstance(num_of_reduces, int)
 
 
 class RecordReader(Closable):
+    """
+    Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
+    """
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def next(self):
         """
-        Returns the (key, value) tuple. Raises a StopIteration
-        exception when the data stream has been emptied.
+        Called by the framework to provide a key/value pair to the
+        :class:`Mapper`\ . Applications must override this.
+        It should raise a StopIteration
+        exception when the data stream has been emptied..
+
+        :rtype: tuple
+        :return: a tuple of two elements. They are,
+        respectively, the key and the value (as strings)
+
         """
         raise StopIteration
 
@@ -273,18 +343,57 @@ class RecordReader(Closable):
         pass
 
     def getProgress(self):
+        """
+        The current progress of the record reader through its
+        data. Applications must override this.
+
+        :rtype: float
+        :return: the fraction of data read up to now, as a float between 0 and 1.
+        """
         return self.get_progress()
+
+    def close(self):
+        """
+        Called after the record reader has finished its job.
+
+        Overriding this method is **not** required.
+        """
+        pass
 
 
 class RecordWriter(Closable):
+    """
+    Writes the output key/value pairs to an output file.
+    """
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def emit(self, key, value):
+        """
+        Writes a key/value pair. Applications must override this.
+
+        :param key: a final output key
+        :type key: string
+        :param value: a final output value
+        :type value: string
+        """
         pass
 
+    def close(self):
+        """
+        Called after the record writer has finished its job.
+
+        Overriding this method is **not** required.
+        """
+        pass
 
 class Factory(object):
+    """
+    Creates MapReduce application components.
+
+    The classes to use for each component must be specified as arguments
+    to the constructor.
+    """
     __metaclass__ = ABCMeta
 
     @abstractmethod
