@@ -23,9 +23,6 @@ TEST_MODULE_NAMES = [
   "test_utils",
   "test_task_context",
   "test_jobconf",
-  "test_record_reader",
-  "test_partitioner",
-  "test_factory",
   "test_pydoop",
   ]
 
