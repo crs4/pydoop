@@ -387,3 +387,22 @@ def realpath(path, user=None):
   if path.startswith('file:'):
     retval = 'file:%s' % retval
   return retval
+
+
+def samefile(path1, path2, user=None):
+  """
+  Return :obj:`True` if both path arguments refer to the same path.
+  """
+  tr = lambda p: abspath(normpath(realpath(p)))
+  return tr(path1) == tr(path2)
+
+
+def splitdrive(path):
+  return '', path  # we only support Linux
+
+
+def splitext(path):
+  """
+  Same as ``os.path.splitext(path)``.
+  """
+  return os.path.splitext(path)

@@ -89,6 +89,11 @@ class TestSplit(unittest.TestCase):
     for p in cases:
       self.assertRaises(ValueError, hdfs.path.split, p)
 
+  def splitext(self):
+    for pre in '', 'file:', 'hdfs://host:1':
+      name, ext = '%sfoo' % pre, '.txt'
+      self.assertEqual(hdfs.path.splitext(name+ext), (name, ext))
+
 
 class TestJoin(unittest.TestCase):
 
@@ -356,11 +361,33 @@ class TestReal(unittest.TestCase):
     hdfs.rmr(wd)
 
 
+class TestSame(unittest.TestCase):
+
+  def samefile_link(self):
+    wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
+    wd = 'file:%s' % wd_
+    link = os.path.join(wd_, make_random_str())
+    os.symlink(wd_, link)
+    self.assertTrue(hdfs.path.samefile('file:%s' % link, 'file:%s' % wd_))
+    hdfs.rmr(wd)
+
+  def samefile_rel(self):
+    p = make_random_str() + UNI_CHR
+    hdfs.dump("foo\n", p)
+    self.assertTrue(hdfs.path.samefile(p, hdfs.path.abspath(p)))
+    hdfs.rmr(p)
+
+  def samefile_norm(self):
+    for pre in '', 'file:/', 'hdfs://host:1/':
+      self.assertTrue(hdfs.path.samefile(pre+'a/b/../c', pre+'a/c'))
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
   suite.addTest(TestSplit('good_with_user'))
   suite.addTest(TestSplit('bad'))
+  suite.addTest(TestSplit('splitext'))
   suite.addTest(TestJoin('good'))
   suite.addTest(TestAbspath('with_user'))
   suite.addTest(TestAbspath('without_user'))
@@ -378,6 +405,9 @@ def suite():
   suite.addTest(TestIsSomething('ismount'))
   suite.addTest(TestNorm('normpath'))
   suite.addTest(TestReal('realpath'))
+  suite.addTest(TestSame('samefile_link'))
+  suite.addTest(TestSame('samefile_rel'))
+  suite.addTest(TestSame('samefile_norm'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 
