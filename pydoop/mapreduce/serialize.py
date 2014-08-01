@@ -92,6 +92,11 @@ def deserialize_int(stream):
     up = xdrlib.Unpacker(buf)
     return up.unpack_int()
 
+def deserialize_long(stream):
+    SIZE_OF_LONG = 8
+    buf = read_buffer(SIZE_OF_LONG, stream)
+    return struct.unpack('>q', buf)[0]
+
 def serialize_vint(t, stream):
     if -112 <= t <= 127:
         stream.write(struct.pack('b', t))

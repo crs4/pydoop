@@ -19,7 +19,8 @@
 import sys
 import logging
 import time
-
+import StringIO
+from pydoop.mapreduce.serialize import deserialize_text, deserialize_long
 import connections
 from api import JobConf, RecordWriter, MapContext, ReduceContext
 from api import PydoopError
@@ -32,6 +33,29 @@ from environment_keys import *
 logging.basicConfig()
 logger = logging.getLogger('pipes')
 logger.setLevel(logging.DEBUG)
+
+
+class InputSplit(object):
+    """
+    Represents the data to be processed by an individual :class:`Mapper`\ .
+
+    Typically, it presents a byte-oriented view on the input and it is
+    the responsibility of the :class:`RecordReader` to convert this to a
+    record-oriented view.
+
+    The ``InputSplit`` is a *logical* representation of the actual
+    dataset chunk, expressed through the ``filename``, ``offset`` and
+    ``length`` attributes.
+
+    :param data: the byte string returned by :meth:`MapContext.getInputSplit`
+    :type data: string
+    """
+
+    def __init__(self, data):
+        stream = StringIO.StringIO(data)
+        self.filename = deserialize_text(stream)
+        self.offset = deserialize_long(stream)
+        self.length = deserialize_long(stream)
 
 
 class CombineRunner(RecordWriter):

@@ -95,6 +95,11 @@ class JobConf(dict):
     def getBoolean(self, key, default=None):
         return self.get_bool(key, default)
 
+    def get(self, k): #FIXME: deprecated behaviour, here only for backward compatibility
+        try:
+            return self[k]
+        except KeyError as ex:
+            raise RuntimeError(ex.message)
 
 class Context(object):
     """
@@ -225,6 +230,11 @@ class ReduceContext(Context):
 
 class Closable(object):
     def close(self):
+        """
+        Called after the object has finished its job.
+
+        Overriding this method is **not** required.
+        """
         pass
 
 
@@ -247,14 +257,6 @@ class Mapper(Closable):
         """
         assert isinstance(context, MapContext)
 
-    def close(self):
-        """
-        Called after the mapper has finished its job.
-
-        Overriding this method is **not** required.
-        """
-        pass
-
 
 class Reducer(Closable):
     """
@@ -274,14 +276,6 @@ class Reducer(Closable):
         emit the output key/value pair.
         """
         assert isinstance(context, ReduceContext)
-
-    def close(self):
-        """
-        Called after the reducer has finished its job.
-
-        Overriding this method is **not** required.
-        """
-    pass
 
 
 class Partitioner(object):
@@ -352,14 +346,6 @@ class RecordReader(Closable):
         """
         return self.get_progress()
 
-    def close(self):
-        """
-        Called after the record reader has finished its job.
-
-        Overriding this method is **not** required.
-        """
-        pass
-
 
 class RecordWriter(Closable):
     """
@@ -379,13 +365,6 @@ class RecordWriter(Closable):
         """
         pass
 
-    def close(self):
-        """
-        Called after the record writer has finished its job.
-
-        Overriding this method is **not** required.
-        """
-        pass
 
 class Factory(object):
     """
