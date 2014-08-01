@@ -156,9 +156,20 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(42, wu.readVInt(self.stream))
         self.assertEqual(4000000000, wu.readVLong(self.stream))
 
+def _compile_java_part(java_class_file, classpath):
+    java_file = os.path.splitext(os.path.realpath(java_class_file))[0] + '.java'
+    if not os.path.exists(java_class_file) or os.path.getmtime(java_file) > os.path.getmtime(java_class_file):
+        print >> sys.stderr, "\nCompiling", java_file
+        cmd = ['javac', '-cp', classpath, java_file]
+        try:
+            subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
+        except subprocess.CalledProcessError:
+            raise RuntimeError("Error compiling Java file %s" % java_file)
+
 def _get_java_output_stream():
     this_directory = os.path.abspath(os.path.dirname(__file__))
     classpath = '.:%s' % pydoop.hadoop_classpath()
+    _compile_java_part(HadoopSerializeClass + ".class", classpath)
     output = subprocess.check_output(
             ['java', '-cp', classpath, HadoopSerializeClass],
             cwd=this_directory,
