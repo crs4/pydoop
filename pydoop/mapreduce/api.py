@@ -95,11 +95,14 @@ class JobConf(dict):
     def getBoolean(self, key, default=None):
         return self.get_bool(key, default)
 
-    def get(self, k): #FIXME: deprecated behaviour, here only for backward compatibility
-        try:
-            return self[k]
-        except KeyError as ex:
-            raise RuntimeError(ex.message)
+    def get(self, *args): #FIXME: deprecated behaviour, here only for backward compatibility
+        if len(args) == 2:
+            return super(JobConf, self).get(*args)
+        else:
+            try:
+                return self[args[0]]
+            except KeyError as ex:
+                raise RuntimeError(ex.message)
 
 class Context(object):
     """
