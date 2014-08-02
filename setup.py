@@ -241,6 +241,9 @@ class HadoopSourcePatcher(object):
 
   def __get_closest_version(self, available, cmp_attr):
     vkey = getattr(self.hadoop_version_info, cmp_attr)
+    if len(vkey) == 7:
+      # HDP
+      vkey = vkey[0:3]
     candidate_map = {}
     for vinfo in available:
       k = getattr(vinfo, cmp_attr)
