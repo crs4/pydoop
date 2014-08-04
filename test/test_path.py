@@ -155,12 +155,13 @@ class TestAbspath(unittest.TestCase):
           self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
 
 
-class TestBasename(unittest.TestCase):
+class TestSplitBasenameDirname(unittest.TestCase):
 
-  def good(self):
-    p, bn = "hdfs://localhost:9000/foo/bar", "bar"
+  def runTest(self):
+    p, d, bn = "hdfs://host:1/a/%s" % UNI_CHR, "hdfs://host:1/a", UNI_CHR
+    self.assertEqual(hdfs.path.splitbn(p), (d, bn))
+    self.assertEqual(hdfs.path.dirname(p), d)
     self.assertEqual(hdfs.path.basename(p), bn)
-    self.assertEqual(hdfs.path.basename(p+UNI_CHR), bn+UNI_CHR)
 
 
 class TestExists(unittest.TestCase):
@@ -393,7 +394,7 @@ def suite():
   suite.addTest(TestAbspath('without_user'))
   suite.addTest(TestAbspath('forced_local'))
   suite.addTest(TestAbspath('already_absolute'))
-  suite.addTest(TestBasename('good'))
+  suite.addTest(TestSplitBasenameDirname('runTest'))
   suite.addTest(TestExists('good'))
   suite.addTest(TestExpand('expanduser'))
   suite.addTest(TestExpand('expanduser_no_expansion'))
