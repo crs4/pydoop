@@ -424,7 +424,9 @@ class PathFinder(object):
         else:
           self.__hadoop_classpath = ':'.join(
             glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
-            glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
+            glob.glob(os.path.join(hadoop_home, 'lib', '*.jar')) +
+            glob.glob(os.path.join(hadoop_home, 'share/hadoop', '*.jar')) +
+            glob.glob(os.path.join(hadoop_home, 'share/hadoop/lib', '*.jar'))
             )
       else:  # FIXME: this does not cover from-tarball installation
         mr1_home = "%s-0.20-mapreduce" % hadoop_home
