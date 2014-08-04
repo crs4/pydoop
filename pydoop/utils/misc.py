@@ -23,9 +23,6 @@ This module contains general utility functions for application writing.
 import logging, uuid
 from struct import pack
 
-import pydoop
-pp = pydoop.import_version_specific_module('_pipes')
-
 # for backwards compatibility
 from pydoop.hdfs.path import split as split_hdfs_path
 
@@ -40,7 +37,7 @@ def raise_pydoop_exception(msg):
   The exception is built at the C++ level and translated into a
   :exc:`UserWarning` by the Boost wrapper.
   """
-  return pp.raise_pydoop_exception(msg)
+  return Exception(msg) #FIXME
 
 
 def jc_configure(obj, jc, k, f, df=None):

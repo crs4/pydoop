@@ -27,7 +27,7 @@ from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
-from utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
+from test.utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
 
 
 class TestCommon(unittest.TestCase):

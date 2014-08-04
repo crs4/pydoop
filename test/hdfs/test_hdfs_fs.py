@@ -28,7 +28,7 @@ sys.path.insert(0, '../../')
 import pydoop.hdfs as hdfs
 import pydoop
 from common_hdfs_tests import TestCommon, common_tests
-import utils as u
+import test.utils as u
 
 
 CURRENT_USER = getpass.getuser()

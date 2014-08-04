@@ -234,7 +234,6 @@ class hdfs(object):
             elif flags == os.O_WRONLY | os.O_APPEND:
                 flags = "a"
             return local_file(self, path, flags)
-        path = str(path)  # the C API does not handle unicodes
         if flags == "r":
             flags = os.O_RDONLY
         elif flags == "w":
