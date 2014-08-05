@@ -16,10 +16,13 @@
 # 
 # END_COPYRIGHT
 
-import unittest, getpass, tempfile, os
+import unittest
+import getpass
+import tempfile
+import os
 
 import pydoop.hdfs as hdfs
-from common_hdfs_tests import TestCommon, common_tests
+from test.backward_compatibility.common_hdfs_tests import TestCommon, common_tests
 
 
 class TestConnection(unittest.TestCase):

@@ -16,12 +16,14 @@
 #
 # END_COPYRIGHT
 
-import unittest, getpass, socket
+import unittest
+import getpass
+import socket
 
 import pydoop.hdfs as hdfs
 import pydoop
-from common_hdfs_tests import TestCommon, common_tests
-import utils as u
+from test.backward_compatibility.common_hdfs_tests import TestCommon, common_tests
+import test.utils as u
 
 
 CURRENT_USER = getpass.getuser()

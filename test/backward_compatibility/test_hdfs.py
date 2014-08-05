@@ -22,7 +22,7 @@ import stat
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import BUFSIZE
-from utils import make_random_data, FSTree
+from test.utils import make_random_data, FSTree
 
 
 class TestHDFS(unittest.TestCase):

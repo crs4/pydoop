@@ -47,23 +47,23 @@ class FileSystemImpl(FileSystem):
         jfs_cl = wrap_class(HadoopHdfsClasses.FileSystem)
 
         if self._host is None or self._host == '':
-            self._fs = jfs_cl.getLocal(self._configuration)
+            self._fs = jfs_cl.newInstanceLocal(self._configuration)
 
         elif self._host == 'default' and self._port == 0:
             self._fs_uri = jfs_cl.getDefaultUri(self._configuration)
             if self._user:
-                self._fs = jfs_cl.get(self._fs_uri, self._configuration, self._user)
+                self._fs = jfs_cl.newInstance(self._fs_uri, self._configuration, self._user)
             else:
-                self._fs = jfs_cl.get(self._fs_uri, self._configuration)
+                self._fs = jfs_cl.newInstance(self._fs_uri, self._configuration)
 
         else:
             uri_str = "hdfs://%s:%s" % (self._host, self._port)
             juri_cl = wrap_class(HadoopHdfsClasses.URI)
             self._fs_uri = juri_cl.create(uri_str)
             if self._user:
-                self._fs = jfs_cl.get(self._fs_uri, self._configuration, self._user)
+                self._fs = jfs_cl.newInstance(self._fs_uri, self._configuration, self._user)
             else:
-                self._fs = jfs_cl.get(self._fs_uri, self._configuration)
+                self._fs = jfs_cl.newInstance(self._fs_uri, self._configuration)
 
 
     def chmod(self, path, mode):
