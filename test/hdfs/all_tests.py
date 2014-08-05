@@ -21,19 +21,16 @@ from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
-    'test_binary_streams',
-    'test_framework',
-    'test_streams',
-    'test_support',
-    'test_support_old_api',
-    'test_text_stream',
-    'test_utils',
+    'test_hdfs',
+    'test_hdfs_fs',
+    'test_path',
 ]
 
 
 def suite(path=None):
     suites = []
     for module in TEST_MODULE_NAMES:
+        print module
         suites.append(get_module(module, path).suite())
     return unittest.TestSuite(suites)
 

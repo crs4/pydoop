@@ -27,10 +27,7 @@
 import unittest, StringIO, random
 import os
 import subprocess
-
-#FIXME
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 
 import pydoop
 import pydoop.mapreduce.serialize as srl
@@ -79,7 +76,9 @@ class TestSerialize(unittest.TestCase):
     def test_string(self):
         N = 10
         stream = self.stream
-        with open(__file__) as f:
+        print "__file__", __file__
+        test_file = __file__.replace("pyc", "py")
+        with open(test_file) as f:
             s = unicode(f.read(), 'utf-8')
         t = s
         for _ in range(N):
@@ -168,8 +167,9 @@ def _compile_java_part(java_class_file, classpath):
 
 def _get_java_output_stream():
     this_directory = os.path.abspath(os.path.dirname(__file__))
-    classpath = '.:%s' % pydoop.hadoop_classpath()
-    _compile_java_part(HadoopSerializeClass + ".class", classpath)
+    classpath = '.:%s:%s' % (pydoop.hadoop_classpath(), this_directory)
+    filename_root = os.path.join(this_directory, HadoopSerializeClass)
+    _compile_java_part(filename_root + ".class", classpath)
     output = subprocess.check_output(
             ['java', '-cp', classpath, HadoopSerializeClass],
             cwd=this_directory,

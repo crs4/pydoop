@@ -21,7 +21,7 @@ import itertools as it
 from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.text_streams import TextDownStreamFilter
 
-from common import WDTestCase
+from pydoop.test_utils import WDTestCase
 
 
 STREAM_1 = [

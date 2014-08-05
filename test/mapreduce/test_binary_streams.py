@@ -18,13 +18,14 @@
 
 import unittest
 import itertools as it
+import os
 from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryWriter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 
-from common import WDTestCase
+from pydoop.test_utils import WDTestCase
 
 
 STREAM_1 = [
@@ -57,8 +58,11 @@ STREAM_2 = [
     ('done',),
     ]
 
-MAP_JAVA_DOWNLINK_DATA='./data/mapper_downlink.data'
-RED_JAVA_DOWNLINK_DATA='./data/reducer_downlink.data'
+
+current_dir = os.path.dirname(__file__)
+
+MAP_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/mapper_downlink.data')
+RED_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/reducer_downlink.data')
 MAP_CMD_OUT='mapper_cmd.txt'
 RED_CMD_OUT='reducer_cmd.txt'
 

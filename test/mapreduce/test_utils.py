@@ -17,14 +17,16 @@
 # END_COPYRIGHT
 
 import unittest
+import os
 from pydoop.mapreduce.string_utils import quote_string, unquote_string
 from pydoop.mapreduce.string_utils import create_digest
 from pydoop.mapreduce.serialize import deserialize
 from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
 
+current_dir = os.path.dirname(__file__)
 
-JOB_TOKEN='./data/jobToken'
-MAP_JAVA_DOWNLINK_DATA='./data/mapper_downlink.data'
+JOB_TOKEN= os.path.join(current_dir, 'data/jobToken')
+MAP_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/mapper_downlink.data')
 
 class TestUtils(unittest.TestCase):
 

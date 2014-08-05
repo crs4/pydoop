@@ -23,7 +23,7 @@ from pydoop.mapreduce.pipes import run_task
 from pydoop.mapreduce.string_utils import unquote_string
 from test_text_stream import stream_writer
 
-from common import WDTestCase
+from pydoop.test_utils import WDTestCase
 
 
 STREAM_1 = [

@@ -6,7 +6,7 @@
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
 # 
-#   http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 # 
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
@@ -20,7 +20,7 @@
 Utilities for unit tests.
 """
 
-import sys, os, random, uuid, tempfile
+import sys, os, random, uuid, tempfile, imp, unittest, shutil
 
 import pydoop
 
@@ -37,17 +37,18 @@ HDFS_PORT = os.getenv("HDFS_PORT", _DEFAULT_HDFS_PORT)
 UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
 
 try:
-  HDFS_PORT = int(HDFS_PORT)
+    HDFS_PORT = int(HDFS_PORT)
 except ValueError:
-  raise ValueError("Environment variable HDFS_PORT must be an int")
+    raise ValueError("Environment variable HDFS_PORT must be an int")
 
 _FD_MAP = {
-  "stdout": sys.stdout.fileno(),
-  "stderr": sys.stderr.fileno(),
-  }
+    "stdout": sys.stdout.fileno(),
+    "stderr": sys.stderr.fileno(),
+}
+
 
 class FSTree(object):
-  """
+    """
   >>> t = FSTree('root')
   >>> d1 = t.add('d1')
   >>> f1 = t.add('f1', 0)
@@ -61,57 +62,85 @@ class FSTree(object):
   f2 0
   f1 0
   """
-  def __init__(self, name, kind=1):
-    assert kind in (0, 1)  # (file, dir)
-    self.name = name
-    self.kind = kind
-    if self.kind:
-      self.children = []
 
-  def add(self, name, kind=1):
-    t = FSTree(name, kind)
-    self.children.append(t)
-    return t
+    def __init__(self, name, kind=1):
+        assert kind in (0, 1)  # (file, dir)
+        self.name = name
+        self.kind = kind
+        if self.kind:
+            self.children = []
 
-  def walk(self):
-    yield self
-    if self.kind:
-      for c in self.children:
-        for t in c.walk():
-          yield t
+    def add(self, name, kind=1):
+        t = FSTree(name, kind)
+        self.children.append(t)
+        return t
+
+    def walk(self):
+        yield self
+        if self.kind:
+            for c in self.children:
+                for t in c.walk():
+                    yield t
 
 
 def make_wd(fs, prefix="pydoop_test_"):
-  if fs.host:
-    wd = "%s%s" % (prefix, uuid.uuid4().hex)
-    fs.create_directory(wd)
-    return fs.get_path_info(wd)['name']
-  else:
-    return tempfile.mkdtemp(prefix=prefix)
+    if fs.host:
+        wd = "%s%s" % (prefix, uuid.uuid4().hex)
+        fs.create_directory(wd)
+        return fs.get_path_info(wd)['name']
+    else:
+        return tempfile.mkdtemp(prefix=prefix)
 
 
 def make_random_data(size=_RANDOM_DATA_SIZE):
-  randint = random.randint
-  return "".join([chr(randint(32, 126)) for _ in xrange(size)])
+    randint = random.randint
+    return "".join([chr(randint(32, 126)) for _ in xrange(size)])
 
 
 def get_bytes_per_checksum():
-  params = pydoop.hadoop_params(_HADOOP_CONF_DIR, _HADOOP_HOME)
-  return int(params.get('io.bytes.per.checksum',
-                        params.get('dfs.bytes-per-checksum',
-                                   _DEFAULT_BYTES_PER_CHECKSUM)))
+    params = pydoop.hadoop_params(_HADOOP_CONF_DIR, _HADOOP_HOME)
+    return int(params.get('io.bytes.per.checksum',
+                          params.get('dfs.bytes-per-checksum',
+                                     _DEFAULT_BYTES_PER_CHECKSUM)))
 
 
 def silent_call(func, *args, **kwargs):
-  with open(os.devnull, "w") as dev_null:
-    cache = {}
-    for s in "stdout", "stderr":
-      cache[s] = os.dup(_FD_MAP[s])
-      os.dup2(dev_null.fileno(), _FD_MAP[s])
+    with open(os.devnull, "w") as dev_null:
+        cache = {}
+        for s in "stdout", "stderr":
+            cache[s] = os.dup(_FD_MAP[s])
+            os.dup2(dev_null.fileno(), _FD_MAP[s])
+        try:
+            ret = func(*args, **kwargs)
+        finally:
+            for s in "stdout", "stderr":
+                os.dup2(cache[s], _FD_MAP[s])
+    return ret
+
+
+def get_module(name, path=None):
+
+    fp, pathname, description = imp.find_module(name, path)
     try:
-      ret = func(*args, **kwargs)
+        module = imp.load_module(name, fp, pathname, description)
+        return module
     finally:
-      for s in "stdout", "stderr":
-        os.dup2(cache[s], _FD_MAP[s])
-  return ret
+        fp.close()
+
+
+class WDTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.wd = tempfile.mkdtemp(prefix='pydoop_test_')
+
+    def tearDown(self):
+        shutil.rmtree(self.wd)
+
+    def _mkfn(self, basename):
+        return os.path.join(self.wd, basename)
+
+    def _mkf(self, basename):
+        return open(self._mkfn(basename), 'w')
+
+
   

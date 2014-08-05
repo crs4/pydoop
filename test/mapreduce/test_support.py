@@ -24,7 +24,7 @@ import itertools as it
 import logging
 from collections import Counter
 
-from common import WDTestCase
+from pydoop.test_utils import WDTestCase
 
 
 DATA = \

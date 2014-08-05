@@ -17,6 +17,7 @@
 # END_COPYRIGHT
 
 import unittest, imp
+from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
@@ -27,16 +28,11 @@ TEST_MODULE_NAMES = [
   ]
 
 
-def suite():
-  suites = []
-  for name in TEST_MODULE_NAMES:
-    fp, pathname, description = imp.find_module(name)
-    try:
-      module = imp.load_module(name, fp, pathname, description)
-      suites.append(module.suite())
-    finally:
-      fp.close()
-  return unittest.TestSuite(tuple(suites))
+def suite(path=None):
+    suites = []
+    for module in TEST_MODULE_NAMES:
+        suites.append(get_module(module, path).suite())
+    return unittest.TestSuite(suites)
 
 
 if __name__ == '__main__':
