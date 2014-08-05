@@ -367,8 +367,11 @@ setup(
   packages=[
     "pydoop",
     "pydoop.hdfs",
+    "pydoop.hdfs.hadoop",
     "pydoop.app",
-    "pydoop.mapreduce"
+    "pydoop.mapreduce",
+    "pydoop.utils",
+    "pydoop.utils.bridge",
     ],
   cmdclass={
     "build": BuildPydoop,
