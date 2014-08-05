@@ -72,11 +72,15 @@ def get_implementation_module():
 
 
 # Loads the proper version of the hadoop hdfs wrapper
-HADOOP_VERSION = get_hadoop_version()
-HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.hdfs.hadoop.hadoop_" + HADOOP_VERSION.replace(".", "_")
+HADOOP_VERSION = get_hadoop_version().split('.')
+DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.hdfs.hadoop.hadoop_" + HADOOP_VERSION[0]
+HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.hdfs.hadoop.hadoop_" + "_".join(HADOOP_VERSION)
 HADOOP_HDFS_IMPL_SUFFIX = "Impl"
 
 logger.debug("HADOOP_HDFS_WRAPPER_MODULE: %s" % HADOOP_HDFS_WRAPPER_MODULE_NAME)
-
-implementation_module = importlib.import_module(HADOOP_HDFS_WRAPPER_MODULE_NAME)
-
+try:
+    implementation_module = importlib.import_module(HADOOP_HDFS_WRAPPER_MODULE_NAME)
+    logger.info("loaded module %s", HADOOP_HDFS_WRAPPER_MODULE_NAME)
+except ImportError:
+    implementation_module = importlib.import_module(DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME)
+    logger.info("loaded module %s", DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME)
