@@ -257,15 +257,19 @@ class PydoopScript(object):
     pypath = os.environ.get('PYTHONPATH', '')
     lines.append("#!/bin/bash")
     lines.append('""":"')
-    if ld_path:
-      lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
-    if pypath:
-      lines.append('export PYTHONPATH="%s"' % pypath)
-    if ("mapreduce.admin.user.home.dir" not in self.properties and
-        'HOME' in os.environ and
-        not self.args.no_override_home):
-      lines.append('export HOME="%s"' % os.environ['HOME'])
-    lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
+
+    if self.args.no_override_env:
+      lines.append('exec "%s" -u "$0" "$@"' % 'python')
+    else:
+      if ld_path:
+        lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
+      if pypath:
+        lines.append('export PYTHONPATH="%s"' % pypath)
+      if ("mapreduce.admin.user.home.dir" not in self.properties and
+          'HOME' in os.environ and
+          not self.args.no_override_home):
+        lines.append('export HOME="%s"' % os.environ['HOME'])
+      lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
     lines.append('":"""')
     template_args = {
       'module': os.path.splitext(self.remote_module_bn)[0],
@@ -378,6 +382,11 @@ def add_parser(subparsers):
     help="Don't set the script's HOME directory to the $HOME in your " +
     "environment.  Hadoop will set it to the value of the " +
     "'mapreduce.admin.user.home.dir' property"
+    )
+  parser.add_argument(
+    '--no-override-env', action='store_true',
+    help="Use the default python executable and environment instead of " +
+    "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH"
     )
   parser.add_argument(
     '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
