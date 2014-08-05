@@ -20,7 +20,7 @@ import os, unittest
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
-import pydoop.utils as utils
+import pydoop.utils.misc as utils
 
 
 class TestSplit(unittest.TestCase):
