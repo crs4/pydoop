@@ -18,11 +18,6 @@
 
 import unittest
 import itertools as it
-
-#FIXME
-import sys
-sys.path.insert(0, '../../')
-
 from pydoop.mapreduce.api import Mapper, Reducer, Factory
 from pydoop.mapreduce.pipes import run_task
 from pydoop.mapreduce.string_utils import unquote_string

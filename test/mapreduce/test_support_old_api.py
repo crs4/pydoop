@@ -17,12 +17,6 @@
 # END_COPYRIGHT
 
 import unittest
-
-# FIXME
-import sys
-sys.path.insert(0, '../../')
-
-
 from pydoop.pipes import Mapper, Reducer, Factory
 from pydoop.mapreduce.simulator import HadoopSimulatorLocal
 from pydoop.mapreduce.simulator import TrivialRecordReader

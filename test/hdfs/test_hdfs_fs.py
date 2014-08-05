@@ -20,15 +20,10 @@ import unittest
 import getpass
 import socket
 
-#FIXME
-import sys
-sys.path.insert(0, '../../')
-
-
 import pydoop.hdfs as hdfs
 import pydoop
 from common_hdfs_tests import TestCommon, common_tests
-import test.utils as u
+import pydoop.test_utils as u
 
 
 CURRENT_USER = getpass.getuser()

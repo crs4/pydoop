@@ -1,6 +1,3 @@
-import sys
-sys.path.insert(0, '../../')
-
 from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 import logging
 import os

@@ -13,7 +13,7 @@ from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.mapreduce.string_utils import create_digest
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -26,7 +26,7 @@ class TrivialRecordWriter(object):
     def __init__(self, stream):
         self.stream = stream
         self.logger = logging.getLogger("TrivialRecordWriter")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         self.counters = {}
 
     def output(self, key, value):

@@ -24,7 +24,7 @@ import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import DEFAULT_PORT, DEFAULT_USER
 from pydoop.utils.misc import make_random_str
 
-from test.utils import UNI_CHR
+from pydoop.test_utils import UNI_CHR
 
 
 def uni_last(tup):

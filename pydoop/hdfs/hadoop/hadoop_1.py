@@ -10,7 +10,7 @@ from pydoop.hdfs.hadoop.hdfs import FileSystem
 from pydoop.hdfs.hadoop.hdfs import File
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 class HadoopHdfsClasses(object):
     """

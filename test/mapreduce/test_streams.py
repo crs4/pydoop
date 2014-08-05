@@ -18,11 +18,6 @@
 
 import unittest
 import itertools as it
-
-#FIXME
-import sys
-sys.path.insert(0, '../../')
-
 from pydoop.mapreduce.streams import ProtocolAbort
 from pydoop.mapreduce.streams import DownStreamFilter
 from pydoop.mapreduce.streams import get_key_value_stream

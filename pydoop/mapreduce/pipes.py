@@ -32,7 +32,7 @@ from environment_keys import *
 
 logging.basicConfig()
 logger = logging.getLogger('pipes')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class InputSplit(object):

@@ -8,7 +8,7 @@ from pydoop.hadoop_utils import PathFinder
 from pydoop.utils.bridge.factory import JavaWrapperFactory
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("pydoop.hdfs.hadoop")
 
 # Hadoop ClassPath detection
@@ -59,7 +59,7 @@ def get_hadoop_version():
 def get_implementation_instance(class_name_prefix, *args, **kwargs):
     try:
         class_name = class_name_prefix + HADOOP_HDFS_IMPL_SUFFIX
-        logger.debug("Trying to load the implementation class %s from the package %s" % (class_name, HADOOP_HDFS_WRAPPER_MODULE_NAME))
+        logger.debug("Trying to load the implementation class %s from the package %s" % (class_name, EFFECTIVE_HADOOP_HDFS_WRAPPER_MODULE_NAME))
         cl = getattr(implementation_module, class_name)
         return cl(*args, **kwargs)
     except Exception, e:
@@ -81,6 +81,8 @@ logger.debug("HADOOP_HDFS_WRAPPER_MODULE: %s" % HADOOP_HDFS_WRAPPER_MODULE_NAME)
 try:
     implementation_module = importlib.import_module(HADOOP_HDFS_WRAPPER_MODULE_NAME)
     logger.info("loaded module %s", HADOOP_HDFS_WRAPPER_MODULE_NAME)
+    EFFECTIVE_HADOOP_HDFS_WRAPPER_MODULE_NAME = HADOOP_HDFS_WRAPPER_MODULE_NAME
 except ImportError:
     implementation_module = importlib.import_module(DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME)
     logger.info("loaded module %s", DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME)
+    EFFECTIVE_HADOOP_HDFS_WRAPPER_MODULE_NAME = DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME

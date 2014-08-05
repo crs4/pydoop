@@ -18,11 +18,6 @@
 
 import unittest
 import itertools as it
-
-#FIXME
-import sys
-sys.path.insert(0, '../../')
-
 from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryWriter

@@ -17,11 +17,6 @@
 # END_COPYRIGHT
 
 import unittest
-
-#FIXME
-import sys
-sys.path.insert(0, '../../')
-
 from pydoop.mapreduce.string_utils import quote_string, unquote_string
 from pydoop.mapreduce.string_utils import create_digest
 from pydoop.mapreduce.serialize import deserialize

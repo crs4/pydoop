@@ -22,7 +22,7 @@ import tempfile
 import os
 
 import pydoop.hdfs as hdfs
-from test.backward_compatibility.common_hdfs_tests import TestCommon, common_tests
+from common_hdfs_tests import TestCommon, common_tests
 
 
 class TestConnection(unittest.TestCase):

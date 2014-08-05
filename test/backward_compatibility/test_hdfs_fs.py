@@ -22,8 +22,8 @@ import socket
 
 import pydoop.hdfs as hdfs
 import pydoop
-from test.backward_compatibility.common_hdfs_tests import TestCommon, common_tests
-import test.utils as u
+from common_hdfs_tests import TestCommon, common_tests
+import pydoop.test_utils as u
 
 
 CURRENT_USER = getpass.getuser()
