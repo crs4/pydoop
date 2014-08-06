@@ -169,6 +169,11 @@ def deserialize_text(stream):
     l = deserialize_vint(stream)
     return unicode(read_buffer(l, stream), 'UTF-8')
 
+def deserialize_old_style_filename(stream):
+    l = struct.unpack('>H', read_buffer(2, stream))[0]
+    return unicode(read_buffer(l, stream), 'UTF-8')
+
+
 class SerializerStore(object):
     def __init__(self):
         self.serialize_map = {}

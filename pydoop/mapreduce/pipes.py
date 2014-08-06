@@ -20,7 +20,7 @@ import sys
 import logging
 import time
 import StringIO
-from pydoop.mapreduce.serialize import deserialize_text, deserialize_long
+from pydoop.mapreduce.serialize import deserialize_text, deserialize_long, deserialize_old_style_filename
 import connections
 from api import JobConf, RecordWriter, MapContext, ReduceContext
 from api import PydoopError
@@ -28,7 +28,7 @@ from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
 from string_utils import create_digest
 from api import Counter
 from environment_keys import *
-
+import pydoop
 
 logging.basicConfig()
 logger = logging.getLogger('pipes')
@@ -53,7 +53,10 @@ class InputSplit(object):
 
     def __init__(self, data):
         stream = StringIO.StringIO(data)
-        self.filename = deserialize_text(stream)
+        if pydoop.hadoop_version_info().has_variable_isplit_encoding():
+            self.filename = deserialize_text(stream)
+        else:
+            self.filename = deserialize_old_style_filename(stream)
         self.offset = deserialize_long(stream)
         self.length = deserialize_long(stream)
 
