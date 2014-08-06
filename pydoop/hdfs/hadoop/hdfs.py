@@ -1,5 +1,3 @@
-__author__ = 'kikkomep'
-
 from abc import abstractmethod
 
 from pydoop.hdfs.hadoop import get_implementation_instance
