@@ -19,6 +19,9 @@
 import unittest
 import itertools as it
 import os
+import tempfile
+import shutil
+
 from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryWriter
@@ -63,8 +66,6 @@ current_dir = os.path.dirname(__file__)
 
 MAP_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/mapper_downlink.data')
 RED_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/reducer_downlink.data')
-MAP_CMD_OUT='mapper_cmd.txt'
-RED_CMD_OUT='reducer_cmd.txt'
 
 
 def stream_writer(fname, data):
@@ -89,15 +90,21 @@ class TestBinaryStream(WDTestCase):
                 print 'error -- %s' % e
 
     def test_on_java_downlink_data(self):
+        wd = tempfile.mkdtemp(prefix='pydoop_')
+        map_cmd_out = os.path.join(wd, 'mapper_cmd.txt')
+        red_cmd_out = os.path.join(wd, 'reducer_cmd.txt')
         def decode(istream, ostream):
             cmd_stream = BinaryDownStreamFilter(istream)
             for (cmd, args) in cmd_stream:
                 ostream.write('cmd: {}, args: {}\n'.format(cmd, args))
-        for i, o in ((MAP_JAVA_DOWNLINK_DATA, MAP_CMD_OUT),
-                     (RED_JAVA_DOWNLINK_DATA, RED_CMD_OUT)):
-            with open(i, 'r') as f:
-                with open(o, 'w') as w:
-                    decode(f, w)
+        try:
+            for i, o in ((MAP_JAVA_DOWNLINK_DATA, map_cmd_out),
+                         (RED_JAVA_DOWNLINK_DATA, red_cmd_out)):
+                with open(i, 'r') as f:
+                    with open(o, 'w') as w:
+                        decode(f, w)
+        finally:
+            shutil.rmtree(wd)
 
     def test_uplink(self):
         fname = self._mkfn('foo.bin')

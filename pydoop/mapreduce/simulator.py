@@ -4,6 +4,7 @@ import os
 import tempfile
 import uuid
 import logging
+import cStringIO
 
 from pydoop.mapreduce.pipes import TaskContext, StreamRunner
 from pydoop.mapreduce.api import RecordReader
@@ -219,42 +220,40 @@ class HadoopSimulator(object):
                               input_key_type='org.apache.hadoop.io.LongWritable',
                               input_value_type='org.apache.hadoop.io.Text',
                               piped_input=False, authorization=None):
-        fname = 'down_stream_map.bin'
-        with open(fname, 'w') as f:
-            down_stream = BinaryWriter(f)
-            self.write_authorization(down_stream, authorization)
-            down_stream.send('start', 0)
-            down_stream.send('setJobConf',
-                             *sum([[k, v] for k, v in job_conf.iteritems()],
-                                 []))
-            down_stream.send('runMap', 'fake_isplit', num_reducers,
-                             piped_input)
-            down_stream.send('setInputTypes', input_key_type, input_value_type)
-            if file_in:
-                for l in file_in:
-                    self.logger.debug("Line: %s" % l)
-                    k, v = l.strip().split('\t')
-                    down_stream.send('mapItem', k, v)
-                down_stream.send('close')
-        return open(fname)
+        f = cStringIO.StringIO()
+        down_stream = BinaryWriter(f)
+        self.write_authorization(down_stream, authorization)
+        down_stream.send('start', 0)
+        down_stream.send('setJobConf',
+                         *sum([[k, v] for k, v in job_conf.iteritems()],
+                             []))
+        down_stream.send('runMap', 'fake_isplit', num_reducers,
+                         piped_input)
+        down_stream.send('setInputTypes', input_key_type, input_value_type)
+        if file_in:
+            for l in file_in:
+                self.logger.debug("Line: %s" % l)
+                k, v = l.strip().split('\t')
+                down_stream.send('mapItem', k, v)
+            down_stream.send('close')
+        return f
 
     def write_reduce_down_stream(self, sas, job_conf, reducer,
                                  piped_output=False, authorization=None):
-        fname = 'down_stream_reduce.bin'
-        with open(fname, 'w') as f:
-            down_stream = BinaryWriter(f)
-            self.write_authorization(down_stream, authorization)
-            down_stream.send('start', 0)
-            down_stream.send('setJobConf',
-                             *sum([[k, v] for k, v in job_conf.iteritems()],
-                                 []))
-            down_stream.send('runReduce', reducer, piped_output)
-            for k in sas:
-                down_stream.send('reduceKey', k)
-                for v in sas[k]:
-                    down_stream.send('reduceValue', v)
-            down_stream.send('close')
-        return open(fname)
+        f = cStringIO.StringIO()
+        down_stream = BinaryWriter(f)
+        self.write_authorization(down_stream, authorization)
+        down_stream.send('start', 0)
+        down_stream.send('setJobConf',
+                         *sum([[k, v] for k, v in job_conf.iteritems()],
+                             []))
+        down_stream.send('runReduce', reducer, piped_output)
+        for k in sas:
+            down_stream.send('reduceKey', k)
+            for v in sas[k]:
+                down_stream.send('reduceValue', v)
+        down_stream.send('close')
+        return f
 
 
 class HadoopSimulatorLocal(HadoopSimulator):

@@ -28,6 +28,8 @@ import unittest, StringIO, random
 import os
 import subprocess
 import sys
+import tempfile
+import shutil
 
 import pydoop
 import pydoop.mapreduce.serialize as srl
@@ -111,28 +113,34 @@ class TestSerialize(unittest.TestCase):
                 self.assertEqual(v, x)
 
     def test_deserializing_java_output(self):
-        byte_stream = _get_java_output_stream()
+        wd = tempfile.mkdtemp(prefix="pydoop_")
+        try:
+            byte_stream = _get_java_output_stream(wd)
 
-        # read integers
-        self.assertEqual(42, wu.readVInt(byte_stream))
-        self.assertEqual(4242, wu.readVInt(byte_stream))
-        self.assertEqual(424242, wu.readVInt(byte_stream))
-        self.assertEqual(42424242, wu.readVInt(byte_stream))
-        self.assertEqual(-42, wu.readVInt(byte_stream))
+            # read integers
+            self.assertEqual(42, wu.readVInt(byte_stream))
+            self.assertEqual(4242, wu.readVInt(byte_stream))
+            self.assertEqual(424242, wu.readVInt(byte_stream))
+            self.assertEqual(42424242, wu.readVInt(byte_stream))
+            self.assertEqual(-42, wu.readVInt(byte_stream))
 
-        # longs
-        self.assertEqual(42, wu.readVLong(byte_stream))
-        self.assertEqual(424242, wu.readVLong(byte_stream))
-        self.assertEqual(4242424242, wu.readVLong(byte_stream))
+            # longs
+            self.assertEqual(42, wu.readVLong(byte_stream))
+            self.assertEqual(424242, wu.readVLong(byte_stream))
+            self.assertEqual(4242424242, wu.readVLong(byte_stream))
 
-        # strings
-        # first one is plain ASCII
-        self.assertEqual(u"hello world", wu.readString(byte_stream))
-        # second has accented characters
-        self.assertEqual(u"oggi è giovedì", wu.readString(byte_stream))
+            # strings
+            # first one is plain ASCII
+            self.assertEqual(u"hello world", wu.readString(byte_stream))
+            # second has accented characters
+            self.assertEqual(u"oggi è giovedì", wu.readString(byte_stream))
 
-        # final piece is an encoded Text object
-        self.assertEqual(u"à Text object", srl.deserialize_text(byte_stream))
+            # final piece is an encoded Text object
+            self.assertEqual(
+                u"à Text object", srl.deserialize_text(byte_stream)
+                )
+        finally:
+            shutil.rmtree(wd)
 
     def test_wu_ascii_string(self):
         # test for self-consistency
@@ -164,14 +172,16 @@ def _compile_java_part(java_class_file, classpath):
         except subprocess.CalledProcessError:
             raise RuntimeError("Error compiling Java file %s" % java_file)
 
-def _get_java_output_stream():
+def _get_java_output_stream(wd):
     this_directory = os.path.abspath(os.path.dirname(__file__))
-    classpath = '.:%s:%s' % (pydoop.hadoop_classpath(), this_directory)
-    filename_root = os.path.join(this_directory, HadoopSerializeClass)
+    src = os.path.join(this_directory, "%s.java" % HadoopSerializeClass)
+    shutil.copy(src, wd)
+    classpath = '.:%s:%s' % (pydoop.hadoop_classpath(), wd)
+    filename_root = os.path.join(wd, HadoopSerializeClass)
     _compile_java_part(filename_root + ".class", classpath)
     output = subprocess.check_output(
             ['java', '-cp', classpath, HadoopSerializeClass],
-            cwd=this_directory,
+            cwd=wd,
             stderr=open('/dev/null', 'w'))
     stream = StringIO.StringIO(output)
     return stream
