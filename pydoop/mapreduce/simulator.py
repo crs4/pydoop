@@ -232,7 +232,7 @@ class HadoopSimulator(object):
             down_stream.send('setInputTypes', input_key_type, input_value_type)
             if file_in:
                 for l in file_in:
-                    print "Line: %s" % l
+                    self.logger.debug("Line: %s" % l)
                     k, v = l.strip().split('\t')
                     down_stream.send('mapItem', k, v)
                 down_stream.send('close')

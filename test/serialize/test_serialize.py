@@ -76,7 +76,6 @@ class TestSerialize(unittest.TestCase):
     def test_string(self):
         N = 10
         stream = self.stream
-        print "__file__", __file__
         test_file = __file__.replace("pyc", "py")
         with open(test_file) as f:
             s = unicode(f.read(), 'utf-8')
