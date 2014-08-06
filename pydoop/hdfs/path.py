@@ -46,8 +46,10 @@ class _HdfsPathSplitter(object):
     except AttributeError:
       rest = hdfs_path
       scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
+    if not rest:
+      cls.raise_bad_path(hdfs_path, "no scheme-specific part")
     if scheme == "hdfs":
-      if rest[:2] == "//" and rest[2] != "/":
+      if rest.startswith("//") and not rest.startswith("///"):
         try:
           netloc, path = rest[2:].split("/", 1)
         except ValueError:

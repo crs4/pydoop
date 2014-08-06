@@ -39,6 +39,7 @@ class TestSplit(unittest.TestCase):
       ('hdfs://localhost:9000/a/b', ('localhost', 9000, '/a/b')),
       ('hdfs://localhost/a/b', ('localhost', DEFAULT_PORT, '/a/b')),
       ('hdfs:///a/b', ('default', 0, '/a/b')),
+      ('hdfs:/', ('default', 0, '/')),
       ('file:///a/b', ('', 0, '/a/b')),
       ('file:/a/b', ('', 0, '/a/b')),
       ('file:///a', ('', 0, '/a')),
@@ -78,6 +79,8 @@ class TestSplit(unittest.TestCase):
   def bad(self):
     cases = [
       '',                                  # not allowed in the Java API
+      'hdfs:',                             # no scheme-specific part
+      'hdfs://',                           # path part is empty
       'ftp://localhost:9000/',             # bad scheme
       'hdfs://localhost:spam/',            # port is not an int
       'hdfs://localhost:9000',             # path part is empty
