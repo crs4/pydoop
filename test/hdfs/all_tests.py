@@ -21,9 +21,10 @@ from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
+    'test_path',
     'test_hdfs',
     'test_hdfs_fs',
-    'test_path',
+    'test_local_fs',
 ]
 
 
