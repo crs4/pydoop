@@ -1,5 +1,3 @@
-__author__ = 'kikkomep'
-
 import os
 import logging
 import importlib
@@ -11,6 +9,7 @@ from pydoop.utils.bridge.factory import JavaWrapperFactory
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("pydoop.hdfs.hadoop")
 
+HADOOP_HDFS_IMPL_SUFFIX = "Impl"
 # Hadoop ClassPath detection
 HADOOP_CLASSPATH = PathFinder().hadoop_classpath()
 
@@ -59,7 +58,10 @@ def get_hadoop_version():
 def get_implementation_instance(class_name_prefix, *args, **kwargs):
     try:
         class_name = class_name_prefix + HADOOP_HDFS_IMPL_SUFFIX
-        logger.debug("Trying to load the implementation class %s from the package %s" % (class_name, EFFECTIVE_HADOOP_HDFS_WRAPPER_MODULE_NAME))
+        logger.debug("class_name %s", class_name)
+        logger.debug("class_name_prefix %s", class_name_prefix)
+        logger.debug("implementation_module%s", implementation_module)
+        logger.debug("HADOOP_HDFS_IMPL_SUFFIX %s", HADOOP_HDFS_IMPL_SUFFIX)
         cl = getattr(implementation_module, class_name)
         return cl(*args, **kwargs)
     except Exception, e:
@@ -70,19 +72,17 @@ def get_implementation_instance(class_name_prefix, *args, **kwargs):
 def get_implementation_module():
     return implementation_module
 
-
 # Loads the proper version of the hadoop hdfs wrapper
-HADOOP_VERSION = get_hadoop_version().split('.')
-DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.hdfs.hadoop.hadoop_" + HADOOP_VERSION[0]
-HADOOP_HDFS_WRAPPER_MODULE_NAME = "pydoop.hdfs.hadoop.hadoop_" + "_".join(HADOOP_VERSION)
-HADOOP_HDFS_IMPL_SUFFIX = "Impl"
+h_version = [''] + get_hadoop_version().split('.')
 
-logger.debug("HADOOP_HDFS_WRAPPER_MODULE: %s" % HADOOP_HDFS_WRAPPER_MODULE_NAME)
-try:
-    implementation_module = importlib.import_module(HADOOP_HDFS_WRAPPER_MODULE_NAME)
-    logger.info("loaded module %s", HADOOP_HDFS_WRAPPER_MODULE_NAME)
-    EFFECTIVE_HADOOP_HDFS_WRAPPER_MODULE_NAME = HADOOP_HDFS_WRAPPER_MODULE_NAME
-except ImportError:
-    implementation_module = importlib.import_module(DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME)
-    logger.info("loaded module %s", DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME)
-    EFFECTIVE_HADOOP_HDFS_WRAPPER_MODULE_NAME = DEFAULT_HADOOP_HDFS_WRAPPER_MODULE_NAME
+while h_version:
+    module_path = "pydoop.hdfs.hadoop.hadoop" + "_".join(h_version)
+    try:
+        implementation_module = importlib.import_module(module_path)
+        logger.info("loaded module %s", module_path)
+        break
+    except ImportError:
+        h_version.pop()
+
+else:
+    logger.critical("INTERNAL ERROR, MISSING CRITICAL MODULE pydoop.hdfs.hadoop.hadoop")
