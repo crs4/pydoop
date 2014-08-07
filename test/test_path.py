@@ -100,22 +100,39 @@ class TestSplit(unittest.TestCase):
 
 class TestJoin(unittest.TestCase):
 
-  def good(self):
-    cases = [
-      (('/foo', 'bar', 'tar'), '/foo/bar/tar'),
-      (('/foo/', 'bar/', 'tar'), '/foo/bar/tar'),
-      (('foo', '/bar', 'tar'), '/bar/tar'),
-      (('foo', 'hdfs://host:1/bar/', 'tar/'), 'hdfs://host:1/bar/tar/'),
-      (('foo', 'file:/bar/', 'tar/'), 'file:/bar/tar/'),
-      (('foo', 'file:///bar/', 'tar/'), 'file:///bar/tar/'),
-      (('hdfs://host:1/', '/foo'), 'hdfs://host:1/foo'),
-      (('hdfs://host:1/', 'file:/foo', '/bar'), 'file:/foo/bar'),
-      (('foo', '/bar', 'hdfs://host:1/'), 'hdfs://host:1/'),
-      ]
+  def __check_join(self, cases):
     for p, r in cases:
       self.assertEqual(hdfs.path.join(*p), r)
-    p, r = cases[0]
-    self.assertEqual(hdfs.path.join(*uni_last(p)), r+UNI_CHR)
+
+  def simple(self):
+    self.__check_join([
+      (('foo', 'bar', 'tar'), 'foo/bar/tar'),
+      (('/foo', 'bar', 'tar'), '/foo/bar/tar'),
+      ])
+
+  def slashes(self):
+    self.__check_join([
+      (('foo/', 'bar/', 'tar'), 'foo/bar/tar'),
+      (('/foo/', 'bar/', 'tar'), '/foo/bar/tar'),
+      ])
+
+  def absolute(self):
+    self.__check_join([
+      (('foo', '/bar', 'tar'), '/bar/tar'),
+      (('foo', 'hdfs://host:1/bar', 'tar'), 'hdfs://host:1/bar/tar'),
+      (('foo', 'file:/bar', 'tar'), 'file:/bar/tar'),
+      (('foo', 'file:///bar', 'tar'), 'file:///bar/tar'),
+      ])
+
+  def full(self):
+    self.__check_join([
+      (('hdfs://host:1/', '/foo'), 'hdfs://host:1/foo'),
+      (('hdfs://host:1/', 'file:/foo', '/bar'), 'file:/foo/bar'),
+      (('foo', '/bar', 'hdfs://host:1/tar'), 'hdfs://host:1/tar'),
+      ])
+
+  def unicode_(self):
+    self.__check_join([(('/foo', 'bar', UNI_CHR), '/foo/bar/%s' % UNI_CHR)])
 
 
 class TestAbspath(unittest.TestCase):
@@ -396,7 +413,11 @@ def suite():
   suite.addTest(TestSplit('good_with_user'))
   suite.addTest(TestSplit('bad'))
   suite.addTest(TestSplit('splitext'))
-  suite.addTest(TestJoin('good'))
+  suite.addTest(TestJoin('simple'))
+  suite.addTest(TestJoin('slashes'))
+  suite.addTest(TestJoin('absolute'))
+  suite.addTest(TestJoin('full'))
+  suite.addTest(TestJoin('unicode_'))
   suite.addTest(TestAbspath('with_user'))
   suite.addTest(TestAbspath('without_user'))
   suite.addTest(TestAbspath('forced_local'))
