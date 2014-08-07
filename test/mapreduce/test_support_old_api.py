@@ -28,16 +28,16 @@ from pydoop.test_utils import WDTestCase
 
 
 DATA = \
-    """1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
-    1	sitting on the riverbank with her elder sister, when she notices a
-    1	talking, clothed White Rabbit with a pocket watch run past. She
-    1	follows it down a rabbit hole when suddenly she falls a long way to a
-    1	curious hall with many locked doors of all sizes. She finds a small
-    1	key to a door too small for her to fit through, but through it she
-    1	sees an attractive garden. She then discovers a bottle on a table
-    1	labelled "DRINK ME," the contents of which cause her to shrink too
-    1	small to reach the key which she has left on the table. She eats a
-    1	cake with "EAT ME" written on it in currants as the chapter closes."""
+    """Chapter One  Down the Rabbit Hole: Alice is feeling bored while
+    sitting on the riverbank with her elder sister, when she notices a
+    talking, clothed White Rabbit with a pocket watch run past. She
+    follows it down a rabbit hole when suddenly she falls a long way to a
+    curious hall with many locked doors of all sizes. She finds a small
+    key to a door too small for her to fit through, but through it she
+    sees an attractive garden. She then discovers a bottle on a table
+    labelled "DRINK ME," the contents of which cause her to shrink too
+    small to reach the key which she has left on the table. She eats a
+    cake with "EAT ME" written on it in currants as the chapter closes."""
 
 COUNTS = Counter(''.join(c for c in DATA.replace('1\t', ' ')
                          if c.isalnum() or c == ' ').lower().split())

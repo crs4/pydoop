@@ -13,6 +13,8 @@ from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.mapreduce.string_utils import create_digest
 
+from pydoop.mapreduce.serialize import serialize_to_string
+
 import logging
 logging.basicConfig()
 logger = logging.getLogger('simulator')
@@ -219,9 +221,9 @@ class HadoopSimulator(object):
             stream.send('authenticationReq', digest, challenge)
 
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
-                              input_key_type='org.apache.hadoop.io.LongWritable',
-                              input_value_type='org.apache.hadoop.io.Text',
-                              piped_input=False, authorization=None):
+            input_key_type='org.apache.hadoop.io.LongWritable',
+            input_value_type='org.apache.hadoop.io.Text',
+            piped_input=False, authorization=None):
         f = cStringIO.StringIO()
         down_stream = BinaryWriter(f)
         self.write_authorization(down_stream, authorization)
@@ -235,8 +237,8 @@ class HadoopSimulator(object):
         if file_in:
             for l in file_in:
                 self.logger.debug("Line: %s" % l)
-                k, v = l.strip().split('\t')
-                down_stream.send('mapItem', k, v)
+                k = serialize_to_string(v)
+                down_stream.send('mapItem', k, l)
             down_stream.send('close')
         f.seek(0)
         return f
