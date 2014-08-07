@@ -13,8 +13,10 @@ from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.mapreduce.string_utils import create_digest
 
-
-logging.basicConfig(level=logging.INFO)
+import logging
+logging.basicConfig()
+logger = logging.getLogger('simulator')
+logger.setLevel(logging.CRITICAL)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -26,8 +28,7 @@ DEFAULT_SLEEP_DELTA = 3
 class TrivialRecordWriter(object):
     def __init__(self, stream):
         self.stream = stream
-        self.logger = logging.getLogger("TrivialRecordWriter")
-        self.logger.setLevel(logging.INFO)
+        self.logger = logger.getChild('TrivialRecordWriter') 
         self.counters = {}
 
     def output(self, key, value):
@@ -106,7 +107,7 @@ class CommandThread(threading.Thread):
         super(CommandThread, self).__init__()
         self.down_bytes = down_bytes
         self.ostream = ostream
-        self.logger = logger
+        self.logger = logger.getChild('CommandThread')
         self.logger.debug('initialized')
 
     def run(self):
@@ -126,10 +127,11 @@ class ResultThread(threading.Thread):
         super(ResultThread, self).__init__()
         self.up_bytes = up_bytes
         self.ostream = ostream
-        self.logger = logger
+        self.logger = logger.getChild('ResultThread')
         self.logger.debug('initialized')
 
     def run(self):
+        self.logger.debug('started runner')        
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
         for cmd, args in up_cmd_stream:
             self.logger.debug('cmd:{} args:{}'.format(cmd, args))
@@ -157,9 +159,9 @@ class HadoopThreadHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         self.server.logger.debug('handler started')
         cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
-                                   self.server.logger.getChild('CommandThread'))
+                                   self.server.logger)
         res_thread = ResultThread(self.rfile, self.server.out_writer,
-                                  self.server.logger.getChild('ResultThread'))
+                                  self.server.logger)
         cmd_thread.start()
         res_thread.start()
         cmd_thread.join()
@@ -190,7 +192,7 @@ class HadoopServer(SocketServer.TCPServer):
         out_writer is an object with a .send() method that can handle 'output'
         and  'done' commands.
         """
-        self.logger = logger if logger \
+        self.logger = logger.getChild('HadoopServer') if logger \
             else logging.getLogger('HadoopServer')
         self.logger.setLevel(loglevel)
         self.down_bytes = down_bytes
@@ -206,7 +208,7 @@ class HadoopServer(SocketServer.TCPServer):
 # -------------------------------------------------------------------------
 class HadoopSimulator(object):
     def __init__(self, logger=None, loglevel=logging.CRITICAL):
-        self.logger = logger if logger \
+        self.logger = logger.getChild('HadoopSimulator') if logger \
             else logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(loglevel)
         self.logger.debug('initialized.')
@@ -236,6 +238,7 @@ class HadoopSimulator(object):
                 k, v = l.strip().split('\t')
                 down_stream.send('mapItem', k, v)
             down_stream.send('close')
+        f.seek(0)
         return f
 
     def write_reduce_down_stream(self, sas, job_conf, reducer,
@@ -253,6 +256,7 @@ class HadoopSimulator(object):
             for v in sas[k]:
                 down_stream.send('reduceValue', v)
         down_stream.send('close')
+        f.seek(0)
         return f
 
 

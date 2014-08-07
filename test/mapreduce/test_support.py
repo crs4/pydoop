@@ -22,6 +22,7 @@ from pydoop.mapreduce.simulator import HadoopSimulatorLocal
 from pydoop.mapreduce.simulator import TrivialRecordReader
 import itertools as it
 import logging
+import os
 from collections import Counter
 
 from pydoop.test_utils import WDTestCase
@@ -123,6 +124,7 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf('map_only.out') as fout:
                 hs.run(fin, fout, job_conf, 0)
+                self.assertTrue(os.stat(fout.name).st_size > 0)
 
     def test_record_reader(self):
         job_conf = {'this.is.not.used': '22'}
@@ -130,6 +132,7 @@ class TestFramework(WDTestCase):
         foname = 'map_reduce.out'
         with self._mkf(foname) as fout:
             hs.run(None, fout, job_conf, 0)
+            self.assertTrue(os.stat(fout.name).st_size > 0)
 
     def test_map_reduce(self):
         job_conf = {'this.is.not.used': '22'}
@@ -138,6 +141,7 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
+                self.assertTrue(os.stat(fout.name).st_size > 0)
         with open(self._mkfn(foname)) as f:
             for l in f:
                 k, c = l.strip().split()
@@ -151,7 +155,8 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
-
+                self.assertTrue(os.stat(fout.name).st_size > 0)
+                
         with open(self._mkfn(foname)) as f:
             for l in f:
                 k, c = l.strip().split()
@@ -172,6 +177,7 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
+                self.assertTrue(os.stat(fout.name).st_size > 0)                
         with open(self._mkfn(foname)) as f:
             for l in f:
                 k, c = l.strip().split()
