@@ -348,10 +348,14 @@ class TestStat(unittest.TestCase):
 
 class TestIsSomething(unittest.TestCase):
 
-  def isabs(self):
-    for p in 'hdfs://host:1/foo', 'file:/foo':
-      self.assertTrue(hdfs.path.isabs(p))
-    self.assertFalse(hdfs.path.isabs('foo'))
+  def full_and_abs(self):
+    for name in 'isfull', 'isabs':
+      test = getattr(hdfs.path, name)
+      for p in 'hdfs://host:1/foo', 'file:/foo':
+        self.assertTrue(test(p))
+      self.assertFalse(test('foo'))
+    self.assertFalse(hdfs.path.isfull('/foo'))
+    self.assertTrue(hdfs.path.isabs('/foo'))
 
   def islink(self):
     wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
@@ -429,7 +433,7 @@ def suite():
   suite.addTest(TestExpand('expandvars'))
   suite.addTest(TestStat('stat'))
   suite.addTest(TestStat('stat_on_local'))
-  suite.addTest(TestIsSomething('isabs'))
+  suite.addTest(TestIsSomething('full_and_abs'))
   suite.addTest(TestIsSomething('islink'))
   suite.addTest(TestIsSomething('ismount'))
   suite.addTest(TestNorm('normpath'))

@@ -145,9 +145,8 @@ def join(*parts):
   Join path name components, inserting ``/`` as needed.
 
   If any component is an absolute path (see :func:`isabs`), all
-  previous components will be discarded.  However, full URIs (i.e.,
-  those that start with ``scheme ":"``) take precedence over
-  incomplete ones:
+  previous components will be discarded.  However, full URIs (see
+  :func:`isfull`) take precedence over incomplete ones:
 
   .. code-block:: python
 
@@ -167,8 +166,8 @@ def join(*parts):
     raise TypeError("need at least one argument")
   for p in parts[1:]:
     path[-1] = path[-1].rstrip("/")
-    full = bool(_HdfsPathSplitter.PATTERN.match(path[0]))
-    if bool(_HdfsPathSplitter.PATTERN.match(p)) or (isabs(p) and not full):
+    full = isfull(path[0])
+    if isfull(p) or (isabs(p) and not full):
       path = [p]
     else:
       path.append(p.lstrip('/'))
@@ -202,7 +201,7 @@ def abspath(hdfs_path, user=None, local=False):
   """
   if local:
     return 'file:%s' % os.path.abspath(hdfs_path)
-  if _HdfsPathSplitter.PATTERN.match(hdfs_path):
+  if isfull(hdfs_path):
     return hdfs_path
   hostname, port, path = split(hdfs_path, user=user)
   if hostname:
@@ -354,14 +353,25 @@ def getsize(path, user=None):
   return stat(path, user=user).st_size
 
 
+def isfull(path):
+  """
+  Return :obj:`True` if ``path`` is a full URI (starts with a scheme
+  followed by a colon).
+
+  No check is made to determine whether ``path`` is a valid HDFS path.
+  """
+  return bool(_HdfsPathSplitter.PATTERN.match(path))
+
+
 def isabs(path):
   """
   Return :obj:`True` if ``path`` is absolute.
 
-  A path is absolute if it starts with ``hdfs:``, ``file:`` or ``/``.
-  No check is made to determine whether ``path`` is a valid HDFS path.
+  A path is absolute if it is a full URI (see :func:`isfull`) or
+  starts with a forward slash. No check is made to determine whether
+  ``path`` is a valid HDFS path.
   """
-  return any(path.startswith(_) for _ in ('file:', 'hdfs:', '/'))
+  return isfull(path) or path.startswith('/')
 
 
 def islink(path, user=None):
@@ -398,7 +408,7 @@ def normpath(path, user=None):
   """
   # normalization is included in split
   host, port, path_ = split(path, user)
-  if not _HdfsPathSplitter.PATTERN.match(path):
+  if not isfull(path):
     return path_
   if host:
     return join("hdfs://%s:%s" % (host, port), path_)
