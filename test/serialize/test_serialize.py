@@ -162,6 +162,14 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(42, wu.readVInt(self.stream))
         self.assertEqual(4000000000, wu.readVLong(self.stream))
 
+    def test_serialize_to_string(self):
+        numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
+        for n in numbers:
+            s = srl.serialize_to_string(n)
+            stream = StringIO.StringIO(s)
+            x = srl.deserialize_vint(stream)
+            self.assertEqual(n, x)
+
 def _compile_java_part(java_class_file, classpath):
     java_file = os.path.splitext(os.path.realpath(java_class_file))[0] + '.java'
     if not os.path.exists(java_class_file) or os.path.getmtime(java_file) > os.path.getmtime(java_class_file):

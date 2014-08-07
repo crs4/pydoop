@@ -70,6 +70,7 @@ We also expect to be able to support something like the following::
 
 from __future__ import division
 import struct, xdrlib
+import StringIO
 
 
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions
@@ -173,7 +174,6 @@ def deserialize_old_style_filename(stream):
     l = struct.unpack('>H', read_buffer(2, stream))[0]
     return unicode(read_buffer(l, stream), 'UTF-8')
 
-
 class SerializerStore(object):
     def __init__(self):
         self.serialize_map = {}
@@ -232,3 +232,10 @@ def serialize(v, stream, type_id=None):
 
 def deserialize(type_id, stream):
     return DEFAULT_STORE.deserializer(type_id)(stream)
+
+def serialize_to_string(v, type_id=None):
+    f = StringIO.StringIO()
+    serialize(v, f, type_id)
+    return f.getvalue()
+
+
