@@ -19,6 +19,12 @@
 from streams import DownStreamFilter, UpStreamFilter
 from serialize import deserialize, serialize
 
+import logging
+logging.basicConfig()
+logger = logging.getLogger('binary_streams')
+logger.setLevel(logging.CRITICAL)
+
+
 # these constants should be exactly what has been defined in HadoopPipes.cpp
 START_MESSAGE = 0
 SET_JOB_CONF = 1
@@ -99,6 +105,7 @@ class BinaryDownStreamFilter(DownStreamFilter):
 
     def __init__(self, stream):
         super(BinaryDownStreamFilter, self).__init__(stream)
+        self.logger = logger.getChild('BinaryDownStreamFilter')
 
     def next(self):
         try:
@@ -110,6 +117,7 @@ class BinaryDownStreamFilter(DownStreamFilter):
             args = processor(self.stream)
             return cmd, tuple(args)
         args = [deserialize(t, self.stream) for t in types]
+        self.logger.debug('next -> cmd: %s; args: %s' % (cmd, args))
         return cmd, tuple(args) if args else None
 
 
@@ -128,8 +136,11 @@ class BinaryUpStreamFilter(UpStreamFilter):
 
     def __init__(self, stream):
         super(BinaryUpStreamFilter, self).__init__(stream)
+        self.logger = logger.getChild('BinaryUpStreamFilter')
+        self.logger.debug('initialize on stream: %s' % stream)        
 
     def send(self, cmd, *args):
+        self.logger.debug('cmd: %s, args: %s' % (cmd, args))
         stream = self.stream
         cmd_code, types, processor = self.UPFLOW_TABLE[cmd]
         serialize(cmd_code, stream)

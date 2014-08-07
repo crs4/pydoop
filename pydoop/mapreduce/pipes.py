@@ -223,6 +223,7 @@ def resolve_connections(port=None, istream=None, ostream=None,
 
 class StreamRunner(object):
     def __init__(self, factory, context, cmd_stream):
+        self.logger = logger.getChild('StreamRunner')        
         self.factory = factory
         self.ctx = context
         self.cmd_stream = cmd_stream
@@ -230,29 +231,32 @@ class StreamRunner(object):
         self.authenticated = False
         self.get_password()
 
+
     def get_password(self):
         secret_location_key = resolve_environment_secret_location_key()
         pfile_name = resolve_environment_secret_location(secret_location_key)
-        logger.debug('{}:{}'.format(secret_location_key, pfile_name))
+        self.logger.debug('{}:{}'.format(secret_location_key, pfile_name))
         if pfile_name is None:
             self.password = None
             return
         try:
             with open(pfile_name) as f:
                 self.password = f.read()
-                logger.debug('password:{}'.format(self.password))
+                self.logger.debug('password:{}'.format(self.password))
         except IOError:
-            logger.error('Could not open the password file')
+            self.logger.error('Could not open the password file')
 
     def run(self):
-        logger.debug('start running')
+        self.logger.debug('start running')
         for cmd, args in self.cmd_stream:
+            self.logger.debug('dispatching cmd:%s, args: %s' % (cmd, args))
             if cmd == 'authenticationReq':
                 digest, challenge = args
-                logger.debug(
+                self.logger.debug(
                     'authenticationReq: {}, {}'.format(digest, challenge))
                 if self.fails_to_authenticate(digest, challenge):
-                    logger.critical('Server failed to authenticate. Exiting')
+                    self.logger.critical(
+                        'Server failed to authenticate. Exiting')
                     break  # bailing out
             elif cmd == 'setJobConf':
                 self.ctx.set_job_conf(args)
@@ -264,11 +268,11 @@ class StreamRunner(object):
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
                 break  # we can bail out, there is nothing more to do.
-        logger.debug('done running')
+        self.logger.debug('done running')
 
     def fails_to_authenticate(self, digest, challenge):
         if self.password is None:
-            logger.info('No password, I assume we are in playback mode')
+            self.logger.info('No password, I assume we are in playback mode')
             self.authenticated = True
             return False
         expected_digest = create_digest(self.password, challenge)
@@ -276,19 +280,20 @@ class StreamRunner(object):
             return True
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
-        logger.debug('authenticationResp: {}'.format(response_digest))
+        self.logger.debug('authenticationResp: {}'.format(response_digest))
         self.ctx.up_link.send('authenticationResp', response_digest)
         return False
 
     def run_map(self, input_split, n_reduces, piped_input):
-        logger.debug('start run_map')
+        self.logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
 
         cmd, args = self.cmd_stream.next()
         if cmd == "setInputTypes":
             ctx._input_key_class, ctx._input_value_class = args
 
-        logger.debug("After setInputTypes: %s, %s" % (ctx.input_key_class, ctx.input_value_class))
+        self.logger.debug("After setInputTypes: %s, %s" %
+                          (ctx.input_key_class, ctx.input_value_class))
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise PydoopError('RecordReader not defined')
@@ -298,18 +303,19 @@ class StreamRunner(object):
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
         for ctx._key, ctx._value in reader:
-            logger.debug("key: %s, value: %s " % (ctx.key, ctx.value))
+            self.logger.debug("key: %s, value: %s " % (ctx.key, ctx.value))
             if send_progress:
                 ctx._progress_float = reader.get_progress()
-                logger.debug("Progress updated to %s " % ctx._progress_float)
+                self.logger.debug("Progress updated to %s "
+                                  % ctx._progress_float)
                 ctx.progress()
                 pass
             mapper.map(ctx)
         mapper.close()
-        logger.debug('done run_map')
+        self.logger.debug('done run_map')
 
     def run_reduce(self, part, piped_output):
-        logger.debug('start run_reduce')
+        self.logger.debug('start run_reduce')
         factory, ctx = self.factory, self.ctx
         writer = factory.create_record_writer(ctx)
         if writer is None and piped_output is None:
@@ -321,7 +327,7 @@ class StreamRunner(object):
         for ctx._key, ctx._values in kvs_stream:
             reducer.reduce(ctx)
         reducer.close()
-        logger.debug('done run_reduce')
+        self.logger.debug('done run_reduce')
 
 
 def run_task(factory, port=None, istream=None, ostream=None):
