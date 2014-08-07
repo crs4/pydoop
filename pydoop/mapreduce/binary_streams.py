@@ -16,8 +16,9 @@
 #
 # END_COPYRIGHT
 
+import sys
 from streams import DownStreamFilter, UpStreamFilter
-from serialize import deserialize, serialize
+from serialize import deserialize, serialize, serialize_to_string
 
 import logging
 logging.basicConfig()
@@ -147,10 +148,18 @@ class BinaryUpStreamFilter(UpStreamFilter):
         for t, v in zip(types, args):
             if t == float: # you never know...
                 serialize(float(v), stream)
-            else:
-                assert t == type(v)
+            elif t == int:
+                assert type(v) == t
                 serialize(v, stream)
-        stream.flush()                
+            elif t == str:
+                if type(v) in [str, unicode]:
+                    serialize(v, stream)
+                else:
+                    s = serialize_to_string(v)
+                    serialize(s, stream)
+        stream.flush()
+        sys.stderr.write("Stream flush....")
+
 
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
     DFLOW_TABLE = dict(
