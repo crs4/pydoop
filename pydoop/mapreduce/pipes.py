@@ -20,19 +20,50 @@ import sys
 import logging
 import time
 import StringIO
-from pydoop.mapreduce.serialize import deserialize_text, deserialize_long, deserialize_old_style_filename
+from pydoop.mapreduce.serialize import deserialize_text, deserialize_long, deserialize_old_style_filename, serialize_to_string
 import connections
-from api import JobConf, RecordWriter, MapContext, ReduceContext
-from api import PydoopError
+from pydoop.mapreduce.api import JobConf, RecordWriter, MapContext, ReduceContext
+from pydoop.mapreduce.api import PydoopError
 from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
 from string_utils import create_digest
-from api import Counter
+from pydoop.mapreduce.api import Counter
 from environment_keys import *
-import pydoop
 
-logging.basicConfig()
+from pydoop import hadoop_version_info
+from pydoop.mapreduce.api import Factory as FactoryInterface
+
+#logging.basicConfig()
 logger = logging.getLogger('pipes')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
+
+class Factory(FactoryInterface):
+    def __init__(self, mapper_class, reducer_class=None, combiner_class=None, partitioner_class=None,
+                 record_writer_class=None, record_reader_class=None):
+        self.mclass = mapper_class
+        self.rclass = reducer_class
+        self.cclass = combiner_class
+        self.pclass = partitioner_class
+        self.rwclass = record_writer_class
+        self.rrclass = record_reader_class
+
+    def create_mapper(self, context):
+        return self.mclass(context)
+
+    def create_reducer(self, context):
+        return None if not self.rclass else self.rclass(context)
+
+    def create_combiner(self, context):
+        return None if not self.cclass else self.cclass(context)
+
+    def create_partitioner(self, context):
+        return None if not self.pclass else self.pclass(context)
+
+    def create_record_reader(self, context):
+        return None if not self.rrclass else self.rrclass(context)
+
+    def create_record_writer(self, context):
+        return None if not self.rwclass else self.rwclass(context)
 
 
 class InputSplit(object):
@@ -53,7 +84,7 @@ class InputSplit(object):
 
     def __init__(self, data):
         stream = StringIO.StringIO(data)
-        if pydoop.hadoop_version_info().has_variable_isplit_encoding():
+        if hadoop_version_info().has_variable_isplit_encoding():
             self.filename = deserialize_text(stream)
         else:
             self.filename = deserialize_old_style_filename(stream)
@@ -116,7 +147,7 @@ class TaskContext(MapContext, ReduceContext):
         self.up_link.send('done')
 
     def set_combiner(self, factory, input_split, n_reduces):
-        self._input_split = input_split
+        #self._input_split = input_split
         self.n_reduces = n_reduces
         if self.n_reduces > 0:
             self.partitioner = factory.create_partitioner(self)
@@ -127,14 +158,15 @@ class TaskContext(MapContext, ReduceContext):
                                         self, reducer) if reducer else None
 
     def emit(self, key, value):
-        logger.debug("Emitting... %s,%s" % (key, value))
+        logger.debug("Emitting... %r,%r" % (key, value))
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
         elif self.partitioner:
             part = self.partitioner.partition(key, self.n_reduces)
-            self.up_link.send('partitionedOutput', key, value)
+            self.up_link.send('partitionedOutput', part, key, value)
         else:
+            logger.debug("** Sending: %r,%r" % (key, value))
             self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
@@ -157,14 +189,14 @@ class TaskContext(MapContext, ReduceContext):
             logger.debug("UpLink is None")
             return
         now = int(round(time.time() * 1000))
-        if logger.level == logging.DEBUG or now - self._last_progress > 1000:
+        if now - self._last_progress > 1000:
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
-                logger.debug("Sending status %s" % self._status)
+                logger.debug("Sending status %r" % self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
-            logger.debug("Sending progress float %s" % self._progress_float)
+            logger.debug("Sending progress float %r" % self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -181,6 +213,9 @@ class TaskContext(MapContext, ReduceContext):
         self.up_link.send("incrementCounter", counter.get_id(), amount)
 
     def get_input_split(self):
+        return InputSplit(self._input_split)
+
+    def getInputSplit(self):
         return self._input_split
 
     def get_input_key_class(self):
@@ -288,28 +323,29 @@ class StreamRunner(object):
         self.logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
 
-        cmd, args = self.cmd_stream.next()
-        if cmd == "setInputTypes":
-            ctx._input_key_class, ctx._input_value_class = args
+        ctx._input_split = input_split
+        logger.debug("InputSPlit setted %r" % input_split)
+        if piped_input:
+            cmd, args = self.cmd_stream.next()
+            if cmd == "setInputTypes":
+                ctx._input_key_class, ctx._input_value_class = args
 
-        self.logger.debug("After setInputTypes: %s, %s" %
-                          (ctx.input_key_class, ctx.input_value_class))
+        logger.debug("After setInputTypes: %r, %r" % (ctx.input_key_class, ctx.input_value_class))
+
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise PydoopError('RecordReader not defined')
-        send_progress = reader is not None
+        send_progress = False #reader is not None
 
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
         for ctx._key, ctx._value in reader:
-            self.logger.debug("key: %s, value: %s " % (ctx.key, ctx.value))
+            logger.debug("key: %r, value: %r " % (ctx.key, ctx.value))
             if send_progress:
                 ctx._progress_float = reader.get_progress()
-                self.logger.debug("Progress updated to %s "
-                                  % ctx._progress_float)
+                logger.debug("Progress updated to %r " % ctx._progress_float)
                 ctx.progress()
-                pass
             mapper.map(ctx)
         mapper.close()
         self.logger.debug('done run_map')
@@ -331,7 +367,7 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None):
-    try:
+    #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
         context = TaskContext(connections.up_link)
@@ -340,7 +376,8 @@ def run_task(factory, port=None, istream=None, ostream=None):
         context.close()
         connections.close()
         return True
-    except StandardError as e:
-        sys.stderr.write('Hadoop Pipes Exception: %s' % e)
-        return False
+    # except StandardError as e:
+    #     sys.stderr.write('Hadoop Pipes Exception: %r' % e)
+    #     return False
+
 
