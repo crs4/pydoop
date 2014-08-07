@@ -24,7 +24,7 @@ available via the Hadoop shell.
 import os, subprocess, shlex
 
 import pydoop
-import pydoop.utils as utils
+import pydoop.utils.misc as utils
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 
