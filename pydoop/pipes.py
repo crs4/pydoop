@@ -28,8 +28,9 @@ framework.
 defined in `pydoop.mapreduce.api`
 """
 
-from pydoop.mapreduce.api import Mapper, Reducer, RecordWriter, Partitioner, Factory
 import pydoop.mapreduce.api
+from pydoop.mapreduce.pipes import Factory
+from pydoop.mapreduce.api import Mapper, Reducer, RecordReader, RecordWriter, Partitioner
 from pydoop.mapreduce.pipes import run_task as runTask, InputSplit
 
 
@@ -54,9 +55,9 @@ class RecordReader(pydoop.mapreduce.api.RecordReader):
   """
 
     def __init__(self, context=None):
-        super(RecordReader, self).__init__()
+        super(RecordReader, self).__init__(context)
 
-    def next(self):  #FIXME, different interface from api, needed
+    def next(self):  # FIXME, different interface from api, needed
         """
     Called by the framework to provide a key/value pair to the
     :class:`Mapper`\ . Applications must override this.
@@ -69,8 +70,14 @@ class RecordReader(pydoop.mapreduce.api.RecordReader):
     """
         raise NotImplementedError
 
-        def __iter__(self):
-            return RecordReaderWrapper(self)
+    def __iter__(self):
+        return RecordReaderWrapper(self)
+
+    def get_progress(self):
+        return self.getProgress()
+
+    def getProgress(self):
+        raise NotImplementedError
 
 
 class Combiner(Reducer):
@@ -78,4 +85,5 @@ class Combiner(Reducer):
     Works exactly as a :class:`Reducer`\ , but values aggregation is performed
     locally to the machine hosting each map task.
     """
-    pass
+
+
