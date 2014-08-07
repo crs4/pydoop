@@ -103,10 +103,14 @@ class TestJoin(unittest.TestCase):
   def good(self):
     cases = [
       (('/foo', 'bar', 'tar'), '/foo/bar/tar'),
-      (('/foo/', 'bar/', 'tar/'), '/foo/bar/tar'),
-      (('/foo/', 'hdfs://host:9000/bar/', 'tar/'), 'hdfs://host:9000/bar/tar'),
-      (('/foo/', 'file:/bar/', 'tar/'), 'file:/bar/tar'),
-      (('/foo/', 'file:///bar/', 'tar/'), 'file:///bar/tar'),
+      (('/foo/', 'bar/', 'tar'), '/foo/bar/tar'),
+      (('foo', '/bar', 'tar'), '/bar/tar'),
+      (('foo', 'hdfs://host:1/bar/', 'tar/'), 'hdfs://host:1/bar/tar/'),
+      (('foo', 'file:/bar/', 'tar/'), 'file:/bar/tar/'),
+      (('foo', 'file:///bar/', 'tar/'), 'file:///bar/tar/'),
+      (('hdfs://host:1/', '/foo'), 'hdfs://host:1/foo'),
+      (('hdfs://host:1/', 'file:/foo', '/bar'), 'file:/foo/bar'),
+      (('foo', '/bar', 'hdfs://host:1/'), 'hdfs://host:1/'),
       ]
     for p, r in cases:
       self.assertEqual(hdfs.path.join(*p), r)

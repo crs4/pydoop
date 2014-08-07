@@ -144,23 +144,34 @@ def join(*parts):
   """
   Join path name components, inserting ``/`` as needed.
 
-  If any component looks like an absolute path (i.e., it starts with
-  ``hdfs:`` or ``file:``), all previous components will be discarded.
+  If any component is an absolute path (see :func:`isabs`), all
+  previous components will be discarded.  However, full URIs (i.e.,
+  those that start with ``scheme ":"``) take precedence over
+  incomplete ones:
+
+  .. code-block:: python
+
+    >>> import pydoop.hdfs.path as hpath
+    >>> hpath.join('bar', '/foo')
+    '/foo'
+    >>> hpath.join('hdfs://host:1/', '/foo')
+    'hdfs://host:1/foo'
 
   Note that this is *not* the reverse of :func:`split`, but rather a
   specialized version of os.path.join. No check is made to determine
   whether the returned string is a valid HDFS path.
   """
   try:
-    path = [parts[0].rstrip("/")]
+    path = [parts[0]]
   except IndexError:
     raise TypeError("need at least one argument")
   for p in parts[1:]:
-    p = p.strip("/")
-    if p.startswith('hdfs:') or p.startswith('file:'):
+    path[-1] = path[-1].rstrip("/")
+    full = bool(_HdfsPathSplitter.PATTERN.match(path[0]))
+    if bool(_HdfsPathSplitter.PATTERN.match(p)) or (isabs(p) and not full):
       path = [p]
     else:
-      path.append(p)
+      path.append(p.lstrip('/'))
   return "/".join(path)
 
 
@@ -180,6 +191,14 @@ def abspath(hdfs_path, user=None, local=False):
     'file:/tmp'
     >>> hpath.abspath('file:/tmp', local=True)
     'file:/tmp/file:/tmp'
+
+  Note that this function always return a full URI:
+
+  .. code-block:: python
+
+    >>> import pydoop.hdfs.path as hpath
+    >>> hpath.abspath('/tmp')
+    'hdfs://localhost:9000/tmp'
   """
   if local:
     return 'file:%s' % os.path.abspath(hdfs_path)
@@ -202,6 +221,7 @@ def splitbn(hdfs_path):
   the same rules as ``os.path.split``.
   """
   return os.path.split(hdfs_path)
+
 
 def basename(hdfs_path):
   """
@@ -337,8 +357,11 @@ def getsize(path, user=None):
 def isabs(path):
   """
   Return :obj:`True` if ``path`` is absolute.
+
+  A path is absolute if it starts with ``hdfs:``, ``file:`` or ``/``.
+  No check is made to determine whether ``path`` is a valid HDFS path.
   """
-  return path.startswith('file:') or path.startswith('hdfs:')
+  return any(path.startswith(_) for _ in ('file:', 'hdfs:', '/'))
 
 
 def islink(path, user=None):
@@ -375,7 +398,7 @@ def normpath(path, user=None):
   """
   # normalization is included in split
   host, port, path_ = split(path, user)
-  if not isabs(path):
+  if not _HdfsPathSplitter.PATTERN.match(path):
     return path_
   if host:
     return join("hdfs://%s:%s" % (host, port), path_)
