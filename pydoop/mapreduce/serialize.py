@@ -201,13 +201,16 @@ class SerializerStore(object):
 DEFAULT_STORE = SerializerStore()
 
 DEFAULT_STORE.register_serializer(int, serialize_vint)
+DEFAULT_STORE.register_serializer('long', serialize_long) # FIXME special case
 DEFAULT_STORE.register_serializer(str, serialize_text)
 DEFAULT_STORE.register_serializer(unicode, serialize_text)
 DEFAULT_STORE.register_serializer(float, serialize_float)
 DEFAULT_STORE.register_serializer(bool, serialize_bool)
 
 DEFAULT_STORE.register_deserializer(int, deserialize_vint)
-# Careful!  Use unicode if you're deserializing Text, unless you're sure it's ASCII!
+DEFAULT_STORE.register_deserializer('long', deserialize_long)
+# Careful!  Use unicode if you're deserializing Text, unless you're sure it's
+# ASCII!
 DEFAULT_STORE.register_deserializer(str, deserialize_bytes)
 DEFAULT_STORE.register_deserializer(unicode, deserialize_text)
 DEFAULT_STORE.register_deserializer(float, deserialize_float)

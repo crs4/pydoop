@@ -16,5 +16,5 @@ conf = {
 path = os.path.realpath(data_in)
 length = os.stat(path).st_size
 input_split = InputSplit.to_string('file://'+path, 0, length)
-hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.INFO)
+hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.CRITICAL)
 hsn.run(None, None, conf, input_split=input_split)

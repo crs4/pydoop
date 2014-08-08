@@ -9,19 +9,18 @@ exec /usr/bin/python -u $0 $@
 import sys
 import logging
 
-fh=logging.FileHandler("/tmp/testing.log")
-fh.setLevel(logging.DEBUG)
 
+logging.basicConfig()
 logger = logging.getLogger("WordCount")
-logger.addHandler(fh)
+logger.setLevel(logging.CRITICAL)
 
-logger.warning("WTH")
 
 import struct
 
 import itertools as it
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
+from pydoop.mapreduce.serialize import serialize_to_string
 
 
 from pydoop.utils.misc import jc_configure, jc_configure_int
@@ -36,16 +35,12 @@ OUTPUT_WORDS = "OUTPUT_WORDS"
 class Mapper(api.Mapper):
     def __init__(self, context):
         super(Mapper, self).__init__(context)
-        sys.stderr.write("Mapper initialized")
         self.logger = logger.getChild("Mapper")
         context.set_status("initializing")
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
         k = context.key
-        sys.stderr.write("Map: %r,%r" % (context.key, context.value))
-        #self.logger.debug("key = %r" % struct.unpack(">q", k)[0])
-
         words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
         for w in words:
             context.emit(w, "1")
@@ -55,17 +50,12 @@ class Mapper(api.Mapper):
 class Reducer(api.Reducer):
     def __init__(self, context):
         super(Reducer, self).__init__(context)
-        sys.stderr.write("Ruducer initialized")
-        self.logger = logger.getChild("Reducer")
         context.set_status("initializing")
         self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
 
     def reduce(self, context):
-        sys.stderr.write("Reducer: %s" % context.key)
-
         s = sum(it.imap(int, context.values))
         context.emit(context.key, str(s))
-
         context.increment_counter(self.output_words, 1)
 
 
@@ -78,18 +68,16 @@ class Reader(api.RecordReader):
 
     def __init__(self, context):
         self.logger = logger.getChild("Reader")
-        sys.stderr.write("Reader.....")
+        self.logger.debug('started')
         self.isplit = context.input_split
         for a in "filename", "offset", "length":
-            #self.logger.debug("isplit.%s = %r" % (a, getattr(self.isplit, a)))
-            sys.stderr.write("isplit.%r = %r" % (a, getattr(self.isplit, a)))
+            self.logger.debug("isplit.{} = {}".format(
+                    a, getattr(self.isplit, a)))
         self.file = hdfs.open(self.isplit.filename)
-        #self.logger.debug("readline chunk size = %r" % self.file.chunk_size)
-        sys.stderr.write("readline chunk size = %r" % self.file.chunk_size)
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
-            discarded = self.file.readline()  # read by reader of previous split
+            discarded = self.file.readline()
             self.bytes_read += len(discarded)
 
     def close(self):
@@ -98,10 +86,9 @@ class Reader(api.RecordReader):
         self.file.fs.close()
 
     def next(self):
-        sys.stderr.write("next")
-        if self.bytes_read > self.isplit.length:  # end of input split
+        if self.bytes_read > self.isplit.length:
             raise StopIteration
-        key = struct.pack(">q", self.isplit.offset + self.bytes_read)  #FIXME: to be updated to the new serialize routine
+        key = serialize_to_string(self.isplit.offset + self.bytes_read)
         record = self.file.readline()
         if record == "":  # end of file
             raise StopIteration
