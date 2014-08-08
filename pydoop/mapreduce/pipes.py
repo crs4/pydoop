@@ -115,7 +115,8 @@ class CombineRunner(RecordWriter):
         ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
-        for ctx._key, ctx._values in self.data.iteritems():
+        for key, values in self.data.iteritems():
+            ctx._key, ctx._values = key, iter(values)
             self.reducer.reduce(ctx)
         ctx.writer = writer
         self.data.clear()
@@ -226,6 +227,7 @@ class TaskContext(MapContext, ReduceContext):
 
     def next_value(self):
         try:
+            logger.debug("%s" % self._values)
             self._value = self._values.next()
             return True
         except StopIteration:
@@ -340,6 +342,7 @@ class StreamRunner(object):
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
+
         for ctx._key, ctx._value in reader:
             logger.debug("key: %r, value: %r " % (ctx.key, ctx.value))
             if send_progress:
