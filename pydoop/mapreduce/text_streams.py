@@ -57,7 +57,7 @@ class TextDownStreamFilter(DownStreamFilter):
             args = args if converter is None else converter(args)
             return cmd, tuple(args) if args else None
         else:
-            raise ProtocolError('Unrecognized command %s' % cmd)
+            raise ProtocolError('Unrecognized command %r' % cmd)
 
     def __init__(self, stream):
         super(TextDownStreamFilter, self).__init__(stream)

@@ -179,14 +179,23 @@ class Context(object):
 class MapContext(Context):
     @property
     def input_split(self):
+        '''
+        Returns the current input_split as InputSplit object
+        :return: InputSplit
+        '''
         return self.get_input_split()
 
     @abstractmethod
     def get_input_split(self):
         pass
 
+    @abstractmethod
     def getInputSplit(self):
-        return self.get_input_split()
+        '''
+        Returns the serialized input_split (only for backward compatibility purposes)
+        :return: string
+        '''
+        pass
 
     @property
     def input_key_class(self):
@@ -247,6 +256,9 @@ class Mapper(Closable):
     """
     __metaclass__ = ABCMeta
 
+    def __init__(self, context):
+        self.context = context
+
     @abstractmethod
     def map(self, context):
         """
@@ -267,6 +279,9 @@ class Reducer(Closable):
     (possibly) smaller set of values.
     """
     __metaclass__ = ABCMeta
+
+    def __init__(self, context=None):
+        self.context = context
 
     @abstractmethod
     def reduce(self, context):
@@ -292,6 +307,9 @@ class Partitioner(object):
     """
     __metaclass__ = ABCMeta
 
+    def __init__(self, context):
+        self.context = context
+
     @abstractmethod
     def partition(self, key, num_of_reduces):
         """
@@ -315,6 +333,12 @@ class RecordReader(Closable):
     Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
     """
     __metaclass__ = ABCMeta
+
+    def __init__(self, context):
+        self.context = context
+
+    def __iter__(self):
+        return self
 
     @abstractmethod
     def next(self):
@@ -355,6 +379,9 @@ class RecordWriter(Closable):
     Writes the output key/value pairs to an output file.
     """
     __metaclass__ = ABCMeta
+
+    def __init__(self, context):
+        self.context = context
 
     @abstractmethod
     def emit(self, key, value):

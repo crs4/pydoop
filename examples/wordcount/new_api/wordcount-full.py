@@ -1,105 +1,91 @@
 #!/bin/bash
 
-# ! /usr/bin/env python
-
-# BEGIN_COPYRIGHT
-# 
-# Copyright 2009-2014 CRS4.
-# 
-# Licensed under the Apache License, Version 2.0 (the "License"); you may not
-# use this file except in compliance with the License. You may obtain a copy
-# of the License at
-# 
-# http://www.apache.org/licenses/LICENSE-2.0
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-# 
-# END_COPYRIGHT
-
 """:"
 export HADOOP_HOME=$HADOOP_PREFIX
 export PYTHON_EGG_CACHE=/tmp/python_cache
 exec /usr/bin/python -u $0 $@
 ":"""
 
-"""
-A comprehensive example that shows how to implement optional MapReduce
-components and use the hdfs module. The RecordReader, RecordWriter and
-Partitioner classes shown here mimic the behavior of the default ones.
-"""
+import sys
+import logging
 
-import sys, logging, struct
+fh=logging.FileHandler("/tmp/testing.log")
+fh.setLevel(logging.DEBUG)
 
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("WordCount")
+logger.addHandler(fh)
 
-import pydoop.pipes as pp
+logger.warning("WTH")
+
+import struct
+
+import itertools as it
+import pydoop.mapreduce.api as api
+import pydoop.mapreduce.pipes as pp
+
+
 from pydoop.utils.misc import jc_configure, jc_configure_int
 import pydoop.hdfs as hdfs
-
+import re
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"
 OUTPUT_WORDS = "OUTPUT_WORDS"
 
 
-class Mapper(pp.Mapper):
+class Mapper(api.Mapper):
     def __init__(self, context):
         super(Mapper, self).__init__(context)
-        self.logger = logging.getLogger("Mapper")
-        context.setStatus("initializing")
-        self.inputWords = context.getCounter(WORDCOUNT, INPUT_WORDS)
+        sys.stderr.write("Mapper initialized")
+        self.logger = logger.getChild("Mapper")
+        context.set_status("initializing")
+        self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        k = context.getInputKey()
+        k = context.key
+        sys.stderr.write("Map: %r,%r" % (context.key, context.value))
         #self.logger.debug("key = %r" % struct.unpack(">q", k)[0])
-        words = context.getInputValue().split()
+
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
         for w in words:
             context.emit(w, "1")
-        context.incrementCounter(self.inputWords, len(words))
-
-    def close(self):
-        self.logger.info("all done")
+        context.increment_counter(self.input_words, len(words))
 
 
-class Reducer(pp.Reducer):
+class Reducer(api.Reducer):
     def __init__(self, context):
         super(Reducer, self).__init__(context)
-        self.logger = logging.getLogger("Reducer")
-        context.setStatus("initializing")
-        self.outputWords = context.getCounter(WORDCOUNT, OUTPUT_WORDS)
+        sys.stderr.write("Ruducer initialized")
+        self.logger = logger.getChild("Reducer")
+        context.set_status("initializing")
+        self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
 
     def reduce(self, context):
-        s = 0
-        while context.nextValue():
-            sys.stderr.write("Value %s" %context.getInputValue())
-            s += int(context.getInputValue())
-            context.emit(context.getInputKey(), str(s))
+        sys.stderr.write("Reducer: %s" % context.key)
 
-        context.incrementCounter(self.outputWords, 1)
+        s = sum(it.imap(int, context.values))
+        context.emit(context.key, str(s))
 
-
-    def close(self):
-        self.logger.info("all done")
+        context.increment_counter(self.output_words, 1)
 
 
-class Reader(pp.RecordReader):
+
+class Reader(api.RecordReader):
     """
     Mimics Hadoop's default LineRecordReader (keys are byte offsets with
     respect to the whole file; values are text lines).
     """
 
     def __init__(self, context):
-        super(Reader, self).__init__()
-        self.logger = logging.getLogger("Reader")
-        self.isplit = pp.InputSplit(context.getInputSplit())
+        self.logger = logger.getChild("Reader")
+        sys.stderr.write("Reader.....")
+        self.isplit = context.input_split
         for a in "filename", "offset", "length":
-            self.logger.debug("isplit.%s = %r" % (a, getattr(self.isplit, a)))
+            #self.logger.debug("isplit.%s = %r" % (a, getattr(self.isplit, a)))
+            sys.stderr.write("isplit.%r = %r" % (a, getattr(self.isplit, a)))
         self.file = hdfs.open(self.isplit.filename)
-        self.logger.debug("readline chunk size = %r" % self.file.chunk_size)
+        #self.logger.debug("readline chunk size = %r" % self.file.chunk_size)
+        sys.stderr.write("readline chunk size = %r" % self.file.chunk_size)
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
@@ -112,20 +98,22 @@ class Reader(pp.RecordReader):
         self.file.fs.close()
 
     def next(self):
+        sys.stderr.write("next")
         if self.bytes_read > self.isplit.length:  # end of input split
-            return (False, "", "")
-        key = struct.pack(">q", self.isplit.offset + self.bytes_read)
+            raise StopIteration
+        key = struct.pack(">q", self.isplit.offset + self.bytes_read)  #FIXME: to be updated to the new serialize routine
         record = self.file.readline()
         if record == "":  # end of file
-            return (False, "", "")
+            raise StopIteration
         self.bytes_read += len(record)
-        return (True, key, record)
+        return (key, record)
 
-    def getProgress(self):
+    def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
 
 
-class Writer(pp.RecordWriter):
+class Writer(api.RecordWriter):
+
     def __init__(self, context):
         super(Writer, self).__init__(context)
         self.logger = logging.getLogger("Writer")
@@ -146,7 +134,7 @@ class Writer(pp.RecordWriter):
         self.file.write("%s%s%s\n" % (key, self.sep, value))
 
 
-class Partitioner(pp.Partitioner):
+class Partitioner(api.Partitioner):
     def __init__(self, context):
         super(Partitioner, self).__init__(context)
         self.logger = logging.getLogger("Partitioner")
@@ -158,10 +146,11 @@ class Partitioner(pp.Partitioner):
 
 
 if __name__ == "__main__":
-    pp.runTask(pp.Factory(
-        Mapper, Reducer,
+    pp.run_task(pp.Factory(
+        mapper_class=Mapper, reducer_class=Reducer,
         record_reader_class=Reader,
         record_writer_class=Writer,
         partitioner_class=Partitioner,
         combiner_class=Reducer
     ))
+
