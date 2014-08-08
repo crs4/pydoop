@@ -18,6 +18,7 @@
 
 from abc import ABCMeta, abstractmethod
 
+from serialize import private_decode
 
 class ProtocolError(Exception):
     pass
@@ -100,7 +101,8 @@ class KeyValuesStream(object):
                 raise StopIteration
             elif cmd == 'reduceKey':
                 values_stream = self.get_value_stream(self.stream)
-                return args[0], values_stream
+                key = private_decode(args[0])
+                return key, values_stream
             elif cmd == 'reduceValue':
                 continue
             else:
@@ -114,7 +116,7 @@ class KeyValuesStream(object):
                 stream.push_back((cmd, args))                
                 raise StopIteration
             elif cmd == 'reduceValue':
-                yield args[0]
+                yield private_decode(args[0])
             else:
                 stream.push_back((cmd, args))
                 raise StopIteration
