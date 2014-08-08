@@ -106,6 +106,9 @@ def deserialize_long(stream):
     buf = read_buffer(SIZE_OF_LONG, stream)
     return struct.unpack('>q', buf)[0]
 
+def serialize_long(v, stream):
+    stream.write(struct.pack('>q', v))
+
 def serialize_vint(t, stream):
     if -112 <= t <= 127:
         stream.write(struct.pack('b', t))
