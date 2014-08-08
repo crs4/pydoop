@@ -158,8 +158,6 @@ class BinaryUpStreamFilter(UpStreamFilter):
                     s = serialize_to_string(v)
                     serialize(s, stream)
         stream.flush()
-        sys.stderr.write("Stream flush....")
-
 
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
     DFLOW_TABLE = dict(
