@@ -85,5 +85,3 @@ class Combiner(Reducer):
     Works exactly as a :class:`Reducer`\ , but values aggregation is performed
     locally to the machine hosting each map task.
     """
-
-
