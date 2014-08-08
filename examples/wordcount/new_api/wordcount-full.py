@@ -26,7 +26,7 @@ import pydoop.mapreduce.pipes as pp
 
 from pydoop.utils.misc import jc_configure, jc_configure_int
 import pydoop.hdfs as hdfs
-
+import re
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"
@@ -45,10 +45,10 @@ class Mapper(api.Mapper):
         k = context.key
         sys.stderr.write("Map: %r,%r" % (context.key, context.value))
         #self.logger.debug("key = %r" % struct.unpack(">q", k)[0])
-        words = context.value.split()
-        for w in words:
-            context.emit(w, 1)
 
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
+        for w in words:
+            context.emit(w, "1")
         context.increment_counter(self.input_words, len(words))
 
 
@@ -62,10 +62,10 @@ class Reducer(api.Reducer):
 
     def reduce(self, context):
         sys.stderr.write("Reducer: %s" % context.key)
-        s = 0
-        for value in context.values:
-            s += 1
+
+        s = sum(it.imap(int, context.values))
         context.emit(context.key, str(s))
+
         context.increment_counter(self.output_words, 1)
 
 

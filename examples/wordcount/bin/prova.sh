@@ -1,0 +1,3 @@
+#!/usr/bin
+
+echo "Hello"
