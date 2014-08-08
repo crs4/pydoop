@@ -20,7 +20,12 @@ import sys
 import logging
 import time
 import StringIO
-from pydoop.mapreduce.serialize import deserialize_text, deserialize_long, deserialize_old_style_filename, serialize_to_string
+
+from pydoop.mapreduce.serialize import deserialize_text, deserialize_long
+from pydoop.mapreduce.serialize import deserialize_old_style_filename
+from pydoop.mapreduce.serialize import serialize_to_string, serialize_text
+from pydoop.mapreduce.serialize import serialize_long
+
 import connections
 from pydoop.mapreduce.api import JobConf, RecordWriter, MapContext, ReduceContext
 from pydoop.mapreduce.api import PydoopError
@@ -37,9 +42,9 @@ from pydoop.mapreduce.api import Factory as FactoryInterface
 logger = logging.getLogger('pipes')
 logger.setLevel(logging.DEBUG)
 
-
 class Factory(FactoryInterface):
-    def __init__(self, mapper_class, reducer_class=None, combiner_class=None, partitioner_class=None,
+    def __init__(self, mapper_class, reducer_class=None, combiner_class=None,
+                 partitioner_class=None,
                  record_writer_class=None, record_reader_class=None):
         self.mclass = mapper_class
         self.rclass = reducer_class
@@ -91,8 +96,18 @@ class InputSplit(object):
             self.filename = deserialize_old_style_filename(stream)
         self.offset = deserialize_long(stream)
         self.length = deserialize_long(stream)
-
-
+        
+    @classmethod
+    def to_string(cls, filename, offset, length):
+        stream = StringIO.StringIO()
+        if hadoop_version_info().has_variable_isplit_encoding():
+            serialize_text(filename, stream)
+        else:
+            serialize_old_style_filename(filename, stream)
+        serialize_long(offset, stream)
+        serialize_long(length, stream)
+        return stream.getvalue()
+        
 class CombineRunner(RecordWriter):
     def __init__(self, spill_bytes, context, reducer):
         self.spill_bytes = spill_bytes
