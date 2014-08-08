@@ -71,7 +71,15 @@ We also expect to be able to support something like the following::
 from __future__ import division
 import struct, xdrlib
 import StringIO
+import cPickle as pickle
 
+PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
+
+def private_encode(obj):
+    return pickle.dumps(obj, PRIVATE_PROTOCOL)
+
+def private_decode(s):
+    return pickle.loads(s)
 
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions
 

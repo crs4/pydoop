@@ -28,6 +28,7 @@ from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
 from string_utils import create_digest
 from pydoop.mapreduce.api import Counter
 from environment_keys import *
+from pydoop.mapreduce.serialize import private_encode
 
 from pydoop import hadoop_version_info
 from pydoop.mapreduce.api import Factory as FactoryInterface
@@ -125,6 +126,7 @@ class CombineRunner(RecordWriter):
 
 class TaskContext(MapContext, ReduceContext):
     def __init__(self, up_link):
+        self._private_encoding = False
         self.up_link = up_link
         self.writer = None
         self.partitioner = None
@@ -141,6 +143,9 @@ class TaskContext(MapContext, ReduceContext):
         self._progress_float = 0.0
         self._last_progress = 0
         self._registered_counters = []
+
+    def enable_private_encoding(self):
+        self._private_encoding = True
 
     def close(self):
         if self.writer:
@@ -163,12 +168,16 @@ class TaskContext(MapContext, ReduceContext):
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
-        elif self.partitioner:
-            part = self.partitioner.partition(key, self.n_reduces)
-            self.up_link.send('partitionedOutput', part, key, value)
         else:
-            logger.debug("** Sending: %r,%r" % (key, value))
-            self.up_link.send('output', key, value)
+            if self._private_encoding:
+                key = private_encode(key)
+                value = private_encode(value)
+            if self.partitioner:
+                part = self.partitioner.partition(key, self.n_reduces)
+                self.up_link.send('partitionedOutput', part, key, value)
+            else:
+                logger.debug("** Sending: %r,%r" % (key, value))
+                self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
         self._job_conf = JobConf(vals)
@@ -324,6 +333,9 @@ class StreamRunner(object):
     def run_map(self, input_split, n_reduces, piped_input):
         self.logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
+
+        if n_reduces > 0:
+            ctx.enable_private_encoding()
 
         ctx._input_split = input_split
         logger.debug("InputSPlit setted %r" % input_split)
