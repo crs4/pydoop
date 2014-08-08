@@ -54,7 +54,7 @@ class TReducer(Reducer):
         self.ctx = ctx
 
     def reduce(self, ctx):
-        s = sum(it.imap(int, ctx.values))
+        s = sum(map(int, ctx.values))
         ctx.emit(ctx.key, str(s))
 
 
@@ -150,17 +150,19 @@ class TestFramework(WDTestCase):
     def test_map_reduce(self):
         factory = TFactory()
         sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas)
+        run_task(factory, istream=self.stream, ostream=sas,
+                 no_private_encoding=True)
         with self._mkf('foo_map_reduce.out') as o:
-            run_task(factory, istream=sas, ostream=o)
+            run_task(factory, istream=sas, ostream=o,
+                     no_private_encoding=True)
 
     def test_map_combiner_reduce(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
         run_task(factory, istream=self.stream, ostream=sas)
         with self._mkf('foo_map_combiner_reduce.out') as o:
-            run_task(factory, istream=sas, ostream=o)
-
+            run_task(factory, istream=sas, ostream=o,
+                     no_private_encoding=True)
 
 def suite():
     suite = unittest.TestSuite()

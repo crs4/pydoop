@@ -73,7 +73,7 @@ class TestStream(unittest.TestCase):
 
     def test_get_key_values_stream(self):
         stream = get_stream(STREAM_2_DATA)
-        kvs_stream = get_key_values_stream(stream)
+        kvs_stream = get_key_values_stream(stream, no_private_encoding=True)
         kvs2_stream = it.groupby(STREAM_2_DATA, keyfunc)
 
         for (k1, vals1), (k2, itx) in it.izip(kvs_stream, kvs2_stream):
@@ -85,7 +85,7 @@ class TestStream(unittest.TestCase):
 
     def test_get_key_values_stream2(self):
         stream = get_stream(STREAM_2_DATA)
-        kvs_stream = get_key_values_stream(stream)
+        kvs_stream = get_key_values_stream(stream, no_private_encoding=True)
         kvs2_stream = it.groupby(STREAM_2_DATA, keyfunc)
         for (k1, vals1), (k2, itx) in it.izip(kvs_stream, kvs2_stream):
             self.assertEqual(k1, k2)

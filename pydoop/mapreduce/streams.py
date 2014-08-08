@@ -89,8 +89,9 @@ class PushBackStream(object):
 
 class KeyValuesStream(object):
 
-    def __init__(self, stream):
+    def __init__(self, stream, no_private_encoding=False):
         self.stream = PushBackStream(stream)
+        self.no_private_encoding = no_private_encoding
 
     def __iter__(self):
         return self
@@ -101,7 +102,8 @@ class KeyValuesStream(object):
                 raise StopIteration
             elif cmd == 'reduceKey':
                 values_stream = self.get_value_stream(self.stream)
-                key = private_decode(args[0])
+                key = private_decode(args[0]) if not self.no_private_encoding\
+                                              else args[0]
                 return key, values_stream
             elif cmd == 'reduceValue':
                 continue
@@ -109,22 +111,22 @@ class KeyValuesStream(object):
                 raise ProtocolError('out of order command: {}'.format(cmd))
         raise StopIteration
 
-    @staticmethod
-    def get_value_stream(stream):
+    def get_value_stream(self, stream):
         for cmd, args in stream:
             if cmd == 'close':
                 stream.push_back((cmd, args))                
                 raise StopIteration
             elif cmd == 'reduceValue':
-                yield private_decode(args[0])
+                yield private_decode(args[0]) if not self.no_private_encoding\
+                                              else args[0]
             else:
                 stream.push_back((cmd, args))
                 raise StopIteration
         raise StopIteration
 
 
-def get_key_values_stream(stream):
-    return KeyValuesStream(stream)
+def get_key_values_stream(stream, no_private_encoding=False):
+    return KeyValuesStream(stream, no_private_encoding)
 
 
 def get_key_value_stream(stream):

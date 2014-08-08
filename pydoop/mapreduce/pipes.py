@@ -40,7 +40,7 @@ from pydoop.mapreduce.api import Factory as FactoryInterface
 
 #logging.basicConfig()
 logger = logging.getLogger('pipes')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
 
 class Factory(FactoryInterface):
     def __init__(self, mapper_class, reducer_class=None, combiner_class=None,
@@ -140,7 +140,8 @@ class CombineRunner(RecordWriter):
 
 
 class TaskContext(MapContext, ReduceContext):
-    def __init__(self, up_link):
+    def __init__(self, up_link, no_private_encoding=False):
+        self.no_private_encoding = no_private_encoding
         self._private_encoding = False
         self.up_link = up_link
         self.writer = None
@@ -160,7 +161,7 @@ class TaskContext(MapContext, ReduceContext):
         self._registered_counters = []
 
     def enable_private_encoding(self):
-        self._private_encoding = True
+        self._private_encoding = not self.no_private_encoding
 
     def close(self):
         if self.writer:
@@ -389,18 +390,20 @@ class StreamRunner(object):
 
         ctx.writer = writer
         reducer = factory.create_reducer(ctx)
-        kvs_stream = get_key_values_stream(self.cmd_stream)
+        kvs_stream = get_key_values_stream(self.cmd_stream,
+                                           ctx.no_private_encoding)
         for ctx._key, ctx._values in kvs_stream:
             reducer.reduce(ctx)
         reducer.close()
         self.logger.debug('done run_reduce')
 
 
-def run_task(factory, port=None, istream=None, ostream=None):
+def run_task(factory, port=None, istream=None, ostream=None,
+             no_private_encoding=False):
     #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
-        context = TaskContext(connections.up_link)
+        context = TaskContext(connections.up_link, no_private_encoding)
         stream_runner = StreamRunner(factory, context, connections.cmd_stream)
         stream_runner.run()
         context.close()
