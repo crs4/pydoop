@@ -170,6 +170,11 @@ class TestSerialize(unittest.TestCase):
             x = srl.deserialize_vint(stream)
             self.assertEqual(n, x)
 
+    def test_private_serialize(self):
+        for obj in [1, 0.4, "Hello", [1,2,3], {"key": "value"}]:
+            self.assertEqual(obj, srl.private_decode(srl.private_encode(obj)))
+            #s = srl.private_encode(obj)
+
 def _compile_java_part(java_class_file, classpath):
     java_file = os.path.splitext(os.path.realpath(java_class_file))[0] + '.java'
     if not os.path.exists(java_class_file) or os.path.getmtime(java_file) > os.path.getmtime(java_class_file):
