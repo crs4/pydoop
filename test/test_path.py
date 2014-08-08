@@ -379,6 +379,7 @@ class TestNorm(unittest.TestCase):
       post = '/a/./b/c/../../foo'
       npost = '/a/foo'
       self.assertEqual(hdfs.path.normpath(pre+post), pre + npost)
+      self.assertEqual(hdfs.path.normpath('a/./b/c/../../foo'), 'a/foo')
 
 
 class TestReal(unittest.TestCase):
@@ -412,6 +413,10 @@ class TestSame(unittest.TestCase):
     for pre in '', 'file:/', 'hdfs://host:1/':
       self.assertTrue(hdfs.path.samefile(pre+'a/b/../c', pre+'a/c'))
 
+  def samefile_user(self):
+    if not hdfs.default_is_local():
+      self.assertTrue(hdfs.path.samefile('fn', '/user/u/fn', user='u'))
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -443,6 +448,7 @@ def suite():
   suite.addTest(TestSame('samefile_link'))
   suite.addTest(TestSame('samefile_rel'))
   suite.addTest(TestSame('samefile_norm'))
+  suite.addTest(TestSame('samefile_user'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 

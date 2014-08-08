@@ -104,7 +104,23 @@ class _HdfsPathSplitter(object):
       cls.raise_bad_path(hdfs_path, "relative path in absolute URI")
     else:
       netloc, path = "", rest
+    if path.startswith("/"):
+      path = "/%s" % path.lstrip("/")
     return scheme, netloc, path
+
+  @classmethod
+  def unparse(cls, scheme, netloc, path):
+    hdfs_path = []
+    if scheme:
+      hdfs_path.append('%s:' % scheme.rstrip(':'))
+    if netloc:
+      if not scheme:
+        raise ValueError('netloc provided, but scheme is empty')
+      hdfs_path.append('//%s' % netloc)
+    if hdfs_path and path and not path.startswith('/'):
+      hdfs_path.append('/')
+    hdfs_path.append(path)
+    return ''.join(hdfs_path)
 
   @classmethod
   def split_netloc(cls, netloc):
@@ -139,9 +155,26 @@ class _HdfsPathSplitter(object):
       hostname, port, path = "", 0, netloc + path
     else:
       cls.raise_bad_path(hdfs_path, "unsupported scheme %r" % scheme)
-    if path.startswith("/"):
-      path = "/%s" % path.lstrip("/")  # not handled by normpath
-    return hostname, port, os.path.normpath(path)
+    return hostname, port, path
+
+
+def parse(hdfs_path):
+  """
+  Parse the given path and return its components.
+
+  :type hdfs_path: string
+  :param hdfs_path: an HDFS path, e.g., ``hdfs://localhost:9000/user/me``
+  :rtype: tuple
+  :return: scheme, netloc, path
+  """
+  return _HdfsPathSplitter.parse(hdfs_path)
+
+
+def unparse(scheme, netloc, path):
+  """
+  Construct a path from its three components (see :func:`parse`).
+  """
+  return _HdfsPathSplitter.unparse(scheme, netloc, path)
 
 
 def split(hdfs_path, user=None):
@@ -422,40 +455,31 @@ def normcase(path):
   return path  # we only support Linux
 
 
-def normpath(path, user=None):
+def normpath(path):
   """
   Normalize ``path``, collapsing redundant separators and up-level refs.
   """
-  # normalization is included in split
-  host, port, path_ = split(path, user)
-  if not isfull(path):
-    return path_
-  if host:
-    return join("hdfs://%s:%s" % (host, port), path_)
-  else:
-    return "file:%s" % path_
+  scheme, netloc, path_ = parse(path)
+  return unparse(scheme, netloc, os.path.normpath(path_))
 
 
-def realpath(path, user=None):
+def realpath(path):
   """
   Return ``path`` with symlinks resolved.
 
   Currently this function returns non-local paths unchanged.
   """
-  host, _, path_ = split(path, user)
-  if host:
-    return path  # do nothing until we fix link support in the back-end
-  retval = os.path.realpath(path_)
-  if path.startswith('file:'):
-    retval = 'file:%s' % retval
-  return retval
+  scheme, netloc, path_ = parse(path)
+  if scheme == 'file' or hdfs_fs.default_is_local():
+    return unparse(scheme, netloc, os.path.realpath(path_))
+  return path
 
 
 def samefile(path1, path2, user=None):
   """
   Return :obj:`True` if both path arguments refer to the same path.
   """
-  tr = lambda p: abspath(normpath(realpath(p)))
+  tr = lambda p: abspath(normpath(realpath(p)), user=user)
   return tr(path1) == tr(path2)
 
 
