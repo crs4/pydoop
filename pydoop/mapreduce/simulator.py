@@ -143,8 +143,9 @@ class ResultThread(threading.Thread):
                 key, value = args
                 self.ostream.output(key, value)
             elif cmd == 'done':
-                self.ostream.close()
-                self.logger.debug('closed ostream')
+                if self.ostream:
+                    self.ostream.close()
+                    self.logger.debug('closed ostream')
                 break
             elif cmd == 'progress':
                 (progress,) = args
@@ -223,7 +224,7 @@ class HadoopSimulator(object):
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
             input_key_type='org.apache.hadoop.io.LongWritable',
             input_value_type='org.apache.hadoop.io.Text',
-            piped_input=False, authorization=None):
+            piped_input=False, authorization=None, input_split=None):
         f = cStringIO.StringIO()
         down_stream = BinaryWriter(f)
         self.write_authorization(down_stream, authorization)
@@ -231,9 +232,9 @@ class HadoopSimulator(object):
         down_stream.send('setJobConf',
                          *sum([[k, v] for k, v in job_conf.iteritems()],
                              []))
-        down_stream.send('runMap', 'fake_isplit', num_reducers,
-                         piped_input)
-        down_stream.send('setInputTypes', input_key_type, input_value_type)
+        down_stream.send('runMap', input_split, num_reducers, piped_input)
+        if piped_input:
+            down_stream.send('setInputTypes', input_key_type, input_value_type)
         if file_in:
             for l in file_in:
                 self.logger.debug("Line: %s" % l)
@@ -282,8 +283,10 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
         bytes_flow = self.write_map_down_stream(file_in, job_conf, num_reducers)
         dstream = BinaryDownStreamFilter(bytes_flow)
-        rec_writer_stream = TrivialRecordWriter(file_out)
-
+        # FIXME this is a quick hack to avoid crashes with used defined
+        # RecordWriter
+        f = cStringIO.StringIO() if file_out is None else file_out
+        rec_writer_stream = TrivialRecordWriter(f)
         if num_reducers == 0:
             self.logger.info('running a map only job')
             self.run_task(dstream, rec_writer_stream)
@@ -297,6 +300,8 @@ class HadoopSimulatorLocal(HadoopSimulator):
             rstream = BinaryDownStreamFilter(bytes_flow)
             self.logger.info('running reducer')
             self.run_task(rstream, rec_writer_stream)
+        if file_out is None:
+            self.logger.debug('fake file_out contents: %r' % f.getvalue())
         self.logger.info('run done.')
 
 
@@ -337,14 +342,16 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         server.handle_request()
         self.logger.debug('run_task: finished with HadoopServer')
 
-    def run(self, file_in, file_out, job_conf, num_reducers=1):
+    def run(self, file_in, file_out, job_conf, num_reducers=1,
+            input_split=None):
         self.logger.debug('run start')
         challenge = 'what? me worry?'
         digest = create_digest(self.password, challenge)
         auth = (digest, challenge)
+        input_split = input_split if input_split else 'fake_isplit'
         down_bytes = self.write_map_down_stream(file_in, job_conf, num_reducers,
-                                                authorization=auth)
-        record_writer = TrivialRecordWriter(file_out)
+                            authorization=auth, input_split=input_split)
+        record_writer = TrivialRecordWriter(file_out) if file_out else None
         if num_reducers == 0:
             self.logger.debug('running a map only job')
             self.run_task(down_bytes, record_writer)
