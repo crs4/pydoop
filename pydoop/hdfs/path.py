@@ -83,40 +83,60 @@ class _HdfsPathSplitter(object):
     raise ValueError(msg)
 
   @classmethod
-  def split(cls, hdfs_path, user):
+  def parse(cls, hdfs_path):
     if not hdfs_path:
       cls.raise_bad_path(hdfs_path, "empty")
     try:
       scheme, rest = cls.PATTERN.match(hdfs_path).groups()
     except AttributeError:
-      rest = hdfs_path
-      scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
+      scheme, rest = "", hdfs_path
     if not rest:
       cls.raise_bad_path(hdfs_path, "no scheme-specific part")
-    if scheme == "hdfs":
-      if rest.startswith("//") and not rest.startswith("///"):
-        try:
-          netloc, path = rest[2:].split("/", 1)
-        except ValueError:
-          cls.raise_bad_path(hdfs_path, "path part is empty")
+    if rest.startswith("//") and not rest.startswith("///"):
+      if not scheme:
+        cls.raise_bad_path(hdfs_path, 'null scheme')
+      try:
+        netloc, path = rest[2:].split("/", 1)
         path = "/%s" % path
-        try:
-          hostname, port = netloc.split(":")
-        except ValueError:
-          hostname, port = netloc, common.DEFAULT_PORT
-        try:
-          port = int(port)
-        except ValueError:
-          cls.raise_bad_path(hdfs_path, "port must be an integer")
-      elif rest[0] != "/":
-        path = "/user/%s/%s" % (user, rest)
-        hostname, port = "default", 0
-      else:
-        hostname, port, path = "default", 0, rest
+      except ValueError:
+        netloc, path = rest[2:], ""
+    elif scheme and not rest.startswith('/'):
+      cls.raise_bad_path(hdfs_path, "relative path in absolute URI")
+    else:
+      netloc, path = "", rest
+    return scheme, netloc, path
+
+  @classmethod
+  def split_netloc(cls, netloc):
+    if not netloc:
+      return "default", 0
+    netloc = netloc.split(":")
+    if len(netloc) > 2:
+      raise ValueError("netloc is not well-formed: %r" % (netloc,))
+    if len(netloc) < 2:
+      return netloc[0], common.DEFAULT_PORT
+    hostname, port = netloc
+    try:
+      port = int(port)
+    except ValueError:
+      raise ValueError("bad netloc (port must be an integer): %r" % (netloc,))
+    return hostname, port
+
+  @classmethod
+  def split(cls, hdfs_path, user):
+    scheme, netloc, path = cls.parse(hdfs_path)
+    if not scheme:
+      scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
+    if scheme == "hdfs":
+      if not path:
+        cls.raise_bad_path(hdfs_path, "path part is empty")
       if ":" in path:
         cls.raise_bad_path(hdfs_path, "':' not allowed outside netloc part")
+      hostname, port = cls.split_netloc(netloc)
+      if not path.startswith("/"):
+        path = "/user/%s/%s" % (user, path)
     elif scheme == "file":
-      hostname, port, path = "", 0, rest
+      hostname, port, path = "", 0, netloc + path
     else:
       cls.raise_bad_path(hdfs_path, "unsupported scheme %r" % scheme)
     if path.startswith("/"):

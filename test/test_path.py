@@ -45,17 +45,18 @@ class TestSplit(unittest.TestCase):
       ('file:/a/b', ('', 0, '/a/b')),
       ('file:///a', ('', 0, '/a')),
       ('file:/a', ('', 0, '/a')),
-      ('file://localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
+      ('file://temp/foo.txt', ('', 0, 'temp/foo.txt')),
+      ('file://temp', ('', 0, 'temp')),
       ]
     if hdfs.default_is_local():
       cases.extend([
-        ('//localhost:9000/a/b', ('', 0, '/localhost:9000/a/b')),
+        ('///a/b', ('', 0, '/a/b')),
         ('/a/b', ('', 0, '/a/b')),
         ('a/b', ('', 0, 'a/b')),
         ])
     else:
       cases.extend([
-        ('//localhost:9000/a/b', ('localhost', 9000, '/a/b')),
+        ('///a/b', ('default', 0, '/a/b')),
         ('/a/b', ('default', 0, '/a/b')),
         ('a/b', ('default', 0, '/user/%s/a/b' % DEFAULT_USER)),
         ])
@@ -86,6 +87,7 @@ class TestSplit(unittest.TestCase):
       'hdfs://localhost:spam/',            # port is not an int
       'hdfs://localhost:9000',             # path part is empty
       'hdfs://localhost:9000/a:b',         # colon outside netloc
+      '//localhost:9000/a/b',              # null scheme
       ]
     if not hdfs.default_is_local():
       cases.append('/localhost:9000/a/b')  # colon outside netloc
