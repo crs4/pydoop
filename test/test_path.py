@@ -100,6 +100,23 @@ class TestSplit(unittest.TestCase):
       self.assertEqual(hdfs.path.splitext(name+ext), (name, ext))
 
 
+class TestUnparse(unittest.TestCase):
+
+  def good(self):
+    cases = [
+      (('hdfs', 'host:1', '/'), 'hdfs://host:1/'),
+      (('file', '', '/'), 'file:/'),
+      (('hdfs', 'host:1', UNI_CHR), 'hdfs://host:1/%s' % UNI_CHR),
+      (('file', '', UNI_CHR), 'file:/%s' % UNI_CHR),
+      (('', '', UNI_CHR), UNI_CHR),
+      ]
+    for (scheme, netloc, path), exp_uri in cases:
+      self.assertEqual(hdfs.path.unparse(scheme, netloc, path), exp_uri)
+
+  def bad(self):
+    self.assertRaises(ValueError, hdfs.path.unparse, '', 'host:1', '/a')
+
+
 class TestJoin(unittest.TestCase):
 
   def __check_join(self, cases):
@@ -424,6 +441,8 @@ def suite():
   suite.addTest(TestSplit('good_with_user'))
   suite.addTest(TestSplit('bad'))
   suite.addTest(TestSplit('splitext'))
+  suite.addTest(TestUnparse('good'))
+  suite.addTest(TestUnparse('bad'))
   suite.addTest(TestJoin('simple'))
   suite.addTest(TestJoin('slashes'))
   suite.addTest(TestJoin('absolute'))
