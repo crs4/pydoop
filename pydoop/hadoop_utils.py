@@ -244,11 +244,12 @@ class PathFinder(object):
   """
   Encapsulates the logic to find paths and other info required by Pydoop.
   """
-  CDH_HADOOP_EXEC = "/usr/bin/hadoop"
+  CDH_HADOOP_EXEC = "/usr/bin/hadoop"  # CDH and rpm
   CDH_HADOOP_HOME_PKG = "/usr/lib/hadoop"
   CDH_HADOOP_HOME_PARCEL = first_dir_in_glob(
     "/opt/cloudera/parcels/CDH-*/lib/hadoop"
     )
+  RPM_HADOOP_HOME = "/usr/share/hadoop"
 
   def __init__(self):
     self.__hadoop_home = None
@@ -275,6 +276,7 @@ class PathFinder(object):
         os.getenv("HADOOP_HOME") or
         fallback or
         first_dir_in_glob("/usr/lib/hadoop*") or
+        first_dir_in_glob("/usr/share/hadoop*") or
         first_dir_in_glob("/opt/hadoop*") or
         hadoop_home_from_path()
         )
@@ -355,6 +357,8 @@ class PathFinder(object):
       except KeyError:
         if self.cloudera():
           candidate = '/etc/hadoop/conf'
+        elif os.path.isdir(self.RPM_HADOOP_HOME):
+          candidate = '/etc/hadoop'
         else:
           if not hadoop_home:
             hadoop_home = self.hadoop_home()
@@ -388,6 +392,9 @@ class PathFinder(object):
     if hadoop_home is None:
       hadoop_home = self.hadoop_home()
     if not self.__hadoop_native:
+      if os.path.isdir(self.RPM_HADOOP_HOME):
+        self.__hadoop_native = os.path.join('/usr', 'lib%s' % get_arch()[1])
+        return self.__hadoop_native
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
         if v.main >= (2, 0, 0):
