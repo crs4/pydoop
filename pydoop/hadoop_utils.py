@@ -421,8 +421,17 @@ class PathFinder(object):
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
         if v.main >= (2, 0, 0):
-          self.__hadoop_classpath = ':'.join(
-            glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
+          if len(v.main) == 7:
+            # HDP
+            self.__hadoop_classpath = ':'.join(
+              glob.glob(os.path.join(hadoop_home, '*.jar')) +
+              glob.glob(os.path.join(hadoop_home + "-hdfs", '*.jar')) +
+              glob.glob(os.path.join(hadoop_home, 'lib', '*.jar')) +
+              glob.glob(os.path.join(hadoop_home + '-mapreduce', '*.jar'))
+            )
+          else:
+            self.__hadoop_classpath = ':'.join(
+              glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/hdfs', '*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/', '*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/lib', '*.jar')) + 
