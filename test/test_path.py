@@ -210,6 +210,7 @@ class TestSplitBasenameDirname(unittest.TestCase):
       ("/a/%s" % UNI_CHR, "/a", UNI_CHR),
       (UNI_CHR, "", UNI_CHR),
       ('/%s' % UNI_CHR, "/", UNI_CHR),
+      ('', '', ''),
       ]
     for p, d, bn in cases:
       self.assertEqual(hdfs.path.dirname(p), d)

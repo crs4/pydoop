@@ -85,7 +85,7 @@ class _HdfsPathSplitter(object):
   @classmethod
   def parse(cls, hdfs_path):
     if not hdfs_path:
-      cls.raise_bad_path(hdfs_path, "empty")
+      return "", "", ""
     try:
       scheme, rest = cls.PATTERN.match(hdfs_path).groups()
     except AttributeError:
