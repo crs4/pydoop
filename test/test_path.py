@@ -202,7 +202,7 @@ class TestSplitBasenameDirname(unittest.TestCase):
 
   def runTest(self):
     p, d, bn = "hdfs://host:1/a/%s" % UNI_CHR, "hdfs://host:1/a", UNI_CHR
-    self.assertEqual(hdfs.path.splitbn(p), (d, bn))
+    self.assertEqual(hdfs.path.splitpath(p), (d, bn))
     self.assertEqual(hdfs.path.dirname(p), d)
     self.assertEqual(hdfs.path.basename(p), bn)
 

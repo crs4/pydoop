@@ -266,8 +266,8 @@ def abspath(hdfs_path, user=None, local=False):
   return apath
 
 
-# splitbn/basename/dirname: we only support Linux, so it's OK to use os.path
-def splitbn(hdfs_path):
+# splitpath/basename/dirname: we only support Linux, so it's OK to use os.path
+def splitpath(hdfs_path):
   """
   Split ``hdfs_path`` into a (``head``, ``tail``) pair, according to
   the same rules as ``os.path.split``.
