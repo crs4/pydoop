@@ -266,13 +266,12 @@ def abspath(hdfs_path, user=None, local=False):
   return apath
 
 
-# splitpath/basename/dirname: we only support Linux, so it's OK to use os.path
 def splitpath(hdfs_path):
   """
   Split ``hdfs_path`` into a (``head``, ``tail``) pair, according to
   the same rules as ``os.path.split``.
   """
-  return os.path.split(hdfs_path)
+  return (dirname(hdfs_path), basename(hdfs_path))
 
 
 def basename(hdfs_path):
@@ -286,7 +285,8 @@ def dirname(hdfs_path):
   """
   Return the directory component of ``hdfs_path``.
   """
-  return os.path.dirname(hdfs_path)
+  scheme, netloc, path = parse(hdfs_path)
+  return unparse(scheme, netloc, os.path.dirname(path))
 
 
 def exists(hdfs_path, user=None):

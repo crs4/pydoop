@@ -201,10 +201,20 @@ class TestAbspath(unittest.TestCase):
 class TestSplitBasenameDirname(unittest.TestCase):
 
   def runTest(self):
-    p, d, bn = "hdfs://host:1/a/%s" % UNI_CHR, "hdfs://host:1/a", UNI_CHR
-    self.assertEqual(hdfs.path.splitpath(p), (d, bn))
-    self.assertEqual(hdfs.path.dirname(p), d)
-    self.assertEqual(hdfs.path.basename(p), bn)
+    cases = [  # path, expected dirname, expected basename
+      ("hdfs://host:1/a/%s" % UNI_CHR, "hdfs://host:1/a", UNI_CHR),
+      ("hdfs://host:1/", "hdfs://host:1/", ""),
+      ("hdfs:/", "hdfs:/", ""),
+      ("file:/", "file:/", ""),
+      ("a/%s" % UNI_CHR, "a", UNI_CHR),
+      ("/a/%s" % UNI_CHR, "/a", UNI_CHR),
+      (UNI_CHR, "", UNI_CHR),
+      ('/%s' % UNI_CHR, "/", UNI_CHR),
+      ]
+    for p, d, bn in cases:
+      self.assertEqual(hdfs.path.dirname(p), d)
+      self.assertEqual(hdfs.path.basename(p), bn)
+      self.assertEqual(hdfs.path.splitpath(p), (d, bn))
 
 
 class TestExists(unittest.TestCase):
