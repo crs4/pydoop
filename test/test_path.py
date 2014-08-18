@@ -295,7 +295,7 @@ class TestExpand(unittest.TestCase):
 
   def expanduser_no_expansion(self):
     for pre in ('hdfs://host:1', 'file://', ''):
-      for rest in ('/~', '/~foo', 'd/~', 'd/~foo'):
+      for rest in ('/~', '/~foo', '/d/~', '/d/~foo'):
         p = '%s%s' % (pre, rest)
         self.assertEqual(hdfs.path.expanduser(p), p)
 
