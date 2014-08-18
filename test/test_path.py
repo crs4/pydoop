@@ -98,6 +98,8 @@ class TestSplit(unittest.TestCase):
     for pre in '', 'file:', 'hdfs://host:1':
       name, ext = '%sfoo' % pre, '.txt'
       self.assertEqual(hdfs.path.splitext(name+ext), (name, ext))
+    p = 'hdfs://foo.com:1/'
+    self.assertEqual(hdfs.path.splitext(p), (p, ''))
 
 
 class TestUnparse(unittest.TestCase):
