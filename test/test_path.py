@@ -165,39 +165,36 @@ class TestAbspath(unittest.TestCase):
       fs = hdfs.hdfs("default", 0)
       self.root = "hdfs://%s:%s" % (fs.host, fs.port)
       fs.close()
-    self.p = 'foo/bar'
-    self.u_p = self.p + UNI_CHR
+    self.p = 'a/%s' % UNI_CHR
 
   def without_user(self):
-    for p in self.p, self.u_p:
-      abs_p = hdfs.path.abspath(p, user=None, local=False)
-      if hdfs.default_is_local():
-        self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
-      else:
-        self.assertEqual(abs_p, '%s/user/%s/%s' % (self.root, DEFAULT_USER, p))
+    abs_p = hdfs.path.abspath(self.p, user=None, local=False)
+    if hdfs.default_is_local():
+      self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(self.p)))
+    else:
+      self.assertEqual(
+        abs_p, '%s/user/%s/%s' % (self.root, DEFAULT_USER, self.p)
+        )
 
   def with_user(self):
-    for p in self.p, self.u_p:
-      abs_p = hdfs.path.abspath(p, user="pydoop", local=False)
-      if hdfs.default_is_local():
-        self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(p)))
-      else:
-        self.assertEqual(abs_p, '%s/user/pydoop/%s' % (self.root, p))
+    abs_p = hdfs.path.abspath(self.p, user="pydoop", local=False)
+    if hdfs.default_is_local():
+      self.assertEqual(abs_p, '%s%s' % (self.root, os.path.abspath(self.p)))
+    else:
+      self.assertEqual(abs_p, '%s/user/pydoop/%s' % (self.root, self.p))
 
   def forced_local(self):
-    for p in self.p, self.u_p:
-      for user in None, "pydoop":
-        abs_p = hdfs.path.abspath(p, user=user, local=True)
-        self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
+    for user in None, "pydoop":
+      abs_p = hdfs.path.abspath(self.p, user=user, local=True)
+      self.assertEqual(abs_p, 'file:%s' % os.path.abspath(self.p))
 
   def already_absolute(self):
-    for base_p in 'file:/foo/bar', 'hdfs://localhost:9000/foo/bar':
-      for p in base_p, base_p + UNI_CHR:
-        for user in None, "pydoop":
-          abs_p = hdfs.path.abspath(p, user=user, local=False)
-          self.assertEqual(abs_p, p)
-          abs_p = hdfs.path.abspath(p, user=user, local=True)
-          self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
+    for p in 'file:/a/%s' % UNI_CHR, 'hdfs://localhost:9000/a/%s' % UNI_CHR:
+      for user in None, "pydoop":
+        abs_p = hdfs.path.abspath(p, user=user, local=False)
+        self.assertEqual(abs_p, p)
+        abs_p = hdfs.path.abspath(p, user=user, local=True)
+        self.assertEqual(abs_p, 'file:%s' % os.path.abspath(p))
 
 
 class TestSplitBasenameDirname(unittest.TestCase):
