@@ -323,11 +323,12 @@ class TestStat(unittest.TestCase):
 
   def stat(self):
     bn = '%s%s' % (make_random_str(), UNI_CHR)
+    fn = '/user/%s/%s' % (DEFAULT_USER, bn)
     fs = hdfs.hdfs("default", 0)
-    p = "hdfs://%s:%s/user/%s/%s" % (fs.host, fs.port, DEFAULT_USER, bn)
-    with fs.open_file(bn, 'w') as fo:
+    p = "hdfs://%s:%s%s" % (fs.host, fs.port, fn)
+    with fs.open_file(fn, 'w') as fo:
       fo.write(make_random_str())
-    info = fs.get_path_info(bn)
+    info = fs.get_path_info(fn)
     fs.close()
     s = hdfs.path.stat(p)
     for n1, n2 in self.NMAP.iteritems():
