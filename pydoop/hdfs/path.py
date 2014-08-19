@@ -140,6 +140,8 @@ class _HdfsPathSplitter(object):
 
   @classmethod
   def split(cls, hdfs_path, user):
+    if not hdfs_path:
+      cls.raise_bad_path(hdfs_path, "empty")
     scheme, netloc, path = cls.parse(hdfs_path)
     if not scheme:
       scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
