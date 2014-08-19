@@ -68,7 +68,7 @@ class StatResult(object):
     names.extend(['kind', 'name', 'replication'])
     return '%s(%s)' % (
       self.__class__.__name__,
-      ', '.join('%s=%s' % (_, getattr(self, _)) for _ in names)
+      ', '.join('%s=%r' % (_, getattr(self, _)) for _ in names)
       )
 
 
