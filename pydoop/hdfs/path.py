@@ -335,7 +335,7 @@ def expanduser(path):
   Replace initial ``~`` or ``~user`` with the user's home directory.
 
   **NOTE:** if the default file system is HDFS, the ``~user`` form is
-  expanded regardless of the user's existence on the client machine.
+  expanded regardless of the user's existence.
   """
   if hdfs_fs.default_is_local():
     return os.path.expanduser(path)
