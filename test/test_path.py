@@ -322,6 +322,8 @@ class TestStat(unittest.TestCase):
     }
 
   def stat(self):
+    if hdfs.default_is_local():
+      return
     bn = '%s%s' % (make_random_str(), UNI_CHR)
     fn = '/user/%s/%s' % (DEFAULT_USER, bn)
     fs = hdfs.hdfs("default", 0)
@@ -342,8 +344,13 @@ class TestStat(unittest.TestCase):
   def stat_on_local(self):
     wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
     p_ = os.path.join(wd_, make_random_str())
-    wd, p = ('file:%s' % _ for _ in (wd_, p_))
-    fs = hdfs.hdfs("", 0)
+    if hdfs.default_is_local():
+      wd, p = wd_, p_
+      host = "default"
+    else:
+      wd, p = ('file:%s' % _ for _ in (wd_, p_))
+      host = ""
+    fs = hdfs.hdfs(host, 0)
     with fs.open_file(p_, 'w') as fo:
       fo.write(make_random_str())
     info = fs.get_path_info(p_)
