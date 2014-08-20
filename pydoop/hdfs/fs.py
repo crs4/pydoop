@@ -150,6 +150,12 @@ class hdfs(object):
         else:
             self.__status.refcount += 1
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
     @property
     def fs(self):
         return self.__status.fs
