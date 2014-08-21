@@ -454,7 +454,7 @@ def ismount(path):
 
 
 def normcase(path):
-  return path  # we only support Linux
+  return path  # we only support Linux / OS X
 
 
 def normpath(path):
@@ -486,7 +486,7 @@ def samefile(path1, path2, user=None):
 
 
 def splitdrive(path):
-  return '', path  # we only support Linux
+  return '', path  # we only support Linux / OS X
 
 
 def splitext(path):
