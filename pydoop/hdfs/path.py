@@ -29,6 +29,9 @@ import common
 import fs as hdfs_fs
 
 
+curdir, pardir, sep = '.', '..', '/'  # pylint: disable=C0103
+
+
 class StatResult(object):
   """
   Mimics the object type returned by ``os.stat``.
@@ -300,6 +303,11 @@ def exists(hdfs_path, user=None):
   retval = fs.exists(path)
   fs.close()
   return retval
+
+
+def lexists(hdfs_path, user=None):
+  # libhdfs does not support fs.FileStatus.isSymlink()
+  return exists(hdfs_path, user=user)
 
 
 def kind(path, user=None):
