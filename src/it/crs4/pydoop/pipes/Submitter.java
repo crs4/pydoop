@@ -298,7 +298,7 @@ public class Submitter extends Configured implements Tool {
         Configuration conf = job.getConfiguration();
         // default map output types to Text
         if (!getIsJavaMapper(conf)) {
-            job.setMapperClass(PipesMapRunner.class);
+            job.setMapperClass(PipesMapper.class);
             // Save the user's partitioner and hook in our's.
             setJavaPartitioner(conf, job.getPartitionerClass());
             job.setPartitionerClass(PipesPartitioner.class);

@@ -38,8 +38,8 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 /**
  * An adaptor to run an external mapper.
  */
-class PipesMapRunner<K1 extends WritableComparable, V1 extends Writable,
-                     K2 extends WritableComparable, V2 extends Writable>
+class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
+                  K2 extends WritableComparable, V2 extends Writable>
     extends Mapper<K1, V1, K2, V2> {
 
     MapContext context;
