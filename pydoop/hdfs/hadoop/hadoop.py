@@ -10,6 +10,11 @@ from pydoop.hdfs.hadoop.hdfs import File
 
 logging.basicConfig(level=logging.INFO)
 
+BUFFER_SIZE_CONFIG_PROPERTY = "io.file.buffer.size"
+REPLICATION_CONFIG_PROPERTY = "dfs.replication"
+BLOCKSIZE_CONFIG_PROPERTY = "dfs.block.size"
+
+
 class HadoopHdfsClasses(object):
     """
     Wraps the set of java classes used for implementing the Hadoop HDFS
@@ -28,9 +33,7 @@ class HadoopHdfsClasses(object):
     ByteArrayOutputStream = "java.io.ByteArrayOutputStream"
 
 
-
 class FileSystemImpl(FileSystem):
-
     def __init__(self, host, port=0, user=None, groups=None):
         self._host = host
         self._port = port
@@ -172,49 +175,52 @@ class FileSystemImpl(FileSystem):
 
     def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0, readline_chunk_size=16384):
 
+        O_ACCMODE = os.O_RDONLY | os.O_RDWR | os.O_WRONLY
+        accmode = flags & O_ACCMODE
+
         # check whether you are trying to open the file in 'rw' mode
-        if flags == 'rw':
-            raise Exception("ERROR: cannot open an hdfs file in 'rw' mode")
+        if accmode != os.O_WRONLY and accmode != os.O_RDONLY:
+            if accmode == os.O_RDWR:
+                raise IOError("Cannot open an hdfs file in O_RDWR mode")
+            else:
+                raise IOError("Cannot open an hdfs file in mode %s" % accmode)
 
-    #      if ((flags & O_CREAT) && (flags & O_EXCL)) {
-    #   fprintf(stderr, "WARN: hdfs does not truly support O_CREATE && O_EXCL\n");
-    # }
+        if (flags & os.O_CREAT) and (flags & os.O_EXCL):
+            self._logger.warn("hdfs does not truly support O_CREATE && O_EXCL")
 
+        # read the 'buffer size' property from the Configuration
+        if not buff_size:
+            buff_size = int(self._configuration.getInt(BLOCKSIZE_CONFIG_PROPERTY, 4096))
+
+        # read the replication property from the Configuration (needed only for write-only mode)
+        if (accmode == os.O_WRONLY) and (flags & os.O_APPEND) == 0 and not replication:
+            replication = self._configuration.getInt(REPLICATION_CONFIG_PROPERTY, 1)
+
+        # the Java path
         jpath = self._get_jpath(path)
 
         stream = None
         stream_type = None
-
-        jstr_buffer_size_prop_name = "io.file.buffer.size"
-        jstr_Replication_prop_name = "dfs.replication"
-        jstr_blocksize_prop_name = "dfs.block.size"
-
-        if not buff_size:
-            buff_size = int(self._configuration.getInt(jstr_blocksize_prop_name, 0))
-
-        # if write only
-        if flags == 'w' or flags == os.O_WRONLY:
-
-            if not replication:
-                replication = self._configuration.getInt(jstr_Replication_prop_name, 1)
-
-            if not blocksize:
-                blocksize = self._configuration.getInt(jstr_blocksize_prop_name, 67108864)
-
         try:
-            # if read only
-            if flags == 'r' or flags == os.O_RDONLY:
+            if accmode == os.O_RDONLY:
                 stream = self._fs.open(jpath, buff_size)
                 stream_type = FileImpl._INPUT
+                self._logger.debug("File opened in read mode")
 
-            elif flags == 'a' or flags == os.O_APPEND:
+            elif accmode == os.O_WRONLY and flags & os.O_APPEND:
                 stream = self._fs.append(jpath)
                 stream_type = FileImpl._OUTPUT
+                self._logger.debug("File opened in append mode")
 
             else:
                 boolean_overwrite = True
+
+                if not blocksize:
+                    blocksize = self._fs.getDefaultBlockSize(jpath)
+
                 stream = self._fs.create(jpath, boolean_overwrite, buff_size, replication, blocksize)
                 stream_type = FileImpl._OUTPUT
+                self._logger.debug("File opened in write mode")
 
         except Exception, e:
             raise IOError(e.message)
@@ -280,7 +286,6 @@ class FileSystemImpl(FileSystem):
 
 
 class FileImpl(File):
-
     _INPUT = 0
     _OUTPUT = 1
 
