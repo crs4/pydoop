@@ -305,7 +305,7 @@ class PathFinder(object):
         _hadoop_home_from_version_cmd() or
         first_dir_in_glob("/usr/lib/hadoop*") or
         first_dir_in_glob("/usr/share/hadoop*") or
-        first_dir_in_glob("/opt/hadoop*") or
+        first_dir_in_glob("/opt/hadoop*")
         )
     if not self.__hadoop_home:
       PathFinder.__error("hadoop home", "HADOOP_HOME")
