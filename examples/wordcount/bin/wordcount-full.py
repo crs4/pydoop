@@ -34,7 +34,7 @@ Partitioner classes shown here mimic the behavior of the default ones.
 
 import sys, logging, struct
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.ERROR)
 
 import pydoop.pipes as pp
 from pydoop.utils.misc import jc_configure, jc_configure_int
@@ -55,7 +55,6 @@ class Mapper(pp.Mapper):
 
     def map(self, context):
         k = context.getInputKey()
-        #self.logger.debug("key = %r" % struct.unpack(">q", k)[0])
         words = context.getInputValue().split()
         for w in words:
             context.emit(w, "1")
@@ -75,7 +74,6 @@ class Reducer(pp.Reducer):
     def reduce(self, context):
         s = 0
         while context.nextValue():
-            sys.stderr.write("Value %s" %context.getInputValue())
             s += int(context.getInputValue())
             context.emit(context.getInputKey(), str(s))
 
