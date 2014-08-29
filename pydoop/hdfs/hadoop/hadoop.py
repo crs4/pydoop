@@ -326,7 +326,8 @@ class FileImpl(File):
         current_size = self._stream.size()
 
         if length > 0:
-            self._stream.write(bytearray(data.encode()))
+            jstr = wrap_class_instance(HadoopHdfsClasses.String, data)
+            self._stream.write(jstr.getBytes())
 
         written = self._stream.size() - current_size
         return written
