@@ -23,7 +23,7 @@ pydoop.hdfs.file -- HDFS File Objects
 
 import os
 
-import common
+from pydoop.hdfs import common
 
 
 def _complain_ifclosed(closed):
@@ -125,7 +125,7 @@ class hdfs_file(object):
         eol = self.__read_chunks_until_nl()
         line = "".join(self.buffer_list) + self.chunk[self.p:eol+1]
         self.buffer_list = []
-        self.p = eol+1
+        self.p = eol + 1
         return line
 
     def next(self):

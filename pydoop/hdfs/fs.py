@@ -21,13 +21,17 @@ pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
 
-import os, socket, urlparse, getpass, re
+import os
+import socket
+import urlparse
+import getpass
+import re
 import operator as ops
 
 import pydoop
-hdfs_ext = pydoop.import_version_specific_module("_hdfs")
 import common
 from file import hdfs_file, local_file
+from pydoop.hdfs.hadoop import get_implementation_instance
 
 
 class _FSStatus(object):
@@ -57,7 +61,7 @@ def _get_ip(host, default=None):
 
 
 def _get_connection_info(host, port, user):
-    fs = hdfs_ext.hdfs_fs(host, port, user)
+    fs = get_implementation_instance("FileSystem", host, port, user)
     res = urlparse.urlparse(fs.working_directory())
     if res.scheme == "file":
         h, p, u = "", 0, getpass.getuser()
@@ -101,8 +105,8 @@ class hdfs(object):
     ignored (i.e., it will always be the current UNIX user).
     """
     SUPPORTED_OPEN_MODES = frozenset([
-        os.O_RDONLY, os.O_WRONLY, os.O_WRONLY|os.O_APPEND, "r", "w", "a"
-    ])
+        os.O_RDONLY, os.O_WRONLY, os.O_WRONLY | os.O_APPEND, "r", "w", "a"
+        ])
     _CACHE = {}
     _ALIASES = {"host": {}, "port": {}, "user": {}}
 
@@ -114,14 +118,24 @@ class hdfs(object):
         return host, port, user
 
     def __lookup(self, hpu):
+        raise KeyError #FIXME, it seems useless with the new implementation
         if hpu[0]:
             hpu = self.__canonize_hpu(hpu)
         return self._CACHE[hpu]
+
+    def __eq__(self, other):
+        """
+        True if the self and other wrap the same hadoop file system instance
+        :param other:
+        :return:
+        """
+        return type(self) == type(other) and self.fs == other.fs
 
     def __init__(self, host="default", port=0, user=None, groups=None):
         host = host.strip()
         raw_host = host
         host = common.encode_host(host)
+
         if user is None:
             user = ""
         if not host:
@@ -232,7 +246,7 @@ class hdfs(object):
                 flags = "r"
             elif flags == os.O_WRONLY:
                 flags = "w"
-            elif flags == os.O_WRONLY|os.O_APPEND:
+            elif flags == os.O_WRONLY | os.O_APPEND:
                 flags = "a"
             return local_file(self, path, flags)
         if flags == "r":
@@ -240,7 +254,7 @@ class hdfs(object):
         elif flags == "w":
             flags = os.O_WRONLY
         elif flags == "a":
-            flags = os.O_WRONLY|os.O_APPEND
+            flags = os.O_WRONLY | os.O_APPEND
         f = self.fs.open_file(
           common.encode_path(path), flags, buff_size, replication, blocksize
           )
@@ -487,7 +501,7 @@ class hdfs(object):
           to ``path``.
         :raises ValueError: if ``mode_string`` is invalid.
         """
-        Char_to_perm_byte = {'r':4, 'w':2, 'x':1}
+        Char_to_perm_byte = {'r': 4, 'w': 2, 'x': 1}
         Fields = (('u', 6), ('g', 3), ('o', 0))
         #--
         m = re.match("\s*([ugoa]*)([-+=])([rwx]*)\s*", mode_string)
