@@ -54,6 +54,7 @@ import org.apache.hadoop.conf.Configuration;
 
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.security.SecureShuffleUtils;
@@ -87,6 +88,7 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
     Application(TaskInputOutputContext<K1,V1,K2,V2> context, 
                 DummyRecordReader input) 
         throws IOException, InterruptedException {
+
         Configuration conf = context.getConfiguration();
         serverSocket = new ServerSocket(0);
         Map<String, String> env = new HashMap<String,String>();
@@ -122,12 +124,12 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
         // we are starting map/reduce task of the pipes job. this is not a cleanup
         // attempt. 
         TaskAttemptID taskid = context.getTaskAttemptID();
+
         File stdout = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDOUT);
         File stderr = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDERR);
         long logLength = TaskLog.getTaskLogLength(conf);
         cmd = TaskLog.captureOutAndError(null, cmd, stdout, stderr, logLength,
                                          false);
-    
         process = runClient(cmd, env);
         clientSocket = serverSocket.accept();
     
@@ -142,6 +144,9 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
             ReflectionUtils.newInstance(context.getOutputValueClass(), conf);
         downlink = new BinaryProtocol<K1, V1, K2, V2>(clientSocket, handler, 
                                                       outputKey, outputValue, conf);
+
+        System.err.println(context.getOutputKeyClass());
+        System.err.println(context.getOutputValueClass());
     
         downlink.authenticate(digestToSend, challenge);
         waitForAuthentication();
@@ -250,10 +255,14 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
     static Process runClient(List<String> command, 
                              Map<String, String> env) throws IOException {
         ProcessBuilder builder = new ProcessBuilder(command);
+        for(String v : command) {
+            System.err.println("v: " + v);
+        }
         if (env != null) {
             builder.environment().putAll(env);
         }
         Process result = builder.start();
+        System.err.println("result: " + result);
         return result;
     }
   

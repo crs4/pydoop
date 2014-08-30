@@ -20,6 +20,10 @@ package it.crs4.pydoop.pipes;
 
 import java.io.IOException;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Writable;
@@ -42,15 +46,22 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
                   K2 extends WritableComparable, V2 extends Writable>
     extends Mapper<K1, V1, K2, V2> {
 
-    MapContext context;
+    // FIXME switch to use LOG instead of err.println()
+    protected static final Log LOG = LogFactory.getLog(PipesMapper.class);
+
+    MapContext<K1, V1, K2, V2> context;
     Application<K1, V1, K2, V2> application = null;
     boolean skipping = false;
+
+    PipesMapper(MapContext<K1, V1, K2, V2> context) {
+        this.context = context;
+    }
 
     /**
      * Get the new configuration.
      * @param job the job's configuration
-     */
-    protected void setup(MapContext context) 
+     */                                                       
+    protected void setup(MapContext<K1, V1, K2, V2> context) 
         throws IOException, InterruptedException {
         this.context = context;
         //disable the auto increment of the counter. For pipes, no of processed 
@@ -58,7 +69,7 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
         // FIXME: disable right now...
         // SkipBadRecords.setAutoIncrMapperProcCount(context, false);
     }
-    protected void cleanup(MapContext context
+    protected void cleanup(MapContext<K1, V1, K2, V2> context
                            ) throws IOException, InterruptedException {
         if (application != null)  {
             application.cleanup();
@@ -71,23 +82,24 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
     @SuppressWarnings("unchecked")
     public void run(MapContext<K1,V1,K2,V2> context) 
         throws IOException, InterruptedException {
-        
+
         setup(context);
 
         Configuration conf = context.getConfiguration();
         InputSplit split = context.getInputSplit();
 
         // FIXME: do we really need to be so convoluted?
-        
         InputFormat<K1, V1> inputFormat;
         try {
              inputFormat = (InputFormat<K1, V1>) 
-                 ReflectionUtils.newInstance(context.getInputFormatClass(), conf);
+                 ReflectionUtils.newInstance(context.getInputFormatClass(), 
+                                             conf);
         } catch (ClassNotFoundException ce) {
             throw new RuntimeException("class not found", ce);
         }
 
-        RecordReader<K1, V1> input = inputFormat.createRecordReader(split, context);
+        RecordReader<K1, V1> input = inputFormat.createRecordReader(split, 
+                                                                    context);
 
         boolean isJavaInput = Submitter.getIsJavaRecordReader(conf);
         
@@ -102,15 +114,14 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
         }
         DownwardProtocol<K1, V1> downlink = application.getDownlink();
         // FIXME: InputSplit is not Writable, but still, this is ugly...
-        downlink.runMap((FileSplit) context.getInputSplit(), context.getNumReduceTasks(), 
+        downlink.runMap((FileSplit) context.getInputSplit(), 
+                        context.getNumReduceTasks(), 
                         isJavaInput);
         boolean skipping = conf.getBoolean(context.SKIP_RECORDS, false);
         try {
             if (isJavaInput) {
-                K1 key = input.getCurrentKey();
-                V1 value = input.getCurrentValue();
-                downlink.setInputTypes(key.getClass().getName(), 
-                                       value.getClass().getName());
+                downlink.setInputTypes(input.getCurrentKey().getClass().getName(),
+                                       input.getCurrentValue().getClass().getName());
                 while (input.nextKeyValue()) {
                     downlink.mapItem(input.getCurrentKey(), input.getCurrentValue());
                     if(skipping) {

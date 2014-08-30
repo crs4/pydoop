@@ -66,6 +66,7 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
      * The task output a normal record.
      */
     public void output(K key, V value) throws IOException, InterruptedException {
+        System.err.println("ready to output:" + key + " " + value);
         context.write(key, value);
     }
 
@@ -94,6 +95,8 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
         if (recordReader != null) {
             progressKey.set(progress);
             recordReader.next(progressKey, nullValue);
+        } else { // FIXME --- Are we sure?
+            progressValue = progress;
         }
     }
 

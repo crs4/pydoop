@@ -27,7 +27,6 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 
@@ -92,6 +91,7 @@ class CommandLineParser {
     CommandLine parse(Configuration conf, String[] args) 
         throws IOException, ParseException {
         Parser parser = new BasicParser();
+        conf.setBoolean("mapreduce.client.genericoptionsparser.used", true);
         GenericOptionsParser genericParser = new GenericOptionsParser(conf, args);
         return parser.parse(options, genericParser.getRemainingArgs());
     }
@@ -325,6 +325,7 @@ public class Submitter extends Configured implements Tool {
         }
     
         String exec = getExecutable(conf);
+        System.err.println("missing executable:" + getExecutable(conf));
         if (exec == null) {
             String msg = "No application program defined.";
             throw new IllegalArgumentException(msg);
@@ -359,17 +360,21 @@ public class Submitter extends Configured implements Tool {
     
     public int run(String[] args) throws Exception {
         CommandLineParser cli = new CommandLineParser();
+        for(int i = 0; i < args.length; ++i) {
+            System.err.println("args["+i+"]: " + args[i]);
+        }
+        
         if (args.length == 0) {
             cli.printUsage();
             return 1;
         }
 
-        Configuration conf = getConf();
         try {
-            CommandLine results = cli.parse(conf, args);
-
-            Job job = new Job(conf);
+            Job job = new Job(new Configuration());
             job.setJobName(getClass().getName());
+            Configuration conf = job.getConfiguration();
+
+            CommandLine results = cli.parse(conf, args);
 
             if (results.hasOption("input")) {
                 Path path = new Path(results.getOptionValue("input"));
@@ -420,6 +425,7 @@ public class Submitter extends Configured implements Tool {
             }
             if (results.hasOption("program")) {
                 setExecutable(conf, results.getOptionValue("program"));
+                System.err.println("program:" + getExecutable(conf));
             }
             // if they gave us a jar file, include it into the class path
             String jarFile = job.getJar();
@@ -440,13 +446,12 @@ public class Submitter extends Configured implements Tool {
                 conf.setClassLoader(loader);
             }
             setupPipesJob(job);
-            System.exit(job.waitForCompletion(true)?0:1);
+            return job.waitForCompletion(true)? 0:1;
         } catch (ParseException pe) {
             LOG.info("Error : " + pe);
             cli.printUsage();
             return 1;
         }
-        return 1; // We are not expected to reach this point.
     }
 
     public static void main(String[] args) throws Exception {

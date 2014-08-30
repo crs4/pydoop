@@ -124,6 +124,7 @@ class BinaryProtocol<K1 extends WritableComparable, V1 extends Writable,
                     }
                     int cmd = WritableUtils.readVInt(inStream);
                     LOG.debug("Handling uplink command " + cmd);
+                    System.err.println("Handling uplink command " + cmd);
                     if (cmd == MessageType.AUTHENTICATION_RESP.code) {
                         String digest = Text.readString(inStream);
                         authPending = !handler.authenticate(digest);
@@ -132,13 +133,19 @@ class BinaryProtocol<K1 extends WritableComparable, V1 extends Writable,
                                  + "complete. Ignoring");
                         continue;
                     } else if (cmd == MessageType.OUTPUT.code) {
+                        System.err.println("Handling ouput ");
                         readObject(key);
+                        System.err.println("key: " + key);
                         readObject(value);
+                        System.err.println("value: " + value);
                         handler.output(key, value);
                     } else if (cmd == MessageType.PARTITIONED_OUTPUT.code) {
+                        System.err.println("Handling partitioned ");
                         int part = WritableUtils.readVInt(inStream);
                         readObject(key);
                         readObject(value);
+                        System.err.println("part, key, value" 
+                                           + part + " " + key + " " + value);
                         handler.partitionedOutput(part, key, value);
                     } else if (cmd == MessageType.STATUS.code) {
                         handler.status(Text.readString(inStream));
@@ -172,6 +179,7 @@ class BinaryProtocol<K1 extends WritableComparable, V1 extends Writable,
     
         private void readObject(Writable obj) throws IOException {
             int numBytes = WritableUtils.readVInt(inStream);
+            System.err.println("there are " + numBytes);
             byte[] buffer;
             // For BytesWritable and Text, use the specified length to set the length
             // this causes the "obvious" translations to work. So that if you emit
@@ -187,6 +195,8 @@ class BinaryProtocol<K1 extends WritableComparable, V1 extends Writable,
             } else {
                 obj.readFields(inStream);
             }
+            System.err.println("obj: " + obj);
+            System.err.println("class: " + obj.getClass().getName());
         }
     }
 

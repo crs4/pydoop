@@ -83,29 +83,34 @@ class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
             initialize(split, context);
         }
 
+        @Override
         public void initialize(InputSplit split, TaskAttemptContext context) 
             throws IOException {
         }
         
         public synchronized void close() throws IOException {}
 
+        @Override
         public float getProgress()  throws IOException, InterruptedException {
             return progress;
         }
 
+        @Override
         public boolean nextKeyValue() throws IOException, InterruptedException {
             return true;
         }
 
+        @Override
         public FloatWritable getCurrentKey() throws IOException, InterruptedException {
             return new FloatWritable(progress);
         }
 
+        @Override
         public NullWritable getCurrentValue() throws IOException, InterruptedException {
             return null;
         }
 
-
+        @Override
         public synchronized boolean next(FloatWritable key, NullWritable value)
                                         throws IOException  {
                 progress = key.get();
