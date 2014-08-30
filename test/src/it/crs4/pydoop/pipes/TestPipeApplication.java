@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+
+
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -48,7 +50,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapred.RawKeyValueIterator;
 import org.apache.hadoop.mapred.IFile.Writer;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -63,6 +67,7 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.MapContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.task.MapContextImpl;
+import org.apache.hadoop.mapreduce.task.ReduceContextImpl;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.mapreduce.task.TaskInputOutputContextImpl;
 import org.apache.hadoop.mapreduce.InputSplit;
@@ -75,6 +80,7 @@ import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.Progressable;
+import org.apache.hadoop.util.Progress;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
 import org.junit.Assert;
 import org.junit.Test;
@@ -194,10 +200,9 @@ public class TestPipeApplication {
             File fCommand = 
                 getFileCommand("it.crs4.pydoop.pipes.PipeApplicationStub");
                 //getFileCommand("it.crs4.pydoop.pipes.PipeApplicationRunnableStub");
-            
+            conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());            
             System.err.println("fCommand" + fCommand.getAbsolutePath());
 
-            conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());
             Token<AMRMTokenIdentifier> token = 
                 new Token<AMRMTokenIdentifier>("user".getBytes(), 
                                                "password".getBytes(), 
@@ -207,8 +212,6 @@ public class TestPipeApplication {
             conf.setBoolean(MRJobConfig.SKIP_RECORDS, true);
 
             TestReporter reporter = new TestReporter();
-
-
             DummyInputFormat input_format = new DummyInputFormat();
             List<InputSplit> isplits = input_format.getSplits(job);
             InputSplit isplit = isplits.get(0);
@@ -221,21 +224,21 @@ public class TestPipeApplication {
             job.setOutputKeyClass(IntWritable.class);
             job.setOutputValueClass(Text.class);
             
-            RecordWriter<WritableComparable<IntWritable>, Text>  writer = 
+            RecordWriter<IntWritable, Text>  writer = 
                 new TestRecordWriter(new FileOutputStream( 
                     workSpace.getAbsolutePath() + File.separator + "outfile"));
 
-            MapContextImpl<WritableComparable<IntWritable>, Text, 
-                           WritableComparable<IntWritable>, Text> context = 
-                new MapContextImpl<WritableComparable<IntWritable>, Text, 
-                                   WritableComparable<IntWritable>, Text>(
+            MapContextImpl<IntWritable, Text, 
+                           IntWritable, Text> context = 
+                new MapContextImpl<IntWritable, Text, 
+                                   IntWritable, Text>(
                       conf, taskAttemptid, null, writer, null, reporter, null);
 
             System.err.println("ready to launch application");
-            Application<WritableComparable<IntWritable>, Text, 
-                        WritableComparable<IntWritable>, Text> application = 
-                new Application<WritableComparable<IntWritable>, Text, 
-                                WritableComparable<IntWritable>, Text>(context, reader);
+            Application<IntWritable, Text, 
+                        IntWritable, Text> application = 
+                new Application<IntWritable, Text, 
+                                IntWritable, Text>(context, reader);
             System.err.println("done");
             
             application.getDownlink().flush();
@@ -420,81 +423,114 @@ public class TestPipeApplication {
 
     }
 
-    // /**
-    //  * test org.apache.hadoop.mapreduce.pipes.PipesReducer
-    //  * test the transfer of data: key and value
-    //  *
-    //  * @throws Exception
-    //  */
-    // @Test
-    // public void testPipesReduser() throws Exception {
+    /**
+     * test org.apache.hadoop.mapreduce.pipes.PipesReducer
+     * test the transfer of data: key and value
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testPipesReducer() throws Exception {
+        System.err.println("testPipesReducer");
 
-    //     File[] psw = cleanTokenPasswordFile();
-    //     Configuration conf = new Configuration();
-    //     try {
-    //         Token<AMRMTokenIdentifier> token = new Token<AMRMTokenIdentifier>(
-    //                                                                           "user".getBytes(), "password".getBytes(), new Text("kind"), new Text(
-    //                                                                                                                                                "service"));
-    //         TokenCache.setJobToken(token, conf.getCredentials());
+        File[] psw = cleanTokenPasswordFile();
+        try {
+            JobID jobId = new JobID("201408272347", 0);
+            TaskID taskId = new TaskID(jobId, TaskType.MAP, 0);
+            TaskAttemptID taskAttemptid = new TaskAttemptID(taskId, 0);
 
-    //         File fCommand = getFileCommand("org.apache.hadoop.mapreduce.pipes.PipeReducerStub");
-    //         conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());
+            Job job = new Job(new Configuration());
+            job.setJobID(jobId);
+            Configuration conf = job.getConfiguration();
+            conf.set(MRJobConfig.TASK_ATTEMPT_ID, taskAttemptid.toString());
+            FileSystem fs = new RawLocalFileSystem();
+            fs.setConf(conf);
 
-    //         PipesReducer<BooleanWritable, Text, IntWritable, Text> reducer = new PipesReducer<BooleanWritable, Text, IntWritable, Text>();
-    //         reducer.configure(conf);
-    //         BooleanWritable bw = new BooleanWritable(true);
+            File fCommand = getFileCommand("it.crs4.pydoop.pipes.PipeReducerStub");
+            conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());
+            System.err.println("fCommand" + fCommand.getAbsolutePath());
 
-    //         conf.set(MRJobConfig.TASK_ATTEMPT_ID, taskName);
-    //         initStdOut(conf);
-    //         conf.setBoolean(MRJobConfig.SKIP_RECORDS, true);
-    //         CombineOutputCollector<IntWritable, Text> output = new CombineOutputCollector<IntWritable, Text>(
-    //                                                                                                          new Counters.Counter(), new Progress());
-    //         Reporter reporter = new TestTaskReporter();
-    //         List<Text> texts = new ArrayList<Text>();
-    //         texts.add(new Text("first"));
-    //         texts.add(new Text("second"));
-    //         texts.add(new Text("third"));
+            Token<AMRMTokenIdentifier> token = 
+                new Token<AMRMTokenIdentifier>("user".getBytes(), 
+                                               "password".getBytes(), 
+                                               new Text("kind"), 
+                                               new Text("service"));
+            TokenCache.setJobToken(token, job.getCredentials());
+            conf.setBoolean(MRJobConfig.SKIP_RECORDS, true);
 
-    //         reducer.reduce(bw, texts.iterator(), output, reporter);
-    //         reducer.close();
-    //         String stdOut = readStdOut(conf);
-    //         // test data: key
-    //         assertTrue(stdOut.contains("reducer key :true"));
-    //         // and values
-    //         assertTrue(stdOut.contains("reduce value  :first"));
-    //         assertTrue(stdOut.contains("reduce value  :second"));
-    //         assertTrue(stdOut.contains("reduce value  :third"));
+            TestReporter reporter = new TestReporter();
+            DummyInputFormat input_format = new DummyInputFormat();
+            List<InputSplit> isplits = input_format.getSplits(job);
+            InputSplit isplit = isplits.get(0);
+            TaskAttemptContextImpl tcontext = 
+                new TaskAttemptContextImpl(conf, taskAttemptid);
 
-    //     } finally {
-    //         if (psw != null) {
-    //             // remove password files
-    //             for (File file : psw) {
-    //                 file.deleteOnExit();
-    //             }
-    //         }
-    //     }
+            RecordWriter<IntWritable, Text>  writer = 
+                new TestRecordWriter(new FileOutputStream( 
+                    workSpace.getAbsolutePath() + File.separator + "outfile"));
 
-    // }
+            BooleanWritable bw = new BooleanWritable(true);
+            List<Text> texts = new ArrayList<Text>();
+            texts.add(new Text("first"));
+            texts.add(new Text("second"));
+            texts.add(new Text("third"));
 
-    // /**
-    //  * test PipesPartitioner
-    //  * test set and get data from  PipesPartitioner
-    //  */
-    // @Test
-    // public void testPipesPartitioner() {
+            DummyRawKeyValueIterator kvit = new DummyRawKeyValueIterator();
 
-    //     PipesPartitioner<IntWritable, Text> partitioner = new PipesPartitioner<IntWritable, Text>();
-    //     Configuration configuration = new Configuration();
-    //     Submitter.getJavaPartitioner(configuration);
-    //     partitioner.configure(new Configuration());
-    //     IntWritable iw = new IntWritable(4);
-    //     // the cache empty
-    //     assertEquals(0, partitioner.getPartition(iw, new Text("test"), 2));
-    //     // set data into cache
-    //     PipesPartitioner.setNextPartition(3);
-    //     // get data from cache
-    //     assertEquals(3, partitioner.getPartition(iw, new Text("test"), 2));
-    // }
+            ReduceContextImpl<BooleanWritable, Text, IntWritable, Text> context 
+                = new ReduceContextImpl<
+                BooleanWritable, Text, IntWritable, Text>(
+                      conf, taskAttemptid, kvit,
+                      null, null, writer, null, null, null, 
+                      BooleanWritable.class, Text.class);
+
+            PipesReducer<BooleanWritable, Text, IntWritable, Text> 
+                reducer = new PipesReducer<BooleanWritable, Text, IntWritable, Text>();
+            reducer.setup(context);
+
+            initStdOut(conf);
+            reducer.reduce(bw, texts, context);
+            reducer.cleanup(context);
+            String stdOut = readStdOut(conf);
+
+            // test data: key
+            assertTrue(stdOut.contains("reducer key :true"));
+            // and values
+            assertTrue(stdOut.contains("reduce value  :first"));
+            assertTrue(stdOut.contains("reduce value  :second"));
+            assertTrue(stdOut.contains("reduce value  :third"));
+
+        } finally {
+            if (psw != null) {
+                // remove password files
+                for (File file : psw) {
+                    file.deleteOnExit();
+                }
+            }
+        }
+
+    }
+
+    /**
+     * test PipesPartitioner
+     * test set and get data from  PipesPartitioner
+     */
+    @Test
+    public void testPipesPartitioner() {
+
+        PipesPartitioner<IntWritable, Text> partitioner = 
+            new PipesPartitioner<IntWritable, Text>();
+        Configuration configuration = new Configuration();
+        Submitter.getJavaPartitioner(configuration);
+        partitioner.configure(new Configuration());
+        IntWritable iw = new IntWritable(4);
+        // the cache empty
+        assertEquals(0, partitioner.getPartition(iw, new Text("test"), 2));
+        // set data into cache
+        PipesPartitioner.setNextPartition(3);
+        // get data from cache
+        assertEquals(3, partitioner.getPartition(iw, new Text("test"), 2));
+    }
 
     /**
      * clean previous std error and outs
@@ -584,7 +620,7 @@ public class TestPipeApplication {
     }
 
     private class TestRecordWriter extends  
-        RecordWriter<WritableComparable<IntWritable>, Text> {
+        RecordWriter<IntWritable, Text> {
         private OutputStream os;
 
         public TestRecordWriter(OutputStream os) {
@@ -593,7 +629,7 @@ public class TestPipeApplication {
 
 
         @Override
-        public void write(WritableComparable<IntWritable> key, Text value) 
+        public void write(IntWritable key, Text value) 
             throws IOException, InterruptedException {
             os.write(("key:" + key + "\n").getBytes());
             os.write(("value:" + value + "\n").getBytes());
@@ -637,5 +673,13 @@ public class TestPipeApplication {
                        InputSplit split)  {
             super(conf, tid, reader, writer, committer, reporter, split);
         }
+    }
+
+    private class DummyRawKeyValueIterator implements RawKeyValueIterator {
+        public DataInputBuffer getKey() throws IOException { return null; }
+        public DataInputBuffer getValue() throws IOException { return null;}
+        public boolean next() throws IOException { return true; }
+        public void close() throws IOException {}
+        public org.apache.hadoop.util.Progress getProgress() { return null; }
     }
 }

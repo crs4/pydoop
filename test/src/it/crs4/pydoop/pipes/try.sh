@@ -5,7 +5,7 @@ export PATH=${HADOOP_PREFIX}/bin:${PATH}
 PYDRIVER=/home/zag/work/vs/git/pydoop/src/it/crs4/pydoop/pypipes_classes
 
 
-SRC="TestPipeApplication.java CommonStub.java PipeApplicationStub.java PipeApplicationRunnableStub.java DummyInputFormat.java"
+SRC="TestPipeApplication.java CommonStub.java PipeApplicationStub.java PipeApplicationRunnableStub.java DummyInputFormat.java PipeReducerStub.java"
 javac -cp `hadoop classpath`:${PYDRIVER} ${SRC} -d test_classes
 
 for class in TestPipeApplication

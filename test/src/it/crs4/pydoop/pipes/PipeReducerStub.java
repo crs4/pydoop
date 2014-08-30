@@ -16,8 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapred.pipes;
-
+package it.crs4.pydoop.pipes;
 
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.Text;
