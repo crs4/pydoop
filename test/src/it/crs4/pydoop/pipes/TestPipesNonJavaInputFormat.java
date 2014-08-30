@@ -16,21 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.hadoop.mapred.pipes;
+package it.crs4.pydoop.pipes;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapred.InputSplit;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.RecordReader;
-import org.apache.hadoop.mapred.Reporter;
-import org.apache.hadoop.mapred.pipes.TestPipeApplication.FakeSplit;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.JobID;
+import org.apache.hadoop.mapreduce.TaskAttemptID;
+import org.apache.hadoop.mapreduce.TaskID;
+import org.apache.hadoop.mapreduce.TaskType;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.util.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
@@ -44,48 +53,53 @@ public class TestPipesNonJavaInputFormat {
     */
 
   @Test
-  public void testFormat() throws IOException {
+  public void testFormat() throws IOException, InterruptedException {
+      JobID jobId = new JobID("201408272347", 0);
+      TaskID taskId = new TaskID(jobId, TaskType.MAP, 0);
+      TaskAttemptID taskAttemptid = new TaskAttemptID(taskId, 0);
 
-    PipesNonJavaInputFormat inputFormat = new PipesNonJavaInputFormat();
-    JobConf conf = new JobConf();
+      Job job = new Job(new Configuration());
+      job.setJobID(jobId);
+      Configuration conf = job.getConfiguration();
 
-    Reporter reporter= mock(Reporter.class);
-    RecordReader<FloatWritable, NullWritable> reader = inputFormat
-        .getRecordReader(new FakeSplit(), conf, reporter);
-    assertEquals(0.0f, reader.getProgress(), 0.001);
+      TaskAttemptContextImpl tcontext = 
+          new TaskAttemptContextImpl(conf, taskAttemptid);
 
-    // input and output files
-    File input1 = new File(workSpace + File.separator + "input1");
-    if (!input1.getParentFile().exists()) {
-      Assert.assertTrue(input1.getParentFile().mkdirs());
-    }
+      PipesNonJavaInputFormat input_format = new PipesNonJavaInputFormat();
 
-    if (!input1.exists()) {
-      Assert.assertTrue(input1.createNewFile());
-    }
+      DummyRecordReader reader =  
+          (DummyRecordReader) input_format.createRecordReader(new FileSplit(), 
+                                                              tcontext);
+      assertEquals(0.0f, reader.getProgress(), 0.001);
 
-    File input2 = new File(workSpace + File.separator + "input2");
-    if (!input2.exists()) {
-      Assert.assertTrue(input2.createNewFile());
-    }
-    // set data for splits
-    conf.set(org.apache.hadoop.mapreduce.lib.input.FileInputFormat.INPUT_DIR,
-        StringUtils.escapeString(input1.getAbsolutePath()) + ","
-            + StringUtils.escapeString(input2.getAbsolutePath()));
-    InputSplit[] splits = inputFormat.getSplits(conf, 2);
-    assertEquals(2, splits.length);
+      // input and output files
+      File input1 = new File(workSpace + File.separator + "input1");
+      if (!input1.getParentFile().exists()) {
+          Assert.assertTrue(input1.getParentFile().mkdirs());
+      }
 
-    PipesNonJavaInputFormat.PipesDummyRecordReader dummyRecordReader = new PipesNonJavaInputFormat.PipesDummyRecordReader(
-        conf, splits[0]);
-    // empty dummyRecordReader
-    assertNull(dummyRecordReader.createKey());
-    assertNull(dummyRecordReader.createValue());
-    assertEquals(0, dummyRecordReader.getPos());
-    assertEquals(0.0, dummyRecordReader.getProgress(), 0.001);
-     // test method next
-    assertTrue(dummyRecordReader.next(new FloatWritable(2.0f), NullWritable.get()));
-    assertEquals(2.0, dummyRecordReader.getProgress(), 0.001);
-    dummyRecordReader.close();
+      if (!input1.exists()) {
+          Assert.assertTrue(input1.createNewFile());
+      }
+
+      File input2 = new File(workSpace + File.separator + "input2");
+      if (!input2.exists()) {
+          Assert.assertTrue(input2.createNewFile());
+      }
+      // set data for splits
+      conf.set(org.apache.hadoop.mapreduce.lib.input.FileInputFormat.INPUT_DIR,
+               StringUtils.escapeString(input1.getAbsolutePath()) + ","
+               + StringUtils.escapeString(input2.getAbsolutePath()));
+      List<InputSplit> splits = input_format.getSplits(job);
+      assertTrue(splits.size() >= 2);
+
+      PipesNonJavaInputFormat.PipesDummyRecordReader dummyRecordReader = 
+          new PipesNonJavaInputFormat.PipesDummyRecordReader(splits.get(0), tcontext);
+      // empty dummyRecordReader
+      assertEquals(0.0, dummyRecordReader.getProgress(), 0.001);
+      // test method next
+      assertTrue(dummyRecordReader.next(new FloatWritable(2.0f), NullWritable.get()));
+      assertEquals(2.0, dummyRecordReader.getProgress(), 0.001);
+      dummyRecordReader.close();
   }
-
 }
