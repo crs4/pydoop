@@ -24,8 +24,9 @@ import logging, uuid
 from struct import pack
 
 # for backwards compatibility
-from pydoop.hdfs.path import split as split_hdfs_path
-
+def split_hdfs_path(hdfs_path, user=None):
+  from pydoop.hdfs.path import split
+  return split(hdfs_path, user)
 
 DEFAULT_LOG_LEVEL = "WARNING"
 
