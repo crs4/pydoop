@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package it.crs4.pydoop.pipes;
+package it.crs4.pydoop.mapreduce.pipes;
 
 
 import java.io.File;
@@ -49,7 +49,7 @@ import org.apache.hadoop.conf.Configuration;
 
   For the time being, we use the following as a stand-in.
 
-  it.crs4.pydoop.pipes.TaskLog;
+  it.crs4.pydoop.mapreduce.pipes.TaskLog;
 */
 
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
