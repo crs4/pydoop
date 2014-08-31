@@ -1,4 +1,4 @@
-package it.crs4.pydoop.pipes;
+package it.crs4.pydoop.mapreduce.pipes;
 
 import java.io.IOException;
 import java.util.List;

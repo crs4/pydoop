@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package it.crs4.pydoop.pipes;
+package it.crs4.pydoop.mapreduce.pipes;
 
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.Text;

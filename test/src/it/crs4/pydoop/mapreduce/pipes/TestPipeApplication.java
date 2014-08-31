@@ -18,7 +18,7 @@
 
 //package org.apache.hadoop.mapred.pipes;
 
-package it.crs4.pydoop.pipes;
+package it.crs4.pydoop.mapreduce.pipes;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
@@ -131,7 +131,7 @@ public class TestPipeApplication {
             TestMapContext context = new TestMapContext(conf, taskAttemptid, rReader, 
                                                         null, null, null, isplit);
             // stub for client
-            File fCommand = getFileCommand("it.crs4.pydoop.pipes.PipeApplicationRunnableStub");
+            File fCommand = getFileCommand("it.crs4.pydoop.mapreduce.pipes.PipeApplicationRunnableStub");
             conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());
             // token for authorization
             Token<AMRMTokenIdentifier> token = 
@@ -198,8 +198,8 @@ public class TestPipeApplication {
             fs.setConf(conf);
 
             File fCommand = 
-                getFileCommand("it.crs4.pydoop.pipes.PipeApplicationStub");
-                //getFileCommand("it.crs4.pydoop.pipes.PipeApplicationRunnableStub");
+                getFileCommand("it.crs4.pydoop.mapreduce.pipes.PipeApplicationStub");
+                //getFileCommand("it.crs4.pydoop.mapreduce.pipes.PipeApplicationRunnableStub");
             conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());            
             System.err.println("fCommand" + fCommand.getAbsolutePath());
 
@@ -399,7 +399,7 @@ public class TestPipeApplication {
             args[6] = "-map";
             args[7] = "org.apache.hadoop.mapreduce.lib.map.InverseMapper";
             args[8] = "-partitioner";
-            args[9] = "it.crs4.pydoop.pipes.PipesPartitioner";
+            args[9] = "it.crs4.pydoop.mapreduce.pipes.PipesPartitioner";
             args[10] = "-reduce";
             args[11] = "org.apache.hadoop.mapreduce.lib.reduce.IntSumReducer";
             args[12] = "-writer";
@@ -446,7 +446,7 @@ public class TestPipeApplication {
             FileSystem fs = new RawLocalFileSystem();
             fs.setConf(conf);
 
-            File fCommand = getFileCommand("it.crs4.pydoop.pipes.PipeReducerStub");
+            File fCommand = getFileCommand("it.crs4.pydoop.mapreduce.pipes.PipeReducerStub");
             conf.set(MRJobConfig.CACHE_LOCALFILES, fCommand.getAbsolutePath());
             System.err.println("fCommand" + fCommand.getAbsolutePath());
 
