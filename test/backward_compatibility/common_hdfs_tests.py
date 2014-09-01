@@ -24,7 +24,6 @@ from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
-from pydoop.hdfs.common import encode_path, decode_path
 import pydoop.test_utils as utils
 
 
@@ -294,11 +293,9 @@ class TestCommon(unittest.TestCase):
     cwd = self.fs.working_directory()
     new_d = self._make_random_path()  # does not need to exist
     self.fs.set_working_directory(new_d)
-    self.assertEqual(self.fs.working_directory(), encode_path(new_d))
-    self.assertEqual(self.fs.working_directory(decode=True), new_d)
+    self.assertEqual(self.fs.working_directory(), new_d)
     self.fs.set_working_directory(cwd)
     self.assertEqual(self.fs.working_directory(), cwd)
-    self.assertEqual(self.fs.working_directory(decode=True), decode_path(cwd))
 
   def list_directory(self):
     new_d = self._make_random_dir()
