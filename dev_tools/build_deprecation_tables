@@ -5,7 +5,7 @@ An utility to generate mrv1 to mrv2 conversion tables.
 
 Usage::
 
-  bash$ build_deprecation_tables /opt/hadoop-2.4.1-src ./pydoop/app/conversion_tables.py
+  bash$ build_deprecation_tables /opt/hadoop-2.4.1-src ./pydoop/utils/conversion_tables.py
 
 
 """
