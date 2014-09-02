@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+"""
+An utility to generate mrv1 to mrv2 conversion tables.
+
+Usage::
+
+  bash$ build_deprecation_tables /opt/hadoop-2.4.1-src ./pydoop/app/conversion_tables.py
+
+
+"""
+
+import os, sys, re
+
+DEFAULT_DEPRECATED_PROPERTIES_APT_VM_FNAME = \
+"hadoop-common-project/hadoop-common/src/site/apt/DeprecatedProperties.apt.vm"
+
+
+
+block_separator = '||'
+
+def extract_tables(apt_vm_fname):
+    """Returns the deprecated-to-new-property table and its inverse as two dict(s)."""
+    with open(apt_vm_fname) as f:
+        lines = [x  for x in f.readlines() if re.match('^\|[^\|]', x)]
+    pairs = [p for p in [map(lambda x : x.strip(), l.split('|'))[1:] for l in lines]
+               if not p[1].startswith('NONE')]
+    return dict(pairs), dict(( (y, x) for (x, y) in pairs))
+    
+
+def main(argv):
+    src_root = argv[0]
+    module_path = argv[1]
+    fname = os.path.join(src_root, DEFAULT_DEPRECATED_PROPERTIES_APT_VM_FNAME)
+    mrv1_to_mrv2, mrv2_to_mrv1 = extract_tables(fname)
+    with open(module_path, 'w') as f:
+        f.write('mrv1_to_mrv2=%r\n' % mrv1_to_mrv2);
+        f.write('mrv2_to_mrv1=%r\n' % mrv2_to_mrv1);
+
+
+if __name__ == "__main__":
+  main(sys.argv[1:])
