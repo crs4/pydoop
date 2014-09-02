@@ -26,6 +26,7 @@ from pydoop.version import version
 
 SUBMOD_NAMES = [
   "script",
+  "submit",
   ]
 
 def make_parser():
