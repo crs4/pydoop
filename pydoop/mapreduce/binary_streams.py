@@ -16,7 +16,6 @@
 #
 # END_COPYRIGHT
 
-import sys
 from streams import DownStreamFilter, UpStreamFilter
 from serialize import deserialize, serialize, serialize_to_string
 
@@ -46,6 +45,13 @@ DONE = 54
 REGISTER_COUNTER = 55
 INCREMENT_COUNTER = 56
 AUTHENTICATION_RESP = 57
+
+
+def get_list(stream):
+    n = deserialize(int, stream)
+    if n < 0:
+        raise ValueError('number of elements < 0')
+    return [deserialize(str, stream) for _ in xrange(n)]
 
 
 class BinaryWriter(object):
@@ -84,12 +90,6 @@ class BinaryWriter(object):
 
 
 class BinaryDownStreamFilter(DownStreamFilter):
-
-    @staticmethod
-    def get_list(stream):
-        n = deserialize(int, stream)
-        assert n >= 0
-        return [deserialize(str, stream) for _ in range(n)]
 
     DFLOW_TABLE = {
         START_MESSAGE: ('start', [int], None),
@@ -144,7 +144,7 @@ class BinaryUpStreamFilter(UpStreamFilter):
     def send(self, cmd, *args):
         self.logger.debug('cmd: %s, args: %s' % (cmd, args))
         stream = self.stream
-        cmd_code, types, processor = self.UPFLOW_TABLE[cmd]
+        cmd_code, types, _ = self.UPFLOW_TABLE[cmd]
         serialize(cmd_code, stream)
         for t, v in zip(types, args):
             if t == float: # you never know...
