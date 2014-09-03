@@ -85,6 +85,7 @@ class BinaryWriter(object):
 
 class BinaryDownStreamFilter(DownStreamFilter):
 
+    @staticmethod
     def get_list(stream):
         n = deserialize(int, stream)
         assert n >= 0
