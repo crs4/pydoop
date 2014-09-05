@@ -21,10 +21,10 @@ import logging
 import time
 import StringIO
 
-from pydoop.mapreduce.serialize import deserialize_text, deserialize_long
-from pydoop.mapreduce.serialize import deserialize_old_style_filename
-from pydoop.mapreduce.serialize import serialize_to_string, serialize_text
-from pydoop.mapreduce.serialize import serialize_long
+from pydoop.utils.serialize import deserialize_text, deserialize_long
+from pydoop.utils.serialize import deserialize_old_style_filename
+from pydoop.utils.serialize import serialize_to_string, serialize_text
+from pydoop.utils.serialize import serialize_long
 
 import connections
 from pydoop.mapreduce.api import JobConf, RecordWriter, MapContext, ReduceContext
@@ -33,7 +33,7 @@ from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
 from string_utils import create_digest
 from pydoop.mapreduce.api import Counter
 from environment_keys import *
-from pydoop.mapreduce.serialize import private_encode
+from pydoop.utils.serialize import private_encode
 
 from pydoop import hadoop_version_info
 from pydoop.mapreduce.api import Factory as FactoryInterface

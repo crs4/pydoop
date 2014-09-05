@@ -18,7 +18,7 @@
 
 from abc import ABCMeta, abstractmethod
 
-from serialize import private_decode
+from pydoop.utils.serialize import private_decode
 
 class ProtocolError(Exception):
     pass

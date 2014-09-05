@@ -19,7 +19,7 @@ from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.mapreduce.string_utils import create_digest
 
-from pydoop.mapreduce.serialize import serialize_to_string
+from pydoop.utils.serialize import serialize_to_string
 
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
