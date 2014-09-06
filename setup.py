@@ -34,7 +34,7 @@ Other relevant environment variables include::
 
 import os, re, glob, shutil, itertools
 import time
-from distutils.core import setup
+from distutils.core import setup, Extension
 from distutils.command.build import build
 from distutils.command.clean import clean
 from distutils.errors import DistutilsSetupError
@@ -366,6 +366,12 @@ class Clean(clean):
     for p in garbage_list:
       rm_rf(p, self.dry_run)
 
+binary_encoder = Extension('pydoop_sercore',
+                           sources = [os.path.join('src/serialize', x) 
+                                      for x in ['protocol_codec.cc', 'SerialUtils.cc', 
+                                                'StringUtils.cc']],
+                           extra_compile_args=["-O3"])
+
 setup(
   name="pydoop",
   version=get_version_string(),
@@ -390,6 +396,7 @@ setup(
     },
   scripts=["scripts/pydoop"],
   platforms=["Linux"],
+  ext_modules = [binary_encoder],
   license="Apache-2.0",
   keywords=["hadoop", "mapreduce"],
   classifiers=[
