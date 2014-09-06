@@ -180,7 +180,7 @@ class TaskContext(MapContext, ReduceContext):
                                         self, reducer) if reducer else None
 
     def emit(self, key, value):
-        logger.debug("Emitting... %r,%r" % (key, value))
+        logger.debug("Emitting... %r,%r", key, value)
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
@@ -192,7 +192,7 @@ class TaskContext(MapContext, ReduceContext):
                 part = self.partitioner.partition(key, self.n_reduces)
                 self.up_link.send('partitionedOutput', part, key, value)
             else:
-                logger.debug("** Sending: %r,%r" % (key, value))
+                logger.debug("** Sending: %r,%r", key, value)
                 self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
@@ -219,10 +219,10 @@ class TaskContext(MapContext, ReduceContext):
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
-                logger.debug("Sending status %r" % self._status)
+                logger.debug("Sending status %r", self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
-            logger.debug("Sending progress float %r" % self._progress_float)
+            logger.debug("Sending progress float %r", self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -252,7 +252,7 @@ class TaskContext(MapContext, ReduceContext):
 
     def next_value(self):
         try:
-            logger.debug("%s" % self._values)
+            logger.debug("%s", self._values)
             self._value = self._values.next()
             return True
         except StopIteration:
@@ -297,25 +297,25 @@ class StreamRunner(object):
     def get_password(self):
         secret_location_key = resolve_environment_secret_location_key()
         pfile_name = resolve_environment_secret_location(secret_location_key)
-        self.logger.debug('{}:{}'.format(secret_location_key, pfile_name))
+        self.logger.debug('%r: %r', secret_location_key, pfile_name)
         if pfile_name is None:
             self.password = None
             return
         try:
             with open(pfile_name) as f:
                 self.password = f.read()
-                self.logger.debug('password:{}'.format(self.password))
+                self.logger.debug('password:%r', self.password)
         except IOError:
             self.logger.error('Could not open the password file')
 
     def run(self):
         self.logger.debug('start running')
         for cmd, args in self.cmd_stream:
-            self.logger.debug('dispatching cmd:%s, args: %s' % (cmd, args))
+            self.logger.debug('dispatching cmd:%s, args: %s', cmd, args)
             if cmd == 'authenticationReq':
                 digest, challenge = args
                 self.logger.debug(
-                    'authenticationReq: {}, {}'.format(digest, challenge))
+                    'authenticationReq: %r, %r', digest, challenge)
                 if self.fails_to_authenticate(digest, challenge):
                     self.logger.critical(
                         'Server failed to authenticate. Exiting')
@@ -342,7 +342,7 @@ class StreamRunner(object):
             return True
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
-        self.logger.debug('authenticationResp: {}'.format(response_digest))
+        self.logger.debug('authenticationResp: %r', response_digest)
         self.ctx.up_link.send('authenticationResp', response_digest)
         return False
 
@@ -354,13 +354,14 @@ class StreamRunner(object):
             ctx.enable_private_encoding()
 
         ctx._input_split = input_split
-        logger.debug("InputSPlit setted %r" % input_split)
+        logger.debug("InputSPlit setted %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
             if cmd == "setInputTypes":
                 ctx._input_key_class, ctx._input_value_class = args
 
-        logger.debug("After setInputTypes: %r, %r" % (ctx.input_key_class, ctx.input_value_class))
+        logger.debug("After setInputTypes: %r, %r", ctx.input_key_class, 
+                     ctx.input_value_class)
 
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
@@ -372,10 +373,10 @@ class StreamRunner(object):
         ctx.set_combiner(factory, input_split, n_reduces)
 
         for ctx._key, ctx._value in reader:
-            logger.debug("key: %r, value: %r " % (ctx.key, ctx.value))
+            logger.debug("key: %r, value: %r ",  ctx.key, ctx.value)
             if send_progress:
                 ctx._progress_float = reader.get_progress()
-                logger.debug("Progress updated to %r " % ctx._progress_float)
+                logger.debug("Progress updated to %r ", ctx._progress_float)
                 ctx.progress()
             mapper.map(ctx)
         mapper.close()

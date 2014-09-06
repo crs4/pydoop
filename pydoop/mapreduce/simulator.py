@@ -48,19 +48,19 @@ class TrivialRecordWriter(object):
             self.output(key, value)
         elif cmd == 'status':
             value = vals[0]
-            self.logger.debug("Sending %s: %s" % (cmd, value))
+            self.logger.debug("Sending %s: %s", cmd, value)
         elif cmd == 'progress':
             value = vals[0]
-            self.logger.debug("Sending %s: %s" % (cmd, value))
+            self.logger.debug("Sending %s: %s", cmd, value)
         elif cmd == 'registerCounter':
             cid, group, name = vals
-            self.logger.debug("Sending command %s => %s" % (cmd, cid))
+            self.logger.debug("Sending command %s => %s", cmd, cid)
             self.counters[cid] = 0
         elif cmd == 'incrementCounter':
             cid, increment = vals
             self.counters[cid] += int(increment)
             self.output("COUNTER_" + str(cid), self.counters[cid])
-            self.logger.debug("Writing %s: %s" % (cid, self.counters[cid]))
+            self.logger.debug("Writing %s: %s", cid, self.counters[cid])
         elif cmd == 'done':
             self.stream.close()
         else:
@@ -99,11 +99,11 @@ class TrivialRecordReader(RecordReader):
 
 class SortAndShuffle(dict):
     def output(self, key, value):
-        logger.debug('SAS:output {}, {}'.format(key, value))
+        logger.debug('SAS:output %r, %r', key, value)
         self.setdefault(key, []).append(value)
 
     def send(self, *args):
-        logger.debug('SAS:send {}'.format(args))        
+        logger.debug('SAS:send %r', args)        
         if args[0] == 'output':
             key, value = args[1:]
             self.setdefault(key, []).append(value)
@@ -147,18 +147,17 @@ class ResultThread(threading.Thread):
         self.logger.debug('started runner')        
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
         for cmd, args in up_cmd_stream:
-            self.logger.debug('cmd:{} args:{}'.format(cmd, args))
+            self.logger.debug('cmd: %r args:%r', cmd, args)
             if cmd == 'authenticationResp':
-                self.logger.debug('got an authenticationResp: {}'.format(args))
+                self.logger.debug('got an authenticationResp: %r', args)
             elif cmd == 'output':
                 key, value = args
                 self.ostream.output(key, value)
-                self.logger.debug('output: ({}, {})'.format(key, value))
+                self.logger.debug('output: (%r, %r)', key, value)
             elif cmd == 'partitionedOutput':
                 part, key, value = args
                 self.ostream.output(key, value)
-                self.logger.debug('partitionedOutput: ({}, {}, {})'.format(
-                    part, key, value))
+                self.logger.debug('partitionedOutput: (%r, %r, %r)', part, key, value)
             elif cmd == 'done':
                 if self.ostream:
                     self.ostream.close()
@@ -213,8 +212,7 @@ class HadoopServer(SocketServer.TCPServer):
         self.out_writer = out_writer
         # old style class
         SocketServer.TCPServer.__init__(self, (host, port), HadoopThreadHandler)
-        self.logger.debug('initialized on ({}, {})'.format(host, port))
-
+        self.logger.debug('initialized on (%r, %r)', host, port)
     def get_port(self):
         return self.socket.getsockname()[1]
 
@@ -265,7 +263,7 @@ class HadoopSimulator(object):
             down_stream.send('setInputTypes', input_key_type, input_value_type)
             pos = file_in.tell()
             for l in file_in:
-                self.logger.debug("Line: %s" % l)
+                self.logger.debug("Line: %s", l)
                 k = serialize_to_string(pos)
                 down_stream.send('mapItem', k, l)
                 pos = file_in.tell()
@@ -285,7 +283,7 @@ class HadoopSimulator(object):
 
         down_stream.send('runReduce', reducer, piped_output)
         for k in sas:
-            self.logger.debug("key: {}".format(k))
+            self.logger.debug("key: %r", k)
             down_stream.send('reduceKey', k)
             for v in sas[k]:
                 down_stream.send('reduceValue', v)
@@ -332,7 +330,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
             self.logger.info('running reducer')
             self.run_task(rstream, rec_writer_stream)
         if file_out is None:
-            self.logger.debug('fake file_out contents: %r' % f.getvalue())
+            self.logger.debug('fake file_out contents: %r', f.getvalue())
         self.logger.info('run done.')
 
 
