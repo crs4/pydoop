@@ -5,6 +5,7 @@ import tempfile
 import uuid
 import logging
 import cStringIO
+import tempfile
 
 import logging
 logging.basicConfig()
@@ -234,8 +235,8 @@ class HadoopSimulator(object):
         self.write_authorization(down_stream, authorization)
         down_stream.send('start', 0)
         down_stream.send('setJobConf',
-                         *sum([[k, v] for k, v in job_conf.iteritems()],
-                             []))
+                         tuple(sum([[k, v] for k, v in job_conf.iteritems()],
+                                   [])))
         
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               authorization=None, input_split=''):
@@ -253,7 +254,11 @@ class HadoopSimulator(object):
         
         piped_input = file_in is not None
 
-        f = cStringIO.StringIO()
+        #f = cStringIO.StringIO()
+        self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
+        f = self.tempf.file
+        #f = open('foo-map.dat', 'wb')
+        self.logger.debug('writing map input data in %s', f.name)
         down_stream = BinaryWriter(f)
         
         self.write_header_down_stream(down_stream, authorization, job_conf)
@@ -268,7 +273,10 @@ class HadoopSimulator(object):
                 down_stream.send('mapItem', k, l)
                 pos = file_in.tell()
             down_stream.send('close')
+        self.logger.debug('\tdone writing, rewinding')
         f.seek(0)
+        #f.close()
+        #f = open('foo-map.dat', 'rb')
         return f
 
     def write_reduce_down_stream(self, sas, job_conf, reducer,
@@ -276,7 +284,10 @@ class HadoopSimulator(object):
         """
         FIXME
         """
-        f = cStringIO.StringIO()
+        #f = cStringIO.StringIO()
+        self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
+        f = self.tempf.file
+        #f = open('foo-map.dat', 'wb')
         down_stream = BinaryWriter(f)
 
         self.write_header_down_stream(down_stream, authorization, job_conf)
@@ -289,6 +300,8 @@ class HadoopSimulator(object):
                 down_stream.send('reduceValue', v)
         down_stream.send('close')
         f.seek(0)
+        #f.close()
+        #f = open('foo-map.dat', 'rb')
         return f
 
 
@@ -302,9 +315,13 @@ class HadoopSimulatorLocal(HadoopSimulator):
         return self.counters.get(group+"_"+name, None)
 
     def run_task(self, dstream, ustream):
+        self.logger.debug('run task')
         context = TaskContext(ustream)
+        self.logger.debug('got context')
         stream_runner = StreamRunner(self.factory, context, dstream)
+        self.logger.debug('got runner, ready to run.')
         stream_runner.run()
+        self.logger.debug('done running!')
         context.close()
 
     def run(self, file_in, file_out, job_conf, num_reducers):
@@ -312,7 +329,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
         bytes_flow = self.write_map_down_stream(file_in, job_conf, num_reducers)
         dstream = BinaryDownStreamFilter(bytes_flow)
-        # FIXME this is a quick hack to avoid crashes with used defined
+        # FIXME this is a quick hack to avoid crashes with user defined
         # RecordWriter
         f = cStringIO.StringIO() if file_out is None else file_out
         rec_writer_stream = TrivialRecordWriter(f)

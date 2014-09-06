@@ -40,7 +40,7 @@ from pydoop.mapreduce.api import Factory as FactoryInterface
 
 #logging.basicConfig()
 logger = logging.getLogger('pipes')
-logger.setLevel(logging.CRITICAL)
+logger.setLevel(logging.DEBUG)
 
 class Factory(FactoryInterface):
     def __init__(self, mapper_class, reducer_class=None, combiner_class=None,
@@ -321,7 +321,7 @@ class StreamRunner(object):
                         'Server failed to authenticate. Exiting')
                     break  # bailing out
             elif cmd == 'setJobConf':
-                self.ctx.set_job_conf(args)
+                self.ctx.set_job_conf(args[0])
             elif cmd == 'runMap':
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
