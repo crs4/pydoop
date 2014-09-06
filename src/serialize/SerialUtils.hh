@@ -162,7 +162,8 @@ namespace HadoopUtils {
   void serializeLong(int64_t t, OutStream& stream);
   int64_t deserializeLong(InStream& stream);
   void serializeFloat(float t, OutStream& stream);
-  float deserializeFloat(InStream& stream);
+  //  float deserializeFloat(InStream& stream);
+  void deserializeFloat(float& t, InStream& stream);
   void serializeString(const std::string& t, OutStream& stream);
   void deserializeString(std::string& t, InStream& stream);
 }

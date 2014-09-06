@@ -166,12 +166,21 @@ public:
         serializeLong(v, stream);
         return o;
       }
+      case 'f': {
+        float v = PyFloat_AsDouble(o);
+        if (v == -1.0 && PyErr_Occurred()) {
+          return NULL;
+        }
+        serializeFloat(v, stream);
+        return o;
+      }
       case 'A': {
         if (!PyTuple_Check(o)) {
           PyErr_SetString(ProtocolCodecError, "A argument should be a tuple.");
           return NULL;
         }
         Py_ssize_t n = PyTuple_GET_SIZE(o);
+        serializeInt(n, stream);
         for(Py_ssize_t i = 0; i < n; ++i){
           serialize_item('s', PyTuple_GET_ITEM(o, i), stream);
         }
@@ -191,12 +200,16 @@ public:
       switch(code) {
       case 's':
         deserializeString(_buffer, stream);
-        std::cerr << "Deserializing string: "<< _buffer << std::endl;
         return PyString_FromStringAndSize(_buffer.c_str(), _buffer.size());
       case 'i':
         return PyInt_FromLong(deserializeInt(stream));
       case 'L':
         return PyLong_FromLongLong(deserializeLong(stream));
+      case 'f': {
+        float v;
+        deserializeFloat(v, stream);
+        return PyFloat_FromDouble((double)v);
+      }
       case 'A': {
         Py_ssize_t n = deserializeInt(stream);
         PyObject* res = PyTuple_New(n);        
