@@ -42,12 +42,12 @@ Object serialization/deserialization will instead be implemented as follows.
                    and isinstance(z, str))
            self.x, self.y, self.z = x, y, z
        def write(self, sink):
-           ProtocolCodec.serialize(('ifs', (self.x, self.y, self.z)), sink)
+           codec.serialize(('ifs', (self.x, self.y, self.z)), sink)
        def read_fields(self, source):
            self.x, self.y, self.z = ProtocolCodec.deserialize(source, enc_format='ifs')
        @classmethod
        def read(cls, source):
-           x, y, z = ProtocolCodec.deserialize(source, enc_format='ifs')
+           x, y, z = codec.deserialize(source, enc_format='ifs')
            return Foo(x, y, z)
 
    codec.register_object('org.foo.FooObject', Foo)
@@ -83,7 +83,7 @@ import struct, xdrlib
 import StringIO
 import cPickle as pickle
 
-from pydoop._serialize import cProtocolCodec
+import pydoop_sercore as codec_core
 
 
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
@@ -266,19 +266,19 @@ def serialize_to_string(v, type_id=None):
     return f.getvalue()
 
 
-
-# FIXME this is currently an empty shell
+# FIXME this is currently an almost empty shell
 class ProtocolCodec(object):
     def __init__(self):
         pass
     def add_rule(self, code, name, enc_format):
-        pass
+        codec_core.add_rule(code, name, enc_format)
+        
     def register_object(self, obj_name, obj_class=None, enc_format=None):
         pass
     def decode_command(self, stream):
-        pass
+        return codec_core.decode_command(stream)
     def encode_command(self, cmd, args, stream):
-        pass
+        return codec_core.encode_command(stream, cmd, args)
     @classmethod
     def serialize(cls, obj, sink=None):
         """
@@ -299,3 +299,4 @@ class ProtocolCodec(object):
         """
         pass
     
+codec = ProtocolCodec()

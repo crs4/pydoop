@@ -17,13 +17,13 @@
 # END_COPYRIGHT
 
 import sys
-from streams import DownStreamFilter, UpStreamFilter
-from serialize import ProtocolCodec
+from pydoop.mapreduce.streams import DownStreamFilter, UpStreamFilter
+from pydoop.utils.serialize import codec, codec_core
 
 import logging
 logging.basicConfig()
 logger = logging.getLogger('binary_streams')
-logger.setLevel(logging.CRITICAL)
+logger.setLevel(logging.DEBUG)
 
 # these constants should be exactly what has been defined in PipesMapper.java
 # BinaryProtocol.java
@@ -47,9 +47,8 @@ REGISTER_COUNTER = 55
 INCREMENT_COUNTER = 56
 AUTHENTICATION_RESP = 57
 
-codec = ProtocolCodec()
 codec.add_rule(START_MESSAGE, 'start', 'i')
-codec.add_rule(SET_JOB_CONF, 'setJobConf', 'L')
+codec.add_rule(SET_JOB_CONF, 'setJobConf', 'A')
 codec.add_rule(SET_INPUT_TYPES, 'setInputTypes', 'ss')
 codec.add_rule(RUN_MAP, 'runMap', 'sii')
 codec.add_rule(MAP_ITEM, 'mapItem', 'ss')
@@ -65,24 +64,36 @@ codec.add_rule(STATUS, 'status', 's')
 codec.add_rule(PROGRESS, 'progress', 'f')
 codec.add_rule(DONE, 'done', '')
 codec.add_rule(REGISTER_COUNTER, 'registerCounter', 'iss')
-codec.add_rule(INCREMENT_COUNTER, 'incrementCounter', 'ii')
+codec.add_rule(INCREMENT_COUNTER, 'incrementCounter', 'iL')
 codec.add_rule(AUTHENTICATION_RESP, 'authenticationResp', 's')
-
 
 
 class BinaryWriter(object):
     def __init__(self, stream):
         self.stream = stream
+        self.logger = logger.getChild('BinaryWriter')
     def send(self, cmd, *args):
-        codec.serialize_cmd(cmd, args)
+        self.logger.debug('writing %r, %r', cmd, args)
+        #codec_core.encode_command(self.stream, cmd, args)
+        codec.encode_command(cmd, args, self.stream)
 
 class BinaryDownStreamFilter(DownStreamFilter):
     def __init__(self, stream):
         super(BinaryDownStreamFilter, self).__init__(stream)
         self.logger = logger.getChild('BinaryDownStreamFilter')
-    def next(self):
+    def __iter__(self):
+        return self.fast_iterator()
+    def fast_iterator(self):
+        stream = self.stream
+        decode_command = codec_core.decode_command
+        while True:
+            try:
+                yield decode_command(stream)
+            except EOFError:
+                raise StopIteration
+    def next(self): # FIXME: this is just for timing purposes.
         try:
-            return codec.deserialize_cmd(self.stream)
+            return codec.decode_command(self.stream)
         except EOFError:
             raise StopIteration
 
@@ -95,7 +106,7 @@ class BinaryUpStreamFilter(UpStreamFilter):
     def send(self, cmd, *args):
         self.logger.debug('cmd: %s, args: %s', cmd, args)
         stream = self.stream
-        codec.serialize_cmd(self.stream, cmd, args)        
+        codec.encode_command(cmd, args, self.stream)
         stream.flush()
 
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
