@@ -94,9 +94,26 @@ class KeyValuesStream(object):
         self.no_private_encoding = no_private_encoding
 
     def __iter__(self):
-        return self
+        return self.fast_iterator()
 
-    def next(self):
+    def fast_iterator(self):
+        stream = self.stream
+        private_encoding = not self.no_private_encoding
+        for cmd, args in stream:
+            if cmd == 'close':
+                raise StopIteration
+            elif cmd == 'reduceKey':
+                values_stream = self.get_value_stream(self.stream)
+                key = private_decode(args[0]) if private_encoding\
+                                              else args[0]
+                yield key, values_stream
+            elif cmd == 'reduceValue':
+                continue
+            else:
+                raise ProtocolError('out of order command: {}'.format(cmd))
+        raise StopIteration
+
+    def next(self): # FIXME: only for timing comparison purposes
         for cmd, args in self.stream:
             if cmd == 'close':
                 raise StopIteration
@@ -112,12 +129,13 @@ class KeyValuesStream(object):
         raise StopIteration
 
     def get_value_stream(self, stream):
+        private_encoding = not self.no_private_encoding
         for cmd, args in stream:
             if cmd == 'close':
                 stream.push_back((cmd, args))                
                 raise StopIteration
             elif cmd == 'reduceValue':
-                yield private_decode(args[0]) if not self.no_private_encoding\
+                yield private_decode(args[0]) if private_encoding\
                                               else args[0]
             else:
                 stream.push_back((cmd, args))
