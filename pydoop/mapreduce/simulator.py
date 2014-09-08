@@ -19,8 +19,10 @@ from pydoop.mapreduce.api import PydoopError
 from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.mapreduce.string_utils import create_digest
+from pydoop.mapreduce.connections import BUF_SIZE
 
 from pydoop.utils.serialize import serialize_to_string
+from pydoop_sercore import fdopen as ph_fdopen
 
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
@@ -176,13 +178,15 @@ class ResultThread(threading.Thread):
                 self.logger.info("Incrementing Counter: %s %s" % args)
         self.logger.debug('done with ResultThread')
 
-
-class HadoopThreadHandler(SocketServer.StreamRequestHandler):
+class HadoopThreadHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         self.server.logger.debug('handler started')
-        cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
+        fd = self.request.fileno()
+        cmd_thread = CommandThread(self.server.down_bytes,
+                                   ph_fdopen(os.dup(fd), 'w', BUF_SIZE),
                                    self.server.logger)
-        res_thread = ResultThread(self.rfile, self.server.out_writer,
+        res_thread = ResultThread(ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
+                                  self.server.out_writer,
                                   self.server.logger)
         cmd_thread.start()
         res_thread.start()
@@ -190,6 +194,21 @@ class HadoopThreadHandler(SocketServer.StreamRequestHandler):
         self.server.logger.debug('cmd_thread returned.')
         res_thread.join()
         self.server.logger.debug('res_thread returned.')
+
+
+# class HadoopThreadHandler(SocketServer.StreamRequestHandler):
+#     def handle(self):
+#         self.server.logger.debug('handler started')
+#         cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
+#                                    self.server.logger)
+#         res_thread = ResultThread(self.rfile, self.server.out_writer,
+#                                   self.server.logger)
+#         cmd_thread.start()
+#         res_thread.start()
+#         cmd_thread.join()
+#         self.server.logger.debug('cmd_thread returned.')
+#         res_thread.join()
+#         self.server.logger.debug('res_thread returned.')
 
 
 class HadoopServer(SocketServer.TCPServer):

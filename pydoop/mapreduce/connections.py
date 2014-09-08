@@ -22,6 +22,8 @@ import socket
 from threading import Thread, Event
 import logging
 
+from pydoop_sercore import fdopen as ph_fdopen
+
 from pydoop.mapreduce.text_streams import TextDownStreamFilter, TextUpStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
 
@@ -103,7 +105,9 @@ class NetworkConnections(Connections):
 def open_network_connections(port):
     s = socket.socket()
     s.connect(('localhost', port))
-    in_stream  = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
-    out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
+    # in_stream  = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
+    # out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
+    in_stream  = ph_fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
+    out_stream = ph_fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
     return NetworkConnections(BinaryDownStreamFilter(in_stream),
                               BinaryUpStreamFilter(out_stream), s, port)

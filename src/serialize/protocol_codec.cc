@@ -5,7 +5,7 @@
 #include <utility>  // std::pair support
 #include <iostream>
 #include "SerialUtils.hh"
-
+#include <errno.h>
 
 /*
   Encoding/Decoding formats:
@@ -351,6 +351,26 @@ codec_add_rule(PyObject *self, PyObject *args) {
   return codec.add_rule(code, std::string(name), std::string(enc_format));
 }
 
+static PyObject *
+util_fdopen(PyObject *self, PyObject *args) {
+  int fd;
+  char *mode;
+  int bufsize = -1;
+  if (!PyArg_ParseTuple(args, "isi", &fd, &mode, &bufsize))
+    return NULL;
+  // FIXME: NO ARGS CHECKING!
+  FILE *fp = fdopen(fd, mode);
+  char *buffer = new char[bufsize];
+  int setbuf = setvbuf(fp, buffer, _IOFBF, bufsize);
+  if (setbuf != 0) {
+    delete [] buffer;
+    std::string msg = std::string("problems with setvbuf:") + strerror(errno);
+    PyErr_SetString(ProtocolCodecError, msg.c_str());
+    return NULL;
+  }
+  return PyFile_FromFile(fp, "<fdopen>", mode, NULL);
+}
+
 static PyMethodDef ProtocolCodecMethods[] = {
   {"add_rule", codec_add_rule, METH_VARARGS,
    "Add protocol command decoding rule"},
@@ -366,6 +386,8 @@ static PyMethodDef ProtocolCodecMethods[] = {
    "Serialize a list of objects to a buffer"},
   {"deserialize_from_buffer", codec_deserialize_from_buffer, METH_VARARGS,
    "Deserialize a list of objects from a buffer"},
+  {"fdopen", util_fdopen, METH_VARARGS, 
+   "Return an open file object connected to a file descriptor"},
   {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
