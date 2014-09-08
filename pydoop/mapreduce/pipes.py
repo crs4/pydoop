@@ -400,7 +400,7 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             no_private_encoding=False):
+             no_private_encoding=True):
     #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
