@@ -40,7 +40,7 @@ from pydoop.mapreduce.api import Factory as FactoryInterface
 
 #logging.basicConfig()
 logger = logging.getLogger('pipes')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
 
 class Factory(FactoryInterface):
     def __init__(self, mapper_class, reducer_class=None, combiner_class=None,

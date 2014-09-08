@@ -23,7 +23,7 @@ from pydoop.utils.serialize import codec, codec_core
 import logging
 logging.basicConfig()
 logger = logging.getLogger('binary_streams')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
 
 # these constants should be exactly what has been defined in PipesMapper.java
 # BinaryProtocol.java
