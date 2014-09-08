@@ -368,7 +368,7 @@ util_fdopen(PyObject *self, PyObject *args) {
     PyErr_SetString(ProtocolCodecError, msg.c_str());
     return NULL;
   }
-  return PyFile_FromFile(fp, "<fdopen>", mode, NULL);
+  return PyFile_FromFile(fp, "<fdopen>", mode, fclose);
 }
 
 static PyMethodDef ProtocolCodecMethods[] = {
