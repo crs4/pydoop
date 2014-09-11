@@ -58,9 +58,12 @@ class StatResult(object):
     self.st_mtime = path_info['last_mod']
     self.st_ctime = 0
     #--
-    n, r = divmod(path_info['size'], path_info['block_size'])
-    self.st_blocks = n + (r != 0)
     self.st_blksize = path_info['block_size']
+    if self.st_blksize:
+      n, r = divmod(path_info['size'], self.st_blksize)
+      self.st_blocks = n + (r != 0)
+    else:
+      self.st_blocks = 0
     #--
     self.kind = path_info['kind']
     self.name = path_info['name']

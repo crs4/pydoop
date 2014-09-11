@@ -371,6 +371,11 @@ class TestStat(unittest.TestCase):
     self.__check_wrapper_funcs(p)
     hdfs.rmr(wd)
 
+  def stat_on_dir(self):
+      s = hdfs.path.stat('/user/%s' % DEFAULT_USER)
+      for attr in s.st_size, s.st_blksize, s.st_blocks:
+        self.assertEqual(attr, 0)
+
   def __check_extra_args(self, stat_res, path_info):
     for n in 'kind', 'name', 'replication':
       attr = getattr(stat_res, '%s' % n, None)
@@ -477,6 +482,7 @@ def suite():
   suite.addTest(TestExpand('expandvars'))
   suite.addTest(TestStat('stat'))
   suite.addTest(TestStat('stat_on_local'))
+  suite.addTest(TestStat('stat_on_dir'))
   suite.addTest(TestIsSomething('full_and_abs'))
   suite.addTest(TestIsSomething('islink'))
   suite.addTest(TestIsSomething('ismount'))
