@@ -327,3 +327,10 @@ def lstat(hdfs_path, user=None):
   Call :func:`.path.lstat` on ``path``.
   """
   return path.lstat(hdfs_path, user=user)
+
+
+def access(hdfs_path, mode, user=None):
+  """
+  Call :func:`.path.access` on ``path``.
+  """
+  return path.access(hdfs_path, mode, user=user)

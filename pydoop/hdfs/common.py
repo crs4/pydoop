@@ -16,7 +16,7 @@
 # 
 # END_COPYRIGHT
 
-import getpass
+import getpass, pwd, grp
 
 BUFSIZE = 16384
 DEFAULT_PORT = 8020  # org/apache/hadoop/hdfs/server/namenode/NameNode.java
@@ -46,3 +46,10 @@ def decode_host(host):
     if isinstance(host, str):
         host = host.decode('idna')
     return host
+
+
+def get_groups(user=DEFAULT_USER):
+    groups = set(_.gr_name for _ in grp.getgrall() if user in set(_.gr_mem))
+    primary_gid = pwd.getpwnam(user).pw_gid
+    groups.add(grp.getgrgid(primary_gid).gr_name)
+    return groups

@@ -509,3 +509,22 @@ def splitext(path):
   Same as ``os.path.splitext(path)``.
   """
   return os.path.splitext(path)
+
+
+def access(path, mode, user=None):
+  """
+  Perform the equivalent of ``os.access`` on ``path``.
+  """
+  scheme = parse(path)[0]
+  if scheme == 'file' or hdfs_fs.default_is_local():
+    return os.access(path, mode)
+  if user is None:
+    user = common.DEFAULT_USER
+  st = stat(path)
+  if st.st_uid == user:
+    mode <<= 6
+  else:
+    groups = common.get_groups()
+    if st.st_gid in groups:
+      mode <<= 3
+  return (st.st_mode & mode) == mode
