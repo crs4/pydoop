@@ -320,3 +320,10 @@ def stat(hdfs_path, user=None):
   Call :func:`.path.stat` on ``path``.
   """
   return path.stat(hdfs_path, user=user)
+
+
+def lstat(hdfs_path, user=None):
+  """
+  Call :func:`.path.lstat` on ``path``.
+  """
+  return path.lstat(hdfs_path, user=user)

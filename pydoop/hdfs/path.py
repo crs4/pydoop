@@ -305,9 +305,13 @@ def exists(hdfs_path, user=None):
   return retval
 
 
+#-- libhdfs does not support fs.FileStatus.isSymlink() --
+def lstat(hdfs_path, user=None):
+  return stat(hdfs_path, user=user)
+
 def lexists(hdfs_path, user=None):
-  # libhdfs does not support fs.FileStatus.isSymlink()
   return exists(hdfs_path, user=user)
+#--------------------------------------------------------
 
 
 def kind(path, user=None):
