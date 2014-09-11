@@ -1,4 +1,5 @@
 *.pyc
+*~
 DEFAULT_HADOOP_HOME
 build
 docs/_build/
