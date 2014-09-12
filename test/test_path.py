@@ -458,6 +458,30 @@ class TestSame(unittest.TestCase):
       self.assertTrue(hdfs.path.samefile('fn', '/user/u/fn', user='u'))
 
 
+class TestAccess(unittest.TestCase):
+
+    def setUp(self):
+        self.path = make_random_str() + UNI_CHR
+        hdfs.mkdir(self.path)
+
+    def tearDown(self):
+        hdfs.rmr(self.path)
+
+    # FIXME: far from exhaustive.  This is a slow test
+    def __test(self, offset, user=None):
+        print
+        for mode in os.R_OK, os.W_OK, os.X_OK:
+            hdfs.chmod(self.path, mode << offset)
+            print ' * mode now: %03o' % hdfs.stat(self.path).st_mode
+            self.assertTrue(hdfs.path.access(self.path, mode, user=user))
+
+    def test_owner(self):
+        self.__test(6)
+
+    def test_other(self):
+        self.__test(0, user=make_random_str())
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -492,6 +516,8 @@ def suite():
   suite.addTest(TestSame('samefile_rel'))
   suite.addTest(TestSame('samefile_norm'))
   suite.addTest(TestSame('samefile_user'))
+  suite.addTest(TestAccess('test_owner'))
+  suite.addTest(TestAccess('test_other'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 
