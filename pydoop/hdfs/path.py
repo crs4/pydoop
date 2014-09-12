@@ -23,7 +23,7 @@ pydoop.hdfs.path -- Path Name Manipulations
 -------------------------------------------
 """
 
-import os, re
+import os, re, time
 
 import common
 import fs as hdfs_fs
@@ -528,3 +528,10 @@ def access(path, mode, user=None):
     if st.st_gid in groups:
       mode <<= 3
   return (st.st_mode & mode) == mode
+
+
+def utime(hdfs_path, times=None, user=None):
+  atime, mtime = times or 2 * (time.time(),)
+  hostname, port, path = split(hdfs_path, user=user)
+  with hdfs_fs.hdfs(hostname, port) as fs:
+    fs.utime(path, mtime, atime)

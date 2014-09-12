@@ -472,7 +472,7 @@ class TestAccess(unittest.TestCase):
         print
         for mode in os.R_OK, os.W_OK, os.X_OK:
             hdfs.chmod(self.path, mode << offset)
-            print ' * mode now: %03o' % hdfs.stat(self.path).st_mode
+            print ' * mode now: %03o' % hdfs.path.stat(self.path).st_mode
             self.assertTrue(hdfs.path.access(self.path, mode, user=user))
 
     def test_owner(self):
@@ -480,6 +480,21 @@ class TestAccess(unittest.TestCase):
 
     def test_other(self):
         self.__test(0, user=make_random_str())
+
+
+class TestUtime(unittest.TestCase):
+
+    def runTest(self):
+        path = make_random_str() + UNI_CHR
+        hdfs.dump("foo\n", path)
+        st = hdfs.path.stat(path)
+        atime, mtime = [getattr(st, 'st_%stime' % _) for _ in 'am']
+        new_atime, new_mtime = atime + 100, mtime + 200
+        hdfs.path.utime(path, (new_atime, new_mtime))
+        st = hdfs.path.stat(path)
+        self.assertEqual(st.st_atime, new_atime)
+        self.assertEqual(st.st_mtime, new_mtime)
+        hdfs.rmr(path)
 
 
 def suite():
@@ -518,6 +533,7 @@ def suite():
   suite.addTest(TestSame('samefile_user'))
   suite.addTest(TestAccess('test_owner'))
   suite.addTest(TestAccess('test_other'))
+  suite.addTest(TestUtime('runTest'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 

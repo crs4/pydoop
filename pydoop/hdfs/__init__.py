@@ -334,3 +334,10 @@ def access(hdfs_path, mode, user=None):
   Call :func:`.path.access` on ``path``.
   """
   return path.access(hdfs_path, mode, user=user)
+
+
+def utime(hdfs_path, times=None, user=None):
+  """
+  Call :func:`.path.utime` on ``path``.
+  """
+  path.utime(hdfs_path, times=times, user=user)
