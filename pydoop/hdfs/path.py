@@ -406,7 +406,7 @@ def getmtime(path, user=None):
   """
   Get time of last modification of ``path``.
   """
-  return stat(path, user=user).st_ctime
+  return stat(path, user=user).st_mtime
 
 
 def getctime(path, user=None):
