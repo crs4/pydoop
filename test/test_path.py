@@ -497,6 +497,31 @@ class TestUtime(unittest.TestCase):
         hdfs.rmr(path)
 
 
+class TestCallFromHdfs(unittest.TestCase):
+
+    def setUp(self):
+        self.path = make_random_str() + UNI_CHR
+        hdfs.dump("foo\n", self.path)
+
+    def test_stat(self):
+        for name in 'stat', 'lstat':
+            self.assertTrue(hasattr(hdfs, name))
+            func = getattr(hdfs, name)
+            _ = func(self.path)
+            _ = func(self.path, user=DEFAULT_USER)
+
+    def test_access(self):
+        self.assertTrue(hasattr(hdfs, 'access'))
+        _ = hdfs.access(self.path, os.F_OK)
+        _ = hdfs.access(self.path, os.F_OK, user=DEFAULT_USER)
+
+    def test_utime(self):
+        self.assertTrue(hasattr(hdfs, 'utime'))
+        hdfs.utime(self.path)
+        hdfs.utime(self.path, times=(1e9, 1e9))
+        hdfs.utime(self.path, times=(1e9, 1e9), user=DEFAULT_USER)
+
+
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(TestSplit('good'))
@@ -534,6 +559,9 @@ def suite():
   suite.addTest(TestAccess('test_owner'))
   suite.addTest(TestAccess('test_other'))
   suite.addTest(TestUtime('runTest'))
+  suite.addTest(TestCallFromHdfs('test_stat'))
+  suite.addTest(TestCallFromHdfs('test_access'))
+  suite.addTest(TestCallFromHdfs('test_utime'))
   suite.addTest(unittest.TestLoader().loadTestsFromTestCase(TestKind))
   return suite
 

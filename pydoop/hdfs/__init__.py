@@ -315,29 +315,8 @@ def move(src, dest, user=None):
     dest_fs.close()
 
 
-def stat(hdfs_path, user=None):
-  """
-  Call :func:`.path.stat` on ``path``.
-  """
-  return path.stat(hdfs_path, user=user)
-
-
-def lstat(hdfs_path, user=None):
-  """
-  Call :func:`.path.lstat` on ``path``.
-  """
-  return path.lstat(hdfs_path, user=user)
-
-
-def access(hdfs_path, mode, user=None):
-  """
-  Call :func:`.path.access` on ``path``.
-  """
-  return path.access(hdfs_path, mode, user=user)
-
-
-def utime(hdfs_path, times=None, user=None):
-  """
-  Call :func:`.path.utime` on ``path``.
-  """
-  path.utime(hdfs_path, times=times, user=user)
+# direct bindings
+stat = path.stat
+lstat = path.lstat
+access = path.access
+utime = path.utime
