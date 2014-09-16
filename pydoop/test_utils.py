@@ -92,9 +92,12 @@ def make_wd(fs, prefix="pydoop_test_"):
         return tempfile.mkdtemp(prefix=prefix)
 
 
-def make_random_data(size=_RANDOM_DATA_SIZE):
+def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
     randint = random.randint
-    return "".join([chr(randint(32, 126)) for _ in xrange(size)])
+    if printable:
+        return "".join([chr(randint(32, 126)) for _ in xrange(size)])
+    else:
+        return "".join([chr(randint(0, 255)) for _ in xrange(size)])
 
 
 def get_bytes_per_checksum():
