@@ -1,9 +1,12 @@
 import os
 import logging
 
+
 from pydoop.hdfs.common import BUFSIZE
 from pydoop.hdfs.hadoop import wrap_class_instance
 from pydoop.hdfs.hadoop import wrap_class
+from pydoop.hdfs.hadoop import wrap_array
+from pydoop.hdfs.hadoop import wrap_array_instance
 from pydoop.hdfs.hadoop.hdfs import FileSystem
 from pydoop.hdfs.hadoop.hdfs import File
 
@@ -15,7 +18,7 @@ REPLICATION_CONFIG_PROPERTY = "dfs.replication"
 BLOCKSIZE_CONFIG_PROPERTY = "dfs.block.size"
 
 
-class HadoopHdfsClasses(object):
+class JavaClassName(object):
     """
     Wraps the set of java classes used for implementing the Hadoop HDFS
     """
@@ -30,6 +33,7 @@ class HadoopHdfsClasses(object):
     ByteBuffer = "java.nio.ByteBuffer"
     Byte = "java.lang.Byte"
     Long = "java.lang.Long"
+    DataOutputStream = "java.io.DataOutputStream"
     ByteArrayOutputStream = "java.io.ByteArrayOutputStream"
 
 
@@ -40,7 +44,7 @@ class FileSystemImpl(FileSystem):
         self._user = user
         self._groups = groups
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._configuration = wrap_class_instance(HadoopHdfsClasses.Configuration, True)
+        self._configuration = wrap_class_instance(JavaClassName.Configuration, True)
         self._connect()
 
 
@@ -49,7 +53,7 @@ class FileSystemImpl(FileSystem):
 
     def _connect(self):
 
-        jfs_cl = wrap_class(HadoopHdfsClasses.FileSystem)
+        jfs_cl = wrap_class(JavaClassName.FileSystem)
 
         if self._host is None or self._host == '':
             self._fs = jfs_cl.getLocal(self._configuration)
@@ -63,7 +67,7 @@ class FileSystemImpl(FileSystem):
 
         else:
             uri_str = "hdfs://%s:%s" % (self._host, self._port)
-            juri_cl = wrap_class(HadoopHdfsClasses.URI)
+            juri_cl = wrap_class(JavaClassName.URI)
             self._fs_uri = juri_cl.create(uri_str)
             if self._user:
                 self._fs = jfs_cl.get(self._fs_uri, self._configuration, self._user)
@@ -72,16 +76,16 @@ class FileSystemImpl(FileSystem):
 
 
     def chmod(self, path, mode):
-        jpath_ = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath_ = wrap_class_instance(JavaClassName.Path, path)
         jshort_cl = wrap_class("java.lang.Short")
-        jpermission = wrap_class_instance(HadoopHdfsClasses.FsPermission, mode)  # jshort_cl.valueOf(mode))
+        jpermission = wrap_class_instance(JavaClassName.FsPermission, mode)  # jshort_cl.valueOf(mode))
         self._fs.setPermission(jpath_, jpermission)
 
     def chown(self, path, user, group):
         if (user is None or user == '') and (group is None or group == ''):
             raise Exception("Both owner and group cannot be null in chown")
 
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         old_path_info = self._get_jpath_info(jpath)
         if user is None or user == '':
             user = old_path_info['owner']
@@ -90,7 +94,7 @@ class FileSystemImpl(FileSystem):
         self._fs.setOwner(jpath, user, group)
 
     def exists(self, path):
-        return self._fs.exists(wrap_class_instance(HadoopHdfsClasses.Path, path))
+        return self._fs.exists(wrap_class_instance(JavaClassName.Path, path))
 
     def get_capacity(self):
         return self._fs.getRawCapacity()
@@ -99,17 +103,17 @@ class FileSystemImpl(FileSystem):
         self._fs.close()
 
     def _copy_helper(self, from_path, to_hdfs, to_path, delete_source):
-        src_path = wrap_class_instance(HadoopHdfsClasses.Path, from_path)
-        dst_path = wrap_class_instance(HadoopHdfsClasses.Path, to_path)
+        src_path = wrap_class_instance(JavaClassName.Path, from_path)
+        dst_path = wrap_class_instance(JavaClassName.Path, to_path)
 
-        jfileUtil = wrap_class(HadoopHdfsClasses.FileUtil)
+        jfileUtil = wrap_class(JavaClassName.FileUtil)
         return jfileUtil.copy(self._fs, src_path, to_hdfs._fs, dst_path, delete_source, self._configuration)
 
     def copy(self, from_path, to_hdfs, to_path):
         self._copy_helper(from_path, to_hdfs, to_path, False)
 
     def create_directory(self, path):
-        return self._fs.mkdirs(wrap_class_instance(HadoopHdfsClasses.Path, path))
+        return self._fs.mkdirs(wrap_class_instance(JavaClassName.Path, path))
 
     def delete(self, path, recursive=True):
         jpath = self._get_jpath(path)
@@ -119,7 +123,7 @@ class FileSystemImpl(FileSystem):
         return self._user
 
     def get_path_info(self, path):
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         return self._get_jpath_info(jpath)
 
     def get_default_block_size(self):
@@ -130,7 +134,7 @@ class FileSystemImpl(FileSystem):
 
     def get_hosts(self, path, start, length):
         result = []
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         jstatus = self._get_jfilestatus(jpath)
         jblock_locations = self._fs.getFileBlockLocations(jstatus, start, length)
         for jblock_location in jblock_locations:
@@ -147,18 +151,18 @@ class FileSystemImpl(FileSystem):
         return self._fs.getRawUsed()
 
     def set_working_directory(self, path):
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         self._fs.setWorkingDirectory(jpath)
 
     def move(self, from_path, to_hdfs, to_path):
         self._copy_helper(from_path, to_hdfs, to_path, True)
 
     def set_replication(self, path, replication):
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         self._fs.setReplication(jpath, replication)
 
     def list_directory(self, path):
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         if not self._fs.exists(jpath):
             raise IOError("Path %s does not exist" % path)
 
@@ -169,8 +173,8 @@ class FileSystemImpl(FileSystem):
         return result
 
     def rename(self, from_path, to_path):
-        jfrom_path = wrap_class_instance(HadoopHdfsClasses.Path, from_path)
-        jto_path = wrap_class_instance(HadoopHdfsClasses.Path, to_path)
+        jfrom_path = wrap_class_instance(JavaClassName.Path, from_path)
+        jto_path = wrap_class_instance(JavaClassName.Path, to_path)
         self._fs.rename(jfrom_path, jto_path)
 
     def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0, readline_chunk_size=16384):
@@ -228,14 +232,14 @@ class FileSystemImpl(FileSystem):
         return FileImpl(flags, stream, stream_type)
 
     def utime(self, path, mtime, atime):
-        jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+        jpath = wrap_class_instance(JavaClassName.Path, path)
         self._fs.setTimes(jpath, mtime, atime)
 
     def _get_jpath(self, path, hdfs=None):
         if hdfs:
-            jparent = wrap_class_instance(HadoopHdfsClasses.Path, hdfs)
-            return wrap_class_instance(HadoopHdfsClasses.Path, jparent, path)
-        return wrap_class_instance(HadoopHdfsClasses.Path, path)
+            jparent = wrap_class_instance(JavaClassName.Path, hdfs)
+            return wrap_class_instance(JavaClassName.Path, jparent, path)
+        return wrap_class_instance(JavaClassName.Path, path)
 
     def _get_jpath_info(self, jpath, jstatus=None):
         info = dict()
@@ -256,7 +260,7 @@ class FileSystemImpl(FileSystem):
 
         info['group'] = jstatus.getGroup()
 
-        jlong_cl = wrap_class(HadoopHdfsClasses.Long)
+        jlong_cl = wrap_class(JavaClassName.Long)
         info['last_mod'] = jlong_cl.valueOf(jstatus.getModificationTime()).intValue()
         info['last_access'] = jlong_cl.valueOf(jstatus.getAccessTime()).intValue()
 
@@ -278,11 +282,11 @@ class FileSystemImpl(FileSystem):
     def _get_jfilestatus(self, path):
         jpath = path
         if isinstance(path, str):
-            jpath = wrap_class_instance(HadoopHdfsClasses.Path, path)
+            jpath = wrap_class_instance(JavaClassName.Path, path)
         return self._fs.getFileStatus(jpath)
 
     def _get_jfile_utils(self):
-        return wrap_class(HadoopHdfsClasses.FileUtil)
+        return wrap_class(JavaClassName.FileUtil)
 
 
 class FileImpl(File):
@@ -293,6 +297,9 @@ class FileImpl(File):
         self._mode = mode
         self._stream = stream
         self._stream_type = stream_type
+
+        if stream_type == self._OUTPUT:
+            self._out_buffer = wrap_class_instance(JavaClassName.ByteArrayOutputStream)
 
     def available(self):
         if not self._stream or self._stream_type != self._INPUT:
@@ -326,8 +333,9 @@ class FileImpl(File):
         current_size = self._stream.size()
 
         if length > 0:
-            jstr = wrap_class_instance(HadoopHdfsClasses.String, data)
-            self._stream.write(jstr.getBytes())
+
+            bytes = wrap_array_instance("byte", array_items=data)
+            self._stream.write(bytes)
 
         written = self._stream.size() - current_size
         return written
@@ -350,13 +358,15 @@ class FileImpl(File):
             if length == -1:
                 length = BUFSIZE
 
-            jbyte_buffer_class = wrap_class(HadoopHdfsClasses.ByteBuffer)
+            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
             read = self._stream.read(buf)
             if read == -1:
                 return ""
-            return wrap_class_instance(HadoopHdfsClasses.String, buf).toString()[:read]
+
+            #return wrap_class_instance(JavaClassName.String, buf).toString()[:read] OLD Impl
+            return ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
 
         except Exception, e:
             raise IOError(e.message)
@@ -367,13 +377,14 @@ class FileImpl(File):
         try:
 
             length = len(chunk)
-            jbyte_buffer_class = wrap_class(HadoopHdfsClasses.ByteBuffer)
+            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
             read = self._stream.read(buf)
             if read == -1:
                 return ""
-            chunk.value = wrap_class_instance(HadoopHdfsClasses.String, buf).toString()[:read]
+            chunk.value = ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
+            #chunk.value = wrap_class_instance(JavaClassName.String, buf).toString()[:read]
             return read
 
         except Exception, e:
@@ -387,11 +398,12 @@ class FileImpl(File):
             if length == -1:
                 length = BUFSIZE
 
-            jbyte_buffer_class = wrap_class(HadoopHdfsClasses.ByteBuffer)
+            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
-            self._stream.read(position, buf, 0, length)
-            return wrap_class_instance(HadoopHdfsClasses.String, buf).toString()
+            read = self._stream.read(position, buf, 0, length)
+            #return wrap_class_instance(JavaClassName.String, buf).toString()[:read] OLD Impl
+            return ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
 
         except Exception, e:
             raise IOError(e.message)
@@ -402,11 +414,12 @@ class FileImpl(File):
         try:
 
             length = len(chunk)
-            jbyte_buffer_class = wrap_class(HadoopHdfsClasses.ByteBuffer)
+            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
             read = self._stream.read(position, buf, 0, length)
-            chunk.value = wrap_class_instance(HadoopHdfsClasses.String, buf).toString()
+            chunk.value = ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
+            #chunk.value = wrap_class_instance(JavaClassName.String, buf).toString()
             return read
 
         except Exception, e:
