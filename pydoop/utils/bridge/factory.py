@@ -49,6 +49,11 @@ class JavaWrapperFactory(object):
     def get_wrapper_instance(self, fully_qualified_class, *args):
         return self._loader.load_class(fully_qualified_class, *args)
 
+    def get_array_wrapper(self, fully_qualified_array_item_class, array_dimensions=1):
+        return self._loader.load_array_class(fully_qualified_array_item_class, array_dimensions)
+
+    def get_array_wrapper_instance(self, fully_qualified_array_item_class, array_dimensions=1, array_items=[]):
+        return self._loader.load_array_class(fully_qualified_array_item_class, array_dimensions)(array_items)
 
 class ClassLoader(object):
     __metaclass__ = ABCMeta

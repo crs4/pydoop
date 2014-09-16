@@ -45,6 +45,27 @@ def wrap_class_instance(fully_qualified_class_name, *args):
     return factory.get_wrapper(fully_qualified_class_name)(*args)
 
 
+def wrap_array(fully_qualified_array_item_class, array_dimensions=1):
+    """
+
+    :param fully_qualified_array_item_class:
+    :param array_dimensions:
+    :return:
+    """
+    return factory.get_array_wrapper(fully_qualified_array_item_class, array_dimensions)
+
+
+def wrap_array_instance(fully_qualified_array_item_class, array_dimension=1, array_items=[]):
+    """
+
+    :param fully_qualified_array_item_class:
+    :param array_dimension:
+    :param array_items:
+    :return:
+    """
+    return factory.get_array_wrapper_instance(fully_qualified_array_item_class, array_dimension, array_items)
+
+
 def get_hadoop_version():
     """
     Detects the current available Hadoop distribution
