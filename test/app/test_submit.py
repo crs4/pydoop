@@ -21,6 +21,8 @@ import unittest
 import pydoop.app.main as app
 
 
+
+
 class TestAppSubmit(unittest.TestCase):
     def test_help(self):
         try:
@@ -48,6 +50,16 @@ class TestAppSubmit(unittest.TestCase):
         my_program my_input my_output
         """
         app.main(args_line.split())
+
+    def test_validate(self):
+        pass
+
+    def test_wrap(self):
+        pass
+
+    def test_conversion(self):
+        pass
+
 
 def suite():
     suite = unittest.TestSuite()

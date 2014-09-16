@@ -66,18 +66,26 @@ class PydoopSubmitter(object):
     self.remote_module_bn = None
     self.remote_exe = None
     self.pipes_code = None
+    self.files_to_cache = []
 
   def set_args(self, args):
     """
     Configure job, based on the arguments provided.
     """
     self.logger.setLevel(getattr(logging, args.log_level))
+
+    parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
+    self.remote_wd = hdfs.path.join(
+      parent, utils.make_random_str(prefix="pydoop_submit_")
+    )
     self.remote_exe = args.program
     self.properties[JOB_NAME] = args.job_name if args.job_name else 'pydoop'
     self.properties[IS_JAVA_RR] = 'false' if args.do_not_use_java_record_reader\
                                           else 'true'
     self.properties[IS_JAVA_RW] = 'false' if args.do_not_use_java_record_writer\
                                           else 'true'
+
+
     if args.input_format:
       self.properties[INPUT_FORMAT] = args.input_format
     if args.output_format:
@@ -93,7 +101,13 @@ class PydoopSubmitter(object):
     if args.cache:
       cfiles += args.cache
     if args.python_egg:
-      cfiles += args.python_egg
+      eggs_to_cache = [('file://' + os.path.realpath(e), 
+                        hdfs.path.join(self.remote_wd, bn), bn)
+                       for (e, bn) in ((e, os.path.basename(e)) 
+                                       for e in args.python_egg)]
+      self.files_to_cache += eggs_to_cache
+      cached_eggs = ["%s#%s" % (h, b) for (_, h, b) in eggs_to_cache]
+      cfiles += cached_eggs
     self.properties[CACHE_FILES] = ','.join(cfiles)
     self.args = args
 
@@ -167,7 +181,7 @@ class PydoopSubmitter(object):
         self.logger.debug(
           "Removing temporary working directory %s", self.remote_wd
           )
-        hdfs.rmr(self.remote_wd)
+        #hdfs.rmr(self.remote_wd)
       except IOError:
         pass
 
@@ -182,27 +196,32 @@ class PydoopSubmitter(object):
     on a shared POSIX filesystem.  Therefore, we make the directory
     and the script accessible by all.
     """
+    self.logger.debug("remote_wd: %s", self.remote_wd)
+    self.logger.debug("remote_exe: %s", self.remote_exe)
+    self.logger.debug("remotes: %s", self.files_to_cache)
+    if self.args.wrap:
+      self.logger.debug('Generated pipes_code:\n\n %s', self.__generate_pipes_code())
+
     if not self.args.pretend:
       hdfs.mkdir(self.remote_wd)
       hdfs.chmod(self.remote_wd, "a+rx")
+      self.logger.debug("created and chmod-ed: %s", self.remote_wd)
       if self.args.wrap:
-          pipes_code = self.__generate_pipes_code()
-          hdfs.dump(pipes_code, self.remote_exe)
+        pipes_code = self.__generate_pipes_code()
+        hdfs.dump(pipes_code, self.remote_exe)
+        self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
       hdfs.chmod(self.remote_exe, "a+rx")
       self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
+      for (l, h, _) in self.files_to_cache:
+        self.logger.debug("uploading: %s to %s", l, h)
+        hdfs.cp(l, h)
     self.logger.debug("Created%sremote paths:" % 
                       (' [simulation] ' if self.args.pretend else ' ')) 
-    self.logger.debug(self.remote_wd)
-    self.logger.debug(self.remote_exe)
-    self.logger.debug(self.remote_module)
-    if self.args.wrap:
-      self.logger.debug('Generated pipes_code:\n\n')        
-      self.logger.debug(self.__generate_pipes_code())        
-      
 
   def run(self):
     if self.args is None:
       raise RuntimeError("cannot run without args, please call set_args")
+    self.__validate()
     if self.args.mrv2:
       pydoop_jar = pydoop.jar_path()
       if pydoop_jar is None:
@@ -246,7 +265,6 @@ class PydoopSubmitter(object):
 def run(args):
   submitter = PydoopSubmitter()
   submitter.set_args(args)
-
   submitter.run()
   return 0
 
@@ -340,8 +358,8 @@ def add_parser_arguments(parser):
   parser.add_argument(
     '--wrap', metavar='MODULE', type=str, 
     help="Wrap MODULE in a script with the appropriate launch environemnt. " +
-    "It is assumed that MODULE is a python module with a main() method."  + 
-    "The resulting pydoop program will be at written at the HDFS path defined by PROGRAM"
+    "It is assumed that MODULE is a python module with a main() function."  + 
+    "The resulting pydoop program will be written as the HDFS path defined by PROGRAM"
     )
   parser.add_argument(
     '--pretend', action='store_true',
