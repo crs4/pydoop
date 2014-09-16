@@ -57,7 +57,7 @@ class TestCommon(unittest.TestCase):
     # also an implicit test for the write method
     def _make_random_file(self, where=None, content=None, **kwargs):
         kwargs["flags"] = "w"
-        content = content or make_random_data()
+        content = content or make_random_data(printable=True)
         path = self._make_random_path(where=where)
         with self.fs.open_file(path, **kwargs) as fo:
             i = 0

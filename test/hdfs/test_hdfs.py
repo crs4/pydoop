@@ -40,7 +40,7 @@ class TestHDFS(unittest.TestCase):
     basenames = ["test_path_%d" % i for i in xrange(2)]
     self.local_paths = ["%s/%s" % (self.local_wd, bn) for bn in basenames]
     self.hdfs_paths = ["%s/%s" % (self.hdfs_wd, bn) for bn in basenames]
-    self.data = make_random_data(4*BUFSIZE + BUFSIZE/2)
+    self.data = make_random_data(4*BUFSIZE + BUFSIZE/2, printable=False)
     for path in self.local_paths:
       self.assertTrue(path.startswith("file:"))
     for path in self.hdfs_paths:
@@ -178,11 +178,13 @@ class TestHDFS(unittest.TestCase):
   def put(self):
     src = pydoop.hdfs.path.split(self.local_paths[0])[-1]
     dest = self.hdfs_paths[0]
+
     with open(src, "w") as f:
       f.write(self.data)
     hdfs.put(src, dest)
     with hdfs.open(dest) as fi:
       rdata = fi.read()
+    self.assertEqual(type(rdata), type(self.data))
     self.assertEqual(rdata, self.data)
 
   def get(self):
