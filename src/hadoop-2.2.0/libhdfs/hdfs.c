@@ -2730,24 +2730,24 @@ hdfsFileInfo *hdfsGetPathInfo(hdfsFS fs, const char* path)
     return fileInfo;
 }
 
-static void hdfsFreeFileInfoEntry(hdfsFileInfo *hdfsFileInfo)
+static void hdfsFreeFileInfoEntry(hdfsFileInfo *hfi)
 {
-    free(hdfsFileInfo->mName);
-    free(hdfsFileInfo->mOwner);
-    free(hdfsFileInfo->mGroup);
-    memset(hdfsFileInfo, 0, sizeof(hdfsFileInfo));
+    free(hfi->mName);
+    free(hfi->mOwner);
+    free(hfi->mGroup);
+    memset(hfi, 0, sizeof(hdfsFileInfo));
 }
 
-void hdfsFreeFileInfo(hdfsFileInfo *hdfsFileInfo, int numEntries)
+void hdfsFreeFileInfo(hdfsFileInfo *hfi, int numEntries)
 {
     //Free the mName, mOwner, and mGroup
     int i;
     for (i=0; i < numEntries; ++i) {
-        hdfsFreeFileInfoEntry(hdfsFileInfo + i);
+        hdfsFreeFileInfoEntry(hfi + i);
     }
 
     //Free entire block
-    free(hdfsFileInfo);
+    free(hfi);
 }
 
 

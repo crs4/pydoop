@@ -476,7 +476,7 @@ class BuildExt(build_ext):
       self.compiler.linker_so.extend(
         ["-Wl,-rpath", os.path.join(JAVA_HOME, 'jre/lib/server')]
         )
-    self.compiler.linker_so.append("-Wl,--no-as-needed")
+    self.compiler.linker_so.append("-Wl")
     build_ext.build_extension(self, ext)
 
   def run(self):
