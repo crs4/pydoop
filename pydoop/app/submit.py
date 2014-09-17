@@ -222,18 +222,27 @@ class PydoopSubmitter(object):
     if self.args is None:
       raise RuntimeError("cannot run without args, please call set_args")
     self.__validate()
+    pydoop_jar = pydoop.jar_path()
+    if self.args.mrv2 and pydoop_jar is None:
+      raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")      
+    if self.args.local_fs and pydoop_jar is None:
+      raise RuntimeError("Can't find pydoop.jar, cannot use local fs patch")      
+    #---
+    job_args = []
     if self.args.mrv2:
-      pydoop_jar = pydoop.jar_path()
-      if pydoop_jar is None:
-        raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")
       submitter_class='it.crs4.pydoop.mapreduce.pipes.Submitter'
       classpath = pydoop_jar
-    else:
+      job_args.extend(("-libjars", pydoop_jar))
+    elif self.args.local_fs:
       # FIXME we still need to handle the special case with hadoop security and local
       # file system.
+      raise RuntimeError("NOT IMPLEMENTED YET")            
+      submitter_class='it.crs4.pydoop.mapred.pipes.Submitter' # FIXME FAKE MODULE
+      classpath = pydoop_jar
+      job_args.extend(("-libjars", pydoop_jar))
+    else:
       submitter_class='org.apache.hadoop.mapred.pipes.Submitter'
       classpath = None
-    job_args = []
     if self.args.conf:
       job_args.extend(['-conf', self.args.conf.name])
     # handle input, output, jar, 
@@ -289,6 +298,11 @@ def add_parser_arguments(parser):
     '--mrv2', action='store_true',
     help="Use mapreduce v2 Hadoop Pipes framework. InputFormat and OutputFormat" +
     "classes should be v2 compliant."
+    )
+  parser.add_argument(
+    '--local-fs', action='store_true',
+    help="Use a patched pipes submitter to side-step a hadoop security bug " +
+    "triggered when using local file systems."
     )
   parser.add_argument(
     '--do-not-use-java-record-reader', action='store_true',
