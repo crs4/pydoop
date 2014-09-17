@@ -53,7 +53,7 @@ tSize wrap_hdfs_file::read_chunk(bp::object buffer) {
   PyObject *pyo = buffer.ptr();
   void *buf;
   Py_ssize_t len;
-  if (PyObject_AsWriteBuffer(buffer.ptr(), &buf, &len)) {
+  if (PyObject_AsWriteBuffer(pyo, &buf, &len)) {
     throw hdfs_exception("Cannot read_chunk on" + filename_);
   }
   exec_and_trap_error(tSize,
