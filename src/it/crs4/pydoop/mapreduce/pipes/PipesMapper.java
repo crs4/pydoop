@@ -53,9 +53,6 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
     Application<K1, V1, K2, V2> application = null;
     boolean skipping = false;
 
-    PipesMapper(MapContext<K1, V1, K2, V2> context) {
-        this.context = context;
-    }
 
     /**
      * Get the new configuration.
