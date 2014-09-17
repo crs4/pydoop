@@ -345,10 +345,10 @@ class FileImpl(File):
             raise IOError
         return long(self._stream.getPos())
 
-    def seek(self, pos):
+    def seek(self, position):
         if not self._stream or self._stream_type != self._INPUT:
             raise IOError
-        self._stream.seek(pos)
+        self._stream.seek(long(position))
 
     def read(self, length=-1):
         if not self._stream or self._stream_type != self._INPUT:
@@ -401,7 +401,7 @@ class FileImpl(File):
             jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
-            read = self._stream.read(position, buf, 0, length)
+            read = self._stream.read(long(position), buf, 0, length)
             #return wrap_class_instance(JavaClassName.String, buf).toString()[:read] OLD Impl
             return ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
 
@@ -417,7 +417,7 @@ class FileImpl(File):
             jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
-            read = self._stream.read(position, buf, 0, length)
+            read = self._stream.read(long(position), buf, 0, length)
             chunk.value = ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
             #chunk.value = wrap_class_instance(JavaClassName.String, buf).toString()
             return read
