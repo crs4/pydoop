@@ -46,19 +46,19 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
                   K2 extends WritableComparable, V2 extends Writable>
     extends Mapper<K1, V1, K2, V2> {
 
-    // FIXME switch to use LOG instead of err.println()
     protected static final Log LOG = LogFactory.getLog(PipesMapper.class);
 
-    MapContext<K1, V1, K2, V2> context;
+    //MapContext<K1, V1, K2, V2> context;
+    Context context;
     Application<K1, V1, K2, V2> application = null;
     boolean skipping = false;
-
 
     /**
      * Get the new configuration.
      * @param job the job's configuration
-     */                                                       
-    protected void setup(MapContext<K1, V1, K2, V2> context) 
+     */                                                      
+    @Override
+    protected void setup(Context context) 
         throws IOException, InterruptedException {
         this.context = context;
         //disable the auto increment of the counter. For pipes, no of processed 
@@ -66,7 +66,8 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
         // FIXME: disable right now...
         // SkipBadRecords.setAutoIncrMapperProcCount(context, false);
     }
-    protected void cleanup(MapContext<K1, V1, K2, V2> context
+    @Override
+    protected void cleanup(Context context
                            ) throws IOException, InterruptedException {
         if (application != null)  {
             application.cleanup();
@@ -76,8 +77,8 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
     /**
      * Run the map task.
      */
-    @SuppressWarnings("unchecked")
-    public void run(MapContext<K1,V1,K2,V2> context) 
+    @Override
+    public void run(Context context) 
         throws IOException, InterruptedException {
 
         setup(context);
@@ -97,11 +98,11 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
 
         RecordReader<K1, V1> input = inputFormat.createRecordReader(split, 
                                                                     context);
+        input.initialize(split, context);
 
         boolean isJavaInput = Submitter.getIsJavaRecordReader(conf);
-        
         try {
-            // FIXME: what happens for a java mapper and no jave record reader?
+            // FIXME: what happens for a java mapper and no java record reader?
             DummyRecordReader fakeInput = 
                 (!isJavaInput && !Submitter.getIsJavaMapper(conf)) ?
                 (DummyRecordReader) input : null;
@@ -115,11 +116,17 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
                         context.getNumReduceTasks(), 
                         isJavaInput);
         boolean skipping = conf.getBoolean(context.SKIP_RECORDS, false);
+        boolean sent_input_types = false;
         try {
             if (isJavaInput) {
-                downlink.setInputTypes(input.getCurrentKey().getClass().getName(),
-                                       input.getCurrentValue().getClass().getName());
+                // FIXME
                 while (input.nextKeyValue()) {
+                    if (!sent_input_types) {
+                        sent_input_types = true;
+                        downlink.setInputTypes(
+                               input.getCurrentKey().getClass().getName(),
+                               input.getCurrentValue().getClass().getName());
+                    }
                     downlink.mapItem(input.getCurrentKey(), input.getCurrentValue());
                     if(skipping) {
                         //flush the streams on every record input if running in skip mode

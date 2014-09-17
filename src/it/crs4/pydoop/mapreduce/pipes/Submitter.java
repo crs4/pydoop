@@ -300,7 +300,11 @@ public class Submitter extends Configured implements Tool {
         if (!getIsJavaMapper(conf)) {
             job.setMapperClass(PipesMapper.class);
             // Save the user's partitioner and hook in our's.
+            System.err.println("job.getPartitionerClass()");
+            System.err.println(job.getPartitionerClass());
             setJavaPartitioner(conf, job.getPartitionerClass());
+            System.err.println("self..getPartitionerClass()");
+            System.err.println(getJavaPartitioner(conf));
             job.setPartitionerClass(PipesPartitioner.class);
         }
         if (!getIsJavaReducer(conf)) {
