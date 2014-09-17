@@ -325,7 +325,6 @@ public class Submitter extends Configured implements Tool {
         }
     
         String exec = getExecutable(conf);
-        System.err.println("missing executable:" + getExecutable(conf));
         if (exec == null) {
             String msg = "No application program defined.";
             throw new IllegalArgumentException(msg);
