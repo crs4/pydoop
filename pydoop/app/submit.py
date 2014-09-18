@@ -165,8 +165,8 @@ class PydoopSubmitter(object):
         lines.append('export HOME="%s"' % os.environ['HOME'])
       lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
     lines.append('":"""')
-    lines.append('from %s import main' % self.args.wrap)
-    lines.append('main()')
+    lines.append('import runpy')
+    lines.append('runpy.run_module("%s")' % self.args.module)
     return os.linesep.join(lines) + os.linesep
 
   def __validate(self):
@@ -199,14 +199,14 @@ class PydoopSubmitter(object):
     self.logger.debug("remote_wd: %s", self.remote_wd)
     self.logger.debug("remote_exe: %s", self.remote_exe)
     self.logger.debug("remotes: %s", self.files_to_cache)
-    if self.args.wrap:
+    if self.args.module:
       self.logger.debug('Generated pipes_code:\n\n %s', self.__generate_pipes_code())
 
     if not self.args.pretend:
       hdfs.mkdir(self.remote_wd)
       hdfs.chmod(self.remote_wd, "a+rx")
       self.logger.debug("created and chmod-ed: %s", self.remote_wd)
-      if self.args.wrap:
+      if self.args.module:
         pipes_code = self.__generate_pipes_code()
         hdfs.dump(pipes_code, self.remote_exe)
         self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
@@ -370,10 +370,11 @@ def add_parser_arguments(parser):
     help="Add this file to the distributed cache"
   )
   parser.add_argument(
-    '--wrap', metavar='MODULE', type=str, 
-    help="Wrap MODULE in a script with the appropriate launch environemnt. " +
-    "It is assumed that MODULE is a python module with a main() function."  + 
-    "The resulting pydoop program will be written as the HDFS path defined by PROGRAM"
+    '--module', metavar='MODULE', type=str, 
+    help="Create a launcher that will execute MODULE code " +
+    "in the the appropriate launch environment."  + 
+    "The resulting pydoop program will be written " + 
+    "at the HDFS path defined by PROGRAM"
     )
   parser.add_argument(
     '--pretend', action='store_true',

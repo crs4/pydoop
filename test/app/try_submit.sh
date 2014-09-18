@@ -33,6 +33,8 @@ class TReducer(Reducer):
 
 def main():
     run_task(Factory(mapper_class=TMapper, reducer_class=TReducer))
+
+main()
 EOF
 
 zip ${MZIP} ${MPY}
@@ -43,6 +45,6 @@ hdfs dfs -put -f ${MPY} ${INPUT}
 
 foobar.main
 
-${SUBMIT_CMD} --python-egg ${MZIP} --wrap ${MODULE} \
+${SUBMIT_CMD} --python-egg ${MZIP} --module ${MODULE} \
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
               ${PROGNAME} ${INPUT} ${OUTPUT} 
