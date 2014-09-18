@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.RecordReader;
 
 public abstract class DummyRecordReader 
     extends RecordReader<FloatWritable, NullWritable> {
+
     public abstract  boolean next(FloatWritable key, NullWritable value)
         throws IOException ;
 }

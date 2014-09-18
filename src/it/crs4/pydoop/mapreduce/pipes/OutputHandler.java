@@ -65,6 +65,7 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
     /**
      * The task output a normal record.
      */
+    @Override
     public void output(K key, V value) throws IOException, InterruptedException {
         System.err.println("ready to output:" + key + " " + value);
         context.write(key, value);
@@ -73,6 +74,7 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
     /**
      * The task output a record with a partition number attached.
      */
+    @Override
     public void partitionedOutput(int reduce, K key, 
                                   V value) throws IOException, InterruptedException  {
         PipesPartitioner.setNextPartition(reduce);
@@ -82,6 +84,7 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
     /**
      * Update the status message for the task.
      */
+    @Override
     public void status(String msg) {
         context.setStatus(msg);
     }
@@ -91,6 +94,7 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
     /**
      * Update the amount done and update above.
      */
+    @Override
     public void progress(float progress) throws IOException {
         if (recordReader != null) {
             progressKey.set(progress);
@@ -103,6 +107,7 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
     /**
      * The task finished successfully.
      */
+    @Override
     public void done() throws IOException {
         synchronized (this) {
             done = true;
@@ -143,11 +148,13 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
             return done;
         }
 
+    @Override
     public void registerCounter(int id, String group, String name) throws IOException {
         Counter counter = context.getCounter(group, name);
         registeredCounters.put(id, counter);
     }
 
+    @Override
     public void incrementCounter(int id, long amount) throws IOException {
         if (id < registeredCounters.size()) {
             Counter counter = registeredCounters.get(id);

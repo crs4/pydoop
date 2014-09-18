@@ -453,7 +453,9 @@ class PathFinder(object):
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/hdfs', '*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/', '*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/lib', '*.jar')) + 
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/mapreduce', '*.jar')) 
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/mapreduce', '*.jar')) +
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/yarn', '*.jar')) \
+              if v.main >= (2, 2, 0) else []
             )
         else:
           self.__hadoop_classpath = ':'.join(

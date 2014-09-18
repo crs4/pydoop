@@ -21,23 +21,32 @@ package it.crs4.pydoop.mapreduce.pipes;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Partitioner;
+import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.ReflectionUtils;
+
 
 /**
  * This partitioner is one that can either be set manually per a record or it
  * can fall back onto a Java partitioner that was set by the user.
  */
 class PipesPartitioner<K extends WritableComparable, V extends Writable>
-    extends Partitioner<K, V> {
+    extends Partitioner<K, V> 
+    implements Configurable {
   
     private static ThreadLocal<Integer> cache = new ThreadLocal<Integer>();
     private Partitioner<K, V> part = null;
-  
-    @SuppressWarnings("unchecked")
-    public void configure(Configuration conf) {
+
+    private Configuration conf;
+
+    public void setConf(Configuration conf) {
+        this.conf = conf;
         part = ReflectionUtils.newInstance(
                    Submitter.getJavaPartitioner(conf), conf);
+    }
+  
+    public Configuration getConf() {
+        return conf;
     }
 
     /**
@@ -55,6 +64,7 @@ class PipesPartitioner<K extends WritableComparable, V extends Writable>
      * @param value the value to partition
      * @param numPartitions the number of reduces
      */
+    @Override
     public int getPartition(K key, V value, 
                             int numPartitions) {
         Integer result = cache.get();

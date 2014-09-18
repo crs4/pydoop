@@ -236,6 +236,8 @@ class JavaLib(object):
     self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
     self.classpath = pydoop.hadoop_classpath()
     self.java_files = ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
+    if hadoop_vinfo.main >= (2, 2, 0):
+      self.java_files.extend(glob.glob('src/it/crs4/pydoop/mapreduce/pipes/*.java'))
     if self.hadoop_vinfo.has_security():
       if hadoop_vinfo.cdh >= (4, 0, 0) and not hadoop_vinfo.ext:
         return  # TODO: add support for mrv2

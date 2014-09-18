@@ -39,13 +39,14 @@ class PipesReducer<K2 extends WritableComparable, V2 extends Writable,
                    K3 extends WritableComparable, V3 extends Writable>
     extends Reducer<K2, V2, K3, V3> {
     private static final Log LOG = LogFactory.getLog(PipesReducer.class.getName());
-    private ReduceContext<K2, V2, K3, V3> context;
+    private Context context;
     private Configuration configuration;
     private Application<K2, V2, K3, V3> application = null;
     private DownwardProtocol<K2, V2> downlink = null;
     private boolean isOk = true;
 
-    public void setup(ReduceContext<K2, V2, K3, V3> context) {
+    @Override
+    public void setup(Reducer.Context context) {
         this.context = context;
         this.configuration = this.context.getConfiguration();
     }
@@ -54,7 +55,8 @@ class PipesReducer<K2 extends WritableComparable, V2 extends Writable,
      * Process all of the keys and values. Start up the application if we haven't
      * started it yet.
      */
-    public void reduce(K2 key, Iterable<V2> values, ReduceContext<K2, V2, K3, V3> context)
+    @Override
+    public void reduce(K2 key, Iterable<V2> values, Context context)
         throws IOException, InterruptedException {
         isOk = false;
         startApplication();
@@ -83,7 +85,8 @@ class PipesReducer<K2 extends WritableComparable, V2 extends Writable,
     /**
      * Handle the end of the input by closing down the application.
      */
-    public void cleanup(ReduceContext<K2, V2, K3, V3> context) 
+    @Override
+    public void cleanup(Context context) 
         throws IOException, InterruptedException {
         // if we haven't started the application, we have nothing to do
         if (isOk) {
