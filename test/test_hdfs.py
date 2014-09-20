@@ -216,6 +216,13 @@ class TestHDFS(unittest.TestCase):
       self.assertTrue(os.path.basename(f2.name) in ls)
       self.assertEqual(len(hdfs.ls(t2.name)), 0)
 
+  def chown(self):
+    new_user = 'nobody'
+    test_path = self.hdfs_paths[0]
+    hdfs.dump(self.data, test_path)
+    hdfs.chown(test_path, user=new_user)
+    self.assertEqual(hdfs.lsl(test_path)[0]['owner'], new_user)
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -231,6 +238,7 @@ def suite():
   suite.addTest(TestHDFS("rmr"))
   suite.addTest(TestHDFS("chmod"))
   suite.addTest(TestHDFS("move"))
+  suite.addTest(TestHDFS("chown"))
   return suite
 
 

@@ -315,6 +315,17 @@ def move(src, dest, user=None):
     dest_fs.close()
 
 
+def chown(hdfs_path, user=None, group=None, hdfs_user=None):
+  """
+  See :meth:`fs.hdfs.chown`.
+  """
+  user = user or ''
+  group = group or ''
+  host, port, path_ = path.split(hdfs_path, hdfs_user)
+  with hdfs(host, port, hdfs_user) as fs:
+    return fs.chown(path_, user=user, group=group)
+
+
 # direct bindings
 stat = path.stat
 lstat = path.lstat
