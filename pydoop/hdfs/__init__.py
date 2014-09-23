@@ -326,6 +326,20 @@ def chown(hdfs_path, user=None, group=None, hdfs_user=None):
     return fs.chown(path_, user=user, group=group)
 
 
+def rename(from_path, to_path, user=None):
+    """
+    See :meth:`fs.hdfs.rename`.
+    """
+    fhost, fport, fpath = path.split(from_path, user)
+    thost, tport, tpath = path.split(to_path, user)
+    with hdfs(thost, tport, user) as fs:
+        chost, cport = fs.host, fs.port
+    with hdfs(fhost, fport, user) as fs:
+        if fs.host != chost or fs.port != cport:
+            raise RuntimeError("can't do a cross-fs rename")
+        return fs.rename(fpath, tpath)
+
+
 # direct bindings
 stat = path.stat
 lstat = path.lstat

@@ -223,6 +223,15 @@ class TestHDFS(unittest.TestCase):
     hdfs.chown(test_path, user=new_user)
     self.assertEqual(hdfs.lsl(test_path)[0]['owner'], new_user)
 
+  def rename(self):
+    test_path = self.hdfs_paths[0]
+    new_path = "%s.new" % test_path
+    hdfs.dump(self.data, test_path)
+    hdfs.rename(test_path, new_path)
+    self.assertFalse(hdfs.path.exists(test_path))
+    self.assertTrue(hdfs.path.exists(new_path))
+    self.assertRaises(RuntimeError, hdfs.rename, test_path, self.local_paths[0])
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -239,6 +248,7 @@ def suite():
   suite.addTest(TestHDFS("chmod"))
   suite.addTest(TestHDFS("move"))
   suite.addTest(TestHDFS("chown"))
+  suite.addTest(TestHDFS("rename"))
   return suite
 
 
