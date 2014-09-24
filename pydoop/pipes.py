@@ -38,15 +38,24 @@ class RecordReaderWrapper(object):
     def __init__(self, obj):
         self._obj = obj
 
+    def __iter__(self):
+        return self.fast_iterator()
+
+    def fast_iterator(self):
+        obj = self._obj
+        next_op = obj.next
+        flag, key, value = next_op()
+        if flag:
+            yield (key, value)
+        else:
+            raise StopIteration
+
     def next(self):
         flag, key, value = self._obj.next()
         if flag:
             return (key, value)
         else:
             raise StopIteration
-
-    def __iter__(self):
-        return self
 
 
 class RecordReader(pydoop.mapreduce.api.RecordReader):
