@@ -33,7 +33,7 @@ from pydoop.test_utils import WDTestCase
 
 STREAM_1 = [
     ('start', 0),
-    ('setJobConf', 'key1', 'value1', 'key2', 'value2'),
+    ('setJobConf', ('key1', 'value1', 'key2', 'value2')),
     ('setInputTypes', 'key_type', 'value_type'),
     ('runMap', 'input_split', 3, False),
     ('mapItem', 'key1', 'val1'),
@@ -72,7 +72,8 @@ def stream_writer(fname, data):
     with open(fname, 'w') as f:
         bw = BinaryWriter(f)
         for vals in data:
-            bw.send(*vals)
+            cmd, args = vals[0], vals[1:]
+            bw.send(vals[0], *args)
 
 class TestBinaryStream(WDTestCase):
 
@@ -111,7 +112,9 @@ class TestBinaryStream(WDTestCase):
         with open(fname, 'w') as f:
             w = BinaryUpStreamFilter(f)
             for vals in STREAM_2:
-                w.send(*vals)
+                cmd, args = vals[0], vals[1:]
+                print cmd, args
+                w.send(cmd, *args)
         with open(fname, 'r') as f:
             cmd_stream = BinaryUpStreamDecoder(f)
             for (cmd, args), vals in it.izip(cmd_stream, STREAM_2):

@@ -16,31 +16,46 @@
 #
 # END_COPYRIGHT
 
-"""
-Serialization routines based on Hadoop's SerialUtils.cc.
+"""Serialization routines based on Hadoop's SerialUtils.cc.
 
-
-Expected usage:
+Client modules will typically use the ProtocolCodec interface to write binary
+protocol interfaces as follows.
 
 .. code-block:: python
 
-   import pydoop.serialize as ps
+   from pydoop.utils.serialize import codec
+   MAP_ITEM = 4
+   codec.add_rule(MAP_ITEM, 'mapItem', 'ss')
+   # ... more cmd rule definitions, ...
+   cmd, args = codec.deserialize_cmd(stream)
 
-   class Foo(object):
+   
+Object serialization/deserialization will instead be implemented as follows.
+
+.. code-block:: python
+
+   from pydoop.utils.serialize import codec, Writable
+
+   class Foo(Writable):
        def __init__(self, x, y, z):
            assert (isinstance(x, int) and isinstance(y, float)
                    and isinstance(z, str))
            self.x, self.y, self.z = x, y, z
+       def write(self, sink):
+           codec.serialize(('ifs', (self.x, self.y, self.z)), sink)
+       def read_fields(self, source):
+           self.x, self.y, self.z = ProtocolCodec.deserialize(source, enc_format='ifs')
        @classmethod
-       def read(cls, stream):
-           x = ps.deserialize_int(stream)
-           y = ps.deserialize_float(stream)
-           z = ps.deserialize_str(stream)
+       def read(cls, source):
+           x, y, z = codec.deserialize(source, enc_format='ifs')
            return Foo(x, y, z)
 
-   ps.register_serializer(Foo, Foo.read)
-   ps.register_deserializer('org.apache.hadoop.io.VIntWritable',
-                            ps.deserialize_int)
+   codec.register_object('org.foo.FooObject', Foo)
+   codec.register_object('org.apache.hadoop.io.VIntWritable', enc_format='i')
+
+The idea is to mimick Hadoop writable interface, so that we can then write:
+
+.. code-block:: python
 
    # in the reader code:
    class Reader(..):
@@ -51,8 +66,8 @@ Expected usage:
            key = ...
            # defaults to no changes if it does not have a deserializer for that
            # type
-           key = ps.deserialize(self.ctx.input_key_type, key)
-           value = ps.deserialize(self.ctx.input_value_type, value)
+           key = codec.deserialize(key, self.ctx.input_key_type)
+           value = codec.deserialize(value, self.ctx.input_value_type)
            return key, value
 
    # in the TaskContext code:
@@ -60,18 +75,16 @@ Expected usage:
    def emit(self, key, value):
        ...
        # if there is noting registered for type(key), try __str__
-       up_link.send('ouput', serialize(key), serialize(value))
-
-We also expect to be able to support something like the following::
-
- pydoop script my_mr.py  --type-conversion=(VIntWritable,pydoop.serialize.VInt)
-
+       up_link.send('ouput', codec.serialize_object(key), codec.serialize_object(value))
 """
 
 from __future__ import division
 import struct, xdrlib
 import StringIO
 import cPickle as pickle
+
+import pydoop_sercore as codec_core
+
 
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
@@ -88,7 +101,6 @@ def read_buffer(n, stream):
     if len(buff) != n:
         raise EOFError
     return buff
-
 
 def serialize_int(t, stream):
     p = xdrlib.Packer()
@@ -185,6 +197,7 @@ def deserialize_old_style_filename(stream):
     l = struct.unpack('>H', read_buffer(2, stream))[0]
     return unicode(read_buffer(l, stream), 'UTF-8')
 
+
 class SerializerStore(object):
     def __init__(self):
         self.serialize_map = {}
@@ -253,3 +266,37 @@ def serialize_to_string(v, type_id=None):
     return f.getvalue()
 
 
+# FIXME this is currently an almost empty shell
+class ProtocolCodec(object):
+    def __init__(self):
+        pass
+    def add_rule(self, code, name, enc_format):
+        codec_core.add_rule(code, name, enc_format)
+        
+    def register_object(self, obj_name, obj_class=None, enc_format=None):
+        pass
+    def decode_command(self, stream):
+        return codec_core.decode_command(stream)
+    def encode_command(self, cmd, args, stream):
+        return codec_core.encode_command(stream, cmd, args)
+    @classmethod
+    def serialize(cls, obj, sink=None):
+        """
+        .. code-block:: python
+          ProtocolCodec.serialize(foo)
+          ProtocolCodec.serialize(foo, sink=stream)
+          ProtocolCodec.serialize(foo, sink=buffer)
+          ProtocolCodec.serialize(('ifs', (2, 0.3, 'hello')), sink=buffer)
+        """
+        pass
+    @classmethod
+    def deserialize(cls, source, obj_class=None, obj_name=None, enc_format=None):
+        """
+        .. code-block:: python
+          ProtocolCodec.deserialize(source, Foo)
+          ProtocolCodec.deserialize(source, obj_name='myobjs.foo')
+          ProtocolCodec.deserialize(source, enc_format='ifs')
+        """
+        pass
+    
+codec = ProtocolCodec()

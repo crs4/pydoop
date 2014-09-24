@@ -16,16 +16,17 @@
 #
 # END_COPYRIGHT
 
-from streams import DownStreamFilter, UpStreamFilter
-from serialize import deserialize, serialize, serialize_to_string
+import sys
+from pydoop.mapreduce.streams import DownStreamFilter, UpStreamFilter
+from pydoop.utils.serialize import codec, codec_core
 
 import logging
 logging.basicConfig()
 logger = logging.getLogger('binary_streams')
 logger.setLevel(logging.CRITICAL)
 
-
-# these constants should be exactly what has been defined in HadoopPipes.cpp
+# these constants should be exactly what has been defined in PipesMapper.java
+# BinaryProtocol.java
 START_MESSAGE = 0
 SET_JOB_CONF = 1
 SET_INPUT_TYPES = 2
@@ -46,122 +47,69 @@ REGISTER_COUNTER = 55
 INCREMENT_COUNTER = 56
 AUTHENTICATION_RESP = 57
 
-
-def get_list(stream):
-    n = deserialize(int, stream)
-    if n < 0:
-        raise ValueError('number of elements < 0')
-    return [deserialize(str, stream) for _ in xrange(n)]
+codec.add_rule(START_MESSAGE, 'start', 'i')
+codec.add_rule(SET_JOB_CONF, 'setJobConf', 'A')
+codec.add_rule(SET_INPUT_TYPES, 'setInputTypes', 'ss')
+codec.add_rule(RUN_MAP, 'runMap', 'sii')
+codec.add_rule(MAP_ITEM, 'mapItem', 'ss')
+codec.add_rule(RUN_REDUCE, 'runReduce', 'ii')
+codec.add_rule(REDUCE_KEY, 'reduceKey', 's')
+codec.add_rule(REDUCE_VALUE, 'reduceValue', 's')
+codec.add_rule(CLOSE, 'close', '')
+codec.add_rule(ABORT, 'abort', '')
+codec.add_rule(AUTHENTICATION_REQ, 'authenticationReq', 'ss')
+codec.add_rule(OUTPUT, 'output', 'ss')
+codec.add_rule(PARTITIONED_OUTPUT, 'partitionedOutput', 'iss')
+codec.add_rule(STATUS, 'status', 's')
+codec.add_rule(PROGRESS, 'progress', 'f')
+codec.add_rule(DONE, 'done', '')
+codec.add_rule(REGISTER_COUNTER, 'registerCounter', 'iss')
+codec.add_rule(INCREMENT_COUNTER, 'incrementCounter', 'iL')
+codec.add_rule(AUTHENTICATION_RESP, 'authenticationResp', 's')
 
 
 class BinaryWriter(object):
-
-    CMD_CODE = {
-        'start' : START_MESSAGE,
-        'setJobConf' : SET_JOB_CONF,
-        'setInputTypes' : SET_INPUT_TYPES,
-        'runMap' : RUN_MAP,
-        'mapItem' : MAP_ITEM,
-        'runReduce' : RUN_REDUCE,
-        'reduceKey' : REDUCE_KEY,
-        'reduceValue' : REDUCE_VALUE,
-        'close' : CLOSE,
-        'abort' : ABORT,
-        'authenticationReq' : AUTHENTICATION_REQ,
-        'output' : OUTPUT,
-        'partitionedOutput' : PARTITIONED_OUTPUT,
-        'status' : STATUS,
-        'progress' : PROGRESS,
-        'done' : DONE,
-        'registerCounter' : REGISTER_COUNTER,
-        'incrementCounter' : INCREMENT_COUNTER,
-        'authenticationResp' : AUTHENTICATION_RESP
-        }
-
     def __init__(self, stream):
         self.stream = stream
-
-    def send(self, *vals):
-        serialize(self.CMD_CODE[vals[0]], self.stream)
-        if vals[0] == 'setJobConf':
-            serialize(len(vals[1:]), self.stream)
-        for v in vals[1:]:
-            serialize(v, self.stream)
-
+        self.logger = logger.getChild('BinaryWriter')
+    def send(self, cmd, *args):
+        self.logger.debug('writing %r, %r', cmd, args)
+        #codec_core.encode_command(self.stream, cmd, args)
+        codec.encode_command(cmd, args, self.stream)
 
 class BinaryDownStreamFilter(DownStreamFilter):
-
-    DFLOW_TABLE = {
-        START_MESSAGE: ('start', [int], None),
-        SET_JOB_CONF: ('setJobConf', None, get_list),
-        SET_INPUT_TYPES: ('setInputTypes', [str, str], None),
-        RUN_MAP: ('runMap', [str, int, int], None),
-        MAP_ITEM: ('mapItem', [str, str], None),
-        RUN_REDUCE: ('runReduce', [int, int], None),
-        REDUCE_KEY: ('reduceKey', [str], None),
-        REDUCE_VALUE: ('reduceValue', [str], None),
-        CLOSE: ('close', [], None),
-        ABORT: ('abort', [], None),
-        AUTHENTICATION_REQ: ('authenticationReq', [str, str], None)
-        }
-
     def __init__(self, stream):
         super(BinaryDownStreamFilter, self).__init__(stream)
         self.logger = logger.getChild('BinaryDownStreamFilter')
-
-    def next(self):
+    def __iter__(self):
+        return self.fast_iterator()
+    def fast_iterator(self):
+        stream = self.stream
+        decode_command = codec_core.decode_command
+        while True:
+            try:
+                yield decode_command(stream)
+            except EOFError:
+                raise StopIteration
+    def next(self): # FIXME: this is just for timing purposes.
         try:
-            cmd_code = deserialize(int, self.stream)
+            return codec.decode_command(self.stream)
         except EOFError:
             raise StopIteration
-        cmd, types, processor = self.DFLOW_TABLE[cmd_code]
-        if types is None: # no types, process stream directly
-            args = processor(self.stream)
-            return cmd, tuple(args)
-        args = [deserialize(t, self.stream) for t in types]
-        self.logger.debug('next -> cmd: %s; args: %s' % (cmd, args))
-        return cmd, tuple(args) if args else None
-
 
 class BinaryUpStreamFilter(UpStreamFilter):
-
-    UPFLOW_TABLE =  {
-        'output' : (OUTPUT, [str, str], None),
-        'partitionedOutput' :(PARTITIONED_OUTPUT, [int, str, str], None),
-        'status': (STATUS, [str], None),
-        'progress' : (PROGRESS, [float], None),
-        'done' : (DONE, [], None),
-        'registerCounter' : (REGISTER_COUNTER, [int, str, str], None),
-        'incrementCounter' : (INCREMENT_COUNTER, [int, int], None),
-        'authenticationResp' : (AUTHENTICATION_RESP, [str], None),
-        }
-
     def __init__(self, stream):
         super(BinaryUpStreamFilter, self).__init__(stream)
         self.logger = logger.getChild('BinaryUpStreamFilter')
-        self.logger.debug('initialize on stream: %s' % stream)        
+        self.logger.debug('initialize on stream: %s', stream)
 
     def send(self, cmd, *args):
-        self.logger.debug('cmd: %s, args: %s' % (cmd, args))
+        #self.logger.debug('cmd: %s, args: %s', cmd, args)
         stream = self.stream
-        cmd_code, types, _ = self.UPFLOW_TABLE[cmd]
-        serialize(cmd_code, stream)
-        for t, v in zip(types, args):
-            if t == float: # you never know...
-                serialize(float(v), stream)
-            elif t == int:
-                assert type(v) == t
-                serialize(v, stream)
-            elif t == str:
-                if type(v) in [str, unicode]:
-                    serialize(v, stream)
-                else:
-                    s = serialize_to_string(v)
-                    serialize(s, stream)
-        stream.flush()
+        codec_core.encode_command(stream, cmd, args)
+
 
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
-    DFLOW_TABLE = dict(
-        ((t[0], (k, t[1], t[2]))
-         for k, t in BinaryUpStreamFilter.UPFLOW_TABLE.iteritems()))
-        
+    def __init__(self, stream):
+        super(BinaryUpStreamDecoder, self).__init__(stream)
+        self.logger = logger.getChild('BinaryUpStreamDecoder')

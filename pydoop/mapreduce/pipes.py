@@ -21,10 +21,10 @@ import logging
 import time
 import StringIO
 
-from pydoop.mapreduce.serialize import deserialize_text, deserialize_long
-from pydoop.mapreduce.serialize import deserialize_old_style_filename
-from pydoop.mapreduce.serialize import serialize_to_string, serialize_text
-from pydoop.mapreduce.serialize import serialize_long
+from pydoop.utils.serialize import deserialize_text, deserialize_long
+from pydoop.utils.serialize import deserialize_old_style_filename
+from pydoop.utils.serialize import serialize_to_string, serialize_text
+from pydoop.utils.serialize import serialize_long
 
 import connections
 from pydoop.mapreduce.api import JobConf, RecordWriter, MapContext, ReduceContext
@@ -33,7 +33,7 @@ from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
 from string_utils import create_digest
 from pydoop.mapreduce.api import Counter
 from environment_keys import *
-from pydoop.mapreduce.serialize import private_encode
+from pydoop.utils.serialize import private_encode
 
 from pydoop import hadoop_version_info
 from pydoop.mapreduce.api import Factory as FactoryInterface
@@ -180,7 +180,7 @@ class TaskContext(MapContext, ReduceContext):
                                         self, reducer) if reducer else None
 
     def emit(self, key, value):
-        logger.debug("Emitting... %r,%r" % (key, value))
+        #logger.debug("Emitting... %r,%r", key, value)
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
@@ -192,7 +192,7 @@ class TaskContext(MapContext, ReduceContext):
                 part = self.partitioner.partition(key, self.n_reduces)
                 self.up_link.send('partitionedOutput', part, key, value)
             else:
-                logger.debug("** Sending: %r,%r" % (key, value))
+                #logger.debug("** Sending: %r,%r", key, value)
                 self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
@@ -212,17 +212,18 @@ class TaskContext(MapContext, ReduceContext):
 
     def progress(self):
         if not self.up_link:
-            logger.debug("UpLink is None")
+            #logger.debug("UpLink is None")
             return
-        now = int(round(time.time() * 1000))
-        if now - self._last_progress > 1000:
+        now = int(time.time())
+        if now - self._last_progress > 1:
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
-                logger.debug("Sending status %r" % self._status)
+                logger.debug("Sending status %r", self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
-            logger.debug("Sending progress float %r" % self._progress_float)
+            self.up_link.flush()
+            logger.debug("Sending progress float %r", self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -252,7 +253,7 @@ class TaskContext(MapContext, ReduceContext):
 
     def next_value(self):
         try:
-            logger.debug("%s" % self._values)
+            #logger.debug("%s", self._values)
             self._value = self._values.next()
             return True
         except StopIteration:
@@ -297,31 +298,31 @@ class StreamRunner(object):
     def get_password(self):
         secret_location_key = resolve_environment_secret_location_key()
         pfile_name = resolve_environment_secret_location(secret_location_key)
-        self.logger.debug('{}:{}'.format(secret_location_key, pfile_name))
+        self.logger.debug('%r: %r', secret_location_key, pfile_name)
         if pfile_name is None:
             self.password = None
             return
         try:
             with open(pfile_name) as f:
                 self.password = f.read()
-                self.logger.debug('password:{}'.format(self.password))
+                self.logger.debug('password:%r', self.password)
         except IOError:
             self.logger.error('Could not open the password file')
 
     def run(self):
         self.logger.debug('start running')
         for cmd, args in self.cmd_stream:
-            self.logger.debug('dispatching cmd:%s, args: %s' % (cmd, args))
+            self.logger.debug('dispatching cmd:%s, args: %s', cmd, args)
             if cmd == 'authenticationReq':
                 digest, challenge = args
                 self.logger.debug(
-                    'authenticationReq: {}, {}'.format(digest, challenge))
+                    'authenticationReq: %r, %r', digest, challenge)
                 if self.fails_to_authenticate(digest, challenge):
                     self.logger.critical(
                         'Server failed to authenticate. Exiting')
                     break  # bailing out
             elif cmd == 'setJobConf':
-                self.ctx.set_job_conf(args)
+                self.ctx.set_job_conf(args[0])
             elif cmd == 'runMap':
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
@@ -342,8 +343,9 @@ class StreamRunner(object):
             return True
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
-        self.logger.debug('authenticationResp: {}'.format(response_digest))
+        self.logger.debug('authenticationResp: %r', response_digest)
         self.ctx.up_link.send('authenticationResp', response_digest)
+        self.ctx.up_link.flush()
         return False
 
     def run_map(self, input_split, n_reduces, piped_input):
@@ -354,13 +356,14 @@ class StreamRunner(object):
             ctx.enable_private_encoding()
 
         ctx._input_split = input_split
-        logger.debug("InputSPlit setted %r" % input_split)
+        logger.debug("InputSPlit setted %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
             if cmd == "setInputTypes":
                 ctx._input_key_class, ctx._input_value_class = args
 
-        logger.debug("After setInputTypes: %r, %r" % (ctx.input_key_class, ctx.input_value_class))
+        logger.debug("After setInputTypes: %r, %r", ctx.input_key_class, 
+                     ctx.input_value_class)
 
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
@@ -371,13 +374,15 @@ class StreamRunner(object):
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
 
+        mapper_map = mapper.map
+        progress_function = ctx.progress
         for ctx._key, ctx._value in reader:
-            logger.debug("key: %r, value: %r " % (ctx.key, ctx.value))
+            #logger.debug("key: %r, value: %r ",  ctx.key, ctx.value)
             if send_progress:
-                ctx._progress_float = reader.get_progress()
-                logger.debug("Progress updated to %r " % ctx._progress_float)
-                ctx.progress()
-            mapper.map(ctx)
+                 ctx._progress_float = reader.get_progress()
+                 logger.debug("Progress updated to %r ", ctx._progress_float)
+                 progress_function()
+            mapper_map(ctx)
         mapper.close()
         self.logger.debug('done run_map')
 
@@ -392,14 +397,15 @@ class StreamRunner(object):
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream,
                                            ctx.no_private_encoding)
+        reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
-            reducer.reduce(ctx)
+            reducer_reduce(ctx)
         reducer.close()
         self.logger.debug('done run_reduce')
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             no_private_encoding=False):
+             no_private_encoding=True):
     #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)

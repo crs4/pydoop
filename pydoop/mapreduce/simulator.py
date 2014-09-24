@@ -5,6 +5,7 @@ import tempfile
 import uuid
 import logging
 import cStringIO
+import tempfile
 
 import logging
 logging.basicConfig()
@@ -18,8 +19,10 @@ from pydoop.mapreduce.api import PydoopError
 from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.mapreduce.string_utils import create_digest
+from pydoop.mapreduce.connections import BUF_SIZE
 
-from pydoop.mapreduce.serialize import serialize_to_string
+from pydoop.utils.serialize import serialize_to_string
+from pydoop_sercore import fdopen as ph_fdopen
 
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
@@ -48,23 +51,26 @@ class TrivialRecordWriter(object):
             self.output(key, value)
         elif cmd == 'status':
             value = vals[0]
-            self.logger.debug("Sending %s: %s" % (cmd, value))
+            self.logger.debug("Sending %s: %s", cmd, value)
         elif cmd == 'progress':
             value = vals[0]
-            self.logger.debug("Sending %s: %s" % (cmd, value))
+            self.logger.debug("Sending %s: %s", cmd, value)
         elif cmd == 'registerCounter':
             cid, group, name = vals
-            self.logger.debug("Sending command %s => %s" % (cmd, cid))
+            self.logger.debug("Sending command %s => %s", cmd, cid)
             self.counters[cid] = 0
         elif cmd == 'incrementCounter':
             cid, increment = vals
             self.counters[cid] += int(increment)
             self.output("COUNTER_" + str(cid), self.counters[cid])
-            self.logger.debug("Writing %s: %s" % (cid, self.counters[cid]))
+            self.logger.debug("Writing %s: %s", cid, self.counters[cid])
         elif cmd == 'done':
             self.stream.close()
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
+
+    def flush(self):
+        pass
 
     def close(self):
         self.stream.close()
@@ -99,17 +105,20 @@ class TrivialRecordReader(RecordReader):
 
 class SortAndShuffle(dict):
     def output(self, key, value):
-        logger.debug('SAS:output {}, {}'.format(key, value))
+        logger.debug('SAS:output %r, %r', key, value)
         self.setdefault(key, []).append(value)
 
     def send(self, *args):
-        logger.debug('SAS:send {}'.format(args))        
+        logger.debug('SAS:send %r', args)        
         if args[0] == 'output':
             key, value = args[1:]
             self.setdefault(key, []).append(value)
         elif args[0] == 'partitionedOutput':
             part, key, value = args[1:]
             self.setdefault(key, []).append(value)
+
+    def flush(self):
+        pass
 
     def close(self):
         pass
@@ -147,18 +156,17 @@ class ResultThread(threading.Thread):
         self.logger.debug('started runner')        
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
         for cmd, args in up_cmd_stream:
-            self.logger.debug('cmd:{} args:{}'.format(cmd, args))
+            self.logger.debug('cmd: %r args:%r', cmd, args)
             if cmd == 'authenticationResp':
-                self.logger.debug('got an authenticationResp: {}'.format(args))
+                self.logger.debug('got an authenticationResp: %r', args)
             elif cmd == 'output':
                 key, value = args
                 self.ostream.output(key, value)
-                self.logger.debug('output: ({}, {})'.format(key, value))
+                self.logger.debug('output: (%r, %r)', key, value)
             elif cmd == 'partitionedOutput':
                 part, key, value = args
                 self.ostream.output(key, value)
-                self.logger.debug('partitionedOutput: ({}, {}, {})'.format(
-                    part, key, value))
+                self.logger.debug('partitionedOutput: (%r, %r, %r)', part, key, value)
             elif cmd == 'done':
                 if self.ostream:
                     self.ostream.close()
@@ -176,13 +184,15 @@ class ResultThread(threading.Thread):
                 self.logger.info("Incrementing Counter: %s %s" % args)
         self.logger.debug('done with ResultThread')
 
-
-class HadoopThreadHandler(SocketServer.StreamRequestHandler):
+class HadoopThreadHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         self.server.logger.debug('handler started')
-        cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
+        fd = self.request.fileno()
+        cmd_thread = CommandThread(self.server.down_bytes,
+                                   ph_fdopen(os.dup(fd), 'w', BUF_SIZE),
                                    self.server.logger)
-        res_thread = ResultThread(self.rfile, self.server.out_writer,
+        res_thread = ResultThread(ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
+                                  self.server.out_writer,
                                   self.server.logger)
         cmd_thread.start()
         res_thread.start()
@@ -190,6 +200,21 @@ class HadoopThreadHandler(SocketServer.StreamRequestHandler):
         self.server.logger.debug('cmd_thread returned.')
         res_thread.join()
         self.server.logger.debug('res_thread returned.')
+
+
+# class HadoopThreadHandler(SocketServer.StreamRequestHandler):
+#     def handle(self):
+#         self.server.logger.debug('handler started')
+#         cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
+#                                    self.server.logger)
+#         res_thread = ResultThread(self.rfile, self.server.out_writer,
+#                                   self.server.logger)
+#         cmd_thread.start()
+#         res_thread.start()
+#         cmd_thread.join()
+#         self.server.logger.debug('cmd_thread returned.')
+#         res_thread.join()
+#         self.server.logger.debug('res_thread returned.')
 
 
 class HadoopServer(SocketServer.TCPServer):
@@ -213,8 +238,7 @@ class HadoopServer(SocketServer.TCPServer):
         self.out_writer = out_writer
         # old style class
         SocketServer.TCPServer.__init__(self, (host, port), HadoopThreadHandler)
-        self.logger.debug('initialized on ({}, {})'.format(host, port))
-
+        self.logger.debug('initialized on (%r, %r)', host, port)
     def get_port(self):
         return self.socket.getsockname()[1]
 
@@ -236,8 +260,8 @@ class HadoopSimulator(object):
         self.write_authorization(down_stream, authorization)
         down_stream.send('start', 0)
         down_stream.send('setJobConf',
-                         *sum([[k, v] for k, v in job_conf.iteritems()],
-                             []))
+                         tuple(sum([[k, v] for k, v in job_conf.iteritems()],
+                                   [])))
         
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               authorization=None, input_split=''):
@@ -255,7 +279,11 @@ class HadoopSimulator(object):
         
         piped_input = file_in is not None
 
-        f = cStringIO.StringIO()
+        #f = cStringIO.StringIO()
+        self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
+        f = self.tempf.file
+        #f = open('foo-map.dat', 'wb')
+        self.logger.debug('writing map input data in %s', f.name)
         down_stream = BinaryWriter(f)
         
         self.write_header_down_stream(down_stream, authorization, job_conf)
@@ -265,12 +293,15 @@ class HadoopSimulator(object):
             down_stream.send('setInputTypes', input_key_type, input_value_type)
             pos = file_in.tell()
             for l in file_in:
-                self.logger.debug("Line: %s" % l)
+                self.logger.debug("Line: %s", l)
                 k = serialize_to_string(pos)
                 down_stream.send('mapItem', k, l)
                 pos = file_in.tell()
             down_stream.send('close')
+        self.logger.debug('\tdone writing, rewinding')
         f.seek(0)
+        #f.close()
+        #f = open('foo-map.dat', 'rb')
         return f
 
     def write_reduce_down_stream(self, sas, job_conf, reducer,
@@ -278,19 +309,24 @@ class HadoopSimulator(object):
         """
         FIXME
         """
-        f = cStringIO.StringIO()
+        #f = cStringIO.StringIO()
+        self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
+        f = self.tempf.file
+        #f = open('foo-map.dat', 'wb')
         down_stream = BinaryWriter(f)
 
         self.write_header_down_stream(down_stream, authorization, job_conf)
 
         down_stream.send('runReduce', reducer, piped_output)
         for k in sas:
-            self.logger.debug("key: {}".format(k))
+            self.logger.debug("key: %r", k)
             down_stream.send('reduceKey', k)
             for v in sas[k]:
                 down_stream.send('reduceValue', v)
         down_stream.send('close')
         f.seek(0)
+        #f.close()
+        #f = open('foo-map.dat', 'rb')
         return f
 
 
@@ -304,9 +340,13 @@ class HadoopSimulatorLocal(HadoopSimulator):
         return self.counters.get(group+"_"+name, None)
 
     def run_task(self, dstream, ustream):
+        self.logger.debug('run task')
         context = TaskContext(ustream)
+        self.logger.debug('got context')
         stream_runner = StreamRunner(self.factory, context, dstream)
+        self.logger.debug('got runner, ready to run.')
         stream_runner.run()
+        self.logger.debug('done running!')
         context.close()
 
     def run(self, file_in, file_out, job_conf, num_reducers):
@@ -314,7 +354,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
         bytes_flow = self.write_map_down_stream(file_in, job_conf, num_reducers)
         dstream = BinaryDownStreamFilter(bytes_flow)
-        # FIXME this is a quick hack to avoid crashes with used defined
+        # FIXME this is a quick hack to avoid crashes with user defined
         # RecordWriter
         f = cStringIO.StringIO() if file_out is None else file_out
         rec_writer_stream = TrivialRecordWriter(f)
@@ -332,7 +372,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
             self.logger.info('running reducer')
             self.run_task(rstream, rec_writer_stream)
         if file_out is None:
-            self.logger.debug('fake file_out contents: %r' % f.getvalue())
+            self.logger.debug('fake file_out contents: %r', f.getvalue())
         self.logger.info('run done.')
 
 
