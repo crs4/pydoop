@@ -101,13 +101,13 @@ class BinaryUpStreamFilter(UpStreamFilter):
     def __init__(self, stream):
         super(BinaryUpStreamFilter, self).__init__(stream)
         self.logger = logger.getChild('BinaryUpStreamFilter')
-        self.logger.debug('initialize on stream: %s', stream)        
+        self.logger.debug('initialize on stream: %s', stream)
 
     def send(self, cmd, *args):
-        self.logger.debug('cmd: %s, args: %s', cmd, args)
+        #self.logger.debug('cmd: %s, args: %s', cmd, args)
         stream = self.stream
-        codec.encode_command(cmd, args, self.stream)
-        stream.flush()
+        codec_core.encode_command(stream, cmd, args)
+
 
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
     def __init__(self, stream):

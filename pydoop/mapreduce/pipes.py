@@ -180,7 +180,7 @@ class TaskContext(MapContext, ReduceContext):
                                         self, reducer) if reducer else None
 
     def emit(self, key, value):
-        logger.debug("Emitting... %r,%r", key, value)
+        #logger.debug("Emitting... %r,%r", key, value)
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
@@ -192,7 +192,7 @@ class TaskContext(MapContext, ReduceContext):
                 part = self.partitioner.partition(key, self.n_reduces)
                 self.up_link.send('partitionedOutput', part, key, value)
             else:
-                logger.debug("** Sending: %r,%r", key, value)
+                #logger.debug("** Sending: %r,%r", key, value)
                 self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
@@ -212,16 +212,17 @@ class TaskContext(MapContext, ReduceContext):
 
     def progress(self):
         if not self.up_link:
-            logger.debug("UpLink is None")
+            #logger.debug("UpLink is None")
             return
-        now = int(round(time.time() * 1000))
-        if now - self._last_progress > 1000:
+        now = int(time.time())
+        if now - self._last_progress > 1:
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
                 logger.debug("Sending status %r", self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
+            self.up_link.flush()
             logger.debug("Sending progress float %r", self._progress_float)
 
     def set_status(self, status):
@@ -252,7 +253,7 @@ class TaskContext(MapContext, ReduceContext):
 
     def next_value(self):
         try:
-            logger.debug("%s", self._values)
+            #logger.debug("%s", self._values)
             self._value = self._values.next()
             return True
         except StopIteration:
@@ -344,6 +345,7 @@ class StreamRunner(object):
         response_digest = create_digest(self.password, digest)
         self.logger.debug('authenticationResp: %r', response_digest)
         self.ctx.up_link.send('authenticationResp', response_digest)
+        self.ctx.up_link.flush()
         return False
 
     def run_map(self, input_split, n_reduces, piped_input):
@@ -372,13 +374,15 @@ class StreamRunner(object):
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
 
+        mapper_map = mapper.map
+        progress_function = ctx.progress
         for ctx._key, ctx._value in reader:
-            logger.debug("key: %r, value: %r ",  ctx.key, ctx.value)
+            #logger.debug("key: %r, value: %r ",  ctx.key, ctx.value)
             if send_progress:
-                ctx._progress_float = reader.get_progress()
-                logger.debug("Progress updated to %r ", ctx._progress_float)
-                ctx.progress()
-            mapper.map(ctx)
+                 ctx._progress_float = reader.get_progress()
+                 logger.debug("Progress updated to %r ", ctx._progress_float)
+                 progress_function()
+            mapper_map(ctx)
         mapper.close()
         self.logger.debug('done run_map')
 
@@ -393,8 +397,9 @@ class StreamRunner(object):
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream,
                                            ctx.no_private_encoding)
+        reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
-            reducer.reduce(ctx)
+            reducer_reduce(ctx)
         reducer.close()
         self.logger.debug('done run_reduce')
 
