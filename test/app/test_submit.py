@@ -20,9 +20,6 @@ import unittest
 
 import pydoop.app.main as app
 
-
-
-
 class TestAppSubmit(unittest.TestCase):
     def test_help(self):
         try:
@@ -49,7 +46,8 @@ class TestAppSubmit(unittest.TestCase):
         --module mymod1.mod2.mod3
         my_program my_input my_output
         """
-        app.main(args_line.split())
+        with self.assertRaises(RuntimeError):
+            app.main(args_line.split())
 
     def test_validate(self):
         pass
