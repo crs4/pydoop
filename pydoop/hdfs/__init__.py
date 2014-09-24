@@ -340,6 +340,16 @@ def rename(from_path, to_path, user=None):
         return fs.rename(fpath, tpath)
 
 
+def renames(from_path, to_path, user=None):
+    """
+    Rename ``from_path`` to ``to_path``, creating parents as needed.
+    """
+    to_dir = path.dirname(to_path)
+    if to_dir:
+        mkdir(to_dir, user=user)
+    rename(from_path, to_path, user=user)
+
+
 # direct bindings
 stat = path.stat
 lstat = path.lstat

@@ -232,6 +232,15 @@ class TestHDFS(unittest.TestCase):
     self.assertTrue(hdfs.path.exists(new_path))
     self.assertRaises(RuntimeError, hdfs.rename, test_path, self.local_paths[0])
 
+  def renames(self):
+    test_path = self.hdfs_paths[0]
+    hdfs.dump(self.data, test_path)
+    new_d = hdfs.path.join(self.hdfs_wd, "new_dir")
+    new_path = hdfs.path.join(new_d, "new_p")
+    hdfs.renames(test_path, new_path)
+    self.assertFalse(hdfs.path.exists(test_path))
+    self.assertTrue(hdfs.path.exists(new_path))
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -249,6 +258,7 @@ def suite():
   suite.addTest(TestHDFS("move"))
   suite.addTest(TestHDFS("chown"))
   suite.addTest(TestHDFS("rename"))
+  suite.addTest(TestHDFS("renames"))
   return suite
 
 
