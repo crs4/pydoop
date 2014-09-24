@@ -69,6 +69,9 @@ class TrivialRecordWriter(object):
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
 
+    def flush(self):
+        pass
+
     def close(self):
         self.stream.close()
 
@@ -113,6 +116,9 @@ class SortAndShuffle(dict):
         elif args[0] == 'partitionedOutput':
             part, key, value = args[1:]
             self.setdefault(key, []).append(value)
+
+    def flush(self):
+        pass
 
     def close(self):
         pass
