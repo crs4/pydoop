@@ -132,7 +132,7 @@ public:
     return res;
   }
   inline PyObject* deserialize_from_buffer(const std::string& enc_rule, 
-                                           const std::string buffer) {
+                                           const std::string& buffer) {
     hu::StringInStream sis(buffer);
     return deserialize_from_stream(enc_rule, sis);
   }
