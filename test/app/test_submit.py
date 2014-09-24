@@ -46,7 +46,7 @@ class TestAppSubmit(unittest.TestCase):
         --output-format mapreduce.lib.input.TextOutputFormat
         --num-reducers 10
         --python-egg allmymodules.egg
-        --wrap mymod1.mod2.mod3
+        --module mymod1.mod2.mod3
         my_program my_input my_output
         """
         app.main(args_line.split())

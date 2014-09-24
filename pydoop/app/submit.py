@@ -100,14 +100,21 @@ class PydoopSubmitter(object):
                                             else []
     if args.cache:
       cfiles += args.cache
+
+    files_to_upload_and_cache = []
+    if args.upload_to_cache:
+        files_to_upload_and_cache += args.upload_to_cache
     if args.python_egg:
-      eggs_to_cache = [('file://' + os.path.realpath(e), 
-                        hdfs.path.join(self.remote_wd, bn), bn)
+        files_to_upload_and_cache += args.python_egg
+
+    if files_to_upload_and_cache:
+      upf_to_cache = [('file://' + os.path.realpath(e), 
+                       hdfs.path.join(self.remote_wd, bn), bn)
                        for (e, bn) in ((e, os.path.basename(e)) 
-                                       for e in args.python_egg)]
-      self.files_to_cache += eggs_to_cache
-      cached_eggs = ["%s#%s" % (h, b) for (_, h, b) in eggs_to_cache]
-      cfiles += cached_eggs
+                                       for e in files_to_upload_and_cache)]
+      self.files_to_cache += upf_to_cache
+      cached_files = ["%s#%s" % (h, b) for (_, h, b) in upf_to_cache]
+      cfiles += cached_files
     self.properties[CACHE_FILES] = ','.join(cfiles)
     self.args = args
 
@@ -280,6 +287,16 @@ def run(args):
 def kv_pair(s):
   return s.split("=", 1)
 
+def a_file_that_can_be_read(x):
+  with open(x, 'r'):
+      pass
+  return x
+
+def a_hdfs_file(x):
+  _, _, _ = hdfs.path.split(x)
+  return x
+    
+
 def add_parser_arguments(parser):
   parser.add_argument(
     'program', metavar='PROGRAM', help='the python mapreduce program',
@@ -362,12 +379,18 @@ def add_parser_arguments(parser):
     help="Additional python egg file"
   )
   parser.add_argument(
-    '--conf', metavar='CONF_FILE', type=argparse.FileType('r'), 
+    '--conf', metavar='CONF_FILE', type=a_file_that_can_be_read, 
     help="Configuration file"
   )
   parser.add_argument(
-    '--cache', metavar='FILE', type=argparse.FileType('r'), action="append",
-    help="Add this file to the distributed cache"
+    '--upload-to-cache', metavar='FILE', type=a_file_that_can_be_read, 
+      action="append",
+    help="Upload and add this file to the distributed cache."
+  )
+  parser.add_argument(
+    '--cache', metavar='HDFS_FILE', type=a_hdfs_file, 
+    action="append",
+    help="Add this HDFS file to the distributed cache."
   )
   parser.add_argument(
     '--module', metavar='MODULE', type=str, 

@@ -43,8 +43,6 @@ hdfs dfs -mkdir -p /user/${USER}/${INPUT}
 hdfs dfs -rmdir /user/${USER}/${OUTPUT}
 hdfs dfs -put -f ${MPY} ${INPUT}
 
-foobar.main
-
 ${SUBMIT_CMD} --python-egg ${MZIP} --module ${MODULE} \
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
               ${PROGNAME} ${INPUT} ${OUTPUT} 
