@@ -151,8 +151,6 @@ class _HdfsPathSplitter(object):
     scheme, netloc, path = cls.parse(hdfs_path)
     if not scheme:
       scheme = "file" if hdfs_fs.default_is_local() else "hdfs"
-    if not rest:
-      cls.raise_bad_path(hdfs_path, "no scheme-specific part")
     if scheme == "hdfs":
       if not path:
         cls.raise_bad_path(hdfs_path, "path part is empty")
