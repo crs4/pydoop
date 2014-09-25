@@ -35,6 +35,7 @@ from pydoop.hdfs.hadoop import get_implementation_instance
 
 
 class _FSStatus(object):
+
     def __init__(self, fs, host, port, user, refcount=1):
         self.fs = fs
         self.host = host
@@ -134,7 +135,6 @@ class hdfs(object):
         host = host.strip()
         raw_host = host
         host = common.encode_host(host)
-
         if user is None:
             user = ""
         if not host:
@@ -162,6 +162,12 @@ class hdfs(object):
             self._CACHE[(ip, p, u)] = self.__status
         else:
             self.__status.refcount += 1
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     @property
     def fs(self):
@@ -351,6 +357,20 @@ class hdfs(object):
     def get_path_info(self, path):
         """
         Get information about ``path`` as a dict of properties.
+
+        The return value, based upon ``fs.FileStatus`` from the Java API,
+        has the following fields:
+
+        * ``block_size``: HDFS block size of ``path``
+        * ``group``: group associated with ``path``
+        * ``kind``: ``'file'`` or ``'directory'``
+        * ``last_access``: last access time of ``path``
+        * ``last_mod``: last modification time of ``path``
+        * ``name``: fully qualified path name
+        * ``owner``: owner of ``path``
+        * ``permissions``: file system permissions associated with ``path``
+        * ``replication``: replication factor of ``path``
+        * ``size``: size in bytes of ``path``
 
         :type path: string
         :param path: a path in the filesystem

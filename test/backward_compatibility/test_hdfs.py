@@ -216,6 +216,31 @@ class TestHDFS(unittest.TestCase):
       self.assertTrue(os.path.basename(f2.name) in ls)
       self.assertEqual(len(hdfs.ls(t2.name)), 0)
 
+  def chown(self):
+    new_user = 'nobody'
+    test_path = self.hdfs_paths[0]
+    hdfs.dump(self.data, test_path)
+    hdfs.chown(test_path, user=new_user)
+    self.assertEqual(hdfs.lsl(test_path)[0]['owner'], new_user)
+
+  def rename(self):
+    test_path = self.hdfs_paths[0]
+    new_path = "%s.new" % test_path
+    hdfs.dump(self.data, test_path)
+    hdfs.rename(test_path, new_path)
+    self.assertFalse(hdfs.path.exists(test_path))
+    self.assertTrue(hdfs.path.exists(new_path))
+    self.assertRaises(RuntimeError, hdfs.rename, test_path, self.local_paths[0])
+
+  def renames(self):
+    test_path = self.hdfs_paths[0]
+    hdfs.dump(self.data, test_path)
+    new_d = hdfs.path.join(self.hdfs_wd, "new_dir")
+    new_path = hdfs.path.join(new_d, "new_p")
+    hdfs.renames(test_path, new_path)
+    self.assertFalse(hdfs.path.exists(test_path))
+    self.assertTrue(hdfs.path.exists(new_path))
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -231,6 +256,9 @@ def suite():
   suite.addTest(TestHDFS("rmr"))
   suite.addTest(TestHDFS("chmod"))
   suite.addTest(TestHDFS("move"))
+  suite.addTest(TestHDFS("chown"))
+  suite.addTest(TestHDFS("rename"))
+  suite.addTest(TestHDFS("renames"))
   return suite
 
 

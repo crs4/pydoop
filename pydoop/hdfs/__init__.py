@@ -314,3 +314,45 @@ def move(src, dest, user=None):
   finally:
     src_fs.close()
     dest_fs.close()
+
+
+def chown(hdfs_path, user=None, group=None, hdfs_user=None):
+  """
+  See :meth:`fs.hdfs.chown`.
+  """
+  user = user or ''
+  group = group or ''
+  host, port, path_ = path.split(hdfs_path, hdfs_user)
+  with hdfs(host, port, hdfs_user) as fs:
+    return fs.chown(path_, user=user, group=group)
+
+
+def rename(from_path, to_path, user=None):
+    """
+    See :meth:`fs.hdfs.rename`.
+    """
+    fhost, fport, fpath = path.split(from_path, user)
+    thost, tport, tpath = path.split(to_path, user)
+    with hdfs(thost, tport, user) as fs:
+        chost, cport = fs.host, fs.port
+    with hdfs(fhost, fport, user) as fs:
+        if fs.host != chost or fs.port != cport:
+            raise RuntimeError("can't do a cross-fs rename")
+        return fs.rename(fpath, tpath)
+
+
+def renames(from_path, to_path, user=None):
+    """
+    Rename ``from_path`` to ``to_path``, creating parents as needed.
+    """
+    to_dir = path.dirname(to_path)
+    if to_dir:
+        mkdir(to_dir, user=user)
+    rename(from_path, to_path, user=user)
+
+
+# direct bindings
+stat = path.stat
+lstat = path.lstat
+access = path.access
+utime = path.utime
