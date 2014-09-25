@@ -28,7 +28,7 @@ TEST_MODULE_NAMES = [
 
 def suite(path=None):
     suites = []
-    for module in "all_tests_pipes","all_tests_hdfs":
+    for module in ["all_tests_pipes"]:
         suites.append(get_module(module, path).suite(path))
 
     for module in TEST_MODULE_NAMES:

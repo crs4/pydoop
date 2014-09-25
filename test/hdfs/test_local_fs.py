@@ -23,8 +23,7 @@ import os
 
 import pydoop.hdfs as hdfs
 from common_hdfs_tests import TestCommon, common_tests
-import logging
-logging.basicConfig(level=logging.DEBUG)
+
 
 class TestConnection(unittest.TestCase):
 

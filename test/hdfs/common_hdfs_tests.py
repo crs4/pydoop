@@ -16,21 +16,17 @@
 #
 # END_COPYRIGHT
 
-import sys
-import os
-import unittest
-import uuid
-import shutil
-import operator
+import sys, os, unittest, uuid, shutil, operator
 from itertools import izip
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
-from pydoop.test_utils import make_wd, make_random_data, get_bytes_per_checksum, silent_call
+import pydoop.test_utils as utils
 
 
 class TestCommon(unittest.TestCase):
+
     def __init__(self, target, hdfs_host='', hdfs_port=0):
         unittest.TestCase.__init__(self, target)
         self.hdfs_host = hdfs_host
@@ -38,14 +34,14 @@ class TestCommon(unittest.TestCase):
 
     def setUp(self):
         self.fs = hdfs.hdfs(self.hdfs_host, self.hdfs_port)
-        self.wd = make_wd(self.fs)
+        self.wd = utils.make_wd(self.fs)
 
     def tearDown(self):
         self.fs.delete(self.wd)
         self.fs.close()
 
     def _make_random_path(self, where=None):
-        return "%s/%s" % (where or self.wd, uuid.uuid4().hex)
+        return "%s/%s_%s" % (where or self.wd, uuid.uuid4().hex, utils.UNI_CHR)
 
     # also an implicit test for the create_directory method
     def _make_random_dir(self, where=None):
@@ -57,21 +53,23 @@ class TestCommon(unittest.TestCase):
     # also an implicit test for the write method
     def _make_random_file(self, where=None, content=None, **kwargs):
         kwargs["flags"] = "w"
-        content = content or make_random_data(printable=True)
+        content = content or utils.make_random_data(printable=True)
         path = self._make_random_path(where=where)
         with self.fs.open_file(path, **kwargs) as fo:
             i = 0
             bytes_written = 0
-            bufsize = pydoop.hdfs.common.BUFSIZE
+            bufsize = hdfs.common.BUFSIZE
             while i < len(content):
-                bytes_written += fo.write(content[i:i + bufsize])
+                bytes_written += fo.write(content[i:i+bufsize])
                 i += bufsize
 
         self.assertEqual(bytes_written, len(content))
         return path
 
     def failUnlessRaisesExternal(self, excClass, callableObj, *args, **kwargs):
-        silent_call(self.failUnlessRaises, excClass, callableObj, *args, **kwargs)
+        utils.silent_call(
+          self.failUnlessRaises, excClass, callableObj, *args, **kwargs
+          )
 
     assertRaisesExternal = failUnlessRaisesExternal
 
@@ -103,18 +101,16 @@ class TestCommon(unittest.TestCase):
 
     def copy(self):
         local_fs = hdfs.hdfs('', 0)
-        local_wd = make_wd(local_fs)
+        local_wd = utils.make_wd(local_fs)
         from_path = os.path.join(local_wd, uuid.uuid4().hex)
         content = uuid.uuid4().hex
-
         with open(from_path, "w") as f:
             f.write(content)
         to_path = self._make_random_file()
         local_fs.copy(from_path, self.fs, to_path)
         local_fs.close()
         with self.fs.open_file(to_path) as f:
-            read = f.read()
-            self.assertEqual(read, content)
+            self.assertEqual(f.read(), content)
         shutil.rmtree(local_wd)
 
     def move(self):
@@ -172,7 +168,7 @@ class TestCommon(unittest.TestCase):
             self.assertTrue(f.name.endswith(path))
             self.assertEqual(f.size, 0)
             self.assertEqual(f.mode, "w")
-            content = make_random_data()
+            content = utils.make_random_data()
             f.write(content)
         self.assertEqual(f.size, len(content))
         with self.fs.open_file(path) as f:
@@ -183,17 +179,17 @@ class TestCommon(unittest.TestCase):
     def flush(self):
         path = self._make_random_path()
         with self.fs.open_file(path, "w") as f:
-            f.write(make_random_data())
+            f.write(utils.make_random_data())
             f.flush()
 
     def available(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         path = self._make_random_file(content=content)
         with self.fs.open_file(path) as f:
             self.assertEqual(len(content), f.available())
 
     def get_path_info(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         path = self._make_random_file(content=content)
         info = self.fs.get_path_info(path)
         self.__check_path_info(info, kind="file", size=len(content))
@@ -205,7 +201,7 @@ class TestCommon(unittest.TestCase):
         self.assertRaises(IOError, self.fs.get_path_info, self._make_random_path())
 
     def read(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         path = self._make_random_file(content=content)
         with self.fs.open_file(path) as f:
             self.assertEqual(f.read(), content)
@@ -214,7 +210,7 @@ class TestCommon(unittest.TestCase):
             self.assertRaisesExternal(IOError, f.write, content)
 
     def read_chunk(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         path = self._make_random_file(content=content)
         size = len(content)
         for chunk_size in size - 1, size, size + 1:
@@ -225,7 +221,7 @@ class TestCommon(unittest.TestCase):
                 self.assertEqual(chunk.value, content[:bytes_read])
 
     def write_chunk(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         chunk = create_string_buffer(len(content))
         chunk[:] = content
         path = self._make_random_path()
@@ -236,12 +232,12 @@ class TestCommon(unittest.TestCase):
 
     def append(self):
         replication = 1  # see https://issues.apache.org/jira/browse/HDFS-3091
-        content, update = make_random_data(), make_random_data()
+        content, update = utils.make_random_data(), utils.make_random_data()
         path = self._make_random_path()
         with self.fs.open_file(path, "w", replication=replication) as fo:
             fo.write(content)
         try:
-            with silent_call(self.fs.open_file, path, "a") as fo:
+            with utils.silent_call(self.fs.open_file, path, "a") as fo:
                 fo.write(update)
         except IOError:
             sys.stderr.write("NOT SUPPORTED ... ")
@@ -258,26 +254,26 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(f.tell(), offset)
 
     def pread(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         offset, length = 2, 3
         path = self._make_random_file(content=content)
         with self.fs.open_file(path) as f:
-            self.assertEqual(f.pread(offset, length), content[offset:offset + length])
+            self.assertEqual(f.pread(offset, length), content[offset:offset+length])
             self.assertEqual(f.tell(), 0)
 
     def pread_chunk(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         offset, length = 2, 3
         chunk = create_string_buffer(length)
         path = self._make_random_file(content=content)
         with self.fs.open_file(path) as f:
             bytes_read = f.pread_chunk(offset, chunk)
             self.assertEqual(bytes_read, length)
-            self.assertEqual(chunk.value, content[offset:offset + length])
+            self.assertEqual(chunk.value, content[offset:offset+length])
             self.assertEqual(f.tell(), 0)
 
     def copy_on_self(self):
-        content = make_random_data()
+        content = utils.make_random_data()
         path = self._make_random_file(content=content)
         path1 = self._make_random_path()
         self.fs.copy(path, self.fs, path1)
@@ -320,20 +316,16 @@ class TestCommon(unittest.TestCase):
             "foo\nbar\n\ntar\n",
             "\n\n\n", "\n", "",
             "foobartar",
-        ]
-        #path = self._make_random_path()
-        path = "foo"
-
+            ]
+        path = self._make_random_path()
         for text in samples:
             expected_lines = text.splitlines(True)
             for chunk_size in 2, max(1, len(text)), 2 + len(text):
                 with self.fs.open_file(path, "w") as f:
                     f.write(text)
-
                 with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
                     lines = get_lines(f)
                 self.assertEqual(lines, expected_lines)
-
 
     def readline(self):
         def get_lines(f):
@@ -344,12 +336,11 @@ class TestCommon(unittest.TestCase):
                     break
                 lines.append(l)
             return lines
-
         self.__check_readline(get_lines)
 
     def readline_big(self):
         for i in xrange(10, 23):
-            x = '*' * (2 ** i) + "\n"
+            x = '*' * (2**i) + "\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
                 l = f.readline()
@@ -364,10 +355,8 @@ class TestCommon(unittest.TestCase):
                 except StopIteration:
                     break
             return lines
-
         def get_lines_implicit(f):
             return [l for l in f]
-
         for fun in get_lines_explicit, get_lines_implicit:
             self.__check_readline(fun)
 
@@ -401,20 +390,20 @@ class TestCommon(unittest.TestCase):
         if pydoop.hadoop_version_info().has_deprecated_bs():
             bs = hdfs.fs.hdfs().default_block_size()
         else:
-            bs = N * get_bytes_per_checksum()
+            bs = N * utils.get_bytes_per_checksum()
             kwargs['blocksize'] = bs
         total_data_size = 2 * bs
         with self.fs.open_file(path, "w", **kwargs) as f:
-            data = make_random_data(total_data_size)
+            data = utils.make_random_data(total_data_size)
             i = 0
-            bufsize = pydoop.hdfs.common.BUFSIZE
+            bufsize = hdfs.common.BUFSIZE
             while i < len(data):
-                f.write(data[i:i + bufsize])
+                f.write(data[i:i+bufsize])
                 i += bufsize
 
         with self.fs.open_file(path) as f:
             p = total_data_size - CHUNK_SIZE
-            for pos in 0, 1, bs - 1, bs, bs + 1, p - 1, p, p + 1, total_data_size - 1:
+            for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data_size-1:
                 expected_len = CHUNK_SIZE if pos <= p else total_data_size - pos
                 f.seek(pos)
                 chunk = f.read(CHUNK_SIZE)
@@ -450,7 +439,6 @@ class TestCommon(unittest.TestCase):
                 'permissions', 'block_size', 'last_access', 'size')
         for k in keys:
             self.assertTrue(k in info)
-            self.assertTrue(k in info)
         for k, exp_v in expected_values.iteritems():
             v = info[k]
             self.assertEqual(v, exp_v)
@@ -465,21 +453,14 @@ def common_tests():
         'chmod',
         'chmod_w_string',
         'file_attrs',
-
-        ###########################
-
         'flush',
         'read',
         'read_chunk',
         'write_chunk',
         'append',
-        'seek',
         'tell',
         'pread',
         'pread_chunk',
-
-        #########################
-
         'rename',
         'change_dir',
         'copy_on_self',
@@ -489,6 +470,7 @@ def common_tests():
         'readline',
         'readline_big',
         'iter_lines',
+        'seek',
         'block_boundary',
         'walk',
-    ]
+        ]

@@ -48,19 +48,17 @@ class TestConnection(unittest.TestCase):
     for host, port in self.hp_cases:
       for user in self.u_cases:
         expected_user = user or CURRENT_USER
-        fs = hdfs.hdfs(host, port, user=user)
-        self.assertEqual(fs.user, expected_user)
-        fs.close()
+        with hdfs.hdfs(host, port, user=user) as fs:
+          self.assertEqual(fs.user, expected_user)
 
   def cache(self):
     hdfs.hdfs._CACHE.clear()
-    orig_fs = hdfs.hdfs(*self.hp_cases[0])
-    for host, port in self.hp_cases[1:]:
-      fs = hdfs.hdfs(host, port)
-      # self.assertEqual(fs.fs, orig_fs.fs) #FIXME
-      fs.close()
-      self.assertFalse(orig_fs.closed)
-    orig_fs.close()
+    with hdfs.hdfs(*self.hp_cases[0]) as orig_fs:
+      for host, port in self.hp_cases[1:]:
+        with hdfs.hdfs(host, port) as fs:
+          # self.assertTrue(fs.fs is orig_fs.fs)  # FIXME
+          pass
+        self.assertFalse(orig_fs.closed)
     self.assertTrue(orig_fs.closed)
 
 
@@ -195,28 +193,6 @@ def suite():
   for t in tests:
     suite.addTest(TestHDFS(t))
   return suite
-
-
-def suite_reduced():
-  suite = unittest.TestSuite()
-  tests = []
-  if not hdfs.default_is_local():
-    tests.extend([
-      'capacity',
-      'default_block_size',
-      'used',
-      'chown',
-      'utime',
-      'block_size',
-      'replication',
-      'set_replication',
-      'readline_block_boundary',
-      'get_hosts',
-      ])
-  for t in tests:
-    suite.addTest(TestHDFS(t))
-  return suite
-
 
 
 if __name__ == '__main__':

@@ -16,21 +16,21 @@
 # 
 # END_COPYRIGHT
 
-import unittest
-import tempfile
-import os
+# pylint: disable=W0311
+
+import unittest, tempfile, os
 from itertools import izip
 import stat
-import pydoop
+
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import BUFSIZE
-from pydoop.test_utils import make_random_data, FSTree
+from pydoop.test_utils import UNI_CHR, make_random_data, FSTree
 
 
 class TestHDFS(unittest.TestCase):
 
   def setUp(self):
-    wd = tempfile.mkdtemp()
+    wd = tempfile.mkdtemp(suffix='_%s' % UNI_CHR)
     wd_bn = os.path.basename(wd)
     self.local_wd = "file:%s" % wd
     fs = hdfs.hdfs("default", 0)
@@ -141,26 +141,26 @@ class TestHDFS(unittest.TestCase):
     copy_on_wd = "%s/src_dir_copy" % wd
     copy_on_copy_on_wd = "%s/src_dir" % copy_on_wd
     hdfs.cp(src_dir, copy_on_wd)
-    self.assertTrue(pydoop.hdfs.path.exists(copy_on_wd))
+    self.assertTrue(hdfs.path.exists(copy_on_wd))
     hdfs.cp(src_dir, copy_on_wd)
-    self.assertTrue(pydoop.hdfs.path.exists(copy_on_copy_on_wd))
+    self.assertTrue(hdfs.path.exists(copy_on_copy_on_wd))
     self.assertRaises(IOError, hdfs.cp, src_dir, copy_on_wd)
 
   def __cp_recursive(self, wd):
     src_t = self.__make_tree(wd)
     src = src_t.name
     copy_on_wd = "%s_copy" % src
-    src_bn, copy_on_wd_bn = [pydoop.hdfs.path.basename(d) for d in (src, copy_on_wd)]
+    src_bn, copy_on_wd_bn = [hdfs.path.basename(d) for d in (src, copy_on_wd)]
     hdfs.cp(src, copy_on_wd)
     for t in src_t.walk():
       copy_name = t.name.replace(src_bn, copy_on_wd_bn)
-      self.assertTrue(pydoop.hdfs.path.exists(copy_name))
+      self.assertTrue(hdfs.path.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
     hdfs.cp(src, copy_on_wd)
     for t in src_t.walk():
       copy_name = t.name.replace(src_bn, "%s/%s" % (copy_on_wd_bn, src_bn))
-      self.assertTrue(pydoop.hdfs.path.exists(copy_name))
+      self.assertTrue(hdfs.path.exists(copy_name))
       if t.kind == 0:
         self.assertEqual(hdfs.load(copy_name), self.data)
 
@@ -176,20 +176,18 @@ class TestHDFS(unittest.TestCase):
       self.__cp_recursive(wd)
 
   def put(self):
-    src = pydoop.hdfs.path.split(self.local_paths[0])[-1]
+    src = hdfs.path.split(self.local_paths[0])[-1]
     dest = self.hdfs_paths[0]
-
     with open(src, "w") as f:
       f.write(self.data)
     hdfs.put(src, dest)
     with hdfs.open(dest) as fi:
       rdata = fi.read()
-    self.assertEqual(type(rdata), type(self.data))
     self.assertEqual(rdata, self.data)
 
   def get(self):
     src = self.hdfs_paths[0]
-    dest = pydoop.hdfs.path.split(self.local_paths[0])[-1]
+    dest = hdfs.path.split(self.local_paths[0])[-1]
     hdfs.dump(self.data, src)
     hdfs.get(src, dest)
     with open(dest) as fi:
@@ -203,7 +201,7 @@ class TestHDFS(unittest.TestCase):
       self.assertEqual(len(hdfs.ls(wd)), 0)
 
   def chmod(self):
-    with tempfile.NamedTemporaryFile() as f:
+    with tempfile.NamedTemporaryFile(suffix='_%s' % UNI_CHR) as f:
       hdfs.chmod("file://" + f.name, 444)
       s = os.stat(f.name)
       self.assertEqual(444, stat.S_IMODE(s.st_mode))
@@ -217,6 +215,31 @@ class TestHDFS(unittest.TestCase):
       ls = [os.path.basename(_) for _ in hdfs.ls(t1.name)]
       self.assertTrue(os.path.basename(f2.name) in ls)
       self.assertEqual(len(hdfs.ls(t2.name)), 0)
+
+  def chown(self):
+    new_user = 'nobody'
+    test_path = self.hdfs_paths[0]
+    hdfs.dump(self.data, test_path)
+    hdfs.chown(test_path, user=new_user)
+    self.assertEqual(hdfs.lsl(test_path)[0]['owner'], new_user)
+
+  def rename(self):
+    test_path = self.hdfs_paths[0]
+    new_path = "%s.new" % test_path
+    hdfs.dump(self.data, test_path)
+    hdfs.rename(test_path, new_path)
+    self.assertFalse(hdfs.path.exists(test_path))
+    self.assertTrue(hdfs.path.exists(new_path))
+    self.assertRaises(RuntimeError, hdfs.rename, test_path, self.local_paths[0])
+
+  def renames(self):
+    test_path = self.hdfs_paths[0]
+    hdfs.dump(self.data, test_path)
+    new_d = hdfs.path.join(self.hdfs_wd, "new_dir")
+    new_path = hdfs.path.join(new_d, "new_p")
+    hdfs.renames(test_path, new_path)
+    self.assertFalse(hdfs.path.exists(test_path))
+    self.assertTrue(hdfs.path.exists(new_path))
 
 
 def suite():
@@ -233,6 +256,9 @@ def suite():
   suite.addTest(TestHDFS("rmr"))
   suite.addTest(TestHDFS("chmod"))
   suite.addTest(TestHDFS("move"))
+  suite.addTest(TestHDFS("chown"))
+  suite.addTest(TestHDFS("rename"))
+  suite.addTest(TestHDFS("renames"))
   return suite
 
 
