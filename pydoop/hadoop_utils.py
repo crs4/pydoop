@@ -234,11 +234,37 @@ def parse_hadoop_conf_file(fn):
   return dict(items)
 
 
-def hadoop_home_from_path():
-  for path in os.getenv("PATH", "").split(os.pathsep):
-    if is_exe(os.path.join(path, 'hadoop')):
-      return os.path.dirname(path)
+def _hadoop_home_from_version_cmd():
+  def get_hh_from_version_output(output):
+    """
+    hadoop version command prints out some information.  The last line contains
+    the absolute path to the hadoop core jar, which should be in the HADOOP_HOME.
+    """
+    if not output:
+      return None
+    last_line = output.splitlines()[-1]
+    m = re.match(r'This command was run using (.*\.jar)', last_line)
+    if m:
+      home = os.path.dirname(m.group(1))
+      return home
+    return None
 
+  for path in os.getenv("PATH", "").split(os.pathsep):
+    full_path = os.path.join(path, 'hadoop')
+    if is_exe(full_path):
+        hadoop_exec = full_path
+        break
+  else:
+    hadoop_exec = None
+
+  if hadoop_exec:
+    try:
+      output = sp.check_output([hadoop_exec, 'version'])
+      return get_hh_from_version_output(output)
+    except sp.CalledProcessError:
+      pass
+
+  return None
 
 class PathFinder(object):
   """
@@ -274,11 +300,12 @@ class PathFinder(object):
     if not self.__hadoop_home:
       self.__hadoop_home = (
         os.getenv("HADOOP_HOME") or
+        os.getenv("HADOOP_PREFIX") or
         fallback or
+        _hadoop_home_from_version_cmd() or
         first_dir_in_glob("/usr/lib/hadoop*") or
         first_dir_in_glob("/usr/share/hadoop*") or
-        first_dir_in_glob("/opt/hadoop*") or
-        hadoop_home_from_path()
+        first_dir_in_glob("/opt/hadoop*")
         )
     if not self.__hadoop_home:
       PathFinder.__error("hadoop home", "HADOOP_HOME")
@@ -426,7 +453,9 @@ class PathFinder(object):
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/hdfs', '*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/', '*.jar')) +
               glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/lib', '*.jar')) + 
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/mapreduce', '*.jar')) 
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/mapreduce', '*.jar')) +
+              glob.glob(os.path.join(hadoop_home, 'share/hadoop/yarn', '*.jar')) \
+              if v.main >= (2, 2, 0) else []
             )
         else:
           self.__hadoop_classpath = ':'.join(
@@ -455,8 +484,7 @@ class PathFinder(object):
             glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
             glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
             )
-        
-      self.__hadoop_classpath += ":" + self.hadoop_native()
+      self.__hadoop_classpath += ":" + self.hadoop_native() + ":" + self.hadoop_conf()
     return self.__hadoop_classpath
 
   def find(self):

@@ -21,10 +21,11 @@ pydoop.hdfs.path -- Path Name Manipulations
 -------------------------------------------
 """
 
-import os, re
+import os
+import re
 
 import common
-import fs as hdfs_fs
+from pydoop.hdfs import fs as hdfs_fs
 
 
 class _HdfsPathSplitter(object):

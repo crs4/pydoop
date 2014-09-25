@@ -48,10 +48,12 @@ can set the environment variable externally and it will override the
 above setting.
 """
 
-import os, glob
+import os
 
 import pydoop
 import common
+from pydoop.hdfs import path
+
 
 try:
   _ORIG_CLASSPATH
@@ -76,8 +78,7 @@ def reset():
 #---------------------
 
 
-from fs import hdfs, default_is_local
-import path
+from pydoop.hdfs.fs import hdfs, default_is_local
 
 
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
