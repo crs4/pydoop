@@ -57,6 +57,7 @@ class TestConnection(unittest.TestCase):
       for host, port in self.hp_cases[1:]:
         with hdfs.hdfs(host, port) as fs:
           # self.assertTrue(fs.fs is orig_fs.fs)  # FIXME
+          pass
         self.assertFalse(orig_fs.closed)
     self.assertTrue(orig_fs.closed)
 

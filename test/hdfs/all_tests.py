@@ -21,23 +21,21 @@ from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
+    'test_local_fs',
+    'test_hdfs_fs',
     'test_path',
     'test_hdfs',
-    'test_hdfs_fs',
-    'test_local_fs',
-]
+    ]
 
 
 def suite(path=None):
     suites = []
     for module in TEST_MODULE_NAMES:
-        print module
         suites.append(get_module(module, path).suite())
     return unittest.TestSuite(suites)
 
 
 if __name__ == '__main__':
     import sys
-
     result = unittest.TextTestRunner(verbosity=2).run(suite())
     sys.exit(not result.wasSuccessful())
