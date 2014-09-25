@@ -24,6 +24,13 @@ Part 3: a pure java map-reduce application
 A pure java map-reduce app that will read from an avro file and create avro
 output.
 
+.. code-block::
+
+   cd java
+   sbt assembly
+   hadoop jar ./target/AvroMR-assembly-0.1.jar \
+              examples.MapReduceColorCount \
+              hdfs://localhost:9000/user/zag/{users.avro,foo}
 
 
 Part 4: an hybrid map-reduce app that will use a java InputFormat
