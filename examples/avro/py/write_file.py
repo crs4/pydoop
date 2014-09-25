@@ -3,9 +3,10 @@ from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter
 import random
 
-schema = avro.schema.parse(open("user.avsc").read())
+schema = avro.schema.parse(open("../schemas/user.avsc").read())
 
-writer = DataFileWriter(open("users.avro", "w"), DatumWriter(), schema)
+writer = DataFileWriter(open("users.avro", "w"), 
+                        DatumWriter(), schema)
 
 N = 200
 offices = ['office-%s' % i for i in xrange(3)]
@@ -19,7 +20,7 @@ for i in xrange(N):
                    "name" : random.choice(names)})
 writer.close()
 
-reader = DataFileReader(open("users.avro", "r"), DatumReader())
-for user in reader:
-    print user
-reader.close()
+# reader = DataFileReader(open("users.avro", "r"), DatumReader())
+# for user in reader:
+#     print user
+# reader.close()
