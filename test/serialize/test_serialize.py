@@ -32,7 +32,7 @@ import tempfile
 import shutil
 
 import pydoop
-import pydoop.mapreduce.serialize as srl
+import pydoop.utils.serialize as srl
 import pydoop.mapreduce.jwritable_utils as wu
 
 HadoopSerializeClass = 'hadoop_serialize'

@@ -20,7 +20,7 @@ import struct
 import itertools as it
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from pydoop.mapreduce.serialize import serialize_to_string
+from pydoop.utils.serialize import serialize_to_string
 
 
 from pydoop.utils.misc import jc_configure, jc_configure_int

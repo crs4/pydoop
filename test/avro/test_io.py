@@ -20,7 +20,7 @@ import unittest
 import os
 from pydoop.mapreduce.string_utils import quote_string, unquote_string
 from pydoop.mapreduce.string_utils import create_digest
-from pydoop.mapreduce.serialize import deserialize
+from pydoop.utils.serialize import deserialize
 from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
 from pydoop.mapreduce.pipes import InputSplit
 
