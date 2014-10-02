@@ -20,19 +20,10 @@ import unittest
 from pydoop.test_utils import get_module
 
 
-TEST_MODULE_NAMES = [
-
-    "test_hadut",
-]
-
-
 def suite(path=None):
     suites = []
     for module in ["all_tests_pipes"]:
         suites.append(get_module(module, path).suite(path))
-
-    for module in TEST_MODULE_NAMES:
-        suites.append(get_module(module, path).suite())
     return unittest.TestSuite(suites)
 
 

@@ -24,7 +24,6 @@ TEST_MODULE_NAMES = [
     "test_utils",
     "test_task_context",
     "test_jobconf",
-    "test_pydoop",
 ]
 
 
