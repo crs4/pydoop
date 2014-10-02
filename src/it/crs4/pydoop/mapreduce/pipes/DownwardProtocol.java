@@ -32,7 +32,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
  * Pipes protocol.  All of these calls are asynchronous and return before the
  * message has been processed.
  */
-interface DownwardProtocol<K extends WritableComparable, V extends Writable> {
+interface DownwardProtocol<K extends Writable, V extends Writable> {
   /**
    * request authentication
    * @throws IOException

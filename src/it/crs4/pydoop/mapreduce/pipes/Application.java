@@ -69,7 +69,7 @@ import org.apache.hadoop.util.StringUtils;
  * This class is responsible for launching and communicating with the child 
  * process.
  */
-class Application<K1 extends WritableComparable, V1 extends Writable,
+class Application<K1 extends Writable, V1 extends Writable,
                   K2 extends WritableComparable, V2 extends Writable> {
     private static final Log LOG = LogFactory.getLog(Application.class.getName());
     private ServerSocket serverSocket;
@@ -145,9 +145,6 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
         downlink = new BinaryProtocol<K1, V1, K2, V2>(clientSocket, handler, 
                                                       outputKey, outputValue, conf);
 
-        System.err.println(context.getOutputKeyClass());
-        System.err.println(context.getOutputValueClass());
-    
         downlink.authenticate(digestToSend, challenge);
         waitForAuthentication();
         LOG.debug("Authentication succeeded");
@@ -255,14 +252,10 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
     static Process runClient(List<String> command, 
                              Map<String, String> env) throws IOException {
         ProcessBuilder builder = new ProcessBuilder(command);
-        for(String v : command) {
-            System.err.println("v: " + v);
-        }
         if (env != null) {
             builder.environment().putAll(env);
         }
         Process result = builder.start();
-        System.err.println("result: " + result);
         return result;
     }
   

@@ -300,11 +300,7 @@ public class Submitter extends Configured implements Tool {
         if (!getIsJavaMapper(conf)) {
             job.setMapperClass(PipesMapper.class);
             // Save the user's partitioner and hook in our's.
-            System.err.println("job.getPartitionerClass()");
-            System.err.println(job.getPartitionerClass());
             setJavaPartitioner(conf, job.getPartitionerClass());
-            System.err.println("self..getPartitionerClass()");
-            System.err.println(getJavaPartitioner(conf));
             job.setPartitionerClass(PipesPartitioner.class);
         }
         if (!getIsJavaReducer(conf)) {
@@ -363,9 +359,6 @@ public class Submitter extends Configured implements Tool {
     
     public int run(String[] args) throws Exception {
         CommandLineParser cli = new CommandLineParser();
-        for(int i = 0; i < args.length; ++i) {
-            System.err.println("args["+i+"]: " + args[i]);
-        }
         
         if (args.length == 0) {
             cli.printUsage();
@@ -428,7 +421,6 @@ public class Submitter extends Configured implements Tool {
             }
             if (results.hasOption("program")) {
                 setExecutable(conf, results.getOptionValue("program"));
-                System.err.println("program:" + getExecutable(conf));
             }
             // if they gave us a jar file, include it into the class path
             String jarFile = job.getJar();

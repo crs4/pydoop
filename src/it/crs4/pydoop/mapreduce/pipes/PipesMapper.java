@@ -42,7 +42,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 /**
  * An adaptor to run an external mapper.
  */
-class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
+class PipesMapper<K1 extends Writable, V1 extends Writable,
                   K2 extends WritableComparable, V2 extends Writable>
     extends Mapper<K1, V1, K2, V2> {
 
@@ -100,6 +100,8 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
                                                                     context);
         input.initialize(split, context);
 
+        System.err.println("input.getClass.getName: " + input.getClass().getName());
+
         boolean isJavaInput = Submitter.getIsJavaRecordReader(conf);
         try {
             // FIXME: what happens for a java mapper and no java record reader?
@@ -126,6 +128,11 @@ class PipesMapper<K1 extends WritableComparable, V1 extends Writable,
                         downlink.setInputTypes(
                                input.getCurrentKey().getClass().getName(),
                                input.getCurrentValue().getClass().getName());
+                        System.err.println("key.getClass.getName: " 
+                                           + input.getCurrentKey().getClass().getName());
+                        System.err.println("value.getClass.getName: " 
+                                           + input.getCurrentValue().getClass().getName());
+
                     }
                     downlink.mapItem(input.getCurrentKey(), input.getCurrentValue());
                     if(skipping) {

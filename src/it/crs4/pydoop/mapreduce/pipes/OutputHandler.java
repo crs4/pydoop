@@ -67,7 +67,6 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
      */
     @Override
     public void output(K key, V value) throws IOException, InterruptedException {
-        System.err.println("ready to output:" + key + " " + value);
         context.write(key, value);
     }
 
