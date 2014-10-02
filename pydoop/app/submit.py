@@ -35,8 +35,8 @@ import pydoop.utils.conversion_tables as conv_tables
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 IS_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
 IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
-INPUT_FORMAT = "mapreduce.pipes.inputformat"
-OUTPUT_FORMAT = "mapreduce.pipes.outputformat"
+INPUT_FORMAT = "mapreduce.job.inputformat.class"
+OUTPUT_FORMAT = "mapreduce.job.outputformat.class"
 CACHE_FILES = "mapreduce.job.cache.files"
 USER_HOME = "mapreduce.admin.user.home.dir"
 JOB_REDUCES = "mapreduce.job.reduces"
@@ -84,7 +84,6 @@ class PydoopSubmitter(object):
                                           else 'true'
     self.properties[IS_JAVA_RW] = 'false' if args.do_not_use_java_record_writer\
                                           else 'true'
-
 
     if args.input_format:
       self.properties[INPUT_FORMAT] = args.input_format
@@ -229,6 +228,9 @@ class PydoopSubmitter(object):
     if self.args is None:
       raise RuntimeError("cannot run without args, please call set_args")
     self.__validate()
+    libjars = []
+    if self.args.libjars:
+      libjars.extend(self.args.libjars)
     pydoop_jar = pydoop.jar_path()
     if self.args.mrv2 and pydoop_jar is None:
       raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")      
@@ -239,14 +241,16 @@ class PydoopSubmitter(object):
     if self.args.mrv2:
       submitter_class='it.crs4.pydoop.mapreduce.pipes.Submitter'
       classpath = pydoop_jar
-      job_args.extend(("-libjars", pydoop_jar))
+      libjars.append(pydoop_jar)
+      #job_args.extend(("-libjars", pydoop_jar))
     elif self.args.local_fs:
       # FIXME we still need to handle the special case with hadoop security and local
       # file system.
       raise RuntimeError("NOT IMPLEMENTED YET")            
       submitter_class='it.crs4.pydoop.mapred.pipes.Submitter' # FIXME FAKE MODULE
       classpath = pydoop_jar
-      job_args.extend(("-libjars", pydoop_jar))
+      libjars.append(pydoop_jar)
+      #job_args.extend(("-libjars", pydoop_jar))
     else:
       submitter_class='org.apache.hadoop.mapred.pipes.Submitter'
       classpath = None
@@ -256,6 +260,8 @@ class PydoopSubmitter(object):
     job_args.extend(['-input', self.args.input])
     job_args.extend(['-output', self.args.output])
     job_args.extend(['-program', self.remote_exe])
+    if libjars:
+      job_args.extend(["-libjars", ','.join(libjars)])
 
     if not self.args.disable_property_name_conversion:
       ctable = conv_tables.mrv1_to_mrv2 \
@@ -294,6 +300,10 @@ def a_file_that_can_be_read(x):
 
 def a_hdfs_file(x):
   _, _, _ = hdfs.path.split(x)
+  return x
+
+def a_comma_separated_list(x):
+  # FIXME unclear how does one check for bad lists.. 
   return x
     
 
@@ -371,8 +381,8 @@ def add_parser_arguments(parser):
     help="This job name."
   )
   parser.add_argument(
-    '--jar', metavar='JAR_FILE', type=str, action="append",
-    help="Additional jar file"
+    '--libjars', metavar='JAR_FILE', type=a_comma_separated_list, action="append",
+    help="Additional comma separated list of jar files"
   )
   parser.add_argument(
     '--python-egg', metavar='EGG_FILE', type=str, action="append",
