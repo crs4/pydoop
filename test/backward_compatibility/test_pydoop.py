@@ -22,21 +22,36 @@ Test suite for top-level functions.
 
 import unittest
 import os
+import tempfile
+import shutil
 
 import pydoop
 
 
 class TestPydoop(unittest.TestCase):
 
+    def setUp(self):
+        self.wd = tempfile.mkdtemp(prefix='pydoop_test_')
+        self.old_env = os.environ.copy()
+
+    def tearDown(self):
+        shutil.rmtree(self.wd)
+        os.environ = self.old_env
+        reload(pydoop)
+
     def test_home(self):
-        if os.environ.has_key('HADOOP_HOME'):
-            self.assertEqual(os.environ['HADOOP_HOME'], pydoop.hadoop_home())
+        old_home = pydoop.hadoop_home()
+        if os.path.isdir(old_home):
+            new_home = os.path.join(self.wd, 'hadoop')
+            os.symlink(old_home, new_home)
+            os.environ['HADOOP_HOME'] = new_home
+            reload(pydoop)
+            self.assertEqual(pydoop.hadoop_home(), new_home)
 
     def test_conf(self):
-        if os.environ.has_key('HADOOP_CONF_DIR'):
-            self.assertEqual(
-                os.environ['HADOOP_CONF_DIR'], pydoop.hadoop_conf()
-            )
+        os.environ['HADOOP_CONF_DIR'] = self.wd
+        reload(pydoop)
+        self.assertEqual(pydoop.hadoop_conf(), self.wd)
 
     def test_pydoop_jar_path(self):
         jar_path = pydoop.jar_path()
