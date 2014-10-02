@@ -26,7 +26,6 @@ from test_text_stream import stream_writer
 
 from pydoop.test_utils import WDTestCase
 
-
 STREAM_1 = [
     ('start', 0),
     ('setJobConf', 'key1', 'value1', 'key2', 'value2'),
@@ -37,6 +36,12 @@ STREAM_1 = [
     ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
     ('close',),
     ]
+
+class TContext(TaskContext):
+    @property
+    def value(self):
+        return ' '.join([self.get_input_value()] * 2)
+        
 
 
 class TMapper(Mapper):
@@ -170,13 +175,13 @@ class TestFramework(WDTestCase):
     def test_map_combiner_reduce_with_context(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas) #, context=TaskContext)
+        run_task(factory, istream=self.stream, ostream=sas, context_class=TContext)
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
                      no_private_encoding=True)
-        self.check_result('foo_map_combiner_reduce.out', STREAM_1)
+        self.check_result('foo_map_combiner_reduce.out', STREAM_1, 2)
 
-    def check_result(self, fname, ref_data):
+    def check_result(self, fname, ref_data, factor=1):
         with self._mkf(fname, mode='r') as i:
             data = i.read()
         lines = data.strip().split('\n')
@@ -185,13 +190,12 @@ class TestFramework(WDTestCase):
         counts = Counter(dict(map(lambda t: (t[0], int(t[1])),
                                   (l.split('\t')[1:] for l in lines[1:-1]))))
         #--
-        recs = [x[2].split() for x in ref_data if x[0] == 'mapItem']
-        ref_counts = Counter(sum(recs, []))
-        self.assertEqual(ref_counts, counts)
+        ref_counts = Counter(sum([x[2].split() for x in ref_data 
+                                               if x[0] == 'mapItem'], []))
+        self.assertEqual(counts.keys(), ref_counts.keys())
+        for k in counts.keys():
+            self.assertEqual(ref_counts[k] * factor, counts[k])
 
-
-            
-            
 
 
 def suite():

@@ -405,11 +405,11 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             no_private_encoding=True):
+             no_private_encoding=True, context_class=TaskContext):
     #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
-        context = TaskContext(connections.up_link, no_private_encoding)
+        context = context_class(connections.up_link, no_private_encoding)
         stream_runner = StreamRunner(factory, context, connections.cmd_stream)
         stream_runner.run()
         context.close()
