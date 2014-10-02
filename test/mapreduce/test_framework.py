@@ -18,8 +18,9 @@
 
 import unittest
 import itertools as it
+from collections import Counter
 from pydoop.mapreduce.api import Mapper, Reducer, Factory
-from pydoop.mapreduce.pipes import run_task
+from pydoop.mapreduce.pipes import run_task, TaskContext
 from pydoop.mapreduce.string_utils import unquote_string
 from test_text_stream import stream_writer
 
@@ -155,6 +156,7 @@ class TestFramework(WDTestCase):
         with self._mkf('foo_map_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
                      no_private_encoding=True)
+        self.check_result('foo_map_reduce.out', STREAM_1)
 
     def test_map_combiner_reduce(self):
         factory = TFactory(combiner=TReducer)
@@ -163,12 +165,41 @@ class TestFramework(WDTestCase):
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
                      no_private_encoding=True)
+        self.check_result('foo_map_combiner_reduce.out', STREAM_1)
+
+    def test_map_combiner_reduce_with_context(self):
+        factory = TFactory(combiner=TReducer)
+        sas = SortAndShuffle()
+        run_task(factory, istream=self.stream, ostream=sas) #, context=TaskContext)
+        with self._mkf('foo_map_combiner_reduce.out') as o:
+            run_task(factory, istream=sas, ostream=o,
+                     no_private_encoding=True)
+        self.check_result('foo_map_combiner_reduce.out', STREAM_1)
+
+    def check_result(self, fname, ref_data):
+        with self._mkf(fname, mode='r') as i:
+            data = i.read()
+        lines = data.strip().split('\n')
+        self.assertEqual('progress\t0.0', lines[0])
+        self.assertEqual('done', lines[-1])
+        counts = Counter(dict(map(lambda t: (t[0], int(t[1])),
+                                  (l.split('\t')[1:] for l in lines[1:-1]))))
+        #--
+        recs = [x[2].split() for x in ref_data if x[0] == 'mapItem']
+        ref_counts = Counter(sum(recs, []))
+        self.assertEqual(ref_counts, counts)
+
+
+            
+            
+
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(TestFramework('test_map_only'))
     suite.addTest(TestFramework('test_map_reduce'))
     suite.addTest(TestFramework('test_map_combiner_reduce'))
+    suite.addTest(TestFramework('test_map_combiner_reduce_with_context'))
     return suite
 
 
