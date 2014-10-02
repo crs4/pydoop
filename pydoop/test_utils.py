@@ -142,8 +142,8 @@ class WDTestCase(unittest.TestCase):
     def _mkfn(self, basename):
         return os.path.join(self.wd, basename)
 
-    def _mkf(self, basename):
-        return open(self._mkfn(basename), 'w')
+    def _mkf(self, basename, mode='w'):
+        return open(self._mkfn(basename), mode)
 
 
   
