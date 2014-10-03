@@ -118,7 +118,6 @@ class hdfs(object):
         return host, port, user
 
     def __lookup(self, hpu):
-        raise KeyError  # FIXME, it seems useless with the new implementation
         if hpu[0]:
             hpu = self.__canonize_hpu(hpu)
         return self._CACHE[hpu]
