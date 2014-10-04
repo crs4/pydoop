@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import itertools as it
+import re
+
 from pydoop.mapreduce.pipes import run_task, Factory
 from pydoop.mapreduce.api import Mapper, Reducer, Partitioner
 
@@ -12,8 +14,7 @@ class TMapper(Mapper):
         print "Mapper instantiated"
 
     def map(self, ctx):
-        words = ''.join(c for c in ctx.value
-                        if c.isalnum() or c == ' ').lower().split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', ctx.value).split()
         for w in words:
             ctx.emit(w, '1')
 

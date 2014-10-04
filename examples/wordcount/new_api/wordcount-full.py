@@ -15,8 +15,6 @@ logger = logging.getLogger("WordCount")
 logger.setLevel(logging.CRITICAL)
 
 
-import struct
-
 import itertools as it
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
@@ -36,7 +34,7 @@ class Mapper(api.Mapper):
     def __init__(self, context):
         super(Mapper, self).__init__(context)
         self.logger = logger.getChild("Mapper")
-        context.set_status("initializing")
+        context.set_status("initializing mapper")
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
@@ -50,7 +48,7 @@ class Mapper(api.Mapper):
 class Reducer(api.Reducer):
     def __init__(self, context):
         super(Reducer, self).__init__(context)
-        context.set_status("initializing")
+        context.set_status("initializing reducer")
         self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
 
     def reduce(self, context):
