@@ -38,10 +38,10 @@ DEFAULT_SLEEP_DELTA = 3
 
 
 class TrivialRecordWriter(object):
-    def __init__(self, stream):
+    def __init__(self, simulator, stream):
         self.stream = stream
         self.logger = logger.getChild('TrivialRecordWriter') 
-        self.counters = {}
+        self.simulator = simulator
 
     def output(self, key, value):
         self.stream.write('{}\t{}\n'.format(key, value))
@@ -50,21 +50,14 @@ class TrivialRecordWriter(object):
         if cmd == 'output':
             key, value = vals
             self.output(key, value)
-        elif cmd == 'status':
-            value = vals[0]
-            self.logger.debug("Sending %s: %s", cmd, value)
         elif cmd == 'progress':
-            value = vals[0]
-            self.logger.debug("Sending %s: %s", cmd, value)
+            self.simulator.set_progress(*vals)
+        elif cmd == 'status':
+            self.simulator.set_status(*vals)
         elif cmd == 'registerCounter':
-            cid, group, name = vals
-            self.logger.debug("Sending command %s => %s", cmd, cid)
-            self.counters[cid] = 0
+            self.simulator.register_counter(*vals)
         elif cmd == 'incrementCounter':
-            cid, increment = vals
-            self.counters[cid] += int(increment)
-            self.output("COUNTER_" + str(cid), self.counters[cid])
-            self.logger.debug("Writing %s: %s", cid, self.counters[cid])
+            self.simulator.increment_counter(*vals)
         elif cmd == 'done':
             self.stream.close()
         else:
@@ -80,7 +73,6 @@ class TrivialRecordWriter(object):
 def reader_iterator(max=10):
     for i in range(1, max+1):
         yield i, "The string %s" % i
-
 
 class TrivialRecordReader(RecordReader):
 
@@ -105,18 +97,27 @@ class TrivialRecordReader(RecordReader):
 
 
 class SortAndShuffle(dict):
+    def __init__(self, simulator):
+        super(SortAndShuffle, self).__init__()
+        self.simulator = simulator
     def output(self, key, value):
         logger.debug('SAS:output %r, %r', key, value)
         self.setdefault(key, []).append(value)
 
-    def send(self, *args):
-        logger.debug('SAS:send %r', args)        
-        if args[0] == 'output':
-            key, value = args[1:]
+    def send(self, cmd, *args):
+        logger.debug('SAS:send %s %r', cmd, args)        
+        if cmd == 'output':
+            key, value = args
             self.setdefault(key, []).append(value)
-        elif args[0] == 'partitionedOutput':
-            part, key, value = args[1:]
+        elif cmd == 'partitionedOutput':
+            part, key, value = args
             self.setdefault(key, []).append(value)
+        # elif cmd == 'registerCounter':
+        #     cid, group, name = vals
+        #     self.simulator.register_counter(cid, group, name)
+        # elif cmd == 'incrementCounter':
+        #     cid, increment = vals
+        #     self.simulator.increment_counter(cid, int(increment))
 
     def flush(self):
         pass
@@ -155,11 +156,12 @@ class CommandThread(threading.Thread):
 
 
 class ResultThread(threading.Thread):
-    def __init__(self, up_bytes, ostream, logger):
+    def __init__(self, simulator, up_bytes, ostream, logger):
         super(ResultThread, self).__init__()
         self.logger = logger.getChild('ResultThread')
         self.up_bytes = up_bytes
         self.ostream = ostream
+        self.simulator = simulator
         self.logger.debug('initialized')
 
     def run(self):
@@ -183,15 +185,13 @@ class ResultThread(threading.Thread):
                     self.logger.debug('closed ostream')
                 break
             elif cmd == 'progress':
-                (progress,) = args
-                self.logger.info('progress:{}'.format(progress))
+                self.simulator.set_progress(*args)
             elif cmd == 'status':
-                (status,) = args
-                self.logger.info('status message: %s' % status)
+                self.simulator.set_status(*args)
             elif cmd == 'registerCounter':
-                self.logger.info("Registering Counter: %s %s %s" % args)
+                self.simulator.register_counter(*args)
             elif cmd == 'incrementCounter':
-                self.logger.info("Incrementing Counter: %s %s" % args)
+                self.simulator.increment_counter(*args)
         self.logger.debug('Done.')
 
 class HadoopThreadHandler(SocketServer.BaseRequestHandler):
@@ -204,7 +204,8 @@ class HadoopThreadHandler(SocketServer.BaseRequestHandler):
         cmd_thread = CommandThread(cmd_flux_has_started, self.server.down_bytes,
                                    ph_fdopen(os.dup(fd), 'w', BUF_SIZE),
                                    self.server.logger)
-        res_thread = ResultThread(ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
+        res_thread = ResultThread(self.server.simulator, 
+                                  ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
                                   self.server.out_writer,
                                   self.server.logger)
         cmd_thread.start()
@@ -221,7 +222,7 @@ class HadoopServer(SocketServer.TCPServer):
     A fake Hadoop server for debugging support.
     """
 
-    def __init__(self, port, down_bytes, out_writer,
+    def __init__(self, simulator, port, down_bytes, out_writer,
                  host='localhost', logger=None, loglevel=logging.CRITICAL):
         """
         down_bytes is the stream of bytes produced by the binary encoding
@@ -233,6 +234,7 @@ class HadoopServer(SocketServer.TCPServer):
         self.logger = logger.getChild('HadoopServer') if logger \
             else logging.getLogger('HadoopServer')
         self.logger.setLevel(loglevel)
+        self.simulator = simulator
         self.down_bytes = down_bytes
         self.out_writer = out_writer
         # old style class
@@ -248,7 +250,39 @@ class HadoopSimulator(object):
         self.logger = logger.getChild('HadoopSimulator') if logger \
             else logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(loglevel)
+        self.counters = {}
+        self.progress = 0
+        self.status = 'Undefined'
+        self.phase = 'Undefined'
         self.logger.debug('initialized.')
+
+    def set_phase(self, phase):
+        self.phase = phase
+        
+    def set_progress(self, value):
+        if value != self.progress:
+            self.logger.info('progress: %s', value)
+            self.progress = value
+
+    def set_status(self, msg):
+        if msg != self.status:
+            self.logger.info('status: %s', msg)        
+            self.status = msg
+
+    def register_counter(self, cid, group, name):
+        self.logger.debug('registering counter[%s] (%s, %s)', cid, group, name)
+        self.counters[(self.phase, cid)] = [(group, name), 0]
+
+    def increment_counter(self, cid, increment):
+        self.logger.debug('incrementing counter[%s] by %s', (self.phase, cid), increment)
+        self.counters[(self.phase, cid)][1] += increment
+
+    def get_counters(self):
+        ctable = {}
+        for k, v in self.counters.iteritems():
+            ctable.setdefault(k[0], 
+                              {}).setdefault(v[0][0], {}).setdefault(v[0][1], v[1])
+        return ctable
 
     def write_authorization(self, stream, authorization):
         if authorization is not None:
@@ -335,9 +369,6 @@ class HadoopSimulatorLocal(HadoopSimulator):
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
 
-    def get_counter(self, group, name):
-        return self.counters.get(group+"_"+name, None)
-
     def run_task(self, dstream, ustream):
         self.logger.debug('run task')
         context = TaskContext(ustream)
@@ -356,24 +387,26 @@ class HadoopSimulatorLocal(HadoopSimulator):
         # FIXME this is a quick hack to avoid crashes with user defined
         # RecordWriter
         f = cStringIO.StringIO() if file_out is None else file_out
-        rec_writer_stream = TrivialRecordWriter(f)
+        rec_writer_stream = TrivialRecordWriter(self, f)
         if num_reducers == 0:
             self.logger.info('running a map only job')
+            self.set_phase('mapping')
             self.run_task(dstream, rec_writer_stream)
         else:
             self.logger.info('running a map reduce job')
-            sas = SortAndShuffle()
+            sas = SortAndShuffle(self)
             self.logger.info('running mapper')
+            self.set_phase('mapping')
             self.run_task(dstream, sas)
             bytes_flow = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers)
             rstream = BinaryDownStreamFilter(bytes_flow)
             self.logger.info('running reducer')
+            self.set_phase('reducing')
             self.run_task(rstream, rec_writer_stream)
         if file_out is None:
             self.logger.debug('fake file_out contents: %r', f.getvalue())
         self.logger.info('run done.')
-
 
 class HadoopSimulatorNetwork(HadoopSimulator):
     """
@@ -397,7 +430,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
 
     def run_task(self, down_bytes, out_writer):
         self.logger.debug('run_task: started HadoopServer')
-        server = HadoopServer(0, down_bytes, out_writer,
+        server = HadoopServer(self, 0, down_bytes, out_writer,
                               logger=self.logger.getChild('HadoopServer'),
                               loglevel=self.logger.getEffectiveLevel())
         port = server.get_port()
@@ -423,8 +456,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         using the provided `input_split`.
         Analogously, the final run results will be written to `file_out`
         unless it is set to `None` and the pipes program is expected to have
-        a `RecordWriter`. Details on 
-
+        a `RecordWriter`. 
         """
         assert file_in or input_split
         assert file_out or num_reducers > 0 #FIXME pipes should support this
@@ -437,15 +469,17 @@ class HadoopSimulatorNetwork(HadoopSimulator):
 
         down_bytes = self.write_map_down_stream(file_in, job_conf, num_reducers,
                             authorization=auth, input_split=input_split)
-        record_writer = TrivialRecordWriter(file_out) if file_out else None
+        record_writer = TrivialRecordWriter(self, file_out) if file_out else None
         
         if num_reducers == 0:
             self.logger.debug('running a map only job')
+            self.set_phase('mapping')
             self.run_task(down_bytes, record_writer)
         else:
             self.logger.debug('running a map reduce job')
-            sas = SortAndShuffle()
+            sas = SortAndShuffle(self)
             self.logger.debug('running mapper')
+            self.set_phase('mapping')
             self.run_task(down_bytes, sas)
             # FIXME we only support a single reducer
             reducer_id = 1
@@ -457,6 +491,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                                 reducer_id, authorization=auth,
                                 piped_output=(file_out is not None))
             self.logger.debug('running reducer')
+            self.set_phase('reducing')
             self.run_task(down_bytes, record_writer)
         self.logger.debug('run done.')
         os.unlink(self.tmp_file)
