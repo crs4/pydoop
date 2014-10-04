@@ -13,8 +13,9 @@ input_split = InputSplit.to_string('file://'+path, 0, length)
 out_path = os.path.realpath('.')
 
 conf = {
-  "mapred.work.output.dir": 'file://%s' % out_path,
-  }
+    "mapreduce.task.partition": "0",
+    "mapreduce.task.output.dir": 'file://%s' % out_path,
+}
 
 hsn = HadoopSimulatorNetwork(program=program_name)
 hsn.run(None, None, conf, input_split=input_split)
