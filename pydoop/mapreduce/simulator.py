@@ -12,6 +12,7 @@ logging.basicConfig()
 logger = logging.getLogger('simulator')
 logger.setLevel(logging.CRITICAL)
 
+#threading._VERBOSE = True
 
 from pydoop.mapreduce.pipes import TaskContext, StreamRunner
 from pydoop.mapreduce.api import RecordReader
@@ -125,35 +126,44 @@ class SortAndShuffle(dict):
 
 
 class CommandThread(threading.Thread):
-    def __init__(self, down_bytes, ostream, logger):
+    def __init__(self, sync_event, down_bytes, ostream, logger):
         super(CommandThread, self).__init__()
+        self.logger = logger.getChild('CommandThread')
         self.down_bytes = down_bytes
         self.ostream = ostream
-        self.logger = logger.getChild('CommandThread')
+        self.sync_event = sync_event
         self.logger.debug('initialized')
 
+
     def run(self):
+        self.logger.debug('started runner.')
         chunk_size = 128 * 1024
-        self.logger.debug('started')
+        not_synced_yet = True
         while True:
+            self.logger.debug('reading %s bytes from %s.', chunk_size, 
+                              self.down_bytes)
             buf = self.down_bytes.read(chunk_size)
+            self.logger.debug('%s bytes actually read.', len(buf))
             if len(buf) == 0:
                 break
             self.ostream.write(buf)
             self.ostream.flush()
-        self.logger.debug('done')
+            if not_synced_yet:
+                not_synced_yet = False
+                self.sync_event.set()
+        self.logger.debug('Done.')
 
 
 class ResultThread(threading.Thread):
     def __init__(self, up_bytes, ostream, logger):
         super(ResultThread, self).__init__()
+        self.logger = logger.getChild('ResultThread')
         self.up_bytes = up_bytes
         self.ostream = ostream
-        self.logger = logger.getChild('ResultThread')
         self.logger.debug('initialized')
 
     def run(self):
-        self.logger.debug('started runner')        
+        self.logger.debug('started runner.')
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
         for cmd, args in up_cmd_stream:
             self.logger.debug('cmd: %r args:%r', cmd, args)
@@ -182,40 +192,29 @@ class ResultThread(threading.Thread):
                 self.logger.info("Registering Counter: %s %s %s" % args)
             elif cmd == 'incrementCounter':
                 self.logger.info("Incrementing Counter: %s %s" % args)
-        self.logger.debug('done with ResultThread')
+        self.logger.debug('Done.')
 
 class HadoopThreadHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         self.server.logger.debug('handler started')
+        # We have to wait for the cmd flux to start, otherwise it appears that
+        # socket data flux gets confused on what is waiting what.
+        cmd_flux_has_started = threading.Event()
         fd = self.request.fileno()
-        cmd_thread = CommandThread(self.server.down_bytes,
+        cmd_thread = CommandThread(cmd_flux_has_started, self.server.down_bytes,
                                    ph_fdopen(os.dup(fd), 'w', BUF_SIZE),
                                    self.server.logger)
         res_thread = ResultThread(ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
                                   self.server.out_writer,
                                   self.server.logger)
         cmd_thread.start()
-        res_thread.start()
+        cmd_flux_has_started.wait()
+        res_thread.start() 
+        self.server.logger.debug('Waiting in cmd_thread.join().')
         cmd_thread.join()
-        self.server.logger.debug('cmd_thread returned.')
+        self.server.logger.debug('Waiting in res_thread.join().')
         res_thread.join()
-        self.server.logger.debug('res_thread returned.')
-
-
-# class HadoopThreadHandler(SocketServer.StreamRequestHandler):
-#     def handle(self):
-#         self.server.logger.debug('handler started')
-#         cmd_thread = CommandThread(self.server.down_bytes, self.wfile,
-#                                    self.server.logger)
-#         res_thread = ResultThread(self.rfile, self.server.out_writer,
-#                                   self.server.logger)
-#         cmd_thread.start()
-#         res_thread.start()
-#         cmd_thread.join()
-#         self.server.logger.debug('cmd_thread returned.')
-#         res_thread.join()
-#         self.server.logger.debug('res_thread returned.')
-
+        self.server.logger.debug('handler is done.')
 
 class HadoopServer(SocketServer.TCPServer):
     """
