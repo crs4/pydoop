@@ -30,9 +30,10 @@ CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
 SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
 
-TASK_PARTITION = 'mapred.task.partition'
-OUTPUT_DIR = 'mapred.work.output.dir'
-
+TASK_PARTITION_V1 = 'mapred.task.partition'
+TASK_PARTITION_V2 = 'mapreduce.task.partition'
+OUTPUT_DIR_V1 = 'mapred.work.output.dir'
+OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
 
 DEFAULT_SLEEP_DELTA = 3
 
@@ -483,10 +484,19 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             self.run_task(down_bytes, sas)
             # FIXME we only support a single reducer
             reducer_id = 1
-            if not job_conf.has_key(TASK_PARTITION):
-                job_conf[TASK_PARTITION] = str(reducer_id)
-            if not job_conf.has_key(OUTPUT_DIR):
-                job_conf[OUTPUT_DIR] = 'file:///var/tmp'
+            if not (job_conf.has_key(TASK_PARTITION_V1) or
+                    job_conf.has_key(TASK_PARTITION_V2)):
+                task_partition = str(reducer_id)
+                job_conf[TASK_PARTITION_V1] = task_partition
+                job_conf[TASK_PARTITION_V2] = task_partition
+                self.logger.info('Set %s=%s', TASK_PARTITION_V1, task_partition)
+                self.logger.info('Set %s=%s', TASK_PARTITION_V2, task_partition)
+            if not (job_conf.has_key(OUTPUT_DIR_V1) or
+                    job_conf.has_key(OUTPUT_DIR_V2)):
+                outdir_path = os.path.realpath(os.path.join('.', 'output'))
+                outdir_uri = 'file://' + outdir_path
+                job_conf[OUTPUT_DIR_V1] = outdir_uri
+                job_conf[OUTPUT_DIR_V2] = outdir_uri
             down_bytes = self.write_reduce_down_stream(sas, job_conf,
                                 reducer_id, authorization=auth,
                                 piped_output=(file_out is not None))
