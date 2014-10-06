@@ -3,8 +3,8 @@
 MODULE=color_counts
 MZIP=${MODULE}.zip
 MPY=${MODULE}.py
-AVRO_USER_AVSC=../user.avsc
-AVRO_STATS_AVSC=../stats.avsc
+AVRO_USER_AVSC=../schemas/user.avsc
+AVRO_STATS_AVSC=../schemas/stats.avsc
 AVRO_DATA=users.avro
 
 PROGNAME=${MODULE}-prog
