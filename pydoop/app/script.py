@@ -111,6 +111,9 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
     writer = ContextWriter(ctx)
     %(module)s.%(map_fn)s(ctx.getInputKey(), ctx.getInputValue(), writer, self.conf)
 
+  def map(self, ctx):
+    pass
+
 class PydoopScriptReducer(pydoop.pipes.Reducer):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
@@ -131,6 +134,9 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
     writer = ContextWriter(ctx)
     %(module)s.%(reduce_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
 
+  def reduce(self, ctx):
+    pass
+
 class PydoopScriptCombiner(pydoop.pipes.Combiner):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
@@ -150,6 +156,9 @@ class PydoopScriptCombiner(pydoop.pipes.Combiner):
     key = ctx.getInputKey()
     writer = ContextWriter(ctx)
     %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx), writer, self.conf)
+
+  def reduce(self, ctx):
+    pass
 
 if __name__ == '__main__':
   result = pydoop.pipes.runTask(pydoop.pipes.Factory(
