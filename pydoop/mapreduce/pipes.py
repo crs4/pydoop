@@ -19,7 +19,7 @@
 import sys
 import logging
 import time
-import StringIO
+from StringIO import StringIO
 
 from pydoop.utils.serialize import deserialize_text, deserialize_long
 from pydoop.utils.serialize import deserialize_old_style_filename
@@ -96,7 +96,7 @@ class InputSplit(object):
     """
 
     def __init__(self, data):
-        stream = StringIO.StringIO(data)
+        stream = StringIO(data)
         if hadoop_version_info().has_variable_isplit_encoding():
             self.filename = deserialize_text(stream)
         else:
@@ -106,7 +106,7 @@ class InputSplit(object):
         
     @classmethod
     def to_string(cls, filename, offset, length):
-        stream = StringIO.StringIO()
+        stream = StringIO()
         if hadoop_version_info().has_variable_isplit_encoding():
             serialize_text(filename, stream)
         else:
