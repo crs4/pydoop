@@ -147,8 +147,8 @@ class CombineRunner(RecordWriter):
 
 
 class TaskContext(MapContext, ReduceContext):
-    def __init__(self, up_link, no_private_encoding=False):
-        self.no_private_encoding = no_private_encoding
+    def __init__(self, up_link, private_encoding=True):
+        self.private_encoding = private_encoding
         self._private_encoding = False
         self.up_link = up_link
         self.writer = None
@@ -168,7 +168,7 @@ class TaskContext(MapContext, ReduceContext):
         self._registered_counters = []
 
     def enable_private_encoding(self):
-        self._private_encoding = not self.no_private_encoding
+        self._private_encoding = self.private_encoding
 
     def close(self):
         if self.writer:
@@ -403,7 +403,7 @@ class StreamRunner(object):
         ctx.writer = writer
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream,
-                                           ctx.no_private_encoding)
+                                           ctx.private_encoding)
         reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
             reducer_reduce(ctx)
@@ -412,20 +412,19 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             no_private_encoding=True, context_class=TaskContext):
+             private_encoding=False, context_class=TaskContext):
         """
-      Run the assigned task in the framework.
+      Run the assigned task in the framework. 
 
       :param factory: a :class:`Factory` instance.
       :type factory: :class:`Factory`
       :rtype: bool
       :return: True, if the task succeeded.
       """
-
     #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
-        context = context_class(connections.up_link, no_private_encoding)
+        context = context_class(connections.up_link, private_encoding)
         stream_runner = StreamRunner(factory, context, connections.cmd_stream)
         stream_runner.run()
         context.close()

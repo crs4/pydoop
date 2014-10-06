@@ -89,16 +89,16 @@ class PushBackStream(object):
 
 class KeyValuesStream(object):
 
-    def __init__(self, stream, no_private_encoding=False):
+    def __init__(self, stream, private_encoding=True):
         self.stream = PushBackStream(stream)
-        self.no_private_encoding = no_private_encoding
+        self.private_encoding = private_encoding
 
     def __iter__(self):
         return self.fast_iterator()
 
     def fast_iterator(self):
         stream = self.stream
-        private_encoding = not self.no_private_encoding
+        private_encoding = self.private_encoding
         for cmd, args in stream:
             if cmd == 'close':
                 raise StopIteration
@@ -119,7 +119,7 @@ class KeyValuesStream(object):
                 raise StopIteration
             elif cmd == 'reduceKey':
                 values_stream = self.get_value_stream(self.stream)
-                key = private_decode(args[0]) if not self.no_private_encoding\
+                key = private_decode(args[0]) if self.private_encoding\
                                               else args[0]
                 return key, values_stream
             elif cmd == 'reduceValue':
@@ -129,7 +129,7 @@ class KeyValuesStream(object):
         raise StopIteration
 
     def get_value_stream(self, stream):
-        private_encoding = not self.no_private_encoding
+        private_encoding = self.private_encoding
         for cmd, args in stream:
             if cmd == 'close':
                 stream.push_back((cmd, args))                
@@ -143,8 +143,8 @@ class KeyValuesStream(object):
         raise StopIteration
 
 
-def get_key_values_stream(stream, no_private_encoding=False):
-    return KeyValuesStream(stream, no_private_encoding)
+def get_key_values_stream(stream, private_encoding=True):
+    return KeyValuesStream(stream, private_encoding)
 
 
 def get_key_value_stream(stream):

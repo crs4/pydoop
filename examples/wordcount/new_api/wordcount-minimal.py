@@ -16,7 +16,7 @@ class TMapper(Mapper):
     def map(self, ctx):
         words = re.sub('[^0-9a-zA-Z]+', ' ', ctx.value).split()
         for w in words:
-            ctx.emit(w, '1')
+            ctx.emit(w, 1)
 
 
 class TReducer(Reducer):
@@ -26,9 +26,11 @@ class TReducer(Reducer):
         print "Reducer instantiated"
 
     def reduce(self, ctx):
-        s = sum(it.imap(int, ctx.values))
-        ctx.emit(ctx.key, str(s))
+        s = sum(ctx.values)
+        # Note: we explicitly write the value as a str.
+        ctx.emit(ctx.key, str(s)) 
 
 
 if __name__ == "__main__":
-    run_task(Factory(mapper_class=TMapper, reducer_class=TReducer))
+    run_task(Factory(mapper_class=TMapper, reducer_class=TReducer), 
+             private_encoding=True)

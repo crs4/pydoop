@@ -41,7 +41,7 @@ class Mapper(api.Mapper):
         k = context.key
         words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
         for w in words:
-            context.emit(w, "1")
+            context.emit(w, 1)
         context.increment_counter(self.input_words, len(words))
 
 
@@ -52,8 +52,8 @@ class Reducer(api.Reducer):
         self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
 
     def reduce(self, context):
-        s = sum(it.imap(int, context.values))
-        context.emit(context.key, str(s))
+        s = sum(context.values)
+        context.emit(context.key, s)
         context.increment_counter(self.output_words, 1)
 
 
@@ -137,5 +137,7 @@ if __name__ == "__main__":
         record_writer_class=Writer,
         partitioner_class=Partitioner,
         combiner_class=Reducer
-    ))
+        ),
+        private_encoding=True        
+    )
 
