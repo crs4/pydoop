@@ -1,7 +1,4 @@
 from abc import abstractmethod, ABCMeta
-
-__author__ = 'kikkomep'
-
 import os
 import importlib
 

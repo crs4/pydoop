@@ -1,5 +1,3 @@
-__author__ = 'kikkomep'
-
 import os
 
 ENVIRONMENT_CMD_KEYS = {
