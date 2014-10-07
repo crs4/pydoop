@@ -42,7 +42,14 @@ from pydoop.mapreduce.api import Factory as FactoryInterface
 logger = logging.getLogger('pipes')
 logger.setLevel(logging.CRITICAL)
 
+
 class Factory(FactoryInterface):
+    """
+    Creates MapReduce application components.
+
+    The classes to use for each component must be specified as arguments
+    to the constructor.
+    """
     def __init__(self, mapper_class, reducer_class=None, combiner_class=None,
                  partitioner_class=None,
                  record_writer_class=None, record_reader_class=None):
@@ -406,6 +413,15 @@ class StreamRunner(object):
 
 def run_task(factory, port=None, istream=None, ostream=None,
              no_private_encoding=True, context_class=TaskContext):
+        """
+      Run the assigned task in the framework.
+
+      :param factory: a :class:`Factory` instance.
+      :type factory: :class:`Factory`
+      :rtype: bool
+      :return: True, if the task succeeded.
+      """
+
     #try:
         connections = resolve_connections(port,
                                           istream=istream, ostream=ostream)
