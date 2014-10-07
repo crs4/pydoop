@@ -19,6 +19,7 @@
 import unittest
 import getpass
 import socket
+from itertools import product
 
 import pydoop.hdfs as hdfs
 import pydoop
@@ -52,13 +53,18 @@ class TestConnection(unittest.TestCase):
           self.assertEqual(fs.user, expected_user)
 
   def cache(self):
-    hdfs.hdfs._CACHE.clear()
-    with hdfs.hdfs(*self.hp_cases[0]) as orig_fs:
-      for host, port in self.hp_cases[1:]:
-        with hdfs.hdfs(host, port) as fs:
-          self.assertTrue(fs.fs is orig_fs.fs)
-        self.assertFalse(orig_fs.closed)
-    self.assertTrue(orig_fs.closed)
+    print
+    for (h1, p1), (h2, p2) in product(self.hp_cases, repeat=2):
+      hdfs.hdfs._CACHE.clear()
+      hdfs.hdfs._ALIASES = {"host": {}, "port": {}, "user": {}}  # FIXME
+      with hdfs.hdfs(h1, p1) as fs1:
+        with hdfs.hdfs(h2, p2) as fs2:
+          print ' * %r vs %r' % ((h1, p1), (h2, p2))
+          self.assertTrue(fs2.fs is fs1.fs)
+        for fs in fs1, fs2:
+          self.assertFalse(fs.closed)
+      for fs in fs1, fs2:
+        self.assertTrue(fs.closed)
 
 
 class TestHDFS(TestCommon):

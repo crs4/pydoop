@@ -143,7 +143,7 @@ class hdfs(object):
             self.__status = self.__lookup((host, port, user))
         except KeyError:
             h, p, u, fs = _get_connection_info(host, port, user)
-            aliasing_info = [] if user else [("user", u, user)]  # (key, alias, name)
+            aliasing_info = [] if user else [("user", u, user)]
             if h != "":
                 aliasing_info.append(("port", p, port))
             ip = _get_ip(h, None)
@@ -157,10 +157,12 @@ class hdfs(object):
             for k, true_x, x in aliasing_info:
                 if true_x != x:
                     self._ALIASES[k][x] = true_x
-            self.__status = _FSStatus(fs, h, p, u, refcount=1)
-            self._CACHE[(ip, p, u)] = self.__status
-        else:
-            self.__status.refcount += 1
+            try:
+                self.__status = self.__lookup((h, p, u))
+            except KeyError:
+                self.__status = _FSStatus(fs, h, p, u, refcount=0)
+                self._CACHE[(ip, p, u)] = self.__status
+        self.__status.refcount += 1
 
     def __enter__(self):
         return self
