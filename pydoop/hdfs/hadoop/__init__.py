@@ -77,17 +77,13 @@ def get_hadoop_version():
 
 
 def get_implementation_instance(class_name_prefix, *args, **kwargs):
-    try:
-        class_name = class_name_prefix + HADOOP_HDFS_IMPL_SUFFIX
-        logger.debug("class_name %s", class_name)
-        logger.debug("class_name_prefix %s", class_name_prefix)
-        logger.debug("implementation_module%s", implementation_module)
-        logger.debug("HADOOP_HDFS_IMPL_SUFFIX %s", HADOOP_HDFS_IMPL_SUFFIX)
-        cl = getattr(implementation_module, class_name)
-        return cl(*args, **kwargs)
-    except Exception, e:
-        print "Unable to load the class %s" % class_name
-        print e.message
+    class_name = class_name_prefix + HADOOP_HDFS_IMPL_SUFFIX
+    logger.debug("class_name %s", class_name)
+    logger.debug("class_name_prefix %s", class_name_prefix)
+    logger.debug("implementation_module%s", implementation_module)
+    logger.debug("HADOOP_HDFS_IMPL_SUFFIX %s", HADOOP_HDFS_IMPL_SUFFIX)
+    cl = getattr(implementation_module, class_name)
+    return cl(*args, **kwargs)
 
 
 def get_implementation_module():
