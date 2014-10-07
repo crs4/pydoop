@@ -34,30 +34,6 @@ from pydoop.mapreduce.api import Mapper, Reducer, RecordReader, RecordWriter, Pa
 from pydoop.mapreduce.pipes import run_task as runTask, InputSplit
 
 
-class RecordReaderWrapper(object):
-    def __init__(self, obj):
-        self._obj = obj
-
-    def __iter__(self):
-        return self.fast_iterator()
-
-    def fast_iterator(self):
-        obj = self._obj
-        next_op = obj.next
-        flag, key, value = next_op()
-        if flag:
-            yield (key, value)
-        else:
-            raise StopIteration
-
-    def next(self):
-        flag, key, value = self._obj.next()
-        if flag:
-            return (key, value)
-        else:
-            raise StopIteration
-
-
 class RecordReader(pydoop.mapreduce.api.RecordReader):
     """
   Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
@@ -80,7 +56,7 @@ class RecordReader(pydoop.mapreduce.api.RecordReader):
         raise NotImplementedError
 
     def __iter__(self):
-        return RecordReaderWrapper(self)
+        return pydoop.mapreduce.pipes.RecordReaderWrapper(self)
 
     def get_progress(self):
         return self.getProgress()
