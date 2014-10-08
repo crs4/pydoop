@@ -503,6 +503,9 @@ class TestCallFromHdfs(unittest.TestCase):
         self.path = make_random_str() + UNI_CHR
         hdfs.dump("foo\n", self.path)
 
+    def tearDown(self):
+        hdfs.rmr(self.path)
+
     def test_stat(self):
         for name in 'stat', 'lstat':
             self.assertTrue(hasattr(hdfs, name))
