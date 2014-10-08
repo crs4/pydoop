@@ -62,7 +62,7 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
     }
     
     public int run(String[] args) throws Exception {
-        if (args.length != 3) {
+        if (args.length != 2) {
             System.err.println("Usage: ExampleParquetMRWrite <input path> <output path>");
             return -1;
         }
@@ -82,8 +82,8 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
         job.setInputFormatClass(TextInputFormat.class);
         job.setOutputFormatClass(AvroParquetOutputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path(args[1]));
-        FileOutputFormat.setOutputPath(job, new Path(args[2]));
+        FileInputFormat.setInputPaths(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
 
         job.waitForCompletion(true);
 
