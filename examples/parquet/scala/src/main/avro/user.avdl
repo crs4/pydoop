@@ -1,0 +1,21 @@
+@namespace("pydoop.avrotest.avro")
+protocol AvroTest {
+    record User {
+        // The name of the user
+        string name = "unknown";
+        // The age of the user
+        int age = 0;
+        // The favorite color of the user
+        string favorite_color = "unknown";
+    }
+    record Message {
+        // The ID of the message
+        long ID = 0;
+        // The sender of this message
+        string sender = "unknown";
+        // The recipient of this message
+        string recipient = "unknown";
+        // The content of the message
+        string content = "";
+    }
+}
