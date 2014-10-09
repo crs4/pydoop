@@ -47,10 +47,19 @@ right schema that should be used.
        with hdfs.open(p) as f:
            data = f.read()
        f = StringIO(data)
-       enc = BinaryDecoder(f)
+       dec = BinaryDecoder(f)
        while f.tell() < len(data):
            print dr.read(dec)
            f.read(1) # skip the newline inserted by TextOutputFormat
+
+
+Part 3: reading an avro-parquet file using python
+-------------------------------------------------
+
+.. code-block:: python
+
+    
+
 
            
        
