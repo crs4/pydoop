@@ -36,6 +36,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableUtils;
@@ -363,6 +364,9 @@ class BinaryProtocol<K1 extends Writable, V1 extends Writable,
             int len = b.getLength();
             WritableUtils.writeVInt(stream, len);
             stream.write(b.getBytes(), 0, len);
+        } else if (obj == null) {
+            // write a zero length string
+            WritableUtils.writeVInt(stream, 0);            
         } else {
             buffer.reset();
             obj.write(buffer);

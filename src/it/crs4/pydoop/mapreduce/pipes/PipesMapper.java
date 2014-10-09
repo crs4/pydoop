@@ -100,8 +100,6 @@ class PipesMapper<K1 extends Writable, V1 extends Writable,
                                                                     context);
         input.initialize(split, context);
 
-        System.err.println("input.getClass.getName: " + input.getClass().getName());
-
         boolean isJavaInput = Submitter.getIsJavaRecordReader(conf);
         try {
             // FIXME: what happens for a java mapper and no java record reader?
@@ -125,14 +123,16 @@ class PipesMapper<K1 extends Writable, V1 extends Writable,
                 while (input.nextKeyValue()) {
                     if (!sent_input_types) {
                         sent_input_types = true;
-                        downlink.setInputTypes(
-                               input.getCurrentKey().getClass().getName(),
-                               input.getCurrentValue().getClass().getName());
-                        System.err.println("key.getClass.getName: " 
-                                           + input.getCurrentKey().getClass().getName());
-                        System.err.println("value.getClass.getName: " 
-                                           + input.getCurrentValue().getClass().getName());
-
+                        NullWritable n = NullWritable.get();
+                        String kclass_name = n.getClass().getName();
+                        String vclass_name = n.getClass().getName();
+                        if (input.getCurrentKey() != null) {
+                            kclass_name = input.getCurrentKey().getClass().getName();
+                        }
+                        if (input.getCurrentValue() != null) {
+                            vclass_name = input.getCurrentValue().getClass().getName();
+                        }
+                        downlink.setInputTypes(kclass_name, vclass_name);
                     }
                     downlink.mapItem(input.getCurrentKey(), input.getCurrentValue());
                     if(skipping) {
