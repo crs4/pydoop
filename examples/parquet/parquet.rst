@@ -49,15 +49,15 @@ right schema that should be used.
        f = StringIO(data)
        dec = BinaryDecoder(f)
        while f.tell() < len(data):
-           print dr.read(dec)
+           u = dr.read(dec)
+           print u['office'], u['favorite_color']
            f.read(1) # skip the newline inserted by TextOutputFormat
 
 
 Part 3: reading an avro-parquet file using python
 -------------------------------------------------
 
-.. code-block:: python
-
+For a full example see the py/run_pavro.sh.
     
 
 

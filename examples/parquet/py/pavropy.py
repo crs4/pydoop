@@ -40,6 +40,7 @@ class ColorPick(api.Mapper):
     def map(self, ctx):
         user = ctx.value
         color = user['favorite_color']
+        sys.stderr.write('user: %r' % user)
         if color is not None:
             ctx.emit(user['office'], Counter({color : 1}))
 

@@ -15,7 +15,7 @@ python ../java/create_input.py ${N} ${INPUT_DATA}
 
 hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rmr /user/${USER}/${PARQUETS_DIR}
-hdfs dfs -put ${INPUT_DATA}
+hdfs dfs -put -f ${INPUT_DATA}
 hadoop jar ${PARQUET_JAR} it.crs4.pydoop.ExampleParquetMRWrite \
                           ${INPUT_DATA} ${PARQUETS_DIR}
 
@@ -25,7 +25,7 @@ MZIP=${MODULE}.zip
 MPY=${MODULE}.py
 PROGNAME=${MODULE}-prog
 JOBNAME=${MODULE}-job
-LOGLEVEL=DEBUG
+LOGLEVEL=INFO
 MRV="--mrv2"
 USER_SCHEMA=`cat ${AVRO_USER_AVSC}`
 
@@ -47,3 +47,8 @@ ${SUBMIT_CMD} --python-egg ${MZIP} \
               --log-level ${LOGLEVEL} ${MRV} --job-name ${JOBNAME} \
               ${PROGNAME} ${INPUT} ${OUTPUT} 
 
+# ----- part 4 -----
+rm -rf ${OUTPUT}
+hdfs dfs -get /user/${USER}/${OUTPUT}
+# this is intentionally hardwired.
+python check_results.py ${INPUT_DATA} ${OUTPUT}/part-r-00000
