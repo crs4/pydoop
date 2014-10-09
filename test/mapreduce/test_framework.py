@@ -157,10 +157,10 @@ class TestFramework(WDTestCase):
         factory = TFactory()
         sas = SortAndShuffle()
         run_task(factory, istream=self.stream, ostream=sas,
-                 no_private_encoding=True)
+                 private_encoding=False)
         with self._mkf('foo_map_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
-                     no_private_encoding=True)
+                     private_encoding=False)
         self.check_result('foo_map_reduce.out', STREAM_1)
 
     def test_map_combiner_reduce(self):
@@ -169,7 +169,7 @@ class TestFramework(WDTestCase):
         run_task(factory, istream=self.stream, ostream=sas)
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
-                     no_private_encoding=True)
+                     private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_1)
 
     def test_map_combiner_reduce_with_context(self):
@@ -178,7 +178,7 @@ class TestFramework(WDTestCase):
         run_task(factory, istream=self.stream, ostream=sas, context_class=TContext)
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
-                     no_private_encoding=True)
+                     private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_1, 2)
 
     def check_result(self, fname, ref_data, factor=1):

@@ -413,23 +413,23 @@ class StreamRunner(object):
 
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=False, context_class=TaskContext):
-        """
+    """
       Run the assigned task in the framework. 
 
       :param factory: a :class:`Factory` instance.
       :type factory: :class:`Factory`
       :rtype: bool
       :return: True, if the task succeeded.
-      """
+    """
     #try:
-        connections = resolve_connections(port,
-                                          istream=istream, ostream=ostream)
-        context = context_class(connections.up_link, private_encoding)
-        stream_runner = StreamRunner(factory, context, connections.cmd_stream)
-        stream_runner.run()
-        context.close()
-        connections.close()
-        return True
+    connections = resolve_connections(port,
+                                      istream=istream, ostream=ostream)
+    context = context_class(connections.up_link, private_encoding)
+    stream_runner = StreamRunner(factory, context, connections.cmd_stream)
+    stream_runner.run()
+    context.close()
+    connections.close()
+    return True
     # except StandardError as e:
     #     sys.stderr.write('Hadoop Pipes Exception: %r' % e)
     #     return False
