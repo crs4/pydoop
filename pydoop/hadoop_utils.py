@@ -44,8 +44,8 @@ class HadoopXMLError(Exception):
 
 
 def get_arch():
-  if SYSTEM == 'darwin':
-    return "", ""
+  #if SYSTEM == 'darwin':
+  #  return "", ""
   bits, _ = platform.architecture()
   if bits == "64bit":
     return "amd64", "64"
