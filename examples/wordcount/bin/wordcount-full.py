@@ -3,21 +3,21 @@
 # ! /usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """:"
@@ -36,8 +36,9 @@ import sys, logging, struct
 
 logging.basicConfig(level=logging.ERROR)
 
+import re
 import pydoop.pipes as pp
-from pydoop.utils.misc import jc_configure, jc_configure_int
+from pydoop.utils import jc_configure, jc_configure_int
 import pydoop.hdfs as hdfs
 
 
@@ -55,7 +56,7 @@ class Mapper(pp.Mapper):
 
     def map(self, context):
         k = context.getInputKey()
-        words = context.getInputValue().split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
         for w in words:
             context.emit(w, "1")
         context.incrementCounter(self.inputWords, len(words))
@@ -131,9 +132,9 @@ class Writer(pp.RecordWriter):
         jc_configure_int(self, jc, "mapred.task.partition", "part")
         jc_configure(self, jc, "mapred.work.output.dir", "outdir")
         jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
-        jc_configure(self, jc, "pydoop.hdfs.user", "hdfs_user", None)
+        #jc_configure(self, jc, "pydoop.hdfs.user", "hdfs_user", None)
         self.outfn = "%s/part-%05d" % (self.outdir, self.part)
-        self.file = hdfs.open(self.outfn, "w", user=self.hdfs_user)
+        self.file = hdfs.open(self.outfn, "w") #, user=self.hdfs_user)
 
     def close(self):
         self.logger.debug("closing open handles")

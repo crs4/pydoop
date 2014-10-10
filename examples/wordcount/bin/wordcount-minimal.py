@@ -19,7 +19,6 @@ class Mapper(pp.Mapper):
         words = context.getInputValue().split()
         for w in words:
             context.emit(w, "1")
-        print "Mapper: key=%s" % context.getInputKey()
 
 
 class Reducer(pp.Reducer):
