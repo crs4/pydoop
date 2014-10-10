@@ -18,7 +18,7 @@
 
 # pylint: disable=W0311
 
-import os, unittest, tempfile
+import sys, os, unittest, tempfile
 from numbers import Number
 
 import pydoop.hdfs as hdfs
@@ -429,7 +429,8 @@ class TestReal(unittest.TestCase):
     wd = 'file:%s' % wd_
     link = os.path.join(wd_, make_random_str())
     os.symlink(wd_, link)
-    self.assertEqual(hdfs.path.realpath('file:%s' % link), 'file:%s' % wd_)
+    expected_path = 'file:%s%s' % ("/private", wd_) if sys.platform == "darwin" else 'file:%s' % wd_
+    self.assertEqual(hdfs.path.realpath('file:%s' % link), expected_path)
     hdfs.rmr(wd)
 
 
@@ -469,7 +470,6 @@ class TestAccess(unittest.TestCase):
 
     # FIXME: far from exhaustive.  This is a slow test
     def __test(self, offset, user=None):
-        print
         for mode in os.R_OK, os.W_OK, os.X_OK:
             hdfs.chmod(self.path, mode << offset)
             print ' * mode now: %03o' % hdfs.path.stat(self.path).st_mode

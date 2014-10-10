@@ -1,9 +1,13 @@
+from abc import ABCMeta
 from abc import abstractmethod
 
-from pydoop.hdfs.hadoop import get_implementation_instance
+from pydoop.hdfs.common import BUFSIZE
 
 
-class FileSystem(object):
+
+class CoreHdfsFs(object):
+
+    __metaclass__ = ABCMeta
 
     """
 
@@ -109,7 +113,9 @@ class FileSystem(object):
         pass
 
 
-class File(object):
+class CoreHdfsFile(object):
+
+    __metaclass__ = ABCMeta
 
     @property
     def mode(self):
@@ -128,7 +134,7 @@ class File(object):
         pass
 
     @abstractmethod
-    def read(self, chunk_size):
+    def read(self, size=BUFSIZE):
         pass
 
     @abstractmethod
@@ -136,7 +142,7 @@ class File(object):
         pass
 
     @abstractmethod
-    def read_check(self, chunk):
+    def read_chunk(self, chunk):
         pass
 
     @abstractmethod
@@ -162,47 +168,3 @@ class File(object):
     @abstractmethod
     def flush(self):
         pass
-
-
-if __name__ == '__main__':
-    fs = get_implementation_instance("FileSystem", host="default")
-    print "the working directory: %s " % fs.get_working_directory()
-    #fs.create_directory("pippo")
-
-
-    #fs.copy("LICENSE", ".", "L1")
-    fs.chown("foo", "kikkomep", "users")
-    # fs.chmod("input", 0000)
-    #print fs.get_path_info("/user/kikkomep/output")
-    #print "%s" % fs.exists("pippo")
-    #fs.copy("ChangeLog", ".")
-    #print "%s" % get_hadoop_version()
-    # for d in fs.list_directory("."):
-    #     print d
-    #print fs.default_block_size
-    #fs.delete("./L1")
-    #fs.move("L1", fs.path_info)
-    #fs.move("L1", "hdfs://localhost:8020", "XXX")
-
-    # f = fs.open_file("input", "r")
-    # l = f.readline()
-    # print l
-    #b = create_string_buffer(512)
-    #data = f.read(b)
-
-    #for i in data:
-        #print "%s" % str.decode(str(i), 'utf-8')
-
-    #print b
-    #print "%s" % fs.get_working_directory()
-
-
-
-
-
-
-
-
-
-
-

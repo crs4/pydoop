@@ -31,7 +31,9 @@ import operator as ops
 import pydoop
 import common
 from file import hdfs_file, local_file
-from pydoop.hdfs.hadoop import get_implementation_instance
+from pydoop.hdfs.core import core_hdfs_fs
+import pydoop.config as pydoop_config
+import core as hdfs_core
 
 
 class _FSStatus(object):
@@ -61,8 +63,8 @@ def _get_ip(host, default=None):
 
 
 def _get_connection_info(host, port, user):
-    fs = get_implementation_instance("FileSystem", host, port, user)
-    res = urlparse.urlparse(fs.working_directory())
+    fs = core_hdfs_fs(host, port, user)
+    res = urlparse.urlparse(fs.get_working_directory())
     if res.scheme == "file":
         h, p, u = "", 0, getpass.getuser()
         fs.set_working_directory(os.getcwd())  # libhdfs "remembers" old cwd

@@ -2,20 +2,21 @@ import os
 import logging
 
 
-from pydoop.hdfs.common import BUFSIZE
-from pydoop.hdfs.hadoop import wrap_class_instance
-from pydoop.hdfs.hadoop import wrap_class
-from pydoop.hdfs.hadoop import wrap_array
-from pydoop.hdfs.hadoop import wrap_array_instance
-from pydoop.hdfs.hadoop.hdfs import FileSystem
-from pydoop.hdfs.hadoop.hdfs import File
 
+from pydoop.hdfs.core.api import CoreHdfsFs as CoreFsApi
+from pydoop.hdfs.core.api import CoreHdfsFile as CoreFileApi
+
+from pydoop.hdfs.common import BUFSIZE
+from pydoop.hdfs.core.bridged.common import wrap_class_instance
+from pydoop.hdfs.core.bridged.common import wrap_class
+from pydoop.hdfs.core.bridged.common import wrap_array
 
 logging.basicConfig(level=logging.INFO)
 
 BUFFER_SIZE_CONFIG_PROPERTY = "io.file.buffer.size"
 REPLICATION_CONFIG_PROPERTY = "dfs.replication"
-BLOCKSIZE_CONFIG_PROPERTY = "dfs.block.size"
+BLOCKSIZE_CONFIG_PROPERTY = "dfs.blocksize"
+
 
 
 class JavaClassName(object):
@@ -34,10 +35,12 @@ class JavaClassName(object):
     Byte = "java.lang.Byte"
     Long = "java.lang.Long"
     DataOutputStream = "java.io.DataOutputStream"
+    BufferedOutputStream = "java.io.BufferedOutputStream"
     ByteArrayOutputStream = "java.io.ByteArrayOutputStream"
 
 
-class FileSystemImpl(FileSystem):
+class CoreHdfsFs(CoreFsApi):
+
     def __init__(self, host, port=0, user=None, groups=None):
         self._host = host
         self._port = port
@@ -208,12 +211,12 @@ class FileSystemImpl(FileSystem):
         try:
             if accmode == os.O_RDONLY:
                 stream = self._fs.open(jpath, buff_size)
-                stream_type = FileImpl._INPUT
+                stream_type = CoreHdfsFile._INPUT
                 self._logger.debug("File opened in read mode")
 
             elif accmode == os.O_WRONLY and flags & os.O_APPEND:
                 stream = self._fs.append(jpath)
-                stream_type = FileImpl._OUTPUT
+                stream_type = CoreHdfsFile._OUTPUT
                 self._logger.debug("File opened in append mode")
 
             else:
@@ -223,13 +226,13 @@ class FileSystemImpl(FileSystem):
                     blocksize = self._fs.getDefaultBlockSize(jpath)
 
                 stream = self._fs.create(jpath, boolean_overwrite, buff_size, replication, blocksize)
-                stream_type = FileImpl._OUTPUT
+                stream_type = CoreHdfsFile._OUTPUT
                 self._logger.debug("File opened in write mode")
 
         except Exception, e:
             raise IOError(e.message)
 
-        return FileImpl(flags, stream, stream_type)
+        return CoreHdfsFile(flags, stream, stream_type)
 
     def utime(self, path, mtime, atime):
         jpath = wrap_class_instance(JavaClassName.Path, path)
@@ -289,7 +292,8 @@ class FileSystemImpl(FileSystem):
         return wrap_class(JavaClassName.FileUtil)
 
 
-class FileImpl(File):
+class CoreHdfsFile(CoreFileApi):
+
     _INPUT = 0
     _OUTPUT = 1
 
@@ -299,7 +303,8 @@ class FileImpl(File):
         self._stream_type = stream_type
 
         if stream_type == self._OUTPUT:
-            self._out_buffer = wrap_class_instance(JavaClassName.ByteArrayOutputStream)
+            self._buffered_stream = wrap_class_instance(JavaClassName.BufferedOutputStream, self._stream)
+            self._jbytearray = wrap_array("byte")
 
     def available(self):
         if not self._stream or self._stream_type != self._INPUT:
@@ -330,15 +335,16 @@ class FileImpl(File):
         if length < 0:
             raise IOError
 
-        current_size = self._stream.size()
+        #current_size = self._stream.size()
 
         if length > 0:
-
-            bytes = wrap_array_instance("byte", array_items=data)
+            bdata = bytearray(data)
+            bytes = self._jbytearray(bdata)
             self._stream.write(bytes)
 
-        written = self._stream.size() - current_size
-        return written
+        #written = self._stream.size() - current_size
+        #return written
+        return length
 
     def tell(self):
         if not self._stream:
