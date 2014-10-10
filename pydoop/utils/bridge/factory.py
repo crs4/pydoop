@@ -1,4 +1,6 @@
 from abc import abstractmethod, ABCMeta
+
+
 import os
 import importlib
 
@@ -93,27 +95,3 @@ def load_class(package, bridge_name):
     module = importlib.import_module(module_path)
     # Finally, we retrieve the Class
     return getattr(module, class_str)
-
-
-if __name__ == '__main__':
-    print "JAVABRIDGE: " + os.environ.get("JAVA_BRIDGE", "NONE")
-
-    os.environ["JAVA_BRIDGE"] = "jpype"
-
-    loader = JavaWrapperFactory(java_bridge_name="pyjnius")
-
-    # print loader.get_classpath()
-
-    Stack = loader.get_wrapper('java.util.Stack')
-    stack = Stack()
-
-    stack.push('hello')
-    stack.push('world')
-
-    print stack.pop()
-    print stack.pop()
-
-    Configuration = loader.get_wrapper("org.apache.hadoop.conf.Configuration")
-    conf = Configuration(True)
-
-    loader.close()
