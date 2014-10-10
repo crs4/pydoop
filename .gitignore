@@ -10,3 +10,12 @@ pydoop/version.py
 src/_hdfs_*_main.cpp
 src/_pipes_*_main.cpp
 src/hadoop*.patched/
+
+src/hdfs/hdfs.xcodeproj
+src/hdfs/hdfs/*
+
+test/timings/dataset
+
+.DS_Store
+.idea
+*.xcodeproj
