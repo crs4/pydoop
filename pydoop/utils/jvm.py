@@ -102,35 +102,6 @@ def check_jni_header(include_dirs=None):
 
 
 
-
-
-
-
-
-
-
-# if sys.platform == 'win32':
-#     platform_specific['libraries'] = ['Advapi32']
-#     platform_specific['define_macros'] = [('WIN32', 1)]
-#     if found_jni:
-#         platform_specific['include_dirs'] += [os.path.join(java_home, 'include', 'win32')]
-#
-# elif sys.platform == 'darwin':
-#     platform_specific['libraries'] = ['dl']
-#     platform_specific['define_macros'] = [('MACOSX', 1)]
-#     if found_jni:
-#         platform_specific['include_dirs'] += [os.path.join(java_home, 'include', 'darwin')]
-# else: # linux etc.
-#     platform_specific['libraries'] = ['dl', "jvm"]
-#     if found_jni:
-#         platform_specific['include_dirs'] += [os.path.join(java_home, 'include', 'linux')]
-#
-#
-#
-# platform_specific["include_dirs"] += [ os.path.join(java_home, 'linux'), os.path.join(java_home, 'lib'), os.path.join('src/hadoop-2.2.0/libhdfs'),
-#                                        "/usr/lib/jvm/java-7-oracle/jre/lib/amd64/server"]
-#
-# platform_specific["extra_compile_args"] = ['-Xlinker', '-rpath', '/usr/lib/jvm/java-7-oracle/jre/lib/amd64/server']
 def find_file(path, to_find):
     result = None
     for element in os.listdir(path):
