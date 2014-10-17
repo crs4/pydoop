@@ -1,0 +1,3 @@
+# DEFAULT config.py
+HDFS_CORE_IMPL='native'
+DEFAULT_HADOOP_HOME=''
