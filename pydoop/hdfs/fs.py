@@ -32,8 +32,6 @@ import pydoop
 import common
 from file import hdfs_file, local_file
 from pydoop.hdfs.core import core_hdfs_fs
-import pydoop.config as pydoop_config
-import core as hdfs_core
 
 
 class _FSStatus(object):
