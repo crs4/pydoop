@@ -6,6 +6,7 @@
 #include <hdfs.h>
 #include <unicodeobject.h>
 
+#define MAX_WD_BUFFSIZE 2048
 
 using namespace hdfs4python;
 using namespace std;
@@ -61,14 +62,6 @@ FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
     if(self->group!=NULL && strlen(self->group)==0)
         self->group = NULL;
 
-    FsClass_connect(self);
-
-    return 1;
-}
-
-
-PyObject* FsClass_connect(FsInfo* self)
-{
     if(self->user!=NULL && strlen(self->user)!=0 ) {
         self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
 
@@ -76,7 +69,7 @@ PyObject* FsClass_connect(FsInfo* self)
         self->_fs = hdfsConnect(self->host, self->port);
     }
 
-    Py_RETURN_NONE;
+    return 1;
 }
 
 
@@ -94,12 +87,18 @@ PyObject* FsClass_working_directory(FsInfo* self){
 
 PyObject* FsClass_get_working_directory(FsInfo* self){
 
-    char* buffer = new char[256];
-    size_t bufferSize = sizeof(buffer)*256;
+    size_t bufferSize = MAX_WD_BUFFSIZE;
+    void *buffer = PyMem_Malloc(bufferSize);
 
-    hdfsGetWorkingDirectory(self->_fs, buffer, bufferSize);
+    if(hdfsGetWorkingDirectory(self->_fs, (char*) buffer, bufferSize)==NULL){
+        PyErr_SetString(PyExc_RuntimeError, "Cannot get working directory.");
+        PyMem_Free(buffer);
+        Py_RETURN_NONE;
+    }
 
-    return Py_BuildValue("O", PyUnicode_FromString(buffer));
+    PyObject *result = Py_BuildValue("O", PyUnicode_FromString((char*) buffer));
+    PyMem_Free(buffer);
+    return result;
 }
 
 PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
@@ -296,21 +295,24 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 
     PyObject* obj_instance = PyObject_CallMethod(module, "CoreHdfsFile","OO", self->_fs, file); //, flags, buff_size, replication, blocksize, NULL);
 
-    FileInfo fileInfo = *((FileInfo*) obj_instance);
-    fileInfo.path = path;
-    fileInfo.flags = flags;
-    fileInfo.buff_size = buff_size;
-    fileInfo.blocksize = blocksize;
-    fileInfo.replication = replication;
-    fileInfo.readline_chunk_size;
+    FileInfo *fileInfo = ((FileInfo*) obj_instance);
+    fileInfo->path = path;
+    fileInfo->flags = flags;
+    fileInfo->buff_size = buff_size;
+    fileInfo->blocksize = blocksize;
+    fileInfo->replication = replication;
+    fileInfo->readline_chunk_size;
+
+    #ifdef HADOOP_LIBHDFS_V1
+        fileInfo->stream_type = (((flags & O_WRONLY) == 0) ? INPUT : OUTPUT);
+    #endif
 
     return obj_instance;
 }
 
 
 
-PyObject *
-FsClass_name(FsInfo* self)
+PyObject *FsClass_name(FsInfo* self)
 {
     static PyObject *format = NULL;
     PyObject *args, *result;
@@ -572,7 +574,12 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
+    #ifdef HADOOP_LIBHDFS_V1
+    int result = hdfsDelete(self->_fs, path);
+    #else
     int result = hdfsDelete(self->_fs, path, recursive);
+    #endif
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
