@@ -107,6 +107,18 @@ def write_config(filename="pydoop/config.py", hdfs_core_impl=hdfscore.NATIVE):
         f.write("DEFAULT_HADOOP_HOME='%s'\n" % HADOOP_HOME)
         f.write("HDFS_CORE_IMPL='%s'\n" % hdfs_core_impl)
 
+def generate_hdfs_config():
+    """
+    Generate config.h for libhdfs.
+
+    This is only relevant for recent Hadoop versions.
+    """
+    config_fn = os.path.join('src','hadoop-' + str(HADOOP_VERSION_INFO), "libhdfs", "config.h")
+    with open(config_fn, "w") as f:
+      f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
+      if have_better_tls():
+        f.write("#define HAVE_BETTER_TLS\n")
+      f.write("#endif\n")
 
 def get_git_commit():
     git_root = '.git'
@@ -133,18 +145,29 @@ def write_version(filename="pydoop/version.py"):
 
 
 def build_hdfscore_native_impl():
+
+    generate_hdfs_config()
+
     hdfs_ext_sources = []
-    hdfs_ext_sources += [os.path.join('src/hadoop-' + str(HADOOP_VERSION_INFO) + "/libhdfs", x)
-                         for x in ['hdfs.c', 'jni_helper.c', 'exception.c', 'native_mini_dfs.c']]
-    hdfs_ext_sources += [os.path.join('src/hdfs', x)
-                         for x in ['hdfs_utils.cc', 'hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc']]
+    if HADOOP_VERSION_INFO.tuple[0] <= 1:
+        hdfs_ext_sources += [os.path.join('src/hadoop-' + str(HADOOP_VERSION_INFO) + "/libhdfs", x)
+                             for x in ['hdfs.c', 'hdfsJniHelper.c']]
+    else:
+        hdfs_ext_sources += [os.path.join('src/hadoop-' + str(HADOOP_VERSION_INFO) + "/libhdfs", x)
+                             for x in ['hdfs.c', 'jni_helper.c', 'exception.c', 'native_mini_dfs.c']]
+
+    hdfs_ext_sources += [os.path.join('src/native_core_hdfs', x)
+                         for x in ['hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc', 'hdfs_utils.cc']]
+
+    libhdfs_macros = [("HADOOP_LIBHDFS_V1" if (HADOOP_VERSION_INFO.tuple[0] <= 1) else "HADOOP_LIBHDFS_V2", 1)]
 
     native_hdfs_core = Extension('native_core_hdfs',
-                                 include_dirs=jvm.get_include_dirs() + [os.path.join('src/hadoop-2.2.0/libhdfs')],
+                                 include_dirs=jvm.get_include_dirs() + [
+                                     os.path.join('src/hadoop-' + str(HADOOP_VERSION_INFO) + '/libhdfs')],
                                  libraries=jvm.get_libraries(),
                                  library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
                                  sources=hdfs_ext_sources,
-                                 define_macros=jvm.get_macros(),
+                                 define_macros=jvm.get_macros() + libhdfs_macros,
                                  extra_compile_args=['-Xlinker', '-rpath', JVM_LIB_PATH])
     extension_modules.append(native_hdfs_core)
 
@@ -418,6 +441,7 @@ class Clean(clean):
             "pydoop/config.py",
             "pydoop/version.py",
         ]
+        garbage_list.extend(glob.iglob("build"))
         garbage_list.extend(glob.iglob("src/*.patched"))
         garbage_list.extend(p for p in itertools.chain(
             glob.iglob('src/*'), glob.iglob('patches/*')
