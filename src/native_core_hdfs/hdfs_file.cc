@@ -17,14 +17,30 @@ FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->replication = 1;
         self->blocksize = 0;
         self->readline_chunk_size=16384;
+#ifdef HADOOP_LIBHDFS_V1
+        self->stream_type = 0;
+#endif
     }
-
     return (PyObject *)self;
 }
 
 
+#ifdef HADOOP_LIBHDFS_V1
+
+bool hdfsFileIsOpenForWrite(FileInfo *f){
+    return f->stream_type == OUTPUT;
+}
+
+
+bool hdfsFileIsOpenForRead(FileInfo *f){
+    return f->stream_type == INPUT;
+}
+
+#endif
+
 void FileClass_dealloc(FileInfo* self)
 {
+    self->file = NULL;
     self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -79,8 +95,11 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
     int size;
 
     static char *kwlist[] = {"size", NULL};
-
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForRead(self)){
+    #else
     if(!hdfsFileIsOpenForRead(self->file)){
+    #endif
         PyErr_SetString(PyExc_IOError, "File is not opened in READ ('r') mode");
         return NULL;
     }
@@ -103,7 +122,11 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
     static char *kwlist[] = {"chunk", NULL};
 
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForRead(self)){
+    #else
     if(!hdfsFileIsOpenForRead(self->file)){
+    #endif
         PyErr_SetString(PyExc_IOError, "File is not opened in READ ('r') mode");
         return NULL;
     }
@@ -125,7 +148,11 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
 
     static char *kwlist[] = {"position", "length", NULL};
 
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForRead(self)){
+    #else
     if(!hdfsFileIsOpenForRead(self->file)){
+    #endif
         PyErr_SetString(PyExc_IOError, "File is not opened in READ ('r') mode");
         return NULL;
     }
@@ -147,7 +174,11 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
     static char *kwlist[] = {"position", "chunk", NULL};
 
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForRead(self)){
+    #else
     if(!hdfsFileIsOpenForRead(self->file)){
+    #endif
         PyErr_SetString(PyExc_IOError, "File is not opened in READ ('r') mode");
         return NULL;
     }
@@ -190,7 +221,11 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
     int buffer_length;
     static char *kwlist[] = {"data", NULL};
 
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForWrite(self)){
+    #else
     if(!hdfsFileIsOpenForWrite(self->file)){
+    #endif
         PyErr_SetString(PyExc_IOError, "File is not opened in WRITE ('w') mode");
         return NULL;
     }
@@ -212,11 +247,14 @@ PyObject* FileClass_write_chunk(FileInfo* self, PyObject *args, PyObject *kwds)
     int buffer_length;
     static char *kwlist[] = {"chunk", NULL};
 
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForWrite(self)){
+    #else
     if(!hdfsFileIsOpenForWrite(self->file)){
+    #endif
         PyErr_SetString(PyExc_IOError, "File is not opened in WRITE ('w') mode");
         return NULL;
     }
-
 
     if (! PyArg_ParseTupleAndKeywords(args, kwds, "s#", kwlist,
             &(buffer), &buffer_length))

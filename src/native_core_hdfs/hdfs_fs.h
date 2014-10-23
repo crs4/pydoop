@@ -46,8 +46,6 @@ void FsClass_dealloc(FsInfo* self);
 
 int FsClass_init(FsInfo* self, PyObject* args, PyObject* kwds);
 
-PyObject* FsClass_connect(FsInfo* self);
-
 PyObject* FsClass_close(FsInfo* self);
 
 PyObject* FsClass_name(FsInfo* self);
@@ -106,10 +104,7 @@ static PyMethodDef FsClass_methods[] = {
         {"name", (PyCFunction) FsClass_name, METH_NOARGS,
                 "Return the name, combining the first and last name"
         },
-        {"connect", (PyCFunction) FsClass_connect, METH_NOARGS,
-                "Establish the connection to the HDFS"
-        },
-
+        
         {"working_directory", (PyCFunction) FsClass_working_directory, METH_NOARGS,
                 "Get the current working directory for the given filesystem."
         },

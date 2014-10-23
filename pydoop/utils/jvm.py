@@ -97,8 +97,8 @@ def check_jni_header(include_dirs=None):
 
     if not found_jni:
         import warnings
-        warnings.warn('Falling back to provided JNI headers, since your provided'
-                      ' JAVA_HOME %s does not provide jni.h' % java_home)
+        warnings.warn('Falling back to provided JNI headers: ' +
+                      'unable to find jni.h in your JAVA_HOME')
 
 
 

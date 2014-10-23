@@ -25,6 +25,11 @@ typedef struct {
     short replication;
     int blocksize;
     int readline_chunk_size;
+
+#ifdef HADOOP_LIBHDFS_V1
+    int stream_type;
+#endif
+
 } FileInfo;
 
 
@@ -36,9 +41,6 @@ void FileClass_dealloc(FileInfo* self);
 int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds);
 
 int FileClass_init_internal(FileInfo *self, hdfsFS fs, hdfsFile file);
-
-
-
 
 PyObject* FileClass_close(FileInfo* self);
 

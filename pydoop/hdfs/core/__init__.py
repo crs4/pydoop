@@ -1,8 +1,8 @@
 import logging
 
-
+logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("pydoop.hdfs.core")
-logger.setLevel(logging.INFO)
+
 
 NATIVE = "native"
 JPYPE_BRIDGED = "jpype-bridged"
@@ -35,7 +35,6 @@ def _init_(implementation_type=_supported_implementations[0]):
 
         elif implementation_type == _supported_implementations[1]:
             from pydoop.hdfs.core.bridged import get_implementation_module
-
             return get_implementation_module()
 
         raise ValueError("Implementation %s not supported!!!" % implementation_type)

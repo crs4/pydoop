@@ -10,7 +10,7 @@ pydoop/version.py
 src/_hdfs_*_main.cpp
 src/_pipes_*_main.cpp
 src/hadoop*.patched/
-
+src/hadoop*/libhdfs/config.h
 src/hdfs/hdfs.xcodeproj
 src/hdfs/hdfs/*
 

@@ -53,7 +53,6 @@ class TestConnection(unittest.TestCase):
           self.assertEqual(fs.user, expected_user)
 
   def cache(self):
-    print
     for (h1, p1), (h2, p2) in product(self.hp_cases, repeat=2):
       hdfs.hdfs._CACHE.clear()
       hdfs.hdfs._ALIASES = {"host": {}, "port": {}, "user": {}}  # FIXME
