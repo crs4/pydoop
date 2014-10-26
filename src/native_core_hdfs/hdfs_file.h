@@ -14,7 +14,6 @@
 #include "structmember.h"
 
 
-
 typedef struct {
     PyObject_HEAD
     hdfsFS fs;
@@ -45,8 +44,6 @@ int FileClass_init_internal(FileInfo *self, hdfsFS fs, hdfsFile file);
 PyObject* FileClass_close(FileInfo* self);
 
 PyObject* FileClass_mode(FileInfo* self);
-
-PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds);
 
@@ -88,59 +85,57 @@ static PyMemberDef FileClass_members[] = {
 static PyMethodDef FileClass_methods[] = {
 
         {"close", (PyCFunction)FileClass_close, METH_NOARGS,
-                "Return the name, combining the first and last name"
+                "FIXME"
         },
 
 
         {"available", (PyCFunction) FileClass_available, METH_NOARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"         
         },
 
 
         {"mode", (PyCFunction)FileClass_mode, METH_NOARGS,
-                "Return the name, combining the first and last name"
+                "FIXME"                  
         },
 
         {"get_mode", (PyCFunction) FileClass_get_mode, METH_NOARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-
-
-        {"write", (PyCFunction)FileClass_write, METH_KEYWORDS,
-                "Return the name, combining the first and last name"
+        {"write", (PyCFunction)FileClass_write, METH_VARARGS,
+                "FIXME"                           
         },
 
-        {"write_chunk", (PyCFunction)FileClass_write_chunk, METH_KEYWORDS,
-                "Return the name, combining the first and last name"
+        {"write_chunk", (PyCFunction)FileClass_write_chunk, METH_VARARGS,
+                "FIXME"                           
         },
 
         {"flush", (PyCFunction) FileClass_flush, METH_NOARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                    
         },
 
         {"read", (PyCFunction) FileClass_read, METH_VARARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                    
         },
 
         {"read_chunk", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                    
         },
 
         {"pread", (PyCFunction) FileClass_pread, METH_VARARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                    
         },
 
         {"pread_chunk", (PyCFunction) FileClass_pread_chunk, METH_VARARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                    
         },
 
         {"seek", (PyCFunction) FileClass_seek, METH_VARARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                   
         },
 
         {"tell", (PyCFunction) FileClass_tell, METH_NOARGS,
-                "Get the current working directory for the given filesystem."
+                "FIXME"                                   
         },
 
         {NULL}  /* Sentinel */

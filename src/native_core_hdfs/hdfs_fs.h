@@ -40,11 +40,11 @@ static PyMemberDef FsClass_members[] = {
 };
 
 
-PyObject* FsClass_new(PyTypeObject* type, PyObject* args, PyObject* kwds);
+PyObject* FsClass_new(PyTypeObject* type, PyObject *args, PyObject *kwds);
 
 void FsClass_dealloc(FsInfo* self);
 
-int FsClass_init(FsInfo* self, PyObject* args, PyObject* kwds);
+int FsClass_init(FsInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject* FsClass_close(FsInfo* self);
 
@@ -58,11 +58,11 @@ PyObject* FsClass_default_block_size(FsInfo* self);
 
 PyObject* FsClass_get_default_block_size(FsInfo* self);
 
-PyObject* FsClass_path_info(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_get_path_info(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_get_hosts(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject* FsClass_used(FsInfo* self);
 
@@ -72,31 +72,31 @@ PyObject* FsClass_capacity(FsInfo* self);
 
 PyObject* FsClass_get_capacity(FsInfo* self);
 
-PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_set_replication(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_set_working_directory(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_open_file(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_copy(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_exists(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_exists(FsInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject*FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_create_directory(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_create_directory(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_rename(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_rename(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_move(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_move(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_delete(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_delete(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_chmod(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_chmod(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_chown(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_chown(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_utime(FsInfo* self, PyObject* args, PyObject* kwds);
+PyObject* FsClass_utime(FsInfo* self, PyObject *args, PyObject *kwds);
 
 
 
@@ -113,11 +113,11 @@ static PyMethodDef FsClass_methods[] = {
                 "Get the current working directory for the given filesystem."
         },
 
-        {"path_info", (PyCFunction) FsClass_path_info, METH_KEYWORDS,
+        {"path_info", (PyCFunction) FsClass_path_info, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"get_path_info", (PyCFunction) FsClass_get_path_info, METH_KEYWORDS,
+        {"get_path_info", (PyCFunction) FsClass_get_path_info, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
@@ -129,15 +129,15 @@ static PyMethodDef FsClass_methods[] = {
                 "Get the current working directory for the given filesystem."
         },
 
-        {"get_hosts", (PyCFunction) FsClass_get_hosts, METH_KEYWORDS,
+        {"get_hosts", (PyCFunction) FsClass_get_hosts, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"capacity", (PyCFunction) FsClass_capacity, METH_KEYWORDS,
+        {"capacity", (PyCFunction) FsClass_capacity, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"get_capacity", (PyCFunction) FsClass_get_capacity, METH_KEYWORDS,
+        {"get_capacity", (PyCFunction) FsClass_get_capacity, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
@@ -150,15 +150,15 @@ static PyMethodDef FsClass_methods[] = {
         },
 
 
-        {"set_replication", (PyCFunction) FsClass_set_replication, METH_KEYWORDS,
+        {"set_replication", (PyCFunction) FsClass_set_replication, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"set_working_directory", (PyCFunction) FsClass_set_working_directory, METH_KEYWORDS,
+        {"set_working_directory", (PyCFunction) FsClass_set_working_directory, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"open_file", (PyCFunction) FsClass_open_file, METH_KEYWORDS,
+        {"open_file", (PyCFunction) FsClass_open_file, METH_VARARGS,
                 "Open a file"
         },
 
@@ -166,43 +166,43 @@ static PyMethodDef FsClass_methods[] = {
                 "Close the connection to the HDFS"
         },
 
-        {"copy", (PyCFunction) FsClass_copy, METH_KEYWORDS,
+        {"copy", (PyCFunction) FsClass_copy, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"create_directory", (PyCFunction) FsClass_create_directory, METH_KEYWORDS,
+        {"create_directory", (PyCFunction) FsClass_create_directory, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"list_directory", (PyCFunction) FsClass_list_directory, METH_KEYWORDS,
+        {"list_directory", (PyCFunction) FsClass_list_directory, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"move", (PyCFunction) FsClass_move, METH_KEYWORDS,
+        {"move", (PyCFunction) FsClass_move, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"rename", (PyCFunction) FsClass_rename, METH_KEYWORDS,
+        {"rename", (PyCFunction) FsClass_rename, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"delete", (PyCFunction) FsClass_delete, METH_KEYWORDS,
+        {"delete", (PyCFunction) FsClass_delete, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"exists", (PyCFunction) FsClass_exists, METH_KEYWORDS,
+        {"exists", (PyCFunction) FsClass_exists, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"chmod", (PyCFunction) FsClass_chmod, METH_KEYWORDS,
+        {"chmod", (PyCFunction) FsClass_chmod, METH_VARARGS,
             "Get the current working directory for the given filesystem."
         },
 
-        {"chown", (PyCFunction) FsClass_chown, METH_KEYWORDS,
+        {"chown", (PyCFunction) FsClass_chown, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
-        {"utime", (PyCFunction) FsClass_utime, METH_KEYWORDS,
+        {"utime", (PyCFunction) FsClass_utime, METH_VARARGS,
                 "Get the current working directory for the given filesystem."
         },
 
