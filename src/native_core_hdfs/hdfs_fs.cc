@@ -46,9 +46,7 @@ int
 FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
 {
 
-    static char *kwlist[] = {"host", "port", "user", "group", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "z|izz", kwlist,
+    if (! PyArg_ParseTuple(args, "z|izz", 
             &(self->host), &(self->port),
             &(self->user), &(self->group)))
         return -1;
@@ -110,9 +108,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
     PyObject* opath;
     char* path;
 
-    static char *kwlist[] = {"path", NULL};
-
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &opath))  {
+    if(!PyArg_ParseTuple(args, "O",  &opath))  {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the arguments.");
         return NULL;
     }
@@ -151,9 +147,7 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds){
     char* path;
     PyObject* opath;
 
-    static char *kwlist[] = {"path", "start", "length", NULL};
-
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "Oii", kwlist, &opath, &start, &length)) {
+    if(!PyArg_ParseTuple(args, "Oii", &opath, &start, &length)) {
         PyErr_SetString(PyExc_IOError, "Parse error.");
         return NULL;
     }
@@ -222,7 +216,7 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds){
     PyObject *opath;
 
 
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "Oh", kwlist, &opath, &replication)) {
+    if(!PyArg_ParseTuple(args, "Oh", &opath, &replication)) {
         PyErr_SetString(PyExc_IOError, "Parse error.");
         return NULL;
     }
@@ -243,10 +237,7 @@ PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* 
     char* path;
     PyObject *opath;
 
-    static char *kwlist[] = {"path", NULL};
-
-
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &opath)) {
+    if(!PyArg_ParseTuple(args, "O", &opath)) {
         PyErr_SetString(PyExc_IOError, "Parse error.");
         return NULL;
     }
@@ -264,16 +255,13 @@ PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* 
 
 PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
-    static char *kwlist[] = {"path", "flags", "buff_size", "replication", "blocksize", "readline_chunk_size", NULL};
-
-
     char* path;
     PyObject *opath;
     int flags, buff_size, blocksize, readline_chunk_size;
     short replication;
 
 
-    if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|iihii", kwlist,
+    if(!PyArg_ParseTuple(args, "O|iihii", 
             &opath, &flags, &buff_size, &replication, &blocksize, &readline_chunk_size)) {
         PyErr_SetString(PyExc_IOError, "Unable to parse the arguments.");
         return NULL;
@@ -351,9 +339,7 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
     char *from_path, *to_path;
     PyObject *o_from_path, *o_to_path;
 
-    static char *kwlist[] = {"from_path", "to_hdfs", "to_path", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "OOO", kwlist,
+    if (! PyArg_ParseTuple(args, "OOO", 
             &o_from_path, &to_hdfs, &o_to_path)) {
         cerr << "Parse error";
         return 0;
@@ -381,9 +367,7 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds){
     char *path;
     PyObject *opath;
 
-    static char *kwlist[] = {"path", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &opath)) {
+    if (! PyArg_ParseTuple(args, "O", &opath)) {
         cerr << "Parse error";
         return 0;
     }
@@ -405,10 +389,7 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     char *path;
     PyObject *opath;
 
-    static char *kwlist[] = {"path", NULL};
-
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist,
+    if (! PyArg_ParseTuple(args, "O", 
             &opath)) {
         cerr << "Parse error";
         return 0;
@@ -443,9 +424,7 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds){
     char *path;
     PyObject *opath;
 
-    static char *kwlist[] = {"path", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &opath)) {
+    if (! PyArg_ParseTuple(args, "O",  &opath)) {
         cerr << "Parse error";
         return 0;
     }
@@ -497,10 +476,7 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds){
     PyObject *o_from_path, *o_to_path;
 
 
-    static char *kwlist[] = {"from_path", "to_hdfs", "to_path", NULL};
-
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "OOO", kwlist,
+    if (! PyArg_ParseTuple(args, "OOO", 
             &o_from_path, &to_hdfs, &o_to_path)) {
         cerr << "Parse error";
         return 0;
@@ -528,9 +504,7 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds){
     char *from_path, *to_path;
     PyObject *o_from_path, *o_to_path;
 
-    static char *kwlist[] = {"from_path", "to_path", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "OO", kwlist,
+    if (! PyArg_ParseTuple(args, "OO", 
             &o_from_path, &o_to_path)) {
         cerr << "Parse error";
         return 0;
@@ -559,10 +533,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds){
     PyObject *opath;
     int recursive = 1;
 
-    static char *kwlist[] = {"path", "recursive", NULL};
-
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|i", kwlist,
+    if (! PyArg_ParseTuple(args, "O|i",
             &opath, &recursive)) {
         cerr << "Parse error";
         return 0;
@@ -590,11 +561,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds){
     PyObject *opath;
     short mode = 1;
 
-    static char *kwlist[] = {"path", "mode", NULL};
-
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oh", kwlist,
-            &opath, &mode)) {
+    if (! PyArg_ParseTuple(args, "Oh", &opath, &mode)) {
         cerr << "Parse error";
         return 0;
     }
@@ -615,9 +582,7 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds){
     char *path, *user, *group;
     PyObject *opath;
 
-    static char *kwlist[] = {"path", "user", "group", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "O|ss", kwlist,
+    if (! PyArg_ParseTuple(args, "O|ss",
             &opath, &user, &group)) {
         cerr << "Parse error";
         return 0;
@@ -653,9 +618,7 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds){
     PyObject *opath;
     tTime mtime, atime;
 
-    static char *kwlist[] = {"path", "mtime", "atime", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "Oii", kwlist,
+    if (! PyArg_ParseTuple(args, "Oii",
             &opath, &mtime, &atime)) {
         cerr << "Parse error";
         return 0;

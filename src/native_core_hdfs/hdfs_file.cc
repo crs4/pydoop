@@ -94,7 +94,6 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
     void* buffer;
     int size;
 
-    static char *kwlist[] = {"size", NULL};
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
     #else
@@ -104,7 +103,7 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "i", kwlist, &(size)))
+    if (! PyArg_ParseTuple(args, "i", &(size)))
         Py_RETURN_NONE;
 
     buffer = malloc(sizeof(tSize) * size);
@@ -120,8 +119,6 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
     int chunk_size;
     void* buffer;
 
-    static char *kwlist[] = {"chunk", NULL};
-
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
     #else
@@ -131,7 +128,7 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "s#", kwlist, &(buffer), &chunk_size))
+    if (! PyArg_ParseTuple(args, "s#",  &buffer, &chunk_size))
         Py_RETURN_NONE;
 
     tSize read = hdfsRead(self->fs, self->file, buffer, chunk_size);
@@ -146,8 +143,6 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
     tSize position;
     tSize length;
 
-    static char *kwlist[] = {"position", "length", NULL};
-
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
     #else
@@ -157,7 +152,7 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "ii", kwlist, &position, &length))
+    if (! PyArg_ParseTuple(args, "ii", &position, &length))
         Py_RETURN_NONE;
 
     void* buffer;
@@ -172,8 +167,6 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
     tSize position, chunk_size;
     void*buffer;
 
-    static char *kwlist[] = {"position", "chunk", NULL};
-
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
     #else
@@ -183,7 +176,7 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "is#", kwlist, &position, &buffer, &chunk_size))
+    if (! PyArg_ParseTuple(args, "is#", &position, &buffer, &chunk_size))
         Py_RETURN_NONE;
 
     tSize read = hdfsPread(self->fs, self->file, position, buffer, chunk_size);
@@ -195,9 +188,7 @@ PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
 
     tSize position;
 
-    static char *kwlist[] = {"position", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "i", kwlist, &position))
+    if (! PyArg_ParseTuple(args, "i", &position))
         Py_RETURN_NONE;
 
     int result = hdfsSeek(self->fs, self->file, position);
@@ -219,7 +210,6 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
 
     char* buffer;
     int buffer_length;
-    static char *kwlist[] = {"data", NULL};
 
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForWrite(self)){
@@ -230,8 +220,7 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "s#", kwlist,
-            &(buffer), &buffer_length))
+    if (! PyArg_ParseTuple(args, "s#",  &buffer, &buffer_length))
         Py_RETURN_NONE;
 
     int written = hdfsWrite(self->fs, self->file, buffer, buffer_length);
@@ -245,7 +234,6 @@ PyObject* FileClass_write_chunk(FileInfo* self, PyObject *args, PyObject *kwds)
 
     char* buffer;
     int buffer_length;
-    static char *kwlist[] = {"chunk", NULL};
 
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForWrite(self)){
@@ -256,14 +244,12 @@ PyObject* FileClass_write_chunk(FileInfo* self, PyObject *args, PyObject *kwds)
         return NULL;
     }
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "s#", kwlist,
-            &(buffer), &buffer_length))
+    if (! PyArg_ParseTuple(args, "s#", &buffer, &buffer_length))
         Py_RETURN_NONE;
 
     int written = hdfsWrite(self->fs, self->file, buffer, buffer_length);
     return Py_BuildValue("i", written);
 }
-
 
 
 PyObject* FileClass_flush(FileInfo *self){
