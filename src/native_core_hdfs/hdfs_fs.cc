@@ -125,7 +125,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    return Py_BuildValue("{s:O,s:s,s:s,s:i,s:i,s:h,s:s,s:h,s:i,s:O,s:i}",
+    return Py_BuildValue("{s:O,s:s,s:s,s:i,s:i,s:h,s:s,s:h,s:i,s:O,s:L}",
             "name", PyUnicode_FromString(info->mName),
             "kind", info->mKind == kObjectKindDirectory ? "directory" : "file",
             "group", info->mGroup,
@@ -194,7 +194,7 @@ PyObject* FsClass_default_block_size(FsInfo* self){
 PyObject* FsClass_get_default_block_size(FsInfo* self){
 
     tOffset size = hdfsGetDefaultBlockSize(self->_fs);
-    return Py_BuildValue("i", size);
+    return Py_BuildValue("L", size);
 }
 
 PyObject* FsClass_used(FsInfo* self){
@@ -204,7 +204,7 @@ PyObject* FsClass_used(FsInfo* self){
 PyObject* FsClass_get_used(FsInfo* self){
 
     tOffset size = hdfsGetUsed(self->_fs);
-    return Py_BuildValue("i", size);
+    return Py_BuildValue("L", size);
 }
 
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds){
@@ -409,14 +409,14 @@ void setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo){
     PyDict_SetItemString(dict, "name", PyUnicode_FromString(fileInfo->mName));
     PyDict_SetItemString(dict, "kind", PyString_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file"));
     PyDict_SetItemString(dict, "group", PyString_FromString(fileInfo->mGroup));
-    PyDict_SetItemString(dict, "last_mod", PyInt_FromSize_t(fileInfo->mLastMod));
-    PyDict_SetItemString(dict, "last_access", PyInt_FromSize_t(fileInfo->mLastAccess));
+    PyDict_SetItemString(dict, "last_mod", PyInt_FromLong(fileInfo->mLastMod));
+    PyDict_SetItemString(dict, "last_access", PyInt_FromLong(fileInfo->mLastAccess));
     PyDict_SetItemString(dict, "replication", PyInt_FromSize_t(fileInfo->mReplication));
     PyDict_SetItemString(dict, "owner", PyString_FromString(fileInfo->mOwner));
     PyDict_SetItemString(dict, "permissions", PyInt_FromSize_t(fileInfo->mPermissions));
-    PyDict_SetItemString(dict, "block_size", PyInt_FromSize_t(fileInfo->mBlockSize));
+    PyDict_SetItemString(dict, "block_size", PyInt_FromLong(fileInfo->mBlockSize));
     PyDict_SetItemString(dict, "path", PyUnicode_FromString(fileInfo->mName));
-    PyDict_SetItemString(dict, "size", PyInt_FromSize_t(fileInfo->mSize));
+    PyDict_SetItemString(dict, "size", PyLong_FromLongLong(fileInfo->mSize));
 }
 
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds){
@@ -613,15 +613,13 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds){
 
-
     char *path;
     PyObject *opath;
     tTime mtime, atime;
 
-    if (! PyArg_ParseTuple(args, "Oii",
+    if (! PyArg_ParseTuple(args, "Oll",
             &opath, &mtime, &atime)) {
         cerr << "Parse error";
-        return 0;
         return 0;
     }
 
