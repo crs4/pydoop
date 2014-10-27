@@ -106,11 +106,13 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
     if (! PyArg_ParseTuple(args, "i", &(size)))
         Py_RETURN_NONE;
 
-    buffer = malloc(sizeof(tSize) * size);
+    buffer = PyMem_Malloc(size);
 
     tSize read = hdfsRead(self->fs, self->file, buffer, size);
-
-    return Py_BuildValue("s#", buffer, read);
+    PyObject* res = Py_BuildValue("s#", buffer, read);
+    
+    PyMem_Free(buffer);
+    return res;
 }
 
 
@@ -140,7 +142,7 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    tSize position;
+    tOffset position;
     tSize length;
 
     #ifdef HADOOP_LIBHDFS_V1
@@ -152,20 +154,24 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTuple(args, "ii", &position, &length))
+    if (! PyArg_ParseTuple(args, "Li", &position, &length))
         Py_RETURN_NONE;
 
     void* buffer;
-    buffer = malloc(sizeof(tSize) * length);
+    buffer = PyMem_Malloc(length);
     tSize read = hdfsPread(self->fs, self->file, position, buffer, length);
-    return Py_BuildValue("s#", buffer, read);
+    PyObject* res = Py_BuildValue("s#", buffer, read);
+    PyMem_Free(buffer);
+    return res;
 }
 
 
 PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    tSize position, chunk_size;
-    void*buffer;
+    tOffset position;
+    tSize chunk_size;
+    void *buffer;
+
 
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
@@ -176,7 +182,7 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTuple(args, "is#", &position, &buffer, &chunk_size))
+    if (! PyArg_ParseTuple(args, "Ls#", &position, &buffer, &chunk_size))
         Py_RETURN_NONE;
 
     tSize read = hdfsPread(self->fs, self->file, position, buffer, chunk_size);
@@ -186,9 +192,9 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    tSize position;
+    tOffset position;
 
-    if (! PyArg_ParseTuple(args, "i", &position))
+    if (! PyArg_ParseTuple(args, "L", &position))
         Py_RETURN_NONE;
 
     int result = hdfsSeek(self->fs, self->file, position);
@@ -200,7 +206,7 @@ PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
 PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
     tOffset offset = hdfsTell(self->fs, self->file);
-    return Py_BuildValue("i", offset);
+    return Py_BuildValue("L", offset);
 }
 
 
