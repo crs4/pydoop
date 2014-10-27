@@ -133,22 +133,28 @@ class TestHDFS(TestCommon):
   # HDFS returns less than the number of requested bytes if the chunk
   # being read crosses the boundary between data blocks.
   def readline_block_boundary(self):
+    hd_info = pydoop.hadoop_version_info()
     kwargs = {}
-    if pydoop.hadoop_version_info().has_deprecated_bs():
+    if hd_info.has_deprecated_bs():
       bs = hdfs.fs.hdfs().default_block_size()
     else:
-      bs = u.get_bytes_per_checksum()
+      #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+      bs = 1048576
       kwargs['blocksize'] = bs
 
     line = "012345678\n"
+    offset = bs - (10*len(line) + 5)
     path = self._make_random_path()
     with self.fs.open_file(path, flags="w", **kwargs) as f:
       bytes_written = lines_written = 0
+      f.write('X' * offset)  
+      bytes_written = offset
       while bytes_written < bs + 1:
         f.write(line)
         lines_written += 1
         bytes_written += len(line)
     with self.fs.open_file(path) as f:
+      f.seek(offset)
       lines = []
       while 1:
         l = f.readline()
@@ -160,11 +166,13 @@ class TestHDFS(TestCommon):
       self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
 
   def get_hosts(self):
+    hd_info = pydoop.hadoop_version_info()
     kwargs = {}
-    if pydoop.hadoop_version_info().has_deprecated_bs():
+    if hd_info.has_deprecated_bs():
       blocksize = hdfs.fs.hdfs().default_block_size()
     else:
-      blocksize = 4096
+      #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+      blocksize = 1048576
       kwargs['blocksize'] = blocksize
     N = 4
     content = "x" * blocksize * N
@@ -183,16 +191,16 @@ def suite():
   tests = common_tests()
   if not hdfs.default_is_local():
     tests.extend([
-      'capacity',
-      'default_block_size',
-      'used',
-      'chown',
-      'utime',
-      'block_size',
-      'replication',
-      'set_replication',
-      'readline_block_boundary',
-      'get_hosts',
+        'capacity',
+        'default_block_size',
+        'used',
+        'chown',
+        'utime',
+        'block_size',
+        'replication',
+        'set_replication',
+        'readline_block_boundary',
+        'get_hosts',
       ])
   for t in tests:
     suite.addTest(TestHDFS(t))

@@ -383,14 +383,16 @@ class TestCommon(unittest.TestCase):
                 self.assertEqual(f.tell(), len(text) - 1)
 
     def block_boundary(self):
+        hd_info = pydoop.hadoop_version_info()
         path = self._make_random_path()
         CHUNK_SIZE = 10
         N = 2
         kwargs = {}
-        if pydoop.hadoop_version_info().has_deprecated_bs():
+        if hd_info.has_deprecated_bs():
             bs = hdfs.fs.hdfs().default_block_size()
         else:
-            bs = N * utils.get_bytes_per_checksum()
+            #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+            bs = max(1048576, N * utils.get_bytes_per_checksum())
             kwargs['blocksize'] = bs
         total_data_size = 2 * bs
         with self.fs.open_file(path, "w", **kwargs) as f:
