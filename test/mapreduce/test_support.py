@@ -120,7 +120,7 @@ class TestFramework(WDTestCase):
 
     def test_map_only(self):
         job_conf = {'this.is.not.used': '22'}
-        hs = HadoopSimulatorLocal(TFactory(), loglevel=logging.DEBUG)
+        hs = HadoopSimulatorLocal(TFactory(), loglevel=logging.CRITICAL)
         with open(self.fname, 'r') as fin:
             with self._mkf('map_only.out') as fout:
                 hs.run(fin, fout, job_conf, 0)
