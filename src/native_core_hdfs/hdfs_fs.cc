@@ -209,15 +209,12 @@ PyObject* FsClass_get_used(FsInfo* self) {
 
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    static char *kwlist[] = {"path", "replication", NULL};
-
     const char *path;
     short replication;
     PyObject *opath;
 
 
-    if(!PyArg_ParseTuple(args, "Oh", &opath, &replication)) {
-        PyErr_SetString(PyExc_IOError, "Parse error.");
+    if (!PyArg_ParseTuple(args, "Oh", &opath, &replication)) {
         return NULL;
     }
 
