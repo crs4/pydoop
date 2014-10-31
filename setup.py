@@ -38,6 +38,7 @@ import re
 import glob
 import shutil
 import itertools
+import subprocess
 
 from distutils.core import setup, Extension
 from distutils.command.build import build
@@ -130,17 +131,10 @@ def generate_hdfs_config():
 
 
 def get_git_commit():
-    git_root = '.git'
-    git_head = os.path.join(git_root, 'HEAD')
-    if os.path.exists(git_head):
-        with open(git_head) as g:
-            git_ref = os.path.join(
-                git_root, g.read().strip().split('ref: ')[1]
-            )
-            if os.path.exists(git_ref):
-                with open(git_ref) as r:
-                    return r.read().strip()
-    return None
+    try:
+        return subprocess.check_output(['git', 'rev-parse', 'HEAD']).rstrip('\n')
+    except subprocess.CalledProcessError:
+        return None
 
 
 def write_version(filename="pydoop/version.py"):
