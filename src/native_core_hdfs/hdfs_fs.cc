@@ -297,21 +297,9 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 
 PyObject *FsClass_name(FsInfo* self)
 {
-    static PyObject *format = NULL;
-    PyObject *args, *result;
-
-    if (format == NULL) {
-        format = PyString_FromString("%s %d %s");
-        if (format == NULL)
-            return NULL;
-    }
-
-    args = Py_BuildValue("sis", self->host, self->port, self->user);
-    if (args == NULL)
-        return NULL;
-
-    result = PyString_Format(format, args);
-    Py_DECREF(args);
+    PyObject* result = PyString_FromFormat("%s %d %s", self->host, self->port, self->user);
+    if (!result)
+        PyErr_SetString(PyExc_RuntimeError, "Failed to format class name");
 
     return result;
 }
