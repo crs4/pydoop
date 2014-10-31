@@ -64,7 +64,7 @@ public:
     }
     int code = _encoding_rules.at(cmd).first;
     std::string encoding = _encoding_rules.at(cmd).second;
-    if (encoding.size() != PyTuple_Size(args)) {
+    if (encoding.size() != (size_t)PyTuple_Size(args)) {
       PyErr_SetString(ProtocolCodecError, 
                       "Wrong number of arguments for the formatting rule.");
       return NULL;
