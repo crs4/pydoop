@@ -1,25 +1,35 @@
-from pydoop.mapreduce.api import RecordWriter, RecordReader
-import pydoop.hdfs as hdfs
-
-from avro.datafile import DataFileReader, DataFileWriter
-from avro.io import DatumReader, DatumWriter
+"""
+Avro tools.
+"""
 
 import logging
 logging.basicConfig()
-logger = logging.getLogger('avrolib')
-logger.setLevel(logging.DEBUG)
+LOGGER = logging.getLogger('avrolib')
+LOGGER.setLevel(logging.DEBUG)
+
+# FIXME: avro is not a dependency
+from avro.datafile import DataFileReader, DataFileWriter
+from avro.io import DatumReader, DatumWriter
+
+from pydoop.mapreduce.api import RecordWriter, RecordReader
+import pydoop.hdfs as hdfs
+
 
 class SeekableDataFileReader(DataFileReader):
+
     FORWARD_WINDOW_SIZE = 8192
+
     def align_after(self, offset):
-        "Search for a sync point after offset and align just after that."
+        """
+        Search for a sync point after offset and align just after that.
+        """
         f = self.reader
-        if offset <= 0: # FIXME what is a negative offset??
+        if offset <= 0:  # FIXME what is a negative offset??
             f.seek(0)
             self.block_count = 0
-            self._read_header() # FIXME we can't extimate how big it is...
+            self._read_header()  # FIXME we can't extimate how big it is...
             return
-        sm = self.sync_marker 
+        sm = self.sync_marker
         sml = len(sm)
         pos = offset
         while pos < self.file_length - sml:
@@ -32,20 +42,23 @@ class SeekableDataFileReader(DataFileReader):
                 return
             pos += len(data)
 
+
 #FIXME this is just an example with no error checking
 class AvroReader(RecordReader):
-    """Read an avro data file. 
-    It will read by record, all the data blocks that begin within the given isplit.
+    """
+    Avro data file reader.
+
+    Reads all data blocks that begin within the given input split.
     """
     def __init__(self, ctx):
-        self.logger = logger.getChild('AvroReader')
+        super(AvroReader, self).__init__(ctx)
+        self.logger = LOGGER.getChild('AvroReader')
         isplit = ctx.input_split
         self.region_start = isplit.offset
         self.region_end = isplit.offset + isplit.length
         self.reader = SeekableDataFileReader(hdfs.open(isplit.filename),
                                              DatumReader())
         self.reader.align_after(isplit.offset)
-
 
     def next(self):
         pos = self.reader.reader.tell()
@@ -55,19 +68,25 @@ class AvroReader(RecordReader):
         return pos, record
 
     def get_progress(self):
-        "Rough estimate of the progress done."
+        """
+        Give a rough estimate of the progress done.
+        """
         pos = self.reader.reader.tell()
         return min((pos - self.region_start)
                    / float(self.region_end - self.region_start),
                    1.0)
 
+
 #FIXME this is just an example with no error checking
 class AvroWriter(RecordWriter):
+
     schema = None
+
     def __init__(self, context):
-        self.logger = logger.getChild('AvroWriter')
+        super(AvroWriter, self).__init__(context)
+        self.logger = LOGGER.getChild('AvroWriter')
         job_conf = context.job_conf
-        part   = int(job_conf['mapreduce.task.partition'])
+        part = int(job_conf['mapreduce.task.partition'])
         outdir = job_conf["mapreduce.task.output.dir"]
         outfn = "%s/part-%05d" % (outdir, part)
         wh = hdfs.open(outfn, "w")
@@ -75,9 +94,11 @@ class AvroWriter(RecordWriter):
         self.writer = DataFileWriter(wh, DatumWriter(), self.schema)
         self.logger.debug('opened AvroWriter')
 
+    def emit(self, key, value):
+        pass  # FIXME
+
     def close(self):
         self.writer.close()
         # FIXME do we really need to explicitely close the filesystem?
         self.writer.writer.fs.close()
         self.logger.debug('closed AvroWriter')
-
