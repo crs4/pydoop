@@ -47,10 +47,10 @@ void FileClass_dealloc(FileInfo* self)
 
 int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds)
 {
-    if (! PyArg_ParseTuple(args, "OO",
-            &(self->fs), &(self->file)))
+    if (! PyArg_ParseTuple(args, "OO", &(self->fs), &(self->file))) {
         PyErr_SetString(PyExc_ValueError, "Error parsing arguments");
-        return NULL;
+        return -1;
+    }
 
     return 0;
 }
