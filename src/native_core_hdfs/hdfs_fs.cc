@@ -5,6 +5,7 @@
 #include <sstream>
 #include <hdfs.h>
 #include <unicodeobject.h>
+#include <errno.h>
 
 #define MAX_WD_BUFFSIZE 2048
 
@@ -447,7 +448,6 @@ int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
 }
 
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
-
     const char *path;
     PyObject *opath;
 
@@ -474,7 +474,10 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     if (pathInfo->mKind == kObjectKindDirectory) {
         pathList = hdfsListDirectory(self->_fs, path, &numEntries);
-        if (!pathList) goto error;
+        if (errno != 0) {
+            PyErr_SetString(PyExc_IOError, strerror(errno));
+            goto error;
+        }
     }
     else {
         numEntries = 1;
@@ -483,17 +486,23 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     result = PyList_New(numEntries);
-    if (!result) goto error;
+    if (!result) goto mem_error;
 
     for (Py_ssize_t i = 0; i < numEntries; i++) {
         PyObject* infoDict = PyDict_New();
-        if (!infoDict) goto error;
+        if (!infoDict) goto mem_error;
         PyList_SET_ITEM(result, i, infoDict);
-        if (setPathInfo(infoDict, &pathList[i]) < 0) goto error;
+        if (setPathInfo(infoDict, &pathList[i]) < 0) {
+            PyErr_SetString(PyExc_IOError, "Error getting file info");
+            goto error;
+        }
     }
 
     goto clean_up; // skip the error section
 
+mem_error:
+    PyErr_SetString(PyExc_MemoryError, "Error allocating structures");
+    // fall through
 error:
     // in case of error DECREF our result structure and return NULL
     if (result != NULL) {
@@ -510,7 +519,6 @@ clean_up:
 
     return result;
 }
-
 
 PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
