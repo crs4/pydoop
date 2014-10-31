@@ -284,7 +284,7 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     fileInfo->buff_size = buff_size;
     fileInfo->blocksize = blocksize;
     fileInfo->replication = replication;
-    fileInfo->readline_chunk_size;
+    fileInfo->readline_chunk_size = readline_chunk_size;
 
     #ifdef HADOOP_LIBHDFS_V1
         fileInfo->stream_type = (((flags & O_WRONLY) == 0) ? INPUT : OUTPUT);
