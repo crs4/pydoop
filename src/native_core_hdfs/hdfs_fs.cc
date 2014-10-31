@@ -386,18 +386,64 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
-void setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo){
-    PyDict_SetItemString(dict, "name", PyUnicode_FromString(fileInfo->mName));
-    PyDict_SetItemString(dict, "kind", PyString_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file"));
-    PyDict_SetItemString(dict, "group", PyString_FromString(fileInfo->mGroup));
-    PyDict_SetItemString(dict, "last_mod", PyInt_FromLong(fileInfo->mLastMod));
-    PyDict_SetItemString(dict, "last_access", PyInt_FromLong(fileInfo->mLastAccess));
-    PyDict_SetItemString(dict, "replication", PyInt_FromSize_t(fileInfo->mReplication));
-    PyDict_SetItemString(dict, "owner", PyString_FromString(fileInfo->mOwner));
-    PyDict_SetItemString(dict, "permissions", PyInt_FromSize_t(fileInfo->mPermissions));
-    PyDict_SetItemString(dict, "block_size", PyInt_FromLong(fileInfo->mBlockSize));
-    PyDict_SetItemString(dict, "path", PyUnicode_FromString(fileInfo->mName));
-    PyDict_SetItemString(dict, "size", PyLong_FromLongLong(fileInfo->mSize));
+/*
+ * Works on borrowed reference `dict`.
+ *
+ * \return 0 if successful
+ * \return -1 if there was a problem. In that case, dict may contain
+ * some values, but will be incomplete and should be discarded.
+ */
+int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
+
+    if (dict == NULL || fileInfo == NULL) return -1;
+    int error_code = 0;
+
+    const char*const keys[] = {
+        "name",
+        "kind",
+        "group",
+        "last_mod",
+        "last_access",
+        "replication",
+        "owner",
+        "permissions",
+        "block_size",
+        "path",
+        "size"
+    };
+
+    const int n_fields = sizeof(keys) / sizeof(keys[0]);
+
+    PyObject* values[n_fields];
+    int i = 0;
+    // Prepare the values.  We'll check for all errors in the "set" loop below
+    // The order of these values MUST match the order of the keys above
+    values[i++] = PyUnicode_FromString(fileInfo->mName);
+    values[i++] = PyString_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file");
+    values[i++] = PyString_FromString(fileInfo->mGroup);
+    values[i++] = PyInt_FromLong(fileInfo->mLastMod);
+    values[i++] = PyInt_FromLong(fileInfo->mLastAccess);
+    values[i++] = PyInt_FromSize_t(fileInfo->mReplication);
+    values[i++] = PyString_FromString(fileInfo->mOwner);
+    values[i++] = PyInt_FromSize_t(fileInfo->mPermissions);
+    values[i++] = PyInt_FromLong(fileInfo->mBlockSize);
+    values[i++] = PyUnicode_FromString(fileInfo->mName);
+    values[i++] = PyLong_FromLongLong(fileInfo->mSize);
+
+    for (i = 0; i < n_fields; ++i) {
+        if (values[i] == NULL || PyDict_SetItemString(dict, keys[i], values[i]) < 0) {
+            error_code = -1;
+            break;
+            // Don't DECREF here.  The error handling code goes through the entire array
+            // and thus we'd end up DECREFing some objects twice.
+        }
+    }
+
+    for (i = 0; i < n_fields; ++i) {
+        Py_XDECREF(values[i]); // some values may be null (if there was an error
+    }
+
+    return error_code;
 }
 
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
@@ -416,35 +462,51 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
         return NULL;
     }
 
-    int numEntries = 0;
-    PyObject *pathEntry, *subPathInfo;
-
     hdfsFileInfo* pathInfo = hdfsGetPathInfo(self->_fs, path);
     if (!pathInfo) {
         PyErr_SetString(PyExc_IOError, "The path doesn't exist");
         return NULL;
     }
 
-    PyObject *result;
-    if(pathInfo->mKind == kObjectKindDirectory) {
+    PyObject *result = NULL;
+    hdfsFileInfo* pathList = NULL;
+    int numEntries = 0;
 
-        hdfsFileInfo* pathList = hdfsListDirectory(self->_fs, path, &numEntries);
-
-        result = PyList_New(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-
-            subPathInfo = PyDict_New();
-            setPathInfo(subPathInfo, &pathList[i]);
-            PyList_SetItem(result, i, subPathInfo);
-        }
-
-    }else{
-
-        result = PyList_New(1);
-        PyObject *pathInfoAsDict = PyDict_New();
-        setPathInfo(pathInfoAsDict, pathInfo);
-        PyList_SetItem(result, 0, pathInfoAsDict);
+    if (pathInfo->mKind == kObjectKindDirectory) {
+        pathList = hdfsListDirectory(self->_fs, path, &numEntries);
+        if (!pathList) goto error;
     }
+    else {
+        numEntries = 1;
+        pathList = pathInfo;
+        pathInfo = NULL;
+    }
+
+    result = PyList_New(numEntries);
+    if (!result) goto error;
+
+    for (Py_ssize_t i = 0; i < numEntries; i++) {
+        PyObject* infoDict = PyDict_New();
+        if (!infoDict) goto error;
+        PyList_SET_ITEM(result, i, infoDict);
+        if (setPathInfo(infoDict, &pathList[i]) < 0) goto error;
+    }
+
+    goto clean_up; // skip the error section
+
+error:
+    // in case of error DECREF our result structure and return NULL
+    if (result != NULL) {
+        Py_XDECREF(result);
+        result = NULL;
+    }
+
+clean_up:
+    // all code paths go through the clean_up section
+    if (pathInfo != NULL)
+        hdfsFreeFileInfo(pathInfo, 1);
+    if (pathList != NULL)
+        hdfsFreeFileInfo(pathList, numEntries);
 
     return result;
 }
