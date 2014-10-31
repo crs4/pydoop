@@ -122,7 +122,8 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
         return NULL;
     }
 
-    return Py_BuildValue("{s:O,s:s,s:s,s:i,s:i,s:h,s:s,s:h,s:i,s:O,s:L}",
+    PyObject* retval =
+        Py_BuildValue("{s:O,s:s,s:s,s:i,s:i,s:h,s:s,s:h,s:i,s:O,s:L}",
             "name", PyUnicode_FromString(info->mName),
             "kind", info->mKind == kObjectKindDirectory ? "directory" : "file",
             "group", info->mGroup,
@@ -135,6 +136,9 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
             "path", PyUnicode_FromString(info->mName),
             "size", info->mSize
     );
+    hdfsFreeFileInfo(info, 1);
+
+    return retval;
 }
 
 
@@ -596,6 +600,8 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
         group = fileInfo->mGroup;
 
     int result = hdfsChown(self->_fs, path, user, group);
+    hdfsFreeFileInfo(fileInfo, 1);
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
