@@ -194,7 +194,7 @@ PyObject* FsClass_default_block_size(FsInfo* self) {
 
 PyObject* FsClass_get_default_block_size(FsInfo* self) {
     tOffset size = hdfsGetDefaultBlockSize(self->_fs);
-    return Py_BuildValue("L", size);
+    return PyLong_FromSsize_t(size);
 }
 
 PyObject* FsClass_used(FsInfo* self) {
@@ -204,7 +204,7 @@ PyObject* FsClass_used(FsInfo* self) {
 PyObject* FsClass_get_used(FsInfo* self) {
 
     tOffset size = hdfsGetUsed(self->_fs);
-    return Py_BuildValue("L", size);
+    return PyLong_FromSsize_t(size);
 }
 
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
@@ -327,7 +327,7 @@ PyObject *FsClass_capacity(FsInfo *self) {
 
 PyObject *FsClass_get_capacity(FsInfo *self) {
     tOffset capacity = hdfsGetCapacity(self->_fs);
-    return Py_BuildValue("i", capacity);
+    return PyLong_FromSsize_t(capacity);
 }
 
 
