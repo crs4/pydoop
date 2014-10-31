@@ -11,8 +11,6 @@
 using namespace hdfs4python;
 using namespace std;
 
-
-
 PyObject*
 FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -41,26 +39,25 @@ FsClass_dealloc(FsInfo* self)
 }
 
 
-
 int
 FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
 {
 
-    if (! PyArg_ParseTuple(args, "z|izz", 
+    if (! PyArg_ParseTuple(args, "z|izz",
             &(self->host), &(self->port),
             &(self->user), &(self->group)))
         return -1;
 
-    if(self->host!=NULL && strlen(self->host)==0)
+    if (self->host != NULL && strlen(self->host) == 0)
         self->host = NULL;
 
-    if(self->user!=NULL && strlen(self->user)==0)
+    if (self->user != NULL && strlen(self->user) == 0)
         self->user = NULL;
 
-    if(self->group!=NULL && strlen(self->group)==0)
+    if (self->group != NULL && strlen(self->group) == 0)
         self->group = NULL;
 
-    if(self->user!=NULL && strlen(self->user)!=0 ) {
+    if (self->user != NULL && strlen(self->user) != 0 ) {
         self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
 
     }else {
@@ -78,49 +75,49 @@ PyObject* FsClass_close(FsInfo* self)
 }
 
 
-PyObject* FsClass_working_directory(FsInfo* self){
+PyObject* FsClass_working_directory(FsInfo* self) {
     return FsClass_get_working_directory(self);
 }
 
 
-PyObject* FsClass_get_working_directory(FsInfo* self){
+PyObject* FsClass_get_working_directory(FsInfo* self) {
 
     size_t bufferSize = MAX_WD_BUFFSIZE;
     void *buffer = PyMem_Malloc(bufferSize);
 
-    if(hdfsGetWorkingDirectory(self->_fs, (char*) buffer, bufferSize)==NULL){
+    if (hdfsGetWorkingDirectory(self->_fs, (char*) buffer, bufferSize) == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Cannot get working directory.");
         PyMem_Free(buffer);
         Py_RETURN_NONE;
     }
 
-    PyObject *result = Py_BuildValue("O", PyUnicode_FromString((char*) buffer));
+    PyObject *result = Py_BuildValue("O", PyUnicode_FromString((const char*) buffer));
     PyMem_Free(buffer);
     return result;
 }
 
-PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
+PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
     return FsClass_get_path_info(self, args, kwds);
 }
 
-PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
+PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
     PyObject* opath;
-    char* path;
+    const char* path;
 
-    if(!PyArg_ParseTuple(args, "O",  &opath))  {
+    if (!PyArg_ParseTuple(args, "O",  &opath))  {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the arguments.");
         return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(path==NULL){
+    if (path == NULL) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
 
-    hdfsFileInfo* info = hdfsGetPathInfo(self->_fs, (char const *) path);
-    if(info==NULL){
+    hdfsFileInfo* info = hdfsGetPathInfo(self->_fs, (const char *) path);
+    if (info == NULL) {
         PyErr_SetString(PyExc_IOError, "File not found");
         return NULL;
     }
@@ -141,7 +138,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds){
+PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
     Py_ssize_t start, length;
     const char* path;
@@ -186,32 +183,31 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds){
     return result;
 }
 
-PyObject* FsClass_default_block_size(FsInfo* self){
+PyObject* FsClass_default_block_size(FsInfo* self) {
     return FsClass_get_default_block_size(self);
 }
 
 
-PyObject* FsClass_get_default_block_size(FsInfo* self){
-
+PyObject* FsClass_get_default_block_size(FsInfo* self) {
     tOffset size = hdfsGetDefaultBlockSize(self->_fs);
     return Py_BuildValue("L", size);
 }
 
-PyObject* FsClass_used(FsInfo* self){
+PyObject* FsClass_used(FsInfo* self) {
     return FsClass_get_used(self);
 }
 
-PyObject* FsClass_get_used(FsInfo* self){
+PyObject* FsClass_get_used(FsInfo* self) {
 
     tOffset size = hdfsGetUsed(self->_fs);
     return Py_BuildValue("L", size);
 }
 
-PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds){
+PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
 
     static char *kwlist[] = {"path", "replication", NULL};
 
-    char *path;
+    const char *path;
     short replication;
     PyObject *opath;
 
@@ -222,7 +218,7 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds){
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -232,18 +228,17 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds){
 }
 
 
-PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds){
+PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    char* path;
+    const char* path;
     PyObject *opath;
 
-    if(!PyArg_ParseTuple(args, "O", &opath)) {
-        PyErr_SetString(PyExc_IOError, "Parse error.");
+    if (!PyArg_ParseTuple(args, "O", &opath)) {
         return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -261,20 +256,19 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     short replication;
 
 
-    if(!PyArg_ParseTuple(args, "O|iihii", 
+    if (!PyArg_ParseTuple(args, "O|iihii",
             &opath, &flags, &buff_size, &replication, &blocksize, &readline_chunk_size)) {
-        PyErr_SetString(PyExc_IOError, "Unable to parse the arguments.");
         return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(path==NULL){
+    if (path == NULL) {
         PyErr_SetString(PyExc_IOError, "Unable to parse the argument.");
         return NULL;
     }
 
     hdfsFile file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
-    if(file==NULL){
+    if (file == NULL) {
         PyErr_SetString(PyExc_IOError, "File found");
         return NULL;
     }
@@ -322,12 +316,12 @@ PyObject *FsClass_name(FsInfo* self)
 }
 
 
-PyObject *FsClass_capacity(FsInfo *self){
+PyObject *FsClass_capacity(FsInfo *self) {
     return FsClass_get_capacity(self);
 }
 
 
-PyObject *FsClass_get_capacity(FsInfo *self){
+PyObject *FsClass_get_capacity(FsInfo *self) {
     tOffset capacity = hdfsGetCapacity(self->_fs);
     return Py_BuildValue("i", capacity);
 }
@@ -336,23 +330,22 @@ PyObject *FsClass_get_capacity(FsInfo *self){
 PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     FsInfo* to_hdfs;
-    char *from_path, *to_path;
+    const char *from_path, *to_path;
     PyObject *o_from_path, *o_to_path;
 
-    if (! PyArg_ParseTuple(args, "OOO", 
-            &o_from_path, &to_hdfs, &o_to_path)) {
+    if (! PyArg_ParseTuple(args, "OOO", &o_from_path, &to_hdfs, &o_to_path)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     from_path = Utils::getObjectAsUTF8String(o_from_path);
-    if(!from_path){
+    if (!from_path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
 
     to_path = Utils::getObjectAsUTF8String(o_to_path);
-    if(!o_to_path){
+    if (!o_to_path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -362,18 +355,18 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 }
 
 
-PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path;
+    const char *path;
     PyObject *opath;
 
     if (! PyArg_ParseTuple(args, "O", &opath)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -384,19 +377,18 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path;
+    const char *path;
     PyObject *opath;
 
-    if (! PyArg_ParseTuple(args, "O", 
-            &opath)) {
+    if (! PyArg_ParseTuple(args, "O", &opath)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -419,18 +411,18 @@ void setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo){
     PyDict_SetItemString(dict, "size", PyLong_FromLongLong(fileInfo->mSize));
 }
 
-PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path;
+    const char *path;
     PyObject *opath;
 
-    if (! PyArg_ParseTuple(args, "O",  &opath)) {
+    if (!PyArg_ParseTuple(args, "O",  &opath)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -439,7 +431,7 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds){
     PyObject *pathEntry, *subPathInfo;
 
     hdfsFileInfo* pathInfo = hdfsGetPathInfo(self->_fs, path);
-    if(!pathInfo){
+    if (!pathInfo) {
         PyErr_SetString(PyExc_IOError, "The path doesn't exist");
         return NULL;
     }
@@ -469,27 +461,26 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     FsInfo* to_hdfs;
-    char *from_path, *to_path;
+    const char *from_path, *to_path;
     PyObject *o_from_path, *o_to_path;
 
 
-    if (! PyArg_ParseTuple(args, "OOO", 
-            &o_from_path, &to_hdfs, &o_to_path)) {
+    if (! PyArg_ParseTuple(args, "OOO", &o_from_path, &to_hdfs, &o_to_path)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     from_path = Utils::getObjectAsUTF8String(o_from_path);
-    if(!from_path){
+    if (!from_path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
 
     to_path = Utils::getObjectAsUTF8String(o_to_path);
-    if(!o_to_path){
+    if (!o_to_path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -499,25 +490,24 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *from_path, *to_path;
+    const char *from_path, *to_path;
     PyObject *o_from_path, *o_to_path;
 
-    if (! PyArg_ParseTuple(args, "OO", 
-            &o_from_path, &o_to_path)) {
+    if (! PyArg_ParseTuple(args, "OO", &o_from_path, &o_to_path)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     from_path = Utils::getObjectAsUTF8String(o_from_path);
-    if(!from_path){
+    if (!from_path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
 
     to_path = Utils::getObjectAsUTF8String(o_to_path);
-    if(!o_to_path){
+    if (!o_to_path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -527,20 +517,19 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path;
+    const char *path;
     PyObject *opath;
     int recursive = 1;
 
-    if (! PyArg_ParseTuple(args, "O|i",
-            &opath, &recursive)) {
+    if (! PyArg_ParseTuple(args, "O|i", &opath, &recursive)) {
         cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -555,9 +544,9 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path;
+    const char *path;
     PyObject *opath;
     short mode = 1;
 
@@ -567,7 +556,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds){
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
@@ -577,9 +566,9 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path, *user, *group;
+    const char *path, *user, *group;
     PyObject *opath;
 
     if (! PyArg_ParseTuple(args, "O|ss",
@@ -589,21 +578,21 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds){
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
 
     hdfsFileInfo* fileInfo = hdfsGetPathInfo(self->_fs, path);
-    if(!fileInfo){
+    if (!fileInfo) {
         PyErr_SetString(PyExc_IOError, "File not found");
         return NULL;
     }
 
-    if(user==NULL || strlen(user)==0)
-        user = fileInfo->mOwner;
+    if (user == NULL || strlen(user) == 0)
+         user = fileInfo->mOwner;
 
-    if(group==NULL || strlen(group)==0)
+    if (group == NULL || strlen(group) == 0)
         group = fileInfo->mGroup;
 
     int result = hdfsChown(self->_fs, path, user, group);
@@ -611,9 +600,9 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds){
+PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    char *path;
+    const char *path;
     PyObject *opath;
     tTime mtime, atime;
 
@@ -624,11 +613,10 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds){
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
-
 
     int result = hdfsUtime(self->_fs, path, mtime, atime);
     return PyBool_FromLong(result >= 0 ? 1 : 0);
