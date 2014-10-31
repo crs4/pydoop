@@ -143,32 +143,30 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds){
 
 PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds){
 
-    int start, length;
-    char* path;
+    Py_ssize_t start, length;
+    const char* path;
     PyObject* opath;
 
-    if(!PyArg_ParseTuple(args, "Oii", &opath, &start, &length)) {
-        PyErr_SetString(PyExc_IOError, "Parse error.");
+    if (!PyArg_ParseTuple(args, "Onn", &opath, &start, &length)) {
         return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
-    if(!path){
+    if (!path) {
         PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
         return NULL;
     }
 
     char*** hosts = hdfsGetHosts(self->_fs, path, start, length);
-
-    PyObject* host;
-    int hostsPerLocation;
-    PyObject* locationHosts;
-
+    if (!hosts) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to get block information");
+        return NULL;
+    }
 
     int numberOfBlocks = 0;
     PyObject* result = PyList_New(0);
 
-    while(hosts[numberOfBlocks]){
+    while(hosts[numberOfBlocks]) {
 
         PyObject* hostsBlocks = PyList_New(0);
 
@@ -182,6 +180,8 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds){
         PyList_Append(result, hostsBlocks);
         numberOfBlocks++;
     }
+
+    hdfsFreeHosts(hosts);
 
     return result;
 }
