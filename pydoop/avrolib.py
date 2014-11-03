@@ -94,9 +94,6 @@ class AvroWriter(RecordWriter):
         self.writer = DataFileWriter(wh, DatumWriter(), self.schema)
         self.logger.debug('opened AvroWriter')
 
-    def emit(self, key, value):
-        pass  # FIXME
-
     def close(self):
         self.writer.close()
         # FIXME do we really need to explicitely close the filesystem?
