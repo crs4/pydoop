@@ -473,8 +473,9 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
     int numEntries = 0;
 
     if (pathInfo->mKind == kObjectKindDirectory) {
-        pathList = hdfsListDirectory(self->_fs, path, &numEntries);
-        if (errno != 0) {
+
+        pathList = hdfsListDirectory(self->_fs, pathInfo->mName, &numEntries);
+        if (!pathList && errno) {
             PyErr_SetString(PyExc_IOError, strerror(errno));
             goto error;
         }
