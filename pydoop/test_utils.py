@@ -34,7 +34,27 @@ _DEFAULT_BYTES_PER_CHECKSUM = 512
 HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
 HDFS_PORT = os.getenv("HDFS_PORT", _DEFAULT_HDFS_PORT)
 
-UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+def _get_special_chr():
+    # something outside the latin-1 range
+    # On some systems, depending on locale settings, we won't be able to use non-ASCII
+    # characters when interacting with system calls.  Since in such cases it doesn't
+    # really make sense to run these tests we set UNI_CHR to a regular ASCII character.
+    the_chr = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+    fd = None
+    fname = None
+
+    try:
+        fd, fname = tempfile.mkstemp(suffix=the_chr)
+    except UnicodeEncodeError:
+        print >> sys.stderr, "\nLocal file system doesn't support non-ASCII characters in filenames.  Falling back to ASCII-only tests"
+        the_chr = 's'
+    finally:
+        if fd:
+            os.close(fd)
+            os.remove(fname)
+    return the_chr
+
+UNI_CHR = _get_special_chr()
 
 try:
     HDFS_PORT = int(HDFS_PORT)

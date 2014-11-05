@@ -43,10 +43,6 @@ _FD_MAP = {
   "stderr": sys.stderr.fileno(),
   }
 
-# something outside the latin-1 range
-UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
-
-
 class FSTree(object):
   """
   >>> t = FSTree('root')
