@@ -221,7 +221,14 @@ class TestHDFS(unittest.TestCase):
     test_path = self.hdfs_paths[0]
     hdfs.dump(self.data, test_path)
     hdfs.chown(test_path, user=new_user)
-    self.assertEqual(hdfs.lsl(test_path)[0]['owner'], new_user)
+    path_info = hdfs.lsl(test_path)[0]
+    self.assertEqual(path_info['owner'], new_user)
+    prev_owner = path_info['owner']
+    prev_grp = path_info['group']
+    hdfs.chown(test_path, user='', group='') # owner and group should remain unchanged
+    path_info = hdfs.lsl(test_path)[0]
+    self.assertEqual(path_info['owner'], prev_owner)
+    self.assertEqual(path_info['group'], prev_grp)
 
   def rename(self):
     test_path = self.hdfs_paths[0]
@@ -241,6 +248,15 @@ class TestHDFS(unittest.TestCase):
     self.assertFalse(hdfs.path.exists(test_path))
     self.assertTrue(hdfs.path.exists(new_path))
 
+  def capacity(self):
+    fs = hdfs.hdfs("", 0)
+    self.assertRaises(RuntimeError, fs.capacity)
+    fs.close()
+    if not hdfs.default_is_local():
+      fs = hdfs.hdfs("default", 0)
+      cap = fs.capacity()
+      self.assertGreaterEqual(cap, 0)
+
 
 def suite():
   suite = unittest.TestSuite()
@@ -259,6 +275,7 @@ def suite():
   suite.addTest(TestHDFS("chown"))
   suite.addTest(TestHDFS("rename"))
   suite.addTest(TestHDFS("renames"))
+  suite.addTest(TestHDFS("capacity"))
   return suite
 
 
