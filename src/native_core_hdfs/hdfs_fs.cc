@@ -9,6 +9,8 @@
 
 #define MAX_WD_BUFFSIZE 2048
 
+#define str_empty(s) ((s) == NULL || strnlen((s), 1) == 0)
+
 using namespace hdfs4python;
 
 PyObject*
@@ -48,16 +50,16 @@ FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
             &(self->user), &(self->group)))
         return -1;
 
-    if (self->host != NULL && strlen(self->host) == 0)
+    if (str_empty(self->host))
         self->host = NULL;
 
-    if (self->user != NULL && strlen(self->user) == 0)
+    if (str_empty(self->user))
         self->user = NULL;
 
-    if (self->group != NULL && strlen(self->group) == 0)
+    if (str_empty(self->group))
         self->group = NULL;
 
-    if (self->user != NULL && strlen(self->user) != 0 ) {
+    if (self->user != NULL && strnlen(self->user, 1) != 0 ) {
         self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
 
     } else {
@@ -700,10 +702,10 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
 
-    if (user == NULL || strlen(user) == 0)
+    if (str_empty(user))
          user = fileInfo->mOwner;
 
-    if (group == NULL || strlen(group) == 0)
+    if (str_empty(group))
         group = fileInfo->mGroup;
 
     int result = hdfsChown(self->_fs, path, user, group);
