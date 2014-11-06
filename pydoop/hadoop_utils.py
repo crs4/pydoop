@@ -52,6 +52,41 @@ def get_arch():
   return "i386", "32"
 
 
+def _jars_from_dirs(dirs):
+  jars = []
+  for d in dirs:
+    jars.extend(glob.glob(os.path.join(d, '*.jar')))
+  return jars
+
+
+def _hadoop1_jars(hadoop_home):
+  return _jars_from_dirs([hadoop_home, os.path.join(hadoop_home, 'lib')])
+
+
+def _hadoop2_jars(hadoop_home):
+  jar_root = os.path.join(hadoop_home, 'share', 'hadoop')
+  return _jars_from_dirs([os.path.join(jar_root, d) for d in (
+    'hdfs',
+    'common',
+    os.path.join('common', 'lib'),
+    'mapreduce',
+    'yarn',  # hadoop >= 2.2.0
+  )])
+
+
+def _cdh4_jars(hadoop_home, is_yarn):
+  mr1_home = '%s-0.20-mapreduce' % hadoop_home
+  dirs = [mr1_home, os.path.join(hadoop_home, 'client')]
+  if is_yarn:
+    dirs.extend([hadoop_home, os.path.join(hadoop_home, 'lib')])
+  jars = _jars_from_dirs(dirs)
+  if not is_yarn:
+    jars.extend(glob.glob(os.path.join(
+      hadoop_home, 'hadoop-annotations*.jar'
+    )))
+  return jars
+
+
 class HadoopVersion(object):
   """
   Stores Hadoop version information.
@@ -448,43 +483,19 @@ class PathFinder(object):
       v = self.hadoop_version_info(hadoop_home)
       if not v.cdh or v.cdh < (4, 0, 0):
         if v.main >= (2, 0, 0):
-          self.__hadoop_classpath = ':'.join(
-            glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/hdfs', '*.jar')) +
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/', '*.jar')) +
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/common/lib', '*.jar')) + 
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/mapreduce', '*.jar')) +
-              glob.glob(os.path.join(hadoop_home, 'share/hadoop/yarn', '*.jar')) \
-              if v.main >= (2, 2, 0) else []
-            )
+          jars = _hadoop2_jars(hadoop_home)
         else:
-          self.__hadoop_classpath = ':'.join(
-            glob.glob(os.path.join(hadoop_home, 'hadoop*.jar')) +
-            glob.glob(os.path.join(hadoop_home, 'lib', '*.jar'))
-            )
-      else:  # FIXME: this does not cover from-tarball installation
-        mr1_home = "%s-0.20-mapreduce" % hadoop_home
-        if self.is_yarn():
-          self.__hadoop_classpath = ':'.join(
-            glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) + 
-            glob.glob(os.path.join(mr1_home, 'hadoop*.jar')) +
-            glob.glob(os.path.join(hadoop_home, "*.jar")) +
-            glob.glob(os.path.join(hadoop_home, "lib/*.jar"))
-          )
+          jars = _hadoop1_jars(hadoop_home)
+      else:  # CDH4. FIXME: this does not cover from-tarball installation
+        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
+          hadoop_home = self.CDH_HADOOP_HOME_PKG
+        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
+          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
         else:
-          if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
-            hadoop_home = self.CDH_HADOOP_HOME_PKG
-          elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
-            hadoop_home = self.CDH_HADOOP_HOME_PARCEL
-          else:
-            raise RuntimeError("unsupported CDH deployment")
-          
-          self.__hadoop_classpath = ':'.join(
-            glob.glob(os.path.join(hadoop_home, 'client', '*.jar')) +
-            glob.glob(os.path.join(hadoop_home, 'hadoop-annotations*.jar')) +
-            glob.glob(os.path.join(mr1_home, 'hadoop*.jar'))
-            )
-      self.__hadoop_classpath += ":" + self.hadoop_native() + ":" + self.hadoop_conf()
+          raise RuntimeError("unsupported CDH deployment")
+        jars = _cdh4_jars(hadoop_home, self.is_yarn())
+      jars.extend([self.hadoop_native(), self.hadoop_conf()])
+      self.__hadoop_classpath = ':'.join(jars)
     return self.__hadoop_classpath
 
   def find(self):
