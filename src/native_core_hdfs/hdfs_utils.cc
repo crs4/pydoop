@@ -5,9 +5,6 @@
 
 using namespace hdfs4python;
 
-using namespace std;
-
-
 char* Utils::getObjectAsUTF8String(PyObject *obj) {
 
     PyObject *utfString = obj;
@@ -56,7 +53,7 @@ bool Utils::parsePathStringArgAsUTF8(PyObject * args, PyObject *kwds, char* arg_
     kwlist[0] = arg_name;
 
     if (! PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &upath)) {
-        cerr << "\n ERRORE \n";
+        std::cerr << "\n ERRORE \n";
         return NULL;
     }
 

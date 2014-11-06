@@ -10,7 +10,6 @@
 #define MAX_WD_BUFFSIZE 2048
 
 using namespace hdfs4python;
-using namespace std;
 
 PyObject*
 FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
@@ -351,7 +350,6 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
     PyObject *opath;
 
     if (! PyArg_ParseTuple(args, "O", &opath)) {
-        cerr << "Parse error";
         return NULL;
     }
 
@@ -373,7 +371,6 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     PyObject *opath;
 
     if (! PyArg_ParseTuple(args, "O", &opath)) {
-        cerr << "Parse error";
         return NULL;
     }
 
@@ -452,7 +449,6 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
     PyObject *opath;
 
     if (!PyArg_ParseTuple(args, "O",  &opath)) {
-        cerr << "Parse error";
         return NULL;
     }
 
@@ -529,7 +525,6 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 
     if (! PyArg_ParseTuple(args, "OOO", &o_from_path, &to_hdfs, &o_to_path)) {
-        cerr << "Parse error";
         return NULL;
     }
 
@@ -556,7 +551,6 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
     PyObject *o_from_path, *o_to_path;
 
     if (! PyArg_ParseTuple(args, "OO", &o_from_path, &o_to_path)) {
-        cerr << "Parse error";
         return NULL;
     }
 
@@ -583,8 +577,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
     PyObject *opath;
     int recursive = 1;
 
-    if (! PyArg_ParseTuple(args, "O|i", &opath, &recursive)) {
-        cerr << "Parse error";
+    if (!PyArg_ParseTuple(args, "O|i", &opath, &recursive)) {
         return NULL;
     }
 
@@ -611,8 +604,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
     short mode = 1;
 
     if (! PyArg_ParseTuple(args, "Oh", &opath, &mode)) {
-        cerr << "Parse error";
-        return 0;
+        return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
@@ -631,9 +623,7 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
     const char *path, *user, *group;
     PyObject *opath;
 
-    if (! PyArg_ParseTuple(args, "O|ss",
-            &opath, &user, &group)) {
-        cerr << "Parse error";
+    if (! PyArg_ParseTuple(args, "O|ss", &opath, &user, &group)) {
         return 0;
     }
 
@@ -668,10 +658,8 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
     PyObject *opath;
     tTime mtime, atime;
 
-    if (! PyArg_ParseTuple(args, "Oll",
-            &opath, &mtime, &atime)) {
-        cerr << "Parse error";
-        return 0;
+    if (! PyArg_ParseTuple(args, "Oll", &opath, &mtime, &atime)) {
+        return NULL;
     }
 
     path = Utils::getObjectAsUTF8String(opath);
