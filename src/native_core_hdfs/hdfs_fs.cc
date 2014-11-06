@@ -60,11 +60,16 @@ FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
     if (self->user != NULL && strlen(self->user) != 0 ) {
         self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
 
-    }else {
+    } else {
         self->_fs = hdfsConnect(self->host, self->port);
     }
 
-    return 1;
+    if (!self->_fs) {
+        PyErr_SetFromErrno(PyExc_RuntimeError);
+        return -1;
+    }
+
+    return 0;
 }
 
 
@@ -82,17 +87,22 @@ PyObject* FsClass_working_directory(FsInfo* self) {
 
 PyObject* FsClass_get_working_directory(FsInfo* self) {
 
-    size_t bufferSize = MAX_WD_BUFFSIZE;
-    void *buffer = PyMem_Malloc(bufferSize);
+    const size_t bufferSize = MAX_WD_BUFFSIZE;
+    char *buffer = (char*)PyMem_Malloc(bufferSize);
+    if (!buffer)
+        return PyErr_NoMemory();
 
-    if (hdfsGetWorkingDirectory(self->_fs, (char*) buffer, bufferSize) == NULL) {
+    if (hdfsGetWorkingDirectory(self->_fs, buffer, bufferSize) == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Cannot get working directory.");
         PyMem_Free(buffer);
-        Py_RETURN_NONE;
+        return NULL;
     }
 
-    PyObject *result = Py_BuildValue("O", PyUnicode_FromString((const char*) buffer));
+    PyObject* result = PyUnicode_FromString(buffer);
     PyMem_Free(buffer);
+    if (!result)
+        return PyErr_NoMemory();
+
     return result;
 }
 
@@ -270,8 +280,7 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 
     hdfsFile file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
     if (file == NULL) {
-        PyErr_SetString(PyExc_IOError, "File found");
-        return NULL;
+        return PyErr_SetFromErrno(PyExc_IOError);
     }
 
     PyObject* module = PyImport_ImportModule("native_core_hdfs");
@@ -294,7 +303,6 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 }
 
 
-
 PyObject *FsClass_name(FsInfo* self)
 {
     PyObject* result = PyString_FromFormat("%s %d %s", self->host, self->port, self->user);
@@ -311,7 +319,22 @@ PyObject *FsClass_capacity(FsInfo *self) {
 
 
 PyObject *FsClass_get_capacity(FsInfo *self) {
+    errno = 0; // hdfsGetCapacity forgets to clear errno
     tOffset capacity = hdfsGetCapacity(self->_fs);
+    if (capacity < 0) {
+        // two error cases are contemplated by the code in hdfsGetCapacity:
+        // 1) exception from the Java method
+        // 2) FS instance is not a DistributedFileSystem.
+        // Here we copy their error textually.
+        if (errno)
+            PyErr_SetFromErrno(PyExc_IOError);
+        else {
+            PyErr_SetString(PyExc_RuntimeError,
+                    "hdfsGetCapacity works only on a DistributedFileSystem");
+        }
+
+        return NULL;
+    }
     return PyLong_FromSsize_t(capacity);
 }
 
@@ -323,24 +346,26 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
     PyObject *o_from_path, *o_to_path;
 
     if (! PyArg_ParseTuple(args, "OOO", &o_from_path, &to_hdfs, &o_to_path)) {
-        cerr << "Parse error";
         return NULL;
     }
 
     from_path = Utils::getObjectAsUTF8String(o_from_path);
     if (!from_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+        PyErr_SetString(PyExc_ValueError, "Unable to parse source path.");
         return NULL;
     }
 
     to_path = Utils::getObjectAsUTF8String(o_to_path);
     if (!o_to_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+        PyErr_SetString(PyExc_ValueError, "Unable to parse destination path.");
         return NULL;
     }
 
     int result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
-    return Py_BuildValue("i", result);
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_RuntimeError);
+
+    return PyLong_FromLong(result);
 }
 
 
@@ -360,6 +385,14 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     int result = hdfsExists(self->_fs, path);
+
+    // LP: hdfsExists (in some cases?) sets errno to ENOENT "[Errno 2] No such
+    // file or directory" when the path doesn't exist or EEXIST in other cases.
+    // I don't know why.  Since that's what we're trying to test, I'll skip
+    // checking errno here.  The consequence is that when we return false it
+    // may be because of an error and not because the path doesn't exist.
+    //
+    // if (result < 0 && errno) return PyErr_SetFromErrno(PyExc_IOError);
 
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
@@ -381,6 +414,9 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     }
 
     int result = hdfsCreateDirectory(self->_fs, path);
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
@@ -458,10 +494,10 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
         return NULL;
     }
 
+    errno = 0;
     hdfsFileInfo* pathInfo = hdfsGetPathInfo(self->_fs, path);
     if (!pathInfo) {
-        PyErr_SetString(PyExc_IOError, "The path doesn't exist");
-        return NULL;
+        return PyErr_SetFromErrno(PyExc_IOError);
     }
 
     PyObject *result = NULL;
@@ -470,9 +506,12 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     if (pathInfo->mKind == kObjectKindDirectory) {
 
+        errno = 0;
         pathList = hdfsListDirectory(self->_fs, pathInfo->mName, &numEntries);
+        // hdfsListDirectory returns NULL when a directory is empty, so to determine
+        // whether there's been an error we also need to check errno
         if (!pathList && errno) {
-            PyErr_SetString(PyExc_IOError, strerror(errno));
+            PyErr_SetFromErrno(PyExc_IOError);
             goto error;
         }
     }
@@ -530,17 +569,20 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     from_path = Utils::getObjectAsUTF8String(o_from_path);
     if (!from_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+        PyErr_SetString(PyExc_ValueError, "Unable to parse the source path.");
         return NULL;
     }
 
     to_path = Utils::getObjectAsUTF8String(o_to_path);
     if (!o_to_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+        PyErr_SetString(PyExc_ValueError, "Unable to parse the destination path.");
         return NULL;
     }
 
     int result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
@@ -556,17 +598,20 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     from_path = Utils::getObjectAsUTF8String(o_from_path);
     if (!from_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+        PyErr_SetString(PyExc_ValueError, "Unable to parse the source path.");
         return NULL;
     }
 
     to_path = Utils::getObjectAsUTF8String(o_to_path);
     if (!o_to_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+        PyErr_SetString(PyExc_ValueError, "Unable to parse the destination path.");
         return NULL;
     }
 
     int result = hdfsRename(self->_fs, from_path, to_path);
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
@@ -593,6 +638,9 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
     int result = hdfsDelete(self->_fs, path, recursive);
     #endif
 
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
@@ -613,7 +661,21 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
         return NULL;
     }
 
+    // hdfsChmod doesn't always set errno in case of error.  We clear it
+    // here so that after the call we'll be sure we're not looking at an old value
+    errno = 0;
     int result = hdfsChmod(self->_fs, path, mode);
+    if (result < 0) {
+        // hdfsChmod
+        if (errno)
+            return PyErr_SetFromErrno(PyExc_IOError);
+        else {
+            PyErr_SetString(PyExc_IOError, "Unknown error while changing permissions");
+            return NULL;
+        }
+    }
+    // else
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
@@ -635,8 +697,7 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     hdfsFileInfo* fileInfo = hdfsGetPathInfo(self->_fs, path);
     if (!fileInfo) {
-        PyErr_SetString(PyExc_IOError, "File not found");
-        return NULL;
+        return PyErr_SetFromErrno(PyExc_IOError);
     }
 
     if (user == NULL || strlen(user) == 0)
@@ -647,6 +708,9 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     int result = hdfsChown(self->_fs, path, user, group);
     hdfsFreeFileInfo(fileInfo, 1);
+
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
 
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
@@ -669,6 +733,9 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     int result = hdfsUtime(self->_fs, path, mtime, atime);
+    if (result < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
     return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
