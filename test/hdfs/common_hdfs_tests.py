@@ -436,6 +436,14 @@ class TestCommon(unittest.TestCase):
         nonexistent_walk = self.fs.walk(self._make_random_path())
         self.assertRaises(IOError, nonexistent_walk.next)
 
+    def exists(self):
+        self.assertFalse(self.fs.exists('some_file'))
+        self.assertFalse(self.fs.exists('some_file/other_file'))
+        dname = self._make_random_dir()
+        self.assertTrue(self.fs.exists(dname))
+        fname = self._make_random_file()
+        self.assertTrue(self.fs.exists(fname))
+
     def __check_path_info(self, info, **expected_values):
         keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
                 'permissions', 'block_size', 'last_access', 'size')
@@ -475,4 +483,5 @@ def common_tests():
         'seek',
         'block_boundary',
         'walk',
+        'exists',
         ]
