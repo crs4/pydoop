@@ -22,7 +22,11 @@
 A quick and easy to use interface for running simple MapReduce jobs.
 """
 
-import os, sys, warnings, logging, argparse
+import os
+import sys
+import warnings
+import argparse
+import logging
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -168,242 +172,262 @@ if __name__ == '__main__':
 """
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
-DEFAULT_OUTPUT_FORMAT = "org.apache.hadoop.mapred.TextOutputFormat"
+DEFAULT_OUTPUT_FORMAT = 'org.apache.hadoop.mapred.TextOutputFormat'
 NOSEP_OUTPUT_FORMAT = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
 
 
 def kv_pair(s):
-  return s.split("=", 1)
+    return s.split("=", 1)
 
 
 class PydoopScript(object):
 
-  DESCRIPTION = "Easy MapReduce scripting with Pydoop"
+    DESCRIPTION = "Easy MapReduce scripting with Pydoop"
 
-  def __init__(self):
-    self.logger = logging.getLogger("PydoopScript")
-    self.properties = {
-      'hadoop.pipes.java.recordreader': 'true',
-      'hadoop.pipes.java.recordwriter': 'true',
-      'mapred.cache.files': '',
-      'mapred.create.symlink': 'yes',
-      'mapred.compress.map.output': 'true',
-      'bl.libhdfs.opts': '-Xmx48m'
-      }
-    self.args = None
-    self.remote_wd = None
-    self.remote_module = None
-    self.remote_module_bn = None
-    self.remote_exe = None
+    def __init__(self):
+        self.logger = logging.getLogger("PydoopScript")
+        self.properties = {
+            'hadoop.pipes.java.recordreader': 'true',
+            'hadoop.pipes.java.recordwriter': 'true',
+            'mapred.cache.files': '',
+            'mapred.create.symlink': 'yes',
+            'mapred.compress.map.output': 'true',
+            'bl.libhdfs.opts': '-Xmx48m'
+        }
+        self.args = None
+        self.remote_wd = None
+        self.remote_module = None
+        self.remote_module_bn = None
+        self.remote_exe = None
 
-  def set_args(self, args):
-    """
-    Configure the pydoop script run, based on the arguments provided.
-    """
-    self.logger.setLevel(getattr(logging, args.log_level))
-    parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
-    self.remote_wd = hdfs.path.join(
-      parent, utils.make_random_str(prefix="pydoop_script_")
-      )
-    self.remote_exe = hdfs.path.join(
-      self.remote_wd, utils.make_random_str(prefix="exe")
-      )
-    module_bn = os.path.basename(args.module)
-    _, ext = module_ext = os.path.splitext(module_bn)
-    # If the module doesn't have an extension, assume it should be .py
-    # This could happen, for instance, if someone loads an executable module
-    # as a script.  We can't blindly add .py though since the module may be a .pyc
-    if not ext:
-      ext = '.py'
-    self.remote_module_bn = utils.make_random_str(
-      prefix="pydoop_script_", postfix=ext
-      )
-    self.remote_module = hdfs.path.join(self.remote_wd, self.remote_module_bn)
-    dist_cache_parameter = "%s#%s" % (self.remote_module, self.remote_module_bn)
-    self.properties['mapred.job.name'] = module_bn
-    self.properties.update(dict(args.D or []))
-    self.properties['mapred.reduce.tasks'] = args.num_reducers
-    self.properties['mapred.textoutputformat.separator'] = args.kv_separator
-    if self.properties['mapred.cache.files']:
-      self.properties['mapred.cache.files'] += ','
-    self.properties['mapred.cache.files'] += dist_cache_parameter
-    self.args = args
-
-  def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
-    """
-    Check directories above the remote module and issue a warning if
-    they are not traversable by all users.
-
-    The reasoning behind this is mainly aimed at set-ups with a centralized
-    Hadoop cluster, accessed by all users, and where the Hadoop task tracker
-    user is not a superuser; an example may be if you're running a shared
-    Hadoop without HDFS (using only a POSIX shared file system).  The task
-    tracker correctly changes user to the job requester's user for most
-    operations, but not when initializing the distributed cache, so jobs who
-    want to place files not accessible by the Hadoop user into dist cache fail.
-    """
-    host, port, path = hdfs.path.split(abs_remote_path)
-    if host == '' and port == 0: # local file system
-      host_port = "file:///"
-    else:
-      # FIXME: this won't work with any scheme other than hdfs:// (e.g., s3)
-      host_port = "hdfs://%s:%s/" % (host, port)
-    path_pieces = path.strip('/').split(os.path.sep)
-    fs = hdfs.hdfs(host, port)
-    for i in xrange(0, len(path_pieces)):
-      part = os.path.join(host_port, os.path.sep.join(path_pieces[0:i+1]))
-      permissions = fs.get_path_info(part)['permissions']
-      if permissions & 0111 != 0111:
-        self.logger.warning(
-          "the remote module %s may not be readable\n" +
-          "by the task tracker when initializing the distributed cache.\n" +
-          "Permissions on path %s: %s", abs_remote_path, part, oct(permissions))
-        break
-
-  def __generate_pipes_code(self):
-    lines = []
-    ld_path = os.environ.get('LD_LIBRARY_PATH', None)
-    pypath = os.environ.get('PYTHONPATH', '')
-    lines.append("#!/bin/bash")
-    lines.append('""":"')
-
-    if self.args.no_override_env:
-      lines.append('exec "%s" -u "$0" "$@"' % 'python')
-    else:
-      if ld_path:
-        lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
-      if pypath:
-        lines.append('export PYTHONPATH="%s"' % pypath)
-      if ("mapreduce.admin.user.home.dir" not in self.properties and
-          'HOME' in os.environ and
-          not self.args.no_override_home):
-        lines.append('export HOME="%s"' % os.environ['HOME'])
-      lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
-    lines.append('":"""')
-    template_args = {
-      'module': os.path.splitext(self.remote_module_bn)[0],
-      'map_fn': self.args.map_fn,
-      'reduce_fn': self.args.reduce_fn,
-      'combiner_fn': self.args.combiner_fn,
-      'combiner_wp' : ('PydoopScriptCombiner' if self.args.combiner_fn
-                       else 'None')
-      }
-    lines.append(PIPES_TEMPLATE % template_args)
-    return os.linesep.join(lines) + os.linesep
-
-  def __validate(self):
-    if not hdfs.path.exists(self.args.input):
-      raise RuntimeError("%r does not exist" % (self.args.input,))
-    if hdfs.path.exists(self.args.output):
-      raise RuntimeError("%r already exists" % (self.args.output,))
-
-  def __clean_wd(self):
-    if self.remote_wd:
-      try:
-        self.logger.debug(
-          "Removing temporary working directory %s", self.remote_wd
-          )
-        hdfs.rmr(self.remote_wd)
-      except IOError:
-        pass
-
-  def __setup_remote_paths(self):
-    """
-    Actually create the working directory and copy the module into it.
-
-    Note: the script has to be readable by Hadoop; though this may not
-    generally be a problem on HDFS, where the Hadoop user is usually
-    the superuser, things may be different if our working directory is
-    on a shared POSIX filesystem.  Therefore, we make the directory
-    and the script accessible by all.
-    """
-    pipes_code = self.__generate_pipes_code()
-    hdfs.mkdir(self.remote_wd)
-    hdfs.chmod(self.remote_wd, "a+rx")
-    hdfs.dump(pipes_code, self.remote_exe)
-    hdfs.chmod(self.remote_exe, "a+rx")
-    hdfs.put(self.args.module, self.remote_module)
-    hdfs.chmod(self.remote_module, "a+r")
-    self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
-    self.logger.debug("Created remote paths:")
-    self.logger.debug(self.remote_wd)
-    self.logger.debug(self.remote_exe)
-    self.logger.debug(self.remote_module)
-
-  def run(self):
-    if self.args is None:
-      raise RuntimeError("cannot run without args, please call set_args")
-    self.__validate()
-    pipes_args = []
-    output_format = self.properties.get(
-      'mapred.output.format.class', DEFAULT_OUTPUT_FORMAT
-      )
-    if output_format == DEFAULT_OUTPUT_FORMAT:
-      if self.properties['mapred.textoutputformat.separator'] == '':
-        pydoop_jar = pydoop.jar_path()
-        if pydoop_jar is not None:
-          self.properties['mapred.output.format.class'] = NOSEP_OUTPUT_FORMAT
-          pipes_args.extend(['-libjars', pydoop_jar])
-        else:
-          warnings.warn(
-            "Can't find pydoop.jar, output will probably be tab-separated"
-            )
-    try:
-      self.__setup_remote_paths()
-      hadut.run_pipes(self.remote_exe, self.args.input, self.args.output,
-        more_args=pipes_args, properties=self.properties, logger=self.logger
+    def set_args(self, args):
+        """
+        Configure the pydoop script run, based on the arguments provided.
+        """
+        self.logger.setLevel(getattr(logging, args.log_level))
+        parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
+        self.remote_wd = hdfs.path.join(
+            parent, utils.make_random_str(prefix="pydoop_script_")
         )
-      self.logger.info("Done")
-    finally:
-      self.__clean_wd()
+        self.remote_exe = hdfs.path.join(
+            self.remote_wd, utils.make_random_str(prefix="exe")
+        )
+        module_bn = os.path.basename(args.module)
+        _, ext = os.path.splitext(module_bn)
+        # If the module doesn't have an extension, assume it should be
+        # '.py'.  This could happen, for instance, if someone loads an
+        # executable module as a script.  We can't blindly add '.py'
+        # though since the module may be a '.pyc'
+        if not ext:
+            ext = '.py'
+        self.remote_module_bn = utils.make_random_str(
+            prefix="pydoop_script_", postfix=ext
+        )
+        self.remote_module = hdfs.path.join(
+            self.remote_wd, self.remote_module_bn
+        )
+        dist_cache_parameter = "%s#%s" % (
+            self.remote_module, self.remote_module_bn
+        )
+        self.properties['mapred.job.name'] = module_bn
+        self.properties.update(dict(args.D or []))
+        self.properties['mapred.reduce.tasks'] = args.num_reducers
+        self.properties[
+            'mapred.textoutputformat.separator'
+        ] = args.kv_separator
+        if self.properties['mapred.cache.files']:
+            self.properties['mapred.cache.files'] += ','
+        self.properties['mapred.cache.files'] += dist_cache_parameter
+        self.args = args
+
+    def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
+        """
+        Check directories above the remote module and issue a warning if
+        they are not traversable by all users.
+
+        The reasoning behind this is mainly aimed at set-ups with a
+        centralized Hadoop cluster, accessed by all users, and where
+        the Hadoop task tracker user is not a superuser; an example
+        may be if you're running a shared Hadoop without HDFS (using
+        only a POSIX shared file system).  The task tracker correctly
+        changes user to the job requester's user for most operations,
+        but not when initializing the distributed cache, so jobs who
+        want to place files not accessible by the Hadoop user into
+        dist cache fail.
+        """
+        host, port, path = hdfs.path.split(abs_remote_path)
+        if host == '' and port == 0:  # local file system
+            host_port = "file:///"
+        else:
+            # FIXME: this won't work with any scheme other than
+            # 'hdfs://' (e.g., s3)
+            host_port = "hdfs://%s:%s/" % (host, port)
+        path_pieces = path.strip('/').split(os.path.sep)
+        fs = hdfs.hdfs(host, port)
+        for i in xrange(0, len(path_pieces)):
+            part = os.path.join(
+                host_port, os.path.sep.join(path_pieces[0:i+1])
+            )
+            permissions = fs.get_path_info(part)['permissions']
+            if permissions & 0111 != 0111:
+                self.logger.warning(
+                    ("remote module %s may not be readable by the task "
+                     "tracker when initializing the distributed cache.  "
+                     "Permissions on %s: %s"),
+                    abs_remote_path, part, oct(permissions)
+                )
+                break
+
+    def __generate_pipes_code(self):
+        lines = []
+        ld_path = os.environ.get('LD_LIBRARY_PATH', None)
+        pypath = os.environ.get('PYTHONPATH', '')
+        lines.append("#!/bin/bash")
+        lines.append('""":"')
+        if self.args.no_override_env:
+            lines.append('exec "%s" -u "$0" "$@"' % 'python')
+        else:
+            if ld_path:
+                lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
+            if pypath:
+                lines.append('export PYTHONPATH="%s"' % pypath)
+            if ("mapreduce.admin.user.home.dir" not in self.properties and
+                'HOME' in os.environ and
+                not self.args.no_override_home):
+                lines.append('export HOME="%s"' % os.environ['HOME'])
+            lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
+        lines.append('":"""')
+        template_args = {
+            'module': os.path.splitext(self.remote_module_bn)[0],
+            'map_fn': self.args.map_fn,
+            'reduce_fn': self.args.reduce_fn,
+            'combiner_fn': self.args.combiner_fn,
+            'combiner_wp': ('PydoopScriptCombiner' if self.args.combiner_fn
+                            else 'None')
+        }
+        lines.append(PIPES_TEMPLATE % template_args)
+        return os.linesep.join(lines) + os.linesep
+
+    def __validate(self):
+        if not hdfs.path.exists(self.args.input):
+            raise RuntimeError("%r does not exist" % (self.args.input,))
+        if hdfs.path.exists(self.args.output):
+            raise RuntimeError("%r already exists" % (self.args.output,))
+
+    def __clean_wd(self):
+        if self.remote_wd:
+            try:
+                self.logger.debug(
+                    "Removing temporary working directory %s", self.remote_wd
+                )
+                hdfs.rmr(self.remote_wd)
+            except IOError:
+                pass
+
+    def __setup_remote_paths(self):
+        """
+        Actually create the working directory and copy the module into it.
+
+        Note: the script has to be readable by Hadoop; though this may not
+        generally be a problem on HDFS, where the Hadoop user is usually
+        the superuser, things may be different if our working directory is
+        on a shared POSIX filesystem.  Therefore, we make the directory
+        and the script accessible by all.
+        """
+        pipes_code = self.__generate_pipes_code()
+        hdfs.mkdir(self.remote_wd)
+        hdfs.chmod(self.remote_wd, "a+rx")
+        hdfs.dump(pipes_code, self.remote_exe)
+        hdfs.chmod(self.remote_exe, "a+rx")
+        hdfs.put(self.args.module, self.remote_module)
+        hdfs.chmod(self.remote_module, "a+r")
+        self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
+        self.logger.debug("Created remote paths:")
+        self.logger.debug(self.remote_wd)
+        self.logger.debug(self.remote_exe)
+        self.logger.debug(self.remote_module)
+
+    def run(self):
+        if self.args is None:
+            raise RuntimeError("cannot run without args, please call set_args")
+        self.__validate()
+        pipes_args = []
+        output_format = self.properties.get(
+            'mapred.output.format.class', DEFAULT_OUTPUT_FORMAT
+        )
+        if output_format == DEFAULT_OUTPUT_FORMAT:
+            if self.properties['mapred.textoutputformat.separator'] == '':
+                pydoop_jar = pydoop.jar_path()
+                if pydoop_jar is not None:
+                    self.properties[
+                        'mapred.output.format.class'
+                    ] = NOSEP_OUTPUT_FORMAT
+                    pipes_args.extend(['-libjars', pydoop_jar])
+                else:
+                    warnings.warn(("Can't find pydoop.jar, output will "
+                                   "probably be tab-separated"))
+        try:
+            self.__setup_remote_paths()
+            hadut.run_pipes(
+                self.remote_exe,
+                self.args.input,
+                self.args.output,
+                more_args=pipes_args,
+                properties=self.properties,
+                logger=self.logger
+            )
+            self.logger.info("Done")
+        finally:
+            self.__clean_wd()
 
 
 def run(args):
-  script = PydoopScript()
-  script.set_args(args)
-  script.run()
-  return 0
+    script = PydoopScript()
+    script.set_args(args)
+    script.run()
+    return 0
 
 
 def add_parser(subparsers):
-  parser = subparsers.add_parser(
-    "script",
-    description=PydoopScript.DESCRIPTION,
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    parser = subparsers.add_parser(
+        "script",
+        description=PydoopScript.DESCRIPTION,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-  parser.add_argument('module', metavar='MODULE', help='python module file')
-  parser.add_argument('input', metavar='INPUT', help='hdfs input path')
-  parser.add_argument('output', metavar='OUTPUT', help='hdfs output path')
-  parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper',
-                      help="name of map function within module")
-  parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
-                      help="name of reduce function within module")
-  parser.add_argument('-c', '--combiner-fn', metavar='COM', default=None,
-                      help="name of reduce function within module")
-  parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
-                      help="output key-value separator")
-  parser.add_argument(
-    '--num-reducers', metavar='INT', type=int, default=DEFAULT_REDUCE_TASKS,
-    help="Number of reduce tasks. Specify 0 to only perform map phase"
+    parser.add_argument('module', metavar='MODULE', help='python module file')
+    parser.add_argument('input', metavar='INPUT', help='hdfs input path')
+    parser.add_argument('output', metavar='OUTPUT', help='hdfs output path')
+    parser.add_argument('-m', '--map-fn', metavar='MAP', default='mapper',
+                        help="name of map function within module")
+    parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
+                        help="name of reduce function within module")
+    parser.add_argument('-c', '--combiner-fn', metavar='COM', default=None,
+                        help="name of reduce function within module")
+    parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
+                        help="output key-value separator")
+    parser.add_argument(
+        '--num-reducers', metavar='INT', type=int,
+        default=DEFAULT_REDUCE_TASKS,
+        help="Number of reduce tasks. Specify 0 to only perform map phase"
     )
-  parser.add_argument(
-    '--no-override-home', action='store_true',
-    help="Don't set the script's HOME directory to the $HOME in your " +
-    "environment.  Hadoop will set it to the value of the " +
-    "'mapreduce.admin.user.home.dir' property"
+    parser.add_argument(
+        '--no-override-home', action='store_true',
+        help=("Don't set the script's HOME directory to the $HOME in your "
+              "environment.  Hadoop will set it to the value of the "
+              "'mapreduce.admin.user.home.dir' property")
     )
-  parser.add_argument(
-    '--no-override-env', action='store_true',
-    help="Use the default python executable and environment instead of " +
-    "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH"
+    parser.add_argument(
+        '--no-override-env', action='store_true',
+        help=("Use the default python executable and environment instead of "
+              "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
     )
-  parser.add_argument(
-    '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
-    help='Set a Hadoop property, such as -D mapred.compress.map.output=true'
+    parser.add_argument(
+        '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
+        help='Set a Hadoop property, e.g., -D mapred.compress.map.output=true'
     )
-  parser.add_argument(
-    '--log-level', metavar="LEVEL", default="INFO", help="Logging level",
-    choices=[ "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL" ]
+    parser.add_argument(
+        '--log-level', metavar="LEVEL", default="INFO", help="Logging level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL"]
     )
-  parser.set_defaults(func=run)
-  return parser
+    parser.set_defaults(func=run)
+    return parser

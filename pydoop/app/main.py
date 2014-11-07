@@ -20,30 +20,32 @@
 Pydoop command line tool.
 """
 
-import argparse, importlib
+import argparse
+import importlib
 
 from pydoop.version import version
 
 SUBMOD_NAMES = [
-  "script",
-  "submit",
-  ]
+    "script",
+    "submit",
+]
+
 
 def make_parser():
-  parser = argparse.ArgumentParser(
-    description="Pydoop command line tool",
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    parser = argparse.ArgumentParser(
+        description="Pydoop command line tool",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-  parser.add_argument('-V', '--version', action='version', version=version,
-                      help='print version number and exit')
-  subparsers = parser.add_subparsers(help="sub-commands")
-  for n in SUBMOD_NAMES:
-    mod = importlib.import_module("%s.%s" % (__package__, n))
-    mod.add_parser(subparsers)
-  return parser
+    parser.add_argument('-V', '--version', action='version', version=version,
+                        help='print version number and exit')
+    subparsers = parser.add_subparsers(help="sub-commands")
+    for n in SUBMOD_NAMES:
+        mod = importlib.import_module("%s.%s" % (__package__, n))
+        mod.add_parser(subparsers)
+    return parser
 
 
 def main(argv=None):
-  parser = make_parser()
-  args = parser.parse_args(argv)
-  args.func(args)
+    parser = make_parser()
+    args = parser.parse_args(argv)
+    args.func(args)
