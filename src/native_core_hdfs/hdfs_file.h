@@ -18,7 +18,8 @@ typedef struct {
     PyObject_HEAD
     hdfsFS fs;
     hdfsFile file;
-    char* path;
+    // LP: do we need this? const char* path;
+    // If so, we should try to convert it to a PyObject* and use reference counting
     int flags;
     int buff_size;
     short replication;

@@ -45,6 +45,8 @@ int
 FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
 {
 
+    // XXX: This call to PyArg_ParseTuple doesn't support non-ASCII characters in
+    // the input strings (host, user, group)
     if (! PyArg_ParseTuple(args, "z|izz",
             &(self->host), &(self->port),
             &(self->user), &(self->group)))
@@ -114,27 +116,27 @@ PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
 PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
-    PyObject* opath;
-    const char* path;
+    const char* path = NULL;
+    PyObject* retval = NULL;
+    hdfsFileInfo* info;
 
-    if (!PyArg_ParseTuple(args, "O",  &opath))  {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the arguments.");
+    if (!PyArg_ParseTuple(args, "es", "utf-8",  &path)) {
+        // PyArg_ParseTuple sets the exception
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (path == NULL) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    hdfsFileInfo* info = hdfsGetPathInfo(self->_fs, (const char *) path);
+    info = hdfsGetPathInfo(self->_fs, path);
     if (info == NULL) {
         PyErr_SetString(PyExc_IOError, "File not found");
-        return NULL;
+        goto done;
     }
 
-    PyObject* retval =
+    retval =
         Py_BuildValue("{s:O,s:s,s:s,s:i,s:i,s:h,s:s,s:h,s:i,s:O,s:L}",
             "name", PyUnicode_FromString(info->mName),
             "kind", info->mKind == kObjectKindDirectory ? "directory" : "file",
@@ -148,8 +150,12 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
             "path", PyUnicode_FromString(info->mName),
             "size", info->mSize
     );
-    hdfsFreeFileInfo(info, 1);
+    // if Py_BuildValue has a problem it'll set the exception. We fall through
+    // and return retval, which in that case will be NULL
 
+    hdfsFreeFileInfo(info, 1);
+done:
+    PyMem_Free((void*)path);
     return retval;
 }
 
@@ -157,34 +163,35 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
     Py_ssize_t start, length;
-    const char* path;
-    PyObject* opath;
+    PyObject* result = NULL;
+    const char* path = NULL;
+    int numberOfBlocks = 0;
+    char*** hosts;
 
-    if (!PyArg_ParseTuple(args, "Onn", &opath, &start, &length)) {
+    if (!PyArg_ParseTuple(args, "esnn", "utf-8", &path, &start, &length)) {
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    char*** hosts = hdfsGetHosts(self->_fs, path, start, length);
+    hosts = hdfsGetHosts(self->_fs, path, start, length);
     if (!hosts) {
         PyErr_SetString(PyExc_RuntimeError, "Failed to get block information");
-        return NULL;
+        goto done;
     }
 
-    int numberOfBlocks = 0;
-    PyObject* result = PyList_New(0);
+    // XXX: missing error handling
+    result = PyList_New(0);
 
     while(hosts[numberOfBlocks]) {
 
         PyObject* hostsBlocks = PyList_New(0);
 
         int numberOfBlockHosts = 0;
-        while(hosts[numberOfBlocks][numberOfBlockHosts])   {
+        while(hosts[numberOfBlocks][numberOfBlockHosts]) {
 
             PyList_Append(hostsBlocks, PyString_FromString(hosts[numberOfBlocks][numberOfBlockHosts]));
             numberOfBlockHosts++;
@@ -195,7 +202,8 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
     }
 
     hdfsFreeHosts(hosts);
-
+done:
+    PyMem_Free((void*)path);
     return result;
 }
 
@@ -221,87 +229,93 @@ PyObject* FsClass_get_used(FsInfo* self) {
 
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    const char *path;
+    PyObject* retval = NULL;
+    const char* path = NULL;
     short replication;
-    PyObject *opath;
+    int result;
 
-
-    if (!PyArg_ParseTuple(args, "Oh", &opath, &replication)) {
+    if (!PyArg_ParseTuple(args, "esh", "utf-8", &path, &replication))
         return NULL;
+
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
-    }
-
-    int result = hdfsSetReplication(self->_fs, path, replication);
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+    result = hdfsSetReplication(self->_fs, path, replication);
+    retval = PyBool_FromLong(result >= 0 ? 1 : 0);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 
 PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    const char* path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
+    int result;
 
-    if (!PyArg_ParseTuple(args, "O", &opath)) {
+    if (!PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
+
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
-    }
-
-    int result = hdfsSetWorkingDirectory(self->_fs, path);
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+    result = hdfsSetWorkingDirectory(self->_fs, path);
+    retval = PyBool_FromLong(result >= 0 ? 1 : 0);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 
 PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
-    char* path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
     int flags, buff_size, blocksize, readline_chunk_size;
     short replication;
+    hdfsFile file;
 
-
-    if (!PyArg_ParseTuple(args, "O|iihii",
-            &opath, &flags, &buff_size, &replication, &blocksize, &readline_chunk_size)) {
+    if (!PyArg_ParseTuple(args, "es|iihii",
+            "utf-8", &path, &flags, &buff_size, &replication, &blocksize, &readline_chunk_size)) {
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (path == NULL) {
-        PyErr_SetString(PyExc_IOError, "Unable to parse the argument.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    hdfsFile file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
+    file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
     if (file == NULL) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+        PyErr_SetFromErrno(PyExc_IOError);
+        goto done;
     }
 
-    PyObject* module = PyImport_ImportModule("native_core_hdfs");
+    {
+        PyObject* module = PyImport_ImportModule("native_core_hdfs");
 
-    PyObject* obj_instance = PyObject_CallMethod(module, "CoreHdfsFile","OO", self->_fs, file); //, flags, buff_size, replication, blocksize, NULL);
+        retval = PyObject_CallMethod(module, "CoreHdfsFile","OO", self->_fs, file); //, flags, buff_size, replication, blocksize, NULL);
 
-    FileInfo *fileInfo = ((FileInfo*) obj_instance);
-    fileInfo->path = path;
-    fileInfo->flags = flags;
-    fileInfo->buff_size = buff_size;
-    fileInfo->blocksize = blocksize;
-    fileInfo->replication = replication;
-    fileInfo->readline_chunk_size = readline_chunk_size;
+        FileInfo *fileInfo = ((FileInfo*) retval);
+        // LP: see hdfs_file.h: fileInfo->path = path;
+        fileInfo->flags = flags;
+        fileInfo->buff_size = buff_size;
+        fileInfo->blocksize = blocksize;
+        fileInfo->replication = replication;
+        fileInfo->readline_chunk_size = readline_chunk_size;
 
-    #ifdef HADOOP_LIBHDFS_V1
-        fileInfo->stream_type = (((flags & O_WRONLY) == 0) ? INPUT : OUTPUT);
-    #endif
-
-    return obj_instance;
+        #ifdef HADOOP_LIBHDFS_V1
+            fileInfo->stream_type = (((flags & O_WRONLY) == 0) ? INPUT : OUTPUT);
+        #endif
+    }
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 
@@ -343,50 +357,48 @@ PyObject *FsClass_get_capacity(FsInfo *self) {
 
 PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 {
+    PyObject* retval = NULL;
     FsInfo* to_hdfs;
-    const char *from_path, *to_path;
-    PyObject *o_from_path, *o_to_path;
+    const char *from_path = NULL, *to_path = NULL;
+    int result;
 
-    if (! PyArg_ParseTuple(args, "OOO", &o_from_path, &to_hdfs, &o_to_path)) {
+    if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
+                &to_hdfs, "utf-8", &to_path)) {
         return NULL;
     }
 
-    from_path = Utils::getObjectAsUTF8String(o_from_path);
-    if (!from_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse source path.");
-        return NULL;
+    if (str_empty(from_path) || str_empty(to_path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    to_path = Utils::getObjectAsUTF8String(o_to_path);
-    if (!o_to_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse destination path.");
-        return NULL;
-    }
-
-    int result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
+    result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_RuntimeError);
-
-    return PyLong_FromLong(result);
+        PyErr_SetFromErrno(PyExc_RuntimeError);
+    else
+        retval = PyLong_FromLong(result);
+done:
+    PyMem_Free((void*)from_path);
+    PyMem_Free((void*)to_path);
+    return retval;
 }
 
 
 PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
+    int result;
 
-    if (! PyArg_ParseTuple(args, "O", &opath)) {
+    if (! PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
+
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
-    }
-
-    int result = hdfsExists(self->_fs, path);
+    result = hdfsExists(self->_fs, path);
 
     // LP: hdfsExists (in some cases?) sets errno to ENOENT "[Errno 2] No such
     // file or directory" when the path doesn't exist or EEXIST in other cases.
@@ -396,30 +408,36 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
     //
     // if (result < 0 && errno) return PyErr_SetFromErrno(PyExc_IOError);
 
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+    retval = PyBool_FromLong(result >= 0 ? 1 : 0);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 
 PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
+    int result;
 
-    if (! PyArg_ParseTuple(args, "O", &opath)) {
+    if (! PyArg_ParseTuple(args, "es", "utf-8", &path)) {
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    int result = hdfsCreateDirectory(self->_fs, path);
+    result = hdfsCreateDirectory(self->_fs, path);
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_IOError);
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+        PyErr_SetFromErrno(PyExc_IOError);
+    else
+        retval = PyBool_FromLong(1);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 /*
@@ -483,32 +501,30 @@ int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
 }
 
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
-    const char *path;
-    PyObject *opath;
 
-    if (!PyArg_ParseTuple(args, "O",  &opath)) {
-        return NULL;
-    }
+    PyObject* retval = NULL;
+    const char* path = NULL;
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
-    }
-
-    errno = 0;
-    hdfsFileInfo* pathInfo = hdfsGetPathInfo(self->_fs, path);
-    if (!pathInfo) {
-        return PyErr_SetFromErrno(PyExc_IOError);
-    }
-
-    PyObject *result = NULL;
     hdfsFileInfo* pathList = NULL;
     int numEntries = 0;
+    hdfsFileInfo* pathInfo = NULL;
+
+    if (!PyArg_ParseTuple(args, "es", "utf-8",  &path))
+        return NULL;
+
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto error;
+    }
+
+    pathInfo = hdfsGetPathInfo(self->_fs, path);
+    if (!pathInfo) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        goto error;
+    }
 
     if (pathInfo->mKind == kObjectKindDirectory) {
 
-        errno = 0;
         pathList = hdfsListDirectory(self->_fs, pathInfo->mName, &numEntries);
         // hdfsListDirectory returns NULL when a directory is empty, so to determine
         // whether there's been an error we also need to check errno
@@ -523,221 +539,233 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
         pathInfo = NULL;
     }
 
-    result = PyList_New(numEntries);
-    if (!result) goto mem_error;
+    retval = PyList_New(numEntries);
+    if (!retval) goto mem_error;
 
     for (Py_ssize_t i = 0; i < numEntries; i++) {
         PyObject* infoDict = PyDict_New();
         if (!infoDict) goto mem_error;
-        PyList_SET_ITEM(result, i, infoDict);
+        PyList_SET_ITEM(retval, i, infoDict);
         if (setPathInfo(infoDict, &pathList[i]) < 0) {
             PyErr_SetString(PyExc_IOError, "Error getting file info");
             goto error;
         }
     }
 
-    goto clean_up; // skip the error section
+    goto done; // skip the error section
 
 mem_error:
     PyErr_SetString(PyExc_MemoryError, "Error allocating structures");
     // fall through
 error:
-    // in case of error DECREF our result structure and return NULL
-    if (result != NULL) {
-        Py_XDECREF(result);
-        result = NULL;
+    // in case of error DECREF our retval structure and return NULL
+    if (retval != NULL) {
+        Py_XDECREF(retval);
+        retval = NULL;
     }
 
-clean_up:
-    // all code paths go through the clean_up section
+done:
+    // all code paths go through the 'done' section
+    PyMem_Free((void*)path);
     if (pathInfo != NULL)
         hdfsFreeFileInfo(pathInfo, 1);
     if (pathList != NULL)
         hdfsFreeFileInfo(pathList, numEntries);
 
-    return result;
+    return retval;
 }
 
 PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
+    PyObject* retval = NULL;
     FsInfo* to_hdfs;
-    const char *from_path, *to_path;
-    PyObject *o_from_path, *o_to_path;
+    const char *from_path = NULL, *to_path = NULL;
+    int result;
 
-
-    if (! PyArg_ParseTuple(args, "OOO", &o_from_path, &to_hdfs, &o_to_path)) {
+    if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
+                &to_hdfs, "utf-8", &to_path)) {
         return NULL;
     }
 
-    from_path = Utils::getObjectAsUTF8String(o_from_path);
-    if (!from_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the source path.");
-        return NULL;
+    if (str_empty(from_path) || str_empty(to_path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    to_path = Utils::getObjectAsUTF8String(o_to_path);
-    if (!o_to_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the destination path.");
-        return NULL;
-    }
-
-    int result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
+    result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_IOError);
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+        PyErr_SetFromErrno(PyExc_IOError);
+    else
+        retval = PyBool_FromLong(1);
+done:
+    PyMem_Free((void*)from_path);
+    PyMem_Free((void*)to_path);
+    return retval;
 }
 
 
 PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *from_path, *to_path;
-    PyObject *o_from_path, *o_to_path;
+    PyObject* retval = NULL;
+    const char *from_path = NULL, *to_path = NULL;
+    int result;
 
-    if (! PyArg_ParseTuple(args, "OO", &o_from_path, &o_to_path)) {
+    if (! PyArg_ParseTuple(args, "eses", "utf-8", &from_path, "utf-8", &to_path))
         return NULL;
+
+    if (str_empty(from_path) || str_empty(to_path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    from_path = Utils::getObjectAsUTF8String(o_from_path);
-    if (!from_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the source path.");
-        return NULL;
-    }
-
-    to_path = Utils::getObjectAsUTF8String(o_to_path);
-    if (!o_to_path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the destination path.");
-        return NULL;
-    }
-
-    int result = hdfsRename(self->_fs, from_path, to_path);
+    result = hdfsRename(self->_fs, from_path, to_path);
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_IOError);
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+        PyErr_SetFromErrno(PyExc_IOError);
+    else
+        retval = PyBool_FromLong(1);
+done:
+    PyMem_Free((void*)from_path);
+    PyMem_Free((void*)to_path);
+    return retval;
 }
 
 
 PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
     int recursive = 1;
+    int result;
 
-    if (!PyArg_ParseTuple(args, "O|i", &opath, &recursive)) {
+    if (!PyArg_ParseTuple(args, "es|i", "utf-8", &path, &recursive)) {
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
     #ifdef HADOOP_LIBHDFS_V1
-    int result = hdfsDelete(self->_fs, path);
+    result = hdfsDelete(self->_fs, path);
     #else
-    int result = hdfsDelete(self->_fs, path, recursive);
+    result = hdfsDelete(self->_fs, path, recursive);
     #endif
 
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_IOError);
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+        PyErr_SetFromErrno(PyExc_IOError);
+    else
+        retval = PyBool_FromLong(1);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 
 PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
     short mode = 1;
+    int result;
 
-    if (! PyArg_ParseTuple(args, "Oh", &opath, &mode)) {
+    if (!PyArg_ParseTuple(args, "esh", "utf-8", &path, &mode)) {
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
     // hdfsChmod doesn't always set errno in case of error.  We clear it
     // here so that after the call we'll be sure we're not looking at an old value
     errno = 0;
-    int result = hdfsChmod(self->_fs, path, mode);
-    if (result < 0) {
-        // hdfsChmod
+    result = hdfsChmod(self->_fs, path, mode);
+    if (result >= 0) {
+        retval = PyBool_FromLong(1);
+    }
+    else {
+        // there's been an error
         if (errno)
-            return PyErr_SetFromErrno(PyExc_IOError);
+            PyErr_SetFromErrno(PyExc_IOError);
         else {
             PyErr_SetString(PyExc_IOError, "Unknown error while changing permissions");
-            return NULL;
         }
     }
-    // else
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
 
 PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path, *user, *group;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char *path = NULL;
+    const char *input_user = NULL, *input_group = NULL;
+    int result;
+    hdfsFileInfo* fileInfo;
 
-    if (! PyArg_ParseTuple(args, "O|ss", &opath, &user, &group)) {
-        return 0;
-    }
-
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
+    if (! PyArg_ParseTuple(args, "es|eses",
+                "utf-8", &path, "utf-8", &input_user, "utf-8", &input_group)) {
         return NULL;
     }
 
-    hdfsFileInfo* fileInfo = hdfsGetPathInfo(self->_fs, path);
-    if (!fileInfo) {
-        return PyErr_SetFromErrno(PyExc_IOError);
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    if (str_empty(user))
-         user = fileInfo->mOwner;
+    fileInfo = hdfsGetPathInfo(self->_fs, path);
+    if (!fileInfo) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        goto done;
+    }
 
-    if (str_empty(group))
-        group = fileInfo->mGroup;
+    {
+        const char* new_user  = str_empty(input_user)  ? fileInfo->mOwner : input_user;
+        const char* new_group = str_empty(input_group) ? fileInfo->mGroup : input_group;
 
-    int result = hdfsChown(self->_fs, path, user, group);
+        result = hdfsChown(self->_fs, path, new_user, new_group);
+    }
     hdfsFreeFileInfo(fileInfo, 1);
 
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_IOError);
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+        PyErr_SetFromErrno(PyExc_IOError);
+    else
+        retval = PyBool_FromLong(1);
+done:
+    PyMem_Free((void*)path);
+    PyMem_Free((void*)input_user);
+    PyMem_Free((void*)input_group);
+    return retval;
 }
 
 
 PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path;
-    PyObject *opath;
+    PyObject* retval = NULL;
+    const char* path = NULL;
     tTime mtime, atime;
+    int result;
 
-    if (! PyArg_ParseTuple(args, "Oll", &opath, &mtime, &atime)) {
+    if (! PyArg_ParseTuple(args, "esll", "utf-8", &path, &mtime, &atime)) {
         return NULL;
     }
 
-    path = Utils::getObjectAsUTF8String(opath);
-    if (!path) {
-        PyErr_SetString(PyExc_ValueError, "Unable to parse the path.");
-        return NULL;
+    if (str_empty(path)) {
+        PyErr_SetString(PyExc_ValueError, "Empty path");
+        goto done;
     }
 
-    int result = hdfsUtime(self->_fs, path, mtime, atime);
+    result = hdfsUtime(self->_fs, path, mtime, atime);
     if (result < 0)
-        return PyErr_SetFromErrno(PyExc_IOError);
-
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+        PyErr_SetFromErrno(PyExc_IOError);
+    else
+        retval = PyBool_FromLong(1);
+done:
+    PyMem_Free((void*)path);
+    return retval;
 }
 
