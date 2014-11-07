@@ -1,19 +1,19 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -24,39 +24,41 @@ are provided as abstract classes. Application developers must subclass
 them, providing implementations for all methods called by the
 framework.
 
-**NOTE:** this module is provided only for backward compatibility support. If you are writing new code, use the api
-defined in `pydoop.mapreduce.api`
+**NOTE:** this module is provided only for backward compatibility support.
+If you are writing new code, use the api defined in `pydoop.mapreduce.api`
 """
 
-import pydoop.mapreduce.api
-from pydoop.mapreduce.pipes import Factory
-from pydoop.mapreduce.api import Mapper, Reducer, RecordReader, RecordWriter, Partitioner
-from pydoop.mapreduce.pipes import run_task as runTask, InputSplit
+__all__ = ["Mapper", "Reducer", "RecordWriter", "Partitioner", "new_RR",
+           "InputSplit", "RecordReaderWrapper", "Factory", "runTask"]
+
+from pydoop.mapreduce.api import (
+    Mapper, Reducer, RecordWriter, Partitioner, RecordReader as new_RR
+)
+from pydoop.mapreduce.pipes import (
+    InputSplit, RecordReaderWrapper, Factory, run_task as runTask
+)
 
 
-class RecordReader(pydoop.mapreduce.api.RecordReader):
+class RecordReader(new_RR):
     """
-  Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
-  """
-
-    def __init__(self, context=None):
-        super(RecordReader, self).__init__(context)
-
-    def next(self):  # FIXME, different interface from api, needed
+    Breaks the data into key/value pairs for input to the :class:`Mapper`.
+    """
+    # we have to override next to document the different return value
+    def next(self):
         """
-    Called by the framework to provide a key/value pair to the
-    :class:`Mapper`\ . Applications must override this.
+        Called by the framework to provide a key/value pair to the
+        :class:`Mapper`.  Applications must override this.
 
-    :rtype: tuple
-    :return: a tuple of three elements. The first one is a bool which
-      is True if a record is being read and False otherwise (signaling
-      the end of the input split). The second and third element are,
-      respectively, the key and the value (as strings).
-    """
+        :rtype: tuple
+        :return: a tuple of three elements. The first one is a bool which
+        is True if a record is being read and False otherwise (signaling
+        the end of the input split). The second and third element are,
+        respectively, the key and the value (as strings).
+        """
         raise NotImplementedError
 
     def __iter__(self):
-        return pydoop.mapreduce.pipes.RecordReaderWrapper(self)
+        return RecordReaderWrapper(self)
 
     def get_progress(self):
         return self.getProgress()
@@ -67,6 +69,6 @@ class RecordReader(pydoop.mapreduce.api.RecordReader):
 
 class Combiner(Reducer):
     """
-    Works exactly as a :class:`Reducer`\ , but values aggregation is performed
+    Works exactly as a :class:`Reducer`, but values aggregation is performed
     locally to the machine hosting each map task.
     """

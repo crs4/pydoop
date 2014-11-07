@@ -1,26 +1,34 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
 Utilities for unit tests.
 """
 
-import sys, os, random, uuid, tempfile, imp, unittest, shutil
+import sys
+import os
+import random
+import uuid
+import tempfile
+import imp
+import unittest
+import shutil
+import warnings
 
 import pydoop
 
@@ -34,25 +42,32 @@ _DEFAULT_BYTES_PER_CHECKSUM = 512
 HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
 HDFS_PORT = os.getenv("HDFS_PORT", _DEFAULT_HDFS_PORT)
 
+
 def _get_special_chr():
+    """
+    This is used to check unicode support.  On some systems, depending
+    on locale settings, we won't be able to use non-ASCII characters
+    when interacting with system calls.  Since in such cases it
+    doesn't really make sense to run these tests we set UNI_CHR to a
+    regular ASCII character.
+    """
     # something outside the latin-1 range
-    # On some systems, depending on locale settings, we won't be able to use non-ASCII
-    # characters when interacting with system calls.  Since in such cases it doesn't
-    # really make sense to run these tests we set UNI_CHR to a regular ASCII character.
     the_chr = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
     fd = None
     fname = None
-
     try:
         fd, fname = tempfile.mkstemp(suffix=the_chr)
     except UnicodeEncodeError:
-        print >> sys.stderr, "\nLocal file system doesn't support non-ASCII characters in filenames.  Falling back to ASCII-only tests"
+        msg = ("local file system doesn't support unicode characters"
+               "in filenames, falling back to ASCII-only")
+        warnings.warn(msg, UnicodeWarning)
         the_chr = 's'
     finally:
         if fd:
             os.close(fd)
             os.remove(fname)
     return the_chr
+
 
 UNI_CHR = _get_special_chr()
 
@@ -164,6 +179,3 @@ class WDTestCase(unittest.TestCase):
 
     def _mkf(self, basename, mode='w'):
         return open(self._mkfn(basename), mode)
-
-
-  

@@ -1,27 +1,31 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
 Miscellaneous utilities for testing.
 """
+
 import re
-import sys, os, tempfile
-from hdfs import default_is_local
+import sys
+import os
+import tempfile
+
+from pydoop.hdfs import default_is_local
 
 
 def inject_code(new_code, target_code):
@@ -31,7 +35,7 @@ def inject_code(new_code, target_code):
     NOTE: this is just a hack to make examples work out-of-the-box, in
     the general case it can fail in several ways.
     """
-    new_code = "{0}#---AUTO-INJECTED---{0}{1}{0}#-------------------{0}".format(
+    new_code = "{0}#--AUTO-INJECTED--{0}{1}{0}#-----------------{0}".format(
         os.linesep, os.linesep.join(new_code.strip().splitlines())
     )
     pos = max(target_code.find("import"), 0)
@@ -71,10 +75,13 @@ def compare_counts(c1, c2):
         return "key lists are different"
     for k in keys:
         if c1[k] != c2[k]:
-            return "values are different for key %r (%r != %r)" % (k, c1[k], c2[k])
+            return "values are different for key %r (%r != %r)" % (
+                k, c1[k], c2[k]
+            )
 
 
 class LocalWordCount(object):
+
     def __init__(self, input_path, min_occurrence=0):
         self.input_path = input_path
         self.min_occurrence = min_occurrence
