@@ -9,7 +9,7 @@
 
 #define MAX_WD_BUFFSIZE 2048
 
-#define str_empty(s) ((s) == NULL || strnlen((s), 1) == 0)
+#define str_empty(s) ((s) == NULL || (*(s) == '\0'))
 
 using namespace hdfs4python;
 
