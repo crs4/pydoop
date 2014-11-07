@@ -165,14 +165,13 @@ class TestHDFS(unittest.TestCase):
         self.assertEqual(hdfs.load(copy_name), self.data)
 
   def cp(self):
-    print
     for wd in self.local_wd, self.hdfs_wd:
-      print "  on %s ..." % wd
-      print "    file ..."
+      #print "  on %s ..." % wd
+      #print "    file ..."
       self.__cp_file(wd)
-      print "    dir ..."
+      #print "    dir ..."
       self.__cp_dir(wd)
-      print "    recursive ..."
+      #print "    recursive ..."
       self.__cp_recursive(wd)
 
   def put(self):
