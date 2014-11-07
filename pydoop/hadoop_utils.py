@@ -16,8 +16,17 @@
 #
 # END_COPYRIGHT
 
+# pylint: disable=W0311
+
 # DEV NOTE: this module is used by the setup script, so it MUST NOT
 # rely on extension modules.
+
+"""
+Tools for retrieving information on the available Hadoop
+installation(s): version, classpath, etc.
+
+Known issues: from-tarball CDH installation is not supported.
+"""
 
 import os, subprocess as sp, glob, re, platform
 import xml.dom.minidom as dom
@@ -28,6 +37,11 @@ try:
 except ImportError:  # should only happen at compile time
   DEFAULT_HADOOP_HOME = None
 SYSTEM = platform.system().lower()
+
+CDH_HADOOP_HOME_PKG = '/usr/lib/hadoop'  # Cloudera bin packages
+CDH_HADOOP_HOME_PARCEL = first_dir_in_glob(
+  '/opt/cloudera/parcels/CDH-*/lib/hadoop'  # Cloudera Manager
+)
 
 
 class HadoopVersionError(Exception):
@@ -50,6 +64,14 @@ def get_arch():
   if bits == "64bit":
     return "amd64", "64"
   return "i386", "32"
+
+
+def _cdh_hadoop_home():
+  if os.path.isdir(CDH_HADOOP_HOME_PKG):
+    return CDH_HADOOP_HOME_PKG
+  elif os.path.isdir(CDH_HADOOP_HOME_PARCEL or ''):
+    return CDH_HADOOP_HOME_PARCEL
+  raise RuntimeError("unsupported CDH deployment")
 
 
 def _jars_from_dirs(dirs):
@@ -306,10 +328,6 @@ class PathFinder(object):
   Encapsulates the logic to find paths and other info required by Pydoop.
   """
   CDH_HADOOP_EXEC = "/usr/bin/hadoop"  # CDH and rpm
-  CDH_HADOOP_HOME_PKG = "/usr/lib/hadoop"
-  CDH_HADOOP_HOME_PARCEL = first_dir_in_glob(
-    "/opt/cloudera/parcels/CDH-*/lib/hadoop"
-    )
   RPM_HADOOP_HOME = "/usr/share/hadoop"
 
   def __init__(self):
@@ -466,13 +484,8 @@ class PathFinder(object):
           self.__hadoop_native = os.path.join(
             hadoop_home, 'lib', 'native', 'Linux-%s-%s' % get_arch()
             )
-      else:  # FIXME: this does not cover from-tarball installation
-        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
-          hadoop_home = self.CDH_HADOOP_HOME_PKG
-        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
-          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
-        else:
-          raise RuntimeError("unsupported CDH deployment")
+      else:
+        hadoop_home = _cdh_hadoop_home()
         self.__hadoop_native = os.path.join(hadoop_home, 'lib', 'native')
     return self.__hadoop_native
 
@@ -486,13 +499,8 @@ class PathFinder(object):
           jars = _hadoop2_jars(hadoop_home)
         else:
           jars = _hadoop1_jars(hadoop_home)
-      else:  # CDH4. FIXME: this does not cover from-tarball installation
-        if os.path.isdir(self.CDH_HADOOP_HOME_PKG):
-          hadoop_home = self.CDH_HADOOP_HOME_PKG
-        elif os.path.isdir(self.CDH_HADOOP_HOME_PARCEL or ""):
-          hadoop_home = self.CDH_HADOOP_HOME_PARCEL
-        else:
-          raise RuntimeError("unsupported CDH deployment")
+      else:
+        hadoop_home = _cdh_hadoop_home()
         jars = _cdh4_jars(hadoop_home, self.is_yarn())
       jars.extend([self.hadoop_native(), self.hadoop_conf()])
       self.__hadoop_classpath = ':'.join(jars)
