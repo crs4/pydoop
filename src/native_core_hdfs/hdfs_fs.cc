@@ -11,10 +11,7 @@
 
 #define str_empty(s) ((s) == NULL || (*(s) == '\0'))
 
-using namespace hdfs4python;
-
-PyObject*
-FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+PyObject* FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     FsInfo *self;
 
@@ -34,15 +31,13 @@ FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 }
 
 
-void
-FsClass_dealloc(FsInfo* self)
+void FsClass_dealloc(FsInfo* self)
 {
     self->ob_type->tp_free((PyObject*)self);
 }
 
 
-int
-FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
+int FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
 {
 
     // XXX: This call to PyArg_ParseTuple doesn't support non-ASCII characters in
