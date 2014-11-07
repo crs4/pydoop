@@ -212,6 +212,9 @@ class HadoopVersion(object):
     def is_cloudera(self):
         return bool(self.cdh)
 
+    def is_cdh_mrv2(self):
+        return self.cdh >= (4, 0, 0) and not self.ext
+
     def has_deprecated_bs(self):
         return self.cdh[:2] >= (4, 3)
 
