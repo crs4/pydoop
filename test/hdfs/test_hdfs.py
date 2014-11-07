@@ -257,6 +257,16 @@ class TestHDFS(unittest.TestCase):
       cap = fs.capacity()
       self.assertGreaterEqual(cap, 0)
 
+  def get_hosts(self):
+    if hdfs.default_is_local():
+      # only run on HDFS
+      return
+    hdfs.dump(self.data, self.hdfs_paths[0])
+    fs = hdfs.hdfs("default", 0)
+    hs = fs.get_hosts(self.hdfs_paths[0], 0, 10)
+    self.assertTrue(len(hs) > 0)
+    self.assertRaises(ValueError, fs.get_hosts, self.hdfs_paths[0], -10, 10)
+    self.assertRaises(ValueError, fs.get_hosts, self.hdfs_paths[0], 0, -10)
 
 def suite():
   suite = unittest.TestSuite()
@@ -276,6 +286,7 @@ def suite():
   suite.addTest(TestHDFS("rename"))
   suite.addTest(TestHDFS("renames"))
   suite.addTest(TestHDFS("capacity"))
+  suite.addTest(TestHDFS("get_hosts"))
   return suite
 
 

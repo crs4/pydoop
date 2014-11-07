@@ -61,7 +61,7 @@ FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
     if (str_empty(self->group))
         self->group = NULL;
 
-    if (self->user != NULL && strnlen(self->user, 1) != 0 ) {
+    if (self->user != NULL) {
         self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
 
     } else {
@@ -165,8 +165,8 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
     Py_ssize_t start, length;
     PyObject* result = NULL;
     const char* path = NULL;
-    int numberOfBlocks = 0;
-    char*** hosts;
+    char*** hosts = NULL;
+    int blockNumber;
 
     if (!PyArg_ParseTuple(args, "esnn", "utf-8", &path, &start, &length)) {
         return NULL;
@@ -177,32 +177,43 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
+    if (start < 0 || length < 0) {
+       PyErr_SetString(PyExc_ValueError, "Start position and length must be >= 0");
+       goto done;
+    }
+
     hosts = hdfsGetHosts(self->_fs, path, start, length);
     if (!hosts) {
         PyErr_SetString(PyExc_RuntimeError, "Failed to get block information");
         goto done;
     }
 
-    // XXX: missing error handling
     result = PyList_New(0);
+    if (!result) goto mem_error;
 
-    while(hosts[numberOfBlocks]) {
+    for (int blockNumber = 0; hosts[blockNumber] != NULL; ++blockNumber)
+    {
+        PyObject* blockHosts = PyList_New(0);
+        if (!blockHosts) goto mem_error;
 
-        PyObject* hostsBlocks = PyList_New(0);
-
-        int numberOfBlockHosts = 0;
-        while(hosts[numberOfBlocks][numberOfBlockHosts]) {
-
-            PyList_Append(hostsBlocks, PyString_FromString(hosts[numberOfBlocks][numberOfBlockHosts]));
-            numberOfBlockHosts++;
+        for (int iBlockHost = 0; hosts[blockNumber][iBlockHost] != NULL; ++iBlockHost)
+        {
+            PyObject* str = PyString_FromString(hosts[blockNumber][iBlockHost]);
+            if (!str) goto mem_error;
+            if (PyList_Append(blockHosts, str) < 0) goto mem_error;
         }
 
-        PyList_Append(result, hostsBlocks);
-        numberOfBlocks++;
+        if (PyList_Append(result, blockHosts) < 0) goto mem_error;
     }
+    goto done; // skip the mem_error section
 
-    hdfsFreeHosts(hosts);
+mem_error:
+    PyErr_SetString(PyExc_MemoryError, "Error allocating host structure");
+    Py_XDECREF(result);
+    result = NULL;
+    // fall through
 done:
+    if (hosts) hdfsFreeHosts(hosts);
     PyMem_Free((void*)path);
     return result;
 }
