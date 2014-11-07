@@ -245,6 +245,8 @@ class hdfs(object):
         :return: handle to the open file
         """
         _complain_ifclosed(self.closed)
+        if not path:
+            raise ValueError("Empty path")
         if flags not in self.SUPPORTED_OPEN_MODES:
             raise ValueError("opening mode %r not supported" % flags)
         if not self.host:
@@ -591,7 +593,10 @@ class hdfs(object):
         :rtype: iterator
         :return: path infos of files and directories in the tree rooted at ``top``
         :raises: IOError
+        :raises: TypeError if `top` is None or empty
         """
+        if not top:
+            raise TypeError()
         if isinstance(top, basestring):
             top = self.get_path_info(top)
         yield top
