@@ -3,8 +3,7 @@
 
 using namespace std;
 
-PyObject*
-FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     FileInfo *self;
 
@@ -16,7 +15,7 @@ FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->buff_size = 0;
         self->replication = 1;
         self->blocksize = 0;
-        self->readline_chunk_size=16384;
+        self->readline_chunk_size = 16 * 1024; // 16 KB
 #ifdef HADOOP_LIBHDFS_V1
         self->stream_type = 0;
 #endif
