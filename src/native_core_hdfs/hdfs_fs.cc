@@ -161,7 +161,6 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
     PyObject* result = NULL;
     const char* path = NULL;
     char*** hosts = NULL;
-    int blockNumber;
 
     if (!PyArg_ParseTuple(args, "esnn", "utf-8", &path, &start, &length)) {
         return NULL;

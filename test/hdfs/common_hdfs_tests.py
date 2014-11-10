@@ -218,6 +218,8 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             self.assertEqual(f.read(), content)
         with self.fs.open_file(path) as f:
+            self.assertEqual(f.read(-1), content)
+        with self.fs.open_file(path) as f:
             self.assertEqual(f.read(3), content[:3])
             self.assertEqual(f.read(3), content[3:6])
             self.assertRaisesExternal(IOError, f.write, content)
@@ -232,6 +234,11 @@ class TestCommon(unittest.TestCase):
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
                 self.assertEqual(chunk.value, content[:bytes_read])
+        # does it work with bytearrays?
+        chunk = bytearray(len(content))
+        with self.fs.open_file(path) as f:
+            f.read_chunk(chunk)
+        self.assertEqual(bytearray(content), chunk)
 
     def write_chunk(self):
         content = utils.make_random_data()

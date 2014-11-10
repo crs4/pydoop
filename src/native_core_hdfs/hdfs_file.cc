@@ -142,8 +142,7 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    int chunk_size;
-    void* buffer;
+    Py_buffer buffer;
 
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
@@ -154,11 +153,16 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTuple(args, "s#",  &buffer, &chunk_size))
-        Py_RETURN_NONE;
+    if (! PyArg_ParseTuple(args, "w*",  &buffer))
+        return NULL;
 
-    tSize read = hdfsRead(self->fs, self->file, buffer, chunk_size);
-    return Py_BuildValue("i", read);
+    tSize bytes_read = hdfsRead(self->fs, self->file, buffer.buf, buffer.len);
+    PyBuffer_Release(&buffer);
+
+    if (bytes_read < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    else
+        return Py_BuildValue("n", bytes_read);
 }
 
 
