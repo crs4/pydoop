@@ -166,8 +166,6 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-
-
 PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
 
     tOffset position;
