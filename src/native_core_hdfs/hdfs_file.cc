@@ -96,8 +96,7 @@ PyObject* FileClass_available(FileInfo *self){
 
 PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    void* buffer;
-    int size;
+    Py_ssize_t size;
 
     #ifdef HADOOP_LIBHDFS_V1
     if(!hdfsFileIsOpenForRead(self)){
@@ -108,16 +107,36 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    if (! PyArg_ParseTuple(args, "i", &(size)))
-        Py_RETURN_NONE;
+    if (! PyArg_ParseTuple(args, "n", &(size)))
+        return NULL;
 
-    buffer = PyMem_Malloc(size);
+    if (size < 0) {
+        PyErr_SetString(PyExc_ValueError, "bytes to read must be >= 0");
+        return NULL;
+    }
 
-    tSize read = hdfsRead(self->fs, self->file, buffer, size);
-    PyObject* res = Py_BuildValue("s#", buffer, read);
+    // Allocate an uninitialized string object.
+    PyObject* retval = PyString_FromStringAndSize(NULL, size);
+    if (!retval) return PyErr_NoMemory();
+
+    tSize bytes_read = hdfsRead(self->fs, self->file, PyString_AS_STRING(retval), size);
+    if (bytes_read < 0) { // error
+        PyErr_SetFromErrno(PyExc_IOError);
+        Py_DECREF(retval);
+        retval = NULL;
+    }
+    else if (bytes_read >= 0 && bytes_read < size) {
+        // read worked properly, but we got fewer bytes than requested (maybe we
+        // reached EOF?).  We need to shrink the string to the correct length.
+        // In case of error the call to _PyString_Resize frees the original string,
+        // sets the appropriate python exception and returns -1, so we can simply
+        // return NULL to deal with the problem.
+        if (_PyString_Resize(&retval, bytes_read) < 0)
+            return NULL;
+    }
+    // else: bytes_read == size data read and string is sized correctly.
     
-    PyMem_Free(buffer);
-    return res;
+    return retval;
 }
 
 
