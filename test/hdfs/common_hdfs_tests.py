@@ -463,10 +463,8 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(infos, expected_infos)
         nonexistent_walk = self.fs.walk(self._make_random_path())
         self.assertRaises(IOError, nonexistent_walk.next)
-        blank_walk = self.fs.walk("")
-        self.assertRaises(TypeError, blank_walk.next)
-        none_walk = self.fs.walk(None)
-        self.assertRaises(TypeError, none_walk.next)
+        for top in '', None:
+            self.assertRaises(ValueError, self.fs.walk(top).next)
 
     def exists(self):
         self.assertFalse(self.fs.exists('some_file'))

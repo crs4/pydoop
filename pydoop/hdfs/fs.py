@@ -593,10 +593,10 @@ class hdfs(object):
         :rtype: iterator
         :return: path infos of files and directories in the tree rooted at ``top``
         :raises: IOError
-        :raises: TypeError if `top` is None or empty
+        :raises: ValueError if ``top`` is empty
         """
         if not top:
-            raise TypeError()
+            raise ValueError("Empty path")
         if isinstance(top, basestring):
             top = self.get_path_info(top)
         yield top
