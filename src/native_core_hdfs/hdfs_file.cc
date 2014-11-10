@@ -65,7 +65,11 @@ int FileClass_init_internal(FileInfo *self, hdfsFS fs, hdfsFile file)
 
 PyObject* FileClass_close(FileInfo* self){
     int result = hdfsCloseFile(self->fs, self->file);
-    return PyBool_FromLong(result >= 0 ? 1 : 0);
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    else
+        return PyBool_FromLong(1);
 }
 
 
@@ -75,14 +79,17 @@ PyObject* FileClass_mode(FileInfo* self){
 
 
 PyObject* FileClass_get_mode(FileInfo *self){
-    return Py_BuildValue("i", self->flags);
+    return PyLong_FromLong(self->flags);
 }
 
 
 
 PyObject* FileClass_available(FileInfo *self){
     int available = hdfsAvailable(self->fs, self->file);
-    return Py_BuildValue("i", available);
+    if (available < 0)
+        return PyErr_SetFromErrno(PyExc_IOError);
+    else
+        return PyLong_FromLong(available);
 }
 
 
