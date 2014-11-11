@@ -25,6 +25,13 @@ import pydoop
 import pydoop.test_utils as utils
 
 
+def _get_value(buf):
+    try:
+        return buf.value  # e.g., ctypes string buffer
+    except AttributeError:
+        return create_string_buffer(str(buf)).value  # e.g., bytearray
+
+
 class TestCommon(unittest.TestCase):
 
     def __init__(self, target, hdfs_host='', hdfs_port=0):
@@ -224,21 +231,20 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(f.read(3), content[3:6])
             self.assertRaisesExternal(IOError, f.write, content)
 
-    def read_chunk(self):
+    def __read_chunk(self, chunk_factory):
         content = utils.make_random_data()
         path = self._make_random_file(content=content)
         size = len(content)
         for chunk_size in size - 1, size, size + 1:
             with self.fs.open_file(path) as f:
-                chunk = create_string_buffer(chunk_size)
+                chunk = chunk_factory(chunk_size)
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
-                self.assertEqual(chunk.value, content[:bytes_read])
-        # does it work with bytearrays?
-        chunk = bytearray(len(content))
-        with self.fs.open_file(path) as f:
-            f.read_chunk(chunk)
-        self.assertEqual(bytearray(content), chunk)
+                self.assertEqual(_get_value(chunk), content[:bytes_read])
+
+    def read_chunk(self):
+        for factory in bytearray, create_string_buffer:
+            self.__read_chunk(factory)
 
     def write_chunk(self):
         content = utils.make_random_data()

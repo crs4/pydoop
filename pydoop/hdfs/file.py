@@ -357,13 +357,13 @@ class local_file(file):
     def pread_chunk(self, position, chunk):
         _complain_ifclosed(self.closed)
         data = self.pread(position, len(chunk))
-        chunk.value = data
+        chunk[:len(data)] = data
         return len(data)
 
     def read_chunk(self, chunk):
         _complain_ifclosed(self.closed)
         data = self.read(len(chunk))
-        chunk.value = data
+        chunk[:len(data)] = data
         return len(data)
 
     def write_chunk(self, chunk):
