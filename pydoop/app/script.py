@@ -200,7 +200,7 @@ class PydoopScript(object):
         self.remote_module_bn = None
         self.remote_exe = None
 
-    def set_args(self, args):
+    def set_args(self, args, unknown_args=[]):
         """
         Configure the pydoop script run, based on the arguments provided.
         """
@@ -239,6 +239,7 @@ class PydoopScript(object):
             self.properties['mapred.cache.files'] += ','
         self.properties['mapred.cache.files'] += dist_cache_parameter
         self.args = args
+        self.unknown_args = unknown_args
 
     def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
         """
@@ -351,7 +352,7 @@ class PydoopScript(object):
         if self.args is None:
             raise RuntimeError("cannot run without args, please call set_args")
         self.__validate()
-        pipes_args = []
+        pipes_args = self.unknown_args
         output_format = self.properties.get(
             'mapred.output.format.class', DEFAULT_OUTPUT_FORMAT
         )
@@ -381,9 +382,9 @@ class PydoopScript(object):
             self.__clean_wd()
 
 
-def run(args):
+def run(args, unknown_args=[]):
     script = PydoopScript()
-    script.set_args(args)
+    script.set_args(args, unknown_args)
     script.run()
     return 0
 
@@ -393,6 +394,8 @@ def add_parser(subparsers):
         "script",
         description=PydoopScript.DESCRIPTION,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        epilog=("Hadoop pipes generic options are supported too.  "
+                "Run `hadoop pipes` for more information")
     )
     parser.add_argument('module', metavar='MODULE', help='python module file')
     parser.add_argument('input', metavar='INPUT', help='hdfs input path')
