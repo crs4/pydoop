@@ -49,7 +49,15 @@ from distutils import log
 import pydoop
 import pydoop.utils.jvm as jvm
 import pydoop.hadoop_utils as hu
-import pydoop.hdfs.core as hdfscore
+
+
+#import pydoop.hdfs.core as hdfscore
+class hdfscore(object):  # FIXME: TEMP HACK
+    NATIVE = "native"
+    JPYPE_BRIDGED = "jpype-bridged"
+    get_supported_implementations = staticmethod(
+        lambda: [hdfscore.NATIVE, hdfscore.JPYPE_BRIDGED]
+    )
 
 
 JAVA_HOME = jvm.get_java_home()

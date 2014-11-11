@@ -1,19 +1,19 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -29,9 +29,9 @@ import re
 import operator as ops
 
 import pydoop
-import common
-from file import hdfs_file, local_file
-from pydoop.hdfs.core import core_hdfs_fs
+from . import common
+from .file import hdfs_file, local_file
+from .core import core_hdfs_fs
 
 
 class _FSStatus(object):
@@ -230,8 +230,8 @@ class hdfs(object):
         :type path: string
         :param path: the full path to the file
         :type flags: string or int
-        :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for reading,
-          ``'w'`` or :data:`os.O_WRONLY` for writing
+        :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for
+          reading, ``'w'`` or :data:`os.O_WRONLY` for writing
         :type buff_size: int
         :param buff_size: read/write buffer size in bytes
         :type replication: int
@@ -295,7 +295,8 @@ class hdfs(object):
 
     def create_directory(self, path):
         """
-        Create directory ``path`` (non-existent parents will be created as well).
+        Create directory ``path`` (non-existent parents will be created as
+        well).
 
         :type path: string
         :param path: the path of the directory
@@ -321,7 +322,7 @@ class hdfs(object):
         :type path: string
         :param path: the path of the file or directory
         :type recursive: bool
-        :param recursive: if path is directory, delete it recursively when True;
+        :param recursive: if path is directory, delete it recursively when True
         :raises: IOError when ``recursive`` is False and directory is non-empty
         """
         _complain_ifclosed(self.closed)
@@ -385,7 +386,7 @@ class hdfs(object):
         return self.fs.get_path_info(path)
 
     def list_directory(self, path):
-        """
+        r"""
         Get list of files and directories for ``path``\ .
 
         :type path: string
@@ -428,7 +429,7 @@ class hdfs(object):
         return self.fs.rename(from_path, to_path)
 
     def set_replication(self, path, replication):
-        """
+        r"""
         Set the replication of ``path`` to ``replication``\ .
 
         :type path: string
@@ -441,7 +442,7 @@ class hdfs(object):
         return self.fs.set_replication(path, replication)
 
     def set_working_directory(self, path):
-        """
+        r"""
         Set the working directory to ``path``\ . All relative paths will
         be resolved relative to it.
 
@@ -508,7 +509,7 @@ class hdfs(object):
         Char_to_perm_byte = {'r': 4, 'w': 2, 'x': 1}
         Fields = (('u', 6), ('g', 3), ('o', 0))
         # --
-        m = re.match("\s*([ugoa]*)([-+=])([rwx]*)\s*", mode_string)
+        m = re.match(r"\s*([ugoa]*)([-+=])([rwx]*)\s*", mode_string)
         if not m:
             raise ValueError("Invalid mode string %s" % mode_string)
         who = m.group(1)
@@ -516,10 +517,13 @@ class hdfs(object):
         which_perm = m.group(3)
         #--
         old_mode = self.fs.get_path_info(path)['permissions']
-        # The mode to be applied by the operation, repeated three times in a list,
-        # for user, group, and other respectively.  Initially these are identical,
-        # but some may change if we have to respect the umask setting.
-        op_perm = [reduce(ops.ior, [Char_to_perm_byte[c] for c in which_perm])] * 3
+        # The mode to be applied by the operation, repeated three
+        # times in a list, for user, group, and other respectively.
+        # Initially these are identical, but some may change if we
+        # have to respect the umask setting.
+        op_perm = [
+            reduce(ops.ior, [Char_to_perm_byte[c] for c in which_perm])
+        ] * 3
         if 'a' in who:
             who = 'ugo'
         elif who == '':
@@ -532,7 +536,8 @@ class hdfs(object):
         new_mode = 0
         for i, tpl in enumerate(Fields):
             field, shift = tpl
-            # shift by the bits specified for the field; keep only the 3 lowest bits
+            # shift by the bits specified for the field; keep only the
+            # 3 lowest bits
             old = (old_mode >> shift) & 0x7
             if field in who:
                 if what_op == '-':
@@ -542,7 +547,9 @@ class hdfs(object):
                 elif what_op == '+':
                     new = old | op_perm[i]
                 else:
-                    raise RuntimeError("unexpected permission operation %s" % what_op)
+                    raise RuntimeError(
+                        "unexpected permission operation %s" % what_op
+                    )
             else:
                 # copy the previous permissions
                 new = old
@@ -591,7 +598,8 @@ class hdfs(object):
         :type top: string or dict
         :param top: an HDFS path or path info dict
         :rtype: iterator
-        :return: path infos of files and directories in the tree rooted at ``top``
+        :return: path infos of files and directories in the tree rooted at
+          ``top``
         :raises: IOError
         :raises: ValueError if ``top`` is empty
         """
