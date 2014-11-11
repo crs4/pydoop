@@ -44,5 +44,5 @@ def make_parser():
 
 def main(argv=None):
   parser = make_parser()
-  args = parser.parse_args(argv)
-  args.func(args)
+  args, unknown = parser.parse_known_args(argv)
+  args.func(args, unknown)
