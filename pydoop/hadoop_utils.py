@@ -16,8 +16,8 @@
 #
 # END_COPYRIGHT
 
-# DEV NOTE: this module is used by the setup script, so it MUST NOT
-# rely on extension modules.
+# DEV NOTE: this module is used by the setup script, so it MUST be
+# importable even if Pydoop has not been installed (yet).
 
 """
 Tools for retrieving information on the available Hadoop

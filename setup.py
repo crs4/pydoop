@@ -49,15 +49,7 @@ from distutils import log
 import pydoop
 import pydoop.utils.jvm as jvm
 import pydoop.hadoop_utils as hu
-
-
-#import pydoop.hdfs.core as hdfscore
-class hdfscore(object):  # FIXME: TEMP HACK
-    NATIVE = "native"
-    JPYPE_BRIDGED = "jpype-bridged"
-    get_supported_implementations = staticmethod(
-        lambda: [hdfscore.NATIVE, hdfscore.JPYPE_BRIDGED]
-    )
+import pydoop.hdfs.core.impl as hdfsimpl
 
 
 JAVA_HOME = jvm.get_java_home()
@@ -110,7 +102,7 @@ def get_version_string(filename="VERSION"):
         raise DistutilsSetupError("failed to read version info")
 
 
-def write_config(filename="pydoop/config.py", hdfs_core_impl=hdfscore.NATIVE):
+def write_config(filename="pydoop/config.py", hdfs_core_impl=hdfsimpl.DEFAULT):
     prereq = "DEFAULT_HADOOP_HOME"
     if not os.path.exists(prereq):
         with open(prereq, "w") as f:
@@ -421,19 +413,18 @@ class JavaBuilder(object):
 class BuildPydoop(build):
 
     user_options = build.user_options
-    supported_implementations = hdfscore.get_supported_implementations()
     user_options.append((
         'hdfs-core-impl=', None,
-        "hdfs core implementation: " + ", ".join(supported_implementations)
+        "hdfs core implementation [%s]" % ", ".join(hdfsimpl.SUPPORTED)
     ))
 
     def __init__(self, dist):
         build.__init__(self, dist)
-        self.hdfs_core_impl = hdfscore.NATIVE
+        self.hdfs_core_impl = hdfsimpl.DEFAULT
 
     def finalize_options(self):
         build.finalize_options(self)
-        if self.hdfs_core_impl not in self.supported_implementations:
+        if self.hdfs_core_impl not in hdfsimpl.SUPPORTED:
             raise DistutilsOptionError(
                 '%r not supported' % (self.hdfs_core_impl,)
             )
@@ -456,7 +447,7 @@ class BuildPydoop(build):
         write_config(hdfs_core_impl=self.hdfs_core_impl)
         write_version()
         build_sercore_extension()
-        if self.hdfs_core_impl == hdfscore.NATIVE:
+        if self.hdfs_core_impl == hdfsimpl.NATIVE:
             build_hdfscore_native_impl()
         build.run(self)
         try:
