@@ -93,7 +93,6 @@ class TestCommon(unittest.TestCase):
         path = self._make_random_path()
         self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
         self.assertRaises(ValueError, self.fs.open_file, "")
-        self.assertRaises(ValueError, self.fs.open_file, None)
 
     def delete(self):
         parent = self._make_random_dir()
@@ -108,7 +107,6 @@ class TestCommon(unittest.TestCase):
         self.fs.delete(parent, recursive=False)
         self.assertFalse(self.fs.exists(parent))
         self.assertRaises(ValueError, self.fs.delete, "")
-        self.assertRaises(TypeError, self.fs.delete, None)
 
     def copy(self):
         local_fs = hdfs.hdfs('', 0)
@@ -120,7 +118,6 @@ class TestCommon(unittest.TestCase):
         to_path = self._make_random_file()
         local_fs.copy(from_path, self.fs, to_path)
         self.assertRaises(ValueError, local_fs.copy, "", self.fs, "")
-        self.assertRaises(TypeError, local_fs.copy, None, None, None)
         local_fs.close()
         with self.fs.open_file(to_path) as f:
             self.assertEqual(f.read(), content)
@@ -135,7 +132,6 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(to_path) as f:
             self.assertEqual(f.read(), content)
         self.assertRaises(ValueError, self.fs.move, "", self.fs, "")
-        self.assertRaises(TypeError, self.fs.move, None, None, None)
 
     def chmod(self):
         new_perm = 0777
@@ -147,7 +143,6 @@ class TestCommon(unittest.TestCase):
         self.fs.chmod(path, old_perm)
         self.assertEqual(self.fs.get_path_info(path)["permissions"], old_perm)
         self.assertRaises(ValueError, self.fs.chmod, "", new_perm)
-        self.assertRaises(TypeError, self.fs.chmod, None, new_perm)
 
     def __set_and_check_perm(self, path, new_mode, expected_mode):
         self.fs.chmod(path, new_mode)
@@ -217,7 +212,6 @@ class TestCommon(unittest.TestCase):
         self.assertTrue(info['name'].endswith(path))
         self.assertRaises(IOError, self.fs.get_path_info, self._make_random_path())
         self.assertRaises(ValueError, self.fs.get_path_info, "")
-        self.assertRaises(TypeError, self.fs.get_path_info, None)
 
     def read(self):
         content = utils.make_random_data()
@@ -314,8 +308,6 @@ class TestCommon(unittest.TestCase):
         self.assertFalse(self.fs.exists(old_path))
         self.assertRaises(ValueError, self.fs.rename, old_path, "")
         self.assertRaises(ValueError, self.fs.rename, "", new_path)
-        self.assertRaises(TypeError, self.fs.rename, old_path, None)
-        self.assertRaises(TypeError, self.fs.rename, None, new_path)
 
     def change_dir(self):
         cwd = self.fs.working_directory()
@@ -325,7 +317,6 @@ class TestCommon(unittest.TestCase):
         self.fs.set_working_directory(cwd)
         self.assertEqual(self.fs.working_directory(), cwd)
         self.assertRaises(ValueError, self.fs.set_working_directory, "")
-        self.assertRaises(TypeError, self.fs.set_working_directory, None)
 
     def list_directory(self):
         new_d = self._make_random_dir()
@@ -341,7 +332,6 @@ class TestCommon(unittest.TestCase):
             self.assertTrue(i['name'].endswith(p))
         self.assertRaises(IOError, self.fs.list_directory, self._make_random_path())
         self.assertRaises(ValueError, self.fs.list_directory, "")
-        self.assertRaises(TypeError, self.fs.list_directory, None)
 
     def __check_readline(self, get_lines):
         samples = [
@@ -480,7 +470,6 @@ class TestCommon(unittest.TestCase):
         fname = self._make_random_file()
         self.assertTrue(self.fs.exists(fname))
         self.assertRaises(ValueError, self.fs.exists, "")
-        self.assertRaises(TypeError, self.fs.exists, None)
 
     def __check_path_info(self, info, **expected_values):
         keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
