@@ -39,6 +39,12 @@ class JavaClassName(object):
     ByteArrayOutputStream = "java.io.ByteArrayOutputStream"
 
 
+def get_jpath(path):
+    if not path:
+        raise ValueError("Empty path")
+    return wrap_class_instance(JavaClassName.Path, path)
+
+
 class CoreHdfsFs(CoreFsApi):
 
     def __init__(self, host, port=0, user=None, groups=None):
@@ -79,7 +85,7 @@ class CoreHdfsFs(CoreFsApi):
 
 
     def chmod(self, path, mode):
-        jpath_ = wrap_class_instance(JavaClassName.Path, path)
+        jpath_ = get_jpath(path)
         jshort_cl = wrap_class("java.lang.Short")
         jpermission = wrap_class_instance(JavaClassName.FsPermission, mode)  # jshort_cl.valueOf(mode))
         self._fs.setPermission(jpath_, jpermission)
@@ -88,7 +94,7 @@ class CoreHdfsFs(CoreFsApi):
         if (user is None or user == '') and (group is None or group == ''):
             raise Exception("Both owner and group cannot be null in chown")
 
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         old_path_info = self._get_jpath_info(jpath)
         if user is None or user == '':
             user = old_path_info['owner']
@@ -97,7 +103,7 @@ class CoreHdfsFs(CoreFsApi):
         self._fs.setOwner(jpath, user, group)
 
     def exists(self, path):
-        return self._fs.exists(wrap_class_instance(JavaClassName.Path, path))
+        return self._fs.exists(get_jpath(path))
 
     def get_capacity(self):
         return self._fs.getRawCapacity()
@@ -106,8 +112,8 @@ class CoreHdfsFs(CoreFsApi):
         self._fs.close()
 
     def _copy_helper(self, from_path, to_hdfs, to_path, delete_source):
-        src_path = wrap_class_instance(JavaClassName.Path, from_path)
-        dst_path = wrap_class_instance(JavaClassName.Path, to_path)
+        src_path = get_jpath(from_path)
+        dst_path = get_jpath(to_path)
 
         jfileUtil = wrap_class(JavaClassName.FileUtil)
         return jfileUtil.copy(self._fs, src_path, to_hdfs._fs, dst_path, delete_source, self._configuration)
@@ -116,17 +122,17 @@ class CoreHdfsFs(CoreFsApi):
         self._copy_helper(from_path, to_hdfs, to_path, False)
 
     def create_directory(self, path):
-        return self._fs.mkdirs(wrap_class_instance(JavaClassName.Path, path))
+        return self._fs.mkdirs(get_jpath(path))
 
     def delete(self, path, recursive=True):
-        jpath = self._get_jpath(path)
+        jpath = get_jpath(path)
         self._fs.delete(jpath, recursive)
 
     def get_user(self):
         return self._user
 
     def get_path_info(self, path):
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         return self._get_jpath_info(jpath)
 
     def get_default_block_size(self):
@@ -137,7 +143,7 @@ class CoreHdfsFs(CoreFsApi):
 
     def get_hosts(self, path, start, length):
         result = []
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         jstatus = self._get_jfilestatus(jpath)
         jblock_locations = self._fs.getFileBlockLocations(jstatus, start, length)
         for jblock_location in jblock_locations:
@@ -154,18 +160,18 @@ class CoreHdfsFs(CoreFsApi):
         return self._fs.getRawUsed()
 
     def set_working_directory(self, path):
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         self._fs.setWorkingDirectory(jpath)
 
     def move(self, from_path, to_hdfs, to_path):
         self._copy_helper(from_path, to_hdfs, to_path, True)
 
     def set_replication(self, path, replication):
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         self._fs.setReplication(jpath, replication)
 
     def list_directory(self, path):
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         if not self._fs.exists(jpath):
             raise IOError("Path %s does not exist" % path)
 
@@ -176,8 +182,8 @@ class CoreHdfsFs(CoreFsApi):
         return result
 
     def rename(self, from_path, to_path):
-        jfrom_path = wrap_class_instance(JavaClassName.Path, from_path)
-        jto_path = wrap_class_instance(JavaClassName.Path, to_path)
+        jfrom_path = get_jpath(from_path)
+        jto_path = get_jpath(to_path)
         self._fs.rename(jfrom_path, jto_path)
 
     def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0, readline_chunk_size=16384):
@@ -204,7 +210,7 @@ class CoreHdfsFs(CoreFsApi):
             replication = self._configuration.getInt(REPLICATION_CONFIG_PROPERTY, 1)
 
         # the Java path
-        jpath = self._get_jpath(path)
+        jpath = get_jpath(path)
 
         stream = None
         stream_type = None
@@ -235,14 +241,8 @@ class CoreHdfsFs(CoreFsApi):
         return CoreHdfsFile(flags, stream, stream_type)
 
     def utime(self, path, mtime, atime):
-        jpath = wrap_class_instance(JavaClassName.Path, path)
+        jpath = get_jpath(path)
         self._fs.setTimes(jpath, mtime, atime)
-
-    def _get_jpath(self, path, hdfs=None):
-        if hdfs:
-            jparent = wrap_class_instance(JavaClassName.Path, hdfs)
-            return wrap_class_instance(JavaClassName.Path, jparent, path)
-        return wrap_class_instance(JavaClassName.Path, path)
 
     def _get_jpath_info(self, jpath, jstatus=None):
         info = dict()
@@ -285,7 +285,7 @@ class CoreHdfsFs(CoreFsApi):
     def _get_jfilestatus(self, path):
         jpath = path
         if isinstance(path, str):
-            jpath = wrap_class_instance(JavaClassName.Path, path)
+            jpath = get_jpath(path)
         return self._fs.getFileStatus(jpath)
 
     def _get_jfile_utils(self):
