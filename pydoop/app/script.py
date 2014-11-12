@@ -362,6 +362,7 @@ def add_parser(subparsers):
     "script",
     description=PydoopScript.DESCRIPTION,
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    epilog="Hadoop pipes generic options are supported too. Run command `hadoop pipes` for more information."
     )
   parser.add_argument('module', metavar='MODULE', help='python module file')
   parser.add_argument('input', metavar='INPUT', help='hdfs input path')
