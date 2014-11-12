@@ -1,19 +1,19 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -21,13 +21,17 @@ pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
 
-import os, socket, urlparse, getpass, re
+import os
+import socket
+import urlparse
+import getpass
+import re
 import operator as ops
 
 import pydoop
-hdfs_ext = pydoop.import_version_specific_module("_hdfs")
-import common
-from file import hdfs_file, local_file
+from . import common
+from .file import hdfs_file, local_file
+from .core import core_hdfs_fs
 
 
 class _FSStatus(object):
@@ -57,8 +61,8 @@ def _get_ip(host, default=None):
 
 
 def _get_connection_info(host, port, user):
-    fs = hdfs_ext.hdfs_fs(host, port, user)
-    res = urlparse.urlparse(fs.working_directory())
+    fs = core_hdfs_fs(host, port, user)
+    res = urlparse.urlparse(fs.get_working_directory())
     if res.scheme == "file":
         h, p, u = "", 0, getpass.getuser()
         fs.set_working_directory(os.getcwd())  # libhdfs "remembers" old cwd
@@ -101,7 +105,7 @@ class hdfs(object):
     ignored (i.e., it will always be the current UNIX user).
     """
     SUPPORTED_OPEN_MODES = frozenset([
-        os.O_RDONLY, os.O_WRONLY, os.O_WRONLY|os.O_APPEND, "r", "w", "a"
+        os.O_RDONLY, os.O_WRONLY, os.O_WRONLY | os.O_APPEND, "r", "w", "a"
     ])
     _CACHE = {}
     _ALIASES = {"host": {}, "port": {}, "user": {}}
@@ -118,6 +122,14 @@ class hdfs(object):
             hpu = self.__canonize_hpu(hpu)
         return self._CACHE[hpu]
 
+    def __eq__(self, other):
+        """
+        True if the self and other wrap the same hadoop file system instance
+        :param other:
+        :return:
+        """
+        return type(self) == type(other) and self.fs == other.fs
+
     def __init__(self, host="default", port=0, user=None, groups=None):
         host = host.strip()
         raw_host = host
@@ -131,7 +143,7 @@ class hdfs(object):
             self.__status = self.__lookup((host, port, user))
         except KeyError:
             h, p, u, fs = _get_connection_info(host, port, user)
-            aliasing_info = [] if user else [("user", u, user)]  # (key, alias, name)
+            aliasing_info = [] if user else [("user", u, user)]
             if h != "":
                 aliasing_info.append(("port", p, port))
             ip = _get_ip(h, None)
@@ -145,10 +157,18 @@ class hdfs(object):
             for k, true_x, x in aliasing_info:
                 if true_x != x:
                     self._ALIASES[k][x] = true_x
-            self.__status = _FSStatus(fs, h, p, u, refcount=1)
-            self._CACHE[(ip, p, u)] = self.__status
-        else:
-            self.__status.refcount += 1
+            try:
+                self.__status = self.__lookup((h, p, u))
+            except KeyError:
+                self.__status = _FSStatus(fs, h, p, u, refcount=0)
+                self._CACHE[(ip, p, u)] = self.__status
+        self.__status.refcount += 1
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     @property
     def fs(self):
@@ -210,8 +230,8 @@ class hdfs(object):
         :type path: string
         :param path: the full path to the file
         :type flags: string or int
-        :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for reading,
-          ``'w'`` or :data:`os.O_WRONLY` for writing
+        :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for
+          reading, ``'w'`` or :data:`os.O_WRONLY` for writing
         :type buff_size: int
         :param buff_size: read/write buffer size in bytes
         :type replication: int
@@ -225,6 +245,8 @@ class hdfs(object):
         :return: handle to the open file
         """
         _complain_ifclosed(self.closed)
+        if not path:
+            raise ValueError("Empty path")
         if flags not in self.SUPPORTED_OPEN_MODES:
             raise ValueError("opening mode %r not supported" % flags)
         if not self.host:
@@ -232,7 +254,7 @@ class hdfs(object):
                 flags = "r"
             elif flags == os.O_WRONLY:
                 flags = "w"
-            elif flags == os.O_WRONLY|os.O_APPEND:
+            elif flags == os.O_WRONLY | os.O_APPEND:
                 flags = "a"
             return local_file(self, path, flags)
         if flags == "r":
@@ -240,10 +262,8 @@ class hdfs(object):
         elif flags == "w":
             flags = os.O_WRONLY
         elif flags == "a":
-            flags = os.O_WRONLY|os.O_APPEND
-        f = self.fs.open_file(
-          common.encode_path(path), flags, buff_size, replication, blocksize
-          )
+            flags = os.O_WRONLY | os.O_APPEND
+        f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
         return hdfs_file(f, self, path, flags, readline_chunk_size)
 
     def capacity(self):
@@ -271,20 +291,19 @@ class hdfs(object):
         _complain_ifclosed(self.closed)
         if isinstance(to_hdfs, self.__class__):
             to_hdfs = to_hdfs.fs
-        return self.fs.copy(
-          common.encode_path(from_path), to_hdfs, common.encode_path(to_path)
-          )
+        return self.fs.copy(from_path, to_hdfs, to_path)
 
     def create_directory(self, path):
         """
-        Create directory ``path`` (non-existent parents will be created as well).
+        Create directory ``path`` (non-existent parents will be created as
+        well).
 
         :type path: string
         :param path: the path of the directory
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        return self.fs.create_directory(common.encode_path(path))
+        return self.fs.create_directory(path)
 
     def default_block_size(self):
         """
@@ -303,11 +322,11 @@ class hdfs(object):
         :type path: string
         :param path: the path of the file or directory
         :type recursive: bool
-        :param recursive: if path is directory, delete it recursively when True;
+        :param recursive: if path is directory, delete it recursively when True
         :raises: IOError when ``recursive`` is False and directory is non-empty
         """
         _complain_ifclosed(self.closed)
-        return self.fs.delete(common.encode_path(path), recursive)
+        return self.fs.delete(path, recursive)
 
     def exists(self, path):
         """
@@ -319,7 +338,7 @@ class hdfs(object):
         :return: True if ``path`` exists, else False
         """
         _complain_ifclosed(self.closed)
-        return self.fs.exists(common.encode_path(path))
+        return self.fs.exists(path)
 
     def get_hosts(self, path, start, length):
         """
@@ -337,11 +356,25 @@ class hdfs(object):
         :return: list of hosts that store the block
         """
         _complain_ifclosed(self.closed)
-        return self.fs.get_hosts(common.encode_path(path), start, length)
+        return self.fs.get_hosts(path, start, length)
 
     def get_path_info(self, path):
         """
         Get information about ``path`` as a dict of properties.
+
+        The return value, based upon ``fs.FileStatus`` from the Java API,
+        has the following fields:
+
+        * ``block_size``: HDFS block size of ``path``
+        * ``group``: group associated with ``path``
+        * ``kind``: ``'file'`` or ``'directory'``
+        * ``last_access``: last access time of ``path``
+        * ``last_mod``: last modification time of ``path``
+        * ``name``: fully qualified path name
+        * ``owner``: owner of ``path``
+        * ``permissions``: file system permissions associated with ``path``
+        * ``replication``: replication factor of ``path``
+        * ``size``: size in bytes of ``path``
 
         :type path: string
         :param path: a path in the filesystem
@@ -350,13 +383,10 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        info = self.fs.get_path_info(common.encode_path(path))
-        if isinstance(path, unicode):
-            info['name'] = common.decode_path(info['name'])
-        return info
+        return self.fs.get_path_info(path)
 
     def list_directory(self, path):
-        """
+        r"""
         Get list of files and directories for ``path``\ .
 
         :type path: string
@@ -366,12 +396,7 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        ls = self.fs.list_directory(common.encode_path(path))
-        if isinstance(path, unicode):
-            decode_path = common.decode_path  # speed hack
-            for info in ls:
-                info['name'] = decode_path(info['name'])
-        return ls
+        return self.fs.list_directory(path)
 
     def move(self, from_path, to_hdfs, to_path):
         """
@@ -388,9 +413,7 @@ class hdfs(object):
         _complain_ifclosed(self.closed)
         if isinstance(to_hdfs, self.__class__):
             to_hdfs = to_hdfs.fs
-        return self.fs.move(
-          common.encode_path(from_path), to_hdfs, common.encode_path(to_path)
-          )
+        return self.fs.move(from_path, to_hdfs, to_path)
 
     def rename(self, from_path, to_path):
         """
@@ -403,12 +426,10 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        return self.fs.rename(
-          common.encode_path(from_path), common.encode_path(to_path)
-          )
+        return self.fs.rename(from_path, to_path)
 
     def set_replication(self, path, replication):
-        """
+        r"""
         Set the replication of ``path`` to ``replication``\ .
 
         :type path: string
@@ -418,10 +439,10 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        return self.fs.set_replication(common.encode_path(path), replication)
+        return self.fs.set_replication(path, replication)
 
     def set_working_directory(self, path):
-        """
+        r"""
         Set the working directory to ``path``\ . All relative paths will
         be resolved relative to it.
 
@@ -430,7 +451,7 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        return self.fs.set_working_directory(common.encode_path(path))
+        return self.fs.set_working_directory(path)
 
     def used(self):
         """
@@ -442,18 +463,16 @@ class hdfs(object):
         _complain_ifclosed(self.closed)
         return self.fs.used()
 
-    def working_directory(self, decode=False):
+    def working_directory(self):
         """
         Get the current working directory.
 
-        :type decode: bool
-        :param decode: if :obj:`True`, return the wd as a Unicode object
         :rtype: str or unicode
         :return: current working directory
         """
         _complain_ifclosed(self.closed)
         wd = self.fs.working_directory()
-        return common.decode_path(wd) if decode else wd
+        return wd
 
     def chown(self, path, user='', group=''):
         """
@@ -468,7 +487,7 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        return self.fs.chown(common.encode_path(path), user, group)
+        return self.fs.chown(path, user, group)
 
     @staticmethod
     def __get_umask():
@@ -487,10 +506,10 @@ class hdfs(object):
           to ``path``.
         :raises ValueError: if ``mode_string`` is invalid.
         """
-        Char_to_perm_byte = {'r':4, 'w':2, 'x':1}
+        Char_to_perm_byte = {'r': 4, 'w': 2, 'x': 1}
         Fields = (('u', 6), ('g', 3), ('o', 0))
-        #--
-        m = re.match("\s*([ugoa]*)([-+=])([rwx]*)\s*", mode_string)
+        # --
+        m = re.match(r"\s*([ugoa]*)([-+=])([rwx]*)\s*", mode_string)
         if not m:
             raise ValueError("Invalid mode string %s" % mode_string)
         who = m.group(1)
@@ -498,10 +517,13 @@ class hdfs(object):
         which_perm = m.group(3)
         #--
         old_mode = self.fs.get_path_info(path)['permissions']
-        # The mode to be applied by the operation, repeated three times in a list,
-        # for user, group, and other respectively.  Initially these are identical,
-        # but some may change if we have to respect the umask setting.
-        op_perm = [reduce(ops.ior, [Char_to_perm_byte[c] for c in which_perm])] * 3
+        # The mode to be applied by the operation, repeated three
+        # times in a list, for user, group, and other respectively.
+        # Initially these are identical, but some may change if we
+        # have to respect the umask setting.
+        op_perm = [
+            reduce(ops.ior, [Char_to_perm_byte[c] for c in which_perm])
+        ] * 3
         if 'a' in who:
             who = 'ugo'
         elif who == '':
@@ -514,7 +536,8 @@ class hdfs(object):
         new_mode = 0
         for i, tpl in enumerate(Fields):
             field, shift = tpl
-            # shift by the bits specified for the field; keep only the 3 lowest bits
+            # shift by the bits specified for the field; keep only the
+            # 3 lowest bits
             old = (old_mode >> shift) & 0x7
             if field in who:
                 if what_op == '-':
@@ -524,7 +547,9 @@ class hdfs(object):
                 elif what_op == '+':
                     new = old | op_perm[i]
                 else:
-                    raise RuntimeError("unexpected permission operation %s" % what_op)
+                    raise RuntimeError(
+                        "unexpected permission operation %s" % what_op
+                    )
             else:
                 # copy the previous permissions
                 new = old
@@ -542,7 +567,6 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        path = common.encode_path(path)
         if isinstance(mode, basestring):
             mode_ = self.__compute_mode_from_string(path, mode)
         else:
@@ -562,7 +586,7 @@ class hdfs(object):
         :raises: IOError
         """
         _complain_ifclosed(self.closed)
-        return self.fs.utime(common.encode_path(path), int(mtime), int(atime))
+        return self.fs.utime(path, int(mtime), int(atime))
 
     def walk(self, top):
         """
@@ -574,9 +598,13 @@ class hdfs(object):
         :type top: string or dict
         :param top: an HDFS path or path info dict
         :rtype: iterator
-        :return: path infos of files and directories in the tree rooted at ``top``
+        :return: path infos of files and directories in the tree rooted at
+          ``top``
         :raises: IOError
+        :raises: ValueError if ``top`` is empty
         """
+        if not top:
+            raise ValueError("Empty path")
         if isinstance(top, basestring):
             top = self.get_path_info(top)
         yield top

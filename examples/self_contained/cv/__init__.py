@@ -27,6 +27,6 @@ rather than a single module.
 # parsed by setup.py, check it before modifying them.
 
 __version__ = "0.1"
-__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu"
-__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>"
+__author__ = "Simone Leo, Gianluigi Zanetti, Luca Pireddu, Francesco Cabras, Mauro Del Rio, Marco Enrico Piras"
+__author_email__ = "<simone.leo@crs4.it>, <gianluigi.zanetti@crs4.it>, <luca.pireddu@crs4.it>, <francesco.cabras@crs4.it>, <mauro@crs4.it>, <kikkomep@crs4.it>"
 __url__ = "http://pydoop.sourceforge.net"

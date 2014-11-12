@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include <string.h> 
 #include <error.h>
 #include "hdfsJniHelper.h"
@@ -24,9 +25,6 @@ static volatile int hashTableInited = 0;
 
 #define LOCK_HASH_TABLE() pthread_mutex_lock(&hdfsHashMutex)
 #define UNLOCK_HASH_TABLE() pthread_mutex_unlock(&hdfsHashMutex)
-#define LOCK_JVM_MUTEX() pthread_mutex_lock(&jvmMutex)
-#define UNLOCK_JVM_MUTEX() pthread_mutex_unlock(&jvmMutex)
-
 
 /** The Native return types that methods could return */
 #define VOID          'V'
@@ -47,6 +45,42 @@ static volatile int hashTableInited = 0;
  * It's set to 4096 to account for (classNames + No. of threads)
  */
 #define MAX_HASH_TABLE_ELEM 4096
+
+
+/** Key that allows us to retrieve thread-local storage */
+static pthread_key_t gTlsKey;
+
+/** nonzero if we succeeded in initializing gTlsKey. Protected by the jvmMutex */
+static int gTlsKeyInitialized = 0;
+
+/** Pthreads thread-local storage for each library thread. */
+struct hdfsTls {
+    JNIEnv *env;
+};
+
+/**
+ * The function that is called whenever a thread with libhdfs thread local data
+ * is destroyed.
+ *
+ * @param v         The thread-local data
+ */
+static void hdfsThreadDestructor(void *v)
+{
+    struct hdfsTls *tls = v;
+    JavaVM *vm;
+    JNIEnv *env = tls->env;
+    jint ret;
+
+    ret = (*env)->GetJavaVM(env, &vm);
+    if (ret) {
+        fprintf(stderr, "hdfsThreadDestructor: GetJavaVM failed with "
+                "error %d\n", ret);
+        (*env)->ExceptionDescribe(env);
+    } else {
+        (*vm)->DetachCurrentThread(vm);
+    }
+    free(tls);
+}
 
 
 static int validateMethodType(MethType methType)
@@ -222,7 +256,7 @@ int invokeMethod(JNIEnv *env, RetVal *retval, Exc *exc, MethType methType,
 }
 
 jarray constructNewArrayString(JNIEnv *env, Exc *exc, const char **elements, int size) {
-  const char *className = "Ljava/lang/String;";
+  const char *className = "java/lang/String";
   jobjectArray result;
   int i;
   jclass arrCls = (*env)->FindClass(env, className);
@@ -378,31 +412,26 @@ char *classNameOfObject(jobject jobj, JNIEnv *env) {
 
 
 
-/**
- * getJNIEnv: A helper function to get the JNIEnv* for the given thread.
- * If no JVM exists, then one will be created. JVM command line arguments
- * are obtained from the LIBHDFS_OPTS environment variable.
- *
- * @param: None.
- * @return The JNIEnv* corresponding to the thread.
- */
-JNIEnv* getJNIEnv(void)
-{
 
+/**
+ * Get the global JNI environemnt.
+ * We only have to create the JVM once.  After that, we can use it in
+ * every thread.  You must be holding the jvmMutex when you call this
+ * function.
+ *
+ * @return          The JNIEnv on success; error code otherwise
+ */
+static JNIEnv* getGlobalJNIEnv(void)
+{
     const jsize vmBufLength = 1;
     JavaVM* vmBuf[vmBufLength]; 
     JNIEnv *env;
     jint rv = 0; 
     jint noVMs = 0;
 
-    // Only the first thread should create the JVM. The other trheads should
-    // just use the JVM created by the first thread.
-    LOCK_JVM_MUTEX();
-
     rv = JNI_GetCreatedJavaVMs(&(vmBuf[0]), vmBufLength, &noVMs);
     if (rv != 0) {
         fprintf(stderr, "JNI_GetCreatedJavaVMs failed with error: %d\n", rv);
-        UNLOCK_JVM_MUTEX();
         return NULL;
     }
 
@@ -411,7 +440,6 @@ JNIEnv* getJNIEnv(void)
         char *hadoopClassPath = getenv("CLASSPATH");
         if (hadoopClassPath == NULL) {
             fprintf(stderr, "Environment variable CLASSPATH not set!\n");
-            UNLOCK_JVM_MUTEX();
             return NULL;
         } 
         char *hadoopClassPathVMArg = "-Djava.class.path=";
@@ -421,28 +449,35 @@ JNIEnv* getJNIEnv(void)
         snprintf(optHadoopClassPath, optHadoopClassPathLen,
                 "%s%s", hadoopClassPathVMArg, hadoopClassPath);
 
+        // Determine the # of LIBHDFS_OPTS args
         int noArgs = 1;
-        //determine how many arguments were passed as LIBHDFS_OPTS env var
         char *hadoopJvmArgs = getenv("LIBHDFS_OPTS");
         char jvmArgDelims[] = " ";
+        char *str, *token, *savePtr;
         if (hadoopJvmArgs != NULL)  {
-                char *result = NULL;
-                result = strtok( hadoopJvmArgs, jvmArgDelims );
-                while ( result != NULL ) {
-                        noArgs++;
-        		result = strtok( NULL, jvmArgDelims);
-           	}
+          hadoopJvmArgs = strdup(hadoopJvmArgs);
+          for (noArgs = 1, str = hadoopJvmArgs; ; noArgs++, str = NULL) {
+            token = strtok_r(str, jvmArgDelims, &savePtr);
+            if (NULL == token) {
+              break;
+            }
+          }
+          free(hadoopJvmArgs);
         }
+
+        // Now that we know the # args, populate the options array
         JavaVMOption options[noArgs];
         options[0].optionString = optHadoopClassPath;
-		//fill in any specified arguments
+        hadoopJvmArgs = getenv("LIBHDFS_OPTS");
 	if (hadoopJvmArgs != NULL)  {
-            char *result = NULL;
-            result = strtok( hadoopJvmArgs, jvmArgDelims );	
-            int argNum = 1;
-            for (;argNum < noArgs ; argNum++) {
-                options[argNum].optionString = result; //optHadoopArg;
+          hadoopJvmArgs = strdup(hadoopJvmArgs);
+          for (noArgs = 1, str = hadoopJvmArgs; ; noArgs++, str = NULL) {
+            token = strtok_r(str, jvmArgDelims, &savePtr);
+            if (NULL == token) {
+              break;
             }
+            options[noArgs].optionString = token;
+          }
         }
 
         //Create the VM
@@ -454,14 +489,17 @@ JNIEnv* getJNIEnv(void)
         vm_args.ignoreUnrecognized = 1;
 
         rv = JNI_CreateJavaVM(&vm, (void*)&env, &vm_args);
+
+        if (hadoopJvmArgs != NULL)  {
+          free(hadoopJvmArgs);
+        }
+        free(optHadoopClassPath);
+
         if (rv != 0) {
             fprintf(stderr, "Call to JNI_CreateJavaVM failed "
                     "with error: %d\n", rv);
-            UNLOCK_JVM_MUTEX();
             return NULL;
         }
-
-        free(optHadoopClassPath);
     }
     else {
         //Attach this thread to the VM
@@ -470,11 +508,78 @@ JNIEnv* getJNIEnv(void)
         if (rv != 0) {
             fprintf(stderr, "Call to AttachCurrentThread "
                     "failed with error: %d\n", rv);
-            UNLOCK_JVM_MUTEX();
             return NULL;
         }
     }
-    UNLOCK_JVM_MUTEX();
 
     return env;
 }
+
+/**
+ * getJNIEnv: A helper function to get the JNIEnv* for the given thread.
+ * If no JVM exists, then one will be created. JVM command line arguments
+ * are obtained from the LIBHDFS_OPTS environment variable.
+ *
+ * Implementation note: we rely on POSIX thread-local storage (tls).
+ * This allows us to associate a destructor function with each thread, that
+ * will detach the thread from the Java VM when the thread terminates.  If we
+ * failt to do this, it will cause a memory leak.
+ *
+ * However, POSIX TLS is not the most efficient way to do things.  It requires a
+ * key to be initialized before it can be used.  Since we don't know if this key
+ * is initialized at the start of this function, we have to lock a mutex first
+ * and check.  Luckily, most operating systems support the more efficient
+ * __thread construct, which is initialized by the linker.
+ *
+ * @param: None.
+ * @return The JNIEnv* corresponding to the thread.
+ */
+JNIEnv* getJNIEnv(void)
+{
+    JNIEnv *env;
+    struct hdfsTls *tls;
+    int ret;
+
+    static __thread struct hdfsTls *quickTls = NULL;
+    if (quickTls)
+        return quickTls->env;
+    pthread_mutex_lock(&jvmMutex);
+    if (!gTlsKeyInitialized) {
+        ret = pthread_key_create(&gTlsKey, hdfsThreadDestructor);
+        if (ret) {
+            pthread_mutex_unlock(&jvmMutex);
+            fprintf(stderr, "pthread_key_create failed with error %d\n", ret);
+            return NULL;
+        }
+        gTlsKeyInitialized = 1;
+    }
+    tls = pthread_getspecific(gTlsKey);
+    if (tls) {
+        pthread_mutex_unlock(&jvmMutex);
+        return tls->env;
+    }
+
+    env = getGlobalJNIEnv();
+    pthread_mutex_unlock(&jvmMutex);
+    if (!env) {
+        fprintf(stderr, "getJNIEnv: getGlobalJNIEnv failed\n");
+        return NULL;
+    }
+    tls = calloc(1, sizeof(struct hdfsTls));
+    if (!tls) {
+        fprintf(stderr, "getJNIEnv: OOM allocating %zd bytes\n",
+                sizeof(struct hdfsTls));
+        return NULL;
+    }
+    tls->env = env;
+    ret = pthread_setspecific(gTlsKey, tls);
+    if (ret) {
+        fprintf(stderr, "getJNIEnv: pthread_setspecific failed with "
+            "error code %d\n", ret);
+        hdfsThreadDestructor(tls);
+        return NULL;
+    }
+    quickTls = tls;
+    return env;
+}
+

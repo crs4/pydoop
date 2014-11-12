@@ -1,19 +1,19 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -23,7 +23,7 @@ pydoop.hdfs.file -- HDFS File Objects
 
 import os
 
-import common
+from pydoop.hdfs import common
 
 
 def _complain_ifclosed(closed):
@@ -41,7 +41,8 @@ class hdfs_file(object):
     """
     ENDL = os.linesep
 
-    def __init__(self, raw_hdfs_file, fs, name, flags, chunk_size=common.BUFSIZE):
+    def __init__(self, raw_hdfs_file, fs, name, flags,
+                 chunk_size=common.BUFSIZE):
         if not chunk_size > 0:
             raise ValueError("chunk size must be positive")
         self.f = raw_hdfs_file
@@ -119,13 +120,15 @@ class hdfs_file(object):
         Read and return a line of text.
 
         :rtype: string
-        :return: the next line of text in the file, including the newline character
+
+        :return: the next line of text in the file, including the
+          newline character
         """
         _complain_ifclosed(self.closed)
         eol = self.__read_chunks_until_nl()
         line = "".join(self.buffer_list) + self.chunk[self.p:eol+1]
         self.buffer_list = []
-        self.p = eol+1
+        self.p = eol + 1
         return line
 
     def next(self):
@@ -144,7 +147,8 @@ class hdfs_file(object):
 
     def available(self):
         """
-        Number of bytes that can be read from this input stream without blocking.
+        Number of bytes that can be read from this input stream without
+        blocking.
 
         :rtype: int
         :return: available bytes
@@ -164,8 +168,9 @@ class hdfs_file(object):
             return retval
 
     def pread(self, position, length):
-        """
-        Read ``length`` bytes of data from the file, starting from ``position``\ .
+        r"""
+        Read ``length`` bytes of data from the file, starting from
+        ``position``\ .
 
         :type position: int
         :param position: position from which to read
@@ -178,7 +183,7 @@ class hdfs_file(object):
         return self.f.pread(position, length)
 
     def pread_chunk(self, position, chunk):
-        """
+        r"""
         Works like :meth:`pread`\ , but data is stored in the writable
         buffer ``chunk`` rather than returned. Reads at most a number of
         bytes equal to the size of ``chunk``\ .
@@ -221,7 +226,7 @@ class hdfs_file(object):
         return "".join(chunks)
 
     def read_chunk(self, chunk):
-        """
+        r"""
         Works like :meth:`read`\ , but data is stored in the writable
         buffer ``chunk`` rather than returned. Reads at most a number of
         bytes equal to the size of ``chunk``\ .
@@ -357,13 +362,13 @@ class local_file(file):
     def pread_chunk(self, position, chunk):
         _complain_ifclosed(self.closed)
         data = self.pread(position, len(chunk))
-        chunk.value = data
+        chunk[:len(data)] = data
         return len(data)
 
     def read_chunk(self, chunk):
         _complain_ifclosed(self.closed)
         data = self.read(len(chunk))
-        chunk.value = data
+        chunk[:len(data)] = data
         return len(data)
 
     def write_chunk(self, chunk):
