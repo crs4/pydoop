@@ -1,11 +1,6 @@
 jdk: 
 - oraclejdk7
-after_success: 
-- #sudo apt-get install debhelper python-all-dev libboost-python-dev libssl-dev python-sphinx devscripts inkscape
-- #make debian
-- #cd sandbox
-- #python -c "import smtplib, glob;from email.mime.application import MIMEApplication;from email.mime.multipart import MIMEMultipart;from email.mime.text import MIMEText;fromaddr = 'travis.ci.rs4@gmail.com';toaddrs  = 'travis.ci.rs4@gmail.com';msg = MIMEMultipart();msg['Subject'] = 'New pydoop deb for $HADOOPVERSION build:$TRAVIS_BUILD_NUMBER';msg['From'] = 'travis.ci.rs4@gmail.com';msg['To'] = 'travis.ci.rs4@gmail.com';username = 'travis.ci.rs4';password = '$pw';part = MIMEText(msg['Subject']);msg.attach(part);deb_file_name = glob.glob('*.deb')[0];part = MIMEApplication(open(deb_file_name,'rb').read());part.add_header('Content-Disposition', 'attachment', filename=deb_file_name);msg.attach(part);server = smtplib.SMTP('smtp.gmail.com:587');server.starttls();server.login(username,password);server.sendmail(msg['From'], msg['To'], msg.as_string());server.quit()"
-env: 
+env:
   global: 
     secure: d1kOuK3dSEs2nNZdGFNcY9KLI5PuWOv7xq9V1b+/+rzhi/BezsvEAjRw+7SeVa/sBk5LcKuKtW06Mjst0npXk487TpQpuLSNzUbX1aaTw4+oG0iJWKeK559iiMs+MBSFYvC6XPts5DkNM+hn5KmhuzCTHBotCv7ZB9Zmuj/ULsg=
   matrix: 
@@ -40,8 +35,6 @@ before_install:
 - . .travis/install_hadoop.sh
 
 script:
-- #sudo jps
-- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
 - python test/all_tests.py
 - cd examples
 - ./run_all
