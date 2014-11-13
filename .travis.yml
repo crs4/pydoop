@@ -13,7 +13,7 @@ python:
 
 before_install:
 - sudo apt-get install build-essential python-all-dev libssl-dev
-- if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then pip install JPype; fi
+- if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then wget http://garr.dl.sourceforge.net/project/jpype/JPype/0.5.4/JPype-0.5.4.2.zip; unzip JPype-0.5.4.2.zip; cd JPype-0.5.4.2; $VIRTUAL_ENV/bin/python setup.py install --user; cd ../; fi
 - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
@@ -23,12 +23,12 @@ before_install:
 - . .travis/install_hadoop.sh
 
 install:
-- python setup.py build --hdfs-core-impl $HDFS_BACKEND
-- python setup.py install --skip-build
+- $VIRTUAL_ENV/bin/python setup.py build --hdfs-core-impl $HDFS_BACKEND
+- $VIRTUAL_ENV/bin/python setup.py install --skip-build
 
 script:
 - cd test;
-- python all_tests.py
+- $VIRTUAL_ENV/bin/python all_tests.py
 - cd ../examples
 - ./run_all
 language: python
