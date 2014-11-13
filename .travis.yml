@@ -35,8 +35,9 @@ before_install:
 - . .travis/install_hadoop.sh
 
 script:
-- python test/all_tests.py
-- cd examples
+- cd test
+- python all_tests.py
+- cd ../examples
 - ./run_all
 - cd ../
 language: python
