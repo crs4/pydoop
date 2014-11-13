@@ -1,30 +1,17 @@
 jdk: 
 - oraclejdk7
+
 env:
   global: 
     secure: d1kOuK3dSEs2nNZdGFNcY9KLI5PuWOv7xq9V1b+/+rzhi/BezsvEAjRw+7SeVa/sBk5LcKuKtW06Mjst0npXk487TpQpuLSNzUbX1aaTw4+oG0iJWKeK559iiMs+MBSFYvC6XPts5DkNM+hn5KmhuzCTHBotCv7ZB9Zmuj/ULsg=
-  matrix: 
-  - HADOOPVERSION=0.20.2
-  - HADOOPVERSION=cdh3u4
-  - HADOOPVERSION=cdh3u5
-  - HADOOPVERSION=1.0.4
-  - HADOOPVERSION=1.1.2
-  - HADOOPVERSION=1.2.1
-  - HADOOPVERSION=2.2.0
-  - HADOOPVERSION=cdh4.2.0
-  - HADOOPVERSION=cdh4.2.0 YARN=true
-  - HADOOPVERSION=cdh4.3.0
-  - HADOOPVERSION=cdh4.3.0 YARN=true
-  - HADOOPVERSION=cdh4.4.0
-  - HADOOPVERSION=cdh4.4.0 YARN=true
-  - HADOOPVERSION=cdh4.5.0
-  - HADOOPVERSION=cdh4.5.0 YARN=true
-python: 
+  matrix:
+  - HADOOPVERSION=2.2.0 HDFS_BACKEND=native
+  - HADOOPVERSION=2.2.0 HDFS_BACKEND=jpype-bridged
+
+python:
 - "2.7"
-install:
-- export LD_PRELOAD=/lib/x86_64-linux-gnu/libssl.so.1.0.0
-- python setup.py install
-before_install: 
+
+before_install:
 - sudo apt-get install build-essential python-all-dev libssl-dev
 - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
@@ -34,10 +21,13 @@ before_install:
 - groups $USER
 - . .travis/install_hadoop.sh
 
+install:
+- python setup.py build --hdfs-core-impl $HDFS_BACKEND
+- python setup.py install --skip-build
+
 script:
-- cd test
+- cd test;
 - python all_tests.py
 - cd ../examples
 - ./run_all
-- cd ../
 language: python
