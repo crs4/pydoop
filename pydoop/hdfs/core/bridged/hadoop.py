@@ -18,6 +18,14 @@ REPLICATION_CONFIG_PROPERTY = "dfs.replication"
 BLOCKSIZE_CONFIG_PROPERTY = "dfs.blocksize"
 
 
+def _unsigned_bytes(jbuf, off=0, length=None):
+    if length is None:
+        length = len(jbuf)
+    stop = off + length
+    if stop > len(jbuf):
+        raise IndexError('buffer index out of range')
+    return ''.join(chr(jbuf[_] & 0xff) for _ in xrange(off, stop))
+
 
 class JavaClassName(object):
     """
@@ -387,8 +395,7 @@ class CoreHdfsFile(CoreFileApi):
             read = self._stream.read(buf)
             if read == -1:
                 return ""
-            chunk.value = ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
-            #chunk.value = wrap_class_instance(JavaClassName.String, buf).toString()[:read]
+            chunk[:read] = _unsigned_bytes(buf, length=read)
             return read
 
         except Exception, e:
@@ -422,8 +429,7 @@ class CoreHdfsFile(CoreFileApi):
             bb = jbyte_buffer_class.allocate(length)
             buf = bb.array()
             read = self._stream.read(long(position), buf, 0, length)
-            chunk.value = ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
-            #chunk.value = wrap_class_instance(JavaClassName.String, buf).toString()
+            chunk[:read] = _unsigned_bytes(buf, length=read)
             return read
 
         except Exception, e:
