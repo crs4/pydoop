@@ -13,6 +13,7 @@ python:
 
 before_install:
 - sudo apt-get install build-essential python-all-dev libssl-dev
+- if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then sudo pip install jpype; fi
 - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
