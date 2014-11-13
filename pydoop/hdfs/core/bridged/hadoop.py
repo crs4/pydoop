@@ -338,9 +338,7 @@ class CoreHdfsFile(CoreFileApi):
         #current_size = self._stream.size()
 
         if length > 0:
-            bdata = bytearray(data)
-            bytes = self._jbytearray(bdata)
-            self._stream.write(bytes)
+            self._stream.write(self._jbytearray(data))
 
         #written = self._stream.size() - current_size
         #return written
