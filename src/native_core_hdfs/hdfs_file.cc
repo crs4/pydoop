@@ -382,6 +382,14 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
 
 PyObject* FileClass_flush(FileInfo *self){
     int result = hdfsFlush(self->fs, self->file);
-    return Py_BuildValue("i", result);
+
+    if (result >= 0) {
+        Py_RETURN_NONE;
+    }
+    else {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+
 }
 
