@@ -321,6 +321,14 @@ PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
     if (! PyArg_ParseTuple(args, "n", &position))
         return NULL;
 
+    if (position < 0) {
+        // raise an IOError like a regular python file
+        errno = EINVAL;
+        PyErr_SetFromErrno(PyExc_IOError);
+        errno = 0;
+        return NULL;
+    }
+
     int result = hdfsSeek(self->fs, self->file, position);
     return Py_BuildValue("i", result);
 }
