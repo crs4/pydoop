@@ -154,6 +154,8 @@ class CoreHdfsFs(CoreFsApi):
         return self._host
 
     def get_hosts(self, path, start, length):
+        if start < 0 or length < 0:
+            raise ValueError('neither start nor length can be negative')
         result = []
         jpath = get_jpath(path)
         jstatus = self._get_jfilestatus(jpath)
