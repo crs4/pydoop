@@ -287,7 +287,7 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(f.pread(offset, length), content[offset:offset+length])
             self.assertEqual(f.tell(), 0)
             self.assertRaises(ValueError, f.pread, -1, 10)
-            self.assertEqual(content[1:], f.pread(1, -1))
+            self.assertRaises(ValueError, f.pread, 0, -1)
             # read starting past end of file
             self.assertRaises(IOError, f.pread, len(content) + 1, 10)
             # read past end of file
