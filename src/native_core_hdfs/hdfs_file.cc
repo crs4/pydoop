@@ -123,9 +123,12 @@ static Py_ssize_t _read_into_str(FileInfo *self, char* buf, Py_ssize_t nbytes) {
 
 static PyObject* _read_new_pystr(FileInfo* self, Py_ssize_t nbytes) {
 
-    if (nbytes < 0) {
-        PyErr_SetString(PyExc_ValueError, "nbytes must be >= 0");
-        return NULL;
+    if (nbytes < 0) { // read entire file
+        nbytes = hdfsAvailable(self->fs, self->file);
+        if (nbytes < 0) {
+            PyErr_SetFromErrno(PyExc_IOError);
+            return NULL;
+        }
     }
 
     // Allocate an uninitialized string object.
@@ -187,9 +190,12 @@ static Py_ssize_t _pread_into_str(FileInfo *self, char* buffer, Py_ssize_t pos, 
 
 static PyObject* _pread_new_pystr(FileInfo* self, Py_ssize_t pos, Py_ssize_t nbytes) {
 
-    if (nbytes < 0) {
-        PyErr_SetString(PyExc_ValueError, "nbytes must be >= 0");
-        return NULL;
+    if (nbytes < 0) { // read entire file
+        nbytes = hdfsAvailable(self->fs, self->file);
+        if (nbytes < 0) {
+            PyErr_SetFromErrno(PyExc_IOError);
+            return NULL;
+        }
     }
 
     // Allocate an uninitialized string object.
