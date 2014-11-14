@@ -330,22 +330,30 @@ PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
     }
 
     int result = hdfsSeek(self->fs, self->file, position);
-    return Py_BuildValue("i", result);
+    if (result >= 0)
+        Py_RETURN_NONE;
+    else {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
 }
-
 
 
 PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
     tOffset offset = hdfsTell(self->fs, self->file);
-    return Py_BuildValue("n", offset);
+    if (offset >= 0)
+        return Py_BuildValue("n", offset);
+    else {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
 }
 
 
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
 {
-
     char* buffer;
     int buffer_length;
 
