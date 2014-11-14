@@ -121,7 +121,7 @@ def generate_hdfs_config():
     This is only relevant for recent Hadoop versions.
     """
     config_fn = os.path.join(
-        'src', 'hadoop-' + str(HADOOP_VERSION_INFO), "libhdfs", "config.h"
+        'src', 'libhdfs', str(HADOOP_VERSION_INFO), "config.h"
     )
     with open(config_fn, "w") as f:
         f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
@@ -152,26 +152,23 @@ def write_version(filename="pydoop/version.py"):
 def build_hdfscore_native_impl():
     generate_hdfs_config()
     hdfs_ext_sources = []
-    if HADOOP_VERSION_INFO.tuple[0] <= 1:
-        hdfs_ext_sources += [os.path.join(
-            'src/hadoop-' + str(HADOOP_VERSION_INFO) + "/libhdfs", x
-        ) for x in ['hdfs.c', 'hdfsJniHelper.c']]
-    else:
-        hdfs_ext_sources += [os.path.join(
-            'src/hadoop-' + str(HADOOP_VERSION_INFO) + "/libhdfs", x
-        ) for x in [
-            'hdfs.c', 'jni_helper.c', 'exception.c', 'native_mini_dfs.c'
-        ]]
+    hadoop_v = HADOOP_VERSION_INFO.tuple[0]
+    hdfs_ext_sources += [os.path.join('src/libhdfs',
+                                      str(HADOOP_VERSION_INFO), x)
+                         for x in (['hdfs.c', 'hdfsJniHelper.c']
+                                   if hadoop_v <= 1 else
+                                   ['hdfs.c', 'jni_helper.c', 'exception.c',
+                                    'native_mini_dfs.c'])]
     hdfs_ext_sources += [
         os.path.join('src/native_core_hdfs', x) for x in [
             'hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc', 'hdfs_utils.cc'
         ]]
-    libhdfs_macros = [("HADOOP_LIBHDFS_V1" if HADOOP_VERSION_INFO.tuple[0] <= 1
+    libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v <= 1
                        else "HADOOP_LIBHDFS_V2", 1)]
     native_hdfs_core = Extension(
         'native_core_hdfs',
         include_dirs=jvm.get_include_dirs() + [
-            os.path.join('src/hadoop-' + str(HADOOP_VERSION_INFO) + '/libhdfs')
+            os.path.join('src/libhdfs', str(HADOOP_VERSION_INFO))
         ],
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
