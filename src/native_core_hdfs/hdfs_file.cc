@@ -105,6 +105,19 @@ static int _ensure_open_for_reading(FileInfo* self) {
     return 1; // True
 }
 
+static int _ensure_open_for_writing(FileInfo* self) {
+    #ifdef HADOOP_LIBHDFS_V1
+    if(!hdfsFileIsOpenForWrite(self)){
+    #else
+    if(!hdfsFileIsOpenForWrite(self->file)){
+    #endif
+        PyErr_SetString(PyExc_IOError, "File is not opened in WRITE ('w') mode");
+        return 0; // False
+    }
+
+    return 1; // True
+}
+
 static Py_ssize_t _read_into_str(FileInfo *self, char* buf, Py_ssize_t nbytes) {
 
     if (nbytes < 0) {
@@ -348,49 +361,24 @@ PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
 {
-    char* buffer;
-    int buffer_length;
+    Py_buffer buffer;
 
-    #ifdef HADOOP_LIBHDFS_V1
-    if(!hdfsFileIsOpenForWrite(self)){
-    #else
-    if(!hdfsFileIsOpenForWrite(self->file)){
-    #endif
-        PyErr_SetString(PyExc_IOError, "File is not opened in WRITE ('w') mode");
+    if (!_ensure_open_for_writing(self))
+        return NULL;
+
+    if (! PyArg_ParseTuple(args, "s*",  &buffer))
+        return NULL;
+
+    Py_ssize_t written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
+    PyBuffer_Release(&buffer);
+
+    if (written >= 0)
+        return Py_BuildValue("n", written);
+    else {
+        PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
     }
-
-    if (! PyArg_ParseTuple(args, "s#",  &buffer, &buffer_length))
-        return NULL;
-
-    int written = hdfsWrite(self->fs, self->file, buffer, buffer_length);
-    return Py_BuildValue("i", written);
 }
-
-
-
-PyObject* FileClass_write_chunk(FileInfo* self, PyObject *args, PyObject *kwds)
-{
-
-    char* buffer;
-    int buffer_length;
-
-    #ifdef HADOOP_LIBHDFS_V1
-    if(!hdfsFileIsOpenForWrite(self)){
-    #else
-    if(!hdfsFileIsOpenForWrite(self->file)){
-    #endif
-        PyErr_SetString(PyExc_IOError, "File is not opened in WRITE ('w') mode");
-        return NULL;
-    }
-
-    if (! PyArg_ParseTuple(args, "s#", &buffer, &buffer_length))
-        return NULL;
-
-    int written = hdfsWrite(self->fs, self->file, buffer, buffer_length);
-    return Py_BuildValue("i", written);
-}
-
 
 PyObject* FileClass_flush(FileInfo *self){
     int result = hdfsFlush(self->fs, self->file);

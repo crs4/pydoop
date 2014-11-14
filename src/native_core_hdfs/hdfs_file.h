@@ -48,8 +48,6 @@ PyObject* FileClass_mode(FileInfo* self);
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FileClass_write_chunk(FileInfo* self, PyObject *args, PyObject *kwds);
-
 PyObject* FileClass_get_mode(FileInfo *self);
 
 PyObject* FileClass_available(FileInfo *self);
@@ -104,10 +102,6 @@ static PyMethodDef FileClass_methods[] = {
         },
 
         {"write", (PyCFunction)FileClass_write, METH_VARARGS,
-                "FIXME"                           
-        },
-
-        {"write_chunk", (PyCFunction)FileClass_write_chunk, METH_VARARGS,
                 "FIXME"                           
         },
 
