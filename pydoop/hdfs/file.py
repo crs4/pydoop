@@ -180,6 +180,10 @@ class hdfs_file(object):
         :return: the chunk of data read from the file
         """
         _complain_ifclosed(self.closed)
+        if position < 0:
+            raise ValueError("position must be >= 0")
+        if length < 0:
+            length = self.size - position
         return self.f.pread(position, length)
 
     def pread_chunk(self, position, chunk):
@@ -357,6 +361,8 @@ class local_file(file):
             raise ValueError("Position must be >= 0")
         old_pos = self.tell()
         self.seek(position)
+        if length < 0:
+            length = self.size - position
         data = self.read(length)
         self.seek(old_pos)
         return data

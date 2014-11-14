@@ -286,8 +286,8 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             self.assertEqual(f.pread(offset, length), content[offset:offset+length])
             self.assertEqual(f.tell(), 0)
+            self.assertEqual(content[1:], f.pread(1, -1))
             self.assertRaises(ValueError, f.pread, -1, 10)
-            self.assertRaises(ValueError, f.pread, 0, -1)
             # read starting past end of file
             self.assertRaises(IOError, f.pread, len(content) + 1, 10)
             # read past end of file
@@ -423,6 +423,7 @@ class TestCommon(unittest.TestCase):
                 self.assertEqual(f.tell(), 2)
                 f.seek(-1, os.SEEK_END)
                 self.assertEqual(f.tell(), len(text) - 1)
+                # seek past end of file
                 self.assertRaises(IOError, f.seek, len(text) + 10)
 
     def block_boundary(self):
