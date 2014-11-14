@@ -350,8 +350,12 @@ class local_file(file):
         return self.__size
 
     def write(self, data):
+        _complain_ifclosed(self.closed)
         if isinstance(data, unicode):
             data = data.encode(common.TEXT_ENCODING)
+        elif not isinstance(data, (basestring, bytearray)):
+            # access non string data through a buffer
+            data = str(buffer(data))
         super(local_file, self).write(data)
         return len(data)
 
@@ -395,5 +399,4 @@ class local_file(file):
         return len(data)
 
     def write_chunk(self, chunk):
-        _complain_ifclosed(self.closed)
-        return self.write(chunk.value)
+        return self.write(chunk)

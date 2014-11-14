@@ -377,13 +377,19 @@ PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
 {
+    PyObject* input;
     Py_buffer buffer;
 
     if (!_ensure_open_for_writing(self))
         return NULL;
 
-    if (! PyArg_ParseTuple(args, "s*",  &buffer))
+    if (! PyArg_ParseTuple(args, "O",  &input))
         return NULL;
+
+    if (PyObject_GetBuffer(input, &buffer, PyBUF_SIMPLE) < 0) {
+        PyErr_SetString(PyExc_TypeError, "Argument is not accessible as a Python buffer");
+        return NULL;
+    }
 
     Py_ssize_t written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
     PyBuffer_Release(&buffer);

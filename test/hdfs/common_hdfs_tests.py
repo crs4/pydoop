@@ -261,6 +261,11 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(bytes_written, len(content))
         with self.fs.open_file(path) as fo:
             self.assertEqual(content, fo.read())
+        chunk = create_string_buffer(len(content))
+        chunk[:] = content
+        with self.fs.open_file(path, "w") as fo:
+            bytes_written = fo.write(chunk)
+            self.assertEqual(bytes_written, len(content))
 
         # try to write a unicode object
         with self.fs.open_file(path, "w") as fo:
