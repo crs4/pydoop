@@ -2589,9 +2589,9 @@ done:
     destroyLocalReference(env, jPath);
     destroyLocalReference(env, jPathList);
 
+    errno = ret;
     if (ret) {
         hdfsFreeFileInfo(pathList, jPathListSize);
-        errno = ret;
         return NULL;
     }
     *numEntries = jPathListSize;
