@@ -99,9 +99,8 @@ class CoreHdfsFs(CoreFsApi):
         self._fs.setPermission(jpath_, jpermission)
 
     def chown(self, path, user, group):
-        if (user is None or user == '') and (group is None or group == ''):
-            raise Exception("Both owner and group cannot be null in chown")
-
+        if not user and not group:
+            return
         jpath = get_jpath(path)
         old_path_info = self._get_jpath_info(jpath)
         if user is None or user == '':
