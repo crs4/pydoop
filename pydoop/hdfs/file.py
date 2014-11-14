@@ -353,6 +353,8 @@ class local_file(file):
 
     def pread(self, position, length):
         _complain_ifclosed(self.closed)
+        if position < 0:
+            raise ValueError("Position must be >= 0")
         old_pos = self.tell()
         self.seek(position)
         data = self.read(length)
