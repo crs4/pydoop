@@ -413,6 +413,7 @@ class TestCommon(unittest.TestCase):
                 self.assertEqual(f.tell(), 2)
                 f.seek(-1, os.SEEK_END)
                 self.assertEqual(f.tell(), len(text) - 1)
+                self.assertRaises(IOError, f.seek, len(text) + 10)
 
     def block_boundary(self):
         hd_info = pydoop.hadoop_version_info()
