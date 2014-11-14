@@ -296,8 +296,7 @@ class hdfs_file(object):
         :rtype: int
         :return: the number of bytes written
         """
-        _complain_ifclosed(self.closed)
-        return self.f.write_chunk(chunk)
+        return self.write(chunk)
 
     def flush(self):
         """

@@ -246,6 +246,22 @@ class TestCommon(unittest.TestCase):
         for factory in bytearray, create_string_buffer:
             self.__read_chunk(factory)
 
+    def write(self):
+        content = utils.make_random_data()
+        path = self._make_random_path()
+        with self.fs.open_file(path, "w") as fo:
+            bytes_written = fo.write(content)
+            self.assertEqual(bytes_written, len(content))
+        with self.fs.open_file(path) as fo:
+            self.assertEqual(content, fo.read())
+
+        with self.fs.open_file(path, "w") as fo:
+            bytes_written = fo.write(bytearray(content))
+            self.assertEqual(bytes_written, len(content))
+        with self.fs.open_file(path) as fo:
+            self.assertEqual(content, fo.read())
+
+
     def write_chunk(self):
         content = utils.make_random_data()
         chunk = create_string_buffer(len(content))
@@ -254,7 +270,6 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write_chunk(chunk)
             self.assertEqual(bytes_written, len(content))
-        return path
 
     def append(self):
         replication = 1  # see https://issues.apache.org/jira/browse/HDFS-3091
@@ -514,6 +529,7 @@ def common_tests():
         'flush',
         'read',
         'read_chunk',
+        'write',
         'write_chunk',
         'append',
         'tell',
