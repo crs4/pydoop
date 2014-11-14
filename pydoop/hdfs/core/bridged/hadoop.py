@@ -113,7 +113,12 @@ class CoreHdfsFs(CoreFsApi):
         return self._fs.exists(get_jpath(path))
 
     def get_capacity(self):
-        return self._fs.getRawCapacity()
+        try:
+            capacity_getter = self._fs.getRawCapacity
+        except AttributeError:
+            raise RuntimeError("cannot get capacity of local file system")
+        else:
+            return capacity_getter()
 
     def close(self):
         self._fs.close()
