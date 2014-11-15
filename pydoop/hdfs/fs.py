@@ -274,6 +274,9 @@ class hdfs(object):
         :return: the raw capacity
         """
         _complain_ifclosed(self.closed)
+        if self.__status.host is '':
+            raise RuntimeError('Capacity is not defined for a local fs')
+        
         return self.fs.capacity()
 
     def copy(self, from_path, to_hdfs, to_path):
