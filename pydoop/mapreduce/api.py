@@ -247,9 +247,11 @@ class ReduceContext(Context):
 
     @abstractmethod
     def next_value(self):
+        "returns True if there is another value that can be processed"
         pass
 
     def nextValue(self):
+        "returns True if there is another value that can be processed"
         return self.next_value()
 
 
