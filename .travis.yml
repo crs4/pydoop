@@ -41,8 +41,10 @@ before_install:
 
 script:
 - #sudo jps
-- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
-- python test/all_tests.py
+- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/
+- cd test
+- python all_tests.py
+- cd ../
 - cd examples
 - ./run_all
 - cd ../
