@@ -334,7 +334,7 @@ class RecordReader(Closable):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, context):
+    def __init__(self, context=None):
         self.context = context
 
     def __iter__(self):
