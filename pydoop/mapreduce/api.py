@@ -380,7 +380,7 @@ class RecordWriter(Closable):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, context):
+    def __init__(self, context=None):
         self.context = context
 
     @abstractmethod
