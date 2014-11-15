@@ -44,6 +44,8 @@ Context objects. That is:
 
 from abc import ABCMeta, abstractmethod
 
+from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
+
 
 class PydoopError(Exception):
     pass
@@ -73,6 +75,7 @@ class JobConf(dict):
         if 1 & len(values):
             raise PydoopError('JobConf.__init__: len(values) should be even')
         super(JobConf, self).__init__(zip(values[::2], values[1::2]))
+        self.__mirror_conf_across_versions()
 
     def hasKey(self, key):
         return self.has_key(key)
@@ -95,7 +98,8 @@ class JobConf(dict):
     def getBoolean(self, key, default=None):
         return self.get_bool(key, default)
 
-    def get(self, *args): #FIXME: deprecated behaviour, here only for backward compatibility
+    #get below is deprecated behaviour, here only for backward compatibility
+    def get(self, *args): 
         if len(args) == 2:
             return super(JobConf, self).get(*args)
         else:
@@ -103,6 +107,15 @@ class JobConf(dict):
                 return self[args[0]]
             except KeyError as ex:
                 raise RuntimeError(ex.message)
+
+    def __mirror_conf_across_versions(self):
+        ext = {}
+        for k in self:
+            if k in mrv1_to_mrv2 and not self.has_key(mrv1_to_mrv2[k]):
+                ext[mrv1_to_mrv2[k]] = self[k]
+            if k in mrv2_to_mrv1 and not self.has_key(mrv2_to_mrv1[k]):
+                ext[mrv2_to_mrv1[k]] = self[k]
+        self.update(ext)
 
 class Context(object):
     """

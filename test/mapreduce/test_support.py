@@ -17,7 +17,7 @@
 # END_COPYRIGHT
 
 import unittest
-from pydoop.mapreduce.api import Mapper, Reducer, Factory
+from pydoop.mapreduce.api import Mapper, Reducer, Factory, JobConf
 from pydoop.mapreduce.simulator import HadoopSimulatorLocal
 from pydoop.mapreduce.simulator import TrivialRecordReader
 import itertools as it
@@ -26,6 +26,7 @@ import os
 from collections import Counter
 
 from pydoop.test_utils import WDTestCase
+from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
 
 
 DATA = \
@@ -118,6 +119,15 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'w') as fo:
             fo.write(DATA)
 
+    def test_job_conf(self):
+        job_conf = {}
+        for k in mrv1_to_mrv2:
+            job_conf[k] = k
+        jc = JobConf([item for sublist in job_conf.iteritems()
+                               for item in sublist])
+        for k in mrv2_to_mrv1:
+            self.assertEqual(jc[k], job_conf[mrv2_to_mrv1[k]])
+
     def test_map_only(self):
         job_conf = {'this.is.not.used': '22'}
         hs = HadoopSimulatorLocal(TFactory(), loglevel=logging.CRITICAL)
@@ -163,12 +173,9 @@ class TestFramework(WDTestCase):
                 if "COUNTER_" in k:
                     ck = int(k[8:]) - 1
                     key = COUNTS.keys()[ck]
-                    #print "%s --> %s %s" % (ck, key, int(c))
                     self.assertEqual(COUNTS[key], int(c))
                 else:
-                    #print "%s --> %s" % (k, int(c))
                     self.assertEqual(COUNTS[k], int(c))
-
 
     def test_map_combiner_reduce(self):
         job_conf = {'this.is.not.used': '22'}
@@ -186,6 +193,7 @@ class TestFramework(WDTestCase):
 
 def suite():
     suite = unittest.TestSuite()
+    suite.addTest(TestFramework('test_job_conf'))    
     suite.addTest(TestFramework('test_map_only'))
     suite.addTest(TestFramework('test_map_reduce'))
     suite.addTest(TestFramework('test_map_combiner_reduce'))
