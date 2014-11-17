@@ -1,23 +1,26 @@
-from abc import ABCMeta
-from abc import abstractmethod
+"""
+Abstract low-level HDFS interface.
+"""
+
+from abc import ABCMeta, abstractmethod
 
 from pydoop.hdfs.common import BUFSIZE
 
 
-
 class CoreHdfsFs(object):
+    """
+    Abstract filesystem interface.
+    """
 
     __metaclass__ = ABCMeta
 
-    """
-
-    """
     @abstractmethod
     def close(self):
         pass
 
     @abstractmethod
-    def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0, readline_chunk_size=16384):
+    def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0,
+                  readline_chunk_size=16384):
         pass
 
     #@property
@@ -114,6 +117,9 @@ class CoreHdfsFs(object):
 
 
 class CoreHdfsFile(object):
+    """
+    Abstract file object interface.
+    """
 
     __metaclass__ = ABCMeta
 

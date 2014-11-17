@@ -1,17 +1,13 @@
 import os
 import logging
-
-
+logging.basicConfig(level=logging.INFO)
 
 from pydoop.hdfs.core.api import CoreHdfsFs as CoreFsApi
 from pydoop.hdfs.core.api import CoreHdfsFile as CoreFileApi
 
 from pydoop.hdfs.common import BUFSIZE
-from pydoop.hdfs.core.bridged.common import wrap_class_instance
-from pydoop.hdfs.core.bridged.common import wrap_class
-from pydoop.hdfs.core.bridged.common import wrap_array
+from .common import wrap_class_instance, wrap_class, wrap_array
 
-logging.basicConfig(level=logging.INFO)
 
 BUFFER_SIZE_CONFIG_PROPERTY = "io.file.buffer.size"
 REPLICATION_CONFIG_PROPERTY = "dfs.replication"
@@ -28,9 +24,6 @@ def _unsigned_bytes(jbuf, off=0, length=None):
 
 
 class JavaClassName(object):
-    """
-    Wraps the set of java classes used for implementing the Hadoop HDFS
-    """
     VersionInfo = "org.apache.hadoop.util.VersionInfo"
     Configuration = 'org.apache.hadoop.conf.Configuration'
     FileSystem = "org.apache.hadoop.fs.FileSystem"
@@ -61,41 +54,41 @@ class CoreHdfsFs(CoreFsApi):
         self._user = user
         self._groups = groups
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._configuration = wrap_class_instance(JavaClassName.Configuration, True)
+        self._configuration = wrap_class_instance(
+            JavaClassName.Configuration, True
+        )
         self._connect()
 
-
     def __eq__(self, other):
-        return type(self) == type(other) and self._fs.toString() == other._fs.toString()
+        return (type(self) == type(other) and
+                self._fs.toString() == other._fs.toString())
 
     def _connect(self):
-
         jfs_cl = wrap_class(JavaClassName.FileSystem)
-
         if self._host is None or self._host == '':
             self._fs = jfs_cl.getLocal(self._configuration)
-
         elif self._host == 'default' and self._port == 0:
             self._fs_uri = jfs_cl.getDefaultUri(self._configuration)
             if self._user:
-                self._fs = jfs_cl.get(self._fs_uri, self._configuration, self._user)
+                self._fs = jfs_cl.get(
+                    self._fs_uri, self._configuration, self._user
+                )
             else:
                 self._fs = jfs_cl.get(self._fs_uri, self._configuration)
-
         else:
             uri_str = "hdfs://%s:%s" % (self._host, self._port)
             juri_cl = wrap_class(JavaClassName.URI)
             self._fs_uri = juri_cl.create(uri_str)
             if self._user:
-                self._fs = jfs_cl.get(self._fs_uri, self._configuration, self._user)
+                self._fs = jfs_cl.get(
+                    self._fs_uri, self._configuration, self._user
+                )
             else:
                 self._fs = jfs_cl.get(self._fs_uri, self._configuration)
 
-
     def chmod(self, path, mode):
         jpath_ = get_jpath(path)
-        jshort_cl = wrap_class("java.lang.Short")
-        jpermission = wrap_class_instance(JavaClassName.FsPermission, mode)  # jshort_cl.valueOf(mode))
+        jpermission = wrap_class_instance(JavaClassName.FsPermission, mode)
         self._fs.setPermission(jpath_, jpermission)
 
     def chown(self, path, user, group):
@@ -126,9 +119,9 @@ class CoreHdfsFs(CoreFsApi):
     def _copy_helper(self, from_path, to_hdfs, to_path, delete_source):
         src_path = get_jpath(from_path)
         dst_path = get_jpath(to_path)
-
         jfileUtil = wrap_class(JavaClassName.FileUtil)
-        return jfileUtil.copy(self._fs, src_path, to_hdfs._fs, dst_path, delete_source, self._configuration)
+        return jfileUtil.copy(self._fs, src_path, to_hdfs._fs, dst_path,
+                              delete_source, self._configuration)
 
     def copy(self, from_path, to_hdfs, to_path):
         self._copy_helper(from_path, to_hdfs, to_path, False)
@@ -159,7 +152,9 @@ class CoreHdfsFs(CoreFsApi):
         result = []
         jpath = get_jpath(path)
         jstatus = self._get_jfilestatus(jpath)
-        jblock_locations = self._fs.getFileBlockLocations(jstatus, start, length)
+        jblock_locations = self._fs.getFileBlockLocations(
+            jstatus, start, length
+        )
         for jblock_location in jblock_locations:
             result.append([str(x) for x in jblock_location.getHosts()])
         return result
@@ -188,7 +183,6 @@ class CoreHdfsFs(CoreFsApi):
         jpath = get_jpath(path)
         if not self._fs.exists(jpath):
             raise IOError("Path %s does not exist" % path)
-
         jsubstatus = self._fs.listStatus(jpath)
         result = []
         for jstatus in jsubstatus:
@@ -200,58 +194,52 @@ class CoreHdfsFs(CoreFsApi):
         jto_path = get_jpath(to_path)
         self._fs.rename(jfrom_path, jto_path)
 
-    def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0, readline_chunk_size=16384):
-
+    def open_file(self, path, flags=0, buff_size=0, replication=1, blocksize=0,
+                  readline_chunk_size=16384):
         O_ACCMODE = os.O_RDONLY | os.O_RDWR | os.O_WRONLY
         accmode = flags & O_ACCMODE
-
-        # check whether you are trying to open the file in 'rw' mode
         if accmode != os.O_WRONLY and accmode != os.O_RDONLY:
             if accmode == os.O_RDWR:
                 raise IOError("Cannot open an hdfs file in O_RDWR mode")
             else:
                 raise IOError("Cannot open an hdfs file in mode %s" % accmode)
-
         if (flags & os.O_CREAT) and (flags & os.O_EXCL):
             self._logger.warn("hdfs does not truly support O_CREATE && O_EXCL")
-
-        # read the 'buffer size' property from the Configuration
         if not buff_size:
-            buff_size = int(self._configuration.getInt(BLOCKSIZE_CONFIG_PROPERTY, 4096))
-
-        # read the replication property from the Configuration (needed only for write-only mode)
-        if (accmode == os.O_WRONLY) and (flags & os.O_APPEND) == 0 and not replication:
-            replication = self._configuration.getInt(REPLICATION_CONFIG_PROPERTY, 1)
-
-        # the Java path
+            buff_size = int(self._configuration.getInt(
+                BLOCKSIZE_CONFIG_PROPERTY, 4096
+            ))
+        if not replication:  # needed only for write mode
+            if (accmode == os.O_WRONLY) and (flags & os.O_APPEND) == 0:
+                replication = self._configuration.getInt(
+                    REPLICATION_CONFIG_PROPERTY, 1
+                )
         jpath = get_jpath(path)
-
         stream = None
         stream_type = None
         try:
             if accmode == os.O_RDONLY:
                 stream = self._fs.open(jpath, buff_size)
-                stream_type = CoreHdfsFile._INPUT
+                stream_type = CoreHdfsFile.INPUT
                 self._logger.debug("File opened in read mode")
-
             elif accmode == os.O_WRONLY and flags & os.O_APPEND:
                 stream = self._fs.append(jpath)
-                stream_type = CoreHdfsFile._OUTPUT
+                stream_type = CoreHdfsFile.OUTPUT
                 self._logger.debug("File opened in append mode")
-
             else:
                 boolean_overwrite = True
-
                 if not blocksize:
                     blocksize = self._fs.getDefaultBlockSize(jpath)
-
-                stream = self._fs.create(jpath, boolean_overwrite, buff_size, replication, blocksize)
-                stream_type = CoreHdfsFile._OUTPUT
+                stream = self._fs.create(
+                    jpath, boolean_overwrite, buff_size, replication, blocksize
+                )
+                stream_type = CoreHdfsFile.OUTPUT
                 self._logger.debug("File opened in write mode")
-
-        except Exception, e:
-            raise IOError(e.message)
-
+        except Exception as e:  # pylint: disable=W0703
+            if hasattr(e, 'javaClass'):
+                raise IOError(e.message())
+            else:
+                raise
         return CoreHdfsFile(flags, stream, stream_type)
 
     def utime(self, path, mtime, atime):
@@ -260,27 +248,23 @@ class CoreHdfsFs(CoreFsApi):
 
     def _get_jpath_info(self, jpath, jstatus=None):
         info = dict()
-
         if jstatus is None:
             try:
                 jstatus = self._fs.getFileStatus(jpath)
                 jpath = jstatus.getPath()
             except Exception:
                 raise IOError
-
         info['name'] = jpath.toString()
-
         if self._fs.isDirectory(jpath):
             info['kind'] = 'directory'
         else:
             info['kind'] = 'file'
-
         info['group'] = jstatus.getGroup()
-
         jlong_cl = wrap_class(JavaClassName.Long)
-        info['last_mod'] = jlong_cl.valueOf(jstatus.getModificationTime()).intValue()
-        info['last_access'] = jlong_cl.valueOf(jstatus.getAccessTime()).intValue()
-
+        info['last_mod'] = jlong_cl.valueOf(
+            jstatus.getModificationTime()).intValue()
+        info['last_access'] = jlong_cl.valueOf(
+            jstatus.getAccessTime()).intValue()
         info['replication'] = jstatus.getReplication()
         info['owner'] = jstatus.getOwner()
         info['permissions'] = jstatus.getPermission().toShort()
@@ -293,7 +277,6 @@ class CoreHdfsFs(CoreFsApi):
         parent = jpath.getParent()
         if parent:
             info['parent'] = parent.getName()
-
         return info
 
     def _get_jfilestatus(self, path):
@@ -308,20 +291,21 @@ class CoreHdfsFs(CoreFsApi):
 
 class CoreHdfsFile(CoreFileApi):
 
-    _INPUT = 0
-    _OUTPUT = 1
+    INPUT = 0
+    OUTPUT = 1
 
-    def __init__(self, mode, stream, stream_type=_INPUT):
+    def __init__(self, mode, stream, stream_type=INPUT):
         self._mode = mode
         self._stream = stream
         self._stream_type = stream_type
-
-        if stream_type == self._OUTPUT:
-            self._buffered_stream = wrap_class_instance(JavaClassName.BufferedOutputStream, self._stream)
+        if stream_type == self.OUTPUT:
+            self._buffered_stream = wrap_class_instance(
+                JavaClassName.BufferedOutputStream, self._stream
+            )
             self._jbytearray = wrap_array("byte")
 
     def available(self):
-        if not self._stream or self._stream_type != self._INPUT:
+        if not self._stream or self._stream_type != self.INPUT:
             return -1
         return int(self._stream.available())
 
@@ -343,19 +327,12 @@ class CoreHdfsFile(CoreFileApi):
         return self._write(data, len(data))
 
     def _write(self, data, length=None):
-        if not self._stream or self._stream_type != self._OUTPUT:
+        if not self._stream or self._stream_type != self.OUTPUT:
             raise IOError
-
         if length < 0:
             raise IOError
-
-        #current_size = self._stream.size()
-
         if length > 0:
             self._stream.write(self._jbytearray(data))
-
-        #written = self._stream.size() - current_size
-        #return written
         return length
 
     def tell(self):
@@ -364,86 +341,59 @@ class CoreHdfsFile(CoreFileApi):
         return long(self._stream.getPos())
 
     def seek(self, position):
-        if not self._stream or self._stream_type != self._INPUT:
+        if not self._stream or self._stream_type != self.INPUT:
             raise IOError
         self._stream.seek(long(position))
 
     def read(self, length=-1):
-        if not self._stream or self._stream_type != self._INPUT:
+        if not self._stream or self._stream_type != self.INPUT:
             raise IOError
-        try:
-
-            if length == -1:
-                length = BUFSIZE
-
-            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
-            bb = jbyte_buffer_class.allocate(length)
-            buf = bb.array()
-            read = self._stream.read(buf)
-            if read == -1:
-                return ""
-
-            #return wrap_class_instance(JavaClassName.String, buf).toString()[:read] OLD Impl
-            return ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
-
-        except Exception, e:
-            raise IOError(e.message)
+        if length == -1:
+            length = BUFSIZE
+        jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
+        bb = jbyte_buffer_class.allocate(length)
+        buf = bb.array()
+        read = self._stream.read(buf)
+        if read == -1:
+            return ""
+        return _unsigned_bytes(buf, length=read)
 
     def read_chunk(self, chunk):
-        if not self._stream or self._stream_type != self._INPUT:
-            raise IOError
-        try:
-
-            length = len(chunk)
-            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
-            bb = jbyte_buffer_class.allocate(length)
-            buf = bb.array()
-            read = self._stream.read(buf)
-            if read == -1:
-                return ""
-            chunk[:read] = _unsigned_bytes(buf, length=read)
-            return read
-
-        except Exception, e:
-            raise IOError(e.message)
+        if not self._stream or self._stream_type != self.INPUT:
+            raise IOError('File not open for reading')
+        length = len(chunk)
+        jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
+        bb = jbyte_buffer_class.allocate(length)
+        buf = bb.array()
+        read = self._stream.read(buf)
+        if read == -1:
+            return ""
+        chunk[:read] = _unsigned_bytes(buf, length=read)
+        return read
 
     def pread(self, position, length):
-        if not self._stream or self._stream_type != self._INPUT:
-            raise IOError
-        try:
-
-            if length == -1:
-                length = BUFSIZE
-
-            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
-            bb = jbyte_buffer_class.allocate(length)
-            buf = bb.array()
-            read = self._stream.read(long(position), buf, 0, length)
-            #return wrap_class_instance(JavaClassName.String, buf).toString()[:read] OLD Impl
-            return ''.join( map(lambda x: chr((x+256)%256), buf[:read])) #FIXME: low performances
-
-        except Exception, e:
-            raise IOError(e.message)
+        if not self._stream or self._stream_type != self.INPUT:
+            raise IOError('File not open for reading')
+        if length == -1:
+            length = BUFSIZE
+        jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
+        bb = jbyte_buffer_class.allocate(length)
+        buf = bb.array()
+        read = self._stream.read(long(position), buf, 0, length)
+        return _unsigned_bytes(buf, length=read)
 
     def pread_chunk(self, position, chunk):
-        if not self._stream or self._stream_type != self._INPUT:
-            raise IOError
-        try:
-
-            length = len(chunk)
-            jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
-            bb = jbyte_buffer_class.allocate(length)
-            buf = bb.array()
-            read = self._stream.read(long(position), buf, 0, length)
-            chunk[:read] = _unsigned_bytes(buf, length=read)
-            return read
-
-        except Exception, e:
-            raise IOError(e.message)
+        if not self._stream or self._stream_type != self.INPUT:
+            raise IOError('File not open for reading')
+        length = len(chunk)
+        jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
+        bb = jbyte_buffer_class.allocate(length)
+        buf = bb.array()
+        read = self._stream.read(long(position), buf, 0, length)
+        chunk[:read] = _unsigned_bytes(buf, length=read)
+        return read
 
     def flush(self):
-        if not self._stream or self._stream_type != self._OUTPUT:
+        if not self._stream or self._stream_type != self.OUTPUT:
             raise IOError
         self._stream.flush()
-
-
