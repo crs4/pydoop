@@ -23,13 +23,12 @@ from threading import Thread, Event
 import logging
 
 from pydoop_sercore import fdopen as ph_fdopen
-
-from pydoop.mapreduce.text_streams import TextDownStreamFilter, TextUpStreamFilter
-from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
+from .text_streams import TextDownStreamFilter, TextUpStreamFilter
+from .binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
 
 
 logging.basicConfig(level=logging.CRITICAL)
-logger = logging.getLogger('connections')
+LOGGER = logging.getLogger('connections')
 
 
 BUF_SIZE = 128 * 1024
@@ -58,40 +57,41 @@ def open_file_connections(istream=sys.stdin, ostream=sys.stdout):
     return Connections(TextDownStreamFilter(istream),
                        TextUpStreamFilter(ostream))
 
+
 class LifeThread(object):
+
     def __init__(self, all_done, port, max_tries=3):
         self.all_done = all_done
         self.port = port
         self.max_tries = max_tries
-        self.logger = logger.getChild('LifeThread')
+        self.logger = LOGGER.getChild('LifeThread')
+
     def __call__(self):
         while True:
             if self.all_done.wait(5):
                 break
             else:
                 for _ in range(self.max_tries):
-                    try:
-                        s = socket.socket()
-                        s.connect(('localhost', self.port))
-                        break
-                    except Exception as e:
-                        self.logger.error('error: {}'.format(e))
+                    s = socket.socket()
+                    s.connect(('localhost', self.port))
+                    break
                 else:
-                    self.logger.critical('server appears to be dead.')          
+                    self.logger.critical('server appears to be dead.')
                     os._exit(1)
-                # FIXME protect with a try the next two...
+                # FIXME protect with a try the next two
                 s.shutdown(socket.SHUT_RDWR)
                 s.close()
 
+
 class NetworkConnections(Connections):
+
     def __init__(self, cmd_stream, up_link, sock, port):
-        self.logger = logging.getLogger('NetworkConnections')        
+        self.logger = LOGGER.getChild('NetworkConnections')
         super(NetworkConnections, self).__init__(cmd_stream, up_link)
         self.all_done = Event()
         self.socket = sock
         self.life_thread = Thread(target=LifeThread(self.all_done, port))
         self.life_thread.start()
-        
 
     def close(self):
         super(NetworkConnections, self).close()
@@ -101,13 +101,10 @@ class NetworkConnections(Connections):
         self.socket.close()
 
 
-
 def open_network_connections(port):
     s = socket.socket()
     s.connect(('localhost', port))
-    # in_stream  = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
-    # out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
-    in_stream  = ph_fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
+    in_stream = ph_fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
     out_stream = ph_fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
     return NetworkConnections(BinaryDownStreamFilter(in_stream),
                               BinaryUpStreamFilter(out_stream), s, port)

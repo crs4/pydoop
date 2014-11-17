@@ -78,7 +78,7 @@ class JobConf(dict):
         self.__mirror_conf_across_versions()
 
     def hasKey(self, key):
-        return self.has_key(key)
+        return key in self
 
     def get_int(self, key, default=None):
         return int(self.get(key, default))
@@ -99,7 +99,7 @@ class JobConf(dict):
         return self.get_bool(key, default)
 
     #get below is deprecated behaviour, here only for backward compatibility
-    def get(self, *args): 
+    def get(self, *args):
         if len(args) == 2:
             return super(JobConf, self).get(*args)
         else:
@@ -111,11 +111,12 @@ class JobConf(dict):
     def __mirror_conf_across_versions(self):
         ext = {}
         for k in self:
-            if k in mrv1_to_mrv2 and not self.has_key(mrv1_to_mrv2[k]):
+            if k in mrv1_to_mrv2 and not mrv1_to_mrv2[k] in self:
                 ext[mrv1_to_mrv2[k]] = self[k]
-            if k in mrv2_to_mrv1 and not self.has_key(mrv2_to_mrv1[k]):
+            if k in mrv2_to_mrv1 and not mrv2_to_mrv1[k] in self:
                 ext[mrv2_to_mrv1[k]] = self[k]
         self.update(ext)
+
 
 class Context(object):
     """
@@ -190,6 +191,7 @@ class Context(object):
 
 
 class MapContext(Context):
+
     @property
     def input_split(self):
         '''
@@ -204,10 +206,12 @@ class MapContext(Context):
 
     @abstractmethod
     def getInputSplit(self):
-        '''
-        Returns the serialized input_split (only for backward compatibility purposes)
+        """
+        Return the serialized input_split (only for backward
+        compatibility purposes)
+
         :return: string
-        '''
+        """
         pass
 
     @property
@@ -234,6 +238,7 @@ class MapContext(Context):
 
 
 class ReduceContext(Context):
+
     @property
     def values(self):
         return self.get_input_values()
@@ -256,6 +261,7 @@ class ReduceContext(Context):
 
 
 class Closable(object):
+
     def close(self):
         """
         Called after the object has finished its job.
@@ -301,18 +307,18 @@ class Reducer(Closable):
     @abstractmethod
     def reduce(self, context):
         """
-        Called once for each key. Applications must override this, emitting an
-        output key/value pair through the context.
+        Called once for each key. Applications must override this, emitting
+        an output key/value pair through the context.
 
-        :param context: the :class:`ReduceContext` object passed by the framework,
-        used to get the input key and corresponding set of values and
-        emit the output key/value pair.
+        :param context: the :class:`ReduceContext` object passed by
+          the framework, used to get the input key and corresponding
+          set of values and emit the output key/value pair.
         """
         assert isinstance(context, ReduceContext)
 
 
 class Partitioner(object):
-    """
+    r"""
     Controls the partitioning of intermediate keys output by the
     :class:`Mapper`\ . The key (or a subset of it) is used to derive the
     partition, typically by a hash function. The total number of
@@ -327,7 +333,7 @@ class Partitioner(object):
 
     @abstractmethod
     def partition(self, key, num_of_reduces):
-        """
+        r"""
         Get the partition number for ``key`` given the total number of
         partitions, i.e., the number of reduce tasks for the
         job. Applications must override this.
@@ -344,7 +350,7 @@ class Partitioner(object):
 
 
 class RecordReader(Closable):
-    """
+    r"""
     Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
     """
     __metaclass__ = ABCMeta
@@ -357,7 +363,7 @@ class RecordReader(Closable):
 
     @abstractmethod
     def next(self):
-        """
+        r"""
         Called by the framework to provide a key/value pair to the
         :class:`Mapper`\ . Applications must override this.
         It should raise a StopIteration
@@ -384,7 +390,8 @@ class RecordReader(Closable):
         data. Applications must override this.
 
         :rtype: float
-        :return: the fraction of data read up to now, as a float between 0 and 1.
+        :return: the fraction of data read up to now, as a float between 0
+          and 1.
         """
         return self.get_progress()
 

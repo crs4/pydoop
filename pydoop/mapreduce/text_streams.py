@@ -16,8 +16,10 @@
 #
 # END_COPYRIGHT
 
-from streams import DownStreamFilter, UpStreamFilter, ProtocolAbort, ProtocolError
-from string_utils import quote_string
+from .streams import (
+    DownStreamFilter, UpStreamFilter, ProtocolAbort, ProtocolError
+)
+from .string_utils import quote_string
 
 
 def toBool(s):
@@ -33,12 +35,12 @@ class TextDownStreamFilter(DownStreamFilter):
 
     **NOTE:** this stream filter is intended for debugging purposes only.
     """
-    SEP   = '\t'
+    SEP = '\t'
     CMD_TABLE = {
         'mapItem': ('mapItem', 2, None),
         'reduceValue': ('reduceValue', 1, None),
         'reduceKey': ('reduceKey', 1, None),
-        'start': ('start', 1, lambda p: [int(p[0]),]),
+        'start': ('start', 1, lambda p: [int(p[0])]),
         'setJobConf': ('setJobConf', None, None),
         'setInputTypes': ('setInputTypes', 2, None),
         'runMap': ('runMap', 3, lambda p: [p[0], int(p[1]), toBool(p[2])]),
