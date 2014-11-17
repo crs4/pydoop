@@ -8,6 +8,7 @@ RecordReader, etc.
 
 
 import pydoop.pipes as pp
+import re
 
 
 class Mapper(pp.Mapper):
@@ -16,7 +17,7 @@ class Mapper(pp.Mapper):
         print context
 
     def map(self, context):
-        words = context.getInputValue().split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
         for w in words:
             context.emit(w, "1")
 

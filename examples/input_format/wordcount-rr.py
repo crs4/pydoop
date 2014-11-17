@@ -19,6 +19,7 @@
 # END_COPYRIGHT
 
 import struct
+import re
 
 import pydoop.pipes as pp
 import pydoop.hdfs as hdfs
@@ -27,7 +28,8 @@ import pydoop.hdfs as hdfs
 class Mapper(pp.Mapper):
   
   def map(self, context):
-    for w in context.getInputValue().split():
+    words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
+    for w in words:
       context.emit(w, "1")
 
 
