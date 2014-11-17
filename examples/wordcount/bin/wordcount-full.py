@@ -76,7 +76,7 @@ class Reducer(pp.Reducer):
         s = 0
         while context.nextValue():
             s += int(context.getInputValue())
-            context.emit(context.getInputKey(), str(s))
+        context.emit(context.getInputKey(), str(s))
 
         context.incrementCounter(self.outputWords, 1)
 
@@ -162,5 +162,5 @@ if __name__ == "__main__":
         record_reader_class=Reader,
         record_writer_class=Writer,
         partitioner_class=Partitioner,
-        combiner_class=Reducer
+        combiner_class=Reducer,
     ))

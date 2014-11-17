@@ -16,6 +16,7 @@ env:
   - HADOOPVERSION=1.1.2
   - HADOOPVERSION=1.2.1
   - HADOOPVERSION=2.2.0
+  - HADOOPVERSION=2.4.1
   - HADOOPVERSION=cdh4.2.0
   - HADOOPVERSION=cdh4.2.0 YARN=true
   - HADOOPVERSION=cdh4.3.0
@@ -41,8 +42,10 @@ before_install:
 
 script:
 - #sudo jps
-- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
-- python test/all_tests.py
+- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/
+- cd test
+- python all_tests.py
+- cd ../
 - cd examples
 - ./run_all
 - cd ../

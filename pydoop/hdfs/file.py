@@ -30,7 +30,18 @@ def _complain_ifclosed(closed):
     if closed:
         raise ValueError("I/O operation on closed HDFS file object")
 
-
+def _seek_with_boundary_checks(f, position, whence):
+    if whence == os.SEEK_CUR:
+        position += f.tell()
+    elif whence == os.SEEK_END:
+        position += f.size
+        position = max(0, position)
+    if position > f.size:
+        raise IOError('cannot seek past end of file')
+    if f.mode != 'r':
+        raise IOError('can seek only in read-only')            
+    return position
+            
 class hdfs_file(object):
     """
     Instances of this class represent HDFS file objects.
@@ -182,6 +193,8 @@ class hdfs_file(object):
         _complain_ifclosed(self.closed)
         if position < 0:
             raise ValueError("position must be >= 0")
+        if position > self.size:
+            raise IOError("position cannot be past EOF")            
         if length < 0:
             length = self.size - position
         return self.f.pread(position, length)
@@ -201,6 +214,8 @@ class hdfs_file(object):
         :return: the number of bytes read
         """
         _complain_ifclosed(self.closed)
+        if position > self.size:
+            raise IOError("position cannot be past EOF")            
         return self.f.pread_chunk(position, chunk)
 
     def read(self, length=-1):
@@ -256,11 +271,7 @@ class hdfs_file(object):
           and ``os.SEEK_END`` (relative to the file's end).
         """
         _complain_ifclosed(self.closed)
-        if whence == os.SEEK_CUR:
-            position += self.tell()
-        elif whence == os.SEEK_END:
-            position += self.size
-        position = max(0, position)
+        position = _seek_with_boundary_checks(self, position, whence)
         self.__reset()
         return self.f.seek(position)
 
@@ -353,7 +364,11 @@ class local_file(file):
             os.fsync(self.fileno())
             self.__size = os.fstat(self.fileno()).st_size
         super(local_file, self).close()
-
+            
+    def seek(self, position, whence=os.SEEK_SET):
+        position = _seek_with_boundary_checks(self, position, whence)
+        return super(local_file, self).seek(position)
+        
     def pread(self, position, length):
         _complain_ifclosed(self.closed)
         if position < 0:
