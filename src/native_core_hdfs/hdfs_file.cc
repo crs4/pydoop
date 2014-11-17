@@ -18,7 +18,6 @@
  */
 
 #include "hdfs_file.h"
-#include "hdfs_utils.h"
 
 using namespace std;
 
@@ -409,6 +408,4 @@ PyObject* FileClass_flush(FileInfo *self){
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
     }
-
 }
-
