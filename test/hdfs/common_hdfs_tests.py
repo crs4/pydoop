@@ -266,6 +266,8 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(chunk)
             self.assertEqual(bytes_written, len(content))
+        with self.fs.open_file(path, "w") as fo:
+            bytes_written = fo.write(u'some unicode data')
 
         # try to write a unicode object
         with self.fs.open_file(path, "w") as fo:
