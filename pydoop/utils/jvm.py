@@ -13,7 +13,6 @@ def get_java_home():
 def load_jvm_lib(java_home=None):
     if not java_home:
         java_home = get_java_home()
-
     jvm_path, jvm_lib = get_jvm_lib_path_and_name(java_home)
     if jvm_path and jvm_lib:
         from ctypes import CDLL
@@ -22,23 +21,17 @@ def load_jvm_lib(java_home=None):
         raise ImportError("Unable to load the JVM dynamic library")
 
 
-
 def get_include_dirs():
     java_home = get_java_home()
-
     dirs = [os.path.join(java_home, 'include'),
             os.path.join('native', 'jni_include'),
             os.path.join(java_home, 'lib')]
-
     if sys.platform == 'win32':
         dirs += [os.path.join(java_home, 'include', 'win32')]
-
     elif sys.platform == 'darwin':
         dirs += [os.path.join(java_home, 'include', 'darwin')]
-
-    else: #linux
+    else:  # linux
         dirs += [os.path.join(java_home, 'include', 'linux')]
-
     return dirs
 
 
@@ -46,13 +39,10 @@ def get_libraries():
     libraries = []
     if sys.platform == 'win32':
         libraries += ['Advapi32']
-
     elif sys.platform == 'darwin':
         libraries += ['dl', 'jvm']
-
-    else: # linux etc.
+    else:  # linux etc.
         libraries += ['dl', "jvm"]
-
     return libraries
 
 
@@ -60,60 +50,46 @@ def get_macros():
     macros = []
     if sys.platform == 'win32':
         macros += [('WIN32', 1)]
-
     elif sys.platform == 'darwin':
         macros += [('MACOSX', 1)]
-
-    else: # linux etc.
+    else:  # linux etc.
         pass
-
     return macros
 
 
 def get_jvm_lib_path_and_name(java_home=None):
     if not java_home:
         java_home = get_java_home()
-
     jvm_lib_name = None
     if sys.platform == 'win32':
-        jvm_lib_name = "jvm.dll" #FIXME: check the library name
-
+        jvm_lib_name = "jvm.dll"  # FIXME: check the library name
     elif sys.platform == 'darwin':
         jvm_lib_name = "libjvm.dylib"
-
-    else: #linux
+    else:  # linux
         jvm_lib_name = "libjvm.so"
-
     jvm_path = find_file(java_home, jvm_lib_name)
-    return os.path.dirname(jvm_path),jvm_lib_name if jvm_path else None
+    return os.path.dirname(jvm_path), jvm_lib_name if jvm_path else None
 
 
 def check_jni_header(include_dirs=None):
-     # check if jni.h can be found
     for d in include_dirs:
         if os.path.exists(os.path.join(d, 'jni.h')):
             found_jni = True
             break
-
     if not found_jni:
         import warnings
         warnings.warn('Falling back to provided JNI headers: ' +
                       'unable to find jni.h in your JAVA_HOME')
 
 
-
 def find_file(path, to_find):
     result = None
     for element in os.listdir(path):
-
         if result:
             break
-
         if fnmatch.fnmatch(element, to_find):
             fullPath = os.path.join(path, element)
             result = fullPath
-
         if not result and os.path.isdir(os.path.join(path, element)):
             result = find_file(os.path.join(path, element), to_find)
-
     return result

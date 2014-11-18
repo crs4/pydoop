@@ -1,5 +1,5 @@
 import jnius
-from pydoop.utils.bridge.factory import ClassLoader
+from .factory import ClassLoader
 
 
 class PyjniusClassLoader(ClassLoader):

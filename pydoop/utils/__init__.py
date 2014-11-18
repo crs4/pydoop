@@ -1,4 +1,3 @@
-
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -18,25 +17,31 @@
 # END_COPYRIGHT
 
 """
-The imports below are just for backward compatibility
+General purpose utilities.
 """
 
-from pydoop.utils.misc import raise_pydoop_exception
+__all__ = [
+    'raise_pydoop_exception',
+    'jc_configure',
+    'jc_configure_int',
+    'jc_configure_bool',
+    'jc_configure_float',
+    'jc_configure_log_level',
+    'make_input_split',
+    'NullHandler',
+    'NullLogger',
+    'make_random_str',
+]
 
-from pydoop.utils.misc import jc_configure
-
-from pydoop.utils.misc import jc_configure_int
-
-from pydoop.utils.misc import jc_configure_bool
-
-from pydoop.utils.misc import jc_configure_float
-
-from pydoop.utils.misc import jc_configure_log_level
-
-from pydoop.utils.misc import make_input_split
-
-from pydoop.utils.misc import NullHandler
-
-from pydoop.utils.misc import NullLogger
-
-from pydoop.utils.misc import make_random_str
+from .misc import (  # backward compatibility
+    raise_pydoop_exception,
+    jc_configure,
+    jc_configure_int,
+    jc_configure_bool,
+    jc_configure_float,
+    jc_configure_log_level,
+    make_input_split,
+    NullHandler,
+    NullLogger,
+    make_random_str,
+)
