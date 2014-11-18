@@ -1,6 +1,7 @@
-from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 import logging
 import os
+
+from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 
 DATA = \
 """1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
@@ -63,17 +64,22 @@ class TFactory(Factory):
 
 run_task(TFactory())
 """
+
+
 def dump_to_disk(fname, data):
     with open(fname, 'w') as f:
         for l in data:
             f.write(l)
 
-program_name = './foobar'
-dump_to_disk('data.in', DATA)
-dump_to_disk(program_name, FOOBAR_PY)
-os.chmod(program_name, 0777)
+
+def main():
+    program_name = './foobar'
+    dump_to_disk('data.in', DATA)
+    dump_to_disk(program_name, FOOBAR_PY)
+    os.chmod(program_name, 0777)
+    hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.INFO)
+    hsn.run(open('data.in'), open('data.out', 'w'), {'a.useless.key': 'we'})
 
 
-hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.INFO)
-hsn.run(open('data.in'), open('data.out', 'w'), {'a.useless.key' : 'we'})
-
+if __name__ == '__main__':
+    main()

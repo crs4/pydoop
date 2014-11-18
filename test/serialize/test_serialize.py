@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 # vim: set fileencoding: utf-8
 
 # BEGIN_COPYRIGHT
@@ -24,10 +24,11 @@
 #
 #    javac -cp $(hadoop classpath) hadoop_serialize.java
 
-import unittest, StringIO, random
+import unittest
+import StringIO
+import random
 import os
 import subprocess
-import sys
 import tempfile
 import shutil
 
@@ -35,7 +36,8 @@ import pydoop
 import pydoop.utils.serialize as srl
 import pydoop.mapreduce.jwritable_utils as wu
 
-HadoopSerializeClass = 'hadoop_serialize'
+_HADOOP_SERIALIZE_CLASS = 'hadoop_serialize'
+
 
 class TestSerialize(unittest.TestCase):
 
@@ -44,10 +46,10 @@ class TestSerialize(unittest.TestCase):
 
     def test_int(self):
         stream = self.stream
-        for i in range(-16782,16782):
+        for i in xrange(-16782, 16782):
             srl.serialize_vint(i, stream)
         stream.seek(0)
-        for i in range(-16782,16782):
+        for i in xrange(-16782, 16782):
             x = srl.deserialize_vint(stream)
             self.assertEqual(i, x)
 
@@ -171,31 +173,36 @@ class TestSerialize(unittest.TestCase):
             self.assertEqual(n, x)
 
     def test_private_serialize(self):
-        for obj in [1, 0.4, "Hello", [1,2,3], {"key": "value"}]:
+        for obj in [1, 0.4, "Hello", [1, 2, 3], {"key": "value"}]:
             self.assertEqual(obj, srl.private_decode(srl.private_encode(obj)))
             #s = srl.private_encode(obj)
 
+
 def _compile_java_part(java_class_file, classpath):
-    java_file = os.path.splitext(os.path.realpath(java_class_file))[0] + '.java'
-    if not os.path.exists(java_class_file) or os.path.getmtime(java_file) > os.path.getmtime(java_class_file):
-        print >> sys.stderr, "\nCompiling", java_file
+    java_file = os.path.splitext(
+        os.path.realpath(java_class_file)
+    )[0] + '.java'
+    if (not os.path.exists(java_class_file) or
+        os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
         cmd = ['javac', '-cp', classpath, java_file]
         try:
             subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
         except subprocess.CalledProcessError:
             raise RuntimeError("Error compiling Java file %s" % java_file)
 
+
 def _get_java_output_stream(wd):
     this_directory = os.path.abspath(os.path.dirname(__file__))
-    src = os.path.join(this_directory, "%s.java" % HadoopSerializeClass)
+    src = os.path.join(this_directory, "%s.java" % _HADOOP_SERIALIZE_CLASS)
     shutil.copy(src, wd)
     classpath = '.:%s:%s' % (pydoop.hadoop_classpath(), wd)
-    filename_root = os.path.join(wd, HadoopSerializeClass)
+    filename_root = os.path.join(wd, _HADOOP_SERIALIZE_CLASS)
     _compile_java_part(filename_root + ".class", classpath)
     output = subprocess.check_output(
-            ['java', '-cp', classpath, HadoopSerializeClass],
-            cwd=wd,
-            stderr=open('/dev/null', 'w'))
+        ['java', '-cp', classpath, _HADOOP_SERIALIZE_CLASS],
+        cwd=wd,
+        stderr=open('/dev/null', 'w')
+    )
     stream = StringIO.StringIO(output)
     return stream
 
@@ -205,5 +212,5 @@ def suite():
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

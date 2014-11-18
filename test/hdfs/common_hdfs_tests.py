@@ -16,7 +16,12 @@
 #
 # END_COPYRIGHT
 
-import sys, os, unittest, uuid, shutil, operator
+import sys
+import os
+import unittest
+import uuid
+import shutil
+import operator
 from itertools import izip
 from ctypes import create_string_buffer
 
@@ -53,7 +58,7 @@ class TestCommon(unittest.TestCase):
     # also an implicit test for the create_directory method
     def _make_random_dir(self, where=None):
         path = self._make_random_path(where=where)
-        res = self.fs.create_directory(path)
+        self.fs.create_directory(path)
         self.assertTrue(self.fs.exists(path))
         return path
 
@@ -75,8 +80,8 @@ class TestCommon(unittest.TestCase):
 
     def failUnlessRaisesExternal(self, excClass, callableObj, *args, **kwargs):
         utils.silent_call(
-          self.failUnlessRaises, excClass, callableObj, *args, **kwargs
-          )
+            self.failUnlessRaises, excClass, callableObj, *args, **kwargs
+        )
 
     assertRaisesExternal = failUnlessRaisesExternal
 
@@ -210,7 +215,9 @@ class TestCommon(unittest.TestCase):
         info = self.fs.get_path_info(path)
         self.__check_path_info(info, kind="directory")
         self.assertTrue(info['name'].endswith(path))
-        self.assertRaises(IOError, self.fs.get_path_info, self._make_random_path())
+        self.assertRaises(
+            IOError, self.fs.get_path_info, self._make_random_path()
+        )
         self.assertRaises(ValueError, self.fs.get_path_info, "")
 
     def read(self):
@@ -255,7 +262,6 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as fo:
             self.assertEqual(content, fo.read())
 
-
     def write_chunk(self):
         content = utils.make_random_data()
         chunk = create_string_buffer(len(content))
@@ -293,7 +299,9 @@ class TestCommon(unittest.TestCase):
         offset, length = 2, 3
         path = self._make_random_file(content=content)
         with self.fs.open_file(path) as f:
-            self.assertEqual(f.pread(offset, length), content[offset:offset+length])
+            self.assertEqual(
+                f.pread(offset, length), content[offset:offset+length]
+            )
             self.assertEqual(f.tell(), 0)
             self.assertEqual(content[1:], f.pread(1, -1))
             self.assertRaises(ValueError, f.pread, -1, 10)
@@ -302,7 +310,6 @@ class TestCommon(unittest.TestCase):
             # read past end of file
             buf = f.pread(len(content) - 2, 10)
             self.assertEqual(2, len(buf))
-
 
     def pread_chunk(self):
         content = utils.make_random_data()
@@ -353,7 +360,9 @@ class TestCommon(unittest.TestCase):
         for i, p in izip(infos, paths):
             self.__check_path_info(i, kind="file")
             self.assertTrue(i['name'].endswith(p))
-        self.assertRaises(IOError, self.fs.list_directory, self._make_random_path())
+        self.assertRaises(
+            IOError, self.fs.list_directory, self._make_random_path()
+        )
         self.assertRaises(ValueError, self.fs.list_directory, "")
 
     def __check_readline(self, get_lines):
@@ -370,7 +379,8 @@ class TestCommon(unittest.TestCase):
             for chunk_size in 2, max(1, len(text)), 2 + len(text):
                 with self.fs.open_file(path, "w") as f:
                     f.write(text)
-                with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
+                with self.fs.open_file(
+                        path, readline_chunk_size=chunk_size) as f:
                     lines = get_lines(f)
                 self.assertEqual(lines, expected_lines)
 
@@ -391,9 +401,12 @@ class TestCommon(unittest.TestCase):
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
                 l = f.readline()
-            self.assertEqual(l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x)))
+            self.assertEqual(
+                l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x))
+            )
 
     def iter_lines(self):
+
         def get_lines_explicit(f):
             lines = []
             while 1:
@@ -402,8 +415,10 @@ class TestCommon(unittest.TestCase):
                 except StopIteration:
                     break
             return lines
+
         def get_lines_implicit(f):
             return [l for l in f]
+
         for fun in get_lines_explicit, get_lines_implicit:
             self.__check_readline(fun)
 
@@ -455,7 +470,9 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             p = total_data_size - CHUNK_SIZE
             for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data_size-1:
-                expected_len = CHUNK_SIZE if pos <= p else total_data_size - pos
+                expected_len = (
+                    CHUNK_SIZE if pos <= p else total_data_size - pos
+                )
                 f.seek(pos)
                 chunk = f.read(CHUNK_SIZE)
                 self.assertEqual(len(chunk), expected_len)
@@ -463,7 +480,9 @@ class TestCommon(unittest.TestCase):
     def walk(self):
         new_d, new_f = self._make_random_dir(), self._make_random_file()
         for top in new_d, new_f:
-            self.assertEqual(list(self.fs.walk(top)), [self.fs.get_path_info(top)])
+            self.assertEqual(
+                list(self.fs.walk(top)), [self.fs.get_path_info(top)]
+            )
         top = new_d
         cache = [top]
         for _ in xrange(2):

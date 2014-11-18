@@ -20,7 +20,9 @@ import unittest
 
 import pydoop.app.main as app
 
+
 class TestAppSubmit(unittest.TestCase):
+
     def test_help(self):
         try:
             app.main(['-h'])
@@ -38,7 +40,7 @@ class TestAppSubmit(unittest.TestCase):
     def test_pretend_submission(self):
         args_line = """
         submit
-        --pretend --mrv2 
+        --pretend --mrv2
         --input-format  mapreduce.lib.input.TextInputFormat
         --output-format mapreduce.lib.input.TextOutputFormat
         --num-reducers 10
@@ -60,13 +62,12 @@ class TestAppSubmit(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestAppSubmit('test_help'))
-    suite.addTest(TestAppSubmit('test_pretend_submission'))
-
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestAppSubmit('test_help'))
+    suite_.addTest(TestAppSubmit('test_pretend_submission'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

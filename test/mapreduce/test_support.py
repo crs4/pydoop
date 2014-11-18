@@ -17,14 +17,13 @@
 # END_COPYRIGHT
 
 import unittest
-from pydoop.mapreduce.api import Mapper, Reducer, Factory, JobConf
-from pydoop.mapreduce.simulator import HadoopSimulatorLocal
-from pydoop.mapreduce.simulator import TrivialRecordReader
 import itertools as it
-import logging
 import os
 from collections import Counter
 
+from pydoop.mapreduce.api import Mapper, Reducer, Factory, JobConf
+from pydoop.mapreduce.simulator import HadoopSimulatorLocal
+from pydoop.mapreduce.simulator import TrivialRecordReader
 from pydoop.test_utils import WDTestCase
 from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
 
@@ -46,7 +45,9 @@ COUNTS = Counter(''.join(c for c in DATA.replace('1\t', ' ')
 
 
 class TMapper(Mapper):
+
     def __init__(self, ctx):
+        super(TMapper, self).__init__(ctx)
         self.ctx = ctx
 
     def map(self, ctx):
@@ -57,7 +58,9 @@ class TMapper(Mapper):
 
 
 class TReducer(Reducer):
+
     def __init__(self, ctx):
+        super(TReducer, self).__init__(ctx)
         self.ctx = ctx
 
     def reduce(self, ctx):
@@ -66,7 +69,9 @@ class TReducer(Reducer):
 
 
 class TReducerWithCounters(Reducer):
+
     def __init__(self, ctx):
+        super(TReducerWithCounters, self).__init__(ctx)
         self.ctx = ctx
         ctx.get_counter("p", "n")
         self.counters = {}
@@ -109,9 +114,6 @@ class TFactory(Factory):
         return None if not self.rwclass else self.rwclass(context)
 
 
-loglevel = logging.CRITICAL
-
-
 class TestFramework(WDTestCase):
     def setUp(self):
         super(TestFramework, self).setUp()
@@ -123,14 +125,15 @@ class TestFramework(WDTestCase):
         job_conf = {}
         for k in mrv1_to_mrv2:
             job_conf[k] = k
-        jc = JobConf([item for sublist in job_conf.iteritems()
-                               for item in sublist])
+        jc = JobConf(
+            [item for sublist in job_conf.iteritems() for item in sublist]
+        )
         for k in mrv2_to_mrv1:
             self.assertEqual(jc[k], job_conf[mrv2_to_mrv1[k]])
 
     def test_map_only(self):
         job_conf = {'this.is.not.used': '22'}
-        hs = HadoopSimulatorLocal(TFactory(), loglevel=logging.CRITICAL)
+        hs = HadoopSimulatorLocal(TFactory())
         with open(self.fname, 'r') as fin:
             with self._mkf('map_only.out') as fout:
                 hs.run(fin, fout, job_conf, 0)
@@ -161,12 +164,10 @@ class TestFramework(WDTestCase):
         job_conf = {'this.is.not.used': '22'}
         hs = HadoopSimulatorLocal(TFactory(reducer_class=TReducerWithCounters))
         foname = 'map_reduce.out'
-
         with open(self.fname, 'r') as fin:
             with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
                 self.assertTrue(os.stat(fout.name).st_size > 0)
-                
         with open(self._mkfn(foname)) as f:
             for l in f:
                 k, c = l.strip().split()
@@ -184,7 +185,7 @@ class TestFramework(WDTestCase):
         with open(self.fname, 'r') as fin:
             with self._mkf(foname) as fout:
                 hs.run(fin, fout, job_conf, 1)
-                self.assertTrue(os.stat(fout.name).st_size > 0)                
+                self.assertTrue(os.stat(fout.name).st_size > 0)
         with open(self._mkfn(foname)) as f:
             for l in f:
                 k, c = l.strip().split()
@@ -192,16 +193,16 @@ class TestFramework(WDTestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestFramework('test_job_conf'))    
-    suite.addTest(TestFramework('test_map_only'))
-    suite.addTest(TestFramework('test_map_reduce'))
-    suite.addTest(TestFramework('test_map_combiner_reduce'))
-    suite.addTest(TestFramework('test_record_reader'))
-    suite.addTest(TestFramework('test_map_reduce_with_counters'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestFramework('test_job_conf'))
+    suite_.addTest(TestFramework('test_map_only'))
+    suite_.addTest(TestFramework('test_map_reduce'))
+    suite_.addTest(TestFramework('test_map_combiner_reduce'))
+    suite_.addTest(TestFramework('test_record_reader'))
+    suite_.addTest(TestFramework('test_map_reduce_with_counters'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

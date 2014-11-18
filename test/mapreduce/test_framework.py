@@ -17,14 +17,15 @@
 # END_COPYRIGHT
 
 import unittest
-import itertools as it
 from collections import Counter
+
 from pydoop.mapreduce.api import Mapper, Reducer, Factory
 from pydoop.mapreduce.pipes import run_task, TaskContext
 from pydoop.mapreduce.string_utils import unquote_string
+from pydoop.test_utils import WDTestCase
+
 from test_text_stream import stream_writer
 
-from pydoop.test_utils import WDTestCase
 
 STREAM_1 = [
     ('start', 0),
@@ -37,11 +38,12 @@ STREAM_1 = [
     ('close',),
     ]
 
+
 class TContext(TaskContext):
+
     @property
     def value(self):
         return ' '.join([self.get_input_value()] * 2)
-        
 
 
 class TMapper(Mapper):
@@ -53,6 +55,7 @@ class TMapper(Mapper):
         words = ctx.value.split()
         for w in words:
             ctx.emit(w, '1')
+
 
 class TReducer(Reducer):
 
@@ -175,7 +178,9 @@ class TestFramework(WDTestCase):
     def test_map_combiner_reduce_with_context(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas, context_class=TContext)
+        run_task(
+            factory, istream=self.stream, ostream=sas, context_class=TContext
+        )
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
                      private_encoding=False)
@@ -190,23 +195,23 @@ class TestFramework(WDTestCase):
         counts = Counter(dict(map(lambda t: (t[0], int(t[1])),
                                   (l.split('\t')[1:] for l in lines[1:-1]))))
         #--
-        ref_counts = Counter(sum([x[2].split() for x in ref_data 
-                                               if x[0] == 'mapItem'], []))
+        ref_counts = Counter(sum(
+            [x[2].split() for x in ref_data if x[0] == 'mapItem'], []
+        ))
         self.assertEqual(counts.keys(), ref_counts.keys())
         for k in counts.keys():
             self.assertEqual(ref_counts[k] * factor, counts[k])
 
 
-
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestFramework('test_map_only'))
-    suite.addTest(TestFramework('test_map_reduce'))
-    suite.addTest(TestFramework('test_map_combiner_reduce'))
-    suite.addTest(TestFramework('test_map_combiner_reduce_with_context'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestFramework('test_map_only'))
+    suite_.addTest(TestFramework('test_map_reduce'))
+    suite_.addTest(TestFramework('test_map_combiner_reduce'))
+    suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))
