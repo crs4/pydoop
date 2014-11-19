@@ -21,29 +21,35 @@ import logging
 import time
 from StringIO import StringIO
 
-from pydoop.utils.serialize import deserialize_text, deserialize_long
-from pydoop.utils.serialize import deserialize_old_style_filename
-from pydoop.utils.serialize import serialize_to_string, serialize_text
-from pydoop.utils.serialize import serialize_long
-
-import connections
-from pydoop.mapreduce.api import JobConf, RecordWriter, MapContext, ReduceContext
-from pydoop.mapreduce.api import PydoopError
-from pydoop.mapreduce.streams import get_key_value_stream, get_key_values_stream
-from string_utils import create_digest
-from pydoop.mapreduce.api import Counter
-from environment_keys import *
-from pydoop.utils.serialize import private_encode
-
 from pydoop import hadoop_version_info
-from pydoop.mapreduce.api import Factory as FactoryInterface
+from pydoop.utils.serialize import (
+    deserialize_text,
+    deserialize_long,
+    serialize_old_style_filename,
+    deserialize_old_style_filename,
+    serialize_text,
+    serialize_long,
+    private_encode,
+)
 
-#logging.basicConfig()
-logger = logging.getLogger('pipes')
-logger.setLevel(logging.CRITICAL)
+from . import connections, api
+from .streams import get_key_value_stream, get_key_values_stream
+from .string_utils import create_digest
+from .environment_keys import (
+    MAPREDUCE_TASK_IO_SORT_MB_KEY,
+    MAPREDUCE_TASK_IO_SORT_MB,
+    resolve_environment_port,
+    resolve_environment_file,
+    resolve_environment_secret_location_key,
+    resolve_environment_secret_location,
+)
+
+logging.basicConfig()
+LOGGER = logging.getLogger('pipes')
+LOGGER.setLevel(logging.CRITICAL)
 
 
-class Factory(FactoryInterface):
+class Factory(api.Factory):
     """
     Creates MapReduce application components.
 
@@ -80,7 +86,7 @@ class Factory(FactoryInterface):
 
 
 class InputSplit(object):
-    """
+    r"""
     Represents the data to be processed by an individual :class:`Mapper`\ .
 
     Typically, it presents a byte-oriented view on the input and it is
@@ -91,7 +97,8 @@ class InputSplit(object):
     dataset chunk, expressed through the ``filename``, ``offset`` and
     ``length`` attributes.
 
-    :param data: the byte string returned by :meth:`MapContext.getInputSplit`
+    :param data: the byte string returned by
+      :meth:`api.MapContext.getInputSplit`
     :type data: string
     """
 
@@ -103,7 +110,7 @@ class InputSplit(object):
             self.filename = deserialize_old_style_filename(stream)
         self.offset = deserialize_long(stream)
         self.length = deserialize_long(stream)
-        
+
     @classmethod
     def to_string(cls, filename, offset, length):
         stream = StringIO()
@@ -114,8 +121,10 @@ class InputSplit(object):
         serialize_long(offset, stream)
         serialize_long(length, stream)
         return stream.getvalue()
-        
-class CombineRunner(RecordWriter):
+
+
+class CombineRunner(api.RecordWriter):
+
     def __init__(self, spill_bytes, context, reducer):
         self.spill_bytes = spill_bytes
         self.used_bytes = 0
@@ -124,7 +133,6 @@ class CombineRunner(RecordWriter):
         self.reducer = reducer
 
     def emit(self, key, value):
-        # FIXME I am assuming that we can neglect the dict and list overhead
         self.used_bytes += sys.getsizeof(key)
         self.used_bytes += sys.getsizeof(value)
         self.data.setdefault(key, []).append(value)
@@ -146,7 +154,8 @@ class CombineRunner(RecordWriter):
         self.used_bytes = 0
 
 
-class TaskContext(MapContext, ReduceContext):
+class TaskContext(api.MapContext, api.ReduceContext):
+
     def __init__(self, up_link, private_encoding=True):
         self.private_encoding = private_encoding
         self._private_encoding = False
@@ -181,13 +190,13 @@ class TaskContext(MapContext, ReduceContext):
         if self.n_reduces > 0:
             self.partitioner = factory.create_partitioner(self)
             reducer = factory.create_combiner(self)
-            spill_size = self._job_conf.get_int(MAPREDUCE_TASK_IO_SORT_MB_KEY,
-                                                MAPREDUCE_TASK_IO_SORT_MB)
+            spill_size = self._job_conf.get_int(
+                MAPREDUCE_TASK_IO_SORT_MB_KEY, MAPREDUCE_TASK_IO_SORT_MB
+            )
             self.writer = CombineRunner(spill_size * 1024 * 1024,
                                         self, reducer) if reducer else None
 
     def emit(self, key, value):
-        #logger.debug("Emitting... %r,%r", key, value)
         self.progress()
         if self.writer:
             self.writer.emit(key, value)
@@ -199,11 +208,10 @@ class TaskContext(MapContext, ReduceContext):
                 part = self.partitioner.partition(key, self.n_reduces)
                 self.up_link.send('partitionedOutput', part, key, value)
             else:
-                #logger.debug("** Sending: %r,%r", key, value)
                 self.up_link.send('output', key, value)
 
     def set_job_conf(self, vals):
-        self._job_conf = JobConf(vals)
+        self._job_conf = api.JobConf(vals)
 
     def get_job_conf(self):
         return self._job_conf
@@ -219,18 +227,17 @@ class TaskContext(MapContext, ReduceContext):
 
     def progress(self):
         if not self.up_link:
-            #logger.debug("UpLink is None")
             return
         now = int(time.time())
         if now - self._last_progress > 1:
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
-                logger.debug("Sending status %r", self._status)
+                LOGGER.debug("Sending status %r", self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
             self.up_link.flush()
-            logger.debug("Sending progress float %r", self._progress_float)
+            LOGGER.debug("Sending progress float %r", self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -241,7 +248,7 @@ class TaskContext(MapContext, ReduceContext):
         counter_id = len(self._registered_counters)
         self._registered_counters.append(counter_id)
         self.up_link.send("registerCounter", counter_id, group, name)
-        return Counter(counter_id)
+        return api.Counter(counter_id)
 
     def increment_counter(self, counter, amount):
         self.up_link.send("incrementCounter", counter.get_id(), amount)
@@ -260,23 +267,18 @@ class TaskContext(MapContext, ReduceContext):
 
     def next_value(self):
         try:
-            #logger.debug("%s", self._values)
             self._value = self._values.next()
             return True
         except StopIteration:
             return False
 
 
-def resolve_connections(port=None, istream=None, ostream=None,
-                        cmd_file=None,
-                        cmd_port_key=None,
-                        cmd_file_key=None):
+def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
     """
     Select appropriate connection streams and protocol.
     """
-    port = port if port else resolve_environment_port()
-    cmd_file = cmd_file if cmd_file else resolve_environment_file()
-
+    port = port or resolve_environment_port()
+    cmd_file = cmd_file or resolve_environment_file()
     if port is not None:
         port = int(port)
         conn = connections.open_network_connections(port)
@@ -292,15 +294,15 @@ def resolve_connections(port=None, istream=None, ostream=None,
 
 
 class StreamRunner(object):
+
     def __init__(self, factory, context, cmd_stream):
-        self.logger = logger.getChild('StreamRunner')        
+        self.logger = LOGGER.getChild('StreamRunner')
         self.factory = factory
         self.ctx = context
         self.cmd_stream = cmd_stream
         self.password = None
         self.authenticated = False
         self.get_password()
-
 
     def get_password(self):
         secret_location_key = resolve_environment_secret_location_key()
@@ -358,37 +360,31 @@ class StreamRunner(object):
     def run_map(self, input_split, n_reduces, piped_input):
         self.logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
-
         if n_reduces > 0:
             ctx.enable_private_encoding()
-
         ctx._input_split = input_split
-        logger.debug("InputSPlit setted %r", input_split)
+        LOGGER.debug("InputSPlit setted %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
             if cmd == "setInputTypes":
                 ctx._input_key_class, ctx._input_value_class = args
-
-        logger.debug("After setInputTypes: %r, %r", ctx.input_key_class, 
+        LOGGER.debug("After setInputTypes: %r, %r", ctx.input_key_class,
                      ctx.input_value_class)
-
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
-            raise PydoopError('RecordReader not defined')
-        send_progress = False #reader is not None
-
+            raise api.PydoopError('RecordReader not defined')
+        send_progress = False  # reader is not None
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
-
         mapper_map = mapper.map
         progress_function = ctx.progress
         for ctx._key, ctx._value in reader:
-            #logger.debug("key: %r, value: %r ",  ctx.key, ctx.value)
+            #LOGGER.debug("key: %r, value: %r ",  ctx.key, ctx.value)
             if send_progress:
-                 ctx._progress_float = reader.get_progress()
-                 logger.debug("Progress updated to %r ", ctx._progress_float)
-                 progress_function()
+                ctx._progress_float = reader.get_progress()
+                LOGGER.debug("Progress updated to %r ", ctx._progress_float)
+                progress_function()
             mapper_map(ctx)
         mapper.close()
         self.logger.debug('done run_map')
@@ -398,8 +394,7 @@ class StreamRunner(object):
         factory, ctx = self.factory, self.ctx
         writer = factory.create_record_writer(ctx)
         if writer is None and piped_output is None:
-            raise PydoopError('RecordWriter not defined')
-
+            raise api.PydoopError('RecordWriter not defined')
         ctx.writer = writer
         reducer = factory.create_reducer(ctx)
         kvs_stream = get_key_values_stream(self.cmd_stream,
@@ -414,14 +409,13 @@ class StreamRunner(object):
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=False, context_class=TaskContext):
     """
-      Run the assigned task in the framework. 
+      Run the assigned task in the framework.
 
       :param factory: a :class:`Factory` instance.
       :type factory: :class:`Factory`
       :rtype: bool
       :return: True, if the task succeeded.
     """
-    #try:
     connections = resolve_connections(port,
                                       istream=istream, ostream=ostream)
     context = context_class(connections.up_link, private_encoding)
@@ -430,12 +424,10 @@ def run_task(factory, port=None, istream=None, ostream=None,
     context.close()
     connections.close()
     return True
-    # except StandardError as e:
-    #     sys.stderr.write('Hadoop Pipes Exception: %r' % e)
-    #     return False
 
 
 class RecordReaderWrapper(object):
+
     def __init__(self, obj):
         self._obj = obj
 

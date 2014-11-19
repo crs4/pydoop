@@ -193,6 +193,9 @@ def deserialize_text(stream):
     l = deserialize_vint(stream)
     return unicode(read_buffer(l, stream), 'UTF-8')
 
+def serialize_old_style_filename(fn, stream):
+    stream.write(struct.pack('>H', fn))
+
 def deserialize_old_style_filename(stream):
     l = struct.unpack('>H', read_buffer(2, stream))[0]
     return unicode(read_buffer(l, stream), 'UTF-8')

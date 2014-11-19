@@ -1,25 +1,28 @@
 #!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
-import os, logging
+import os
+import logging
+
 logging.basicConfig(level=logging.INFO)
+
 from psrunner import PydoopScriptRunner
 
 
@@ -28,31 +31,31 @@ LOCAL_INPUT = "../input/alice.txt"
 
 
 def main():
-  logger = logging.getLogger("main")
-  logger.setLevel(logging.INFO)
-  opts = [
-    '--num-reducers', '0',
-    '--kv-separator', '',
-    '-D', 'mapred.map.tasks=4'
+    logger = logging.getLogger("main")
+    logger.setLevel(logging.INFO)
+    opts = [
+        '--num-reducers', '0',
+        '--kv-separator', '',
+        '-D', 'mapred.map.tasks=4'
     ]
-  runner = PydoopScriptRunner(logger=logger)
-  runner.set_input(LOCAL_INPUT, put=True)
-  runner.run(SCRIPT, more_args=opts)
-  res = sorted(runner.collect_output().splitlines())
-  runner.clean()
-  logger.info("checking results")
-  with open(LOCAL_INPUT) as f:
-    expected_res = sorted(l.lower().rstrip() for l in f)
-  if res == expected_res:
-    print "OK."
-  else:
-    print "ERROR"
-    for r, n in (res, 'result'), (expected_res, 'expected_result'):
-      out_fn = "%s.txt" % n
-      with open(out_fn, "w") as fo:
-        fo.write(os.linesep.join(r))
-        print "wrote %r" % (out_fn,)
+    runner = PydoopScriptRunner(logger=logger)
+    runner.set_input(LOCAL_INPUT, put=True)
+    runner.run(SCRIPT, more_args=opts)
+    res = sorted(runner.collect_output().splitlines())
+    runner.clean()
+    logger.info("checking results")
+    with open(LOCAL_INPUT) as f:
+        expected_res = sorted(l.lower().rstrip() for l in f)
+    if res == expected_res:
+        print "OK."
+    else:
+        print "ERROR"
+        for r, n in (res, 'result'), (expected_res, 'expected_result'):
+            out_fn = "%s.txt" % n
+            with open(out_fn, "w") as fo:
+                fo.write(os.linesep.join(r))
+                print "wrote %r" % (out_fn,)
 
 
 if __name__ == "__main__":
-  main()
+    main()

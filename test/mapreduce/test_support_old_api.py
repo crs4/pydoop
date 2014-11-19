@@ -17,13 +17,12 @@
 # END_COPYRIGHT
 
 import unittest
+import itertools as it
+from collections import Counter
+
 from pydoop.pipes import Mapper, Reducer, Factory
 from pydoop.mapreduce.simulator import HadoopSimulatorLocal
 from pydoop.mapreduce.simulator import TrivialRecordReader
-import itertools as it
-import logging
-from collections import Counter
-
 from pydoop.test_utils import WDTestCase
 
 
@@ -44,7 +43,9 @@ COUNTS = Counter(''.join(c for c in DATA.replace('1\t', ' ')
 
 
 class TMapper(Mapper):
+
     def __init__(self, ctx):
+        super(TMapper, self).__init__(ctx)
         self.ctx = ctx
 
     def map(self, ctx):
@@ -55,7 +56,9 @@ class TMapper(Mapper):
 
 
 class TReducer(Reducer):
+
     def __init__(self, ctx):
+        super(TReducer, self).__init__(ctx)
         self.ctx = ctx
 
     def reduce(self, ctx):
@@ -64,22 +67,23 @@ class TReducer(Reducer):
 
 
 class TReducerWithCounters(Reducer):
+
     def __init__(self, ctx):
+        super(TReducerWithCounters, self).__init__(ctx)
         self.ctx = ctx
         self.counters = {}
-        self.outputWords = self.ctx.getCounter("DEFAULT", "OUTPUTWORD")
-        self.logger = logging.getLogger("TReducerWithCounters")
+        self.output_words = self.ctx.getCounter("DEFAULT", "OUTPUTWORD")
 
     def reduce(self, ctx):
         s = 0
         while ctx.nextValue():
-          s += int(ctx.getInputValue())
+            s += int(ctx.getInputValue())
         ctx.emit(ctx.getInputKey(), str(s))
-        self.logger.debug("Incrementing: %s=>%s" % (ctx.getInputValue(), s))
-        ctx.incrementCounter(self.outputWords, s)
+        ctx.incrementCounter(self.output_words, s)
 
 
 class TFactory(Factory):
+
     def __init__(self, combiner=None, partitioner=None, reducer_class=TReducer,
                  record_writer=None, record_reader=None):
         self.mclass = TMapper
@@ -106,9 +110,6 @@ class TFactory(Factory):
 
     def create_record_writer(self, context):
         return None if not self.rwclass else self.rwclass(context)
-
-
-loglevel = logging.CRITICAL
 
 
 class TestFramework(WDTestCase):
@@ -154,17 +155,16 @@ class TestFramework(WDTestCase):
                 hs.run(fin, fout, job_conf, 1)
 
         with open(self._mkfn(foname)) as f:
-            sum = 0
+            sum_ = 0
             counter_value = 0
             for l in f:
                 k, c = l.strip().split()
                 if "COUNTER_" in k:
                     counter_value = int(c)
-                    self.assertEqual(sum, counter_value)
+                    self.assertEqual(sum_, counter_value)
                 else:
-                    sum += int(c)
+                    sum_ += int(c)
                     self.assertEqual(COUNTS[k], int(c))
-
 
     def test_map_combiner_reduce(self):
         job_conf = {'this.is.not.used': '22'}
@@ -180,15 +180,15 @@ class TestFramework(WDTestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestFramework('test_map_only'))
-    suite.addTest(TestFramework('test_map_reduce'))
-    suite.addTest(TestFramework('test_map_combiner_reduce'))
-    suite.addTest(TestFramework('test_record_reader'))
-    suite.addTest(TestFramework('test_map_reduce_with_counters'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestFramework('test_map_only'))
+    suite_.addTest(TestFramework('test_map_reduce'))
+    suite_.addTest(TestFramework('test_map_combiner_reduce'))
+    suite_.addTest(TestFramework('test_record_reader'))
+    suite_.addTest(TestFramework('test_map_reduce_with_counters'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

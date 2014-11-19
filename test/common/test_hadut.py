@@ -71,12 +71,12 @@ class TestHadut(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestHadut('test_pop_generic_args'))
-    suite.addTest(TestHadut('test_merge_csv_args'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestHadut('test_pop_generic_args'))
+    suite_.addTest(TestHadut('test_merge_csv_args'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

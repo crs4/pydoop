@@ -18,8 +18,6 @@
 
 import unittest
 import itertools as it
-from pydoop.mapreduce.streams import ProtocolAbort
-from pydoop.mapreduce.streams import DownStreamFilter
 from pydoop.mapreduce.streams import get_key_value_stream
 from pydoop.mapreduce.streams import get_key_values_stream
 
@@ -29,7 +27,7 @@ STREAM_1_DATA = [
     ('mapItem', 'key2', 'val2'),
     ('mapItem', 'key3', 'val3'),
     ('close',),
-    ('mapItem', 'key3', 'val3'), # should not get here
+    ('mapItem', 'key3', 'val3'),  # should not get here
     ]
 STREAM_2_DATA = [
     ('reduceKey', 'key1'),
@@ -41,7 +39,7 @@ STREAM_2_DATA = [
     ('reduceValue', 'val22'),
     ('reduceValue', 'val23'),
     ('close',),
-    ('reduceValue', 'val24'), # should not get here
+    ('reduceValue', 'val24'),  # should not get here
     ]
 
 
@@ -59,10 +57,6 @@ def get_stream(data):
 
 
 class TestStream(unittest.TestCase):
-
-    def test_abort(self):
-        with self.assertRaises(ProtocolAbort):
-            DownStreamFilter.convert_message('abort', [])
 
     def test_get_key_value_stream(self):
         stream = get_stream(STREAM_1_DATA)
@@ -98,14 +92,13 @@ class TestStream(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    # suite.addTest(TestStream('test_abort'))
-    suite.addTest(TestStream('test_get_key_value_stream'))
-    suite.addTest(TestStream('test_get_key_values_stream'))
-    suite.addTest(TestStream('test_get_key_values_stream2'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestStream('test_get_key_value_stream'))
+    suite_.addTest(TestStream('test_get_key_values_stream'))
+    suite_.addTest(TestStream('test_get_key_values_stream2'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

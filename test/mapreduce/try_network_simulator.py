@@ -1,6 +1,25 @@
-from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2014 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
 import logging
 import os
+
+from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 
 DATA = \
 """1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
@@ -63,17 +82,22 @@ class TFactory(Factory):
 
 run_task(TFactory())
 """
+
+
 def dump_to_disk(fname, data):
     with open(fname, 'w') as f:
         for l in data:
             f.write(l)
 
-program_name = './foobar'
-dump_to_disk('data.in', DATA)
-dump_to_disk(program_name, FOOBAR_PY)
-os.chmod(program_name, 0777)
+
+def main():
+    program_name = './foobar'
+    dump_to_disk('data.in', DATA)
+    dump_to_disk(program_name, FOOBAR_PY)
+    os.chmod(program_name, 0777)
+    hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.INFO)
+    hsn.run(open('data.in'), open('data.out', 'w'), {'a.useless.key': 'we'})
 
 
-hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.INFO)
-hsn.run(open('data.in'), open('data.out', 'w'), {'a.useless.key' : 'we'})
-
+if __name__ == '__main__':
+    main()

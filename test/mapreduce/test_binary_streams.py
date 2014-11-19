@@ -31,6 +31,13 @@ from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 from pydoop.test_utils import WDTestCase
 
 
+_CURRENT_DIR = os.path.dirname(__file__)
+MAP_JAVA_DOWNLINK_DATA = os.path.join(
+    _CURRENT_DIR, 'data/mapper_downlink.data'
+)
+RED_JAVA_DOWNLINK_DATA = os.path.join(
+    _CURRENT_DIR, 'data/reducer_downlink.data'
+)
 STREAM_1 = [
     ('start', 0),
     ('setJobConf', ('key1', 'value1', 'key2', 'value2')),
@@ -50,22 +57,16 @@ STREAM_1 = [
 
 STREAM_2 = [
     ('status',  'I am ok'),
-    ('registerCounter', 1 , 'group', 'name'),
-    ('incrementCounter', 1 , 289189289),
+    ('registerCounter', 1, 'group', 'name'),
+    ('incrementCounter', 1, 289189289),
     ('progress', 0.5),
     ('output', 'key1', 'value1'),
     ('output', 'key2', 'value2'),
     ('output', 'key3', 'value3'),
     ('output', 'key4', 'value4'),
-    ('status',  'I am still ok'),    
+    ('status',  'I am still ok'),
     ('done',),
     ]
-
-
-current_dir = os.path.dirname(__file__)
-
-MAP_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/mapper_downlink.data')
-RED_JAVA_DOWNLINK_DATA=os.path.join(current_dir, 'data/reducer_downlink.data')
 
 
 def stream_writer(fname, data):
@@ -73,7 +74,8 @@ def stream_writer(fname, data):
         bw = BinaryWriter(f)
         for vals in data:
             cmd, args = vals[0], vals[1:]
-            bw.send(vals[0], *args)
+            bw.send(cmd, *args)
+
 
 class TestBinaryStream(WDTestCase):
 
@@ -94,10 +96,12 @@ class TestBinaryStream(WDTestCase):
         wd = tempfile.mkdtemp(prefix='pydoop_')
         map_cmd_out = os.path.join(wd, 'mapper_cmd.txt')
         red_cmd_out = os.path.join(wd, 'reducer_cmd.txt')
+
         def decode(istream, ostream):
             cmd_stream = BinaryDownStreamFilter(istream)
             for (cmd, args) in cmd_stream:
                 ostream.write('cmd: {}, args: {}\n'.format(cmd, args))
+
         try:
             for i, o in ((MAP_JAVA_DOWNLINK_DATA, map_cmd_out),
                          (RED_JAVA_DOWNLINK_DATA, red_cmd_out)):
@@ -119,18 +123,19 @@ class TestBinaryStream(WDTestCase):
             cmd_stream = BinaryUpStreamDecoder(f)
             for (cmd, args), vals in it.izip(cmd_stream, STREAM_2):
                 self.assertEqual(cmd, vals[0])
-                self.assertTrue((len(vals) == 1 and not args)
-                                    or (vals[1:] == args))
+                self.assertTrue(
+                    (len(vals) == 1 and not args) or (vals[1:] == args)
+                )
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestBinaryStream('test_downlink'))
-    suite.addTest(TestBinaryStream('test_on_java_downlink_data'))
-    suite.addTest(TestBinaryStream('test_uplink'))    
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestBinaryStream('test_downlink'))
+    suite_.addTest(TestBinaryStream('test_on_java_downlink_data'))
+    suite_.addTest(TestBinaryStream('test_uplink'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

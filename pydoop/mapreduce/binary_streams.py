@@ -16,14 +16,13 @@
 #
 # END_COPYRIGHT
 
-import sys
-from pydoop.mapreduce.streams import DownStreamFilter, UpStreamFilter
+from .streams import DownStreamFilter, UpStreamFilter
 from pydoop.utils.serialize import codec, codec_core
 
 import logging
 logging.basicConfig()
-logger = logging.getLogger('binary_streams')
-logger.setLevel(logging.CRITICAL)
+LOGGER = logging.getLogger('binary_streams')
+LOGGER.setLevel(logging.CRITICAL)
 
 # these constants should be exactly what has been defined in PipesMapper.java
 # BinaryProtocol.java
@@ -69,20 +68,25 @@ codec.add_rule(AUTHENTICATION_RESP, 'authenticationResp', 's')
 
 
 class BinaryWriter(object):
+
     def __init__(self, stream):
         self.stream = stream
-        self.logger = logger.getChild('BinaryWriter')
+        self.logger = LOGGER.getChild('BinaryWriter')
+
     def send(self, cmd, *args):
         self.logger.debug('writing %r, %r', cmd, args)
-        #codec_core.encode_command(self.stream, cmd, args)
         codec.encode_command(cmd, args, self.stream)
 
+
 class BinaryDownStreamFilter(DownStreamFilter):
+
     def __init__(self, stream):
         super(BinaryDownStreamFilter, self).__init__(stream)
-        self.logger = logger.getChild('BinaryDownStreamFilter')
+        self.logger = LOGGER.getChild('BinaryDownStreamFilter')
+
     def __iter__(self):
         return self.fast_iterator()
+
     def fast_iterator(self):
         stream = self.stream
         decode_command = codec_core.decode_command
@@ -91,20 +95,22 @@ class BinaryDownStreamFilter(DownStreamFilter):
                 yield decode_command(stream)
             except EOFError:
                 raise StopIteration
-    def next(self): # FIXME: this is just for timing purposes.
+
+    def next(self):  # FIXME: this is just for timing purposes.
         try:
             return codec.decode_command(self.stream)
         except EOFError:
             raise StopIteration
 
+
 class BinaryUpStreamFilter(UpStreamFilter):
+
     def __init__(self, stream):
         super(BinaryUpStreamFilter, self).__init__(stream)
-        self.logger = logger.getChild('BinaryUpStreamFilter')
+        self.logger = LOGGER.getChild('BinaryUpStreamFilter')
         self.logger.debug('initialize on stream: %s', stream)
 
     def send(self, cmd, *args):
-        #self.logger.debug('cmd: %s, args: %s', cmd, args)
         stream = self.stream
         codec_core.encode_command(stream, cmd, args)
 
@@ -112,4 +118,4 @@ class BinaryUpStreamFilter(UpStreamFilter):
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
     def __init__(self, stream):
         super(BinaryUpStreamDecoder, self).__init__(stream)
-        self.logger = logger.getChild('BinaryUpStreamDecoder')
+        self.logger = LOGGER.getChild('BinaryUpStreamDecoder')

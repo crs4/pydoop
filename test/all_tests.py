@@ -16,22 +16,32 @@
 #
 # END_COPYRIGHT
 
-import unittest, os, importlib
+import unittest
+import os
+import importlib
+
+
+_TEST_DIRS = (
+    "backward_compatibility",
+    "hdfs",
+    "mapreduce",
+    "serialize",
+    "common",
+)
+
 
 def suite():
-
     suites = []
-    for dir_ in ("backward_compatibility", "hdfs", "mapreduce", "serialize",
-                 "common"):
-        module = importlib.import_module("%s.%s"%(dir_, "all_tests"), dir_)
+    for dir_ in _TEST_DIRS:
+        module = importlib.import_module("%s.%s" % (dir_, "all_tests"), dir_)
         sys.path.insert(0, dir_)
-        path = [os.path.abspath("./%s"%dir_)]
+        path = [os.path.abspath("./%s" % dir_)]
         suites.append(getattr(module, "suite")(path))
         sys.path.pop(0)
     return unittest.TestSuite(tuple(suites))
 
 
 if __name__ == '__main__':
-  import sys
-  result = unittest.TextTestRunner(verbosity=2).run(suite())
-  sys.exit(not result.wasSuccessful())
+    import sys
+    _RESULT = unittest.TextTestRunner(verbosity=2).run(suite())
+    sys.exit(not _RESULT.wasSuccessful())

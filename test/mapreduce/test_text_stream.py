@@ -18,9 +18,9 @@
 
 import unittest
 import itertools as it
+
 from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.text_streams import TextDownStreamFilter
-
 from pydoop.test_utils import WDTestCase
 
 
@@ -45,7 +45,7 @@ STREAM_1 = [
 def stream_writer(fname, data):
     with open(fname, 'w') as f:
         for vals in data:
-            f.write('\t'.join(map(str,vals)) + '\n')
+            f.write('\t'.join(map(str, vals)) + '\n')
 
 
 class TestTextStream(WDTestCase):
@@ -65,11 +65,11 @@ class TestTextStream(WDTestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestTextStream('test_downlink'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestTextStream('test_downlink'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

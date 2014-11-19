@@ -63,13 +63,13 @@ class TestPydoop(unittest.TestCase):
 
 
 def suite():
-    suite = unittest.TestSuite()
-    suite.addTest(TestPydoop('test_home'))
-    suite.addTest(TestPydoop('test_conf'))
-    suite.addTest(TestPydoop('test_pydoop_jar_path'))
-    return suite
+    suite_ = unittest.TestSuite()
+    suite_.addTest(TestPydoop('test_home'))
+    suite_.addTest(TestPydoop('test_conf'))
+    suite_.addTest(TestPydoop('test_pydoop_jar_path'))
+    return suite_
 
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run((suite()))
+    _RUNNER = unittest.TextTestRunner(verbosity=2)
+    _RUNNER.run((suite()))

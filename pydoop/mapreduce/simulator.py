@@ -1,47 +1,61 @@
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2014 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
 import SocketServer
 import threading
 import os
 import tempfile
 import uuid
-import logging
 import cStringIO
-import tempfile
-
 import logging
+
 logging.basicConfig()
-logger = logging.getLogger('simulator')
-logger.setLevel(logging.CRITICAL)
-
+LOGGER = logging.getLogger('simulator')
+LOGGER.setLevel(logging.CRITICAL)
 #threading._VERBOSE = True
-
-from pydoop.mapreduce.pipes import TaskContext, StreamRunner
-from pydoop.mapreduce.api import RecordReader
-from pydoop.mapreduce.api import PydoopError
-from pydoop.mapreduce.binary_streams import BinaryWriter, BinaryDownStreamFilter
-from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
-from pydoop.mapreduce.string_utils import create_digest
-from pydoop.mapreduce.connections import BUF_SIZE
 
 from pydoop.utils.serialize import serialize_to_string
 from pydoop_sercore import fdopen as ph_fdopen
+
+from .pipes import TaskContext, StreamRunner
+from .api import RecordReader, PydoopError
+from .binary_streams import (
+    BinaryWriter, BinaryDownStreamFilter, BinaryUpStreamDecoder
+)
+from .string_utils import create_digest
+from .connections import BUF_SIZE
 
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
 SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
-
 TASK_PARTITION_V1 = 'mapred.task.partition'
 TASK_PARTITION_V2 = 'mapreduce.task.partition'
 OUTPUT_DIR_V1 = 'mapred.work.output.dir'
 OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
-
 DEFAULT_SLEEP_DELTA = 3
 
 
 class TrivialRecordWriter(object):
+
     def __init__(self, simulator, stream):
         self.stream = stream
-        self.logger = logger.getChild('TrivialRecordWriter') 
+        self.logger = LOGGER.getChild('TrivialRecordWriter')
         self.simulator = simulator
 
     def output(self, key, value):
@@ -75,6 +89,7 @@ def reader_iterator(max=10):
     for i in range(1, max+1):
         yield i, "The string %s" % i
 
+
 class TrivialRecordReader(RecordReader):
 
     def __init__(self, context):
@@ -98,15 +113,17 @@ class TrivialRecordReader(RecordReader):
 
 
 class SortAndShuffle(dict):
+
     def __init__(self, simulator):
         super(SortAndShuffle, self).__init__()
         self.simulator = simulator
+
     def output(self, key, value):
-        logger.debug('SAS:output %r, %r', key, value)
+        LOGGER.debug('SAS:output %r, %r', key, value)
         self.setdefault(key, []).append(value)
 
     def send(self, cmd, *args):
-        logger.debug('SAS:send %s %r', cmd, args)        
+        LOGGER.debug('SAS:send %s %r', cmd, args)
         if cmd == 'output':
             key, value = args
             self.setdefault(key, []).append(value)
@@ -136,13 +153,12 @@ class CommandThread(threading.Thread):
         self.sync_event = sync_event
         self.logger.debug('initialized')
 
-
     def run(self):
         self.logger.debug('started runner.')
         chunk_size = 128 * 1024
         not_synced_yet = True
         while True:
-            self.logger.debug('reading %s bytes from %s.', chunk_size, 
+            self.logger.debug('reading %s bytes from %s.', chunk_size,
                               self.down_bytes)
             buf = self.down_bytes.read(chunk_size)
             self.logger.debug('%s bytes actually read.', len(buf))
@@ -179,7 +195,9 @@ class ResultThread(threading.Thread):
             elif cmd == 'partitionedOutput':
                 part, key, value = args
                 self.ostream.output(key, value)
-                self.logger.debug('partitionedOutput: (%r, %r, %r)', part, key, value)
+                self.logger.debug(
+                    'partitionedOutput: (%r, %r, %r)', part, key, value
+                )
             elif cmd == 'done':
                 if self.ostream:
                     self.ostream.close()
@@ -195,34 +213,37 @@ class ResultThread(threading.Thread):
                 self.simulator.increment_counter(*args)
         self.logger.debug('Done.')
 
+
 class HadoopThreadHandler(SocketServer.BaseRequestHandler):
+
     def handle(self):
         self.server.logger.debug('handler started')
         # We have to wait for the cmd flux to start, otherwise it appears that
         # socket data flux gets confused on what is waiting what.
         cmd_flux_has_started = threading.Event()
         fd = self.request.fileno()
-        cmd_thread = CommandThread(cmd_flux_has_started, self.server.down_bytes,
-                                   ph_fdopen(os.dup(fd), 'w', BUF_SIZE),
-                                   self.server.logger)
-        res_thread = ResultThread(self.server.simulator, 
+        cmd_thread = CommandThread(
+            cmd_flux_has_started, self.server.down_bytes,
+            ph_fdopen(os.dup(fd), 'w', BUF_SIZE), self.server.logger
+        )
+        res_thread = ResultThread(self.server.simulator,
                                   ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
                                   self.server.out_writer,
                                   self.server.logger)
         cmd_thread.start()
         cmd_flux_has_started.wait()
-        res_thread.start() 
+        res_thread.start()
         self.server.logger.debug('Waiting in cmd_thread.join().')
         cmd_thread.join()
         self.server.logger.debug('Waiting in res_thread.join().')
         res_thread.join()
         self.server.logger.debug('handler is done.')
 
+
 class HadoopServer(SocketServer.TCPServer):
     """
     A fake Hadoop server for debugging support.
     """
-
     def __init__(self, simulator, port, down_bytes, out_writer,
                  host='localhost', logger=None, loglevel=logging.CRITICAL):
         """
@@ -239,14 +260,17 @@ class HadoopServer(SocketServer.TCPServer):
         self.down_bytes = down_bytes
         self.out_writer = out_writer
         # old style class
-        SocketServer.TCPServer.__init__(self, (host, port), HadoopThreadHandler)
+        SocketServer.TCPServer.__init__(
+            self, (host, port), HadoopThreadHandler
+        )
         self.logger.debug('initialized on (%r, %r)', host, port)
+
     def get_port(self):
         return self.socket.getsockname()[1]
 
 
-# -------------------------------------------------------------------------
 class HadoopSimulator(object):
+
     def __init__(self, logger=None, loglevel=logging.CRITICAL):
         self.logger = logger.getChild('HadoopSimulator') if logger \
             else logging.getLogger(self.__class__.__name__)
@@ -259,7 +283,7 @@ class HadoopSimulator(object):
 
     def set_phase(self, phase):
         self.phase = phase
-        
+
     def set_progress(self, value):
         if value != self.progress:
             self.logger.info('progress: %s', value)
@@ -267,7 +291,7 @@ class HadoopSimulator(object):
 
     def set_status(self, msg):
         if msg != self.status:
-            self.logger.info('status: %s', msg)        
+            self.logger.info('status: %s', msg)
             self.status = msg
 
     def register_counter(self, cid, group, name):
@@ -275,14 +299,16 @@ class HadoopSimulator(object):
         self.counters[(self.phase, cid)] = [(group, name), 0]
 
     def increment_counter(self, cid, increment):
-        self.logger.debug('incrementing counter[%s] by %s', (self.phase, cid), increment)
+        self.logger.debug(
+            'incrementing counter[%s] by %s', (self.phase, cid), increment
+        )
         self.counters[(self.phase, cid)][1] += increment
 
     def get_counters(self):
         ctable = {}
         for k, v in self.counters.iteritems():
-            ctable.setdefault(k[0], 
-                              {}).setdefault(v[0][0], {}).setdefault(v[0][1], v[1])
+            ctable.setdefault(
+                k[0], {}).setdefault(v[0][0], {}).setdefault(v[0][1], v[1])
         return ctable
 
     def write_authorization(self, stream, authorization):
@@ -296,7 +322,7 @@ class HadoopSimulator(object):
         down_stream.send('setJobConf',
                          tuple(sum([[k, v] for k, v in job_conf.iteritems()],
                                    [])))
-        
+
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               authorization=None, input_split=''):
         """
@@ -308,21 +334,17 @@ class HadoopSimulator(object):
         `input_split` variable and take care of record reading by itself.
 
         """
-        input_key_type='org.apache.hadoop.io.LongWritable'
-        input_value_type='org.apache.hadoop.io.Text'
-        
+        input_key_type = 'org.apache.hadoop.io.LongWritable'
+        input_value_type = 'org.apache.hadoop.io.Text'
         piped_input = file_in is not None
-
         #f = cStringIO.StringIO()
         self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
         f = self.tempf.file
         #f = open('foo-map.dat', 'wb')
         self.logger.debug('writing map input data in %s', f.name)
         down_stream = BinaryWriter(f)
-        
         self.write_header_down_stream(down_stream, authorization, job_conf)
         down_stream.send('runMap', input_split, num_reducers, piped_input)
-        
         if piped_input:
             down_stream.send('setInputTypes', input_key_type, input_value_type)
             pos = file_in.tell()
@@ -382,8 +404,9 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
     def run(self, file_in, file_out, job_conf, num_reducers):
         self.logger.debug('run start')
-
-        bytes_flow = self.write_map_down_stream(file_in, job_conf, num_reducers)
+        bytes_flow = self.write_map_down_stream(
+            file_in, job_conf, num_reducers
+        )
         dstream = BinaryDownStreamFilter(bytes_flow)
         # FIXME this is a quick hack to avoid crashes with user defined
         # RecordWriter
@@ -408,6 +431,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
         if file_out is None:
             self.logger.debug('fake file_out contents: %r', f.getvalue())
         self.logger.info('run done.')
+
 
 class HadoopSimulatorNetwork(HadoopSimulator):
     """
@@ -457,21 +481,20 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         using the provided `input_split`.
         Analogously, the final run results will be written to `file_out`
         unless it is set to `None` and the pipes program is expected to have
-        a `RecordWriter`. 
+        a `RecordWriter`.
         """
         assert file_in or input_split
-        assert file_out or num_reducers > 0 #FIXME pipes should support this
-        
+        assert file_out or num_reducers > 0  # FIXME pipes should support this
         self.logger.debug('run start')
-        
         challenge = 'what? me worry?'
         digest = create_digest(self.password, challenge)
         auth = (digest, challenge)
-
-        down_bytes = self.write_map_down_stream(file_in, job_conf, num_reducers,
-                            authorization=auth, input_split=input_split)
-        record_writer = TrivialRecordWriter(self, file_out) if file_out else None
-        
+        down_bytes = self.write_map_down_stream(
+            file_in, job_conf, num_reducers, authorization=auth,
+            input_split=input_split
+        )
+        record_writer = TrivialRecordWriter(
+            self, file_out) if file_out else None
         if num_reducers == 0:
             self.logger.debug('running a map only job')
             self.set_phase('mapping')
@@ -484,22 +507,26 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             self.run_task(down_bytes, sas)
             # FIXME we only support a single reducer
             reducer_id = 1
-            if not (job_conf.has_key(TASK_PARTITION_V1) or
-                    job_conf.has_key(TASK_PARTITION_V2)):
+            if not (TASK_PARTITION_V1 in job_conf or
+                    TASK_PARTITION_V2 in job_conf):
                 task_partition = str(reducer_id)
                 job_conf[TASK_PARTITION_V1] = task_partition
                 job_conf[TASK_PARTITION_V2] = task_partition
-                self.logger.info('Set %s=%s', TASK_PARTITION_V1, task_partition)
-                self.logger.info('Set %s=%s', TASK_PARTITION_V2, task_partition)
-            if not (job_conf.has_key(OUTPUT_DIR_V1) or
-                    job_conf.has_key(OUTPUT_DIR_V2)):
+                self.logger.info(
+                    'Set %s=%s', TASK_PARTITION_V1, task_partition
+                )
+                self.logger.info(
+                    'Set %s=%s', TASK_PARTITION_V2, task_partition
+                )
+            if not (OUTPUT_DIR_V1 in job_conf or OUTPUT_DIR_V2 in job_conf):
                 outdir_path = os.path.realpath(os.path.join('.', 'output'))
                 outdir_uri = 'file://' + outdir_path
                 job_conf[OUTPUT_DIR_V1] = outdir_uri
                 job_conf[OUTPUT_DIR_V2] = outdir_uri
-            down_bytes = self.write_reduce_down_stream(sas, job_conf,
-                                reducer_id, authorization=auth,
-                                piped_output=(file_out is not None))
+            down_bytes = self.write_reduce_down_stream(
+                sas, job_conf, reducer_id, authorization=auth,
+                piped_output=(file_out is not None)
+            )
             self.logger.debug('running reducer')
             self.set_phase('reducing')
             self.run_task(down_bytes, record_writer)

@@ -40,6 +40,5 @@ def suite(path=None):
 
 if __name__ == '__main__':
     import sys
-
-    result = unittest.TextTestRunner(verbosity=2).run(suite())
-    sys.exit(not result.wasSuccessful())
+    _RESULT = unittest.TextTestRunner(verbosity=2).run(suite())
+    sys.exit(not _RESULT.wasSuccessful())

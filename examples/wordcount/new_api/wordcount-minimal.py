@@ -1,10 +1,27 @@
 #!/usr/bin/env python
 
-import itertools as it
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2014 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
 import re
 
 from pydoop.mapreduce.pipes import run_task, Factory
-from pydoop.mapreduce.api import Mapper, Reducer, Partitioner
+from pydoop.mapreduce.api import Mapper, Reducer
 
 
 class TMapper(Mapper):
@@ -28,9 +45,9 @@ class TReducer(Reducer):
     def reduce(self, ctx):
         s = sum(ctx.values)
         # Note: we explicitly write the value as a str.
-        ctx.emit(ctx.key, str(s)) 
+        ctx.emit(ctx.key, str(s))
 
 
 if __name__ == "__main__":
-    run_task(Factory(mapper_class=TMapper, reducer_class=TReducer), 
+    run_task(Factory(mapper_class=TMapper, reducer_class=TReducer),
              private_encoding=True)
