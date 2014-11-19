@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2014 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 """
@@ -32,7 +32,11 @@ that, if set to 'false', makes input file non-splitable (i.e., you
 can't get more InputSplits than the number of input files).
 """
 
-import sys, os, optparse, logging
+import sys
+import os
+import optparse
+import logging
+
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -50,67 +54,67 @@ OUTPUT = "output"
 INPUT_FORMAT = "net.sourceforge.pydoop.mapred.TextInputFormat"
 JAR_NAME = "pydoop-mapred.jar"
 CONF = {
-  "mapred.job.name": "test_rr_override",
-  "mapreduce.admin.user.home.dir": os.path.expanduser("~"),
-  "hadoop.pipes.java.recordreader": "false",
-  "hadoop.pipes.java.recordwriter": "true",
-  "mapred.input.format.class": INPUT_FORMAT,
-  }
+    "mapred.job.name": "test_rr_override",
+    "mapreduce.admin.user.home.dir": os.path.expanduser("~"),
+    "hadoop.pipes.java.recordreader": "false",
+    "hadoop.pipes.java.recordwriter": "true",
+    "mapred.input.format.class": INPUT_FORMAT,
+}
 HADOOP_CONF_DIR = pydoop.hadoop_conf()
 PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 
 
 class HelpFormatter(optparse.IndentedHelpFormatter):
-  def format_description(self, description):
-    return description + "\n" if description else ""
+    def format_description(self, description):
+        return description + "\n" if description else ""
 
 
 def make_parser():
-  parser = optparse.OptionParser(
-    usage="%prog [OPTIONS]", formatter=HelpFormatter(),
+    parser = optparse.OptionParser(
+        usage="%prog [OPTIONS]", formatter=HelpFormatter(),
     )
-  parser.set_description(__doc__.lstrip())
-  parser.add_option("-i", dest="input", metavar="STRING",
-                    help="input dir ['%default']", default=DEFAULT_INPUT)
-  parser.add_option("--java-rr", action="store_true",
-                    help="Java RecordReader (CRASHES THE APPLICATION)")
-  parser.add_option("--splitable", action="store_true",
-                    help="allow input format to split individual files")
-  parser.add_option("--clean", action="store_true",
-                    help="do not run the example. Perform cleanup")
-  return parser
+    parser.set_description(__doc__.lstrip())
+    parser.add_option("-i", dest="input", metavar="STRING",
+                      help="input dir ['%default']", default=DEFAULT_INPUT)
+    parser.add_option("--java-rr", action="store_true",
+                      help="Java RecordReader (CRASHES THE APPLICATION)")
+    parser.add_option("--splitable", action="store_true",
+                      help="allow input format to split individual files")
+    parser.add_option("--clean", action="store_true",
+                      help="do not run the example. Perform cleanup")
+    return parser
 
 
 def main():
-  logger = logging.getLogger("main")
-  logger.setLevel(logging.INFO)
-  parser = make_parser()
-  opt, _ = parser.parse_args()
-  if opt.clean:
-    os.system("find . -regex '.*\(\.class\|~\|.pyc\)' -exec rm -fv {} \;")
-    os.system("rm -rfv *.jar %s" % OUTPUT)
+    logger = logging.getLogger("main")
+    logger.setLevel(logging.INFO)
+    parser = make_parser()
+    opt, _ = parser.parse_args()
+    if opt.clean:
+        os.system(r"find . -regex '.*\(\.class\|~\|.pyc\)' -exec rm -fv {} \;")
+        os.system("rm -rfv *.jar %s" % OUTPUT)
+        return 0
+    logger.info("compiling Java code")
+    retval = compiler.main(["compiler.py", JAR_NAME])
+    if retval:
+        return retval
+    runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
+    with open(LOCAL_MR_SCRIPT) as f:
+        pipes_code = pts.add_sys_path(f.read())
+    runner.set_input(opt.input, put=True)
+    runner.set_exe(pipes_code)
+    conf = CONF.copy()
+    if opt.java_rr:
+        conf["hadoop.pipes.java.recordreader"] = "true"
+    conf["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
+    runner.run(more_args=["-libjars", JAR_NAME], properties=conf,
+               hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
+    res = runner.collect_output()
+    runner.clean()
+    local_wc = pts.LocalWordCount(opt.input)
+    logger.info(local_wc.check(res))
     return 0
-  logger.info("compiling Java code")
-  retval = compiler.main(["compiler.py", JAR_NAME])
-  if retval:
-    return retval
-  runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
-  with open(LOCAL_MR_SCRIPT) as f:
-    pipes_code = pts.add_sys_path(f.read())
-  runner.set_input(opt.input, put=True)
-  runner.set_exe(pipes_code)
-  conf = CONF.copy()
-  if opt.java_rr:
-    conf["hadoop.pipes.java.recordreader"] = "true"
-  conf["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
-  runner.run(more_args=["-libjars", JAR_NAME], properties=conf,
-             hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
-  res = runner.collect_output()
-  runner.clean()
-  local_wc = pts.LocalWordCount(opt.input)
-  logger.info(local_wc.check(res))
-  return 0
 
 
 if __name__ == "__main__":
-  sys.exit(main())
+    sys.exit(main())

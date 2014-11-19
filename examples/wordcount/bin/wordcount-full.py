@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# ! /usr/bin/env python
-
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -32,7 +30,9 @@ components and use the hdfs module. The RecordReader, RecordWriter and
 Partitioner classes shown here mimic the behavior of the default ones.
 """
 
-import sys, logging, struct
+import sys
+import logging
+import struct
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -48,38 +48,37 @@ OUTPUT_WORDS = "OUTPUT_WORDS"
 
 
 class Mapper(pp.Mapper):
+
     def __init__(self, context):
         super(Mapper, self).__init__(context)
         self.logger = logging.getLogger("Mapper")
         context.setStatus("initializing")
-        self.inputWords = context.getCounter(WORDCOUNT, INPUT_WORDS)
+        self.input_words = context.getCounter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        k = context.getInputKey()
         words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
         for w in words:
             context.emit(w, "1")
-        context.incrementCounter(self.inputWords, len(words))
+        context.incrementCounter(self.input_words, len(words))
 
     def close(self):
         self.logger.info("all done")
 
 
 class Reducer(pp.Reducer):
+
     def __init__(self, context):
         super(Reducer, self).__init__(context)
         self.logger = logging.getLogger("Reducer")
         context.setStatus("initializing")
-        self.outputWords = context.getCounter(WORDCOUNT, OUTPUT_WORDS)
+        self.output_words = context.getCounter(WORDCOUNT, OUTPUT_WORDS)
 
     def reduce(self, context):
         s = 0
         while context.nextValue():
             s += int(context.getInputValue())
         context.emit(context.getInputKey(), str(s))
-
-        context.incrementCounter(self.outputWords, 1)
-
+        context.incrementCounter(self.output_words, 1)
 
     def close(self):
         self.logger.info("all done")
@@ -102,7 +101,8 @@ class Reader(pp.RecordReader):
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
-            discarded = self.file.readline()  # read by reader of previous split
+            # read by reader of previous split
+            discarded = self.file.readline()
             self.bytes_read += len(discarded)
 
     def close(self):
@@ -131,10 +131,12 @@ class Writer(pp.RecordWriter):
         jc = context.getJobConf()
         jc_configure_int(self, jc, "mapred.task.partition", "part")
         jc_configure(self, jc, "mapred.work.output.dir", "outdir")
-        jc_configure(self, jc, "mapred.textoutputformat.separator", "sep", "\t")
+        jc_configure(
+            self, jc, "mapred.textoutputformat.separator", "sep", "\t"
+        )
         #jc_configure(self, jc, "pydoop.hdfs.user", "hdfs_user", None)
         self.outfn = "%s/part-%05d" % (self.outdir, self.part)
-        self.file = hdfs.open(self.outfn, "w") #, user=self.hdfs_user)
+        self.file = hdfs.open(self.outfn, "w")  # , user=self.hdfs_user)
 
     def close(self):
         self.logger.debug("closing open handles")
@@ -146,6 +148,7 @@ class Writer(pp.RecordWriter):
 
 
 class Partitioner(pp.Partitioner):
+
     def __init__(self, context):
         super(Partitioner, self).__init__(context)
         self.logger = logging.getLogger("Partitioner")
@@ -164,3 +167,7 @@ if __name__ == "__main__":
         partitioner_class=Partitioner,
         combiner_class=Reducer,
     ))
+
+# Local Variables:
+# mode: python
+# End:
