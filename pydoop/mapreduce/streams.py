@@ -73,16 +73,16 @@ class UpStreamFilter(StreamFilter):
 class PushBackStream(object):
 
     def __init__(self, stream):
-        self.stream = stream
+        self.stream_iterator = stream.__iter__()
         self.lifo = []
 
     def __iter__(self):
         return self
-
+        
     def next(self):
         if self.lifo:
             return self.lifo.pop()
-        return self.stream.next()
+        return self.stream_iterator.next()
 
     def push_back(self, v):
         self.lifo.append(v)
