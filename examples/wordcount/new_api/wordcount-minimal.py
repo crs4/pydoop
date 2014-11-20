@@ -23,12 +23,18 @@ import re
 from pydoop.mapreduce.pipes import run_task, Factory
 from pydoop.mapreduce.api import Mapper, Reducer
 
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger('wc-minimal')
+logger.setLevel(logging.CRITICAL)
+
 
 class TMapper(Mapper):
 
     def __init__(self, ctx):
         self.ctx = ctx
-        print "Mapper instantiated"
+        logger.info("Mapper instantiated")
 
     def map(self, ctx):
         words = re.sub('[^0-9a-zA-Z]+', ' ', ctx.value).split()
@@ -40,7 +46,7 @@ class TReducer(Reducer):
 
     def __init__(self, ctx):
         self.ctx = ctx
-        print "Reducer instantiated"
+        logger.info("Reducer instantiated")        
 
     def reduce(self, ctx):
         s = sum(ctx.values)
