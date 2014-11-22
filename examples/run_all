@@ -13,7 +13,7 @@ examples=(
 
 for e in ${examples[@]}; do
     pushd ${e}
-    echo -ne "\n *** RUNNING ${e} EXAMPLE(S) ***\n"
+    echo -ne "\n\n *** RUNNING ${e} EXAMPLE(S) ***\n\n"
     ./run
     popd
 done
