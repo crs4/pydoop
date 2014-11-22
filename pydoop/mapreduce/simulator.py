@@ -27,7 +27,7 @@ import logging
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
-#threading._VERBOSE = True
+# threading._VERBOSE = True
 
 from pydoop.utils.serialize import serialize_to_string
 from pydoop_sercore import fdopen as ph_fdopen
@@ -419,13 +419,13 @@ class HadoopSimulatorLocal(HadoopSimulator):
         else:
             self.logger.info('running a map reduce job')
             sas = SortAndShuffle(self)
-            self.logger.info('running mapper')
+            self.logger.info('running mapping phase')
             self.set_phase('mapping')
             self.run_task(dstream, sas)
             bytes_flow = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers)
             rstream = BinaryDownStreamFilter(bytes_flow)
-            self.logger.info('running reducer')
+            self.logger.info('running reducing phase')
             self.set_phase('reducing')
             self.run_task(rstream, rec_writer_stream)
         if file_out is None:
@@ -463,8 +463,8 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         self.logger.debug('secret location: {}'.format(self.tmp_file))
         os.environ[CMD_PORT_KEY] = str(port)
         os.environ[SECRET_LOCATION_KEY] = self.tmp_file
-        self.logger.info('delaying {} {} secs'.format(self.program,
-                                                      self.sleep_delta))
+        self.logger.debug('delaying {} {} secs'.format(self.program,
+                                                        self.sleep_delta))
         cmd_line = "(sleep {}; {})&".format(self.sleep_delta, self.program)
         os.system(cmd_line)
         server.handle_request()
@@ -496,13 +496,13 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         record_writer = TrivialRecordWriter(
             self, file_out) if file_out else None
         if num_reducers == 0:
-            self.logger.debug('running a map only job')
+            self.logger.info('running a map only job')
             self.set_phase('mapping')
             self.run_task(down_bytes, record_writer)
         else:
-            self.logger.debug('running a map reduce job')
+            self.logger.info('running a map reduce job')
             sas = SortAndShuffle(self)
-            self.logger.debug('running mapper')
+            self.logger.info('running mapping phase')
             self.set_phase('mapping')
             self.run_task(down_bytes, sas)
             # FIXME we only support a single reducer
@@ -512,10 +512,10 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                 task_partition = str(reducer_id)
                 job_conf[TASK_PARTITION_V1] = task_partition
                 job_conf[TASK_PARTITION_V2] = task_partition
-                self.logger.info(
+                self.logger.debug(
                     'Set %s=%s', TASK_PARTITION_V1, task_partition
                 )
-                self.logger.info(
+                self.logger.debug(
                     'Set %s=%s', TASK_PARTITION_V2, task_partition
                 )
             if not (OUTPUT_DIR_V1 in job_conf or OUTPUT_DIR_V2 in job_conf):
@@ -527,8 +527,8 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                 sas, job_conf, reducer_id, authorization=auth,
                 piped_output=(file_out is not None)
             )
-            self.logger.debug('running reducer')
+            self.logger.info('running reducer')
             self.set_phase('reducing')
             self.run_task(down_bytes, record_writer)
-        self.logger.debug('run done.')
+        self.logger.info('run done.')
         os.unlink(self.tmp_file)

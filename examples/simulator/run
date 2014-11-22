@@ -53,17 +53,12 @@ def run_full(logger):
                                  loglevel=logging.INFO)
     hsn.run(None, None, conf, input_split=input_split)
     counters = hsn.get_counters()
-    print
-    print '=' * 30
-    print 'Counters'
     for phase in ['mapping', 'reducing']:
-        print
-        print '%s counters:' % phase.capitalize()
+        logger.info("%s counters:", phase.capitalize())
         for group in counters[phase]:
-            print '\tGroup %s' % group
+            logger.info("  Group %s", group)
             for c, v in counters[phase][group].iteritems():
-                print '\t\t%s: %s' % (c, v)
-
+                logger.info("   %s: %s", c, v)
     data_out = os.path.join(output_dir,
                             'part-%05d' % int(conf["mapred.task.partition"]))
     local_wc = pts.LocalWordCount(data_in)
@@ -95,8 +90,8 @@ def main():
     logger.setLevel(logging.INFO)
     logger.info("running word count full")
     run_full(logger)
-    # logger.info("running word count minimal")
-    # run_minimal(logger)
+    logger.info("running word count minimal")
+    run_minimal(logger)
 
 
 if __name__ == "__main__":

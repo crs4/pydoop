@@ -90,7 +90,9 @@ public:
     }
     PyObject* res; 
     try {
+      Py_BEGIN_ALLOW_THREADS;
       serializeInt(code, stream);
+      Py_END_ALLOW_THREADS;
       res = serialize_to_stream(encoding, args, stream);
     } catch (hu::Error& e) {
       return handle_error(e);
@@ -100,11 +102,14 @@ public:
 
   inline PyObject* decode_cmd_from_stream(hu::InStream& stream) {
     int code;
+    Py_BEGIN_ALLOW_THREADS;
     try {
       code = deserializeInt(stream);
     } catch (hu::Error& e) {
+      Py_BLOCK_THREADS;
       return handle_error(e);
     }
+    Py_END_ALLOW_THREADS;
     if (_decoding_rules.find(code) == _decoding_rules.end()) {
         PyErr_SetString(ProtocolCodecError, "Unknown command code.");
         return NULL;
@@ -156,7 +161,8 @@ public:
     return deserialize_from_stream(enc_rule, sis);
   }
 
-  inline PyObject* serialize_item(char code, PyObject* o, hu::OutStream& stream) {
+  inline PyObject* serialize_item(char code, PyObject* o,
+                                  hu::OutStream& stream) {
     try {
       switch(code) {
       case 's': {
@@ -166,7 +172,9 @@ public:
           return NULL;
         }
         std::string s(ptr, size);
+        Py_BEGIN_ALLOW_THREADS;
         serializeString(s, stream);
+        Py_END_ALLOW_THREADS;
         return o; // everything is ok.
       }
       case 'i': {
@@ -174,7 +182,9 @@ public:
         if (v == -1 && PyErr_Occurred()) {
           return NULL;
         }
+        Py_BEGIN_ALLOW_THREADS;
         serializeInt(v, stream);
+        Py_END_ALLOW_THREADS;
         return o;
       }
       case 'L': {
@@ -182,7 +192,9 @@ public:
         if (v == -1 && PyErr_Occurred()) {
           return NULL;
         }
+        Py_BEGIN_ALLOW_THREADS;
         serializeLong(v, stream);
+        Py_END_ALLOW_THREADS;
         return o;
       }
       case 'f': {
@@ -190,7 +202,9 @@ public:
         if (v == -1.0 && PyErr_Occurred()) {
           return NULL;
         }
+        Py_BEGIN_ALLOW_THREADS;
         serializeFloat(v, stream);
+        Py_END_ALLOW_THREADS;
         return o;
       }
       case 'A': {
@@ -199,7 +213,9 @@ public:
           return NULL;
         }
         Py_ssize_t n = PyTuple_GET_SIZE(o);
+        Py_BEGIN_ALLOW_THREADS;
         serializeInt(n, stream);
+        Py_END_ALLOW_THREADS;
         for(Py_ssize_t i = 0; i < n; ++i){
           serialize_item('s', PyTuple_GET_ITEM(o, i), stream);
         }
@@ -217,20 +233,38 @@ public:
   inline PyObject* deserialize_item(char code, hu::InStream& stream) {
     try {
       switch(code) {
-      case 's':
+      case 's': {
+        Py_BEGIN_ALLOW_THREADS;
         deserializeString(_buffer, stream);
+        Py_END_ALLOW_THREADS;
         return PyString_FromStringAndSize(_buffer.c_str(), _buffer.size());
-      case 'i':
-        return PyInt_FromLong(deserializeInt(stream));
-      case 'L':
-        return PyLong_FromLongLong(deserializeLong(stream));
+      }
+      case 'i': {
+        long v;
+        Py_BEGIN_ALLOW_THREADS;
+        v = deserializeInt(stream);
+        Py_END_ALLOW_THREADS;
+        return PyInt_FromLong(v);
+      }
+      case 'L': {
+        long long v;
+        Py_BEGIN_ALLOW_THREADS;        
+        v = deserializeLong(stream);
+        Py_END_ALLOW_THREADS;      
+        return PyLong_FromLongLong(v);
+      }
       case 'f': {
         float v;
+        Py_BEGIN_ALLOW_THREADS;
         deserializeFloat(v, stream);
+        Py_END_ALLOW_THREADS;
         return PyFloat_FromDouble((double)v);
       }
       case 'A': {
-        Py_ssize_t n = deserializeInt(stream);
+        Py_ssize_t n;
+        Py_BEGIN_ALLOW_THREADS;        
+        n = deserializeInt(stream);
+        Py_END_ALLOW_THREADS;
         PyObject* res = PyTuple_New(n);        
         for(Py_ssize_t i = 0; i < n; ++i){
           PyTuple_SET_ITEM(res, i, deserialize_item('s', stream));
