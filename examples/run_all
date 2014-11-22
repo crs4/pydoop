@@ -9,6 +9,7 @@ examples=(
     ipcount
     sequence_file
     wordcount
+    simulator
 )
 
 for e in ${examples[@]}; do
