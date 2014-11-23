@@ -16,6 +16,21 @@
 #
 # END_COPYRIGHT
 
+r"""
+Pydoop Simulator
+================
+
+This module provides basic, stand-alone, simulators for pydoop programs
+debugging support.
+
+  * ``HadoopSimulatorLocal`` allows the debugging of pydoop program
+    components in a simulated map-reduce context.
+
+  * ``HadoopSimulatorNetwork`` allows the debugging of a pydoop program
+    in a fully simulated Hadoop setup.
+
+"""
+
 import SocketServer
 import threading
 import os
@@ -270,6 +285,9 @@ class HadoopServer(SocketServer.TCPServer):
 
 
 class HadoopSimulator(object):
+    r"""
+    Common HadoopSimulator components.
+    """
 
     def __init__(self, logger=None, loglevel=logging.CRITICAL):
         self.logger = logger.getChild('HadoopSimulator') if logger \
@@ -332,15 +350,12 @@ class HadoopSimulator(object):
         the command flow a mapItem instruction for each line of `file_in`.
         Otherwise, it assumes that the pipes program will use the
         `input_split` variable and take care of record reading by itself.
-
         """
         input_key_type = 'org.apache.hadoop.io.LongWritable'
         input_value_type = 'org.apache.hadoop.io.Text'
         piped_input = file_in is not None
-        #f = cStringIO.StringIO()
         self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
         f = self.tempf.file
-        #f = open('foo-map.dat', 'wb')
         self.logger.debug('writing map input data in %s', f.name)
         down_stream = BinaryWriter(f)
         self.write_header_down_stream(down_stream, authorization, job_conf)
@@ -356,8 +371,6 @@ class HadoopSimulator(object):
             down_stream.send('close')
         self.logger.debug('\tdone writing, rewinding')
         f.seek(0)
-        #f.close()
-        #f = open('foo-map.dat', 'rb')
         return f
 
     def write_reduce_down_stream(self, sas, job_conf, reducer,
@@ -365,10 +378,8 @@ class HadoopSimulator(object):
         """
         FIXME
         """
-        #f = cStringIO.StringIO()
         self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
         f = self.tempf.file
-        #f = open('foo-map.dat', 'wb')
         down_stream = BinaryWriter(f)
 
         self.write_header_down_stream(down_stream, authorization, job_conf)
@@ -381,14 +392,31 @@ class HadoopSimulator(object):
                 down_stream.send('reduceValue', v)
         down_stream.send('close')
         f.seek(0)
-        #f.close()
-        #f = open('foo-map.dat', 'rb')
         return f
 
 
 class HadoopSimulatorLocal(HadoopSimulator):
+    r"""
+    Basic simulation of hadoop workflows.
+
+    This class allows the debugging of pydoop programs by simulating the
+    invocation of program components in a realistic hadoop workflow.
+    The expected usage is as follows::
+      
+       .. code-block::
+       
+         from mymr import TFactory
+         hs = HadoopSimulatorLocal(TFactory)
+         job_conf = {..}
+         hs.run(fin, fout, job_conf, num_reducers)
+         counters = hs.get_counters()
+    """
 
     def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
+        r"""
+        Initialize the simulator on a given factory of pydoop program
+        components.
+        """
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
 
@@ -403,6 +431,17 @@ class HadoopSimulatorLocal(HadoopSimulator):
         context.close()
 
     def run(self, file_in, file_out, job_conf, num_reducers):
+        r""" Run the simulator as configured by job_conf, with num_reducers
+        reducers. If ``file_in`` is ``not None``, it will simulate the
+        behavior of hadoop ``TextLineReader`` and create a record
+        for each line of ``file_in``. Otherwise, it assumes that
+        the factory argument provided in class initialization defines a
+        ``RecordReader`` class, and that ``job_conf`` provides a suitable
+        ``input_split`` variable.
+        Similarly, if ``file_out`` is ``None`` it will assume
+        that factory argument provided in class initialization defines a
+        ``RecordWriter`` class with appropriate parameters in ``job_conf``.
+        """
         self.logger.debug('run start')
         bytes_flow = self.write_map_down_stream(
             file_in, job_conf, num_reducers
@@ -434,16 +473,47 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
 
 class HadoopSimulatorNetwork(HadoopSimulator):
-    """
+    r"""
     This is a debugging support simulator class that uses network connections
     to communicate to an user-provided pipes program.
 
     It implements a reasonably close aproximation of the 'real'
     Hadoop-pipes setup.
+
+       .. code-block::
+       
+          program_name = '../wordcount/new_api/wordcount-full.py'
+          data_in = '../input/alice.txt'
+          output_dir = './output'
+          data_in_path = os.path.realpath(data_in)
+          data_in_uri = 'file://' + data_in_path
+          data_in_size = os.stat(data_in_path).st_size
+          os.makedirs(output_dir)
+          output_dir_uri = 'file://' + os.path.realpath(output_dir)
+          conf = {
+              "mapred.job.name": "wordcount",
+              "mapred.work.output.dir": output_dir_uri,
+              "mapred.task.partition": "0",
+          }
+          input_split = InputSplit.to_string(data_in_uri, 0, data_in_size)
+          hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
+                                       loglevel=logging.INFO)
+          hsn.run(None, None, conf, input_split=input_split)
+          counters = hsn.get_counters()
+          for phase in ['mapping', 'reducing']:
+              print "{} counters:".format(phase.capitalize())
+             for group in counters[phase]:
+                 print "  Group {}".format(group)
+                 for c, v in counters[phase][group].iteritems():
+                     print "   {}: {}".format(c, v)
     """
 
     def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
                  sleep_delta=DEFAULT_SLEEP_DELTA):
+        r"""
+        Initialize the simulator. When run, it will launch the pydoop
+        ``program`` ``sleep_delta`` seconds after framework initialization.
+        """
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
         self.program = program
         self.sleep_delta = sleep_delta
@@ -464,7 +534,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         os.environ[CMD_PORT_KEY] = str(port)
         os.environ[SECRET_LOCATION_KEY] = self.tmp_file
         self.logger.debug('delaying {} {} secs'.format(self.program,
-                                                        self.sleep_delta))
+                                                       self.sleep_delta))
         cmd_line = "(sleep {}; {})&".format(self.sleep_delta, self.program)
         os.system(cmd_line)
         server.handle_request()
@@ -472,16 +542,16 @@ class HadoopSimulatorNetwork(HadoopSimulator):
 
     def run(self, file_in, file_out, job_conf, num_reducers=1,
             input_split=''):
-        """
+        r"""
         Run the program through the simulated hadoop infrastructure.
-        The infrastructure will pipe the contents of `file_in` to the pipes
+        The infrastructure will pipe the contents of ``file_in`` to the pipes
         program similarly to what Hadoop's TextInputFormat does. Setting the
-        `file_in` to `None` implies that the pipes
-        program is expected to get its data from its own `RecordReader`
-        using the provided `input_split`.
-        Analogously, the final run results will be written to `file_out`
-        unless it is set to `None` and the pipes program is expected to have
-        a `RecordWriter`.
+        ``file_in`` to ``None`` implies that the pipes
+        program is expected to get its data from its own ``RecordReader``
+        using the provided ``input_split``.
+        Analogously, the final run results will be written to ``file_out``
+        unless it is set to ``None`` and the pipes program is expected to have
+        a ``RecordWriter``.
         """
         assert file_in or input_split
         assert file_out or num_reducers > 0  # FIXME pipes should support this
