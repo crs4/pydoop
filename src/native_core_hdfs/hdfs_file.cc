@@ -19,8 +19,6 @@
 
 #include "hdfs_file.h"
 
-using namespace std;
-
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     FileInfo *self;
@@ -44,12 +42,12 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 #ifdef HADOOP_LIBHDFS_V1
 
-bool hdfsFileIsOpenForWrite(FileInfo *f){
+static bool hdfsFileIsOpenForWrite(FileInfo *f){
     return f->stream_type == OUTPUT;
 }
 
 
-bool hdfsFileIsOpenForRead(FileInfo *f){
+static bool hdfsFileIsOpenForRead(FileInfo *f){
     return f->stream_type == INPUT;
 }
 
