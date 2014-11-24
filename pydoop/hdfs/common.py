@@ -30,6 +30,12 @@ DEFAULT_PORT = 8020  # org/apache/hadoop/hdfs/server/namenode/NameNode.java
 DEFAULT_USER = getpass.getuser()
 DEFAULT_LIBHDFS_OPTS = "-Xmx48m"  # enough for most applications
 
+# Unicode objects are encoded using this encoding:
+TEXT_ENCODING = 'utf-8'
+# We use UTF-8 since this is what the Hadoop TextFileFormat uses
+# NOTE:  If you change this, you'll also need to fix the encoding
+# used by the native extension.
+
 
 def encode_path(path):
     if isinstance(path, unicode):

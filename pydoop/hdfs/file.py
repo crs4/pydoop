@@ -351,6 +351,8 @@ class local_file(file):
         return self.__size
 
     def write(self, data):
+        if isinstance(data, unicode):
+            data = data.encode(common.TEXT_ENCODING)
         super(local_file, self).write(data)
         return len(data)
 
