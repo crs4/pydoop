@@ -529,7 +529,11 @@ def access(path, mode, user=None):
     if st.st_uid == user:
         mode <<= 6
     else:
-        groups = common.get_groups()
+        try:
+            groups = common.get_groups(user)
+        except KeyError:
+            # user isn't recognized on the system.  No group information available
+            groups = []
         if st.st_gid in groups:
             mode <<= 3
     return (st.st_mode & mode) == mode

@@ -19,7 +19,6 @@
 
 #include "hdfs_fs.h"
 #include "hdfs_file.h"
-#include "hdfs_utils.h"
 
 #include <sstream>
 #include <hdfs.h>

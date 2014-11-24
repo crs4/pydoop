@@ -161,7 +161,7 @@ def build_hdfscore_native_impl():
                                     'native_mini_dfs.c'])]
     hdfs_ext_sources += [
         os.path.join('src/native_core_hdfs', x) for x in [
-            'hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc', 'hdfs_utils.cc'
+            'hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc'
         ]]
     libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v <= 1
                        else "HADOOP_LIBHDFS_V2", 1)]
