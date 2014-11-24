@@ -107,10 +107,16 @@ def main():
     if opt.java_rr:
         conf["hadoop.pipes.java.recordreader"] = "true"
     conf["pydoop.input.issplitable"] = "true" if opt.splitable else "false"
-    runner.run(more_args=["-libjars", JAR_NAME], properties=conf,
-               hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
-    res = runner.collect_output()
-    runner.clean()
+    try:
+        runner.run(more_args=["-libjars", JAR_NAME], properties=conf,
+                   hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
+        res = runner.collect_output()
+    except pydoop.hadut.RunCmdError as e:
+        logger.fatal(e)
+        logger.fatal("Failed command: %s ", e.cmd)
+        sys.exit(e.returncode)
+    finally:
+        runner.clean()
     local_wc = pts.LocalWordCount(opt.input)
     logger.info(local_wc.check(res))
     return 0
