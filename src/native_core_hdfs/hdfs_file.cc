@@ -19,6 +19,8 @@
 
 #include "hdfs_file.h"
 
+#define PYDOOP_TEXT_ENCODING  "utf-8"
+
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     FileInfo *self;
@@ -391,7 +393,7 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
      * it directly through a Python buffer.
      */
     if (PyUnicode_Check(input)) {
-       encoded = PyUnicode_AsEncodedString(input, NULL, NULL);
+       encoded = PyUnicode_AsEncodedString(input, PYDOOP_TEXT_ENCODING, NULL);
        if (!encoded) // error
            return NULL;
        input = encoded; // override original input with encoded string
