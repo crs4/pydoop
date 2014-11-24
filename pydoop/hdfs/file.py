@@ -25,7 +25,6 @@ import os
 
 from pydoop.hdfs import common
 
-
 def _complain_ifclosed(closed):
     if closed:
         raise ValueError("I/O operation on closed HDFS file object")
@@ -41,7 +40,7 @@ def _seek_with_boundary_checks(f, position, whence):
     if f.mode != 'r':
         raise IOError('can seek only in read-only')            
     return position
-            
+
 class hdfs_file(object):
     """
     Instances of this class represent HDFS file objects.
@@ -366,11 +365,11 @@ class local_file(file):
             os.fsync(self.fileno())
             self.__size = os.fstat(self.fileno()).st_size
         super(local_file, self).close()
-            
+
     def seek(self, position, whence=os.SEEK_SET):
         position = _seek_with_boundary_checks(self, position, whence)
         return super(local_file, self).seek(position)
-        
+
     def pread(self, position, length):
         _complain_ifclosed(self.closed)
         if position < 0:
