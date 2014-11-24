@@ -177,6 +177,14 @@ class TestSerialize(unittest.TestCase):
             self.assertEqual(obj, srl.private_decode(srl.private_encode(obj)))
             #s = srl.private_encode(obj)
 
+    def test_serialize_old_style_filename(self):
+        fn = 'some_filename.file'
+        srl.serialize_old_style_filename(fn, self.stream)
+        self.stream.seek(0)
+        new_fn = srl.deserialize_old_style_filename(self.stream)
+        self.assertEqual(fn, new_fn)
+
+
 
 def _compile_java_part(java_class_file, classpath):
     java_file = os.path.splitext(
