@@ -145,17 +145,15 @@ class Partitioner(api.Partitioner):
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 
+factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer,
+                     record_reader_class=Reader,
+                     record_writer_class=Writer,
+                     partitioner_class=Partitioner,
+                     combiner_class=Reducer)
+
 
 if __name__ == "__main__":
-    pp.run_task(pp.Factory(
-        mapper_class=Mapper, reducer_class=Reducer,
-        record_reader_class=Reader,
-        record_writer_class=Writer,
-        partitioner_class=Partitioner,
-        combiner_class=Reducer
-        ),
-        private_encoding=True
-    )
+    pp.run_task(factory, private_encoding=True)
 
 # Local Variables:
 # mode: python
