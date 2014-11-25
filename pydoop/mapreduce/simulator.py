@@ -323,7 +323,7 @@ class HadoopSimulator(object):
         self.counters[(self.phase, cid)][1] += increment
 
     def get_counters(self):
-        ctable = {}
+        ctable = {'mapping' : {}, 'reducing' : {}}
         for k, v in self.counters.iteritems():
             ctable.setdefault(
                 k[0], {}).setdefault(v[0][0], {}).setdefault(v[0][1], v[1])
@@ -430,7 +430,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
         self.logger.debug('done running!')
         context.close()
 
-    def run(self, file_in, file_out, job_conf, num_reducers):
+    def run(self, file_in, file_out, job_conf, num_reducers, input_split=''):
         r""" Run the simulator as configured by job_conf, with num_reducers
         reducers. If ``file_in`` is ``not None``, it will simulate the
         behavior of hadoop ``TextLineReader`` and create a record
@@ -444,7 +444,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
         """
         self.logger.debug('run start')
         bytes_flow = self.write_map_down_stream(
-            file_in, job_conf, num_reducers
+            file_in, job_conf, num_reducers, input_split
         )
         dstream = BinaryDownStreamFilter(bytes_flow)
         # FIXME this is a quick hack to avoid crashes with user defined
