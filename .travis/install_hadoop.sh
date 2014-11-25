@@ -1,38 +1,172 @@
 #!/bin/bash
-#set -e
+
+set -o errexit
+set -o nounset
+
+HadoopArchiveUrl="http://archive.apache.org/dist/hadoop/core/"
+
+# a generic error trap that prints the command that failed before exiting the script.
+function error_trap() {
+  printf -v message "Unexpected error while installing Hadoop.\nCommand: %s\nExiting\n" "${BASH_COMMAND}"
+  printf "${message}" >&2
+  exit 1
+}
+
+trap error_trap ERR
+
+function log() {
+  echo -e $(date +"%F %T") -- $@ >&2
+  return 0
+}
+
+function error() {
+    if [ -n "${@}" ]; then
+        log $@
+    else
+        log "Unknown error"
+    fi
+    exit 1
+}
+
+
+function write_old_style_site_config() {
+    [ $# -eq 1 ] || error "Missing Hadoop conf dir function argument"
+    local HadoopConfDir="${1}"
+
+    cat <<END > "${HadoopConfDir}/hdfs-site.xml"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property><name>dfs.permissions.supergroup</name><value>admin</value></property>
+    <property><name>dfs.replication</name><value>1</value></property>
+    <property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>
+    <property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property>
+</configuration>
+END
+    cat <<END > "${HadoopConfDir}/core-site.xml"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>hdfs://localhost:9000</value>
+    </property>
+</configuration>
+END
+
+    cat <<END > "${HadoopConfDir}/mapred-site.xml"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>mapred.job.tracker</name>
+        <value>localhost:9001</value>
+    </property>
+</configuration>
+END
+    return 0
+}
+
+function write_yarn_site_config() {
+    [ $# -eq 1 ] || error "Missing Hadoop conf dir function argument"
+    local HadoopConfDir="${1}"
+
+    sudo cat <<END > "${HadoopConfDir}/core-site.xml"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>fs.default.name</name>
+        <value>hdfs://localhost:8020</value>
+    </property>
+
+    <!-- OOZIE proxy user setting -->
+    <property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property>
+    <property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property>
+
+    <!-- HTTPFS proxy user setting -->
+    <property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property>
+    <property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property>
+</configuration>
+END
+
+        #sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts
+        #sudo /etc/init.d/networking restart
+    sudo cat <<END > "${HadoopConfDir}/mapred-site.xml"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property>
+        <name>mapred.job.tracker</name>
+        <value>localhost:9001</value>
+    </property>
+    <property>
+        <name>mapred.local.dir</name>
+        <value>/tmp/mapred_data</value>
+    </property>
+</configuration>
+END
+
+    sudo cat <<END > "${HadoopConfDir}/hdfs-site.xml"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+    <property><name>dfs.permissions.supergroup</name><value>admin</value></property>
+    <property><name>dfs.replication</name><value>1</value></property>
+    <property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property>
+</configuration>
+END
+    return 0
+}
 
 function install_standard_hadoop() {
-    wget http://archive.apache.org/dist/hadoop/core/hadoop-$HADOOPVERSION/hadoop-$HADOOPVERSION.tar.gz
-    tar xf hadoop-$HADOOPVERSION.tar.gz
-    export HADOOP_HOME=`pwd`/hadoop-$HADOOPVERSION
-    if [[ "$HADOOPVERSION" == 2.2.* || "$HADOOPVERSION" == 2.4.* ]]; then
-        export HADOOP_CONF_DIR=`pwd`/.travis/hadoop-$HADOOPVERSION-conf/
-        export HADOOP_BIN=$HADOOP_HOME/sbin/
-        export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native
-        export HADOOP_OPTS="-Djava.library.path=$HADOOP_HOME/lib"
-    else 
-        export HADOOP_CONF_DIR=$HADOOP_HOME/conf
-        export HADOOP_BIN=$HADOOP_HOME/bin/
+    [ $# -eq 1 ] || error "Missing HadoopVersion function argument"
+    local HadoopVersion="${1}"
 
-        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property><property><name>dfs.replication</name><value>1</value></property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property><property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property></configuration>" > $HADOOP_CONF_DIR/hdfs-site.xml
-        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:9000</value></property></configuration>" > $HADOOP_CONF_DIR/core-site.xml
-        echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration> <property><name>mapred.job.tracker</name><value>localhost:9001</value></property></configuration>" > $HADOOP_CONF_DIR/mapred-site.xml
+    log "Installing standard Apache Hadoop, version ${HadoopVersion}"
+
+    wget ${HadoopArchiveUrl}/hadoop-${HadoopVersion}/hadoop-${HadoopVersion}.tar.gz
+    tar xzf "hadoop-${HadoopVersion}.tar.gz"
+
+    export HADOOP_HOME="${PWD}/hadoop-${HadoopVersion}"
+    if [[ "${HadoopVersion}" == 2.2.* || "${HadoopVersion}" == 2.4.* ]]; then
+        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-${HadoopVersion}-conf/"
+        export HADOOP_BIN="${HADOOP_HOME}/sbin/"
+        export HADOOP_COMMON_LIB_NATIVE_DIR="${HADOOP_HOME}/lib/native"
+        export HADOOP_OPTS="-Djava.library.path=${HADOOP_HOME}/lib"
+    else 
+        export HADOOP_CONF_DIR="${HADOOP_HOME}/conf"
+        export HADOOP_BIN="${HADOOP_HOME}/bin/"
+        write_old_style_site_config "${HADOOP_CONF_DIR}"
     fi
-    echo "export HADOOP_HOME=$HADOOP_HOME" >> $HADOOP_CONF_DIR/hadoop-env.sh
-    echo "export JAVA_HOME=$JAVA_HOME" >> $HADOOP_CONF_DIR/hadoop-env.sh
+    echo "export HADOOP_HOME=${HADOOP_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+    echo "export JAVA_HOME=${JAVA_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     
-    $HADOOP_HOME/bin/hadoop namenode -format
-    $HADOOP_BIN/start-all.sh
-    $HADOOP_HOME/bin/hadoop dfsadmin -safemode wait
+    log "Formatting namenode"
+    "${HADOOP_HOME}/bin/hadoop" namenode -format
+    log "Starting daemons..."
+    "${HADOOP_BIN}/start-all.sh"
+    "${HADOOP_HOME}/bin/hadoop" dfsadmin -safemode wait
+    log "done"
+    return 0
 }
 
 
 function install_cdh() {
+    [ $# -eq 1 ] || error "Missing HadoopVersion function argument"
+    local HadoopVersion="${1}"
+
+    log "Installing Cloudera Hadoop, version ${HadoopVersion}"
+
+    log "Creating namenode directories"
     mkdir -p /tmp/hadoop-hdfs/dfs/name
+    ls -ld /tmp/hadoop-hdfs/dfs/name
     chmod 777 /tmp/hadoop-hdfs/ -R
     ls -la /tmp/hadoop-hdfs/dfs/name
-    if [[ "$HADOOPVERSION" == *cdh4* ]]; then 
-        sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-$HADOOPVERSION contrib"
+
+    log "Installing packages"
+    if [[ "${HadoopVersion}" == *cdh4* ]]; then 
+        sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-${HadoopVersion} contrib"
         curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -
         sudo apt-get update
         if [[ "$YARN" ]]; then
@@ -40,25 +174,20 @@ function install_cdh() {
         else
             sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client hadoop-0.20-mapreduce-tasktracker
         fi
-    elif [[ "$HADOOPVERSION" == *cdh3* ]]; then
-        sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-$HADOOPVERSION contrib"
+    elif [[ "${HadoopVersion}" == *cdh3* ]]; then
+        sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-${HadoopVersion} contrib"
         curl -s http://archive.cloudera.com/debian/archive.key | sudo apt-key add -
-        sudo apt-get update; sudo apt-get install hadoop-0.20-conf-pseudo
+        sudo apt-get update
+        sudo apt-get install hadoop-0.20-conf-pseudo
     fi
-    
-    sudo chmod 777 /etc/hadoop/conf/ -R
-    sudo chmod 777 /etc/hadoop/conf/*.xml        
-    sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml
-    sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
 
-    if ! [[ "$YARN" ]]; then                
-        sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>fs.default.name</name><value>hdfs://localhost:8020</value></property><!-- OOZIE proxy user setting --><property><name>hadoop.proxyuser.oozie.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.oozie.groups</name><value>*</value></property><!-- HTTPFS proxy user setting --><property><name>hadoop.proxyuser.httpfs.hosts</name><value>*</value></property><property><name>hadoop.proxyuser.httpfs.groups</name><value>*</value></property></configuration>" > /etc/hadoop/conf/core-site.xml
-        
-        #sed "s/localhost /localhost `hostname` /" /etc/hosts > /tmp/hosts; sudo mv /tmp/hosts /etc/hosts
-        #sudo /etc/init.d/networking restart
-        sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>mapred.job.tracker</name><value>localhost:9001</value></property><property><name>mapred.local.dir</name><value>/tmp/mapred_data</value></property></configuration>" > /etc/hadoop/conf/mapred-site.xml
-
-        sudo echo "<?xml version=\"1.0\"?><?xml-stylesheet type=\"text/xsl\" href=\"configuration.xsl\"?><configuration><property><name>dfs.permissions.supergroup</name><value>admin</value></property><property><name>dfs.replication</name><value>1</value></property><property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property></configuration>" > /etc/hadoop/conf/hdfs-site.xml
+    local HadoopConfDir=/etc/hadoop/conf/
+    log "Creating configuration under ${HadoopConfDir}"
+    # make configuration files editable by everyone to simplify setting up the machine... :-/
+    sudo chmod -R 777 "${HadoopConfDir}"
+    sed -i -e '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' "${HadoopConfDir}/hdfs-site.xml"
+    if [[ "${YARN}" ]]; then                
+        write_yarn_site_config "${HadoopConfDir}"
 
         #sudo rm /tmp/hadoop* -rf
         #sudo rm /var/lib/hadoop-hdfs/* -rf
@@ -68,22 +197,27 @@ function install_cdh() {
 
     for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
     
-    #if [[ "$HADOOPVERSION" == *cdh3* ]]
+    #if [[ "${HadoopVersion}" == *cdh3* ]]
     #   then 
     #      JH=${JAVA_HOME//\//\\\/}
     #     sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh
     #fi
     
-    sudo echo "export JAVA_HOME=$JAVA_HOME" >> /etc/hadoop/conf/hadoop-env.sh
+    sudo echo "export JAVA_HOME=$JAVA_HOME" >> "${HadoopConfDir}/hadoop-env.sh"
+
+    log "Formatting namenode"
     sudo rm /tmp/hadoop-hdfs/dfs/name -rf
     sudo -u hdfs hadoop namenode -format
 
+    log "Starting namenode"
     for x in `cd /etc/init.d ; ls hadoop-*namenode` ; do sudo service $x start ; done
 
     hadoop dfsadmin -safemode wait
+    log "HDFS out of safe mode"
     sudo jps
 
     local hdfs="sudo -u hdfs hadoop fs"
+    log "Creating HDFS directories"
     ${hdfs} -mkdir /tmp
     ${hdfs} -chmod 1777 /tmp
     ${hdfs} -mkdir  /user/$USER
@@ -112,13 +246,24 @@ function install_cdh() {
         ${hdfs} -chown mapred:hadoop /tmp/mapred/system
     fi        
 
+    log "Starting all Hadoop services"
     for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
+
+    log "done"
+
+    return 0
 }
 
 #### main ###
 
-if [[ "$HADOOPVERSION" != *cdh* ]]; then
-    install_standard_hadoop
+if [[ "${HADOOPVERSION}" != *cdh* ]]; then
+    install_standard_hadoop "${HADOOPVERSION}"
 else # else CDH
-    install_cdh
+    install_cdh "${HADOOPVERSION}"
 fi
+
+log "installation finished"
+
+# restore modified bash options
+set +o errexit
+set +o nounset
