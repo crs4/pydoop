@@ -23,9 +23,8 @@ logging.basicConfig(level=logging.INFO)
 from pydoop.hdfs.core.api import CoreHdfsFs as CoreFsApi
 from pydoop.hdfs.core.api import CoreHdfsFile as CoreFileApi
 
-from pydoop.hdfs.common import BUFSIZE
+from pydoop.hdfs.common import BUFSIZE, TEXT_ENCODING
 from .common import wrap_class_instance, wrap_class, wrap_array
-
 
 BUFFER_SIZE_CONFIG_PROPERTY = "io.file.buffer.size"
 REPLICATION_CONFIG_PROPERTY = "dfs.replication"
@@ -349,9 +348,11 @@ class CoreHdfsFile(CoreFileApi):
             raise IOError
         if length < 0:
             raise IOError
-        if length > 0:
+        if length is None or length > 0:
+            if isinstance(data, unicode):
+                data = data.encode(TEXT_ENCODING)
             self._stream.write(self._jbytearray(data))
-        return length
+        return len(data)
 
     def tell(self):
         if not self._stream:

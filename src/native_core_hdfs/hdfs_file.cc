@@ -19,6 +19,8 @@
 
 #include "hdfs_file.h"
 
+#define PYDOOP_TEXT_ENCODING  "utf-8"
+
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     FileInfo *self;
@@ -377,23 +379,43 @@ PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
 {
+    PyObject *input, *encoded = NULL, *retval = NULL;
     Py_buffer buffer;
 
     if (!_ensure_open_for_writing(self))
         return NULL;
 
-    if (! PyArg_ParseTuple(args, "s*",  &buffer))
+    if (! PyArg_ParseTuple(args, "O",  &input))
         return NULL;
 
-    Py_ssize_t written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
-    PyBuffer_Release(&buffer);
-
-    if (written >= 0)
-        return Py_BuildValue("n", written);
-    else {
-        PyErr_SetFromErrno(PyExc_IOError);
-        return NULL;
+    /* If we get a unicode object we serialized it using the
+     * system's default codec.  Any other object we try to access
+     * it directly through a Python buffer.
+     */
+    if (PyUnicode_Check(input)) {
+       encoded = PyUnicode_AsEncodedString(input, PYDOOP_TEXT_ENCODING, NULL);
+       if (!encoded) // error
+           return NULL;
+       input = encoded; // override original input with encoded string
     }
+
+    if (PyObject_GetBuffer(input, &buffer, PyBUF_SIMPLE) < 0) {
+        PyErr_SetString(PyExc_TypeError, "Argument is not accessible as a Python buffer");
+    }
+    else {
+        Py_ssize_t written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
+        PyBuffer_Release(&buffer);
+
+        if (written >= 0)
+            retval = Py_BuildValue("n", written);
+        else {
+            PyErr_SetFromErrno(PyExc_IOError);
+            retval = NULL;
+        }
+    }
+
+    Py_XDECREF(encoded);
+    return retval;
 }
 
 PyObject* FileClass_flush(FileInfo *self){

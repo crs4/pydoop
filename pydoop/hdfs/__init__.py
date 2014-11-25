@@ -81,12 +81,10 @@ import os
 import pydoop
 from . import common, path
 
-
 try:
     _ORIG_CLASSPATH
 except NameError:
     _ORIG_CLASSPATH = os.getenv("CLASSPATH", "")
-
 
 #--- MODULE CONFIG ---
 def init():
