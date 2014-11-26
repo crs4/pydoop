@@ -46,7 +46,7 @@ typedef struct {
     int readline_chunk_size;
 
 #ifdef HADOOP_LIBHDFS_V1
-    int stream_type;
+    hdfsStreamType stream_type;
 #endif
 
 } FileInfo;
