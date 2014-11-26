@@ -88,20 +88,20 @@ def check_results(data_in, data_out, logger):
 def run_network_minimal(logger):
     program_name = '../wordcount/new_api/wordcount_minimal.py'
     data_in, data_out, conf, input_split, output_dir = create_configuration()
-    hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
-                                 loglevel=logging.INFO)
-    hsn.run(open(data_in), open(data_out, 'w'), conf)
-    dump_counters(hsn, logger)
+    hs = HadoopSimulatorNetwork(program=program_name, logger=logger,
+                                loglevel=logging.INFO)
+    hs.run(open(data_in), open(data_out, 'w'), conf)
+    dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
 
 
 def run_local_minimal(logger):
-    hsl = HadoopSimulatorLocal(factory=factory_minimal, logger=logger,
-                               loglevel=logging.INFO)
+    hs = HadoopSimulatorLocal(factory=factory_minimal, logger=logger,
+                              loglevel=logging.INFO)
     data_in, data_out, conf, input_split, output_dir = create_configuration()
-    hsl.run(open(data_in), open(data_out, 'w'), conf)
-    dump_counters(hsl, logger)
+    hs.run(open(data_in), open(data_out, 'w'), conf)
+    dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
 
@@ -121,19 +121,12 @@ def run_local_full(logger):
 def run_network_full(logger):
     program_name = '../wordcount/new_api/wordcount_full.py'
     data_in, data_out, conf, input_split, output_dir = create_configuration()
-    hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
-                                 loglevel=logging.INFO)
-    hsn.run(None, None, conf, input_split=input_split)
-    counters = hsn.get_counters()
-    for phase in ['mapping', 'reducing']:
-        logger.info("%s counters:", phase.capitalize())
-        for group in counters[phase]:
-            logger.info("  Group %s", group)
-            for c, v in counters[phase][group].iteritems():
-                logger.info("   %s: %s", c, v)
+    hs = HadoopSimulatorNetwork(program=program_name, logger=logger,
+                                loglevel=logging.INFO)
+    hs.run(None, None, conf, input_split=input_split)
     data_out = os.path.join(output_dir,
                             'part-%05d' % int(conf["mapred.task.partition"]))
-    dump_counters(hsn, logger)
+    dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
 
@@ -141,10 +134,14 @@ def run_network_full(logger):
 def main():
     logger = logging.getLogger("main")
     logger.setLevel(logging.INFO)
-    logger.info("running word count full using the network simulator")
+    logger.info("*** word count full using HadoopSimulatorNetwork ***")
     run_network_full(logger)
-    logger.info("running word count minimal using the network simulator")
+    logger.info("*** word count minimal using HadoopSimulatorNetwork ***")
     run_network_minimal(logger)
+    logger.info("*** word count minimal using HadoopSimulatorLocal ***")
+    run_local_minimal(logger)
+    logger.info("*** word count full using HadoopSimulatorLocal ***")
+    run_local_full(logger)
 
 
 if __name__ == "__main__":

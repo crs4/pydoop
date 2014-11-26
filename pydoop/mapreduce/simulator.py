@@ -129,9 +129,10 @@ class TrivialRecordReader(RecordReader):
 
 class SortAndShuffle(dict):
 
-    def __init__(self, simulator):
+    def __init__(self, simulator, enable_local_counters=False):
         super(SortAndShuffle, self).__init__()
         self.simulator = simulator
+        self.enable_local_counters = enable_local_counters
 
     def output(self, key, value):
         LOGGER.debug('SAS:output %r, %r', key, value)
@@ -145,12 +146,14 @@ class SortAndShuffle(dict):
         elif cmd == 'partitionedOutput':
             part, key, value = args
             self.setdefault(key, []).append(value)
-        # elif cmd == 'registerCounter':
-        #     cid, group, name = vals
-        #     self.simulator.register_counter(cid, group, name)
-        # elif cmd == 'incrementCounter':
-        #     cid, increment = vals
-        #     self.simulator.increment_counter(cid, int(increment))
+        elif cmd == 'registerCounter':
+            if self.enable_local_counters:
+                cid, group, name = args
+                self.simulator.register_counter(cid, group, name)
+        elif cmd == 'incrementCounter':
+            if self.enable_local_counters:
+                cid, increment = args
+                self.simulator.increment_counter(cid, int(increment))
 
     def flush(self):
         pass
@@ -323,7 +326,7 @@ class HadoopSimulator(object):
         self.counters[(self.phase, cid)][1] += increment
 
     def get_counters(self):
-        ctable = {'mapping' : {}, 'reducing' : {}}
+        ctable = {'mapping': {}, 'reducing': {}}
         for k, v in self.counters.iteritems():
             ctable.setdefault(
                 k[0], {}).setdefault(v[0][0], {}).setdefault(v[0][1], v[1])
@@ -402,9 +405,9 @@ class HadoopSimulatorLocal(HadoopSimulator):
     This class allows the debugging of pydoop programs by simulating the
     invocation of program components in a realistic hadoop workflow.
     The expected usage is as follows::
-      
+
        .. code-block::
-       
+
          from mymr import TFactory
          hs = HadoopSimulatorLocal(TFactory)
          job_conf = {..}
@@ -430,7 +433,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
         self.logger.debug('done running!')
         context.close()
 
-    def run(self, file_in, file_out, job_conf, num_reducers, input_split=''):
+    def run(self, file_in, file_out, job_conf, num_reducers=1, input_split=''):
         r""" Run the simulator as configured by job_conf, with num_reducers
         reducers. If ``file_in`` is ``not None``, it will simulate the
         behavior of hadoop ``TextLineReader`` and create a record
@@ -439,12 +442,12 @@ class HadoopSimulatorLocal(HadoopSimulator):
         ``RecordReader`` class, and that ``job_conf`` provides a suitable
         ``input_split`` variable.
         Similarly, if ``file_out`` is ``None`` it will assume
-        that factory argument provided in class initialization defines a
+        that the factory argument provided in class initialization defines a
         ``RecordWriter`` class with appropriate parameters in ``job_conf``.
         """
         self.logger.debug('run start')
         bytes_flow = self.write_map_down_stream(
-            file_in, job_conf, num_reducers, input_split
+            file_in, job_conf, num_reducers, input_split=input_split
         )
         dstream = BinaryDownStreamFilter(bytes_flow)
         # FIXME this is a quick hack to avoid crashes with user defined
@@ -457,7 +460,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
             self.run_task(dstream, rec_writer_stream)
         else:
             self.logger.info('running a map reduce job')
-            sas = SortAndShuffle(self)
+            sas = SortAndShuffle(self, enable_local_counters=True)
             self.logger.info('running mapping phase')
             self.set_phase('mapping')
             self.run_task(dstream, sas)
@@ -467,8 +470,6 @@ class HadoopSimulatorLocal(HadoopSimulator):
             self.logger.info('running reducing phase')
             self.set_phase('reducing')
             self.run_task(rstream, rec_writer_stream)
-        if file_out is None:
-            self.logger.debug('fake file_out contents: %r', f.getvalue())
         self.logger.info('run done.')
 
 
