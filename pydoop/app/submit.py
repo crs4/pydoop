@@ -73,7 +73,7 @@ class PydoopSubmitter(object):
         self.pipes_code = None
         self.files_to_cache = []
 
-    def set_args(self, args):
+    def set_args(self, args, unknown_args=[]):
         """
         Configure job, based on the arguments provided.
         """
@@ -122,6 +122,7 @@ class PydoopSubmitter(object):
             cfiles += cached_files
         self.properties[CACHE_FILES] = ','.join(cfiles)
         self.args = args
+        self.unknown_args = unknown_args
 
     def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
         """
@@ -177,13 +178,14 @@ class PydoopSubmitter(object):
             if pypath:
                 lines.append('export PYTHONPATH="%s"' % pypath)
             if (USER_HOME not in self.properties and
-                'HOME' in os.environ and
-                not self.args.no_override_home):
+                "HOME" in os.environ and not self.args.no_override_home):
                 lines.append('export HOME="%s"' % os.environ['HOME'])
             lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
         lines.append('":"""')
         lines.append('import runpy')
-        lines.append('runpy.run_module("%s")' % self.args.module)
+        lines.append('mdir = runpy.run_module("%s")' % self.args.module)
+        if self.args.entry_point:
+            lines.append('mdir["%s"]()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
 
     def __validate(self):
@@ -198,7 +200,7 @@ class PydoopSubmitter(object):
                 self.logger.debug(
                     "Removing temporary working directory %s", self.remote_wd
                 )
-                #hdfs.rmr(self.remote_wd)
+                hdfs.rmr(self.remote_wd)
             except IOError:
                 pass
 
@@ -249,13 +251,11 @@ class PydoopSubmitter(object):
             raise RuntimeError(
                 "Can't find pydoop.jar, cannot use local fs patch"
             )
-        #---
         job_args = []
         if self.args.mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
             classpath = pydoop_jar
             libjars.append(pydoop_jar)
-            #job_args.extend(("-libjars", pydoop_jar))
         elif self.args.local_fs:
             # FIXME we still need to handle the special case with
             # hadoop security and local file system.
@@ -264,13 +264,11 @@ class PydoopSubmitter(object):
             submitter_class = 'it.crs4.pydoop.mapred.pipes.Submitter'
             classpath = pydoop_jar
             libjars.append(pydoop_jar)
-            #job_args.extend(("-libjars", pydoop_jar))
         else:
             submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
             classpath = None
         if self.args.conf:
             job_args.extend(['-conf', self.args.conf.name])
-        # handle input, output, jar,
         job_args.extend(['-input', self.args.input])
         job_args.extend(['-output', self.args.output])
         job_args.extend(['-program', self.remote_exe])
@@ -301,10 +299,10 @@ class PydoopSubmitter(object):
                          (submitter_class, args, properties, classpath))
 
 
-def run(args):
-    submitter = PydoopSubmitter()
-    submitter.set_args(args)
-    submitter.run()
+def run(args, unknown_args=[]):
+    script = PydoopSubmitter()
+    script.set_args(args, unknown_args)
+    script.run()
     return 0
 
 
@@ -428,9 +426,14 @@ def add_parser_arguments(parser):
     parser.add_argument(
         '--module', metavar='MODULE', type=str,
         help=("Create a launcher that will execute MODULE code "
-              "in the the appropriate launch environment."
+              "in the appropriate launch environment."
               "The resulting pydoop program will be written "
               "at the HDFS path defined by PROGRAM")
+    )
+    parser.add_argument(
+        '--entry-point', metavar='ENTRY_POINT', type=str,
+        help=("Explicitly execute MODULE.ENTRY_POINT() "
+              "in the launcher script.")
     )
     parser.add_argument(
         '--pretend', action='store_true',

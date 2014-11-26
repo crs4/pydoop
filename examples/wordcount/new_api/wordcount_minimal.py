@@ -53,7 +53,10 @@ class TReducer(Reducer):
         # Note: we explicitly write the value as a str.
         ctx.emit(ctx.key, str(s))
 
+factory = Factory(mapper_class=TMapper, reducer_class=TReducer)
+
+def main():
+    run_task(factory, private_encoding=True)    
 
 if __name__ == "__main__":
-    run_task(Factory(mapper_class=TMapper, reducer_class=TReducer),
-             private_encoding=True)
+    main()
