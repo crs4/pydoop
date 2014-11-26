@@ -151,9 +151,12 @@ factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer,
                      partitioner_class=Partitioner,
                      combiner_class=Reducer)
 
+def main():
+    pp.run_task(factory, private_encoding=True)    
 
 if __name__ == "__main__":
-    pp.run_task(factory, private_encoding=True)
+    main()
+    
 
 # Local Variables:
 # mode: python
