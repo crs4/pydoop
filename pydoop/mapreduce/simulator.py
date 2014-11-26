@@ -259,7 +259,7 @@ class HadoopThreadHandler(SocketServer.BaseRequestHandler):
 
 
 class HadoopServer(SocketServer.TCPServer):
-    """
+    r"""
     A fake Hadoop server for debugging support.
     """
     def __init__(self, simulator, port, down_bytes, out_writer,
@@ -325,6 +325,21 @@ class HadoopSimulator(object):
         self.counters[(self.phase, cid)][1] += increment
 
     def get_counters(self):
+        r"""
+         Extract counters information accumulated by this simulator instance.
+         The expected usage is as follows::
+
+         .. code-block::
+
+          counters = hs.get_counters()
+          for phase in ['mapping', 'reducing']:
+              print "{} counters:".format(phase.capitalize())
+             for group in counters[phase]:
+                 print "  Group {}".format(group)
+                 for c, v in counters[phase][group].iteritems():
+                     print "   {}: {}".format(c, v)
+
+        """
         ctable = {'mapping': {}, 'reducing': {}}
         for k, v in self.counters.iteritems():
             ctable.setdefault(
@@ -407,10 +422,10 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
        .. code-block::
 
-         from mymr import TFactory
-         hs = HadoopSimulatorLocal(TFactory)
+         from mymr import Factory
+         hs = HadoopSimulatorLocal(TFactory())
          job_conf = {..}
-         hs.run(fin, fout, job_conf, num_reducers)
+         hs.run(fin, fout, job_conf)
          counters = hs.get_counters()
     """
 
@@ -483,8 +498,8 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     Hadoop-pipes setup.
 
        .. code-block::
-       
-          program_name = '../wordcount/new_api/wordcount-full.py'
+
+          program_name = '../wordcount/new_api/wordcount_full.py'
           data_in = '../input/alice.txt'
           output_dir = './output'
           data_in_path = os.path.realpath(data_in)
@@ -501,13 +516,6 @@ class HadoopSimulatorNetwork(HadoopSimulator):
           hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
                                        loglevel=logging.INFO)
           hsn.run(None, None, conf, input_split=input_split)
-          counters = hsn.get_counters()
-          for phase in ['mapping', 'reducing']:
-              print "{} counters:".format(phase.capitalize())
-             for group in counters[phase]:
-                 print "  Group {}".format(group)
-                 for c, v in counters[phase][group].iteritems():
-                     print "   {}: {}".format(c, v)
     """
 
     def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,

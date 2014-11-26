@@ -36,9 +36,11 @@ from wordcount_full import factory as factory_full
 
 
 """
-Use simulators to run the workcount examples.
+Use simulators to run wordcount
+===============================
 
-
+This example shows how to use the two different version of the
+HadoopSimulator to run wordcount with different configurations.
 
 """
 
