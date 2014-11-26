@@ -18,6 +18,8 @@ OUTPUT=output
 
 SUBMIT_CMD="/home/zag/.local/bin/pydoop submit"
 
+python write_file.py
+
 zip ${MZIP} ${MPY}
 hdfs dfs -mkdir -p /user/${USER}/${INPUT}
 
