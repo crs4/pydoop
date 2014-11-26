@@ -35,7 +35,7 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->blocksize = 0;
         self->readline_chunk_size = 16 * 1024; // 16 KB
 #ifdef HADOOP_LIBHDFS_V1
-        self->stream_type = 0;
+        self->stream_type = UNINITIALIZED;
 #endif
     }
     return (PyObject *)self;
