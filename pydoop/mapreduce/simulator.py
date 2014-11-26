@@ -292,9 +292,8 @@ class HadoopSimulator(object):
     Common HadoopSimulator components.
     """
 
-    def __init__(self, logger=None, loglevel=logging.CRITICAL):
-        self.logger = logger.getChild('HadoopSimulator') if logger \
-            else logging.getLogger(self.__class__.__name__)
+    def __init__(self, logger, loglevel=logging.CRITICAL):
+        self.logger = logger
         self.logger.setLevel(loglevel)
         self.counters = {}
         self.progress = 0
@@ -420,6 +419,8 @@ class HadoopSimulatorLocal(HadoopSimulator):
         Initialize the simulator on a given factory of pydoop program
         components.
         """
+        logger = logger.getChild('HadoopSimulatorLocal') if logger \
+                 else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
 
@@ -515,6 +516,8 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         Initialize the simulator. When run, it will launch the pydoop
         ``program`` ``sleep_delta`` seconds after framework initialization.
         """
+        logger = logger.getChild('HadoopSimulatorNetwork') if logger \
+                 else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
         self.program = program
         self.sleep_delta = sleep_delta
