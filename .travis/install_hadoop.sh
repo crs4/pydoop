@@ -4,6 +4,7 @@ set -o errexit
 set -o nounset
 
 HadoopArchiveUrl="http://archive.apache.org/dist/hadoop/core/"
+TravisHadoopEnvFile="/tmp/set_travis_hadoop_env.sh"
 
 # a generic error trap that prints the command that failed before exiting the script.
 function error_trap() {
@@ -141,6 +142,7 @@ function install_standard_hadoop() {
     fi
     echo "export HADOOP_HOME=${HADOOP_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     echo "export JAVA_HOME=${JAVA_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+    echo "export PATH=${VIRTUAL_ENV}/bin:${PATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     
     log "Formatting namenode"
     "${HADOOP_HOME}/bin/hadoop" namenode -format
@@ -254,6 +256,24 @@ function install_cdh() {
     return 0
 }
 
+function print_hadoop_env() {
+    for var_name in HADOOP_HOME\
+               HADOOP_CONF_DIR\
+               HADOOP_BIN\
+               HADOOP_COMMON_LIB_NATIVE_DIR\
+               HADOOP_OPTS\
+               HADOOP_CONF_DIR\
+               HADOOP_BIN\
+               HADOOP_MAPRED_HOME ;
+    do
+        # derefence the variable
+        if [[ -v ${var_name} ]]; then
+            value=$(eval echo \$${var_name})
+            printf "export ${var_name}=\"${value}\"\n"
+        fi
+    done
+}
+
 #### main ###
 
 if [[ "${HADOOPVERSION}" != *cdh* ]]; then
@@ -262,8 +282,14 @@ else # else CDH
     install_cdh "${HADOOPVERSION}"
 fi
 
+print_hadoop_env > "${TravisHadoopEnvFile}"
+chmod a+r "${TravisHadoopEnvFile}"
+log "Wrote hadoop environment variables to ${TravisHadoopEnvFile}\n   ==== Start ===="
+cat ${TravisHadoopEnvFile} >&2
+log "   ====  End  ===="
+
 log "installation finished"
 
-# restore modified bash options
-set +o errexit
+# turn off verification of variables
+# The Travis build process crashes otherwise
 set +o nounset
