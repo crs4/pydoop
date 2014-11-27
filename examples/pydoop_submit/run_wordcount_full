@@ -1,0 +1,32 @@
+#!/bin/bash
+
+MODULE=wordcount_full
+MZIP=${MODULE}.zip
+MPY=${MODULE}.py
+DATA=../input/alice.txt
+
+PROGNAME=${MODULE}-prog
+JOBNAME=${MODULE}-job
+
+LOGLEVEL=INFO
+
+INPUT=${MODULE}_input
+OUTPUT=${MODULE}_output
+
+SUBMIT_CMD="pydoop submit"
+
+zip -j ${MZIP} ../wordcount/new_api/${MPY}
+
+hdfs dfs -rmr -f /user/${USER}/${INPUT}
+hdfs dfs -mkdir -p /user/${USER}/${INPUT}
+hdfs dfs -rmr /user/${USER}/${OUTPUT}
+hdfs dfs -put -f ${DATA} ${INPUT}
+
+${SUBMIT_CMD} --python-egg ${MZIP} \
+              -D mapreduce.pipes.isjavarecordreader=false \
+              -D mapreduce.pipes.isjavarecordwriter=false \
+              --module ${MODULE} --entry-point main \
+              --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
+              ${PROGNAME} ${INPUT} ${OUTPUT} 
+
+
