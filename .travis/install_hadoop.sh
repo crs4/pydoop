@@ -142,7 +142,9 @@ function install_standard_hadoop() {
     fi
     echo "export HADOOP_HOME=${HADOOP_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     echo "export JAVA_HOME=${JAVA_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
-    echo "export PATH=${VIRTUAL_ENV}/bin:${PATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+    # copy the path from the current environment (which may have been modified
+    # in .travis.yml steps prior to this one).
+    echo "export PATH=${PATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     
     log "Formatting namenode"
     "${HADOOP_HOME}/bin/hadoop" namenode -format
@@ -205,7 +207,10 @@ function install_cdh() {
     #     sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh
     #fi
     
-    sudo echo "export JAVA_HOME=$JAVA_HOME" >> "${HadoopConfDir}/hadoop-env.sh"
+    echo "export JAVA_HOME=$JAVA_HOME" >> "${HadoopConfDir}/hadoop-env.sh"
+    # copy the path from the current environment (which may have been modified
+    # in .travis.yml steps prior to this one).
+    echo "export PATH=${PATH}" >> "${HadoopConfDir}/hadoop-env.sh"
 
     log "Formatting namenode"
     sudo rm /tmp/hadoop-hdfs/dfs/name -rf
