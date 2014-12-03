@@ -296,18 +296,59 @@ class TestHDFS(unittest.TestCase):
                 while not self.done:
                     self._count += 1
 
+        class BusyContext(object):
+            def __init__(self):
+                self.counter = None
+
+            def __enter__(self):
+                self.counter = BusyCounter()
+                self.counter.start()
+
+            def __exit__(self, _1, _2, _3):
+                self.counter.done = True
+                self.counter.join()
+
+            @property
+            def count(self):
+                return self.counter.count
+
+
         some_data = "a" * (30 * 1024 * 1024) # 30 MB
-        counter = BusyCounter()
-        counter.start()
+        counter = BusyContext()
 
-        with hdfs.open(self.hdfs_paths[0], "w") as f:
-            start_count = counter.count
-            f.write(some_data)
-            end_count = counter.count
+        # If the hdfs call doesn't release the GIL, the counter won't make any progress
+        # during the HDFS call and will be stuck at 0.  On the other hand, if the GIL
+        # is release during the operation we'll see a count value > 0.
+        fs = hdfs.hdfs("default", 0)
+        with fs.open_file(self.hdfs_paths[0], "w") as f:
+            with counter:
+                f.write(some_data)
+            self.assertGreaterEqual(counter.count, 1000)
 
-        counter.done = True
-        counter.join()
-        self.assertGreaterEqual(end_count, start_count + 1000)
+        with fs.open_file(self.hdfs_paths[0], "w") as f:
+            with counter:
+                f.read()
+            self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            fs.get_hosts(self.hdfs_paths[0], 0, 10)
+        self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            fs.list_directory('/')
+        self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            hdfs.cp(self.hdfs_paths[0], self.hdfs_paths[0] + '_2')
+        self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            hdfs.rmr(self.hdfs_paths[0] + '_2')
+        self.assertGreaterEqual(counter.count, 1000)
+
+        # ...we could go on, but the better strategy would be to insert a check
+        # analogous to these in each method's unit test
+
 
 def suite():
     suite_ = unittest.TestSuite()
