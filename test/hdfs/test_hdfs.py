@@ -21,6 +21,7 @@ import tempfile
 import os
 import stat
 from itertools import izip
+from threading import Thread
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import BUFSIZE
@@ -278,6 +279,76 @@ class TestHDFS(unittest.TestCase):
         )
         self.assertRaises(ValueError, fs.get_hosts, self.hdfs_paths[0], 0, -10)
 
+    def thread_allow(self):
+        # test whether our code is properly allowing other python threads to
+        # make progress while we're busy doing I/O
+        class BusyCounter(Thread):
+            def __init__(self):
+                super(BusyCounter, self).__init__()
+                self.done = False
+                self._count = 0
+
+            @property
+            def count(self):
+                return self._count
+
+            def run(self):
+                while not self.done:
+                    self._count += 1
+
+        class BusyContext(object):
+            def __init__(self):
+                self.counter = None
+
+            def __enter__(self):
+                self.counter = BusyCounter()
+                self.counter.start()
+
+            def __exit__(self, _1, _2, _3):
+                self.counter.done = True
+                self.counter.join()
+
+            @property
+            def count(self):
+                return self.counter.count
+
+
+        some_data = "a" * (30 * 1024 * 1024) # 30 MB
+        counter = BusyContext()
+
+        # If the hdfs call doesn't release the GIL, the counter won't make any progress
+        # during the HDFS call and will be stuck at 0.  On the other hand, if the GIL
+        # is release during the operation we'll see a count value > 0.
+        fs = hdfs.hdfs("default", 0)
+        with fs.open_file(self.hdfs_paths[0], "w") as f:
+            with counter:
+                f.write(some_data)
+            self.assertGreaterEqual(counter.count, 1000)
+
+        with fs.open_file(self.hdfs_paths[0], "w") as f:
+            with counter:
+                f.read()
+            self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            fs.get_hosts(self.hdfs_paths[0], 0, 10)
+        self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            fs.list_directory('/')
+        self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            hdfs.cp(self.hdfs_paths[0], self.hdfs_paths[0] + '_2')
+        self.assertGreaterEqual(counter.count, 1000)
+
+        with counter:
+            hdfs.rmr(self.hdfs_paths[0] + '_2')
+        self.assertGreaterEqual(counter.count, 1000)
+
+        # ...we could go on, but the better strategy would be to insert a check
+        # analogous to these in each method's unit test
+
 
 def suite():
     suite_ = unittest.TestSuite()
@@ -298,6 +369,7 @@ def suite():
     suite_.addTest(TestHDFS("renames"))
     suite_.addTest(TestHDFS("capacity"))
     suite_.addTest(TestHDFS("get_hosts"))
+    suite_.addTest(TestHDFS("thread_allow"))
     return suite_
 
 
