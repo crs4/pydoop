@@ -21,6 +21,7 @@ import tempfile
 import os
 import stat
 from itertools import izip
+from threading import Thread
 
 import pydoop.hdfs as hdfs
 from pydoop.hdfs.common import BUFSIZE
@@ -278,6 +279,48 @@ class TestHDFS(unittest.TestCase):
         )
         self.assertRaises(ValueError, fs.get_hosts, self.hdfs_paths[0], 0, -10)
 
+    def thread_allow(self):
+        # test whether our code is properly allowing other python threads to
+        # make progress while we're busy doing I/O
+        import sys
+        class BusyCounter(Thread):
+            def __init__(self):
+                super(BusyCounter, self).__init__()
+                self.done = False
+                self._count = 0
+
+            @property
+            def count(self):
+                return self._count
+
+            def run(self):
+                print >> sys.stderr, "BusyCounter running"
+                while not self.done:
+                    #if self._count % 1000 == 0:
+                    #    print >> sys.stderr, "count:", self._count, "done:", self.done
+                    self._count += 1
+
+        some_data = "a" * (30 * 1024 * 1024)
+        print >> sys.stderr, "data ready"
+        counter = BusyCounter()
+        print >> sys.stderr, "created busy counter object"
+        print >> sys.stderr, "counter.count:", counter.count, "; counter.done:", counter.done
+        print >> sys.stderr, "starting counter"
+        counter.start()
+        print >> sys.stderr, "counter started in separate thread"
+
+        with hdfs.open(self.hdfs_paths[0], "w") as f:
+            print >> sys.stderr, "Hdfs file open"
+            start_count = counter.count
+            print >> sys.stderr, "about to write.  start_count:", start_count
+            f.write(some_data)
+            end_count = counter.count
+            print >> sys.stderr, "finished writing.  end_count:", end_count
+
+        counter.done = True
+        counter.join()
+        print >> sys.stderr, "start counter was", start_count, "; end count was", end_count
+        self.assertGreaterEqual(end_count, start_count + 1000)
 
 def suite():
     suite_ = unittest.TestSuite()
