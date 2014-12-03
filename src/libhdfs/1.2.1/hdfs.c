@@ -80,6 +80,10 @@ static jobject constructNewObjectOfPath(JNIEnv *env, const char *path)
 {
     //Construct a java.lang.String object
     jstring jPathString = (*env)->NewStringUTF(env, path); 
+    if (!jPathString) {
+        errno = ENOMEM;
+        return NULL;
+    }
 
     //Construct the org.apache.hadoop.fs.Path object
     jobject jPath =
@@ -209,6 +213,10 @@ hdfsFS hdfsConnectAsUser(const char* host, tPort port, const char *user)
  
     if (user != NULL) {
       jUserString = (*env)->NewStringUTF(env, user);
+      if (!jUserString) {
+          errno = ENOMEM;
+          goto done;
+      }
     }
     //Check what type of FileSystem the caller wants...
     if (host == NULL) {
@@ -254,11 +262,16 @@ hdfsFS hdfsConnectAsUser(const char* host, tPort port, const char *user)
       if (cURI == NULL) {
         fprintf (stderr, "Couldn't allocate an object of size %d",
                  strlen(host) + 16);
-        errno = EINTERNAL;			
-        goto done;	
+        errno = EINTERNAL;
+        goto done;
       }
 
       jURIString = (*env)->NewStringUTF(env, cURI);
+      if (!jURIString) {
+          errno = ENOMEM;
+          goto done;
+      }
+
       if (invokeMethod(env, &jVal, &jExc, STATIC, NULL, JAVA_NET_URI,
                        "create", "(Ljava/lang/String;)Ljava/net/URI;",
                        jURIString) != 0) {
@@ -402,10 +415,14 @@ hdfsFile hdfsOpenFile(hdfsFS fs, const char* path, int flags,
     jint jBufferSize = bufferSize;
     jshort jReplication = replication;
     jlong jBlockSize = blockSize;
+
     jstring jStrBufferSize = (*env)->NewStringUTF(env, "io.file.buffer.size"); 
     jstring jStrReplication = (*env)->NewStringUTF(env, "dfs.replication");
     jstring jStrBlockSize = (*env)->NewStringUTF(env, "dfs.block.size");
-
+    if (! (jStrBufferSize && jStrReplication && jStrBlockSize) ) {
+        errno = ENOMEM;
+        goto done;
+    }
 
     //bufferSize
     if (!bufferSize) {
@@ -558,6 +575,11 @@ int hdfsExists(hdfsFS fs, const char *path)
     }
 
     jobject jPath = constructNewObjectOfPath(env, path);
+    if (!jPath) {
+        errno = ENOMEM;
+        return -1;
+    }
+
     jvalue  jVal;
     jthrowable jExc = NULL;
     jobject jFS = (jobject)fs;
@@ -598,7 +620,7 @@ tSize hdfsRead(hdfsFS fs, hdfsFile f, void* buffer, tSize length)
     jobject jInputStream = (jobject)(f ? f->file : NULL);
 
     jbyteArray jbRarray;
-    jint noReadBytes = 0;
+    jint noReadBytes = -1;
     jvalue jVal;
     jthrowable jExc = NULL;
 
@@ -617,27 +639,31 @@ tSize hdfsRead(hdfsFS fs, hdfsFile f, void* buffer, tSize length)
 
     //Read the requisite bytes
     jbRarray = (*env)->NewByteArray(env, length);
-    if (invokeMethod(env, &jVal, &jExc, INSTANCE, jInputStream, HADOOP_ISTRM,
-                     "read", "([B)I", jbRarray) != 0) {
-        errno = errnoFromException(jExc, env, "org.apache.hadoop.fs."
-                                   "FSDataInputStream::read");
-        noReadBytes = -1;
+    if (jbRarray) {
+        if (invokeMethod(env, &jVal, &jExc, INSTANCE, jInputStream, HADOOP_ISTRM,
+                         "read", "([B)I", jbRarray) != 0) {
+            errno = errnoFromException(jExc, env, "org.apache.hadoop.fs."
+                                       "FSDataInputStream::read");
+        }
+        else {
+            noReadBytes = jVal.i;
+            if (noReadBytes > 0) {
+                (*env)->GetByteArrayRegion(env, jbRarray, 0, noReadBytes, buffer);
+            }
+            else {
+                //This is a valid case: there aren't any bytes left to read!
+                if (noReadBytes == 0 || noReadBytes < -1) {
+                    fprintf(stderr, "WARN: FSDataInputStream.read returned invalid return code - libhdfs returning EOF, i.e., 0: %d\n", noReadBytes);
+                }
+                noReadBytes = 0;
+            }
+            errno = 0;
+        }
+        destroyLocalReference(env, jbRarray);
     }
     else {
-        noReadBytes = jVal.i;
-        if (noReadBytes > 0) {
-            (*env)->GetByteArrayRegion(env, jbRarray, 0, noReadBytes, buffer);
-        }  else {
-            //This is a valid case: there aren't any bytes left to read!
-          if (noReadBytes == 0 || noReadBytes < -1) {
-            fprintf(stderr, "WARN: FSDataInputStream.read returned invalid return code - libhdfs returning EOF, i.e., 0: %d\n", noReadBytes);
-          }
-            noReadBytes = 0;
-        }
-        errno = 0;
+        errno = ENOMEM;
     }
-
-    destroyLocalReference(env, jbRarray);
 
     return noReadBytes;
 }
@@ -662,7 +688,7 @@ tSize hdfsPread(hdfsFS fs, hdfsFile f, tOffset position,
     jobject jInputStream = (jobject)(f ? f->file : NULL);
 
     jbyteArray jbRarray;
-    jint noReadBytes = 0;
+    jint noReadBytes = -1;
     jvalue jVal;
     jthrowable jExc = NULL;
 
@@ -681,26 +707,31 @@ tSize hdfsPread(hdfsFS fs, hdfsFile f, tOffset position,
 
     //Read the requisite bytes
     jbRarray = (*env)->NewByteArray(env, length);
-    if (invokeMethod(env, &jVal, &jExc, INSTANCE, jInputStream, HADOOP_ISTRM,
-                     "read", "(J[BII)I", position, jbRarray, 0, length) != 0) {
-        errno = errnoFromException(jExc, env, "org.apache.hadoop.fs."
-                                   "FSDataInputStream::read");
-        noReadBytes = -1;
+    if (jbRarray) {
+        if (invokeMethod(env, &jVal, &jExc, INSTANCE, jInputStream, HADOOP_ISTRM,
+                         "read", "(J[BII)I", position, jbRarray, 0, length) != 0) {
+            errno = errnoFromException(jExc, env, "org.apache.hadoop.fs."
+                                       "FSDataInputStream::read");
+        }
+        else {
+            noReadBytes = jVal.i;
+            if (noReadBytes > 0) {
+                (*env)->GetByteArrayRegion(env, jbRarray, 0, noReadBytes, buffer);
+            }
+            else {
+                //This is a valid case: there aren't any bytes left to read!
+                if (noReadBytes == 0 || noReadBytes < -1) {
+                  fprintf(stderr, "WARN: FSDataInputStream.read returned invalid return code - libhdfs returning EOF, i.e., 0: %d\n", noReadBytes);
+                }
+                noReadBytes = 0;
+            }
+            errno = 0;
+        }
+        destroyLocalReference(env, jbRarray);
     }
     else {
-        noReadBytes = jVal.i;
-        if (noReadBytes > 0) {
-            (*env)->GetByteArrayRegion(env, jbRarray, 0, noReadBytes, buffer);
-        }  else {
-            //This is a valid case: there aren't any bytes left to read!
-          if (noReadBytes == 0 || noReadBytes < -1) {
-            fprintf(stderr, "WARN: FSDataInputStream.read returned invalid return code - libhdfs returning EOF, i.e., 0: %d\n", noReadBytes);
-          }
-            noReadBytes = 0;
-        }
-        errno = 0;
+        errno = ENOMEM;
     }
-    destroyLocalReference(env, jbRarray);
 
     return noReadBytes;
 }
@@ -734,8 +765,8 @@ tSize hdfsWrite(hdfsFS fs, hdfsFile f, const void* buffer, tSize length)
     }
     
     if (length < 0) {
-    	errno = EINVAL;
-    	return -1;
+        errno = EINVAL;
+        return -1;
     }
 
     //Error checking... make sure that this file is 'writable'
@@ -749,15 +780,21 @@ tSize hdfsWrite(hdfsFS fs, hdfsFile f, const void* buffer, tSize length)
     if (length != 0) {
         //Write the requisite bytes into the file
         jbWarray = (*env)->NewByteArray(env, length);
-        (*env)->SetByteArrayRegion(env, jbWarray, 0, length, buffer);
-        if (invokeMethod(env, NULL, &jExc, INSTANCE, jOutputStream,
-                         HADOOP_OSTRM, "write",
-                         "([B)V", jbWarray) != 0) {
-            errno = errnoFromException(jExc, env, "org.apache.hadoop.fs."
-                                       "FSDataOutputStream::write");
+        if (jbWarray) {
+            (*env)->SetByteArrayRegion(env, jbWarray, 0, length, buffer);
+            if (invokeMethod(env, NULL, &jExc, INSTANCE, jOutputStream,
+                             HADOOP_OSTRM, "write",
+                             "([B)V", jbWarray) != 0) {
+                errno = errnoFromException(jExc, env, "org.apache.hadoop.fs."
+                                           "FSDataOutputStream::write");
+                length = -1;
+            }
+            destroyLocalReference(env, jbWarray);
+        }
+        else {
+            fprintf(stderr, "Error allocating temporary byte buffer of size %d\n", length);
             length = -1;
         }
-        destroyLocalReference(env, jbWarray);
     }
 
     //Return no. of bytes succesfully written (libc way)
@@ -1359,6 +1396,10 @@ int hdfsChown(hdfsFS fs, const char* path, const char *owner, const char *group)
 
     jstring jOwnerString = (*env)->NewStringUTF(env, owner); 
     jstring jGroupString = (*env)->NewStringUTF(env, group); 
+    if (!jOwnerString || !jGroupString) {
+        errno = ENOMEM;
+        goto done;
+    }
 
     //Create the directory
     int ret = 0;
