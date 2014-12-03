@@ -74,12 +74,16 @@ int FsClass_init(FsInfo *self, PyObject *args, PyObject *kwds)
     if (str_empty(self->group))
         self->group = NULL;
 
-    if (self->user != NULL) {
-        self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
+    // Connect cycles and retries more than once if necessary.  Better let
+    // other Python threads through.
+    Py_BEGIN_ALLOW_THREADS;
+        if (self->user != NULL) {
+            self->_fs = hdfsConnectAsUser(self->host, self->port, self->user);
 
-    } else {
-        self->_fs = hdfsConnect(self->host, self->port);
-    }
+        } else {
+            self->_fs = hdfsConnect(self->host, self->port);
+        }
+    Py_END_ALLOW_THREADS;
 
     if (!self->_fs) {
         PyErr_SetFromErrno(PyExc_RuntimeError);
@@ -143,7 +147,9 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    info = hdfsGetPathInfo(self->_fs, path);
+    Py_BEGIN_ALLOW_THREADS;
+        info = hdfsGetPathInfo(self->_fs, path);
+    Py_END_ALLOW_THREADS;
     if (info == NULL) {
         PyErr_SetString(PyExc_IOError, "File not found");
         goto done;
@@ -194,7 +200,9 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
        goto done;
     }
 
-    hosts = hdfsGetHosts(self->_fs, path, start, length);
+    Py_BEGIN_ALLOW_THREADS;
+        hosts = hdfsGetHosts(self->_fs, path, start, length);
+    Py_END_ALLOW_THREADS;
     if (!hosts) {
         PyErr_SetString(PyExc_RuntimeError, "Failed to get block information");
         goto done;
@@ -265,7 +273,11 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) 
         goto done;
     }
 
-    result = hdfsSetReplication(self->_fs, path, replication);
+    // The call requires network access to talk to the NameNode. May be high
+    // latency, so we allow python threads in the meantime.
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsSetReplication(self->_fs, path, replication);
+    Py_END_ALLOW_THREADS;
     retval = PyBool_FromLong(result >= 0 ? 1 : 0);
 done:
     PyMem_Free((void*)path);
@@ -313,7 +325,9 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
         goto done;
     }
 
-    file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
+    Py_BEGIN_ALLOW_THREADS;
+        file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
+    Py_END_ALLOW_THREADS;
     if (file == NULL) {
         PyErr_SetFromErrno(PyExc_IOError);
         goto done;
@@ -358,8 +372,13 @@ PyObject *FsClass_capacity(FsInfo *self) {
 
 
 PyObject *FsClass_get_capacity(FsInfo *self) {
-    errno = 0; // hdfsGetCapacity forgets to clear errno
-    tOffset capacity = hdfsGetCapacity(self->_fs);
+    tOffset capacity;
+
+    Py_BEGIN_ALLOW_THREADS;
+        errno = 0; // hdfsGetCapacity forgets to clear errno
+        capacity = hdfsGetCapacity(self->_fs);
+    Py_END_ALLOW_THREADS;
+
     if (capacity < 0) {
         // two error cases are contemplated by the code in hdfsGetCapacity:
         // 1) exception from the Java method
@@ -395,7 +414,9 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
         goto done;
     }
 
-    result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
+    Py_END_ALLOW_THREADS;
     if (result < 0)
         PyErr_SetFromErrno(PyExc_RuntimeError);
     else
@@ -421,7 +442,9 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    result = hdfsExists(self->_fs, path);
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsExists(self->_fs, path);
+    Py_END_ALLOW_THREADS;
 
     // LP: hdfsExists (in some cases?) sets errno to ENOENT "[Errno 2] No such
     // file or directory" when the path doesn't exist or EEXIST in other cases.
@@ -453,7 +476,10 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
         goto done;
     }
 
-    result = hdfsCreateDirectory(self->_fs, path);
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsCreateDirectory(self->_fs, path);
+    Py_END_ALLOW_THREADS;
+
     if (result < 0)
         PyErr_SetFromErrno(PyExc_IOError);
     else
@@ -470,7 +496,7 @@ done:
  * \return -1 if there was a problem. In that case, dict may contain
  * some values, but will be incomplete and should be discarded.
  */
-int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
+static int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
 
     if (dict == NULL || fileInfo == NULL) return -1;
     int error_code = 0;
@@ -540,27 +566,33 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto error;
     }
 
-    pathInfo = hdfsGetPathInfo(self->_fs, path);
-    if (!pathInfo) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        goto error;
-    }
+    Py_BEGIN_ALLOW_THREADS;
+        pathInfo = hdfsGetPathInfo(self->_fs, path);
 
-    if (pathInfo->mKind == kObjectKindDirectory) {
-
-        pathList = hdfsListDirectory(self->_fs, pathInfo->mName, &numEntries);
-        // hdfsListDirectory returns NULL when a directory is empty, so to determine
-        // whether there's been an error we also need to check errno
-        if (!pathList && errno) {
+        if (!pathInfo) {
+            Py_BLOCK_THREADS; // later we 'goto' skipping over END_ALLOW_THREADS
             PyErr_SetFromErrno(PyExc_IOError);
             goto error;
         }
-    }
-    else {
-        numEntries = 1;
-        pathList = pathInfo;
-        pathInfo = NULL;
-    }
+
+        if (pathInfo->mKind == kObjectKindDirectory) {
+
+            pathList = hdfsListDirectory(self->_fs, pathInfo->mName, &numEntries);
+
+            // hdfsListDirectory returns NULL when a directory is empty, so to determine
+            // whether there's been an error we also need to check errno
+            if (!pathList && errno) {
+                Py_BLOCK_THREADS; // later we 'goto' skipping over END_ALLOW_THREADS
+                PyErr_SetFromErrno(PyExc_IOError);
+                goto error;
+            }
+        }
+        else {
+            numEntries = 1;
+            pathList = pathInfo;
+            pathInfo = NULL;
+        }
+    Py_END_ALLOW_THREADS;
 
     retval = PyList_New(numEntries);
     if (!retval) goto mem_error;
@@ -615,7 +647,10 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
+    Py_END_ALLOW_THREADS;
+
     if (result < 0)
         PyErr_SetFromErrno(PyExc_IOError);
     else
@@ -641,7 +676,10 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    result = hdfsRename(self->_fs, from_path, to_path);
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsRename(self->_fs, from_path, to_path);
+    Py_END_ALLOW_THREADS;
+
     if (result < 0)
         PyErr_SetFromErrno(PyExc_IOError);
     else
@@ -669,11 +707,13 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    #ifdef HADOOP_LIBHDFS_V1
-    result = hdfsDelete(self->_fs, path);
-    #else
-    result = hdfsDelete(self->_fs, path, recursive);
-    #endif
+    Py_BEGIN_ALLOW_THREADS;
+        #ifdef HADOOP_LIBHDFS_V1
+        result = hdfsDelete(self->_fs, path);
+        #else
+        result = hdfsDelete(self->_fs, path, recursive);
+        #endif
+    Py_END_ALLOW_THREADS;
 
     if (result < 0)
         PyErr_SetFromErrno(PyExc_IOError);
@@ -701,10 +741,13 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    // hdfsChmod doesn't always set errno in case of error.  We clear it
-    // here so that after the call we'll be sure we're not looking at an old value
-    errno = 0;
-    result = hdfsChmod(self->_fs, path, mode);
+    Py_BEGIN_ALLOW_THREADS;
+        // hdfsChmod doesn't always set errno in case of error.  We clear it
+        // here so that after the call we'll be sure we're not looking at an old value
+        errno = 0;
+        result = hdfsChmod(self->_fs, path, mode);
+    Py_END_ALLOW_THREADS;
+
     if (result >= 0) {
         retval = PyBool_FromLong(1);
     }
@@ -740,19 +783,19 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    fileInfo = hdfsGetPathInfo(self->_fs, path);
-    if (!fileInfo) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        goto done;
-    }
+    Py_BEGIN_ALLOW_THREADS;
+        fileInfo = hdfsGetPathInfo(self->_fs, path);
+        if (fileInfo) {
+            const char* new_user  = str_empty(input_user)  ? fileInfo->mOwner : input_user;
+            const char* new_group = str_empty(input_group) ? fileInfo->mGroup : input_group;
 
-    {
-        const char* new_user  = str_empty(input_user)  ? fileInfo->mOwner : input_user;
-        const char* new_group = str_empty(input_group) ? fileInfo->mGroup : input_group;
-
-        result = hdfsChown(self->_fs, path, new_user, new_group);
-    }
-    hdfsFreeFileInfo(fileInfo, 1);
+            result = hdfsChown(self->_fs, path, new_user, new_group);
+            hdfsFreeFileInfo(fileInfo, 1);
+        }
+        else {
+            result = -1;
+        }
+    Py_END_ALLOW_THREADS;
 
     if (result < 0)
         PyErr_SetFromErrno(PyExc_IOError);
@@ -782,7 +825,10 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
         goto done;
     }
 
-    result = hdfsUtime(self->_fs, path, mtime, atime);
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsUtime(self->_fs, path, mtime, atime);
+    Py_END_ALLOW_THREADS;
+
     if (result < 0)
         PyErr_SetFromErrno(PyExc_IOError);
     else
@@ -791,4 +837,3 @@ done:
     PyMem_Free((void*)path);
     return retval;
 }
-

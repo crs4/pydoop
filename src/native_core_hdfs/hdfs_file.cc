@@ -143,7 +143,11 @@ static Py_ssize_t _read_into_str(FileInfo *self, char* buf, Py_ssize_t nbytes) {
         return -1;
     }
 
-    tSize bytes_read = hdfsRead(self->fs, self->file, buf, nbytes);
+    tSize bytes_read;
+    Py_BEGIN_ALLOW_THREADS;
+        bytes_read = hdfsRead(self->fs, self->file, buf, nbytes);
+    Py_END_ALLOW_THREADS;
+
     if (bytes_read < 0) { // error
         PyErr_SetFromErrno(PyExc_IOError);
         return -1;
@@ -403,7 +407,10 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
         PyErr_SetString(PyExc_TypeError, "Argument is not accessible as a Python buffer");
     }
     else {
-        Py_ssize_t written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
+        Py_ssize_t written;
+        Py_BEGIN_ALLOW_THREADS;
+            written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
+        Py_END_ALLOW_THREADS;
         PyBuffer_Release(&buffer);
 
         if (written >= 0)
