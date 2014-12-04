@@ -312,8 +312,7 @@ class TestHDFS(unittest.TestCase):
             def count(self):
                 return self.counter.count
 
-
-        some_data = "a" * (30 * 1024 * 1024) # 30 MB
+        some_data = "a" * (5 * 1024 * 1024) # 5 MB
         counter = BusyContext()
 
         # If the hdfs call doesn't release the GIL, the counter won't make any progress
@@ -323,28 +322,28 @@ class TestHDFS(unittest.TestCase):
         with fs.open_file(self.hdfs_paths[0], "w") as f:
             with counter:
                 f.write(some_data)
-            self.assertGreaterEqual(counter.count, 1000)
+            self.assertGreaterEqual(counter.count, 500)
 
         with fs.open_file(self.hdfs_paths[0], "w") as f:
             with counter:
                 f.read()
-            self.assertGreaterEqual(counter.count, 1000)
+            self.assertGreaterEqual(counter.count, 500)
 
         with counter:
             fs.get_hosts(self.hdfs_paths[0], 0, 10)
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, 500)
 
         with counter:
             fs.list_directory('/')
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, 500)
 
         with counter:
             hdfs.cp(self.hdfs_paths[0], self.hdfs_paths[0] + '_2')
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, 500)
 
         with counter:
             hdfs.rmr(self.hdfs_paths[0] + '_2')
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, 500)
 
         # ...we could go on, but the better strategy would be to insert a check
         # analogous to these in each method's unit test
