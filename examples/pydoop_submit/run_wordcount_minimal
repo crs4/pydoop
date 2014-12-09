@@ -15,12 +15,22 @@ OUTPUT=${MODULE}_output
 
 SUBMIT_CMD="pydoop submit"
 
+
+if type -P hdfs >/dev/null; then
+	hdfs="$(type -P hdfs) "
+elif type -P hadoop >/dev/null; then
+	hdfs="$(type -P hadoop) fs "
+else
+	echo "Cannot find hdfs or hadoop executables" >&2
+	exit 1
+fi
+
 zip -j ${MZIP} ../wordcount/new_api/${MPY}
 
-hdfs dfs -rmr -f /user/${USER}/${INPUT}
-hdfs dfs -mkdir -p /user/${USER}/${INPUT}
-hdfs dfs -rmr /user/${USER}/${OUTPUT}
-hdfs dfs -put -f ${DATA} ${INPUT}
+${hdfs} -rmr /user/${USER}/${INPUT}
+${hdfs} -mkdir /user/${USER}/${INPUT}
+${hdfs} -rmr /user/${USER}/${OUTPUT}
+${hdfs} -put ${DATA} ${INPUT}
 
 ${SUBMIT_CMD} --python-egg ${MZIP} \
               -D mapreduce.pipes.isjavarecordreader=true \
