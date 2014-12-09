@@ -279,7 +279,6 @@ function install_cdh() {
 function print_hadoop_env() {
     for var_name in HADOOP_HOME\
                HADOOP_CONF_DIR\
-               HADOOP_BIN\
                HADOOP_COMMON_LIB_NATIVE_DIR\
                HADOOP_OPTS\
                HADOOP_CONF_DIR\
