@@ -157,7 +157,9 @@ function install_standard_hadoop() {
     # copy the PATH and PYTHONPATH from the current environment (which may have been modified
     # in .travis.yml steps prior to this one, including calls to virtualenv).
     echo "export PATH=${PATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
-    echo "export PYTHONPATH=${PYTHONPATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+    if [[ -n "${PYTHONPATH}" ]]; then
+      echo "export PYTHONPATH=${PYTHONPATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+    fi
     
     log "Formatting namenode"
     "${HADOOP_HOME}/bin/hadoop" namenode -format
