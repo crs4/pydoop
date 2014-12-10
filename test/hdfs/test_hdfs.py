@@ -312,9 +312,16 @@ class TestHDFS(unittest.TestCase):
             def count(self):
                 return self.counter.count
 
-
-        some_data = "a" * (30 * 1024 * 1024) # 30 MB
+        some_data = "a" * (5 * 1024 * 1024) # 5 MB
         counter = BusyContext()
+
+        ###########################
+        acceptable_threshold = 5
+        # The tests were sometimes failing on TravisCI (slower machines) with 
+        # counts below 100.  A test where we left the GIL locked showed that in
+        # that case counter value doesn't change at all across calls, so in
+        # theory even an increment of 1 would demonstrate that the mechanism is
+        # working.
 
         # If the hdfs call doesn't release the GIL, the counter won't make any progress
         # during the HDFS call and will be stuck at 0.  On the other hand, if the GIL
@@ -323,28 +330,28 @@ class TestHDFS(unittest.TestCase):
         with fs.open_file(self.hdfs_paths[0], "w") as f:
             with counter:
                 f.write(some_data)
-            self.assertGreaterEqual(counter.count, 1000)
+            self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with fs.open_file(self.hdfs_paths[0], "w") as f:
             with counter:
                 f.read()
-            self.assertGreaterEqual(counter.count, 1000)
+            self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:
             fs.get_hosts(self.hdfs_paths[0], 0, 10)
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:
             fs.list_directory('/')
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:
             hdfs.cp(self.hdfs_paths[0], self.hdfs_paths[0] + '_2')
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:
             hdfs.rmr(self.hdfs_paths[0] + '_2')
-        self.assertGreaterEqual(counter.count, 1000)
+        self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         # ...we could go on, but the better strategy would be to insert a check
         # analogous to these in each method's unit test

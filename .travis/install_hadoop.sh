@@ -63,6 +63,18 @@ END
         <name>mapred.job.tracker</name>
         <value>localhost:9001</value>
     </property>
+    <property>
+        <name>mapred.job.tracker</name>
+        <value>localhost:9001</value>
+    </property>
+    <property>
+        <name>mapred.task.timeout</name>
+        <value>60000</value>
+    </property>
+    <property>
+        <name>mapreduce.task.timeout</name>
+        <value>60000</value>
+    </property>
 </configuration>
 END
     return 0
@@ -142,10 +154,11 @@ function install_standard_hadoop() {
     fi
     echo "export HADOOP_HOME=${HADOOP_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     echo "export JAVA_HOME=${JAVA_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
-    # copy the path from the current environment (which may have been modified
+    # copy the PATH and PYTHONPATH from the current environment (which may have been modified
     # in .travis.yml steps prior to this one).
-    echo "export PATH=${PATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
-    
+    echo "export PATH=${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${PATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+    echo "export PYTHONPATH=${PYTHONPATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
+
     log "Formatting namenode"
     "${HADOOP_HOME}/bin/hadoop" namenode -format
     log "Starting daemons..."
@@ -190,6 +203,9 @@ function install_cdh() {
     # make configuration files editable by everyone to simplify setting up the machine... :-/
     sudo chmod -R 777 "${HadoopConfDir}"
     sed -i -e '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' "${HadoopConfDir}/hdfs-site.xml"
+    sed -i -e '/\/configuration/ i\<property><name>mapreduce.task.timeout<\/name><value>60000<\/value><\/property>' \
+           -e '/\/configuration/ i\<property><name>mapred.task.timeout<\/name><value>60000<\/value><\/property>' "${HadoopConfDir}/mapred-site.xml"
+
     if [[ "${YARN}" ]]; then                
         write_yarn_site_config "${HadoopConfDir}"
 
@@ -264,7 +280,6 @@ function install_cdh() {
 function print_hadoop_env() {
     for var_name in HADOOP_HOME\
                HADOOP_CONF_DIR\
-               HADOOP_BIN\
                HADOOP_COMMON_LIB_NATIVE_DIR\
                HADOOP_OPTS\
                HADOOP_CONF_DIR\
