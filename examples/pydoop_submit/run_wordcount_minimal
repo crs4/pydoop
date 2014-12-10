@@ -17,7 +17,7 @@ SUBMIT_CMD="pydoop submit"
 
 
 if type -P hdfs >/dev/null; then
-	hdfs="$(type -P hdfs) "
+	hdfs="$(type -P hdfs) dfs "
 elif type -P hadoop >/dev/null; then
 	hdfs="$(type -P hadoop) fs "
 else
@@ -27,9 +27,9 @@ fi
 
 zip -j ${MZIP} ../wordcount/new_api/${MPY}
 
-${hdfs} -rmr /user/${USER}/${INPUT}
+${hdfs} -rm -r /user/${USER}/${INPUT}
 ${hdfs} -mkdir /user/${USER}/${INPUT}
-${hdfs} -rmr /user/${USER}/${OUTPUT}
+${hdfs} -rm -r /user/${USER}/${OUTPUT}
 ${hdfs} -put ${DATA} ${INPUT}
 
 ${SUBMIT_CMD} --python-egg ${MZIP} \
