@@ -50,7 +50,7 @@ before_install:
 - bash .travis/install_hadoop.sh
 - # load Hadoop variables set by installation script
 - . /tmp/set_travis_hadoop_env.sh
-- test -n "${HADOOP_BIN}" && export PATH="${HADOOP_BIN}:${PATH}"
+- test -n "${HADOOP_HOME}" && export PATH="${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${PATH}"
 
 install:
 - $VIRTUAL_ENV/bin/python setup.py build --hdfs-core-impl $HDFS_BACKEND
