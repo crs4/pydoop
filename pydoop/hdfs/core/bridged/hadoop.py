@@ -246,7 +246,7 @@ class CoreHdfsFs(CoreFsApi):
             else:
                 boolean_overwrite = True
                 if not blocksize:
-                    blocksize = self._fs.getDefaultBlockSize(jpath)
+                    blocksize = self.get_default_block_size()
                 stream = self._fs.create(
                     jpath, boolean_overwrite, buff_size, replication, blocksize
                 )
