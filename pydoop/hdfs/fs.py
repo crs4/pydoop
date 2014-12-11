@@ -67,6 +67,12 @@ def _get_connection_info(host, port, user):
       h, p = res.netloc.split(":")
     except ValueError:
       h, p = res.netloc, common.DEFAULT_PORT
+
+      # try to find an IP address if we can't extract it from res.netloc
+      if not res.netloc:
+        hosts = fs.get_hosts(str(res.path), 0, 0)
+        if hosts and hosts[0] and hosts[0][0]:
+          h, p = hosts[0][0], common.DEFAULT_PORT
     u = res.path.split("/", 2)[2]
   return h, int(p), u, fs
 
@@ -238,10 +244,13 @@ class hdfs(object):
       flags = os.O_WRONLY
     elif flags == "a":
       flags = os.O_WRONLY|os.O_APPEND
-    return hdfs_file(
+    f = hdfs_file(
       self.fs.open_file(path, flags, buff_size, replication, blocksize),
       self, path, flags, readline_chunk_size
-      )
+    )
+    if flags == 0:
+      f.seek(0)
+    return f
 
   def capacity(self):
     """
