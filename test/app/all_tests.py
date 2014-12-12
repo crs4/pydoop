@@ -17,29 +17,19 @@
 # END_COPYRIGHT
 
 import unittest
-import os
-import importlib
+from pydoop.test_utils import get_module
 
 
-_TEST_DIRS = (
-    "app",
-    "backward_compatibility",
-    "hdfs",
-    "mapreduce",
-    "serialize",
-    "common",
-)
+TEST_MODULE_NAMES = [
+    'test_submit',
+]
 
 
-def suite():
+def suite(path=None):
     suites = []
-    for dir_ in _TEST_DIRS:
-        module = importlib.import_module("%s.%s" % (dir_, "all_tests"), dir_)
-        sys.path.insert(0, dir_)
-        path = [os.path.abspath("./%s" % dir_)]
-        suites.append(getattr(module, "suite")(path))
-        sys.path.pop(0)
-    return unittest.TestSuite(tuple(suites))
+    for module in TEST_MODULE_NAMES:
+        suites.append(get_module(module, path).suite())
+    return unittest.TestSuite(suites)
 
 
 if __name__ == '__main__':
