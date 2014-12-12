@@ -207,16 +207,25 @@ class JavaLib(object):
         self.hadoop_vinfo = hadoop_vinfo
         self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
         self.classpath = pydoop.hadoop_classpath()
-        self.java_files = [
-            "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
-        ]
-        self.java_files.extend(glob.glob(
-            'src/it/crs4/pydoop/pipes/*.java'
-        ))
+        self.java_files = []        
         if hadoop_vinfo.main >= (2, 2, 0):
+            self.java_files.extend([
+                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
+            ])
             self.java_files.extend(glob.glob(
-                'src/it/crs4/pydoop/mapreduce/pipes/*.java'
+                'src/v2/it/crs4/pydoop/pipes/*.java'
             ))
+            self.java_files.extend(glob.glob(
+                'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
+            ))
+        else:
+            self.java_files.extend([
+                "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
+            ])
+            self.java_files.extend(glob.glob(
+                'src/v1/it/crs4/pydoop/pipes/*.java'
+            ))
+            
 
 class JavaBuilder(object):
 
