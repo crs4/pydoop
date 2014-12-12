@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 MODULE=wordcount_minimal
 MZIP=${MODULE}.zip
