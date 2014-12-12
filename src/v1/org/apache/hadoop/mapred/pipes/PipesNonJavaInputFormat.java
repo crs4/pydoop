@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package  it.crs4.pydoop.pipes;
+package org.apache.hadoop.mapred.pipes;
 
 import java.io.IOException;
 
@@ -37,7 +37,7 @@ import org.apache.hadoop.util.ReflectionUtils;
  * The only useful thing this does is set up the Map-Reduce job to get the
  * {@link PipesDummyRecordReader}, everything else left for the 'actual'
  * InputFormat specified by the user which is given by 
- * <i>mapreduce.pipes.inputformat</i>.
+ * <i>mapred.pipes.user.inputformat</i>.
  */
 class PipesNonJavaInputFormat 
 implements InputFormat<FloatWritable, NullWritable> {
@@ -51,7 +51,7 @@ implements InputFormat<FloatWritable, NullWritable> {
   public InputSplit[] getSplits(JobConf job, int numSplits) throws IOException {
     // Delegate the generation of input splits to the 'original' InputFormat
     return ReflectionUtils.newInstance(
-        job.getClass(Submitter.INPUT_FORMAT, 
+        job.getClass("mapred.pipes.user.inputformat", 
                      TextInputFormat.class, 
                      InputFormat.class), job).getSplits(job, numSplits);
   }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package  it.crs4.pydoop.pipes;
+package org.apache.hadoop.mapred.pipes;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,21 +25,23 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Iterator;
 import java.util.StringTokenizer;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.Parser;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
@@ -54,11 +56,7 @@ import org.apache.hadoop.mapred.Partitioner;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.lib.HashPartitioner;
-import org.apache.hadoop.mapred.lib.LazyOutputFormat;
 import org.apache.hadoop.mapred.lib.NullOutputFormat;
-import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
-import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 
@@ -66,23 +64,9 @@ import org.apache.hadoop.util.Tool;
  * The main entry point and job submitter. It may either be used as a command
  * line-based or API-based method to launch Pipes jobs.
  */
-@InterfaceAudience.Public
-@InterfaceStability.Stable
 public class Submitter extends Configured implements Tool {
 
   protected static final Log LOG = LogFactory.getLog(Submitter.class);
-  public static final String PRESERVE_COMMANDFILE = 
-    "mapreduce.pipes.commandfile.preserve";
-  public static final String EXECUTABLE = "mapreduce.pipes.executable";
-  public static final String INTERPRETOR = 
-    "mapreduce.pipes.executable.interpretor";
-  public static final String IS_JAVA_MAP = "mapreduce.pipes.isjavamapper";
-  public static final String IS_JAVA_RR = "mapreduce.pipes.isjavarecordreader";
-  public static final String IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter";
-  public static final String IS_JAVA_REDUCE = "mapreduce.pipes.isjavareducer";
-  public static final String PARTITIONER = "mapreduce.pipes.partitioner";
-  public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
-  public static final String PORT = "mapreduce.pipes.command.port";
   
   public Submitter() {
     this(new Configuration());
@@ -98,9 +82,9 @@ public class Submitter extends Configured implements Tool {
    * @return the URI where the application's executable is located
    */
   public static String getExecutable(JobConf conf) {
-    return conf.get(Submitter.EXECUTABLE);
+    return conf.get("hadoop.pipes.executable");
   }
-
+  
   /**
    * Set the URI for the application's executable. Normally this is a hdfs: 
    * location.
@@ -108,7 +92,7 @@ public class Submitter extends Configured implements Tool {
    * @param executable The URI of the application's executable.
    */
   public static void setExecutable(JobConf conf, String executable) {
-    conf.set(Submitter.EXECUTABLE, executable);
+    conf.set("hadoop.pipes.executable", executable);
   }
 
   /**
@@ -117,7 +101,7 @@ public class Submitter extends Configured implements Tool {
    * @param value the new value
    */
   public static void setIsJavaRecordReader(JobConf conf, boolean value) {
-    conf.setBoolean(Submitter.IS_JAVA_RR, value);
+    conf.setBoolean("hadoop.pipes.java.recordreader", value);
   }
 
   /**
@@ -126,7 +110,7 @@ public class Submitter extends Configured implements Tool {
    * @return is it a Java RecordReader?
    */
   public static boolean getIsJavaRecordReader(JobConf conf) {
-    return conf.getBoolean(Submitter.IS_JAVA_RR, false);
+    return conf.getBoolean("hadoop.pipes.java.recordreader", false);
   }
 
   /**
@@ -135,7 +119,7 @@ public class Submitter extends Configured implements Tool {
    * @param value the new value
    */
   public static void setIsJavaMapper(JobConf conf, boolean value) {
-    conf.setBoolean(Submitter.IS_JAVA_MAP, value);
+    conf.setBoolean("hadoop.pipes.java.mapper", value);
   }
 
   /**
@@ -144,7 +128,7 @@ public class Submitter extends Configured implements Tool {
    * @return is it a Java Mapper?
    */
   public static boolean getIsJavaMapper(JobConf conf) {
-    return conf.getBoolean(Submitter.IS_JAVA_MAP, false);
+    return conf.getBoolean("hadoop.pipes.java.mapper", false);
   }
 
   /**
@@ -153,7 +137,7 @@ public class Submitter extends Configured implements Tool {
    * @param value the new value
    */
   public static void setIsJavaReducer(JobConf conf, boolean value) {
-    conf.setBoolean(Submitter.IS_JAVA_REDUCE, value);
+    conf.setBoolean("hadoop.pipes.java.reducer", value);
   }
 
   /**
@@ -162,7 +146,7 @@ public class Submitter extends Configured implements Tool {
    * @return is it a Java Reducer?
    */
   public static boolean getIsJavaReducer(JobConf conf) {
-    return conf.getBoolean(Submitter.IS_JAVA_REDUCE, false);
+    return conf.getBoolean("hadoop.pipes.java.reducer", false);
   }
 
   /**
@@ -171,7 +155,7 @@ public class Submitter extends Configured implements Tool {
    * @param value the new value to set
    */
   public static void setIsJavaRecordWriter(JobConf conf, boolean value) {
-    conf.setBoolean(Submitter.IS_JAVA_RW, value);
+    conf.setBoolean("hadoop.pipes.java.recordwriter", value);
   }
 
   /**
@@ -180,7 +164,7 @@ public class Submitter extends Configured implements Tool {
    * @return true, if the output of the job will be written by Java
    */
   public static boolean getIsJavaRecordWriter(JobConf conf) {
-    return conf.getBoolean(Submitter.IS_JAVA_RW, false);
+    return conf.getBoolean("hadoop.pipes.java.recordwriter", false);
   }
 
   /**
@@ -202,7 +186,7 @@ public class Submitter extends Configured implements Tool {
    * @param cls the user's partitioner class
    */
   static void setJavaPartitioner(JobConf conf, Class cls) {
-    conf.set(Submitter.PARTITIONER, cls.getName());
+    conf.set("hadoop.pipes.partitioner", cls.getName());
   }
   
   /**
@@ -211,7 +195,7 @@ public class Submitter extends Configured implements Tool {
    * @return the class that the user submitted
    */
   static Class<? extends Partitioner> getJavaPartitioner(JobConf conf) {
-    return conf.getClass(Submitter.PARTITIONER, 
+    return conf.getClass("hadoop.pipes.partitioner", 
                          HashPartitioner.class,
                          Partitioner.class);
   }
@@ -224,12 +208,12 @@ public class Submitter extends Configured implements Tool {
    * JobConf.setKeepFailedTaskFiles(true) to keep the entire directory from
    * being deleted.
    * To run using the data file, set the environment variable 
-   * "mapreduce.pipes.commandfile" to point to the file.
+   * "hadoop.pipes.command.file" to point to the file.
    * @param conf the configuration to check
    * @return will the framework save the command file?
    */
   public static boolean getKeepCommandFile(JobConf conf) {
-    return conf.getBoolean(Submitter.PRESERVE_COMMANDFILE, false);
+    return conf.getBoolean("hadoop.pipes.command-file.keep", false);
   }
 
   /**
@@ -238,7 +222,7 @@ public class Submitter extends Configured implements Tool {
    * @param keep the new value
    */
   public static void setKeepCommandFile(JobConf conf, boolean keep) {
-    conf.setBoolean(Submitter.PRESERVE_COMMANDFILE, keep);
+    conf.setBoolean("hadoop.pipes.command-file.keep", keep);
   }
 
   /**
@@ -294,15 +278,15 @@ public class Submitter extends Configured implements Tool {
       }
     }
     String textClassname = Text.class.getName();
-    setIfUnset(conf, MRJobConfig.MAP_OUTPUT_KEY_CLASS, textClassname);
-    setIfUnset(conf, MRJobConfig.MAP_OUTPUT_VALUE_CLASS, textClassname);
-    setIfUnset(conf, MRJobConfig.OUTPUT_KEY_CLASS, textClassname);
-    setIfUnset(conf, MRJobConfig.OUTPUT_VALUE_CLASS, textClassname);
+    setIfUnset(conf, "mapred.mapoutput.key.class", textClassname);
+    setIfUnset(conf, "mapred.mapoutput.value.class", textClassname);
+    setIfUnset(conf, "mapred.output.key.class", textClassname);
+    setIfUnset(conf, "mapred.output.value.class", textClassname);
     
     // Use PipesNonJavaInputFormat if necessary to handle progress reporting
     // from C++ RecordReaders ...
     if (!getIsJavaRecordReader(conf) && !getIsJavaMapper(conf)) {
-      conf.setClass(Submitter.INPUT_FORMAT, 
+      conf.setClass("mapred.pipes.user.inputformat", 
                     conf.getInputFormat().getClass(), InputFormat.class);
       conf.setInputFormat(PipesNonJavaInputFormat.class);
     }
@@ -314,10 +298,11 @@ public class Submitter extends Configured implements Tool {
     // add default debug script only when executable is expressed as
     // <path>#<executable>
     if (exec.contains("#")) {
+      DistributedCache.createSymlink(conf);
       // set default gdb commands for map and reduce task 
-      String defScript = "$HADOOP_PREFIX/src/c++/pipes/debug/pipes-default-script";
-      setIfUnset(conf, MRJobConfig.MAP_DEBUG_SCRIPT,defScript);
-      setIfUnset(conf, MRJobConfig.REDUCE_DEBUG_SCRIPT,defScript);
+      String defScript = "$HADOOP_HOME/src/c++/pipes/debug/pipes-default-script";
+      setIfUnset(conf,"mapred.map.task.debug.script",defScript);
+      setIfUnset(conf,"mapred.reduce.task.debug.script",defScript);
     }
     URI[] fileCache = DistributedCache.getCacheFiles(conf);
     if (fileCache == null) {
@@ -374,7 +359,6 @@ public class Submitter extends Configured implements Tool {
       System.out.println("  [-writer <class>] // Java RecordWriter");
       System.out.println("  [-program <executable>] // executable URI");
       System.out.println("  [-reduces <num>] // number of reduces");
-      System.out.println("  [-lazyOutput <true/false>] // createOutputLazily");
       System.out.println();
       GenericOptionsParser.printGenericCommandUsage(System.out);
     }
@@ -385,7 +369,7 @@ public class Submitter extends Configured implements Tool {
                                           JobConf conf, 
                                           Class<InterfaceType> cls
                                          ) throws ClassNotFoundException {
-    return conf.getClassByName(cl.getOptionValue(key)).asSubclass(cls);
+    return conf.getClassByName((String) cl.getOptionValue(key)).asSubclass(cls);
   }
 
   @Override
@@ -412,25 +396,25 @@ public class Submitter extends Configured implements Tool {
     cli.addOption("jobconf", false, 
         "\"n1=v1,n2=v2,..\" (Deprecated) Optional. Add or override a JobConf property.",
         "key=val");
-    cli.addOption("lazyOutput", false, "Optional. Create output lazily",
-                  "boolean");
     Parser parser = cli.createParser();
     try {
       
       GenericOptionsParser genericParser = new GenericOptionsParser(getConf(), args);
-      CommandLine results = parser.parse(cli.options, genericParser.getRemainingArgs());
+      CommandLine results = 
+        parser.parse(cli.options, genericParser.getRemainingArgs());
       
       JobConf job = new JobConf(getConf());
       
       if (results.hasOption("input")) {
-        FileInputFormat.setInputPaths(job, results.getOptionValue("input"));
+        FileInputFormat.setInputPaths(job, 
+                          (String) results.getOptionValue("input"));
       }
       if (results.hasOption("output")) {
         FileOutputFormat.setOutputPath(job, 
-          new Path(results.getOptionValue("output")));
+          new Path((String) results.getOptionValue("output")));
       }
       if (results.hasOption("jar")) {
-        job.setJar(results.getOptionValue("jar"));
+        job.setJar((String) results.getOptionValue("jar"));
       }
       if (results.hasOption("inputformat")) {
         setIsJavaRecordReader(job, true);
@@ -453,32 +437,24 @@ public class Submitter extends Configured implements Tool {
         job.setReducerClass(getClass(results, "reduce", job, Reducer.class));
       }
       if (results.hasOption("reduces")) {
-        job.setNumReduceTasks(Integer.parseInt( 
-                                           results.getOptionValue("reduces")));
+        job.setNumReduceTasks(Integer.parseInt((String) 
+                                            results.getOptionValue("reduces")));
       }
       if (results.hasOption("writer")) {
         setIsJavaRecordWriter(job, true);
         job.setOutputFormat(getClass(results, "writer", job, 
                                       OutputFormat.class));
       }
-      
-      if (results.hasOption("lazyOutput")) {
-        if (Boolean.parseBoolean(results.getOptionValue("lazyOutput"))) {
-          LazyOutputFormat.setOutputFormatClass(job,
-              job.getOutputFormat().getClass());
-        }
-      }
-      
       if (results.hasOption("program")) {
-        setExecutable(job, results.getOptionValue("program"));
+        setExecutable(job, (String) results.getOptionValue("program"));
       }
       if (results.hasOption("jobconf")) {
         LOG.warn("-jobconf option is deprecated, please use -D instead.");
-        String options = results.getOptionValue("jobconf");
+        String options = (String)results.getOptionValue("jobconf");
         StringTokenizer tokenizer = new StringTokenizer(options, ",");
         while (tokenizer.hasMoreTokens()) {
           String keyVal = tokenizer.nextToken().trim();
-          String[] keyValSplit = keyVal.split("=");
+          String[] keyValSplit = keyVal.split("=", 2);
           job.set(keyValSplit[0], keyValSplit[1]);
         }
       }
@@ -516,7 +492,7 @@ public class Submitter extends Configured implements Tool {
    */
   public static void main(String[] args) throws Exception {
     int exitCode =  new Submitter().run(args);
-    ExitUtil.terminate(exitCode);
+    System.exit(exitCode);
   }
 
 }

@@ -223,7 +223,7 @@ class JavaLib(object):
                 "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
             self.java_files.extend(glob.glob(
-                'src/v1/it/crs4/pydoop/pipes/*.java'
+                'src/v1/org/apache/hadoop/mapred/pipes/*.java'
             ))
             
 

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package  it.crs4.pydoop.pipes;
+package org.apache.hadoop.mapred.pipes;
 
 import java.io.IOException;
 import org.apache.hadoop.io.Writable;

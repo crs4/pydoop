@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package  it.crs4.pydoop.pipes;
+package org.apache.hadoop.mapred.pipes;
 
 import java.io.IOException;
 
@@ -30,7 +30,6 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SkipBadRecords;
-import org.apache.hadoop.mapreduce.MRJobConfig;
 
 /**
  * An adaptor to run a C++ mapper.
@@ -77,7 +76,7 @@ class PipesMapRunner<K1 extends WritableComparable, V1 extends Writable,
     boolean isJavaInput = Submitter.getIsJavaRecordReader(job);
     downlink.runMap(reporter.getInputSplit(), 
                     job.getNumReduceTasks(), isJavaInput);
-    boolean skipping = job.getBoolean(MRJobConfig.SKIP_RECORDS, false);
+    boolean skipping = job.getBoolean("mapred.skip.on", false);
     try {
       if (isJavaInput) {
         // allocate key & value instances that are re-used for all entries

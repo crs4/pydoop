@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package  it.crs4.pydoop.pipes;
+package org.apache.hadoop.mapred.pipes;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import javax.crypto.SecretKey;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
@@ -47,9 +48,7 @@ import org.apache.hadoop.mapred.RecordReader;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TaskAttemptID;
 import org.apache.hadoop.mapred.TaskLog;
-
-import org.apache.hadoop.mapreduce.MRJobConfig;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
+import org.apache.hadoop.mapred.TaskTracker;
 import org.apache.hadoop.mapreduce.security.SecureShuffleUtils;
 import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
@@ -94,17 +93,16 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
     Map<String, String> env = new HashMap<String,String>();
     // add TMPDIR environment variable with the value of java.io.tmpdir
     env.put("TMPDIR", System.getProperty("java.io.tmpdir"));
-    env.put(Submitter.PORT, 
+    env.put("hadoop.pipes.command.port", 
             Integer.toString(serverSocket.getLocalPort()));
-
-    TaskAttemptID taskid = 
-      TaskAttemptID.forName(conf.get(MRJobConfig.TASK_ATTEMPT_ID));
+    
+    TaskAttemptID taskid = TaskAttemptID.forName(conf.get("mapred.task.id"));
 
     // get the task's working directory
-    String workDir = LocalJobRunner.getLocalTaskDir(conf.getUser(),
+    String workDir = TaskTracker.getLocalTaskDir(conf.getUser(),
             taskid.getJobID().toString(),
-            taskid.getTaskID().toString(), false);
-    
+            taskid.getTaskID().toString());
+
     //Add token to the environment if security is enabled
     Token<JobTokenIdentifier> jobToken = TokenCache.getJobToken(conf
         .getCredentials());
@@ -117,12 +115,13 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
     env.put("hadoop.pipes.shared.secret.location", localPasswordFile);
  
     List<String> cmd = new ArrayList<String>();
-    String interpretor = conf.get(Submitter.INTERPRETOR);
+    String interpretor = conf.get("hadoop.pipes.executable.interpretor");
     if (interpretor != null) {
       cmd.add(interpretor);
     }
+
     String executable = DistributedCache.getLocalCacheFiles(conf)[0].toString();
-    if (!FileUtil.canExecute(new File(executable))) {
+    if (!new File(executable).canExecute()) {
       // LinuxTaskController sets +x permissions on all distcache files already.
       // In case of DefaultTaskController, set permissions here.
       FileUtil.chmod(executable, "u+x");
@@ -135,8 +134,8 @@ class Application<K1 extends WritableComparable, V1 extends Writable,
     File stderr = TaskLog.getTaskLogFile(taskid, false, TaskLog.LogName.STDERR);
     long logLength = TaskLog.getTaskLogLength(conf);
     cmd = TaskLog.captureOutAndError(null, cmd, stdout, stderr, logLength,
-                                     false);
-    
+        false);
+
     process = runClient(cmd, env);
     clientSocket = serverSocket.accept();
     

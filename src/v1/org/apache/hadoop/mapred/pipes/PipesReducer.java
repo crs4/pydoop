@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package  it.crs4.pydoop.pipes;
+package org.apache.hadoop.mapred.pipes;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,7 +27,6 @@ import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.SkipBadRecords;
-import org.apache.hadoop.mapreduce.MRJobConfig;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -50,7 +49,7 @@ class PipesReducer<K2 extends WritableComparable, V2 extends Writable,
     //disable the auto increment of the counter. For pipes, no of processed 
     //records could be different(equal or less) than the no of records input.
     SkipBadRecords.setAutoIncrReducerProcCount(job, false);
-    skipping = job.getBoolean(MRJobConfig.SKIP_RECORDS, false);
+    skipping = job.getBoolean("mapred.skip.on", false);
   }
 
   /**
