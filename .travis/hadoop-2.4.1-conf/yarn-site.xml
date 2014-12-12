@@ -57,6 +57,11 @@
   </property>
 
   <property>
+    <name>yarn.nodemanager.vmem-pmem-ratio</name>
+    <value>2.8</value>
+	</property>
+
+  <property>
     <description>Classpath for typical applications.</description>
      <name>yarn.application.classpath</name>
      <value>
