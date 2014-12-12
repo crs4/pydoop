@@ -323,16 +323,17 @@ class TestHDFS(unittest.TestCase):
         # theory even an increment of 1 would demonstrate that the mechanism is
         # working.
 
-        # If the hdfs call doesn't release the GIL, the counter won't make any progress
-        # during the HDFS call and will be stuck at 0.  On the other hand, if the GIL
-        # is release during the operation we'll see a count value > 0.
+        # If the hdfs call doesn't release the GIL, the counter won't make any
+        # progress during the HDFS call and will be stuck at 0.  On the other
+        # hand, if the GIL is release during the operation we'll see a count
+        # value > 0.
         fs = hdfs.hdfs("default", 0)
         with fs.open_file(self.hdfs_paths[0], "w") as f:
             with counter:
                 f.write(some_data)
             self.assertGreaterEqual(counter.count, acceptable_threshold)
 
-        with fs.open_file(self.hdfs_paths[0], "w") as f:
+        with fs.open_file(self.hdfs_paths[0], "r") as f:
             with counter:
                 f.read()
             self.assertGreaterEqual(counter.count, acceptable_threshold)
