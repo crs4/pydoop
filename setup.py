@@ -201,172 +201,34 @@ def have_better_tls():
 # BUILD ENGINE
 # ------------
 
-class HadoopSourcePatcher(object):
-
-    def __init__(self, hadoop_version_info=HADOOP_VERSION_INFO):
-        self.hadoop_version_info = hadoop_version_info
-        self.hadoop_tag = "hadoop-%s" % self.hadoop_version_info
-        self.patch_fn = "patches/%s.patch" % self.hadoop_tag
-        self.src_dir = "src/%s" % self.hadoop_tag
-        self.patched_src_dir = "%s.patched" % self.src_dir
-        self.from_jtree = os.path.join(
-            self.patched_src_dir, "org/apache/hadoop/mapred/pipes"
-        )
-        self.to_jtree = os.path.join(
-            self.patched_src_dir, "it/crs4/pydoop/pipes"
-        )
-
-    def __link_closest_tag(self):
-        available, cmp_attr = self.__get_available_versions()
-        closest_vinfo = self.__get_closest_version(available, cmp_attr)
-        if closest_vinfo is None:
-            raise RuntimeError(
-                "none of the supported versions is close enough to %s" %
-                self.hadoop_version_info
-            )
-        closest_tag = "hadoop-%s" % closest_vinfo
-        old_wd = os.getcwd()
-        os.chdir("src")
-        os.symlink(closest_tag, self.hadoop_tag)
-        os.chdir("../patches")
-        os.symlink("%s.patch" % closest_tag, "%s.patch" % self.hadoop_tag)
-        os.chdir(old_wd)
-        return closest_tag
-
-    def __get_available_versions(self):
-        pattern = re.compile(r"^hadoop-.+\d$")
-        available = [
-            hu.HadoopVersion(fn.split("-", 1)[1])
-            for fn in os.listdir("src")
-            if pattern.match(fn)
-        ]
-        if self.hadoop_version_info.is_cloudera():
-            available = [vinfo for vinfo in available if (
-                vinfo.is_cloudera() and
-                vinfo.main == self.hadoop_version_info.main and
-                vinfo.ext == self.hadoop_version_info.ext
-            )]
-            cmp_attr = "cdh"
-        else:
-            available = [_ for _ in available if not _.is_cloudera()]
-            cmp_attr = "main"
-        return available, cmp_attr
-
-    def __get_closest_version(self, available, cmp_attr):
-        vkey = getattr(self.hadoop_version_info, cmp_attr)
-        candidate_map = {}
-        for vinfo in available:
-            k = getattr(vinfo, cmp_attr)
-            if len(k) == len(vkey):
-                candidate_map[k] = vinfo
-        for i in xrange(-1, -len(vkey), -1):
-            selection = [
-                (abs(k[i] - vkey[i]), vinfo)
-                for (k, vinfo) in candidate_map.iteritems()
-                if k[:i] == vkey[:i]
-            ]
-            if selection:
-                return min(selection)[1]
-
-    def __convert_pkg(self):
-        assert os.path.isdir(self.from_jtree)
-        os.makedirs(self.to_jtree)
-        for bn in os.listdir(self.from_jtree):
-            with open(os.path.join(self.from_jtree, bn)) as f:
-                content = f.read()
-            with open(os.path.join(self.to_jtree, bn), "w") as f:
-                f.write(content.replace(
-                    "org.apache.hadoop.mapred.pipes", " it.crs4.pydoop.pipes"
-                ))
-
-    def patch(self):
-        if not os.path.isdir(self.src_dir):
-            closest_tag = self.__link_closest_tag()
-            assert os.path.isfile(self.patch_fn)
-            log.warn("*** WARNING: %s NOT SUPPORTED, TRYING %s ***" % (
-                self.hadoop_tag, closest_tag
-            ))
-        if must_generate(self.patched_src_dir, [self.src_dir, self.patch_fn]):
-            log.info("patching source code %r" % (self.src_dir,))
-            shutil.rmtree(self.patched_src_dir, ignore_errors=True)
-            shutil.copytree(self.src_dir, self.patched_src_dir)
-            cmd = "patch -d %s -N -p1 < %s" % (
-                self.patched_src_dir, self.patch_fn
-            )
-            if os.system(cmd):
-                raise DistutilsSetupError(
-                    "Error applying patch.  Command: %s" % cmd
-                )
-            self.__convert_pkg()
-        return self.patched_src_dir
-
-
 class JavaLib(object):
 
-    def __init__(self, hadoop_vinfo, pipes_src_dir):
+    def __init__(self, hadoop_vinfo):
         self.hadoop_vinfo = hadoop_vinfo
         self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
         self.classpath = pydoop.hadoop_classpath()
         self.java_files = [
             "src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
         ]
+        self.java_files.extend(glob.glob(
+            'src/it/crs4/pydoop/pipes/*.java'
+        ))
         if hadoop_vinfo.main >= (2, 2, 0):
             self.java_files.extend(glob.glob(
                 'src/it/crs4/pydoop/mapreduce/pipes/*.java'
             ))
-        if self.hadoop_vinfo.has_security():
-            if hadoop_vinfo.cdh >= (4, 0, 0) and not hadoop_vinfo.ext:
-                return  # TODO: add support for mrv2
-            # https://issues.apache.org/jira/browse/MAPREDUCE-4000
-            self.java_files.extend(glob.glob("%s/*" % pipes_src_dir))
-
-
-class ExtensionManager(object):
-
-    def __init__(self):
-        self.mr1_vinfo = None
-        self.mr1_patcher = None
-        # --
-        self.patcher = HadoopSourcePatcher(HADOOP_VERSION_INFO)
-        # --
-        if HADOOP_VERSION_INFO.cdh >= (4, 0, 0):
-            self.mr1_vinfo = hu.cdh_mr1_version(HADOOP_VERSION_INFO)
-            self.mr1_patcher = HadoopSourcePatcher(self.mr1_vinfo)
-        # --
-        self.patched_src_dir = None
-        self.patched_java_src_dir = None
-        self.mr1_patched_java_src_dir = None
-
-    def patch_src(self):
-        self.patched_src_dir = self.patcher.patch()
-        self.patched_java_src_dir = self.patcher.to_jtree
-        log.info("Patched source in %s", self.patched_java_src_dir)
-        if self.mr1_vinfo:
-            self.mr1_patched_java_src_dir = self.mr1_patcher.to_jtree
-
-    def create_java_libs(self):
-        java_libs = [JavaLib(HADOOP_VERSION_INFO, self.patched_java_src_dir)]
-        if self.mr1_vinfo:
-            java_libs.append(JavaLib(
-                self.mr1_vinfo, self.mr1_patched_java_src_dir
-            ))
-        return java_libs
-
 
 class JavaBuilder(object):
 
     def __init__(self, build_temp, build_lib):
         self.build_temp = build_temp
         self.build_lib = build_lib
-        self.ext_manager = ExtensionManager()
-        self.java_libs = None
+        self.java_libs = [JavaLib(HADOOP_VERSION_INFO)]
 
     def run(self):
         log.info("hadoop_home: %r" % (HADOOP_HOME,))
         log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
         log.info("java_home: %r" % (JAVA_HOME,))
-        self.ext_manager.patch_src()
-        self.java_libs = self.ext_manager.create_java_libs()
         for jlib in self.java_libs:
             self.__build_java_lib(jlib)
 
