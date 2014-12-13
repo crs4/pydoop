@@ -97,8 +97,10 @@ class PydoopSubmitter(object):
         self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name
+        self.logger.debug('properties: %r' % self.properties)
         self.properties.update(dict(args.D or []))
         self.properties.update(dict(args.job_conf or []))
+        self.logger.debug('properties[after update]: %r' % self.properties)
         cfiles = []
         if self.properties[CACHE_FILES]:
             cfiles.append(self.properties[CACHE_FILES])
@@ -165,10 +167,11 @@ class PydoopSubmitter(object):
         lines = []
         ld_path = os.environ.get('LD_LIBRARY_PATH', None)
         pypath = os.environ.get('PYTHONPATH', '')
+        executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')
         if self.args.no_override_env:
-            lines.append('exec "%s" -u "$0" "$@"' % 'python')
+            lines.append('exec "%s" -u "$0" "$@"' % executable)
         else:
             if ld_path:
                 lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
@@ -179,7 +182,7 @@ class PydoopSubmitter(object):
             if (USER_HOME not in self.properties and
                 "HOME" in os.environ and not self.args.no_override_home):
                 lines.append('export HOME="%s"' % os.environ['HOME'])
-            lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
+            lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         lines.append('import runpy')
         lines.append('mdir = runpy.run_module("%s")' % self.args.module)
@@ -281,7 +284,8 @@ class PydoopSubmitter(object):
                 (ctable.get(k, k), v) for (k, v) in self.properties.iteritems()
             ]
             self.properties = dict(props)
-            self.logger.debug("properties after projection: ", self.properties)
+            self.logger.debug("properties after projection: %r",
+                              self.properties)
         try:
             self.__setup_remote_paths()
             executor = (hadut.run_class if not self.args.pretend
@@ -333,6 +337,10 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--job-name', metavar='NAME', type=str, help="name of the job"
+    )
+    parser.add_argument(
+        '--python-program', metavar='PYTHON', type=str, default='python',
+        help="python executable that should be used by the wrapper"
     )
     parser.add_argument(
         '--pretend', action='store_true',
