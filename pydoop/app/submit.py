@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -18,8 +16,6 @@
 #
 # END_COPYRIGHT
 
-# FIXME: duplicate code with script.py
-
 """
 An interface to simplify pydoop jobs submission.
 """
@@ -36,17 +32,20 @@ import pydoop.hadut as hadut
 import pydoop.utils as utils
 import pydoop.utils.conversion_tables as conv_tables
 
+from .argparse_types import kv_pair, a_file_that_can_be_read
+from .argparse_types import a_comma_separated_list, a_hdfs_file
+
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
-IS_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
-IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
-INPUT_FORMAT = "mapreduce.job.inputformat.class"
-OUTPUT_FORMAT = "mapreduce.job.outputformat.class"
-CACHE_FILES = "mapreduce.job.cache.files"
+IS_JAVA_RR = "hadoop.pipes.java.recordreader"
+IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
+INPUT_FORMAT = "mapred.input.format.class"
+OUTPUT_FORMAT = "mapred.output.format.class"
+CACHE_FILES = "mapred.cache.files"
 USER_HOME = "mapreduce.admin.user.home.dir"
-JOB_REDUCES = "mapreduce.job.reduces"
-JOB_NAME = "mapreduce.job.name"
-COMPRESS_MAP_OUTPUT = "mapreduce.map.output.compress"
+JOB_REDUCES = "mapred.reduce.tasks"
+JOB_NAME = "mapred.job.name"
+COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
 
 
 class PydoopSubmitter(object):
@@ -98,8 +97,10 @@ class PydoopSubmitter(object):
         self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name
+        self.logger.debug('properties: %r' % self.properties)
         self.properties.update(dict(args.D or []))
         self.properties.update(dict(args.job_conf or []))
+        self.logger.debug('properties[after update]: %r' % self.properties)
         cfiles = []
         if self.properties[CACHE_FILES]:
             cfiles.append(self.properties[CACHE_FILES])
@@ -166,10 +167,11 @@ class PydoopSubmitter(object):
         lines = []
         ld_path = os.environ.get('LD_LIBRARY_PATH', None)
         pypath = os.environ.get('PYTHONPATH', '')
+        executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')
         if self.args.no_override_env:
-            lines.append('exec "%s" -u "$0" "$@"' % 'python')
+            lines.append('exec "%s" -u "$0" "$@"' % executable)
         else:
             if ld_path:
                 lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
@@ -180,7 +182,7 @@ class PydoopSubmitter(object):
             if (USER_HOME not in self.properties and
                 "HOME" in os.environ and not self.args.no_override_home):
                 lines.append('export HOME="%s"' % os.environ['HOME'])
-            lines.append('exec "%s" -u "$0" "$@"' % sys.executable)
+            lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         lines.append('import runpy')
         lines.append('mdir = runpy.run_module("%s")' % self.args.module)
@@ -267,8 +269,8 @@ class PydoopSubmitter(object):
         else:
             submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
             classpath = None
-        if self.args.conf:
-            job_args.extend(['-conf', self.args.conf.name])
+        if self.args.hadoop_conf:
+            job_args.extend(['-conf', self.args.hadoop_conf.name])
         job_args.extend(['-input', self.args.input])
         job_args.extend(['-output', self.args.output])
         job_args.extend(['-program', self.remote_exe])
@@ -282,7 +284,8 @@ class PydoopSubmitter(object):
                 (ctable.get(k, k), v) for (k, v) in self.properties.iteritems()
             ]
             self.properties = dict(props)
-
+            self.logger.debug("properties after projection: %r",
+                              self.properties)
         try:
             self.__setup_remote_paths()
             executor = (hadut.run_class if not self.args.pretend
@@ -294,7 +297,9 @@ class PydoopSubmitter(object):
         finally:
             self.__clean_wd()
 
-    def fake_run_class(self, submitter_class, args, properties, classpath):
+    def fake_run_class(self, submitter_class, args, properties, classpath,
+                       logger):
+        logger.info("Fake run class")
         sys.stdout.write("hadut.run_class(%s, %s, %s, %s)\n" %
                          (submitter_class, args, properties, classpath))
 
@@ -305,27 +310,50 @@ def run(args, unknown_args=[]):
     script.run()
     return 0
 
-
-def kv_pair(s):
-    return s.split("=", 1)
-
-
-def a_file_that_can_be_read(x):
-    with open(x, 'r'):
-        pass
-    return x
-
-
-def a_hdfs_file(x):
-    _, _, _ = hdfs.path.split(x)
-    return x
-
-
-def a_comma_separated_list(x):
-    # FIXME unclear how does one check for bad lists...
-    return x
-
-
+def add_parser_common_arguments(parser):
+    parser.add_argument(
+        '--num-reducers', metavar='INT', type=int,
+        default=DEFAULT_REDUCE_TASKS,
+        help="Number of reduce tasks. Specify 0 to only perform map phase"
+    )
+    parser.add_argument(
+        '--no-override-home', action='store_true',
+        help=("Don't set the script's HOME directory to the $HOME in your "
+              "environment.  Hadoop will set it to the value of the "
+              "'mapreduce.admin.user.home.dir' property")
+    )
+    parser.add_argument(
+        '--no-override-env', action='store_true',
+        help=("Use the default python executable and environment instead of "
+              "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
+    )
+    parser.add_argument(
+        '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
+        help='Set a Hadoop property, e.g., -D mapred.compress.map.output=true'
+    )
+    parser.add_argument(
+        '--log-level', metavar="LEVEL", default="INFO", help="Logging level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL"]
+    )
+    parser.add_argument(
+        '--job-name', metavar='NAME', type=str, help="name of the job"
+    )
+    parser.add_argument(
+        '--python-program', metavar='PYTHON', type=str, default='python',
+        help="python executable that should be used by the wrapper"
+    )
+    parser.add_argument(
+        '--pretend', action='store_true',
+        help=("Do not actually submit a job, print the generated config "
+              "settings and the command line that would be invoked")
+    )
+    parser.add_argument(
+        '--hadoop-conf', metavar='HADOOP_CONF_FILE',
+        type=a_file_that_can_be_read,
+        help="Hadoop configuration file"
+    )
+    
+    
 def add_parser_arguments(parser):
     parser.add_argument(
         'program', metavar='PROGRAM', help='the python mapreduce program',
@@ -369,37 +397,9 @@ def add_parser_arguments(parser):
               "depends on the mapreduce version used")
     )
     parser.add_argument(
-        '--num-reducers', metavar='INT', type=int,
-        default=DEFAULT_REDUCE_TASKS,
-        help="Number of reduce tasks. Specify 0 to only perform map phase"
-    )
-    parser.add_argument(
-        '--no-override-home', action='store_true',
-        help=("Don't set the script's HOME directory to the $HOME in your "
-              "environment.  Hadoop will set it to the value of the "
-              "'%s' property" % USER_HOME)
-    )
-    parser.add_argument(
-        '--no-override-env', action='store_true',
-        help=("Use the default python executable and environment instead of "
-              "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
-    )
-    parser.add_argument(
-        '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
-        help=('Set a Hadoop property, such as '
-              '-D mapreduce.compress.map.output=true')
-    )
-    parser.add_argument(
         '--job-conf', metavar="NAME=VALUE", type=kv_pair, action="append",
         nargs='+',
         help='Set a Hadoop property, e.g., mapreduce.compress.map.output=true'
-    )
-    parser.add_argument(
-        '--log-level', metavar="LEVEL", default="INFO", help="Logging level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL"]
-    )
-    parser.add_argument(
-        '--job-name', metavar='NAME', type=str, help="name of the job"
     )
     parser.add_argument(
         '--libjars', metavar='JAR_FILE', type=a_comma_separated_list,
@@ -408,10 +408,6 @@ def add_parser_arguments(parser):
     parser.add_argument(
         '--python-egg', metavar='EGG_FILE', type=str, action="append",
         help="Additional python egg file"
-    )
-    parser.add_argument(
-        '--conf', metavar='CONF_FILE', type=a_file_that_can_be_read,
-        help="Configuration file"
     )
     parser.add_argument(
         '--upload-to-cache', metavar='FILE', type=a_file_that_can_be_read,
@@ -435,11 +431,6 @@ def add_parser_arguments(parser):
         help=("Explicitly execute MODULE.ENTRY_POINT() "
               "in the launcher script.")
     )
-    parser.add_argument(
-        '--pretend', action='store_true',
-        help=("Do not actually submit a job, print the generated config "
-              "settings and the command line that would be invoked")
-    )
 
 
 def add_parser(subparsers):
@@ -448,6 +439,7 @@ def add_parser(subparsers):
         description=PydoopSubmitter.DESCRIPTION,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    add_parser_common_arguments(parser)
     add_parser_arguments(parser)
     parser.set_defaults(func=run)
     return parser
