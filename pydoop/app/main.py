@@ -20,8 +20,10 @@
 Pydoop command line tool.
 """
 
+import os
 import argparse
 import importlib
+
 
 from pydoop.version import version
 
@@ -30,12 +32,16 @@ SUBMOD_NAMES = [
     "submit",
 ]
 
+PYDOOP_CONF_FILE = "~/.pydoop/pydoop.conf"
+
 
 def make_parser():
     parser = argparse.ArgumentParser(
         description="Pydoop command line tool",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        fromfile_prefix_chars='@'
     )
+
     parser.add_argument('-V', '--version', action='version', version=version,
                         help='print version number and exit')
     subparsers = parser.add_subparsers(help="sub-commands")
@@ -47,5 +53,7 @@ def make_parser():
 
 def main(argv=None):
     parser = make_parser()
+    if os.path.exists(PYDOOP_CONF_FILE):
+        argv = argv + ['@' + PYDOOP_CONF_FILE]
     args, unknown = parser.parse_known_args(argv)
     args.func(args, unknown)
