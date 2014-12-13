@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/bash -x
 
 # BEGIN_COPYRIGHT
 #
@@ -18,68 +18,32 @@
 #
 # END_COPYRIGHT
 
-import logging
-import csv
-
-logging.basicConfig(level=logging.INFO)
-
-from psrunner import PydoopScriptRunner
 
 
+DATA = "matrix.txt"
 SCRIPT = "transpose.py"
-LOCAL_INPUT = "matrix.txt"
 
+INPUT=${SCRIPT}_input
+OUTPUT=${SCRIPT}_output
+RESULT=${SCRIPT}_res
+REFERENCE=${SCRIPT}_ref
 
-# We don't want to depend on NumPy just for this example
-def transpose(a):
-    t_a = [[] for _ in xrange(len(a[0]))]
-    for r in a:
-        for j, x in enumerate(r):
-            t_a[j].append(x)
-    return t_a
+SCRIPT_CMD="pydoop script"
 
+PYTHONBIN=${PYTHONBIN:-python}
 
-def get_expected_res():
-    with open(LOCAL_INPUT) as f:
-        reader = csv.reader(f, delimiter="\t")
-        a = [r for r in reader]
-        return transpose(a)
+if type -P hdfs >/dev/null; then
+	hdfs="$(type -P hdfs) dfs "
+elif type -P hadoop >/dev/null; then
+	hdfs="$(type -P hadoop) fs "
+else
+	echo "Cannot find hdfs or hadoop executables" >&2
+	exit 1
+fi
 
+${hdfs} -rm -r /user/${USER}/${INPUT}
+${hdfs} -mkdir /user/${USER}/${INPUT}
+${hdfs} -rm -r /user/${USER}/${OUTPUT}
+${hdfs} -put ${DATA} ${INPUT}
 
-def parse_mr_output(res):
-    res = [l.split() for l in res.splitlines(False)]
-    for l in res:
-        l[0] = int(l[0])
-    res.sort()
-    return [l[1:] for l in res]
-
-
-def main():
-    logger = logging.getLogger("main")
-    logger.setLevel(logging.INFO)
-    opts = [
-        '--num-reducers', '4',
-        '-D', 'mapred.map.tasks=2'
-    ]
-    runner = PydoopScriptRunner(logger=logger)
-    runner.set_input(LOCAL_INPUT, put=True)
-    runner.run(SCRIPT, more_args=opts)
-    res = runner.collect_output()
-    runner.clean()
-    logger.info("checking results")
-    res = parse_mr_output(res)
-    expected_res = get_expected_res()
-    if res == expected_res:
-        print "OK."
-    else:
-        print "ERROR"
-        for r, n in (res, 'result'), (expected_res, 'expected_result'):
-            out_fn = "%s.txt" % n
-            with open(out_fn, "w") as fo:
-                for row in r:
-                    fo.write("\t".join(map(str, row))+"\n")
-                print "wrote %r" % (out_fn,)
-
-
-if __name__ == "__main__":
-    main()
+${SCRIPT_CMD} --num-reducers 4 -D mapred.map.tasks=2 ${SCRIPT} ${INPUT} ${OUTPUT}
