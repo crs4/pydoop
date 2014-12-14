@@ -97,11 +97,21 @@ class TestAppSubmit(unittest.TestCase):
         finally:
             shutil.rmtree(wd)
 
+    def test_empty_param(self):
+        parser = app.make_parser()
+        parser.format_help = nop
+        program = 'program'
+        ainput = 'input'
+        aoutput = 'output'
+        argv = ['submit', '--module', '', program, ainput, aoutput]
+        [args, unknown] = parser.parse_known_args(argv)
+        self.assertEqual(args.module, '')
 
 def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestAppSubmit('test_help'))
     suite_.addTest(TestAppSubmit('test_conf_file'))
+    suite_.addTest(TestAppSubmit('test_empty_param'))    
     return suite_
 
 
