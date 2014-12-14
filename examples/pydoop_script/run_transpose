@@ -20,8 +20,8 @@
 
 
 
-DATA = "matrix.txt"
-SCRIPT = "transpose.py"
+DATA="matrix.txt"
+SCRIPT="transpose.py"
 
 INPUT=${SCRIPT}_input
 OUTPUT=${SCRIPT}_output
