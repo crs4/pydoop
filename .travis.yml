@@ -63,6 +63,7 @@ script:
 - cd test;
 - $VIRTUAL_ENV/bin/python all_tests.py
 - cd ../examples
+- export PYTHONBIN=$VIRTUAL_ENV/bin/python
 - ./run_all
 
 language: python

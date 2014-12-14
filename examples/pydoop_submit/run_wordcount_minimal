@@ -8,12 +8,14 @@ DATA=../input/alice.txt
 PROGNAME=${MODULE}-prog
 JOBNAME=${MODULE}-job
 
-LOGLEVEL=INFO
+LOGLEVEL=DEBUG
 
 INPUT=${MODULE}_input
 OUTPUT=${MODULE}_output
 
 SUBMIT_CMD="pydoop submit"
+
+PYTHONBIN=${PYTHONBIN:-python}
 
 
 if type -P hdfs >/dev/null; then
@@ -32,7 +34,7 @@ ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rm -r /user/${USER}/${OUTPUT}
 ${hdfs} -put ${DATA} ${INPUT}
 
-${SUBMIT_CMD} --python-egg ${MZIP} \
+${SUBMIT_CMD} --python-egg ${MZIP} --python-program ${PYTHONBIN}\
               -D mapreduce.pipes.isjavarecordreader=true \
               -D mapreduce.pipes.isjavarecordwriter=true \
               --module ${MODULE} --entry-point main \

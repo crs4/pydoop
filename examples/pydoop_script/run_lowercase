@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/bash -x
 
 # BEGIN_COPYRIGHT
 #
@@ -18,44 +18,31 @@
 #
 # END_COPYRIGHT
 
-import os
-import logging
 
-logging.basicConfig(level=logging.INFO)
+DATA="../input/alice.txt"
+SCRIPT="lowercase.py"
 
-from psrunner import PydoopScriptRunner
+INPUT=${SCRIPT}_input
+OUTPUT=${SCRIPT}_output
+RESULT=${SCRIPT}_res
+REFERENCE=${SCRIPT}_ref
 
+SCRIPT_CMD="pydoop script"
 
-SCRIPT = "lowercase.py"
-LOCAL_INPUT = "../input/alice.txt"
+PYTHONBIN=${PYTHONBIN:-python}
 
+if type -P hdfs >/dev/null; then
+	hdfs="$(type -P hdfs) dfs "
+elif type -P hadoop >/dev/null; then
+	hdfs="$(type -P hadoop) fs "
+else
+	echo "Cannot find hdfs or hadoop executables" >&2
+	exit 1
+fi
 
-def main():
-    logger = logging.getLogger("main")
-    logger.setLevel(logging.INFO)
-    opts = [
-        '--num-reducers', '0',
-        '--kv-separator', '',
-        '-D', 'mapred.map.tasks=4'
-    ]
-    runner = PydoopScriptRunner(logger=logger)
-    runner.set_input(LOCAL_INPUT, put=True)
-    runner.run(SCRIPT, more_args=opts)
-    res = sorted(runner.collect_output().splitlines())
-    runner.clean()
-    logger.info("checking results")
-    with open(LOCAL_INPUT) as f:
-        expected_res = sorted(l.lower().rstrip() for l in f)
-    if res == expected_res:
-        print "OK."
-    else:
-        print "ERROR"
-        for r, n in (res, 'result'), (expected_res, 'expected_result'):
-            out_fn = "%s.txt" % n
-            with open(out_fn, "w") as fo:
-                fo.write(os.linesep.join(r))
-                print "wrote %r" % (out_fn,)
+${hdfs} -rm -r /user/${USER}/${INPUT}
+${hdfs} -mkdir /user/${USER}/${INPUT}
+${hdfs} -rm -r /user/${USER}/${OUTPUT}
+${hdfs} -put ${DATA} ${INPUT}
 
-
-if __name__ == "__main__":
-    main()
+${SCRIPT_CMD} --num-reducers 0 -t '' -D mapred.map.tasks=4 ${SCRIPT} ${INPUT} ${OUTPUT}

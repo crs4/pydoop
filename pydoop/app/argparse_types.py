@@ -1,5 +1,3 @@
-#!/bin/bash -x
-
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -18,30 +16,23 @@
 #
 # END_COPYRIGHT
 
-DATA="example.sam"
-SCRIPT="base_histogram.py"
+import pydoop.hdfs as hdfs
 
-INPUT=${SCRIPT}_input
-OUTPUT=${SCRIPT}_output
-RESULT=${SCRIPT}_res
-REFERENCE=${SCRIPT}_ref
+def kv_pair(s):
+    return s.split("=", 1)
 
-SCRIPT_CMD="pydoop script"
 
-PYTHONBIN=${PYTHONBIN:-python}
+def a_file_that_can_be_read(x):
+    with open(x, 'r'):
+        pass
+    return x
 
-if type -P hdfs >/dev/null; then
-	hdfs="$(type -P hdfs) dfs "
-elif type -P hadoop >/dev/null; then
-	hdfs="$(type -P hadoop) fs "
-else
-	echo "Cannot find hdfs or hadoop executables" >&2
-	exit 1
-fi
 
-${hdfs} -rm -r /user/${USER}/${INPUT}
-${hdfs} -mkdir /user/${USER}/${INPUT}
-${hdfs} -rm -r /user/${USER}/${OUTPUT}
-${hdfs} -put ${DATA} ${INPUT}
+def a_hdfs_file(x):
+    _, _, _ = hdfs.path.split(x)
+    return x
 
-${SCRIPT_CMD} ${SCRIPT} ${INPUT} ${OUTPUT}
+
+def a_comma_separated_list(x):
+    # FIXME unclear how does one check for bad lists...
+    return x
