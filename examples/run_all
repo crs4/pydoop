@@ -4,7 +4,7 @@ trap exit ERR
 examples=(
     hdfs
     input_format
-    #pydoop_script
+    pydoop_script
     pydoop_submit
     self_contained
     ipcount
