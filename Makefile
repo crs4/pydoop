@@ -1,18 +1,28 @@
 WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
-.PHONY: all wheel install install_user docs docs_py docs_put docs_view \
+TARGETS=all wheel install install_user install_wheel install_wheel_user\
+        docs docs_py docs_put docs_view \
         clean distclean uninstall_user logo favicon
 
-all: wheel
+.PHONY: $(TARGETS)
+
+all:
+	@echo "Try one of: ${TARGETS}"
+
+install_user:
+	python setup.py install --user
+
+install:
+	python setup.py install
 
 wheel:
 	python setup.py bdist_wheel --dist-dir=${WHEEL_DIR}
 
-install:
+install_wheel: wheel
 	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop
 
-install_user:
+install_wheel_user: wheel
 	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop --user
 
 logo: docs/_static/logo.png
