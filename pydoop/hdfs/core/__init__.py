@@ -28,11 +28,12 @@ def init(backend=impl.DEFAULT):
         import pydoop.utils.jvm as jvm
         jvm.load_jvm_lib()
         try:
-            import native_core_hdfs  # NOTE: JVM must be already instantiated
+            # NOTE: JVM must be already instantiated
+            import pydoop.native_core_hdfs
         except ImportError:
             return None  # should only happen at compile time
         else:
-            return native_core_hdfs
+            return pydoop.native_core_hdfs
     elif backend == impl.JPYPE_BRIDGED:
         from pydoop.hdfs.core.bridged import get_implementation_module
         return get_implementation_module()

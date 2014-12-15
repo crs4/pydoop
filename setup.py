@@ -39,7 +39,7 @@ import glob
 import shutil
 import itertools
 import subprocess
-import setuptools
+
 
 from distutils.core import setup, Extension
 from distutils.command.build import build
@@ -166,7 +166,7 @@ def build_hdfscore_native_impl():
     libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v <= 1
                        else "HADOOP_LIBHDFS_V2", 1)]
     native_hdfs_core = Extension(
-        'native_core_hdfs',
+        'pydoop.native_core_hdfs',
         include_dirs=jvm.get_include_dirs() + [
             os.path.join('src/libhdfs', str(HADOOP_VERSION_INFO))
         ],
@@ -181,7 +181,7 @@ def build_hdfscore_native_impl():
 
 def build_sercore_extension():
     binary_encoder = Extension(
-        'pydoop_sercore',
+        'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
             'protocol_codec.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],

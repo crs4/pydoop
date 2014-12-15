@@ -83,7 +83,7 @@ import struct, xdrlib
 import StringIO
 import cPickle as pickle
 
-import pydoop_sercore as codec_core
+import pydoop.sercore as codec_core
 
 
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
