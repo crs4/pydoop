@@ -1,31 +1,31 @@
 include AUTHORS LICENSE VERSION README.md
 
-include src/*.hpp
-recursive-include src/it *
-exclude src/_pipes*main.cpp
-exclude src/_hdfs*main.cpp
-graft src/hadoop-*
-prune src/hadoop-*.patched
+recursive-include test *.py
+recursive-include test/common *.py
+recursive-include test/app *.py
+recursive-include test/serialize *.py
+recursive-include test/hdfs *.py
+recursive-include test/mapreduce *.py
+recursive-include test/mapreduce/data *.data jobToken
+recursive-include test/avro *.py
+recursive-include test/backward_compatibility *.py
 
-recursive-include patches *.patch
-
-include test/all_tests_pipes.py
-include test/all_tests_hdfs.py
-include test/all_tests.py
-include test/common_hdfs_tests.py
-include test/utils.py
-exclude test/test_string_lifetime.py
-
-recursive-include examples *
-recursive-exclude examples/input_format/net/sourceforge/pydoop/mapreduce *
-exclude examples/text_pipe_runner.py
-exclude examples/run_all
-
-exclude pydoop/hadoop_serial.py
-exclude pydoop/text_protocol.py
-exclude pydoop/binary_protocol.py
-exclude pydoop/pipes_runner.py
+recursive-include examples run_all README
+recursive-include examples/input *.txt
+recursive-include examples/ipcount *.py run excludes.txt run
+recursive-include examples/ipcount/input *.log
+recursive-include examples/pydoop_script *.py run* matrix.txt example.sam
+recursive-include examples/pydoop_submit run*
+recursive-include examples/simulator run
+recursive-include examples/hdfs run* *.py
+recursive-include examples/sequence_file/bin *.py
+recursive-include examples/sequence_file run*
+recursive-include examples/wordcount/bin *.py
+recursive-include examples/wordcount run
+#recursive-include examples/input_format
+#recursive-include examples/self_contained *.py
+#recursive-include examples/avro
 
 recursive-include docs *
 
-recursive-include debian *
+
