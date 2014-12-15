@@ -16,54 +16,55 @@
 # 
 # END_COPYRIGHT
 
-HADOOP_HOME = $(shell python -c 'import pydoop; print pydoop.hadoop_home()')
-HADOOP_CONF_DIR = $(shell python -c 'import pydoop; print pydoop.hadoop_conf()')
-HADOOP = $(shell python -c 'import pydoop; print pydoop.hadoop_exec()') --config $(HADOOP_CONF_DIR)
+pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 
-PYTHON_ABI_TAG ?= $(shell uname -r | grep gentoo >/dev/null && eselect python show | tr -s python -)
-BOOST_PYTHON ?= boost_python$(PYTHON_ABI_TAG)
+WHEEL_DIR=../../dist
+# FIXME -- this should be fixed to be an get from pypi
+# FIXME -- note the --pre flag in the pip command below
+PIP=pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR}
+SUBMIT_CMD=pydoop submit
 
-BASE_BUILD_DIR := $(realpath .)/_build
+HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
+       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
+	       HDFS_IS_MISSING))
 
-PYDOOP_TRUNK := $(realpath ../..)
-CV_TRUNK := $(realpath .)
+LOGLEVEL=INFO
+PROGNAME=self_contained
+JOBNAME=self_contained
+DATA := ../input
+INPUT=${PROGNAME}_input
+OUTPUT=${PROGNAME}_output
 
-PYDOOP_BUILD_DIR := $(BASE_BUILD_DIR)/pydoop
-PYDOOP_DIR := $(PYDOOP_BUILD_DIR)/pydoop
-PYDOOP_TAR := $(PYDOOP_DIR)/pydoop.tgz
+.PHONY: setup_io run clean distclean dfsclean check_results submit
 
-CV_BUILD_DIR := $(BASE_BUILD_DIR)/cv
-CV_DIR := $(CV_BUILD_DIR)/cv
-CV_TAR := $(CV_DIR)/cv.tgz
+run: check_result
 
-HDFS_WORK_DIR := pydoop_test_self_contained
-INPUT_DIR := ../input
+check_result: submit
+	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
 
 
-.PHONY: all pydoop cv upload run get clean distclean dfsclean
+setup_io:
+	-${HDFS} -rm -r /user/${USER}/${INPUT}
+	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
+	-${HDFS} -mkdir /user/${USER}
+	${HDFS} -put ${DATA} ${INPUT}
 
-all: upload
-pydoop: $(PYDOOP_TAR)
-cv: $(CV_TAR)
 
-$(PYDOOP_TAR): $(PYDOOP_TRUNK)
-	cd $< && HADOOP_HOME=$(HADOOP_HOME) BOOST_PYTHON=$(BOOST_PYTHON) python setup.py build --build-base $(BASE_BUILD_DIR) --build-lib $(PYDOOP_BUILD_DIR)
-	cd $(PYDOOP_DIR) && tar czf pydoop.tgz *
+submit: cv.zip pydoop.tgz setup_io
+	${SUBMIT_CMD} --python-zip cv.zip --upload-archive-to-cache pydoop.tgz \
+                --module cv.mr.main --entry-point main \
+                --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
+	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
-$(CV_TAR): $(CV_TRUNK)/setup.py $(CV_TRUNK)/cv 
-	python $< build --build-base $(BASE_BUILD_DIR) --build-lib $(CV_BUILD_DIR)
-	cd $(CV_DIR) && tar czf cv.tgz *
+cv.zip:
+	zip -r cv.zip cv
 
-upload: pydoop cv dfsclean
-	$(HADOOP) dfs -mkdir $(HDFS_WORK_DIR)
-	$(HADOOP) dfs -put $(PYDOOP_TAR) $(HDFS_WORK_DIR)
-	$(HADOOP) dfs -put $(CV_TAR) $(HDFS_WORK_DIR)
-
-run: self_contained.py upload
-	HDFS_WORK_DIR=$(HDFS_WORK_DIR) python $< $(INPUT_DIR)
+pydoop.tgz:
+	${PIP} -t .  pydoop
+	tar cfz pydoop.tgz pydoop
+	rm -rf pydoop pydoop-*
 
 clean:
-	rm -rf $(BASE_BUILD_DIR)
+	rm -rf pydoop.tgz cv.zip
 
-distclean: clean
-	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\)' -exec rm -fv {} \;
+
