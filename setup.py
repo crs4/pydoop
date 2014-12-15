@@ -39,6 +39,7 @@ import glob
 import shutil
 import itertools
 import subprocess
+import setuptools
 
 from distutils.core import setup, Extension
 from distutils.command.build import build
@@ -48,9 +49,7 @@ from distutils import log
 
 import pydoop
 import pydoop.utils.jvm as jvm
-import pydoop.hadoop_utils as hu
 import pydoop.hdfs.core.impl as hdfsimpl
-
 
 JAVA_HOME = jvm.get_java_home()
 JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
@@ -132,7 +131,8 @@ def generate_hdfs_config():
 
 def get_git_commit():
     try:
-        return subprocess.check_output(['git', 'rev-parse', 'HEAD']).rstrip('\n')
+        return subprocess.check_output(['git',
+                                        'rev-parse', 'HEAD']).rstrip('\n')
     except subprocess.CalledProcessError:
         return None
 
