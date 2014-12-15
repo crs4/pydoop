@@ -34,7 +34,6 @@ Other relevant environment variables include::
 
 import time
 import os
-import re
 import glob
 import shutil
 import itertools
@@ -48,7 +47,6 @@ from distutils import log
 
 import pydoop
 import pydoop.utils.jvm as jvm
-import pydoop.hadoop_utils as hu
 import pydoop.hdfs.core.impl as hdfsimpl
 
 
@@ -132,7 +130,9 @@ def generate_hdfs_config():
 
 def get_git_commit():
     try:
-        return subprocess.check_output(['git', 'rev-parse', 'HEAD']).rstrip('\n')
+        return subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD']
+        ).rstrip('\n')
     except subprocess.CalledProcessError:
         return None
 
@@ -207,7 +207,7 @@ class JavaLib(object):
         self.hadoop_vinfo = hadoop_vinfo
         self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
         self.classpath = pydoop.hadoop_classpath()
-        self.java_files = []        
+        self.java_files = []
         if hadoop_vinfo.main >= (2, 2, 0):
             self.java_files.extend([
                 "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
@@ -225,7 +225,7 @@ class JavaLib(object):
             self.java_files.extend(glob.glob(
                 'src/v1/org/apache/hadoop/mapred/pipes/*.java'
             ))
-            
+
 
 class JavaBuilder(object):
 
