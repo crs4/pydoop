@@ -39,7 +39,7 @@ import glob
 import shutil
 import itertools
 import subprocess
-
+import setuptools
 
 from distutils.core import setup, Extension
 from distutils.command.build import build
@@ -357,6 +357,10 @@ setup(
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
     download_url="https://sourceforge.net/projects/pydoop/files/",
+    extras_require={
+        ':python_version=="2.6"': ['argparse'],
+        'tool': []
+        },  
     packages=[
         "pydoop",
         "pydoop.hdfs",
