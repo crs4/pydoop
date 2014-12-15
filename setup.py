@@ -38,6 +38,7 @@ import glob
 import shutil
 import itertools
 import subprocess
+import setuptools
 
 from distutils.core import setup, Extension
 from distutils.command.build import build
@@ -48,7 +49,6 @@ from distutils import log
 import pydoop
 import pydoop.utils.jvm as jvm
 import pydoop.hdfs.core.impl as hdfsimpl
-
 
 JAVA_HOME = jvm.get_java_home()
 JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
@@ -166,7 +166,7 @@ def build_hdfscore_native_impl():
     libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v <= 1
                        else "HADOOP_LIBHDFS_V2", 1)]
     native_hdfs_core = Extension(
-        'native_core_hdfs',
+        'pydoop.native_core_hdfs',
         include_dirs=jvm.get_include_dirs() + [
             os.path.join('src/libhdfs', str(HADOOP_VERSION_INFO))
         ],
@@ -181,7 +181,7 @@ def build_hdfscore_native_impl():
 
 def build_sercore_extension():
     binary_encoder = Extension(
-        'pydoop_sercore',
+        'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
             'protocol_codec.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
@@ -357,6 +357,10 @@ setup(
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
     download_url="https://sourceforge.net/projects/pydoop/files/",
+    extras_require={
+        ':python_version=="2.6"': ['argparse'],
+        'tool': []
+        },  
     packages=[
         "pydoop",
         "pydoop.hdfs",

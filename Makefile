@@ -1,27 +1,29 @@
-EXPORT_DIR = /tmp/pydoop_export
+WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
-.PHONY: all build build_py install install_py install_user install_user_py docs docs_py docs_put docs_view dist debian clean distclean uninstall_user logo favicon
+TARGETS=all wheel install install_user install_wheel install_wheel_user\
+        docs docs_py docs_put docs_view \
+        clean distclean uninstall_user logo favicon
 
-all: build
+.PHONY: $(TARGETS)
 
-build:
-	python setup.py build
+all:
+	@echo "Try one of: ${TARGETS}"
 
-build_py:
-	python setup.py build_py
+install_user:
+	python setup.py install --user
 
-install: build
-	python setup.py install --skip-build
+install:
+	python setup.py install
 
-install_py: build_py
-	python setup.py install --skip-build
+wheel:
+	python setup.py bdist_wheel --dist-dir=${WHEEL_DIR}
 
-install_user: build
-	python setup.py install --skip-build --user
+install_wheel: wheel
+	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop
 
-install_user_py: build_py
-	python setup.py install --skip-build --user
+install_wheel_user: wheel
+	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop --user
 
 logo: docs/_static/logo.png
 
@@ -54,33 +56,13 @@ docs_put: docs
 docs_view: docs
 	yelp docs/_build/html/index.html &
 
-dist: docs
-	./dev_tools/update_changelog
-	./dev_tools/git_export -o $(EXPORT_DIR)
-	rm -rf $(EXPORT_DIR)/docs/*
-	mv docs/_build/html $(EXPORT_DIR)/docs/
-	cd $(EXPORT_DIR) && python setup.py sdist
-	mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
-	rm -rf $(EXPORT_DIR)
-
-debian: dist
-	mkdir sandbox
-	tar -xz -C sandbox -f pydoop-*.tar.gz
-	cd sandbox/pydoop-* && fakeroot dpkg-buildpackage -us -uc
-
 clean:
 	python setup.py clean --all
+	rm -rf pydoop.egg-
 	rm -f docs/_static/logo.png docs/_static/favicon.ico
 	make -C docs clean
-	make -C examples/self_contained clean
-	make -C examples/wordcount/c++ clean
+	make -C examples clean
 	find . -regex '.*\(\.pyc\|\.pyo\|~\|\.so\|\.jar\|\.class\)' -exec rm -fv {} \;
-
-distclean: clean
-	rm -rf $(EXPORT_DIR)
-	make -C examples/self_contained distclean
-	rm -rf pydoop-*
-	rm -rf sandbox
 
 uninstall_user:
 	rm -rf ~/.local/lib/python$(PY_V)/site-packages/pydoop*

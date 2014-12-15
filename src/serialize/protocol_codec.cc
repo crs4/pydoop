@@ -445,10 +445,10 @@ static PyMethodDef ProtocolCodecMethods[] = {
 };
 
 PyMODINIT_FUNC
-initpydoop_sercore(void)
+initsercore(void)
 {
   PyObject *m;
-  m = Py_InitModule("pydoop_sercore", ProtocolCodecMethods);
+  m = Py_InitModule("sercore", ProtocolCodecMethods);
   if (m == NULL) 
     return;
   ProtocolCodecError = PyErr_NewException("ProtocolCodec.error", NULL, NULL);

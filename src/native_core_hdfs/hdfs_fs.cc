@@ -316,7 +316,8 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     hdfsFile file;
 
     if (!PyArg_ParseTuple(args, "es|iihii",
-            "utf-8", &path, &flags, &buff_size, &replication, &blocksize, &readline_chunk_size)) {
+                          "utf-8", &path, &flags, &buff_size, &replication,
+                          &blocksize, &readline_chunk_size)) {
         return NULL;
     }
 
@@ -326,7 +327,8 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     }
 
     Py_BEGIN_ALLOW_THREADS;
-        file = hdfsOpenFile(self->_fs, path, flags, buff_size, replication, blocksize);
+        file = hdfsOpenFile(self->_fs, path, flags,
+                            buff_size, replication, blocksize);
     Py_END_ALLOW_THREADS;
     if (file == NULL) {
         PyErr_SetFromErrno(PyExc_IOError);
@@ -334,7 +336,7 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     }
 
     {
-        PyObject* module = PyImport_ImportModule("native_core_hdfs");
+        PyObject* module = PyImport_ImportModule("pydoop.native_core_hdfs");
 
         retval = PyObject_CallMethod(module, "CoreHdfsFile","OO", self->_fs, file); //, flags, buff_size, replication, blocksize, NULL);
 
