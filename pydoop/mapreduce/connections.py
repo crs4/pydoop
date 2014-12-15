@@ -22,7 +22,7 @@ import socket
 from threading import Thread, Event
 import logging
 
-from pydoop_sercore import fdopen as ph_fdopen
+from pydoop.sercore import fdopen as ph_fdopen
 from .text_streams import TextDownStreamFilter, TextUpStreamFilter
 from .binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
 

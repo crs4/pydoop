@@ -45,7 +45,7 @@ LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
 
 from pydoop.utils.serialize import serialize_to_string
-from pydoop_sercore import fdopen as ph_fdopen
+from pydoop.sercore import fdopen as ph_fdopen
 
 from .pipes import TaskContext, StreamRunner
 from .api import RecordReader, PydoopError
