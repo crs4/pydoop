@@ -28,6 +28,7 @@ HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
 
+
 LOGLEVEL=DEBUG
 PROGNAME=self_contained
 JOBNAME=self_contained
