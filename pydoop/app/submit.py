@@ -434,10 +434,6 @@ def add_parser_arguments(parser):
         action="append", help="Additional comma-separated list of jar files"
     )
     parser.add_argument(
-        '--python-egg', metavar='EGG_FILE', type=str, action="append",
-        help="Additional python egg file"
-    )
-    parser.add_argument(
         '--cache-file', metavar='HDFS_FILE', type=a_hdfs_file,
         action="append",
         help="Add this HDFS file to the distributed cache as a file."
