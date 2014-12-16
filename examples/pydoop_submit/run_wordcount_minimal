@@ -34,7 +34,7 @@ ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rm -r /user/${USER}/${OUTPUT}
 ${hdfs} -put ${DATA} ${INPUT}
 
-${SUBMIT_CMD} --python-egg ${MZIP} --python-program ${PYTHONBIN}\
+${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
               -D mapreduce.pipes.isjavarecordreader=true \
               -D mapreduce.pipes.isjavarecordwriter=true \
               --module ${MODULE} --entry-point main \
