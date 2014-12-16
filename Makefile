@@ -1,7 +1,7 @@
 WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
-TARGETS=all wheel install install_user install_wheel install_wheel_user\
+TARGETS=all build wheel install install_user install_wheel install_wheel_user\
         docs docs_py docs_put docs_view \
         clean distclean uninstall_user logo favicon
 
@@ -10,11 +10,14 @@ TARGETS=all wheel install install_user install_wheel install_wheel_user\
 all:
 	@echo "Try one of: ${TARGETS}"
 
-install_user:
+install_user: build
 	python setup.py install --user
 
-install:
+install: build
 	python setup.py install
+
+build:
+	python setup.py build
 
 wheel:
 	python setup.py bdist_wheel --dist-dir=${WHEEL_DIR}
