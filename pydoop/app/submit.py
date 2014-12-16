@@ -178,24 +178,25 @@ class PydoopSubmitter(object):
 
     def __generate_pipes_code(self):
         lines = []
-        ld_path = os.environ.get('LD_LIBRARY_PATH', None)
-        pypath = os.environ.get('PYTHONPATH', '')
+        if not self.args.no_override_env:
+            ld_path = os.environ.get('LD_LIBRARY_PATH', None)
+            pypath = os.environ.get('PYTHONPATH', '')
+        else:
+            ld_path = ''
+            pypath = ''
         executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')
-        if self.args.no_override_env:
-            lines.append('exec "%s" -u "$0" "$@"' % executable)
-        else:
-            if ld_path:
-                lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
-            if self.args.python_zip:
-                pypath = ':'.join(self.args.python_zip + [pypath])
-            if pypath:
-                lines.append('export PYTHONPATH="%s"' % pypath)
-            if (USER_HOME not in self.properties and
-                "HOME" in os.environ and not self.args.no_override_home):
-                lines.append('export HOME="%s"' % os.environ['HOME'])
-            lines.append('exec "%s" -u "$0" "$@"' % executable)
+        if ld_path:
+            lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
+        if self.args.python_zip:
+            pypath = ':'.join(self.args.python_zip + [pypath])
+        if pypath:
+            lines.append('export PYTHONPATH="%s"' % pypath)
+        if (USER_HOME not in self.properties and
+            "HOME" in os.environ and not self.args.no_override_home):
+            lines.append('export HOME="%s"' % os.environ['HOME'])
+        lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         lines.append('import runpy')
         lines.append('try:')
