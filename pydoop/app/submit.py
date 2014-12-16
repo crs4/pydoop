@@ -198,7 +198,11 @@ class PydoopSubmitter(object):
             lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         lines.append('import runpy')
-        lines.append('mdir = runpy.run_module("%s")' % self.args.module)
+        lines.append('try:')
+        lines.append('    mdir = runpy.run_module("%s")' % self.args.module)
+        lines.append('except ImportError as e:')
+        lines.append('    import sys')
+        lines.append('    raise ImportError("%s in %s" % (e, sys.path))')
         if self.args.entry_point:
             lines.append('mdir["%s"]()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
