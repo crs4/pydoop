@@ -47,22 +47,24 @@ check_result: submit
 setup_io:
 	-${HDFS} -rm -r /user/${USER}/${INPUT}
 	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
+	-${HDFS} -mkdir /user
 	-${HDFS} -mkdir /user/${USER}
 	${HDFS} -put ${DATA} ${INPUT}
 
 
 submit: cv.zip pydoop.tgz setup_io
-	${SUBMIT_CMD} --python-zip cv.zip --upload-archive-to-cache pydoop.tgz \
-                --module cv.mr.main --entry-point main \
-                --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
+	${SUBMIT_CMD} --python-zip cv.zip --upload-archive-to-cache pydoop.tgz\
+                --module cv.mr.main --entry-point main\
+                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
+                --no-override-home --no-override-env\
 	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
 cv.zip:
-	zip -r cv.zip cv
+	zip -rq cv.zip cv
 
 pydoop.tgz:
 	${PIP} -t .  pydoop
-	tar cfz pydoop.tgz pydoop
+	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*
 
 clean:
