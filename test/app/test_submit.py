@@ -74,7 +74,7 @@ class TestAppSubmit(unittest.TestCase):
                    ("--input-format", 'mapreduce.lib.input.TextInputFormat'),
                    ("--output-format", 'mapreduce.lib.input.TextOutputFormat'),
                    ("--num-reducers", 10),
-                   ("--python-egg", 'allmymodules.egg'),
+                   ("--python-zip", 'allmymodules.zip'),
                    ("--module", 'mymod1.mod2.mod3'))
         try:
             with open(conf_file, 'w') as cf:
