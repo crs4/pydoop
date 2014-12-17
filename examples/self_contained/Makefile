@@ -40,7 +40,7 @@ OUTPUT=${PROGNAME}_output
 
 run: check_result
 
-check_result: submit2
+check_result: submit
 	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
 
 setup_io:
