@@ -22,25 +22,3 @@ vowel in a text input stream. It is more structured than would be
 necessary because we want to test automatic distribution of a package
 rather than a single module.
 """
-
-# NOTE: some of the variables defined here are
-# parsed by setup.py, check it before modifying them.
-
-__version__ = "0.1"
-__author__ = ", ".join((
-    "Simone Leo",
-    "Gianluigi Zanetti",
-    "Luca Pireddu",
-    "Francesco Cabras",
-    "Mauro Del Rio",
-    "Marco Enrico Piras",
-))
-__author_email__ = ", ".join((
-    "<simone.leo@crs4.it>",
-    "<gianluigi.zanetti@crs4.it>",
-    "<luca.pireddu@crs4.it>",
-    "<francesco.cabras@crs4.it>",
-    "<mauro@crs4.it>",
-    "<kikkomep@crs4.it>",
-))
-__url__ = "http://pydoop.sourceforge.net"
