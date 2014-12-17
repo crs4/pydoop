@@ -183,7 +183,7 @@ class PydoopSubmitter(object):
             ld_path = os.environ.get('LD_LIBRARY_PATH', None)
             pypath = os.environ.get('PYTHONPATH', '')
         else:
-            ld_path = ''
+            ld_path = None
             pypath = '.'
         executable = self.args.python_program
         lines.append("#!/bin/bash")
@@ -197,7 +197,7 @@ class PydoopSubmitter(object):
         if self.args.python_zip:
             pypath = ':'.join(self.args.python_zip + [pypath])
         if pypath:
-            lines.append('export PYTHONPATH="%s"' % pypath)
+            lines.append('export PYTHONPATH="%s:$PYTHONPATH"' % pypath)
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
