@@ -52,9 +52,11 @@ COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
 
 class PydoopSubmitter(object):
     """
-    Builds and launches pydoop jobs.  Supports both v1 and v2
-    mapreduce models and automatically adapts configuration variable
-    names to the specific (1.x vs 2.x) Hadoop version used.
+    Builds and launches pydoop jobs.
+
+    Supports both v1 and v2 mapreduce models and automatically adapts
+    configuration variable names to the specific (1.x vs 2.x) Hadoop
+    version used.
     """
     DESCRIPTION = "Simplified pydoop jobs submission"
 
@@ -201,6 +203,10 @@ class PydoopSubmitter(object):
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
+        if self.args.log_level == "DEBUG":
+            lines.append("echo ${PYTHONPATH} 1>&2")
+            lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
+            lines.append("echo ${HOME} 1>&2")             
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         lines.append('import %s as module' % self.args.module)

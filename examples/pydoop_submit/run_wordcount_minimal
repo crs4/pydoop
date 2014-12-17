@@ -1,14 +1,15 @@
-#!/bin/bash -x
+#!/bin/bash
 
 MODULE=wordcount_minimal
 MZIP=${MODULE}.zip
 MPY=${MODULE}.py
 DATA=../input/alice.txt
+RESULTS=results.txt
 
 PROGNAME=${MODULE}-prog
 JOBNAME=${MODULE}-job
 
-LOGLEVEL=DEBUG
+LOGLEVEL=INFO
 
 INPUT=${MODULE}_input
 OUTPUT=${MODULE}_output
@@ -41,4 +42,16 @@ ${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
               ${PROGNAME} ${INPUT} ${OUTPUT} 
 
+${hdfs} -cat ${OUTPUT}/part'*' > ${RESULTS}
+
+python <<EOF
+import pydoop.test_support as pts
+
+def check_results(data_in, data_out):
+    local_wc = pts.LocalWordCount(data_in)
+    print "result is:", local_wc.check(open(data_out).read())
+
+print "Checking results"
+check_results("${DATA}", "${RESULTS}")
+EOF
 

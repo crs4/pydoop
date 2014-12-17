@@ -62,7 +62,7 @@ def main(argv):
     args = parser.parse_args(argv)
     update_conf(args)
     logger = logging.getLogger("main")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
     with open(args.pipes_exe) as f:
         pipes_code = pts.add_sys_path(f.read())

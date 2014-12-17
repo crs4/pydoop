@@ -34,22 +34,27 @@ SUBMOD_NAMES = [
 
 PYDOOP_CONF_FILE = "~/.pydoop/pydoop.conf"
 
+
 class PatchedArgumentParser(argparse.ArgumentParser):
     """
-    This is a work-around for a bug in ArgumentParser that is triggered when there is
-    a  zero length argument and fromfile_prefix_chars is not None.
+    This is a work-around for a bug in ArgumentParser that is triggered
+    when there is a zero length argument and fromfile_prefix_chars is
+    not None.
     """
     def _read_args_from_files(self, arg_strings):
         place_holder = "abcjdkje-32333a290"
         assert not (place_holder in arg_strings)
-        args = [ x if len(x) > 0 else place_holder for x in arg_strings]
-        new_args = super(PatchedArgumentParser, self)._read_args_from_files(args)
-        return [ x if x != place_holder else '' for x in new_args]
+        args = [x if len(x) > 0 else place_holder for x in arg_strings]
+        new_args = super(PatchedArgumentParser,
+                         self)._read_args_from_files(args)
+        return [x if x != place_holder else '' for x in new_args]
+
 
 def make_parser():
     parser = PatchedArgumentParser(
         description="Pydoop command line tool",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        epilog=("Supports argparse @confile syntax "),
         fromfile_prefix_chars='@'
     )
 
