@@ -183,7 +183,7 @@ class PydoopSubmitter(object):
             pypath = os.environ.get('PYTHONPATH', '')
         else:
             ld_path = ''
-            pypath = ''
+            pypath = '.'
         executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')

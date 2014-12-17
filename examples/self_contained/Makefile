@@ -40,7 +40,7 @@ OUTPUT=${PROGNAME}_output
 
 run: check_result
 
-check_result: submit
+check_result: submit2
 	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
 
 
@@ -59,8 +59,19 @@ submit: cv.zip pydoop.tgz setup_io
                 --no-override-home --no-override-env\
 	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
+submit2: cv.tgz pydoop.tgz setup_io
+	${SUBMIT_CMD} --upload-archive-to-cache cv.tgz\
+                --upload-archive-to-cache pydoop.tgz\
+                --module cv.mr.main --entry-point main\
+                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
+                --no-override-home --no-override-env\
+	              ${PROGNAME} ${INPUT} ${OUTPUT}
+
 cv.zip:
 	zip -rq cv.zip cv
+
+cv.tgz:
+	cd cv; tar cfz ../cv.tgz . ; cd -
 
 pydoop.tgz:
 	${PIP} -t .  pydoop
