@@ -203,13 +203,7 @@ class PydoopSubmitter(object):
             lines.append('export HOME="%s"' % os.environ['HOME'])
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
-        lines.append('import importlib')
-        lines.append('try:')
-        lines.append('    module = importlib.import_module("%s")'
-                     % self.args.module)
-        lines.append('except ImportError as e:')
-        lines.append('    import sys')
-        lines.append('    raise ImportError("%s in %s" % (e, sys.path))')
+        lines.append('import %s as module' % self.args.module)
         lines.append('module.%s()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
 
