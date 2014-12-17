@@ -37,6 +37,7 @@ from .argparse_types import a_comma_separated_list, a_hdfs_file
 
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
+DEFAULT_ENTRY_POINT = '__main__'
 IS_JAVA_RR = "hadoop.pipes.java.recordreader"
 IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
 INPUT_FORMAT = "mapred.input.format.class"
@@ -61,7 +62,7 @@ class PydoopSubmitter(object):
         self.logger = logging.getLogger("PydoopSubmitter")
         self.properties = {
             CACHE_FILES: '',
-            CACHE_ARCHIVES: '',            
+            CACHE_ARCHIVES: '',
             'mapred.create.symlink': 'yes',  # backward compatibility
             COMPRESS_MAP_OUTPUT: 'true',
             'bl.libhdfs.opts': '-Xmx48m'
@@ -193,19 +194,19 @@ class PydoopSubmitter(object):
             pypath = ':'.join(self.args.python_zip + [pypath])
         if pypath:
             lines.append('export PYTHONPATH="%s"' % pypath)
-        if (USER_HOME not in self.properties and
-            "HOME" in os.environ and not self.args.no_override_home):
+        if (USER_HOME not in self.properties and "HOME" in os.environ
+           and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
-        lines.append('import runpy')
+        lines.append('import importlib')
         lines.append('try:')
-        lines.append('    mdir = runpy.run_module("%s")' % self.args.module)
+        lines.append('    module = importlib.import_module("%s")'
+                     % self.args.module)
         lines.append('except ImportError as e:')
         lines.append('    import sys')
         lines.append('    raise ImportError("%s in %s" % (e, sys.path))')
-        if self.args.entry_point:
-            lines.append('mdir["%s"]()' % self.args.entry_point)
+        lines.append('module.%s()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
 
     def __validate(self):
@@ -385,8 +386,8 @@ def add_parser_common_arguments(parser):
         type=a_file_that_can_be_read,
         help="Hadoop configuration file"
     )
-    
-    
+
+
 def add_parser_arguments(parser):
     parser.add_argument(
         'program', metavar='PROGRAM', help='the python mapreduce program',
@@ -458,6 +459,7 @@ def add_parser_arguments(parser):
     )
     parser.add_argument(
         '--entry-point', metavar='ENTRY_POINT', type=str,
+        default=DEFAULT_ENTRY_POINT,
         help=("Explicitly execute MODULE.ENTRY_POINT() "
               "in the launcher script.")
     )
