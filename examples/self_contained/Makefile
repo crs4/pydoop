@@ -43,7 +43,6 @@ run: check_result
 check_result: submit2
 	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
 
-
 setup_io:
 	-${HDFS} -rm -r /user/${USER}/${INPUT}
 	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
@@ -52,26 +51,27 @@ setup_io:
 	${HDFS} -put ${DATA} ${INPUT}
 
 
-submit: cv.zip pydoop.tgz setup_io
-	${SUBMIT_CMD} --python-zip cv.zip --upload-archive-to-cache pydoop.tgz\
-                --module cv.mr.main --entry-point main\
-                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
-                --no-override-home --no-override-env\
-	              ${PROGNAME} ${INPUT} ${OUTPUT}
-
-submit2: cv.tgz pydoop.tgz setup_io
-	${SUBMIT_CMD} --upload-archive-to-cache cv.tgz\
+submit: vowelcount.zip pydoop.tgz setup_io
+	${SUBMIT_CMD} --python-zip vowelcount.zip \
                 --upload-archive-to-cache pydoop.tgz\
-                --module cv.mr.main --entry-point main\
+                --module vowelcount.mr.main --entry-point main\
                 --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
                 --no-override-home --no-override-env\
 	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
-cv.zip:
-	zip -rq cv.zip cv
+submit2: vowelcount.tgz pydoop.tgz setup_io
+	${SUBMIT_CMD} --upload-archive-to-cache vowelcount.tgz\
+                --upload-archive-to-cache pydoop.tgz\
+                --module vowelcount.mr.main --entry-point main\
+                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
+                --no-override-home --no-override-env\
+	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
-cv.tgz:
-	cd cv; tar cfz ../cv.tgz . ; cd -
+vowelcount.zip: vowelcount
+	zip -rq vowelcount.zip vowelcount
+
+vowelcount.tgz:
+	cd vowelcount; tar cfz ../vowelcount.tgz . ; cd -
 
 pydoop.tgz:
 	${PIP} -t .  pydoop
@@ -79,6 +79,6 @@ pydoop.tgz:
 	rm -rf pydoop pydoop-*
 
 clean:
-	rm -rf pydoop.tgz cv.zip
+	rm -rf pydoop.tgz vowelcount.zip
 
 

@@ -17,7 +17,7 @@
 # END_COPYRIGHT
 
 import pydoop.pipes as pp
-from cv.lib import is_vowel
+from vowelcount.lib import is_vowel
 
 
 class Mapper(pp.Mapper):
