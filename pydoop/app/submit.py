@@ -188,6 +188,10 @@ class PydoopSubmitter(object):
         executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')
+        if self.args.log_level == "DEBUG":
+            lines.append("printenv 1>&2")
+            lines.append("echo ${PWD} 1>&2")
+            lines.append("ls -l  1>&2")
         if ld_path:
             lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
         if self.args.python_zip:
