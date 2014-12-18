@@ -20,12 +20,12 @@
 
 import struct
 from pydoop.pipes import Mapper, Reducer, Factory, runTask
-
+import re
 
 class WordCountMapper(Mapper):
 
     def map(self, context):
-        words = context.getInputValue().split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
         for w in words:
             context.emit(w, "1")
 
