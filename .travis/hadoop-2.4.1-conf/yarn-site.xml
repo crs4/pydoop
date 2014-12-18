@@ -15,7 +15,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
 <configuration>
   <property>
@@ -55,6 +54,11 @@
     <name>yarn.nodemanager.remote-app-log-dir</name>
     <value>/tmp/log/hadoop-yarn/apps</value>
   </property>
+
+  <property>
+    <name>yarn.nodemanager.vmem-pmem-ratio</name>
+    <value>2.8</value>
+	</property>
 
   <property>
     <description>Classpath for typical applications.</description>
