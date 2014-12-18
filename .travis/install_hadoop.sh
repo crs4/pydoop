@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -o errexit
+#set -o errexit
 set -o nounset
 
 HadoopArchiveUrl="http://archive.apache.org/dist/hadoop/core/"
@@ -117,6 +117,15 @@ END
         <name>mapred.local.dir</name>
         <value>/tmp/mapred_data</value>
     </property>
+
+    <property>
+        <name>mapreduce.task.timeout</name>
+        <value>60000</value>
+    </property>
+    <property>
+        <name>mapred.task.timeout</name>
+        <value>60000</value>
+    </property>
 </configuration>
 END
 
@@ -127,6 +136,7 @@ END
     <property><name>dfs.permissions.supergroup</name><value>admin</value></property>
     <property><name>dfs.replication</name><value>1</value></property>
     <property><name>dfs.namenode.secondary.http-address</name><value>localhost:50090</value></property>
+    <property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>
 </configuration>
 END
     return 0
@@ -172,8 +182,9 @@ function install_standard_hadoop() {
 
 
 function install_cdh() {
-    [ $# -eq 1 ] || error "Missing HadoopVersion function argument"
+    [ $# -eq 2 ] || error "Missing HadoopVersion and Yarn function argument"
     local HadoopVersion="${1}"
+    local Yarn="${2}"
 
     log "Installing Cloudera Hadoop, version ${HadoopVersion}"
 
@@ -183,15 +194,17 @@ function install_cdh() {
     chmod 777 /tmp/hadoop-hdfs/ -R
     ls -la /tmp/hadoop-hdfs/dfs/name
 
-    log "Installing packages"
+    log "Installing repository and default hadoop configuration"
     if [[ "${HadoopVersion}" == *cdh4* ]]; then 
         sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-${HadoopVersion} contrib"
         curl -s http://archive.cloudera.com/cdh4/ubuntu/lucid/amd64/cdh/archive.key | sudo apt-key add -
         sudo apt-get update
-        if [[ "$YARN" ]]; then
-            sudo apt-get install hadoop-conf-pseudo hadoop-0.20-mapreduce-jobtracker hadoop-client hadoop-0.20-mapreduce-tasktracker
+        if [[ "${Yarn}" == true ]]; then
+            sudo -E apt-get install hadoop-conf-pseudo
+
         else
-            sudo apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client hadoop-0.20-mapreduce-tasktracker
+            sudo -E apt-get install hadoop-0.20-conf-pseudo
+
         fi
     elif [[ "${HadoopVersion}" == *cdh3* ]]; then
         sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/debian lucid-${HadoopVersion} contrib"
@@ -200,68 +213,98 @@ function install_cdh() {
         sudo apt-get install hadoop-0.20-conf-pseudo
     fi
 
+
     local HadoopConfDir=/etc/hadoop/conf/
     log "Creating configuration under ${HadoopConfDir}"
     # make configuration files editable by everyone to simplify setting up the machine... :-/
     sudo chmod -R 777 "${HadoopConfDir}"
-    sed -i -e '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' "${HadoopConfDir}/hdfs-site.xml"
-    sed -i -e '/\/configuration/ i\<property><name>mapreduce.task.timeout<\/name><value>60000<\/value><\/property>' \
-           -e '/\/configuration/ i\<property><name>mapred.task.timeout<\/name><value>60000<\/value><\/property>' "${HadoopConfDir}/mapred-site.xml"
 
-    if [[ "${YARN}" ]]; then                
-        write_yarn_site_config "${HadoopConfDir}"
+    # write configuration files
+    #sed -i -e '/\/configuration/ i\<property><name>dfs.replication</name><value>1</value></property><property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property>' "${HadoopConfDir}/hdfs-site.xml"
+    #sed -i -e '/\/configuration/ i\<property><name>mapreduce.task.timeout<\/name><value>60000<\/value><\/property>' \
+    #       -e '/\/configuration/ i\<property><name>mapred.task.timeout<\/name><value>60000<\/value><\/property>' "${HadoopConfDir}/mapred-site.xml"
+    if [[ "${Yarn}" == true ]]; then
+        sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml;
+	    sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
 
-        #sudo rm /tmp/hadoop* -rf
-        #sudo rm /var/lib/hadoop-hdfs/* -rf
+	    sudo sed '/\/configuration/ i\<property><name>mapreduce.task.timeout</name><value>60000</value></property><property><name>mapred.task.timeout</name><value>60000</value></property>' <  /etc/hadoop/conf/mapred-site.xml > /tmp/mapred-site.xml;
+	    sudo mv /tmp/mapred-site.xml /etc/hadoop/conf/mapred-site.xml
+
+	    sudo sed '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' <  /etc/hadoop/conf/yarn-site.xml > /tmp/yarn-site.xml;
+	    sudo mv /tmp/yarn-site.xml /etc/hadoop/conf/yarn-site.xml
+
+    else
+	    write_yarn_site_config "${HadoopConfDir}"
         sudo mkdir /tmp/mapred_data
         sudo chown -R mapred:hadoop /tmp/mapred_data
     fi
 
-    for i in `cd /etc/init.d; ls hadoop*`; do sudo service $i stop; done   
-    
-    #if [[ "${HadoopVersion}" == *cdh3* ]]
-    #   then 
-    #      JH=${JAVA_HOME//\//\\\/}
-    #     sed "s/# export JAVA_HOME=.*/ export JAVA_HOME=${JH//\//\\\/}/" /etc/hadoop/conf/hadoop-env.sh > /tmp/env.sh; sudo mv /tmp/env.sh /etc/hadoop/conf/hadoop-env.sh
-    #fi
-    
-    echo "export JAVA_HOME=$JAVA_HOME" >> "${HadoopConfDir}/hadoop-env.sh"
+
+    log "JAVA HOME: ${JAVA_HOME}"
     # copy the path from the current environment (which may have been modified
     # in .travis.yml steps prior to this one).
+    echo "export JAVA_HOME=$JAVA_HOME" >> "${HadoopConfDir}/hadoop-env.sh"
     echo "export PATH=${PATH}" >> "${HadoopConfDir}/hadoop-env.sh"
+    echo "export PYTHONPATH=${PYTHONPATH}" >> "${HadoopConfDir}/hadoop-env.sh"
+    echo "export HADOOP_LIBEXEC_DIR=/usr/lib/hadoop/libexec" >> "${HadoopConfDir}/hadoop-env.sh"
+
+    export HADOOP_HOME=/usr/lib/hadoop
+    export HADOOP_LIBEXEC_DIR=/usr/lib/hadoop/libexec
+    export HADOOP_CONF_DIR=${HadoopConfDir}
+
+    log "Installing packages"
+    if [[ "${HadoopVersion}" == *cdh4* ]]; then
+        if [[ "${Yarn}" == true ]]; then
+            sudo -E apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-client hadoop-0.20-mapreduce-tasktracker hadoop-client
+        else
+            sudo -E apt-get install hadoop-0.20-mapreduce-jobtracker hadoop-hdfs-datanode hadoop-hdfs-namenode hadoop-hdfs-secondarynamenode hadoop-client hadoop-0.20-mapreduce-tasktracker
+        fi
+    fi
+
+
+    for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo -E service $x stop ; done
+
+    log "Stopping namenode & datanode"
+    #for x in `cd /etc/init.d ; ls hadoop-*namenode` ; do sudo -E service $x stop ; done
+    #for x in `cd /etc/init.d ; ls hadoop-*datanode` ; do sudo -E service $x stop ; done
 
     log "Formatting namenode"
     sudo rm /tmp/hadoop-hdfs/dfs/name -rf
     sudo -u hdfs hadoop namenode -format
 
-    log "Starting namenode"
-    for x in `cd /etc/init.d ; ls hadoop-*namenode` ; do sudo service $x start ; done
+    log "Starting namenode & datanode"
+    for x in `cd /etc/init.d ; ls hadoop-*namenode` ; do sudo -E service $x start ; done
+    for x in `cd /etc/init.d ; ls hadoop-*datanode` ; do sudo -E service $x start ; done
 
     hadoop dfsadmin -safemode wait
     log "HDFS out of safe mode"
-    sudo jps
 
-    local hdfs="sudo -u hdfs hadoop fs"
+    local hdfs="sudo -u hdfs hdfs dfs"
     log "Creating HDFS directories"
     ${hdfs} -mkdir /tmp
     ${hdfs} -chmod 1777 /tmp
-    ${hdfs} -mkdir  /user/$USER
+    ${hdfs} -mkdir -p  /user/$USER
     ${hdfs} -chown $USER /user/$USER
-    
-     if [[ "$YARN" ]]; then
+
+
+     if [[ "${Yarn}" == true ]]; then
         ${hdfs}  -mkdir /tmp/hadoop-yarn/staging
         ${hdfs}  -chmod -R 1777 /tmp/hadoop-yarn/staging
-        
+
         ${hdfs} -mkdir /tmp/hadoop-yarn/staging/history/done_intermediate
         ${hdfs} -chmod -R 1777 /tmp/hadoop-yarn/staging/history/done_intermediate
         ${hdfs} -chown -R mapred:mapred /tmp/hadoop-yarn/staging
-        ${hdfs} -mkdir /var/log/hadoop-yarn 
+        ${hdfs} -mkdir /var/log/hadoop-yarn
         ${hdfs} -chown yarn:mapred /var/log/hadoop-yarn
-        
+
+        export HADOOP_MAPRED_HOME=/usr/lib/hadoop-yarn
+        #export HADOOP_COMMON_LIB_NATIVE_DIR="${HADOOP_HOME}/lib/native"
+        #export HADOOP_OPTS="-Djava.library.path=${HADOOP_HOME}/lib"
+
         sudo service hadoop-yarn-resourcemanager start
-        sudo service hadoop-yarn-nodemanager start 
+        sudo service hadoop-yarn-nodemanager start
         sudo service hadoop-mapreduce-historyserver start
-        export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce
+
     else
         ${hdfs} -mkdir /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
         ${hdfs} -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
@@ -269,10 +312,14 @@ function install_cdh() {
         
         ${hdfs} -mkdir /tmp/mapred/system
         ${hdfs} -chown mapred:hadoop /tmp/mapred/system
+
+        for x in `cd /etc/init.d ; ls hadoop-0.20*` ; do sudo -E service $x start ; done
     fi        
 
-    log "Starting all Hadoop services"
-    for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo service $x start ; done
+    #log "Starting all Hadoop services"
+    #for x in `cd /etc/init.d ; ls hadoop-*` ; do sudo -E service $x start ; done
+
+    sudo jps
 
     log "done"
 
@@ -301,7 +348,7 @@ function print_hadoop_env() {
 if [[ "${HADOOPVERSION}" != *cdh* ]]; then
     install_standard_hadoop "${HADOOPVERSION}"
 else # else CDH
-    install_cdh "${HADOOPVERSION}"
+    install_cdh "${HADOOPVERSION}" "${YARN}"
 fi
 
 print_hadoop_env > "${TravisHadoopEnvFile}"
