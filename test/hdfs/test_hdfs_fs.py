@@ -141,6 +141,15 @@ class TestHDFS(TestCommon):
     # HDFS returns less than the number of requested bytes if the chunk
     # being read crosses the boundary between data blocks.
     def readline_block_boundary(self):
+
+        def _write_prefix(f, size, bs):
+            # Avoid memory problem with JVM
+            chunk_size = min(bs, 24*1048576)
+            written = 0
+            while written < size:
+                data = 'X'*min(chunk_size, size -written)
+                written += f.write(data)
+
         hd_info = pydoop.hadoop_version_info()
         kwargs = {}
         if hd_info.has_deprecated_bs():
@@ -155,7 +164,7 @@ class TestHDFS(TestCommon):
         path = self._make_random_path()
         with self.fs.open_file(path, flags="w", **kwargs) as f:
             bytes_written = lines_written = 0
-            f.write('X' * offset)
+            _write_prefix(f, offset, bs)
             bytes_written = offset
             while bytes_written < bs + 1:
                 f.write(line)
@@ -172,6 +181,7 @@ class TestHDFS(TestCommon):
         self.assertEqual(len(lines), lines_written)
         for i, l in enumerate(lines):
             self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
+
 
     def get_hosts(self):
         hd_info = pydoop.hadoop_version_info()

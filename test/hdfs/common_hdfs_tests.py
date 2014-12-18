@@ -70,7 +70,7 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, **kwargs) as fo:
             i = 0
             bytes_written = 0
-            bufsize = hdfs.common.BUFSIZE
+            bufsize = 24*1024*1024
             while i < len(content):
                 bytes_written += fo.write(content[i:i+bufsize])
                 i += bufsize
@@ -474,11 +474,11 @@ class TestCommon(unittest.TestCase):
             kwargs['blocksize'] = bs
         total_data_size = 2 * bs
         with self.fs.open_file(path, "w", **kwargs) as f:
-            data = utils.make_random_data(total_data_size)
             i = 0
-            bufsize = hdfs.common.BUFSIZE
-            while i < len(data):
-                f.write(data[i:i+bufsize])
+            bufsize = 24*1024*1024
+            while i < total_data_size:
+                data = 'X'*min(bufsize, total_data_size -i)
+                f.write(data)
                 i += bufsize
 
         with self.fs.open_file(path) as f:
