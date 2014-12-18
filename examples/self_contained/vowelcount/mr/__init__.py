@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -18,13 +16,3 @@
 #
 # END_COPYRIGHT
 
-import sys
-import os
-
-sys.path = [os.getcwd()] + sys.path
-
-from cv.mr import run_task
-
-
-if __name__ == "__main__":
-    run_task()

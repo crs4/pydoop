@@ -16,13 +16,9 @@
 #
 # END_COPYRIGHT
 
-import pydoop.pipes as pp
-from cv.lib import is_vowel
-
-
-class Mapper(pp.Mapper):
-
-    def map(self, context):
-        for c in context.getInputValue():
-            if is_vowel(c):
-                context.emit(c.upper(), "1")
+"""
+A trivial MapReduce application that counts the occurence of each
+vowel in a text input stream. It is more structured than would be
+necessary because we want to test automatic distribution of a package
+rather than a single module.
+"""

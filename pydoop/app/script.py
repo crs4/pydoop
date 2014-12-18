@@ -72,10 +72,10 @@ class PydoopScript(object):
             zipf.write(args.module, arcname=mr_module+'.py')
             zipf.writestr(mr_driver+'.py',
                           self.generate_driver(mr_module, args))
-        if not hasattr(args, "python_egg"):
-            args.python_egg = [zip_filename]
+        if args.python_zip is None:
+            args.python_zip = [zip_filename]
         else:
-            args.python_egg.append(zip_filename)
+            args.python_zip.append(zip_filename)
         args.module = mr_driver
         args.entry_point = 'main'
         args.program = mr_driver
@@ -83,7 +83,8 @@ class PydoopScript(object):
         args.do_not_use_java_record_writer = False
         args.input_format = None
         args.output_format = None
-        args.cache = None
+        args.cache_file = None
+        args.cache_archive = None        
         args.upload_to_cache = None
         args.libjars = None
         args.mrv2 = False

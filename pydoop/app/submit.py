@@ -37,11 +37,13 @@ from .argparse_types import a_comma_separated_list, a_hdfs_file
 
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
+DEFAULT_ENTRY_POINT = '__main__'
 IS_JAVA_RR = "hadoop.pipes.java.recordreader"
 IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
 INPUT_FORMAT = "mapred.input.format.class"
 OUTPUT_FORMAT = "mapred.output.format.class"
 CACHE_FILES = "mapred.cache.files"
+CACHE_ARCHIVES = "mapred.cache.archives"
 USER_HOME = "mapreduce.admin.user.home.dir"
 JOB_REDUCES = "mapred.reduce.tasks"
 JOB_NAME = "mapred.job.name"
@@ -50,9 +52,11 @@ COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
 
 class PydoopSubmitter(object):
     """
-    Builds and launches pydoop jobs.  Supports both v1 and v2
-    mapreduce models and automatically adapts configuration variable
-    names to the specific (1.x vs 2.x) Hadoop version used.
+    Builds and launches pydoop jobs.
+
+    Supports both v1 and v2 mapreduce models and automatically adapts
+    configuration variable names to the specific (1.x vs 2.x) Hadoop
+    version used.
     """
     DESCRIPTION = "Simplified pydoop jobs submission"
 
@@ -60,6 +64,7 @@ class PydoopSubmitter(object):
         self.logger = logging.getLogger("PydoopSubmitter")
         self.properties = {
             CACHE_FILES: '',
+            CACHE_ARCHIVES: '',
             'mapred.create.symlink': 'yes',  # backward compatibility
             COMPRESS_MAP_OUTPUT: 'true',
             'bl.libhdfs.opts': '-Xmx48m'
@@ -70,7 +75,39 @@ class PydoopSubmitter(object):
         self.remote_module_bn = None
         self.remote_exe = None
         self.pipes_code = None
-        self.files_to_cache = []
+        self.files_to_upload = []
+
+    def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
+        cfiles = self.properties[prop] if self.properties[prop] else []
+        cfiles += cache if cache else []
+        if upload_and_cache:
+            upf_to_cache = [
+                ('file://' + os.path.realpath(e),
+                 hdfs.path.join(self.remote_wd, bn),
+                 bn if prop == CACHE_FILES else os.path.splitext(bn)[0])
+                for (e, bn) in ((e, os.path.basename(e))
+                                for e in upload_and_cache)
+            ]
+            self.files_to_upload += upf_to_cache
+            cached_files = ["%s#%s" % (h, b) for (_, h, b) in upf_to_cache]
+            cfiles += cached_files
+        self.properties[prop] = ','.join(cfiles)
+
+    def __set_files_to_cache(self, args):
+        if args.upload_file_to_cache is None:
+            args.upload_file_to_cache = []
+        if args.python_zip:
+            args.upload_file_to_cache += args.python_zip
+        self.__set_files_to_cache_helper(CACHE_FILES,
+                                         args.upload_file_to_cache,
+                                         args.cache_file)
+
+    def __set_archives_to_cache(self, args):
+        if args.upload_archive_to_cache is None:
+            args.upload_archive_to_cache = []
+        self.__set_files_to_cache_helper(CACHE_ARCHIVES,
+                                         args.upload_archive_to_cache,
+                                         args.cache_archive)
 
     def set_args(self, args, unknown_args=[]):
         """
@@ -97,31 +134,10 @@ class PydoopSubmitter(object):
         self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name
-        self.logger.debug('properties: %r' % self.properties)
         self.properties.update(dict(args.D or []))
         self.properties.update(dict(args.job_conf or []))
-        self.logger.debug('properties[after update]: %r' % self.properties)
-        cfiles = []
-        if self.properties[CACHE_FILES]:
-            cfiles.append(self.properties[CACHE_FILES])
-        if args.cache:
-            cfiles += args.cache
-        files_to_upload_and_cache = []
-        if args.upload_to_cache:
-            files_to_upload_and_cache += args.upload_to_cache
-        if args.python_egg:
-            files_to_upload_and_cache += args.python_egg
-        if files_to_upload_and_cache:
-            upf_to_cache = [
-                ('file://' + os.path.realpath(e),
-                 hdfs.path.join(self.remote_wd, bn), bn)
-                for (e, bn) in ((e, os.path.basename(e))
-                                for e in files_to_upload_and_cache)
-            ]
-            self.files_to_cache += upf_to_cache
-            cached_files = ["%s#%s" % (h, b) for (_, h, b) in upf_to_cache]
-            cfiles += cached_files
-        self.properties[CACHE_FILES] = ','.join(cfiles)
+        self.__set_files_to_cache(args)
+        self.__set_archives_to_cache(args)
         self.args = args
         self.unknown_args = unknown_args
 
@@ -165,29 +181,36 @@ class PydoopSubmitter(object):
 
     def __generate_pipes_code(self):
         lines = []
-        ld_path = os.environ.get('LD_LIBRARY_PATH', None)
-        pypath = os.environ.get('PYTHONPATH', '')
+        if not self.args.no_override_env:
+            ld_path = os.environ.get('LD_LIBRARY_PATH', None)
+            pypath = os.environ.get('PYTHONPATH', '')
+        else:
+            ld_path = None
+            pypath = '.'
         executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')
-        if self.args.no_override_env:
-            lines.append('exec "%s" -u "$0" "$@"' % executable)
-        else:
-            if ld_path:
-                lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
-            if self.args.python_egg:
-                pypath = ':'.join(self.args.python_egg + [pypath])
-            if pypath:
-                lines.append('export PYTHONPATH="%s"' % pypath)
-            if (USER_HOME not in self.properties and
-                "HOME" in os.environ and not self.args.no_override_home):
-                lines.append('export HOME="%s"' % os.environ['HOME'])
-            lines.append('exec "%s" -u "$0" "$@"' % executable)
+        if self.args.log_level == "DEBUG":
+            lines.append("printenv 1>&2")
+            lines.append("echo ${PWD} 1>&2")
+            lines.append("ls -l  1>&2")
+        if ld_path:
+            lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
+        if self.args.python_zip:
+            pypath = ':'.join(self.args.python_zip + [pypath])
+        if pypath:
+            lines.append('export PYTHONPATH="%s:$PYTHONPATH"' % pypath)
+        if (USER_HOME not in self.properties and "HOME" in os.environ
+           and not self.args.no_override_home):
+            lines.append('export HOME="%s"' % os.environ['HOME'])
+        if self.args.log_level == "DEBUG":
+            lines.append("echo ${PYTHONPATH} 1>&2")
+            lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
+            lines.append("echo ${HOME} 1>&2")             
+        lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
-        lines.append('import runpy')
-        lines.append('mdir = runpy.run_module("%s")' % self.args.module)
-        if self.args.entry_point:
-            lines.append('mdir["%s"]()' % self.args.entry_point)
+        lines.append('import %s as module' % self.args.module)
+        lines.append('module.%s()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
 
     def __validate(self):
@@ -218,7 +241,7 @@ class PydoopSubmitter(object):
         """
         self.logger.debug("remote_wd: %s", self.remote_wd)
         self.logger.debug("remote_exe: %s", self.remote_exe)
-        self.logger.debug("remotes: %s", self.files_to_cache)
+        self.logger.debug("remotes: %s", self.files_to_upload)
         if self.args.module:
             self.logger.debug(
                 'Generated pipes_code:\n\n %s', self.__generate_pipes_code()
@@ -233,7 +256,7 @@ class PydoopSubmitter(object):
                 self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
             hdfs.chmod(self.remote_exe, "a+rx")
             self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
-            for (l, h, _) in self.files_to_cache:
+            for (l, h, _) in self.files_to_upload:
                 self.logger.debug("uploading: %s to %s", l, h)
                 hdfs.cp(l, h)
         self.logger.debug("Created%sremote paths:" %
@@ -310,6 +333,7 @@ def run(args, unknown_args=[]):
     script.run()
     return 0
 
+
 def add_parser_common_arguments(parser):
     parser.add_argument(
         '--num-reducers', metavar='INT', type=int,
@@ -332,6 +356,20 @@ def add_parser_common_arguments(parser):
         help='Set a Hadoop property, e.g., -D mapred.compress.map.output=true'
     )
     parser.add_argument(
+        '--python-zip', metavar='ZIP_FILE', type=str, action="append",
+        help="Additional python zip file"
+    )
+    parser.add_argument(
+        '--upload-file-to-cache', metavar='FILE', type=a_file_that_can_be_read,
+        action="append",
+        help="Upload and add this file to the distributed cache."
+    )
+    parser.add_argument(
+        '--upload-archive-to-cache', metavar='FILE',
+        type=a_file_that_can_be_read,  action="append",
+        help="Upload and add this archive file to the distributed cache."
+    )
+    parser.add_argument(
         '--log-level', metavar="LEVEL", default="INFO", help="Logging level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL"]
     )
@@ -352,8 +390,8 @@ def add_parser_common_arguments(parser):
         type=a_file_that_can_be_read,
         help="Hadoop configuration file"
     )
-    
-    
+
+
 def add_parser_arguments(parser):
     parser.add_argument(
         'program', metavar='PROGRAM', help='the python mapreduce program',
@@ -406,18 +444,15 @@ def add_parser_arguments(parser):
         action="append", help="Additional comma-separated list of jar files"
     )
     parser.add_argument(
-        '--python-egg', metavar='EGG_FILE', type=str, action="append",
-        help="Additional python egg file"
+        '--cache-file', metavar='HDFS_FILE', type=a_hdfs_file,
+        action="append",
+        help="Add this HDFS file to the distributed cache as a file."
     )
     parser.add_argument(
-        '--upload-to-cache', metavar='FILE', type=a_file_that_can_be_read,
+        '--cache-archive', metavar='HDFS_FILE', type=a_hdfs_file,
         action="append",
-        help="Upload and add this file to the distributed cache."
-    )
-    parser.add_argument(
-        '--cache', metavar='HDFS_FILE', type=a_hdfs_file,
-        action="append",
-        help="Add this HDFS file to the distributed cache."
+        help="Add this HDFS archive file to the distributed cache" +
+             "as an archive."
     )
     parser.add_argument(
         '--module', metavar='MODULE', type=str,
@@ -428,6 +463,7 @@ def add_parser_arguments(parser):
     )
     parser.add_argument(
         '--entry-point', metavar='ENTRY_POINT', type=str,
+        default=DEFAULT_ENTRY_POINT,
         help=("Explicitly execute MODULE.ENTRY_POINT() "
               "in the launcher script.")
     )

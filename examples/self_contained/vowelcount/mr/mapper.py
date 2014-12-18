@@ -16,16 +16,13 @@
 #
 # END_COPYRIGHT
 
-from distutils.core import setup
-import cv
+import pydoop.pipes as pp
+from vowelcount.lib import is_vowel
 
 
-setup(
-    name="cv",
-    version=cv.__version__,
-    description="MR app for counting occurrence of each vowel in input text",
-    author=cv.__author__,
-    author_email=cv.__author_email__,
-    url=cv.__url__,
-    packages=["cv", "cv.lib", "cv.mr"]
-    )
+class Mapper(pp.Mapper):
+
+    def map(self, context):
+        for c in context.getInputValue():
+            if is_vowel(c):
+                context.emit(c.upper(), "1")
