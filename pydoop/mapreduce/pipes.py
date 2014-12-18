@@ -97,11 +97,9 @@ class InputSplit(object):
     dataset chunk, expressed through the ``filename``, ``offset`` and
     ``length`` attributes.
 
-    :param data: the byte string returned by
-      :meth:`api.MapContext.getInputSplit`
-    :type data: string
+    InputSplit objects are instantiated by the framework and accessed
+    via :attr:`MapContext.input_split`\ .
     """
-
     def __init__(self, data):
         stream = StringIO(data)
         if hadoop_version_info().has_variable_isplit_encoding():
@@ -409,12 +407,10 @@ class StreamRunner(object):
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=False, context_class=TaskContext):
     """
-      Run the assigned task in the framework.
+    Run the assigned task in the framework.
 
-      :param factory: a :class:`Factory` instance.
-      :type factory: :class:`Factory`
-      :rtype: bool
-      :return: True, if the task succeeded.
+    :rtype: bool
+    :return: :obj:`True` if the task succeeded.
     """
     connections = resolve_connections(port,
                                       istream=istream, ostream=ostream)
