@@ -64,8 +64,7 @@ FACTORY = Factory(mapper_class=TMapper, reducer_class=TReducer)
 
 
 def main():
-    run_task(FACTORY, private_encoding=True)
-
+    run_task(FACTORY)
 
 if __name__ == "__main__":
     main()

@@ -35,7 +35,7 @@ from pydoop.mapreduce.api import (
     Mapper, Reducer, RecordWriter, Partitioner, RecordReader as new_RR
 )
 from pydoop.mapreduce.pipes import (
-    InputSplit, RecordReaderWrapper, Factory, run_task as runTask
+    InputSplit, RecordReaderWrapper, Factory, runTask
 )
 
 

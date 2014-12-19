@@ -154,8 +154,7 @@ FACTORY = pp.Factory(
 
 
 def main():
-    pp.run_task(FACTORY, private_encoding=True)
-
+    pp.run_task(FACTORY)
 
 if __name__ == "__main__":
     main()
