@@ -152,7 +152,7 @@ factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer,
                      combiner_class=Reducer)
 
 def main():
-    pp.run_task(factory, private_encoding=True)    
+    pp.run_task(factory)    
 
 if __name__ == "__main__":
     main()

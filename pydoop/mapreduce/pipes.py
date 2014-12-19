@@ -185,7 +185,6 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self.up_link.send('done')
 
     def set_combiner(self, factory, input_split, n_reduces):
-        #self._input_split = input_split
         self.n_reduces = n_reduces
         if self.n_reduces > 0:
             self.partitioner = factory.create_partitioner(self)
@@ -204,6 +203,11 @@ class TaskContext(api.MapContext, api.ReduceContext):
             if self._private_encoding:
                 key = private_encode(key)
                 value = private_encode(value)
+            else:
+                key = (key if type(key) in [str, unicode]
+                       else unicode(key))
+                value = (value if type(value) in [str, unicode]
+                         else unicode(value))
             if self.partitioner:
                 part = self.partitioner.partition(key, self.n_reduces)
                 self.up_link.send('partitionedOutput', part, key, value)
@@ -373,14 +377,13 @@ class StreamRunner(object):
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise api.PydoopError('RecordReader not defined')
-        send_progress = False  # reader is not None
+        send_progress = reader is not None
         mapper = factory.create_mapper(ctx)
         reader = reader if reader else get_key_value_stream(self.cmd_stream)
         ctx.set_combiner(factory, input_split, n_reduces)
         mapper_map = mapper.map
         progress_function = ctx.progress
         for ctx._key, ctx._value in reader:
-            #LOGGER.debug("key: %r, value: %r ",  ctx.key, ctx.value)
             if send_progress:
                 ctx._progress_float = reader.get_progress()
                 LOGGER.debug("Progress updated to %r ", ctx._progress_float)
@@ -407,7 +410,7 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             private_encoding=False, context_class=TaskContext):
+             private_encoding=True, context_class=TaskContext):
     """
       Run the assigned task in the framework.
 
@@ -424,6 +427,10 @@ def run_task(factory, port=None, istream=None, ostream=None,
     context.close()
     connections.close()
     return True
+
+
+def runTask(factory):
+    run_task(factory, private_encoding=False)
 
 
 class RecordReaderWrapper(object):
