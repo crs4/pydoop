@@ -18,6 +18,10 @@
 #
 # END_COPYRIGHT
 
+"""
+Minimal word count example.
+"""
+
 import re
 
 from pydoop.mapreduce.pipes import run_task, Factory
@@ -26,15 +30,16 @@ from pydoop.mapreduce.api import Mapper, Reducer
 import logging
 
 logging.basicConfig()
-logger = logging.getLogger('wc-minimal')
-logger.setLevel(logging.CRITICAL)
+LOGGER = logging.getLogger('wc-minimal')
+LOGGER.setLevel(logging.CRITICAL)
 
 
 class TMapper(Mapper):
 
     def __init__(self, ctx):
+        super(TMapper, self).__init__(ctx)
         self.ctx = ctx
-        logger.info("Mapper instantiated")
+        LOGGER.info("Mapper instantiated")
 
     def map(self, ctx):
         words = re.sub('[^0-9a-zA-Z]+', ' ', ctx.value).split()
@@ -45,18 +50,22 @@ class TMapper(Mapper):
 class TReducer(Reducer):
 
     def __init__(self, ctx):
+        super(TReducer, self).__init__(ctx)
         self.ctx = ctx
-        logger.info("Reducer instantiated")        
+        LOGGER.info("Reducer instantiated")
 
     def reduce(self, ctx):
         s = sum(ctx.values)
         # Note: we explicitly write the value as a str.
         ctx.emit(ctx.key, str(s))
 
-factory = Factory(mapper_class=TMapper, reducer_class=TReducer)
+
+FACTORY = Factory(mapper_class=TMapper, reducer_class=TReducer)
+
 
 def main():
-    run_task(factory, private_encoding=True)    
+    run_task(FACTORY, private_encoding=True)
+
 
 if __name__ == "__main__":
     main()
