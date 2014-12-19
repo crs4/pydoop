@@ -37,6 +37,7 @@ ${hdfs} -put ${DATA} ${INPUT}
 ${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
               -D hadoop.pipes.java.recordreader=false \
               -D hadoop.pipes.java.recordwriter=false \
+							-D pydoop.hdfs.user=${USER} \
               --module ${MODULE} --entry-point main \
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
               ${PROGNAME} ${INPUT} ${OUTPUT} 

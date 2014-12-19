@@ -38,6 +38,7 @@ ${hdfs} -put ${DATA} ${INPUT}
 ${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
               -D mapreduce.pipes.isjavarecordreader=true \
               -D mapreduce.pipes.isjavarecordwriter=true \
+							-D pydoop.hdfs.user=${USER} \
               --module ${MODULE} --entry-point main \
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
               ${PROGNAME} ${INPUT} ${OUTPUT} 
