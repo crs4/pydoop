@@ -4,6 +4,22 @@ News
 ====
 
 
+New in 1.0.0
+------------
+
+ * Pydoop now features a brand new, more pythonic MapReduce API
+ * Added "pydoop submit" app to simplify job submission
+ * The hdfs.path module offers many new functions that serve as the
+   HDFS-aware counterparts of those in os.path
+ * The pipes backend (except for the performance-critical
+   serialization section) has been reimplemented in pure Python
+ * An alternative (optional) JPype HDFS backend is available
+   (currently slower than the one based on libhdfs)
+ * Extension modules do not require Boost.Python anymore
+ * Added support for Hadoop 2.4.1
+ * Removed support for Hadoop 0.20.2 and CDH3
+
+
 New in 0.12.0
 -------------
 
