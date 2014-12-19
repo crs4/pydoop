@@ -118,7 +118,7 @@ class Writer(api.RecordWriter):
         part = jc.get_int("mapred.task.partition")
         out_dir = jc["mapred.work.output.dir"]
         outfn = "%s/part-%05d" % (out_dir, part)
-        hdfs_user = jc.get("pydoop.hdfs.user")
+        hdfs_user = jc.get("pydoop.hdfs.user", None)
         self.file = hdfs.open(outfn, "w", user=hdfs_user)
         self.sep = jc.get("mapred.textoutputformat.separator", "\t")
 
@@ -143,16 +143,18 @@ class Partitioner(api.Partitioner):
         return reducer_id
 
 
+FACTORY = pp.Factory(
+    mapper_class=Mapper,
+    reducer_class=Reducer,
+    record_reader_class=Reader,
+    record_writer_class=Writer,
+    partitioner_class=Partitioner,
+    combiner_class=Reducer
+)
+
+
 def main():
-    factory = pp.Factory(
-        mapper_class=Mapper,
-        reducer_class=Reducer,
-        record_reader_class=Reader,
-        record_writer_class=Writer,
-        partitioner_class=Partitioner,
-        combiner_class=Reducer
-    )
-    pp.run_task(factory, private_encoding=True)
+    pp.run_task(FACTORY, private_encoding=True)
 
 
 if __name__ == "__main__":

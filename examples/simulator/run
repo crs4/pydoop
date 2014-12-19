@@ -24,6 +24,7 @@ from pydoop.mapreduce.pipes import InputSplit
 import logging
 import os
 import shutil
+import tempfile
 import pydoop.test_support as pts
 
 import sys
@@ -31,8 +32,8 @@ md_folder = os.path.realpath(os.path.abspath('../wordcount/new_api'))
 if md_folder not in sys.path:
     sys.path.insert(0, md_folder)
 
-from wordcount_minimal import factory as factory_minimal
-from wordcount_full import factory as factory_full
+from wordcount_minimal import FACTORY as factory_minimal
+from wordcount_full import FACTORY as factory_full
 
 
 """
@@ -51,9 +52,7 @@ def create_configuration():
     data_in_path = os.path.realpath(data_in)
     data_in_uri = 'file://' + data_in_path
     data_in_size = os.stat(data_in_path).st_size
-    output_dir = './output'
-    # FIXME this will intentionally break if output_dir already exists
-    os.makedirs(output_dir)
+    output_dir = tempfile.mkdtemp(prefix="pydoop_")
     output_dir_uri = 'file://' + os.path.realpath(output_dir)
     conf = {
         "mapred.map.tasks": "2",
