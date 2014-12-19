@@ -186,7 +186,7 @@ class PydoopSubmitter(object):
             pypath = os.environ.get('PYTHONPATH', '')
         else:
             ld_path = None
-            pypath = '.'
+            pypath = ''
         executable = self.args.python_program
         lines.append("#!/bin/bash")
         lines.append('""":"')
@@ -198,8 +198,9 @@ class PydoopSubmitter(object):
             lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
         if self.args.python_zip:
             pypath = ':'.join(self.args.python_zip + [pypath])
-        if pypath:
-            lines.append('export PYTHONPATH="%s:$PYTHONPATH"' % pypath)
+        # Note that we have to explicitely put the working directory in the path
+        # otherwise it will miss cached modules and packages.
+        lines.append('export PYTHONPATH="${PWD}:%s:$PYTHONPATH"' % (pypath))
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
@@ -209,6 +210,9 @@ class PydoopSubmitter(object):
             lines.append("echo ${HOME} 1>&2")             
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
+        if self.args.log_level == "DEBUG":
+            lines.append('import sys')
+            lines.append('sys.stderr.write("%r\\n" % sys.path)')
         lines.append('import %s as module' % self.args.module)
         lines.append('module.%s()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
