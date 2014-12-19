@@ -75,8 +75,8 @@ class Reader(api.RecordReader):
     Mimics Hadoop's default LineRecordReader (keys are byte offsets with
     respect to the whole file; values are text lines).
     """
-
     def __init__(self, context):
+        super(Reader, self).__init__(context)
         self.logger = LOGGER.getChild("Reader")
         self.logger.debug('started')
         self.isplit = context.input_split
@@ -145,14 +145,16 @@ class Partitioner(api.Partitioner):
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 
-factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer,
-                     record_reader_class=Reader,
-                     record_writer_class=Writer,
-                     partitioner_class=Partitioner,
-                     combiner_class=Reducer)
-
 
 def main():
+    factory = pp.Factory(
+        mapper_class=Mapper,
+        reducer_class=Reducer,
+        record_reader_class=Reader,
+        record_writer_class=Writer,
+        partitioner_class=Partitioner,
+        combiner_class=Reducer
+    )
     pp.run_task(factory, private_encoding=True)
 
 
