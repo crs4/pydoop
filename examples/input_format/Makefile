@@ -17,7 +17,8 @@
 # END_COPYRIGHT
 
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
-INPUT_FORMAT=it.crs4.pydoop.mapred.TextInputFormat
+INPUT_FORMAT_MRV1=it.crs4.pydoop.mapred.TextInputFormat
+INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
 PROGNAME=input_format_test
 JOBNAME=input_format_test_job
@@ -39,39 +40,46 @@ JAVA = java -classpath $(CLASSPATH)
 SRC = $(wildcard it/crs4/pydoop/mapred*/TextInputFormat.java)
 CLASSES = $(subst .java,.class,$(SRC))
 
+SUBMIT_ARGS = --upload-file-to-cache wordcount_rr.py \
+--libjars ${PYINPUTFORMAT_JAR}\
+--module wordcount_rr\
+--do-not-use-java-record-reader\
+-D pydoop.input.issplitable=true\
+--log-level ${LOGLEVEL} --job-name ${JOBNAME}
+
+
 .SUFFIXES: .java .class
 .java.class:
 	$(JC) $*.java
 
 
-.PHONY: setup_io run clean distclean dfsclean check_results submit
+.PHONY: run clean distclean dfsclean submit_mrv1 submit_mrv2
 
-run: check_result
+run: submit_mrv1 submit_mrv2
 
-check_result: submit
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT} 
+${PYINPUTFORMAT_JAR}: $(CLASSES)
+	jar -cvf $@ $(CLASSES)
 
-
-setup_io:
+submit_mrv1: ${PYINPUTFORMAT_JAR}
 	-${HDFS} -rm -r /user/${USER}/${INPUT}
 	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
 	-${HDFS} -mkdir /user
 	-${HDFS} -mkdir /user/${USER}
 	${HDFS} -put ${DATA} ${INPUT}
-
-
-${PYINPUTFORMAT_JAR}: $(CLASSES)
-	jar -cvf $@ $(CLASSES)
-
-submit: ${PYINPUTFORMAT_JAR} setup_io
-		${SUBMIT_CMD} --upload-file-to-cache wordcount_rr.py\
-                  --libjars ${PYINPUTFORMAT_JAR}\
-								  --input-format ${INPUT_FORMAT}\
-	                --module wordcount_rr\
-									--do-not-use-java-record-reader\
-									-D pydoop.input.issplitable=true\
-	                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
 		              ${PROGNAME} ${INPUT} ${OUTPUT}
+	python check_results.py ${DATA} /user/${USER}/${OUTPUT} 
+
+submit_mrv2: ${PYINPUTFORMAT_JAR}
+	-${HDFS} -rm -r /user/${USER}/${INPUT}
+	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
+	-${HDFS} -mkdir /user
+	-${HDFS} -mkdir /user/${USER}
+	${HDFS} -put ${DATA} ${INPUT}
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} --mrv2\
+		              ${PROGNAME} ${INPUT} ${OUTPUT}
+	python check_results.py ${DATA} /user/${USER}/${OUTPUT} 
+
 
 clean:
 	rm -f ${PYINPUTFORMAT_JAR}
