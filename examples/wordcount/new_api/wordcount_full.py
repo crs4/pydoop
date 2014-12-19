@@ -35,7 +35,6 @@ LOGGER.setLevel(logging.CRITICAL)
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.utils.serialize import serialize_to_string
-from pydoop.utils.misc import jc_configure, jc_configure_int
 import pydoop.hdfs as hdfs
 
 WORDCOUNT = "WORDCOUNT"
@@ -115,15 +114,13 @@ class Writer(api.RecordWriter):
     def __init__(self, context):
         super(Writer, self).__init__(context)
         self.logger = LOGGER.getChild("Writer")
-        jc = context.getJobConf()
-        jc_configure_int(self, jc, "mapred.task.partition", "part")
-        jc_configure(self, jc, "mapred.work.output.dir", "outdir")
-        jc_configure(
-            self, jc, "mapred.textoutputformat.separator", "sep", "\t"
-        )
-        jc_configure(self, jc, "pydoop.hdfs.user", "hdfs_user", None)
-        self.outfn = "%s/part-%05d" % (self.outdir, self.part)
-        self.file = hdfs.open(self.outfn, "w", user=self.hdfs_user)
+        jc = context.job_conf
+        part = jc.get_int("mapred.task.partition")
+        out_dir = jc["mapred.work.output.dir"]
+        outfn = "%s/part-%05d" % (out_dir, part)
+        hdfs_user = jc.get("pydoop.hdfs.user")
+        self.file = hdfs.open(outfn, "w", user=hdfs_user)
+        self.sep = jc.get("mapred.textoutputformat.separator", "\t")
 
     def close(self):
         self.logger.debug("closing open handles")
@@ -140,8 +137,8 @@ class Partitioner(api.Partitioner):
         super(Partitioner, self).__init__(context)
         self.logger = LOGGER.getChild("Partitioner")
 
-    def partition(self, key, numOfReduces):
-        reducer_id = (hash(key) & sys.maxint) % numOfReduces
+    def partition(self, key, num_reduces):
+        reducer_id = (hash(key) & sys.maxint) % num_reduces
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 
