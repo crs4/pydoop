@@ -16,7 +16,7 @@
 // 
 // END_COPYRIGHT
 
-package net.sourceforge.pydoop.mapreduce;
+package it.crs4.pydoop.mapreduce;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -35,11 +35,12 @@ public class TextInputFormat extends FileInputFormat<LongWritable, Text> {
     public RecordReader<LongWritable, Text> createRecordReader(
 						InputSplit split,
 						TaskAttemptContext context) {
-	return new LineRecordReader();
+        return new LineRecordReader();
     }
 
     @Override
     protected boolean isSplitable(JobContext context, Path file) {
-	return context.getConfiguration().getBoolean("pydoop.input.issplitable", true);
+        return context.getConfiguration().getBoolean("pydoop.input.issplitable",
+                                                     true);
     }
 }

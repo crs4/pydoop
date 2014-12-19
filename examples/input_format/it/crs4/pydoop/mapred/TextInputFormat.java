@@ -16,7 +16,7 @@
 // 
 // END_COPYRIGHT
 
-package net.sourceforge.pydoop.mapred;
+package it.crs4.pydoop.mapred;
 
 import java.io.*;
 
@@ -32,18 +32,18 @@ public class TextInputFormat extends FileInputFormat<LongWritable, Text>
     private Boolean will_split;
 
     public void configure(JobConf conf) {
-	will_split = conf.getBoolean("pydoop.input.issplitable", true);
+        will_split = conf.getBoolean("pydoop.input.issplitable", true);
     }
 
     protected boolean isSplitable(FileSystem fs, Path file) {
-	return will_split;
+        return will_split;
     }
     
     public RecordReader<LongWritable, Text> getRecordReader(
                                           InputSplit genericSplit, JobConf job,
                                           Reporter reporter)
 	throws IOException {
-	reporter.setStatus(genericSplit.toString());
-	return new LineRecordReader(job, (FileSplit) genericSplit);
+        reporter.setStatus(genericSplit.toString());
+        return new LineRecordReader(job, (FileSplit) genericSplit);
     }
 }

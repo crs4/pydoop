@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2014 CRS4.
@@ -18,43 +16,41 @@
 #
 # END_COPYRIGHT
 
-import struct
 import re
 
-import pydoop.pipes as pp
+import pydoop.mapreduce.api as api
+import pydoop.mapreduce.pipes as pp
 import pydoop.hdfs as hdfs
+from pydoop.utils.serialize import serialize_to_string
 
 
-class Mapper(pp.Mapper):
+class Mapper(api.Mapper):
 
     def map(self, context):
         words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
         for w in words:
-            context.emit(w, "1")
+            context.emit(w, 1)
 
 
-class Reducer(pp.Reducer):
+class Reducer(api.Reducer):
 
     def reduce(self, context):
-        s = 0
-        while context.nextValue():
-            s += int(context.getInputValue())
-        context.emit(context.getInputKey(), str(s))
+        s = sum(context.values)
+        context.emit(context.key, s)
 
 
-class Reader(pp.RecordReader):
+class Reader(api.RecordReader):
     """
     Mimics Hadoop's default LineRecordReader (keys are byte offsets with
     respect to the whole file; values are text lines).
     """
     def __init__(self, context):
-        super(Reader, self).__init__()
-        self.isplit = pp.InputSplit(context.getInputSplit())
+        self.isplit = context.input_split
         self.file = hdfs.open(self.isplit.filename)
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
-            discarded = self.file.readline()  # read by reader of prev. split
+            discarded = self.file.readline()
             self.bytes_read += len(discarded)
 
     def close(self):
@@ -62,18 +58,22 @@ class Reader(pp.RecordReader):
         self.file.fs.close()
 
     def next(self):
-        if self.bytes_read > self.isplit.length:  # end of input split
-            return (False, "", "")
-        key = struct.pack(">q", self.isplit.offset+self.bytes_read)
+        if self.bytes_read > self.isplit.length:
+            raise StopIteration
+        key = serialize_to_string(self.isplit.offset + self.bytes_read)
         record = self.file.readline()
         if record == "":  # end of file
-            return (False, "", "")
+            raise StopIteration
         self.bytes_read += len(record)
-        return (True, key, record)
+        return (key, record)
 
-    def getProgress(self):
-        return min(float(self.bytes_read)/self.isplit.length, 1.0)
+    def get_progress(self):
+        return min(float(self.bytes_read) / self.isplit.length, 1.0)
 
 
-if __name__ == "__main__":
-    pp.runTask(pp.Factory(Mapper, Reducer, record_reader_class=Reader))
+factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer,
+                     record_reader_class=Reader)
+
+
+def __main__():
+    pp.run_task(factory)
