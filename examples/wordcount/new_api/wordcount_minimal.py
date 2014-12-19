@@ -56,7 +56,7 @@ class TReducer(Reducer):
 factory = Factory(mapper_class=TMapper, reducer_class=TReducer)
 
 def main():
-    run_task(factory, private_encoding=True)    
+    run_task(factory)    
 
 if __name__ == "__main__":
     main()
