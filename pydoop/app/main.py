@@ -57,13 +57,14 @@ def make_parser():
         epilog=("Supports argparse @confile syntax "),
         fromfile_prefix_chars='@'
     )
-
+    parser._pydoop_docs_helper = {}
     parser.add_argument('-V', '--version', action='version', version=version,
                         help='print version number and exit')
     subparsers = parser.add_subparsers(help="sub-commands")
     for n in SUBMOD_NAMES:
         mod = importlib.import_module("%s.%s" % (__package__, n))
-        mod.add_parser(subparsers)
+        subp = mod.add_parser(subparsers)
+        parser._pydoop_docs_helper[n] = subp
     return parser
 
 
