@@ -78,7 +78,6 @@ class Formatter(object):
                 continue
             outf.write(self.format_action(a)+'\n')
             outf.write(self.hline()+'\n')
-        outf.write(self.hline()+'\n')
 
 
 def make_parser():
@@ -91,6 +90,7 @@ def make_parser():
 def main():
     parser = make_parser()
     args = parser.parse_args()
+    outf = None
     #--
     pydoop_parser = pydoop.app.main.make_parser()
     subp = pydoop_parser._pydoop_docs_helper[args.app]
@@ -99,10 +99,10 @@ def main():
     set_option_attrs(actions)
     fmt = Formatter(actions)
     try:
-        outf = open(args.out_fn) if args.out_fn else sys.stdout
+        outf = open(args.out_fn, 'w') if args.out_fn else sys.stdout
         fmt.dump_table(outf)
     finally:
-        if args.out_fn:
+        if outf:
             outf.close()
 
 

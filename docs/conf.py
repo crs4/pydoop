@@ -66,6 +66,7 @@ release = version_string
 # Avoid doc-not-included-in-toctree warning
 exclude_patterns = [
     'pydoop_script_options.rst',  # included with ..include::
+    'pydoop_submit_options.rst',  # included with ..include::
 ]
 
 # List of directories, relative to source directory, that shouldn't be searched
