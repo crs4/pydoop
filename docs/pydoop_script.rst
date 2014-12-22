@@ -24,72 +24,36 @@ your job's output directory.
 
 Options are shown in the following table.
 
-+--------+--------------------+-----------------------------------------------+
-| Short  | Long               | Meaning                                       |
-+========+====================+===============================================+
-| ``-m`` | ``--map-fn``       | Name of map function within module (default:  |
-|        |                    | mapper)                                       |
-+--------+--------------------+-----------------------------------------------+
-| ``-r`` | ``--reduce-fn``    | Name of reduce function within module         |
-|        |                    | (default: reducer)                            |
-+--------+--------------------+-----------------------------------------------+
-| ``-c`` | ``--combine-fn``   | Name of combine function within module        |
-|        |                    | (default: None)                               |
-+--------+--------------------+-----------------------------------------------+
-| ``-t`` | ``--kv-separator`` | Key-value separator string in final output    |
-|        |                    | (default: <tab> character)                    |
-+--------+--------------------+-----------------------------------------------+
-|        | ``--num-reducers`` | Number of reduce tasks. Specify 0 to only     |
-|        |                    | perform map phase (default: 3 * num task      |
-|        |                    | trackers)                                     |
-+--------+--------------------+-----------------------------------------------+
-| ``-D`` |                    | Set a property value, such as                 |
-|        |                    | -D mapred.compress.map.output=true            |
-+--------+--------------------+-----------------------------------------------+
+.. include:: pydoop_script_options.rst
 
-Generic Hadoop options
-----------------------
-
-In addition to the options listed above, you can pass any of the
-options used by Hadoop tools, but you must pass them **after the
-pydoop script options listed above**:
-
-================================ ==============================================
-``-conf <configuration file>``   specify an application configuration file
-``-fs <local|namenode:port>``    specify a namenode
-``-jt <local|jobtracker:port>``  specify a job tracker
-``-files <list of files>``       comma-separated files to be copied to the map
-                                 reduce cluster
-``-libjars <list of jars>``      comma-separated jar files to include in the
-                                 classpath
-``-archives <list of archives>`` comma-separated archives to be unarchived on
-                                 the compute machines
-================================ ==============================================
 
 Example: Word Count with Stop Words
 +++++++++++++++++++++++++++++++++++
 
 Here is the word count example modified to ignore stop words from a
-file that is distributed to all the nodes using the ``-files`` option:
+file that is distributed to all the nodes via the Hadoop distributed
+cache:
 
 .. code-block:: python
 
-  with open('stop_words.txt') as f:
-    STOP_WORDS = frozenset(l.strip() for l in f if not l.isspace())
+  with open('stop.txt') as f:
+      STOP_WORDS = frozenset(l.strip() for l in f if not l.isspace())
 
   def mapper(_, v, writer):
-    for word in v.split():
-      if word in STOP_WORDS:
-        writer.count("STOP_WORDS", 1)
-      else:
-        writer.emit(word, 1)
+      for word in v.split():
+          if word in STOP_WORDS:
+              writer.count("STOP_WORDS", 1)
+        else:
+            writer.emit(word, 1)
 
   def reducer(word, icounts, writer):
-    writer.emit(word, sum(map(int, icounts)))
+      writer.emit(word, sum(map(int, icounts)))
 
-Command line::
+To execute the above script, save it to a ``wc.py`` file and run::
 
-  pydoop script word_count.py hdfs_input hdfs_output -files stop_words.txt
+  pydoop script wc.py hdfs_input hdfs_output --upload-file-to-cache stop.txt
+
+where ``stop.txt`` is a text file that contains the stop words, one per line.
 
 While this script works, it has the obvious weakness of loading the
 stop words list even when executing the reducer (since it's loaded as
@@ -102,11 +66,8 @@ required.
 Writing your Map and Reduce Functions
 -------------------------------------
 
-In this section we assume you'll be using the default TextInputFormat
-and TextOutputFormat record reader/writer.  You may select a different
-input or output format by configuring the appropriate Hadoop
-properties (see the `custom input format example
-<input_format_example>`.
+In this section we assume you'll be using the default ``TextInputFormat``
+and ``TextOutputFormat``.
 
 Mapper
 ++++++
@@ -118,9 +79,8 @@ in your input data.  It receives 3 parameters:
    you can ignore it;
 #. value: the line of text to be processed;
 #. writer object: a Python object to write output and count values (see below);
-#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object from which
-   to fetch configuration property values (see `Accessing Parameters`_
-   below).
+#. optionally, a job conf object from which to fetch configuration
+   property values (see `Accessing Parameters`_ below).
 
 Combiner
 ++++++++
@@ -131,10 +91,10 @@ produced by your map function.  It also receives 3 parameters:
 #. key: the key produced by your map function
 #. values iterable: iterate over this parameter to see all the values emitted
    for the current key
-#. writer object: a writer object identical to the one given to the map function
-#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object: a Python object from
-   which to fetch configuration property values (see `Accessing Parameters`_
-   below).
+#. writer object: a writer object identical to the one given to the
+   map function
+#. optionally, a job conf object, identical to the one given to the
+   map function.
 
 The key-value pair emitted by your combiner will be piped to the reducer.
 
@@ -148,8 +108,8 @@ produced by your map function.  It also receives 3 parameters:
 #. values iterable: iterate over this parameter to traverse all the
    values emitted for the current key;
 #. writer object: this is identical to the one given to the map function;
-#. optionally, a :ref:`jc_wrapper<pydoop-jc>` conf object, identical
-   to the one given to the map function.
+#. optionally, a job conf object, identical to the one given to the
+   map function.
 
 The key-value pair emitted by your reducer will be joined by the
 key-value separator specified with the ``--kv-separator`` option.
@@ -181,9 +141,9 @@ Accessing Parameters
 ++++++++++++++++++++
 
 Pydoop Script lets you access the values of your job configuration
-properties through a dict-like object, which gets passed as the fourth
-(optional) parameter to your functions.  To see the methods available
-check out the :ref:`api<pydoop-jc>`.
+properties through a dict-like :class:`~pydoop.mapreduce.api.JobConf`
+object, which gets passed as the fourth (optional) parameter to your
+functions.
 
 
 Naming your Functions
@@ -201,6 +161,6 @@ Map-only Jobs
 
 You may have a program that doesn't use a reduce function.  Specify
 ``--num-reducers 0`` on the command line and your map output will be
-written directly to file.  In this case, you map output will go
+written directly to file.  In this case, your map output will go
 directly to the output formatter and be written to your final output,
 separated by the key-value separator.

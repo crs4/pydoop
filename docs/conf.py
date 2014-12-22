@@ -63,8 +63,10 @@ release = version_string
 # Else, today_fmt is used as the format for a strftime call.
 #today_fmt = '%B %d, %Y'
 
-# List of documents that shouldn't be included in the build.
-#unused_docs = []
+# Avoid doc-not-included-in-toctree warning
+exclude_patterns = [
+    'pydoop_script_options.rst',  # included with ..include::
+]
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
