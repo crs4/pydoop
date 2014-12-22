@@ -72,4 +72,6 @@ def main(argv=None):
     if os.path.exists(PYDOOP_CONF_FILE):
         argv = argv + ['@' + PYDOOP_CONF_FILE]
     args, unknown = parser.parse_known_args(argv)
+    if args.combiner_fn and not args.combine_fn:
+        args.combine_fn = args.combiner_fn  # backwards compatibility
     args.func(args, unknown)
