@@ -56,6 +56,11 @@ JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
 HADOOP_HOME = pydoop.hadoop_home(fallback=None)
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
+LIBHDFS_SRC = {(1, 0, 4): "1.0.4", (1, 1, 2): "1.1.2",
+               (1, 2, 1): "1.1.2", (2, 2, 0): "2.2.0",
+               (2, 4, 1): "2.4.1", (2, 5, 2): "2.4.1",
+               (2, 6, 0): "2.4.1"}
+
 EXTENSION_MODULES = []
 
 
@@ -100,6 +105,13 @@ def get_version_string(filename="VERSION"):
         raise DistutilsSetupError("failed to read version info")
 
 
+def resolve_libhdfs_src():
+    t = HADOOP_VERSION_INFO.tuple
+    tag = (LIBHDFS_SRC[t] if LIBHDFS_SRC.has_key(t) else
+           str(HADOOP_VERSION_INFO))
+    return os.path.join('src', 'libhdfs', tag)
+
+
 def write_config(filename="pydoop/config.py", hdfs_core_impl=hdfsimpl.DEFAULT):
     prereq = "DEFAULT_HADOOP_HOME"
     if not os.path.exists(prereq):
@@ -118,9 +130,7 @@ def generate_hdfs_config():
 
     This is only relevant for recent Hadoop versions.
     """
-    config_fn = os.path.join(
-        'src', 'libhdfs', str(HADOOP_VERSION_INFO), "config.h"
-    )
+    config_fn = os.path.join(resolve_libhdfs_src(), "config.h")
     with open(config_fn, "w") as f:
         f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
         if have_better_tls():
@@ -149,27 +159,23 @@ def write_version(filename="pydoop/version.py"):
             )
 
 
+
 def build_hdfscore_native_impl():
     generate_hdfs_config()
     hdfs_ext_sources = []
-    hadoop_v = HADOOP_VERSION_INFO.tuple[0]
-    hdfs_ext_sources += [os.path.join('src/libhdfs',
-                                      str(HADOOP_VERSION_INFO), x)
-                         for x in (['hdfs.c', 'hdfsJniHelper.c']
-                                   if hadoop_v <= 1 else
-                                   ['hdfs.c', 'jni_helper.c', 'exception.c',
-                                    'native_mini_dfs.c'])]
+    hadoop_v = HADOOP_VERSION_INFO.tuple
+    libhdfs_src = resolve_libhdfs_src()
+    hdfs_src = os.path.join(libhdfs_src, '*.c')
+    hdfs_ext_sources += glob.glob(hdfs_src)
     hdfs_ext_sources += [
         os.path.join('src/native_core_hdfs', x) for x in [
             'hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc'
         ]]
-    libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v <= 1
+    libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v[0] <= 1
                        else "HADOOP_LIBHDFS_V2", 1)]
     native_hdfs_core = Extension(
         'pydoop.native_core_hdfs',
-        include_dirs=jvm.get_include_dirs() + [
-            os.path.join('src/libhdfs', str(HADOOP_VERSION_INFO))
-        ],
+        include_dirs=jvm.get_include_dirs() + [libhdfs_src],
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=hdfs_ext_sources,

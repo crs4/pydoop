@@ -17,6 +17,8 @@ env:
     - HADOOPVERSION=2.2.0 HDFS_BACKEND=jpype-bridged
     - HADOOPVERSION=2.4.1 HDFS_BACKEND=native
     - HADOOPVERSION=2.4.1 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.5.2 HDFS_BACKEND=native
+    - HADOOPVERSION=2.5.2 HDFS_BACKEND=jpype-bridged
     - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=native
     - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=jpype-bridged
     - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=native
