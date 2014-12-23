@@ -105,6 +105,13 @@ def get_version_string(filename="VERSION"):
         raise DistutilsSetupError("failed to read version info")
 
 
+def resolve_libhdfs_src():
+    t = HADOOP_VERSION_INFO.tuple
+    tag = (LIBHDFS_SRC[t] if LIBHDFS_SRC.has_key(t) else
+           str(HADOOP_VERSION_INFO))
+    return os.path.join('src', 'libhdfs', tag)
+
+
 def write_config(filename="pydoop/config.py", hdfs_core_impl=hdfsimpl.DEFAULT):
     prereq = "DEFAULT_HADOOP_HOME"
     if not os.path.exists(prereq):
@@ -123,9 +130,7 @@ def generate_hdfs_config():
 
     This is only relevant for recent Hadoop versions.
     """
-    config_fn = os.path.join(
-        'src', 'libhdfs', str(HADOOP_VERSION_INFO), "config.h"
-    )
+    config_fn = os.path.join(resolve_libhdfs_src(), "config.h")
     with open(config_fn, "w") as f:
         f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
         if have_better_tls():
@@ -153,12 +158,6 @@ def write_version(filename="pydoop/version.py"):
                 version, '' if git_commit is None else (' [%s]' % git_commit))
             )
 
-
-def resolve_libhdfs_src():
-    t = HADOOP_VERSION_INFO.tuple
-    tag = (LIBHDFS_SRC[t] if LIBHDFS_SRC.has_key(t) else
-           str(HADOOP_VERSION_INFO))
-    return os.path.join('src/libhdfs', tag)
 
 
 def build_hdfscore_native_impl():
