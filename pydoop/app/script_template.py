@@ -110,7 +110,7 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
 class PydoopScriptCombiner(pydoop.pipes.Combiner):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
-    setup_script_object(self, 'reduce', %(module)s.%(combiner_fn)s, ctx)
+    setup_script_object(self, 'reduce', %(module)s.%(combine_fn)s, ctx)
 
   @staticmethod
   def iter(ctx):
@@ -120,13 +120,13 @@ class PydoopScriptCombiner(pydoop.pipes.Combiner):
   def without_conf(self, ctx):
     key = ctx.getInputKey()
     writer = ContextWriter(ctx)
-    %(module)s.%(combiner_fn)s(key, PydoopScriptCombiner.iter(ctx), writer)
+    %(module)s.%(combine_fn)s(key, PydoopScriptCombiner.iter(ctx), writer)
 
   def with_conf(self, ctx):
     key = ctx.getInputKey()
     writer = ContextWriter(ctx)
-    %(module)s.%(combiner_fn)s(key, PydoopScriptReducer.iter(ctx),
-                               writer, self.conf)
+    %(module)s.%(combine_fn)s(key, PydoopScriptReducer.iter(ctx),
+                              writer, self.conf)
 
   def reduce(self, ctx):
     pass

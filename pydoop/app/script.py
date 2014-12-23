@@ -56,8 +56,8 @@ class PydoopScript(object):
             'module': mr_module,
             'map_fn': args.map_fn,
             'reduce_fn': args.reduce_fn,
-            'combiner_fn': args.combiner_fn,
-            'combiner_wp': ('PydoopScriptCombiner' if args.combiner_fn
+            'combine_fn': args.combine_fn,
+            'combiner_wp': ('PydoopScriptCombiner' if args.combine_fn
                             else 'None')
         }
         lines.append(DRIVER_TEMPLATE % template_args)
@@ -135,8 +135,10 @@ def add_parser_arguments(parser):
                         help="name of map function within module")
     parser.add_argument('-r', '--reduce-fn', metavar='RED', default='reducer',
                         help="name of reduce function within module")
-    parser.add_argument('-c', '--combiner-fn', metavar='COM', default=None,
-                        help="name of reduce function within module")
+    parser.add_argument('-c', '--combine-fn', metavar='COM', default=None,
+                        help="name of combine function within module")
+    parser.add_argument('--combiner-fn', metavar='COM', default=None,
+                        help="--combine-fn alias for backwards compatibility")
     parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
                         help="output key-value separator")
 
