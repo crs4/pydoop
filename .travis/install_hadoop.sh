@@ -152,8 +152,7 @@ function install_standard_hadoop() {
     tar xzf "hadoop-${HadoopVersion}.tar.gz"
 
     export HADOOP_HOME="${PWD}/hadoop-${HadoopVersion}"
-    if [[ "${HadoopVersion}" == 2.2.* || "${HadoopVersion}" == 2.4.* \
-           || "${HadoopVersion}" == 2.5.*]]; then
+    if [[ "${HadoopVersion}" == 2.2.* || "${HadoopVersion}" == 2.4.* || "${HadoopVersion}" == 2.5.*]]; then
         export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-${HadoopVersion}-conf/"
         export HADOOP_BIN="${HADOOP_HOME}/sbin/"
         export HADOOP_COMMON_LIB_NATIVE_DIR="${HADOOP_HOME}/lib/native"
