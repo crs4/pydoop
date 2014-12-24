@@ -1,3 +1,11 @@
 #!/bin/bash
 
-make run
+if type -P hdfs >/dev/null; then
+    make submit_mrv1
+    make submit_mrv2    
+elif type -P hadoop >/dev/null; then
+    make submit_mrv1
+else
+	echo "Cannot find hdfs or hadoop executables" >&2
+	exit 1
+fi
