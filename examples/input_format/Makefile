@@ -32,6 +32,11 @@ SUBMIT_CMD=pydoop submit
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
+HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rm -r,\
+	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rmr,\
+	       HDFS_IS_MISSING))
+HDFS_PUT=${HDFS} -put
+HDFS_MKDIR=${HDFS} -mkdir
 
 CLASSPATH=$(shell hadoop classpath)
 JC = javac -classpath $(CLASSPATH)
@@ -53,32 +58,32 @@ SUBMIT_ARGS = --upload-file-to-cache wordcount_rr.py \
 	$(JC) $*.java
 
 
-.PHONY: run clean distclean dfsclean submit_mrv1 submit_mrv2
+.PHONY: run clean distclean dfsclean
 
 run: submit_mrv1 submit_mrv2
 
 ${PYINPUTFORMAT_JAR}: $(CLASSES)
 	jar -cvf $@ $(CLASSES)
 
-submit_mrv1: ${PYINPUTFORMAT_JAR}
-	-${HDFS} -rm -r /user/${USER}/${INPUT}
-	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
-	-${HDFS} -mkdir /user
-	-${HDFS} -mkdir /user/${USER}
-	${HDFS} -put ${DATA} ${INPUT}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
-		              ${PROGNAME} ${INPUT} ${OUTPUT}
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT} 
+data:
+	-${HDFS_MKDIR}  /user
+	-${HDFS_MKDIR} /user/${USER}
+	-${HDFS_MKDIR} /user/${USER}
+	-${HDFS_RMR} /user/${USER}/${INPUT}
+	-${HDFS_RMR} /user/${USER}/${OUTPUT}_*
+	${HDFS_PUT} ${DATA} ${INPUT}
 
-submit_mrv2: ${PYINPUTFORMAT_JAR}
-	-${HDFS} -rm -r /user/${USER}/${INPUT}
-	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
-	-${HDFS} -mkdir /user
-	-${HDFS} -mkdir /user/${USER}
-	${HDFS} -put ${DATA} ${INPUT}
+
+submit_mrv1: data ${PYINPUTFORMAT_JAR}
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
+		            ${PROGNAME} ${INPUT} ${OUTPUT}_MRV1
+	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
+
+
+submit_mrv2: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} --mrv2\
-		              ${PROGNAME} ${INPUT} ${OUTPUT}
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT} 
+		            ${PROGNAME} ${INPUT} ${OUTPUT}_MRV2
+	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
 
 
 clean:
