@@ -156,19 +156,16 @@ def build_hdfscore_native_impl():
     if hadoop_t == (1, 0, 4):
         src_dir = 'src/libhdfs/1.0.4'
         hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
-        libhdfs_macros = [("HADOOP_LIBHDFS_V2", 1)]
         inc_dirs = jvm.get_include_dirs() + [src_dir]
         libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
     elif hadoop_t == (1, 1, 2):
         src_dir = 'src/libhdfs/1.1.2'
         hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
-        libhdfs_macros = [("HADOOP_LIBHDFS_V2", 1)]
         inc_dirs = jvm.get_include_dirs() + [src_dir]
         libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
     elif hadoop_t == (1, 2, 1):
         src_dir = 'src/libhdfs/1.2.1'
         hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
-        libhdfs_macros = [("HADOOP_LIBHDFS_V2", 1)]
         inc_dirs = jvm.get_include_dirs() + [src_dir]
         libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
     elif hadoop_t >= (2, 0, 0):
