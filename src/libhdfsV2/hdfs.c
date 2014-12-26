@@ -3092,6 +3092,9 @@ hdfsFileInfo* hdfsListDirectory(hdfsFS fs, const char *path, int *numEntries)
     jsize i;
     jobject tmpStat;
 
+    // Reset errno, just in case
+    errno = 0; 
+
     //Get the JNIEnv* corresponding to current thread
     JNIEnv* env = getJNIEnv();
     if (env == NULL) {
