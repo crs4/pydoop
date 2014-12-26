@@ -119,7 +119,7 @@ def generate_hdfs_config():
     This is only relevant for recent Hadoop versions.
     """
     config_fn = os.path.join(
-        'src', 'libhdfs', str(HADOOP_VERSION_INFO), "config.h"
+        'src', 'libhdfsV2', "config.h"
     )
     with open(config_fn, "w") as f:
         f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
@@ -152,24 +152,36 @@ def write_version(filename="pydoop/version.py"):
 def build_hdfscore_native_impl():
     generate_hdfs_config()
     hdfs_ext_sources = []
-    hadoop_v = HADOOP_VERSION_INFO.tuple[0]
-    hdfs_ext_sources += [os.path.join('src/libhdfs',
-                                      str(HADOOP_VERSION_INFO), x)
-                         for x in (['hdfs.c', 'hdfsJniHelper.c']
-                                   if hadoop_v <= 1 else
-                                   ['hdfs.c', 'jni_helper.c', 'exception.c',
-                                    'native_mini_dfs.c'])]
-    hdfs_ext_sources += [
-        os.path.join('src/native_core_hdfs', x) for x in [
-            'hdfs_module.cc', 'hdfs_file.cc', 'hdfs_fs.cc'
-        ]]
-    libhdfs_macros = [("HADOOP_LIBHDFS_V1" if hadoop_v <= 1
-                       else "HADOOP_LIBHDFS_V2", 1)]
+    hadoop_t = HADOOP_VERSION_INFO.tuple
+    if hadoop_t == (1, 0, 4):
+        src_dir = 'src/libhdfs/1.0.4'
+        hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
+        inc_dirs = jvm.get_include_dirs() + [src_dir]
+        libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
+    elif hadoop_t == (1, 1, 2):
+        src_dir = 'src/libhdfs/1.1.2'
+        hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
+        inc_dirs = jvm.get_include_dirs() + [src_dir]
+        libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
+    elif hadoop_t == (1, 2, 1):
+        src_dir = 'src/libhdfs/1.2.1'
+        hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
+        inc_dirs = jvm.get_include_dirs() + [src_dir]
+        libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
+    elif hadoop_t >= (2, 0, 0):
+        hdfs_ext_sources += glob.glob('src/libhdfsV2/*.c')
+        hdfs_ext_sources += glob.glob('src/libhdfsV2/common/*.c')
+        hdfs_ext_sources += glob.glob('src/libhdfsV2/os/posix/*.c')
+        libhdfs_macros = [("HADOOP_LIBHDFS_V2", 1)]
+        inc_dirs = (jvm.get_include_dirs() +
+                    ['src/libhdfsV2', 'src/libhdfsV2/os/posix'])
+    else:
+        raise DistutilsSetupError("Hadoop %s is not supported" %
+                                  HADOOP_VERSION_INFO)
+    hdfs_ext_sources += glob.glob('src/native_core_hdfs/*.cc')
     native_hdfs_core = Extension(
         'pydoop.native_core_hdfs',
-        include_dirs=jvm.get_include_dirs() + [
-            os.path.join('src/libhdfs', str(HADOOP_VERSION_INFO))
-        ],
+        include_dirs=inc_dirs,
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=hdfs_ext_sources,
