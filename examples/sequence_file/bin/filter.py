@@ -23,8 +23,9 @@ Filter out words whose occurrence falls below a specified value.
 """
 
 import struct
-from pydoop.pipes import Mapper, Reducer, Factory, runTask
-from pydoop.utils import jc_configure_int
+
+from pydoop.mapreduce.pipes import run_task, Factory
+from pydoop.mapreduce.api import Mapper, Reducer
 
 
 class FilterMapper(Mapper):
@@ -34,11 +35,11 @@ class FilterMapper(Mapper):
     """
     def __init__(self, context):
         super(FilterMapper, self).__init__(context)
-        jc = context.getJobConf()
-        jc_configure_int(self, jc, "filter.occurrence.threshold", "threshold")
+        jc = context.job_conf
+        self.threshold = jc.get_int("filter.occurrence.threshold")
 
     def map(self, context):
-        word, occurrence = (context.getInputKey(), context.getInputValue())
+        word, occurrence = context.key, context.value
         occurrence = struct.unpack(">i", occurrence)[0]
         if occurrence >= self.threshold:
             context.emit(word, str(occurrence))
@@ -51,4 +52,4 @@ class FilterReducer(Reducer):
 
 
 if __name__ == "__main__":
-    runTask(Factory(FilterMapper, FilterReducer))
+    run_task(Factory(FilterMapper, FilterReducer))
