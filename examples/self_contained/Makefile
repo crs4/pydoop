@@ -44,8 +44,8 @@ check_result: submit
 	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
 
 setup_io:
-	-${HDFS} -rm -r /user/${USER}/${INPUT}
-	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
+	-${HDFS} -rmr /user/${USER}/${INPUT}
+	-${HDFS} -rmr /user/${USER}/${OUTPUT}
 	-${HDFS} -mkdir /user
 	-${HDFS} -mkdir /user/${USER}
 	${HDFS} -put ${DATA} ${INPUT}
@@ -74,11 +74,10 @@ vowelcount.tgz:
 	cd vowelcount; tar cfz ../vowelcount.tgz . ; cd -
 
 pydoop.tgz:
+	$(MAKE) -C ../.. wheel
 	${PIP} -t .  pydoop
 	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*
 
 clean:
 	rm -rf pydoop.tgz vowelcount.zip
-
-
