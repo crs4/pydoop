@@ -16,13 +16,13 @@
 #
 # END_COPYRIGHT
 
-import pydoop.pipes as pp
+import pydoop.mapreduce.api as api
 from vowelcount.lib import is_vowel
 
 
-class Mapper(pp.Mapper):
+class Mapper(api.Mapper):
 
     def map(self, context):
-        for c in context.getInputValue():
+        for c in context.value:
             if is_vowel(c):
-                context.emit(c.upper(), "1")
+                context.emit(c.upper(), 1)

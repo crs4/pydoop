@@ -16,13 +16,11 @@
 #
 # END_COPYRIGHT
 
-import pydoop.pipes as pp
+import pydoop.mapreduce.api as api
 
 
-class Reducer(pp.Reducer):
+class Reducer(api.Reducer):
 
     def reduce(self, context):
-        s = 0
-        while context.nextValue():
-            s += int(context.getInputValue())
-        context.emit(context.getInputKey(), str(s))
+        s = sum(map(int, context.values))
+        context.emit(context.key, str(s))

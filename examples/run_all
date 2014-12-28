@@ -1,5 +1,5 @@
 #!/bin/bash
-trap exit ERR	
+trap exit ERR
 
 examples=(
     hdfs
@@ -7,7 +7,6 @@ examples=(
     pydoop_script
     pydoop_submit
     self_contained
-    ipcount
     sequence_file
     wordcount
     simulator

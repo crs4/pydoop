@@ -12,8 +12,6 @@ recursive-include test/backward_compatibility *.py
 
 recursive-include examples run_all README
 recursive-include examples/input *.txt
-recursive-include examples/ipcount *.py run excludes.txt run
-recursive-include examples/ipcount/input *.log
 recursive-include examples/pydoop_script *.py run* matrix.txt example.sam
 recursive-include examples/pydoop_submit run*
 recursive-include examples/simulator run
@@ -27,5 +25,3 @@ recursive-include examples/wordcount run
 #recursive-include examples/avro
 
 recursive-include docs *
-
-

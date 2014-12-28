@@ -16,11 +16,10 @@
 #
 # END_COPYRIGHT
 
-from pydoop.pipes import runTask, Factory
+from pydoop.mapreduce.pipes import run_task, Factory
 from .mapper import Mapper
 from .reducer import Reducer
 
 
 def main():
-    return runTask(Factory(Mapper, Reducer, combiner_class=Reducer))
-
+    return run_task(Factory(Mapper, Reducer, combiner_class=Reducer))
