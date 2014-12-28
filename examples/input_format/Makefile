@@ -17,7 +17,8 @@
 # END_COPYRIGHT
 
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
-INPUT_FORMAT=it.crs4.pydoop.mapred.TextInputFormat
+INPUT_FORMAT_MRV1=it.crs4.pydoop.mapred.TextInputFormat
+INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
 PROGNAME=input_format_test
 JOBNAME=input_format_test_job
@@ -31,6 +32,11 @@ SUBMIT_CMD=pydoop submit
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
+HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rm -r,\
+	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rmr,\
+	       HDFS_IS_MISSING))
+HDFS_PUT=${HDFS} -put
+HDFS_MKDIR=${HDFS} -mkdir
 
 CLASSPATH=$(shell hadoop classpath)
 JC = javac -classpath $(CLASSPATH)
@@ -39,39 +45,46 @@ JAVA = java -classpath $(CLASSPATH)
 SRC = $(wildcard it/crs4/pydoop/mapred*/TextInputFormat.java)
 CLASSES = $(subst .java,.class,$(SRC))
 
+SUBMIT_ARGS = --upload-file-to-cache wordcount_rr.py \
+--libjars ${PYINPUTFORMAT_JAR}\
+--module wordcount_rr\
+--do-not-use-java-record-reader\
+-D pydoop.input.issplitable=true\
+--log-level ${LOGLEVEL} --job-name ${JOBNAME}
+
+
 .SUFFIXES: .java .class
 .java.class:
 	$(JC) $*.java
 
 
-.PHONY: setup_io run clean distclean dfsclean check_results submit
+.PHONY: run clean distclean dfsclean
 
-run: check_result
-
-check_result: submit
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT} 
-
-
-setup_io:
-	-${HDFS} -rm -r /user/${USER}/${INPUT}
-	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
-	-${HDFS} -mkdir /user
-	-${HDFS} -mkdir /user/${USER}
-	${HDFS} -put ${DATA} ${INPUT}
-
+run: submit_mrv1 submit_mrv2
 
 ${PYINPUTFORMAT_JAR}: $(CLASSES)
 	jar -cvf $@ $(CLASSES)
 
-submit: ${PYINPUTFORMAT_JAR} setup_io
-		${SUBMIT_CMD} --upload-file-to-cache wordcount_rr.py\
-                  --libjars ${PYINPUTFORMAT_JAR}\
-								  --input-format ${INPUT_FORMAT}\
-	                --module wordcount_rr\
-									--do-not-use-java-record-reader\
-									-D pydoop.input.issplitable=true\
-	                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
-		              ${PROGNAME} ${INPUT} ${OUTPUT}
+data:
+	-${HDFS_MKDIR}  /user
+	-${HDFS_MKDIR} /user/${USER}
+	-${HDFS_MKDIR} /user/${USER}
+	-${HDFS_RMR} /user/${USER}/${INPUT}
+	-${HDFS_RMR} /user/${USER}/${OUTPUT}_*
+	${HDFS_PUT} ${DATA} ${INPUT}
+
+
+submit_mrv1: data ${PYINPUTFORMAT_JAR}
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
+		            ${PROGNAME} ${INPUT} ${OUTPUT}_MRV1
+	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
+
+
+submit_mrv2: data ${PYINPUTFORMAT_JAR}
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} --mrv2\
+		            ${PROGNAME} ${INPUT} ${OUTPUT}_MRV2
+	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
+
 
 clean:
 	rm -f ${PYINPUTFORMAT_JAR}
