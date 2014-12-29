@@ -104,62 +104,25 @@ def _hadoop2_jars(hadoop_home):
     )])
 
 
-def _cdh4_jars_(hadoop_home, is_yarn):
-    mr1_home = '%s-0.20-mapreduce' % hadoop_home
-    dirs = [mr1_home, os.path.join(hadoop_home, 'client')]
-    if is_yarn:
-        dirs.extend([hadoop_home, os.path.join(hadoop_home, 'lib')])
-    jars = _jars_from_dirs(dirs)
-    if not is_yarn:
-        jars.extend(glob.glob(os.path.join(
-            hadoop_home, 'hadoop-annotations*.jar'
-        )))
-    return jars
+def _cdh_jars(hadoop_home, is_yarn):
 
-def _cdh4_jars(hadoop_home, is_yarn):
+    hadoop_hdfs = hadoop_home + "-hdfs"
+    hadoop_yarn = hadoop_home + "-yarn"
+    hadoop_mapred_v1 = hadoop_home + "-0.20-mapreduce"
+    hadoop_mapred_v2 = hadoop_home + "-mapreduce"
+
     if not is_yarn:
-        dirs = ["/etc/hadoop/conf", "/usr/lib/hadoop/lib/", "/usr/lib/hadoop/",
-                "/usr/lib/hadoop-hdfs/", "/usr/lib/hadoop-hdfs/lib/",
-                "/usr/lib/hadoop-hdfs/", "/usr/lib/hadoop-yarn/",
-                "/usr/lib/hadoop-0.20-mapreduce/", "/usr/lib/hadoop-0.20-mapreduce/lib/",
-                "/usr/lib/hadoop-0.20-mapreduce/"]
+        dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+                hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
+                hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
+                hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
     else:
-        dirs = ["/etc/hadoop/conf", "/usr/lib/hadoop/lib/",
-                "/usr/lib/hadoop/", "/usr/lib/hadoop-hdfs/",
-                "/usr/lib/hadoop-hdfs/lib/", "/usr/lib/hadoop-hdfs/",
-                "/usr/lib/hadoop-yarn/lib/", "/usr/lib/hadoop-yarn/",
-                "/usr/lib/hadoop-mapreduce/lib/", "/usr/lib/hadoop-mapreduce/"]
+        dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+                hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
+                hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
+                hadoop_mapred_v1, os.path.join(hadoop_mapred_v2, "lib")]
 
     jars = _jars_from_dirs(dirs)
-
-    if not is_yarn:
-         jars.extend(glob.glob(os.path.join(
-             hadoop_home, 'hadoop-annotations*.jar'
-         )))
-    return jars
-
-
-def _cdh5_jars(hadoop_home, is_yarn):
-    if not is_yarn:
-        dirs = ["/etc/hadoop/conf", "/usr/lib/hadoop/lib",
-                "/usr/lib/hadoop", "/usr/lib/hadoop-hdfs",
-                "/usr/lib/hadoop-hdfs/lib", "/usr/lib/hadoop-hdfs",
-                "/usr/lib/hadoop-yarn/lib", "/usr/lib/hadoop-yarn",
-                "/usr/lib/hadoop-0.20-mapreduce/lib", "/usr/lib/hadoop-0.20-mapreduce"]
-    else:
-        dirs = ["/etc/hadoop/conf", "/usr/lib/hadoop/lib",
-                "/usr/lib/hadoop", "/usr/lib/hadoop-hdfs",
-                "/usr/lib/hadoop-hdfs/lib", "/usr/lib/hadoop-hdfs",
-                "/usr/lib/hadoop-mapreduce/lib", "/usr/lib/hadoop-mapreduce",
-                "/usr/lib/hadoop-yarn/lib", "/usr/lib/hadoop-yarn"
-        ]
-
-    jars = _jars_from_dirs(dirs)
-
-    if not is_yarn:
-         jars.extend(glob.glob(os.path.join(
-             hadoop_home, 'hadoop-annotations*.jar'
-         )))
     return jars
 
 
@@ -584,10 +547,7 @@ class PathFinder(object):
                     jars = _hadoop1_jars(hadoop_home)
             else:
                 hadoop_home = _cdh_hadoop_home()
-                if v.cdh >= (4, 0, 0):
-                    jars = _cdh4_jars(hadoop_home, self.is_yarn())
-                else:
-                    jars = _cdh5_jars(hadoop_home, self.is_yarn())
+                jars = _cdh_jars(hadoop_home, self.is_yarn())
             jars.extend([self.hadoop_native(), self.hadoop_conf()])
             self.__hadoop_classpath = ':'.join(jars)
         return self.__hadoop_classpath
