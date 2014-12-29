@@ -142,6 +142,38 @@ END
     return 0
 }
 
+
+function update_cdh_configuration_files(){
+    # update the configuration files
+    [ $# -eq 3 ] || error "Missing HadoopVersion, YARN, HadoopConfDir arguments"
+
+    local HadoopVersion="${1}"
+    local Yarn="${2}"
+    local HadoopConfDir="${3}"
+
+    # make configuration files editable by everyone to simplify setting up the machine... :-/
+    sudo chmod -R 777 "${HadoopConfDir}"
+
+    if [[ "${Yarn}" == true ]]; then  # MRv2 (YARN)
+        ## hdfs-site.xml
+        sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml;
+	    sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
+        ## mapred-site.xml
+	    sudo sed '/\/configuration/ i\<property><name>mapreduce.framework.name</name><value>yarn</value></property><property><name>mapreduce.task.timeout</name><value>60000</value></property><property><name>mapred.task.timeout</name><value>60000</value></property>' <  /etc/hadoop/conf/mapred-site.xml > /tmp/mapred-site.xml;
+	    sudo mv /tmp/mapred-site.xml /etc/hadoop/conf/mapred-site.xml
+        ## yarn-site.xml
+	    sudo sed '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' <  /etc/hadoop/conf/yarn-site.xml > /tmp/yarn-site.xml;
+	    sudo mv /tmp/yarn-site.xml /etc/hadoop/conf/yarn-site.xml
+    else  # MRv1
+	    write_yarn_site_config "${HadoopConfDir}"
+    fi
+
+    # update the hadoop_env
+    echo "export JAVA_HOME=$JAVA_HOME" >> "${HadoopConfDir}/hadoop-env.sh"
+}
+
+
+
 function install_standard_hadoop() {
     [ $# -eq 1 ] || error "Missing HadoopVersion function argument"
     local HadoopVersion="${1}"
