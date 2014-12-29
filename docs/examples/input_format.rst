@@ -3,9 +3,9 @@
 Writing a Custom InputFormat
 ============================
 
-You can use a custom Java InputFormat together with a Python
-:class:`~pydoop.pipes.RecordReader`: the RecordReader supplied by the
-InputFormat will be overridden by the Python one.
+You can use a custom Java ``InputFormat`` together with a Python
+:class:`~pydoop.mapreduce.api.RecordReader`: the java RecordReader
+supplied by the ``InputFormat`` will be overridden by the Python one.
 
 Consider the following simple modification of Hadoop's built-in
 ``TextInputFormat``:
@@ -51,8 +51,4 @@ boolean parameter (``pydoop.input.issplitable``) that, if set to
 input splits than the number of input files).
 
 For details on how to compile the above code into a jar and use it
-with pipes, see ``examples/input_format`` in the Pydoop distribution
-root.  You can run the input_format example with::
-
-  cd examples/input_format
-  ./run
+with Pydoop, see ``examples/input_format``\ .

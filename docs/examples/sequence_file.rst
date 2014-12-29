@@ -5,39 +5,33 @@ Although many MapReduce applications deal with text files, there are
 many cases where processing binary data is required. In this case, you
 basically have two options:
 
-#. write appropriate :class:`~pydoop.pipes.RecordReader` /
-   :class:`~pydoop.pipes.RecordWriter` classes for the binary format
+#. write appropriate :class:`~pydoop.mapreduce.api.RecordReader` /
+   :class:`~pydoop.mapreduce.api.RecordWriter` classes for the binary format
    you need to process
-#. convert your data to Hadoop's standard `SequenceFile
-   <http://hadoop.apache.org/common/docs/r0.20.0/api/org/apache/hadoop/io/SequenceFile.html>`_ format.
+#. convert your data to Hadoop's standard ``SequenceFile`` format.
 
-Using Sequence Files within Pydoop is easy. To write output key/value
-pairs in the ``SequenceFile`` format, add the following properties to
-your job configuration file:
+To write sequence files with Pydoop, set the ouput format and the
+compression type as follows::
 
-.. code-block:: xml
+  [MapReduce V1]
+  pydoop submit \
+  --output-format=org.apache.hadoop.mapred.SequenceFileOutputFormat \
+  -D mapred.output.compression.type=NONE|RECORD|BLOCK [...]
 
-  <property>
-    <name>mapred.output.format.class</name>
-    <value>org.apache.hadoop.mapred.SequenceFileOutputFormat</value>
-  </property>
+  [MapReduce V2]
+  pydoop submit \
+  --output-format=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat \
+  -D mapreduce.output.fileoutputformat.compress.type=NONE|RECORD|BLOCK [...]
 
-  <property>
-    <name>mapred.output.compression.type</name>
-    <value>desired_compression_type</value>
-  </property>
+To read sequence files, set the input format as follows::
 
-Where ``desired_compression_type`` can be ``NONE``, ``RECORD`` or
-``BLOCK`` (see the ``SequenceFile`` documentation at the above
-link). To read key/value pairs written in the ``SequenceFile`` format,
-add the following one:
+  [MapReduce V1]
+  pydoop submit \
+  --input-format=org.apache.hadoop.mapred.SequenceFileInputFormat
 
-.. code-block:: xml
-
-  <property>
-    <name>mapred.input.format.class</name>
-    <value>org.apache.hadoop.mapred.SequenceFileInputFormat</value>
-  </property>
+  [MapReduce V2]
+  pydoop submit \
+  --input-format=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat
 
 
 Example Application: Filter Wordcount Results
@@ -64,26 +58,16 @@ integer instead:
 .. code-block:: python
 
   class WordCountReducer(Reducer):
-  
-    def reduce(self, context):
-      s = 0
-      while context.nextValue():
-        s += int(context.getInputValue())
-      context.emit(context.getInputKey(), struct.pack(">i", s))
+
+      def reduce(self, context):
+          s = sum(context.values)
+          context.emit(context.key, struct.pack(">i", s))
 
 Since newline characters can appear in the serialized values, you
 cannot use the standard text format where each line contains a
-tab-separated key-value pair. The problem is solved by using
+tab-separated key-value pair. The problem can be solved by using
 ``SequenceFileOutputFormat`` for wordcount and
 ``SequenceFileInputFormat`` for the filtering application.
 
-For further details, see the source code under ``examples/sequence_file``\ .
-
-
-Running the Example
--------------------
-
-From the Pydoop root directory::
-
-  cd examples/sequence_file
-  ./run
+The full source code for the example is available under
+``examples/sequence_file``\ .
