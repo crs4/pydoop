@@ -120,7 +120,7 @@ def _cdh_jars(hadoop_home, is_yarn):
         dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
                 hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
                 hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
-                hadoop_mapred_v1, os.path.join(hadoop_mapred_v2, "lib")]
+                hadoop_mapred_v2, os.path.join(hadoop_mapred_v2, "lib")]
 
     jars = _jars_from_dirs(dirs)
     return jars
