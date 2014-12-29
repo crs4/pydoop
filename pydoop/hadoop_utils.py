@@ -212,6 +212,10 @@ class HadoopVersion(object):
     def is_cloudera(self):
         return bool(self.cdh)
 
+    def is_yarn(self):
+        pf = PathFinder()
+        return pf.is_yarn()
+
     def is_cdh_mrv2(self):
         return self.cdh >= (4, 0, 0) and not self.ext
 
