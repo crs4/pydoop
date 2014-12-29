@@ -358,6 +358,95 @@ function install_cdh() {
     return 0
 }
 
+
+function install_cdh4() {
+    [ $# -eq 2 ] || error "Missing HadoopVersion and Yarn function argument"
+    local HadoopVersion="${1}"
+    local Yarn="${2}"
+    local HadoopConfDir=/etc/hadoop/conf/
+
+    log "Installing Cloudera Hadoop, version ${HadoopVersion}: START"
+
+    log "Adding repository"
+    sudo add-apt-repository "deb [arch=amd64] http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh precise-${HadoopVersion} contrib"
+    curl -s http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh/archive.key | sudo apt-key add -
+    log "Updating packages"
+    sudo apt-get update
+
+
+    if [[ "${Yarn}" == false ]]; then
+        log "Installing hadoop MR1"
+        sudo -E apt-get install hadoop-0.20-conf-pseudo
+    else
+        log "Installing hadoop MR2 (YARN)"
+        sudo -E apt-get install hadoop-conf-pseudo
+    fi
+
+    log "Updating configuration files"
+    update_cdh_configuration_files "${HadoopVersion}" "${Yarn}" "${HadoopConfDir}"
+
+    log "Stop all active services before changing configuration"
+    for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x stop ; done
+    if [[ "${Yarn}" == false ]]; then
+        for x in `cd /etc/init.d ; ls hadoop-0.20-mapreduce-*` ; do sudo -E service $x stop ; done
+    else
+        sudo service hadoop-yarn-resourcemanager stop
+        sudo service hadoop-yarn-nodemanager stop
+        sudo service hadoop-mapreduce-historyserver stop
+    fi
+
+    log "Formatting the NameNode"
+    sudo -u hdfs hdfs namenode -format
+
+    log "Start HDFS"
+    for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo -E service $x start ; done
+
+    log "Create HDFS directories"
+    sudo -u hdfs hadoop fs -mkdir /tmp
+    sudo -u hdfs hadoop fs -chmod -R 1777 /tmp
+    if [[ "${Yarn}" == false ]]; then
+        sudo -u hdfs hadoop fs -mkdir -p /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+        sudo -u hdfs hadoop fs -chmod 1777 /var/lib/hadoop-hdfs/cache/mapred/mapred/staging
+        sudo -u hdfs hadoop fs -chown -R mapred /var/lib/hadoop-hdfs/cache/mapred
+    else
+        sudo -u hdfs hadoop fs -mkdir /tmp/hadoop-yarn/staging
+        sudo -u hdfs hadoop fs -chmod -R 1777 /tmp/hadoop-yarn/staging
+        sudo -u hdfs hadoop fs -mkdir /tmp/hadoop-yarn/staging/history/done_intermediate
+        sudo -u hdfs hadoop fs -chmod -R 1777 /tmp/hadoop-yarn/staging/history/done_intermediate
+        sudo -u hdfs hadoop fs -chown -R mapred:mapred /tmp/hadoop-yarn/staging
+        sudo -u hdfs hadoop fs -mkdir /var/log/hadoop-yarn
+        sudo -u hdfs hadoop fs -chown yarn:mapred /var/log/hadoop-yarn
+    fi
+
+    log "Verify directories"
+    sudo -u hdfs hadoop fs -ls -R /
+
+    log "Start MapReduce"
+    if [[ "${Yarn}" == false ]]; then
+        for x in `cd /etc/init.d ; ls hadoop-0.20-mapreduce-*` ; do sudo -E service $x start ; done
+    else
+        sudo service hadoop-yarn-resourcemanager start
+        sudo service hadoop-yarn-nodemanager start
+        sudo service hadoop-mapreduce-historyserver start
+    fi
+
+    log "Create user directories"
+    sudo -u hdfs hadoop fs -mkdir -p /user/${USER}
+    sudo -u hdfs hadoop fs -chown ${USER} /user/${USER}
+
+
+    log "Check running services"
+    sudo jps
+
+    log "Cloudera Hadoop, version ${HadoopVersion} installed"
+
+    export HADOOP_HOME=/usr/lib/hadoop
+
+    return 0
+}
+
+
+
 function print_hadoop_env() {
     for var_name in HADOOP_HOME\
                HADOOP_CONF_DIR\
