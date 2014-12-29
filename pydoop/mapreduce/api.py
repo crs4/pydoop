@@ -17,9 +17,6 @@
 # END_COPYRIGHT
 
 """
-MapReduce API
-=============
-
 The MapReduce API allows to write the components of a MapReduce application.
 
 The basic MapReduce components (:class:`Mapper`, :class:`Reducer`,
@@ -287,7 +284,9 @@ class MapContext(Context):
 
 
 class ReduceContext(Context):
-
+    """
+    The context given to the reducer.
+    """
     @property
     def values(self):
         return self.get_input_values()
@@ -301,11 +300,12 @@ class ReduceContext(Context):
 
     @abstractmethod
     def next_value(self):
-        "returns True if there is another value that can be processed"
+        """
+        Return :obj:`True` if there is another value that can be processed.
+        """
         pass
 
     def nextValue(self):
-        "returns True if there is another value that can be processed"
         return self.next_value()
 
 
@@ -336,7 +336,8 @@ class Mapper(Closable):
         split. Applications must override this, emitting an output
         key/value pair through the context.
 
-        :param context: the :class:`MapContext` object passed by the
+        :type context: :class:`MapContext`
+        :param context: the context object passed by the
           framework, used to get the input key/value pair and emit the
           output key/value pair.
         """
@@ -359,7 +360,8 @@ class Reducer(Closable):
         Called once for each key. Applications must override this, emitting
         an output key/value pair through the context.
 
-        :param context: the :class:`ReduceContext` object passed by
+        :type context: :class:`ReduceContext`
+        :param context: the context object passed by
           the framework, used to get the input key and corresponding
           set of values and emit the output key/value pair.
         """
@@ -372,7 +374,7 @@ class Partitioner(object):
     :class:`Mapper`\ . The key (or a subset of it) is used to derive the
     partition, typically by a hash function. The total number of
     partitions is the same as the number of reduce tasks for the
-    job. Hence this controls which of the ``m`` reduce tasks the
+    job. Hence this controls which of the *m* reduce tasks the
     intermediate key (and hence the record) is sent to for reduction.
     """
     __metaclass__ = ABCMeta
@@ -387,10 +389,10 @@ class Partitioner(object):
         partitions, i.e., the number of reduce tasks for the
         job. Applications must override this.
 
-        :param key: the key of the key/value pair being dispatched
-        :type key: string
-        :param numOfReduces: the total number of reduces.
+        :type key: str
+        :param key: the key of the key/value pair being dispatched.
         :type numOfReduces: int
+        :param numOfReduces: the total number of reduces.
         :rtype: int
         :return: the partition number for ``key``\ .
         """
@@ -415,7 +417,7 @@ class RecordReader(Closable):
         r"""
         Called by the framework to provide a key/value pair to the
         :class:`Mapper`\ . Applications must override this, making
-        sure it raises :class:`StopIteration` when there are no more
+        sure it raises :exc:`~exceptions.StopIteration` when there are no more
         records to process.
 
         :rtype: tuple
@@ -427,20 +429,15 @@ class RecordReader(Closable):
     @abstractmethod
     def get_progress(self):
         """
-        The progress of the record reader through the split
-        as a value between 0.0 and 1.0.
-        """
-        pass
-
-    def getProgress(self):
-        """
-        The current progress of the record reader through its
-        data. Applications must override this.
+        The current progress of the record reader through its data.
 
         :rtype: float
         :return: the fraction of data read up to now, as a float between 0
           and 1.
         """
+        pass
+
+    def getProgress(self):
         return self.get_progress()
 
 
@@ -458,10 +455,10 @@ class RecordWriter(Closable):
         """
         Writes a key/value pair. Applications must override this.
 
+        :type key: str
         :param key: a final output key
-        :type key: string
+        :type value: str
         :param value: a final output value
-        :type value: string
         """
         pass
 
@@ -487,7 +484,7 @@ class Factory(object):
         """
         Create a combiner object.
 
-        Return the new combiner or None, if one is not needed.
+        Return the new combiner or :obj:`None`, if one is not needed.
         """
         assert isinstance(context, MapContext)
         return None
@@ -496,7 +493,7 @@ class Factory(object):
         """
         Create a partitioner object.
 
-        Return the new partitioner or None, if the default partitioner
+        Return the new partitioner or :obj:`None`, if the default partitioner
         should be used.
         """
         assert isinstance(context, MapContext)
@@ -506,7 +503,7 @@ class Factory(object):
         """
         Create a record reader object.
 
-        Return the new record reader or None, if the Java record
+        Return the new record reader or :obj:`None`, if the Java record
         reader should be used.
         """
         assert isinstance(context, MapContext)
@@ -516,7 +513,7 @@ class Factory(object):
         """
         Create an application record writer.
 
-        Return the new record writer or None, if the Java record
+        Return the new record writer or :obj:`None`, if the Java record
         writer should be used.
         """
         assert isinstance(context, ReduceContext)

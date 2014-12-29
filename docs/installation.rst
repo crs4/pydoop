@@ -103,6 +103,11 @@ dist-specific packages.  Build Pydoop with::
 
   python setup.py build
 
+This builds Pydoop with the "native" HDFS backend.  To build the
+(experimental) JPype backend instead, run::
+
+  python setup.py build --hdfs-core-impl=jpype-bridged
+
 For a system-wide installation, run the following::
 
   sudo python setup.py install --skip-build

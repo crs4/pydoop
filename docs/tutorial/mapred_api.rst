@@ -256,8 +256,7 @@ method passing it the total number of reducers ``n_red``, and expects
 the chosen reducer ID --- in the ``[0, ..., n_red-1]`` range --- as
 the return value.
 
-The :class:`~pydoop.mapreduce.api.Combiner` is functionally
-identical to a reducer, but it is run
+The combiner is functionally identical to a reducer, but it is run
 locally, on the key-value stream output by a single mapper.  Although
 nothing prevents the combiner from processing values differently from
 the reducer, the former, provided that the reduce function is

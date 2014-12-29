@@ -45,9 +45,9 @@ class hdfs_file(object):
     """
     Instances of this class represent HDFS file objects.
 
-    Objects from this class should not be instantiated directly.  The
-    preferred way to open an HDFS file is with the :func:`open` function;
-    alternatively, :meth:`hdfs.open_file` can be used.
+    Objects from this class should not be instantiated directly.  To
+    open an HDFS file, use :meth:`~.fs.hdfs.open_file`, or the
+    top-level ``open`` function in the hdfs package.
     """
     ENDL = os.linesep
 
@@ -129,7 +129,7 @@ class hdfs_file(object):
         """
         Read and return a line of text.
 
-        :rtype: string
+        :rtype: str
 
         :return: the next line of text in the file, including the
           newline character

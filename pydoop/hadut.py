@@ -162,8 +162,8 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
     Each element in the returned list is in the ``(host, port)`` format.
     ``properties`` is passed to :func:`run_cmd`.
 
-    If ``offline`` is True, try getting the list of task trackers from
-    the 'slaves' file in Hadoop's configuration directory (no attempt is
+    If ``offline`` is :obj:`True`, try getting the list of task trackers from
+    the ``slaves`` file in Hadoop's configuration directory (no attempt is
     made to contact the Hadoop daemons).  In this case, ports are set to 0.
     """
     if offline:
@@ -208,7 +208,7 @@ def dfs(args=None, properties=None, hadoop_conf_dir=None):
 
 def path_exists(path, properties=None, hadoop_conf_dir=None):
     """
-    Return ``True`` if ``path`` exists in the default HDFS, else ``False``.
+    Return :obj:`True` if ``path`` exists in the default HDFS.
 
     ``properties`` is passed to :func:`dfs`.
 
@@ -296,8 +296,8 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     are passed to :func:`run_cmd`.
 
     If not specified otherwise, this function sets the properties
-    hadoop.pipes.java.recordreader and hadoop.pipes.java.recordwriter
-    to 'true'.
+    ``hadoop.pipes.java.recordreader`` and ``hadoop.pipes.java.recordwriter``
+    to ``"true"``.
 
     This function works around a bug in Hadoop pipes that affects
     versions of Hadoop with security when the local file system is
@@ -353,7 +353,7 @@ def find_jar(jar_name, root_path=None):
     #. ``${PWD}/build``
     #. ``/usr/share/java``
 
-    Return the full path of the jar if found; else return ``None``.
+    Return the full path of the jar if found; else return :obj:`None`.
     """
     jar_name = os.path.basename(jar_name)
     root = root_path or os.getcwd()
@@ -401,7 +401,7 @@ class PipesRunner(object):
     Allows to set up and run pipes jobs, optionally automating a few
     common tasks.
 
-    :type prefix: string
+    :type prefix: str
     :param prefix: if specified, it must be a writable directory path
       that all nodes can see (the latter could be an issue if the local
       file system is used rather than HDFS)
@@ -492,7 +492,7 @@ class PipesRunner(object):
 
 class PydoopScriptRunner(PipesRunner):
     """
-    Specialization of PipesRunner to support the set up and running of
+    Specialization of :class:`PipesRunner` to support the set up and running of
     pydoop script jobs.
     """
     PYDOOP_EXE = None
