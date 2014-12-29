@@ -265,6 +265,9 @@ class HadoopVersion(object):
     def is_cdh_mrv2(self):
         return self.cdh >= (4, 0, 0) and not self.ext
 
+    def is_cdh_v5(self):
+        return self.cdh >= (5, 0, 0) and self.cdh < (6, 0, 0)
+
     def has_deprecated_bs(self):
         return self.cdh[:2] >= (4, 3)
 
