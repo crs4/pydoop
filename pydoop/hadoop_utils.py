@@ -138,6 +138,31 @@ def _cdh4_jars(hadoop_home, is_yarn):
          )))
     return jars
 
+
+def _cdh5_jars(hadoop_home, is_yarn):
+    if not is_yarn:
+        dirs = ["/etc/hadoop/conf", "/usr/lib/hadoop/lib",
+                "/usr/lib/hadoop", "/usr/lib/hadoop-hdfs",
+                "/usr/lib/hadoop-hdfs/lib", "/usr/lib/hadoop-hdfs",
+                "/usr/lib/hadoop-yarn/lib", "/usr/lib/hadoop-yarn",
+                "/usr/lib/hadoop-0.20-mapreduce/lib", "/usr/lib/hadoop-0.20-mapreduce"]
+    else:
+        dirs = ["/etc/hadoop/conf", "/usr/lib/hadoop/lib",
+                "/usr/lib/hadoop", "/usr/lib/hadoop-hdfs",
+                "/usr/lib/hadoop-hdfs/lib", "/usr/lib/hadoop-hdfs",
+                "/usr/lib/hadoop-mapreduce/lib", "/usr/lib/hadoop-mapreduce",
+                "/usr/lib/hadoop-yarn/lib", "/usr/lib/hadoop-yarn"
+        ]
+
+    jars = _jars_from_dirs(dirs)
+
+    if not is_yarn:
+         jars.extend(glob.glob(os.path.join(
+             hadoop_home, 'hadoop-annotations*.jar'
+         )))
+    return jars
+
+
 class HadoopVersion(object):
     """
     Stores Hadoop version information.
@@ -556,7 +581,10 @@ class PathFinder(object):
                     jars = _hadoop1_jars(hadoop_home)
             else:
                 hadoop_home = _cdh_hadoop_home()
-                jars = _cdh4_jars(hadoop_home, self.is_yarn())
+                if v.cdh >= (4, 0, 0):
+                    jars = _cdh4_jars(hadoop_home, self.is_yarn())
+                else:
+                    jars = _cdh5_jars(hadoop_home, self.is_yarn())
             jars.extend([self.hadoop_native(), self.hadoop_conf()])
             self.__hadoop_classpath = ':'.join(jars)
         return self.__hadoop_classpath
