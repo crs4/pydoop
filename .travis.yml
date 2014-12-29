@@ -62,6 +62,8 @@ before_install:
 - env
 - test -n "${HADOOP_HOME}" && export PATH="${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${PATH}"
 - if [[ "${HADOOPVERSION}" == *cdh* ]]; then unset HADOOP_HOME; fi
+- hadoop version
+- hadoop classpath
 
 install:
 - $VIRTUAL_ENV/bin/python setup.py build --hdfs-core-impl $HDFS_BACKEND
