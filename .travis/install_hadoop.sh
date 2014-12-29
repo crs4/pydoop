@@ -30,7 +30,7 @@ function error() {
 }
 
 
-function write_old_style_site_config() {
+function write_hadoop_standard_config_v1() {
     [ $# -eq 1 ] || error "Missing Hadoop conf dir function argument"
     local HadoopConfDir="${1}"
 
@@ -80,7 +80,7 @@ END
     return 0
 }
 
-function write_yarn_site_config() {
+function write_cdh_mrv1_config() {
     [ $# -eq 1 ] || error "Missing Hadoop conf dir function argument"
     local HadoopConfDir="${1}"
 
@@ -143,7 +143,7 @@ END
 }
 
 
-function update_cdh_configuration_files(){
+function update_cdh_config_files(){
     # update the configuration files
     [ $# -eq 3 ] || error "Missing HadoopVersion, YARN, HadoopConfDir arguments"
 
@@ -165,7 +165,7 @@ function update_cdh_configuration_files(){
 	    sudo sed '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' <  /etc/hadoop/conf/yarn-site.xml > /tmp/yarn-site.xml;
 	    sudo mv /tmp/yarn-site.xml /etc/hadoop/conf/yarn-site.xml
     else  # MRv1
-	    write_yarn_site_config "${HadoopConfDir}"
+	    write_cdh_mrv1_config "${HadoopConfDir}"
     fi
 
     # update the hadoop_env
@@ -192,7 +192,7 @@ function install_standard_hadoop() {
     else 
         export HADOOP_CONF_DIR="${HADOOP_HOME}/conf"
         export HADOOP_BIN="${HADOOP_HOME}/bin/"
-        write_old_style_site_config "${HADOOP_CONF_DIR}"
+        write_hadoop_standard_config_v1 "${HADOOP_CONF_DIR}"
     fi
     echo "export HADOOP_HOME=${HADOOP_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     echo "export JAVA_HOME=${JAVA_HOME}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
@@ -238,7 +238,7 @@ function install_cdh4() {
     fi
 
     log "Updating configuration files"
-    update_cdh_configuration_files "${HadoopVersion}" "${Yarn}" "${HadoopConfDir}"
+    update_cdh_config_files "${HadoopVersion}" "${Yarn}" "${HadoopConfDir}"
 
     log "Stop all active services before changing configuration"
     for x in `cd /etc/init.d ; ls hadoop-hdfs-*` ; do sudo service $x stop ; done
@@ -335,7 +335,7 @@ function install_cdh5() {
     fi
 
     log "Updating configuration files"
-    update_cdh_configuration_files "${HadoopVersion}" "${Yarn}" "${HadoopConfDir}"
+    update_cdh_config_files "${HadoopVersion}" "${Yarn}" "${HadoopConfDir}"
 
     log "Formatting the NameNode"
     sudo -u hdfs hdfs namenode -format
