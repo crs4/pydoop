@@ -468,6 +468,8 @@ function print_hadoop_env() {
 
 if [[ "${HADOOPVERSION}" == *cdh4* ]]; then
     install_cdh4 "${HADOOPVERSION}" "${YARN}"
+elif [[ "${HADOOPVERSION}" == *cdh5* ]]; then
+    install_cdh5 "${HADOOPVERSION}" "${YARN}"
 else # else hadoop
     install_standard_hadoop "${HADOOPVERSION}"
 fi
