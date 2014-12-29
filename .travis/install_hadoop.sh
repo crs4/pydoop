@@ -466,12 +466,11 @@ function print_hadoop_env() {
 
 #### main ###
 
-if [[ "${HADOOPVERSION}" != *cdh* ]]; then
+if [[ "${HADOOPVERSION}" == *cdh4* ]]; then
+    install_cdh4 "${HADOOPVERSION}" "${YARN}"
+else # else hadoop
     install_standard_hadoop "${HADOOPVERSION}"
-else # else CDH
-    install_cdh "${HADOOPVERSION}" "${YARN}"
 fi
-
 print_hadoop_env > "${TravisHadoopEnvFile}"
 chmod a+r "${TravisHadoopEnvFile}"
 log "Wrote hadoop environment variables to ${TravisHadoopEnvFile}\n   ==== Start ===="
