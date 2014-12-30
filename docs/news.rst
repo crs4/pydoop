@@ -4,6 +4,22 @@ News
 ====
 
 
+New in 1.0.0
+------------
+
+ * Pydoop now features a brand new, more pythonic :ref:`MapReduce API <mr_api>`
+ * The :mod:`~pydoop.hdfs.path` module offers many new functions that
+   serve as the HDFS-aware counterparts of those in :mod:`os.path`
+ * Added ``pydoop submit`` app for :ref:`job submission <running_apps>`
+ * The pipes backend (except for the performance-critical
+   serialization section) has been reimplemented in pure Python
+ * An alternative (optional) JPype HDFS backend is available
+   (currently slower than the one based on libhdfs)
+ * Extension modules do not require Boost.Python anymore
+ * Added support for Hadoop 2.4.1, 2.5.2 and 2.6.0
+ * Removed support for Hadoop 0.20.2 and CDH3
+
+
 New in 0.12.0
 -------------
 
@@ -24,7 +40,7 @@ New in 0.10.0
  * Added support for CDH 4.3.0
 
  * Added a :meth:`~pydoop.hdfs.fs.hdfs.walk` method to hdfs instances
-   (works similarly to ``os.walk`` from Python's standard library)
+   (works similarly to :func:`os.walk` from Python's standard library)
 
  * The Hadoop version parser is now more flexible.  It should be able
    to parse version strings for all CDH releases, including older ones
@@ -151,10 +167,6 @@ New in 0.6.0
   to understand and run
 * Several bugs were fixed; we also introduced a few optimizations,
   most notably the automatic caching of HDFS instances
-* We have pushed our code to a `Git repository
-  <http://sourceforge.net/p/pydoop/code>`_ hosted by `SourceForge
-  <http://sourceforge.net>`_.  See the :ref:`installation` section for
-  instructions.
 
 
 New in 0.5.0

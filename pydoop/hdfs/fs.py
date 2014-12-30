@@ -91,7 +91,7 @@ class hdfs(object):
     """
     A handle to an HDFS instance.
 
-    :type host: string
+    :type host: str
     :param host: hostname or IP address of the HDFS NameNode. Set to an
       empty string (and ``port`` to 0) to connect to the local file
       system; set to ``'default'`` (and ``port`` to 0) to connect to the
@@ -99,7 +99,7 @@ class hdfs(object):
       file system.
     :type port: int
     :param port: the port on which the NameNode is listening
-    :type user: string or ``None``
+    :type user: str
     :param user: the Hadoop domain user name. Defaults to the current
       UNIX user. Note that, in MapReduce applications, since tasks are
       spawned by the JobTracker, the default user will be the one that
@@ -130,9 +130,8 @@ class hdfs(object):
 
     def __eq__(self, other):
         """
-        True if the self and other wrap the same hadoop file system instance
-        :param other:
-        :return:
+        :obj:`True` if ``self`` and ``other`` wrap the same Hadoop file
+        system instance
         """
         return type(self) == type(other) and self.fs == other.fs
 
@@ -229,13 +228,13 @@ class hdfs(object):
         """
         Open an HDFS file.
 
-        Pass 0 as buff_size, replication or blocksize if you want to use
-        the default values, i.e., the ones set in the Hadoop configuration
-        files.
+        Pass 0 as ``buff_size``, ``replication`` or ``blocksize`` if you want
+        to use the "configured" values, i.e., the ones set in the Hadoop
+        configuration files.
 
-        :type path: string
+        :type path: str
         :param path: the full path to the file
-        :type flags: string or int
+        :type flags: str
         :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for
           reading, ``'w'`` or :data:`os.O_WRONLY` for writing
         :type buff_size: int
@@ -246,8 +245,8 @@ class hdfs(object):
         :param blocksize: HDFS block size
         :type readline_chunk_size: int
         :param readline_chunk_size: the amount of bytes that
-          :meth:`hdfs_file.readline` will use for buffering
-        :rtpye: :class:`hdfs_file`
+          :meth:`~.file.hdfs_file.readline` will use for buffering
+        :rtpye: :class:`~.file.hdfs_file`
         :return: handle to the open file
         """
         _complain_ifclosed(self.closed)
@@ -280,7 +279,7 @@ class hdfs(object):
         Return the raw capacity of the filesystem.
 
         :rtype: int
-        :return: the raw capacity
+        :return: filesystem capacity
         """
         _complain_ifclosed(self.closed)
         if self.__status.host is '':
@@ -292,13 +291,13 @@ class hdfs(object):
         """
         Copy file from one filesystem to another.
 
-        :type from_path: string
+        :type from_path: str
         :param from_path: the path of the source file
-        :type from_hdfs: :class:`hdfs`
-        :param to_hdfs: the handle to destination filesystem
-        :type to_path: string
+        :type to_hdfs: :class:`hdfs`
+        :param to_hdfs: destination filesystem
+        :type to_path: str
         :param to_path: the path of the destination file
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         if isinstance(to_hdfs, self.__class__):
@@ -310,9 +309,9 @@ class hdfs(object):
         Create directory ``path`` (non-existent parents will be created as
         well).
 
-        :type path: string
+        :type path: str
         :param path: the path of the directory
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.create_directory(path)
@@ -331,11 +330,13 @@ class hdfs(object):
         """
         Delete ``path``.
 
-        :type path: string
+        :type path: str
         :param path: the path of the file or directory
         :type recursive: bool
-        :param recursive: if path is directory, delete it recursively when True
-        :raises: IOError when ``recursive`` is False and directory is non-empty
+        :param recursive: if ``path`` is a directory, delete it recursively
+          when :obj:`True`
+        :raises: :exc:`~exceptions.IOError` when ``recursive`` is
+          :obj:`False` and directory is non-empty
         """
         _complain_ifclosed(self.closed)
         return self.fs.delete(path, recursive)
@@ -344,10 +345,10 @@ class hdfs(object):
         """
         Check if a given path exists on the filesystem.
 
-        :type path: string
+        :type path: str
         :param path: the path to look for
         :rtype: bool
-        :return: True if ``path`` exists, else False
+        :return: :obj:`True` if ``path`` exists
         """
         _complain_ifclosed(self.closed)
         return self.fs.exists(path)
@@ -358,7 +359,7 @@ class hdfs(object):
         blocksize) of a file is stored. Due to replication, a single block
         could be present on multiple hosts.
 
-        :type path: string
+        :type path: str
         :param path: the path of the file
         :type start: int
         :param start: the start of the block
@@ -388,11 +389,11 @@ class hdfs(object):
         * ``replication``: replication factor of ``path``
         * ``size``: size in bytes of ``path``
 
-        :type path: string
+        :type path: str
         :param path: a path in the filesystem
         :rtype: dict
         :return: path information
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.get_path_info(path)
@@ -401,11 +402,11 @@ class hdfs(object):
         r"""
         Get list of files and directories for ``path``\ .
 
-        :type path: string
+        :type path: str
         :param path: the path of the directory
         :rtype: list
         :return: list of files and directories in ``path``
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.list_directory(path)
@@ -414,13 +415,13 @@ class hdfs(object):
         """
         Move file from one filesystem to another.
 
-        :type from_path: string
+        :type from_path: str
         :param from_path: the path of the source file
         :type from_hdfs: :class:`hdfs`
-        :param to_hdfs: the handle to destination filesystem
-        :type to_path: string
+        :param to_hdfs: destination filesystem
+        :type to_path: str
         :param to_path: the path of the destination file
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         if isinstance(to_hdfs, self.__class__):
@@ -431,11 +432,11 @@ class hdfs(object):
         """
         Rename file.
 
-        :type from_path: string
+        :type from_path: str
         :param from_path: the path of the source file
-        :type to_path: string
+        :type to_path: str
         :param to_path: the path of the destination file
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.rename(from_path, to_path)
@@ -444,11 +445,11 @@ class hdfs(object):
         r"""
         Set the replication of ``path`` to ``replication``\ .
 
-        :type path: string
+        :type path: str
         :param path: the path of the file
         :type replication: int
         :param replication: the replication value
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.set_replication(path, replication)
@@ -458,9 +459,9 @@ class hdfs(object):
         Set the working directory to ``path``\ . All relative paths will
         be resolved relative to it.
 
-        :type path: string
+        :type path: str
         :param path: the path of the directory
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.set_working_directory(path)
@@ -479,7 +480,7 @@ class hdfs(object):
         """
         Get the current working directory.
 
-        :rtype: str or unicode
+        :rtype: str
         :return: current working directory
         """
         _complain_ifclosed(self.closed)
@@ -490,13 +491,13 @@ class hdfs(object):
         """
         Change file owner and group.
 
-        :type path: string
+        :type path: str
         :param path: the path to the file or directory
-        :type user: string
+        :type user: str
         :param user: Hadoop username. Set to '' if only setting group
-        :type group: string
+        :type group: str
         :param group: Hadoop group name. Set to '' if only setting user
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.chown(path, user, group)
@@ -511,12 +512,14 @@ class hdfs(object):
         """
         Scan a unix-style mode string and apply it to ``path``.
 
+        :type mode_string: str
         :param mode_string: see ``man chmod`` for details. ``X``, ``s``
           and ``t`` modes are not supported.  The string should match the
           following regular expression: ``[ugoa]*[-+=]([rwx]*)``.
+        :rtype: int
         :return: a new mode integer resulting from applying ``mode_string``
           to ``path``.
-        :raises ValueError: if ``mode_string`` is invalid.
+        :raises: :exc:`~exceptions.ValueError` if ``mode_string`` is invalid.
         """
         Char_to_perm_byte = {'r': 4, 'w': 2, 'x': 1}
         Fields = (('u', 6), ('g', 3), ('o', 0))
@@ -572,11 +575,11 @@ class hdfs(object):
         """
         Change file mode bits.
 
-        :type path: string
+        :type path: str
         :param path: the path to the file or directory
         :type mode: int
         :param mode: the bitmask to set it to (e.g., 0777)
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         if isinstance(mode, basestring):
@@ -589,13 +592,13 @@ class hdfs(object):
         """
         Change file last access and modification times.
 
-        :type path: string
+        :type path: str
         :param path: the path to the file or directory
         :type mtime: int
         :param mtime: new modification time in seconds
         :type atime: int
         :param atime: new access time in seconds
-        :raises: IOError
+        :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
         return self.fs.utime(path, int(mtime), int(atime))
@@ -607,13 +610,13 @@ class hdfs(object):
         The ``top`` parameter can be either an HDFS path string or a
         dictionary of properties as returned by :meth:`get_path_info`.
 
-        :type top: string or dict
+        :type top: str, dict
         :param top: an HDFS path or path info dict
         :rtype: iterator
         :return: path infos of files and directories in the tree rooted at
           ``top``
-        :raises: IOError
-        :raises: ValueError if ``top`` is empty
+        :raises: :exc:`~exceptions.IOError`; :exc:`~exceptions.ValueError`
+          if ``top`` is empty
         """
         if not top:
             raise ValueError("Empty path")

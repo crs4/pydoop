@@ -110,11 +110,11 @@ from .fs import hdfs, default_is_local
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
          readline_chunk_size=common.BUFSIZE, user=None):
     """
-    Open a file, returning an :class:`hdfs_file` object.
+    Open a file, returning an :class:`~.file.hdfs_file` object.
 
-    ``hdfs_path`` and ``user`` are passed to
-    :func:`~path.split`, while the other args are
-    passed to the :class:`hdfs_file` constructor.
+    ``hdfs_path`` and ``user`` are passed to :func:`~path.split`,
+    while the other args are passed to the :class:`~.file.hdfs_file`
+    constructor.
     """
     host, port, path_ = path.split(hdfs_path, user)
     fs = hdfs(host, port, user)

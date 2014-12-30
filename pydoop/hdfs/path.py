@@ -33,13 +33,13 @@ curdir, pardir, sep = '.', '..', '/'  # pylint: disable=C0103
 
 class StatResult(object):
     """
-    Mimics the object type returned by ``os.stat``.
+    Mimics the object type returned by :func:`os.stat`.
 
     Objects of this class are instantiated from dictionaries with the
     same structure as the ones returned by :meth:`~.fs.hdfs.get_path_info`.
 
     Attributes starting with ``st_`` have the same meaning as the
-    corresponding ones in the object returned by ``os.stat``, although
+    corresponding ones in the object returned by :func:`os.stat`, although
     some of them may not make sense for an HDFS path (in this case,
     their value will be set to 0).  In addition, the ``kind``, ``name``
     and ``replication`` attributes are available, with the same values
@@ -173,7 +173,7 @@ def parse(hdfs_path):
     """
     Parse the given path and return its components.
 
-    :type hdfs_path: string
+    :type hdfs_path: str
     :param hdfs_path: an HDFS path, e.g., ``hdfs://localhost:9000/user/me``
     :rtype: tuple
     :return: scheme, netloc, path
@@ -192,9 +192,9 @@ def split(hdfs_path, user=None):
     """
     Split ``hdfs_path`` into a (hostname, port, path) tuple.
 
-    :type hdfs_path: string
+    :type hdfs_path: str
     :param hdfs_path: an HDFS path, e.g., ``hdfs://localhost:9000/user/me``
-    :type user: string
+    :type user: str
     :param user: user name used to resolve relative paths, defaults to the
       current user
     :rtype: tuple
@@ -221,7 +221,7 @@ def join(*parts):
       'hdfs://host:1/foo'
 
     Note that this is *not* the reverse of :func:`split`, but rather a
-    specialized version of os.path.join. No check is made to determine
+    specialized version of :func:`os.path.join`. No check is made to determine
     whether the returned string is a valid HDFS path.
     """
     try:
@@ -280,7 +280,7 @@ def abspath(hdfs_path, user=None, local=False):
 def splitpath(hdfs_path):
     """
     Split ``hdfs_path`` into a (``head``, ``tail``) pair, according to
-    the same rules as ``os.path.split``.
+    the same rules as :func:`os.path.split`.
     """
     return (dirname(hdfs_path), basename(hdfs_path))
 
@@ -302,8 +302,7 @@ def dirname(hdfs_path):
 
 def exists(hdfs_path, user=None):
     """
-    Return ``True`` if ``hdfs_path`` exists in the default HDFS, else
-    ``False``.
+    Return :obj:`True` if ``hdfs_path`` exists in the default HDFS.
     """
     hostname, port, path = split(hdfs_path, user=user)
     fs = hdfs_fs.hdfs(hostname, port)
@@ -324,9 +323,9 @@ def lexists(hdfs_path, user=None):
 
 def kind(path, user=None):
     """
-    Get the kind of item that the path references.
+    Get the kind of item ("file" or "directory") that the path references.
 
-    Return None if the path doesn't exist.
+    Return :obj:`None` if ``path`` doesn't exist.
     """
     hostname, port, path = split(path, user=user)
     fs = hdfs_fs.hdfs(hostname, port)
@@ -340,14 +339,14 @@ def kind(path, user=None):
 
 def isdir(path, user=None):
     """
-    Return True if ``path`` refers to a directory; False otherwise.
+    Return :obj:`True` if ``path`` refers to a directory.
     """
     return kind(path, user) == 'directory'
 
 
 def isfile(path, user=None):
     """
-    Return True if ``path`` refers to a file; False otherwise.
+    Return :obj:`True` if ``path`` refers to a file.
     """
     return kind(path, user) == 'file'
 
@@ -388,7 +387,7 @@ def _update_stat(st, path_):
 
 def stat(path, user=None):
     """
-    Performs the equivalent of ``os.stat`` on ``path``, returning a
+    Performs the equivalent of :func:`os.stat` on ``path``, returning a
     :class:`StatResult` object.
     """
     host, port, path_ = split(path, user)
@@ -511,14 +510,14 @@ def splitdrive(path):
 
 def splitext(path):
     """
-    Same as ``os.path.splitext(path)``.
+    Same as :func:`os.path.splitext`.
     """
     return os.path.splitext(path)
 
 
 def access(path, mode, user=None):
     """
-    Perform the equivalent of ``os.access`` on ``path``.
+    Perform the equivalent of :func:`os.access` on ``path``.
     """
     scheme = parse(path)[0]
     if scheme == 'file' or hdfs_fs.default_is_local():

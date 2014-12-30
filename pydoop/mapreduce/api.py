@@ -17,29 +17,12 @@
 # END_COPYRIGHT
 
 """
-Pydoop API
-==========
+The MapReduce API allows to write the components of a MapReduce application.
 
-All computation is performed by instances of classes derived from Mapper,
-Reducer and, possibly, Reader, Writer, Combiner and Partitioner.
-
-All communication between the framework and these objects is mediated by
-Context objects. That is:
-
- * when they are instantiated, they receive contextual
-   information via a context object::
-
-     def __init__(self, context):
-         job_conf = context.job_conf
-         input_split = context.input_split
-
- * when they are used, for instance invoking the map method of a mapper,
-   they read data and emit back to the framework via a context object::
-
-     def map(self, context):
-         key, value = context.key, context.value
-         ...
-         context.emit(new_key, new_value)
+The basic MapReduce components (:class:`Mapper`, :class:`Reducer`,
+:class:`RecordReader`, etc.)  are provided as abstract classes that
+must be subclassed by the developer, providing implementations for all
+methods called by the framework.
 """
 
 from abc import ABCMeta, abstractmethod
@@ -54,6 +37,10 @@ class PydoopError(Exception):
 class Counter(object):
     """
     An interface to the Hadoop counters infrastructure.
+
+    Counter objects are instantiated and directly manipulated by the
+    framework; users get and update them via the :class:`Context`
+    interface.
     """
 
     def __init__(self, counter_id):
@@ -69,6 +56,15 @@ class Counter(object):
 class JobConf(dict):
     """
     Configuration properties assigned to this job.
+
+    JobConf objects are instantiated by the framework and support the
+    same interface as dictionaries, plus a few methods that perform
+    automatic type conversion::
+
+      >>> jc['a']
+      '1'
+      >>> jc.get_int('a')
+      1
     """
 
     def __init__(self, values):
@@ -81,18 +77,27 @@ class JobConf(dict):
         return key in self
 
     def get_int(self, key, default=None):
+        """
+        Same as :meth:`dict.get`, but the value is converted to an int.
+        """
         return int(self.get(key, default))
 
     def getInt(self, key, default=None):
         return self.get_int(key, default)
 
     def get_float(self, key, default=None):
+        """
+        Same as :meth:`dict.get`, but the value is converted to an float.
+        """
         return float(self.get(key, default))
 
     def getFloat(self, key, default=None):
         return self.get_float(key, default)
 
     def get_bool(self, key, default=None):
+        """
+        Same as :meth:`dict.get`, but the value is converted to a bool.
+        """
         return bool(self.get(key, default))
 
     def getBoolean(self, key, default=None):
@@ -120,15 +125,24 @@ class JobConf(dict):
 
 class Context(object):
     """
-    Information inter-exchange object.
+    Context objects are used for communication between the framework
+    and the Mapreduce application.  These objects are instantiated by the
+    framework and passed to user methods as parameters::
 
-    Context instances are the only points of contact between the framework
-    and user-defined code.
+      class Mapper(api.Mapper):
+
+          def map(self, context):
+              key, value = context.key, context.value
+              ...
+              context.emit(new_key, new_value)
     """
     __metaclass__ = ABCMeta
 
     @property
     def job_conf(self):
+        """
+        MapReduce job configuration as a :class:`JobConf` object.
+        """
         return self.get_job_conf()
 
     @abstractmethod
@@ -140,6 +154,9 @@ class Context(object):
 
     @property
     def key(self):
+        """
+        Input key.
+        """
         return self.get_input_key()
 
     @abstractmethod
@@ -151,6 +168,9 @@ class Context(object):
 
     @property
     def value(self):
+        """
+        Input value.
+        """
         return self.get_input_value()
 
     @abstractmethod
@@ -162,6 +182,9 @@ class Context(object):
 
     @abstractmethod
     def emit(self, key, value):
+        """
+        Emit a key, value pair to the framework.
+        """
         pass
 
     @abstractmethod
@@ -170,6 +193,12 @@ class Context(object):
 
     @abstractmethod
     def set_status(self, status):
+        """
+        Set the current status.
+
+        :type status: str
+        :param status: a description of the current status
+        """
         pass
 
     def setStatus(self, status):
@@ -177,6 +206,16 @@ class Context(object):
 
     @abstractmethod
     def get_counter(self, group, name):
+        """
+        Get a :class:`Counter` from the framework.
+
+        :type group: str
+        :param group: counter group name
+        :type name: str
+        :param name: counter name
+
+        The counter can be updated via :meth:`increment_counter`.
+        """
         pass
 
     def getCounter(self, group, name):
@@ -184,6 +223,9 @@ class Context(object):
 
     @abstractmethod
     def increment_counter(self, counter, amount):
+        """
+        Update a :class:`Counter` by the specified amount.
+        """
         pass
 
     def incrementCounter(self, counter, amount):
@@ -191,13 +233,14 @@ class Context(object):
 
 
 class MapContext(Context):
-
+    """
+    The context given to the mapper.
+    """
     @property
     def input_split(self):
-        '''
-        Returns the current input_split as InputSplit object
-        :return: InputSplit
-        '''
+        """
+        Get the current input split as an :class:`~.pipes.InputSplit` object.
+        """
         return self.get_input_split()
 
     @abstractmethod
@@ -207,15 +250,15 @@ class MapContext(Context):
     @abstractmethod
     def getInputSplit(self):
         """
-        Return the serialized input_split (only for backward
-        compatibility purposes)
-
-        :return: string
+        Get the raw input split as a byte string (backward compatibility).
         """
         pass
 
     @property
     def input_key_class(self):
+        """
+        Return the type of the input key.
+        """
         return self.get_input_key_class()
 
     @abstractmethod
@@ -231,6 +274,9 @@ class MapContext(Context):
 
     @abstractmethod
     def get_input_value_class(self):
+        """
+        Return the type of the input key.
+        """
         pass
 
     def getInputValueClass(self):
@@ -238,7 +284,9 @@ class MapContext(Context):
 
 
 class ReduceContext(Context):
-
+    """
+    The context given to the reducer.
+    """
     @property
     def values(self):
         return self.get_input_values()
@@ -252,11 +300,12 @@ class ReduceContext(Context):
 
     @abstractmethod
     def next_value(self):
-        "returns True if there is another value that can be processed"
+        """
+        Return :obj:`True` if there is another value that can be processed.
+        """
         pass
 
     def nextValue(self):
-        "returns True if there is another value that can be processed"
         return self.next_value()
 
 
@@ -287,7 +336,8 @@ class Mapper(Closable):
         split. Applications must override this, emitting an output
         key/value pair through the context.
 
-        :param context: the :class:`MapContext` object passed by the
+        :type context: :class:`MapContext`
+        :param context: the context object passed by the
           framework, used to get the input key/value pair and emit the
           output key/value pair.
         """
@@ -310,7 +360,8 @@ class Reducer(Closable):
         Called once for each key. Applications must override this, emitting
         an output key/value pair through the context.
 
-        :param context: the :class:`ReduceContext` object passed by
+        :type context: :class:`ReduceContext`
+        :param context: the context object passed by
           the framework, used to get the input key and corresponding
           set of values and emit the output key/value pair.
         """
@@ -323,7 +374,7 @@ class Partitioner(object):
     :class:`Mapper`\ . The key (or a subset of it) is used to derive the
     partition, typically by a hash function. The total number of
     partitions is the same as the number of reduce tasks for the
-    job. Hence this controls which of the ``m`` reduce tasks the
+    job. Hence this controls which of the *m* reduce tasks the
     intermediate key (and hence the record) is sent to for reduction.
     """
     __metaclass__ = ABCMeta
@@ -338,10 +389,10 @@ class Partitioner(object):
         partitions, i.e., the number of reduce tasks for the
         job. Applications must override this.
 
-        :param key: the key of the key/value pair being dispatched
-        :type key: string
-        :param numOfReduces: the total number of reduces.
+        :type key: str
+        :param key: the key of the key/value pair being dispatched.
         :type numOfReduces: int
+        :param numOfReduces: the total number of reduces.
         :rtype: int
         :return: the partition number for ``key``\ .
         """
@@ -365,34 +416,28 @@ class RecordReader(Closable):
     def next(self):
         r"""
         Called by the framework to provide a key/value pair to the
-        :class:`Mapper`\ . Applications must override this.
-        It should raise a StopIteration
-        exception when the data stream has been emptied..
+        :class:`Mapper`\ . Applications must override this, making
+        sure it raises :exc:`~exceptions.StopIteration` when there are no more
+        records to process.
 
         :rtype: tuple
-        :return: a tuple of two elements. They are,
-        respectively, the key and the value (as strings)
-
+        :return: a tuple of two elements. They are, respectively, the
+          key and the value (as strings)
         """
         raise StopIteration
 
     @abstractmethod
     def get_progress(self):
         """
-        The progress of the record reader through the split
-        as a value between 0.0 and 1.0.
-        """
-        pass
-
-    def getProgress(self):
-        """
-        The current progress of the record reader through its
-        data. Applications must override this.
+        The current progress of the record reader through its data.
 
         :rtype: float
         :return: the fraction of data read up to now, as a float between 0
           and 1.
         """
+        pass
+
+    def getProgress(self):
         return self.get_progress()
 
 
@@ -410,10 +455,10 @@ class RecordWriter(Closable):
         """
         Writes a key/value pair. Applications must override this.
 
+        :type key: str
         :param key: a final output key
-        :type key: string
+        :type value: str
         :param value: a final output value
-        :type value: string
         """
         pass
 
@@ -439,7 +484,7 @@ class Factory(object):
         """
         Create a combiner object.
 
-        Return the new combiner or None, if one is not needed.
+        Return the new combiner or :obj:`None`, if one is not needed.
         """
         assert isinstance(context, MapContext)
         return None
@@ -448,7 +493,7 @@ class Factory(object):
         """
         Create a partitioner object.
 
-        Return the new partitioner or None, if the default partitioner
+        Return the new partitioner or :obj:`None`, if the default partitioner
         should be used.
         """
         assert isinstance(context, MapContext)
@@ -458,7 +503,7 @@ class Factory(object):
         """
         Create a record reader object.
 
-        Return the new record reader or None, if the Java record
+        Return the new record reader or :obj:`None`, if the Java record
         reader should be used.
         """
         assert isinstance(context, MapContext)
@@ -468,7 +513,7 @@ class Factory(object):
         """
         Create an application record writer.
 
-        Return the new record writer or None, if the Java record
+        Return the new record writer or :obj:`None`, if the Java record
         writer should be used.
         """
         assert isinstance(context, ReduceContext)

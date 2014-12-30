@@ -17,19 +17,14 @@ directories and global file system properties:
   hello
   >>> hdfs.ls("test")
   ['hdfs://localhost:9000/user/simleo/test/hello.txt']
-  >>> for k, v in hdfs.lsl("test")[0].iteritems():
-  ...     print "%s = %s" % (k, v)
-  ...
-  kind = file
-  group = supergroup
-  name = hdfs://localhost:9000/user/simleo/test/hello.txt
-  last_mod = 1333119543
-  replication = 1
-  owner = simleo
-  permissions = 420
-  block_size = 67108864
-  last_access = 1333119543
-  size = 5
+  >>> hdfs.stat("test/hello.txt").st_size
+  5L
+  >>> hdfs.path.isdir("test")
+  True
+  >>> hdfs.path.isfile("test")
+  False
+  >>> hdfs.path.basename("test/hello.txt")
+  'hello.txt'
   >>> hdfs.cp("test", "test.copy")
   >>> hdfs.ls("test.copy")
   ['hdfs://localhost:9000/user/simleo/test.copy/hello.txt']
@@ -52,8 +47,7 @@ directories and global file system properties:
 Low-level API
 -------------
 
-Pydoop's HDFS API can also be used at a lower level, which mirrors
-Hadoop's C HDFS API (libhdfs). The following example
+The following example
 shows how to build statistics of HDFS usage by block size by directly
 instantiating an ``hdfs`` object, which represents an open connection
 to an HDFS instance:
@@ -64,30 +58,21 @@ to an HDFS instance:
 
   ROOT = "pydoop_test_tree"
 
-  def treewalker(fs, root_info):
-    yield root_info
-    if root_info['kind'] == 'directory':
-      for info in fs.list_directory(root_info['name']):
-        for item in treewalker(fs, info):
-          yield item
-
   def usage_by_bs(fs, root):
-    stats = {}
-    root_info = fs.get_path_info(root)
-    for info in treewalker(fs, root_info):
-      if info['kind'] == 'directory':
-        continue
-      bs = int(info['block_size'])
-      size = int(info['size'])
-      stats[bs] = stats.get(bs, 0) + size
-    return stats
+      stats = {}
+      for info in fs.walk(root):
+          if info['kind'] == 'directory':
+              continue
+          bs = int(info['block_size'])
+          size = int(info['size'])
+          stats[bs] = stats.get(bs, 0) + size
+      return stats
 
   if __name__ == "__main__":
-    fs = hdfs.hdfs()
-    print "BS (MB)\tBYTES USED"
-    for k, v in sorted(usage_by_bs(fs, ROOT).iteritems()):
-      print "%d\t%d" % (k/2**20, v)
-    fs.close()
+      with hdfs.hdfs() as fs:
+          print "BS (MB)\tBYTES USED"
+          for k, v in sorted(usage_by_bs(fs, ROOT).iteritems()):
+              print "%d\t%d" % (k/2**20, v)
 
 Full source code for the example is located under ``examples/hdfs`` in
 the Pydoop distribution.  You should be able to run the example by
