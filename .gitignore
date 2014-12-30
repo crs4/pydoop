@@ -14,7 +14,14 @@ src/hadoop*/libhdfs/config.h
 src/hdfs/hdfs.xcodeproj
 src/hdfs/hdfs/*
 
+dist
+
+examples/**/*.class
+examples/**/*.jar
+
 test/timings/dataset
+
+pydoop.egg-info
 
 .DS_Store
 .idea

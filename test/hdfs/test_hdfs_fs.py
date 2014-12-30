@@ -186,7 +186,7 @@ class TestHDFS(TestCommon):
     def get_hosts(self):
         hd_info = pydoop.hadoop_version_info()
         kwargs = {}
-        if hd_info.has_deprecated_bs():
+        if hd_info.has_deprecated_bs() and not hd_info.is_cdh_v5():
             blocksize = hdfs.fs.hdfs().default_block_size()
         else:
             #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
