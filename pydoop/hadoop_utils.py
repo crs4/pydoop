@@ -104,16 +104,25 @@ def _hadoop2_jars(hadoop_home):
     )])
 
 
-def _cdh4_jars(hadoop_home, is_yarn):
-    mr1_home = '%s-0.20-mapreduce' % hadoop_home
-    dirs = [mr1_home, os.path.join(hadoop_home, 'client')]
-    if is_yarn:
-        dirs.extend([hadoop_home, os.path.join(hadoop_home, 'lib')])
-    jars = _jars_from_dirs(dirs)
+def _cdh_jars(hadoop_home, is_yarn):
+
+    hadoop_hdfs = hadoop_home + "-hdfs"
+    hadoop_yarn = hadoop_home + "-yarn"
+    hadoop_mapred_v1 = hadoop_home + "-0.20-mapreduce"
+    hadoop_mapred_v2 = hadoop_home + "-mapreduce"
+
     if not is_yarn:
-        jars.extend(glob.glob(os.path.join(
-            hadoop_home, 'hadoop-annotations*.jar'
-        )))
+        dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+                hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
+                hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
+                hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
+    else:
+        dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+                hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
+                hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
+                hadoop_mapred_v2, os.path.join(hadoop_mapred_v2, "lib")]
+
+    jars = _jars_from_dirs(dirs)
     return jars
 
 
@@ -212,8 +221,15 @@ class HadoopVersion(object):
     def is_cloudera(self):
         return bool(self.cdh)
 
+    def is_yarn(self):
+        pf = PathFinder()
+        return pf.is_yarn()
+
     def is_cdh_mrv2(self):
         return self.cdh >= (4, 0, 0) and not self.ext
+
+    def is_cdh_v5(self):
+        return self.cdh >= (5, 0, 0) and self.cdh < (6, 0, 0)
 
     def has_deprecated_bs(self):
         return self.cdh[:2] >= (4, 3)
@@ -531,7 +547,7 @@ class PathFinder(object):
                     jars = _hadoop1_jars(hadoop_home)
             else:
                 hadoop_home = _cdh_hadoop_home()
-                jars = _cdh4_jars(hadoop_home, self.is_yarn())
+                jars = _cdh_jars(hadoop_home, self.is_yarn())
             jars.extend([self.hadoop_native(), self.hadoop_conf()])
             self.__hadoop_classpath = ':'.join(jars)
         return self.__hadoop_classpath
