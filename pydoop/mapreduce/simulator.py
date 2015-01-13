@@ -329,7 +329,7 @@ class HadoopSimulator(object):
          Extract counters information accumulated by this simulator instance.
          The expected usage is as follows::
 
-         .. code-block::
+         .. code-block:: python
 
           counters = hs.get_counters()
           for phase in ['mapping', 'reducing']:
@@ -420,7 +420,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
     invocation of program components in a realistic hadoop workflow.
     The expected usage is as follows::
 
-       .. code-block::
+       .. code-block:: python
 
          from mymr import Factory
          hs = HadoopSimulatorLocal(TFactory())
@@ -497,7 +497,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     It implements a reasonably close aproximation of the 'real'
     Hadoop-pipes setup.
 
-       .. code-block::
+       .. code-block:: python
 
           program_name = '../wordcount/new_api/wordcount_full.py'
           data_in = '../input/alice.txt'

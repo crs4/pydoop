@@ -8,16 +8,22 @@ New in 1.0.0
 ------------
 
  * Pydoop now features a brand new, more pythonic :ref:`MapReduce API <mr_api>`
+ * Added ``pydoop submit`` app for :ref:`job submission <running_apps>`
+ * Added support for testing Pydoop programs in a :ref:`simulated
+   Hadoop framework <simulator-api>`
+ * Added support (experimental) for MapReduce V2 input/output formats (see
+   :ref:`input_format_example`)
  * The :mod:`~pydoop.hdfs.path` module offers many new functions that
    serve as the HDFS-aware counterparts of those in :mod:`os.path`
- * Added ``pydoop submit`` app for :ref:`job submission <running_apps>`
  * The pipes backend (except for the performance-critical
    serialization section) has been reimplemented in pure Python
  * An alternative (optional) JPype HDFS backend is available
    (currently slower than the one based on libhdfs)
- * Extension modules do not require Boost.Python anymore
- * Added support for Hadoop 2.4.1, 2.5.2 and 2.6.0
+ * Added support for Apache Hadoop 2.4.1, 2.5.2 and 2.6.0, and for CDH5
  * Removed support for Hadoop 0.20.2 and CDH3
+ * Installation has been greatly simplified: now Pydoop does not
+   require any external library to build its native extensions
+ * We now provide installation as a Python wheel (experimental)
 
 
 New in 0.12.0
