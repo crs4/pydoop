@@ -1,4 +1,5 @@
 EXPORT_DIR = /tmp/pydoop_export
+GIT_COMMIT_FN = .git_commit
 WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
@@ -62,6 +63,7 @@ docs_view: docs
 
 dist: docs
 	./dev_tools/git_export -o $(EXPORT_DIR)
+	git rev-parse HEAD >$(EXPORT_DIR)/$(GIT_COMMIT_FN)
 	rm -rf $(EXPORT_DIR)/docs/*
 	mv docs/_build/html $(EXPORT_DIR)/docs/
 	cd $(EXPORT_DIR) && python setup.py sdist
