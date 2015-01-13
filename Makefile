@@ -1,3 +1,4 @@
+EXPORT_DIR = /tmp/pydoop_export
 WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
@@ -58,6 +59,14 @@ docs_put: docs
 
 docs_view: docs
 	yelp docs/_build/html/index.html &
+
+dist: docs
+	./dev_tools/git_export -o $(EXPORT_DIR)
+	rm -rf $(EXPORT_DIR)/docs/*
+	mv docs/_build/html $(EXPORT_DIR)/docs/
+	cd $(EXPORT_DIR) && python setup.py sdist
+	mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
+	rm -rf $(EXPORT_DIR)
 
 clean:
 	python setup.py clean --all
