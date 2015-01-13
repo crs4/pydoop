@@ -1,9 +1,11 @@
-include AUTHORS LICENSE VERSION README.md
+include AUTHORS LICENSE VERSION README.md .git_commit
+
+recursive-include src *
 
 recursive-include test *.py
 recursive-include test/common *.py
 recursive-include test/app *.py
-recursive-include test/serialize *.py
+recursive-include test/serialize *.py *.java
 recursive-include test/hdfs *.py
 recursive-include test/mapreduce *.py
 recursive-include test/mapreduce/data *.data jobToken
@@ -20,8 +22,8 @@ recursive-include examples/sequence_file/bin *.py
 recursive-include examples/sequence_file run*
 recursive-include examples/wordcount/bin *.py
 recursive-include examples/wordcount run
-#recursive-include examples/input_format
-#recursive-include examples/self_contained *.py
+recursive-include examples/input_format
+recursive-include examples/self_contained
 #recursive-include examples/avro
 
 recursive-include docs *
