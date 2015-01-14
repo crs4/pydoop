@@ -1,7 +1,7 @@
 .. _running_apps:
 
-Running Pydoop Applications
-===========================
+Pydoop Submit User Guide
+========================
 
 Pydoop applications are run via the ``pydoop submit`` command.  To
 start, you will need a working Hadoop cluster.  If you don't have one
