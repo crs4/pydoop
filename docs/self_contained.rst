@@ -1,3 +1,5 @@
+.. _self_contained:
+
 Installation-free Usage
 =======================
 
