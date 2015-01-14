@@ -3,6 +3,8 @@
 :mod:`pydoop.mapreduce.simulator` --- Hadoop Simulator API
 ==========================================================
 
+.. automodule:: pydoop.mapreduce.simulator
+
 .. autoclass:: pydoop.mapreduce.simulator.HadoopSimulatorLocal
    :members:
 

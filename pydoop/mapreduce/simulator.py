@@ -16,19 +16,9 @@
 #
 # END_COPYRIGHT
 
-r"""
-Pydoop Simulator
-================
-
-This module provides basic, stand-alone, simulators for pydoop programs
+"""
+This module provides basic, stand-alone Hadoop simulators for
 debugging support.
-
-  * ``HadoopSimulatorLocal`` allows the debugging of pydoop program
-    components in a simulated map-reduce context.
-
-  * ``HadoopSimulatorNetwork`` allows the debugging of a pydoop program
-    in a fully simulated Hadoop setup.
-
 """
 
 import SocketServer
@@ -414,26 +404,18 @@ class HadoopSimulator(object):
 
 class HadoopSimulatorLocal(HadoopSimulator):
     r"""
-    Basic simulation of hadoop workflows.
+    Simulates the invocation of program components in a Hadoop workflow.
 
-    This class allows the debugging of pydoop programs by simulating the
-    invocation of program components in a realistic hadoop workflow.
-    The expected usage is as follows::
+    .. code-block:: python
 
-       .. code-block:: python
-
-         from mymr import Factory
-         hs = HadoopSimulatorLocal(TFactory())
-         job_conf = {..}
-         hs.run(fin, fout, job_conf)
-         counters = hs.get_counters()
+      from my_mr_app import Factory
+      hs = HadoopSimulatorLocal(Factory())
+      job_conf = {...}
+      hs.run(fin, fout, job_conf)
+      counters = hs.get_counters()
     """
 
     def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
-        r"""
-        Initialize the simulator on a given factory of pydoop program
-        components.
-        """
         logger = logger.getChild('HadoopSimulatorLocal') if logger \
                  else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
@@ -450,16 +432,17 @@ class HadoopSimulatorLocal(HadoopSimulator):
         context.close()
 
     def run(self, file_in, file_out, job_conf, num_reducers=1, input_split=''):
-        r""" Run the simulator as configured by job_conf, with num_reducers
-        reducers. If ``file_in`` is ``not None``, it will simulate the
-        behavior of hadoop ``TextLineReader`` and create a record
-        for each line of ``file_in``. Otherwise, it assumes that
-        the factory argument provided in class initialization defines a
-        ``RecordReader`` class, and that ``job_conf`` provides a suitable
-        ``input_split`` variable.
-        Similarly, if ``file_out`` is ``None`` it will assume
-        that the factory argument provided in class initialization defines a
-        ``RecordWriter`` class with appropriate parameters in ``job_conf``.
+        r"""
+        Run the simulator as configured by ``job_conf``, with
+        ``num_reducers`` reducers.  If ``file_in`` is not :obj:`None`,
+        simulate the behavior of Hadoop's ``TextLineReader``, creating
+        a record for each line in ``file_in``.  Otherwise, assume that
+        the ``factory`` argument given to the constructor defines a
+        :class:`~.api.RecordReader`, and that ``job_conf`` provides a
+        suitable :class:`~.pipes.InputSplit`.  Similarly, if
+        ``file_out`` is :obj:`None`, assume that ``factory`` defines a
+        :class:`~.api.RecordWriter` with appropriate parameters in
+        ``job_conf``.
         """
         self.logger.debug('run start')
         bytes_flow = self.write_map_down_stream(
@@ -491,39 +474,36 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
 class HadoopSimulatorNetwork(HadoopSimulator):
     r"""
-    This is a debugging support simulator class that uses network connections
-    to communicate to an user-provided pipes program.
+    Simulates the invocation of program components in a Hadoop
+    workflow using network connections to communicate with a
+    user-provided pipes program.
 
-    It implements a reasonably close aproximation of the 'real'
-    Hadoop-pipes setup.
+    .. code-block:: python
 
-       .. code-block:: python
+      program_name = '../wordcount/new_api/wordcount_full.py'
+      data_in = '../input/alice.txt'
+      output_dir = './output'
+      data_in_path = os.path.realpath(data_in)
+      data_in_uri = 'file://' + data_in_path
+      data_in_size = os.stat(data_in_path).st_size
+      os.makedirs(output_dir)
+      output_dir_uri = 'file://' + os.path.realpath(output_dir)
+      conf = {
+        "mapred.job.name": "wordcount",
+        "mapred.work.output.dir": output_dir_uri,
+        "mapred.task.partition": "0",
+      }
+      input_split = InputSplit.to_string(data_in_uri, 0, data_in_size)
+      hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
+                                   loglevel=logging.INFO)
+      hsn.run(None, None, conf, input_split=input_split)
 
-          program_name = '../wordcount/new_api/wordcount_full.py'
-          data_in = '../input/alice.txt'
-          output_dir = './output'
-          data_in_path = os.path.realpath(data_in)
-          data_in_uri = 'file://' + data_in_path
-          data_in_size = os.stat(data_in_path).st_size
-          os.makedirs(output_dir)
-          output_dir_uri = 'file://' + os.path.realpath(output_dir)
-          conf = {
-              "mapred.job.name": "wordcount",
-              "mapred.work.output.dir": output_dir_uri,
-              "mapred.task.partition": "0",
-          }
-          input_split = InputSplit.to_string(data_in_uri, 0, data_in_size)
-          hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
-                                       loglevel=logging.INFO)
-          hsn.run(None, None, conf, input_split=input_split)
+    The Pydoop application ``program`` will be launched ``sleep_delta``
+    seconds after framework initialization.
     """
 
     def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
                  sleep_delta=DEFAULT_SLEEP_DELTA):
-        r"""
-        Initialize the simulator. When run, it will launch the pydoop
-        ``program`` ``sleep_delta`` seconds after framework initialization.
-        """
         logger = logger.getChild('HadoopSimulatorNetwork') if logger \
                  else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
@@ -552,18 +532,17 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         server.handle_request()
         self.logger.debug('run_task: finished with HadoopServer')
 
-    def run(self, file_in, file_out, job_conf, num_reducers=1,
-            input_split=''):
+    def run(self, file_in, file_out, job_conf, num_reducers=1, input_split=''):
         r"""
-        Run the program through the simulated hadoop infrastructure.
-        The infrastructure will pipe the contents of ``file_in`` to the pipes
-        program similarly to what Hadoop's TextInputFormat does. Setting the
-        ``file_in`` to ``None`` implies that the pipes
-        program is expected to get its data from its own ``RecordReader``
-        using the provided ``input_split``.
-        Analogously, the final run results will be written to ``file_out``
-        unless it is set to ``None`` and the pipes program is expected to have
-        a ``RecordWriter``.
+        Run the program through the simulated Hadoop infrastructure,
+        piping the contents of ``file_in`` to the program similarly to
+        what Hadoop's ``TextInputFormat`` does.  Setting ``file_in``
+        to :obj:`None` implies that the program is expected to get its
+        data from its own :class:`~.api.RecordReader`, using the
+        provided ``input_split``.  Analogously, the final results will
+        be written to ``file_out`` unless it is set to :obj:`None`, in
+        which case the program is expected to have a
+        :class:`~.api.RecordWriter`.
         """
         assert file_in or input_split
         assert file_out or num_reducers > 0  # FIXME pipes should support this
