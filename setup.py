@@ -177,7 +177,7 @@ def build_hdfscore_native_impl():
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=hdfs_ext_sources,
         define_macros=jvm.get_macros() + libhdfs_macros,
-        extra_compile_args=['-Xlinker', '-rpath', JVM_LIB_PATH]
+        extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
     )
     EXTENSION_MODULES.append(native_hdfs_core)
 
