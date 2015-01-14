@@ -340,14 +340,12 @@ class Clean(clean):
         clean.run(self)
         garbage_list = [
             "DEFAULT_HADOOP_HOME",
+            "build",
+            "dist",
+            "pydoop.egg-info",
             "pydoop/config.py",
             "pydoop/version.py",
         ]
-        garbage_list.extend(glob.iglob("build"))
-        garbage_list.extend(glob.iglob("src/*.patched"))
-        garbage_list.extend(p for p in itertools.chain(
-            glob.iglob('src/*'), glob.iglob('patches/*')
-        ) if os.path.islink(p))
         for p in garbage_list:
             rm_rf(p, self.dry_run)
 
