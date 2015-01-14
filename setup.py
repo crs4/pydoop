@@ -57,6 +57,7 @@ HADOOP_HOME = pydoop.hadoop_home(fallback=None)
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
 EXTENSION_MODULES = []
+GIT_COMMIT_FN = ".git_commit"
 
 
 # ---------
@@ -129,6 +130,9 @@ def generate_hdfs_config():
 
 
 def get_git_commit():
+    if os.path.isfile(GIT_COMMIT_FN):
+        with open(GIT_COMMIT_FN) as f:
+            return f.read().strip()
     try:
         return subprocess.check_output(
             ['git', 'rev-parse', 'HEAD']
