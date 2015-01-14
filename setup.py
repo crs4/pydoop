@@ -40,6 +40,14 @@ import itertools
 import subprocess
 import setuptools
 
+# bug: http://bugs.python.org/issue1222585
+# workaround: http://stackoverflow.com/questions/8106258
+from distutils.sysconfig import get_config_var
+_UNWANTED_OPTS = frozenset(['-Wstrict-prototypes'])
+os.environ['OPT'] = ' '.join(
+    _ for _ in get_config_var('OPT').strip().split() if _ not in _UNWANTED_OPTS
+)
+
 from distutils.core import setup, Extension
 from distutils.command.build import build
 from distutils.command.clean import clean
