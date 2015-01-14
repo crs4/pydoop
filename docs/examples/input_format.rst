@@ -44,13 +44,12 @@ Consider the following simple modification of Hadoop's built-in
       }
   }
 
-
 With respect to the default one, this InputFormat adds a configurable
 boolean parameter (``pydoop.input.issplitable``) that, if set to
 ``false``, makes input files non-splitable (i.e., you can't get more
 input splits than the number of input files).
 
-The same code written for MapReduce V2:
+The following code implements the same input format with MapReduce V2:
 
 .. code-block:: java
 
@@ -66,23 +65,20 @@ The same code written for MapReduce V2:
   import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
   import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
 
-
   public class TextInputFormat extends FileInputFormat<LongWritable, Text> {
 
       @Override
       public RecordReader<LongWritable, Text> createRecordReader(
-               InputSplit split,
-               TaskAttemptContext context) {
+        InputSplit split, TaskAttemptContext context) {
           return new LineRecordReader();
       }
 
       @Override
       protected boolean isSplitable(JobContext context, Path file) {
-          return context.getConfiguration().getBoolean("pydoop.input.issplitable",
-                                                       true);
+        return context.getConfiguration().getBoolean(
+          "pydoop.input.issplitable", true);
       }
   }
-
 
 For details on how to compile the above code into a jar and use it
 with Pydoop, see ``examples/input_format``\ .
