@@ -261,7 +261,7 @@ hdfsFS hdfsConnectAsUser(const char* host, tPort port, const char *user)
       sprintf(cURI, "hdfs://%s:%d", host, (int)(port));
       if (cURI == NULL) {
         fprintf (stderr, "Couldn't allocate an object of size %d",
-                 strlen(host) + 16);
+                 (int)(strlen(host) + 16));
         errno = EINTERNAL;
         goto done;
       }
@@ -1374,6 +1374,8 @@ int hdfsChown(hdfsFS fs, const char* path, const char *owner, const char *group)
     // JAVA EQUIVALENT:
     //  fs.setOwner(path, owner, group)
 
+    int ret = 0;
+
     //Get the JNIEnv* corresponding to current thread
     JNIEnv* env = getJNIEnv();
     if (env == NULL) {
@@ -1402,7 +1404,6 @@ int hdfsChown(hdfsFS fs, const char* path, const char *owner, const char *group)
     }
 
     //Create the directory
-    int ret = 0;
     jthrowable jExc = NULL;
     if (invokeMethod(env, NULL, &jExc, INSTANCE, jFS, HADOOP_FS,
                      "setOwner", JMETHOD3(JPARAM(HADOOP_PATH), JPARAM(JAVA_STRING), JPARAM(JAVA_STRING), JAVA_VOID),

@@ -2871,12 +2871,14 @@ static size_t getExtendedFileInfoOffset(const char *str)
     return num_64_bit_words * 8;
 }
 
+#ifdef HDFS_SUPPORTS_IS_ENCRYPTED
 static struct hdfsExtendedFileInfo *getExtendedFileInfo(hdfsFileInfo *fileInfo)
 {
     char *owner = fileInfo->mOwner;
     return (struct hdfsExtendedFileInfo *)(owner +
                 getExtendedFileInfoOffset(owner));
 }
+#endif
 
 static jthrowable
 getFileInfoFromStat(JNIEnv *env, jobject jStat, hdfsFileInfo *fileInfo)
@@ -2891,7 +2893,9 @@ getFileInfoFromStat(JNIEnv *env, jobject jStat, hdfsFileInfo *fileInfo)
     const char *cPathName;
     const char *cUserName;
     const char *cGroupName;
+#ifdef HDFS_SUPPORTS_IS_ENCRYPTED
     struct hdfsExtendedFileInfo *extInfo;
+#endif
     size_t extOffset;
 
     jthr = invokeMethod(env, &jVal, INSTANCE, jStat,
