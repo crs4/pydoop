@@ -51,27 +51,15 @@ int FsClass_init(FsInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject* FsClass_close(FsInfo* self);
 
-PyObject* FsClass_name(FsInfo* self);
-
-PyObject* FsClass_working_directory(FsInfo* self);
-
 PyObject* FsClass_get_working_directory(FsInfo* self);
 
-PyObject* FsClass_default_block_size(FsInfo* self);
-
 PyObject* FsClass_get_default_block_size(FsInfo* self);
-
-PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds);
 
 PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds);
 
-PyObject* FsClass_used(FsInfo* self);
-
 PyObject* FsClass_get_used(FsInfo* self);
-
-PyObject* FsClass_capacity(FsInfo* self);
 
 PyObject* FsClass_get_capacity(FsInfo* self);
 

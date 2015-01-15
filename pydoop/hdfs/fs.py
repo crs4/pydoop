@@ -284,8 +284,7 @@ class hdfs(object):
         _complain_ifclosed(self.closed)
         if self.__status.host is '':
             raise RuntimeError('Capacity is not defined for a local fs')
-        
-        return self.fs.capacity()
+        return self.fs.get_capacity()
 
     def copy(self, from_path, to_hdfs, to_path):
         """
@@ -324,7 +323,7 @@ class hdfs(object):
         :return: the default blocksize
         """
         _complain_ifclosed(self.closed)
-        return self.fs.default_block_size()
+        return self.fs.get_default_block_size()
 
     def delete(self, path, recursive=True):
         """
@@ -474,7 +473,7 @@ class hdfs(object):
         :return: total size of files in the file system
         """
         _complain_ifclosed(self.closed)
-        return self.fs.used()
+        return self.fs.get_used()
 
     def working_directory(self):
         """
@@ -484,7 +483,7 @@ class hdfs(object):
         :return: current working directory
         """
         _complain_ifclosed(self.closed)
-        wd = self.fs.working_directory()
+        wd = self.fs.get_working_directory()
         return wd
 
     def chown(self, path, user='', group=''):
