@@ -1,4 +1,4 @@
-include AUTHORS LICENSE VERSION README.md .git_commit
+include AUTHORS LICENSE VERSION README.md
 
 recursive-include src *
 
@@ -22,8 +22,7 @@ recursive-include examples/sequence_file/bin *.py
 recursive-include examples/sequence_file run*
 recursive-include examples/wordcount/bin *.py
 recursive-include examples/wordcount run
-recursive-include examples/input_format
-recursive-include examples/self_contained
-#recursive-include examples/avro
+recursive-include examples/input_format *
+recursive-include examples/self_contained *
 
 recursive-include docs *
