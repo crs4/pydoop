@@ -4,7 +4,7 @@ WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
 
 TARGETS=all build wheel install install_user install_wheel install_wheel_user\
-        docs docs_py docs_put docs_view \
+        docs docs_py docs_view \
         clean distclean uninstall_user logo favicon
 
 .PHONY: $(TARGETS)
@@ -54,9 +54,6 @@ docs: install_user logo favicon
 
 docs_py: install_user_py logo favicon
 	make -C docs html
-
-docs_put: docs
-	rsync -avz --delete -e ssh docs/_build/html/ ${USER},pydoop@web.sourceforge.net:/home/project-web/pydoop/htdocs/docs/
 
 docs_view: docs
 	yelp docs/_build/html/index.html &

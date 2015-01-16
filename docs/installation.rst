@@ -30,11 +30,7 @@ We recommend installing Pydoop via `pip <http://www.pip-installer.org>`_::
 
   pip install pydoop
 
-We also upload our releases to SourceForge at
-https://sourceforge.net/projects/pydoop/files.
-
-Finally, Pydoop source code is available from the `Git
-<http://git-scm.com/>`_ repository::
+To get the source code, clone our `Git <http://git-scm.com/>`_ repository::
 
   git clone https://github.com/crs4/pydoop.git
 
