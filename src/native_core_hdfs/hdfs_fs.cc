@@ -101,11 +101,6 @@ PyObject* FsClass_close(FsInfo* self)
 }
 
 
-PyObject* FsClass_working_directory(FsInfo* self) {
-    return FsClass_get_working_directory(self);
-}
-
-
 PyObject* FsClass_get_working_directory(FsInfo* self) {
 
     const size_t bufferSize = MAX_WD_BUFFSIZE;
@@ -125,10 +120,6 @@ PyObject* FsClass_get_working_directory(FsInfo* self) {
         return PyErr_NoMemory();
 
     return result;
-}
-
-PyObject* FsClass_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
-    return FsClass_get_path_info(self, args, kwds);
 }
 
 PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
@@ -238,18 +229,9 @@ done:
     return result;
 }
 
-PyObject* FsClass_default_block_size(FsInfo* self) {
-    return FsClass_get_default_block_size(self);
-}
-
-
 PyObject* FsClass_get_default_block_size(FsInfo* self) {
     tOffset size = hdfsGetDefaultBlockSize(self->_fs);
     return PyLong_FromSsize_t(size);
-}
-
-PyObject* FsClass_used(FsInfo* self) {
-    return FsClass_get_used(self);
 }
 
 PyObject* FsClass_get_used(FsInfo* self) {
@@ -355,21 +337,6 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 done:
     PyMem_Free((void*)path);
     return retval;
-}
-
-
-PyObject *FsClass_name(FsInfo* self)
-{
-    PyObject* result = PyString_FromFormat("%s %d %s", self->host, self->port, self->user);
-    if (!result)
-        PyErr_SetString(PyExc_RuntimeError, "Failed to format class name");
-
-    return result;
-}
-
-
-PyObject *FsClass_capacity(FsInfo *self) {
-    return FsClass_get_capacity(self);
 }
 
 

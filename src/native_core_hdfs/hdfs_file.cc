@@ -91,17 +91,6 @@ PyObject* FileClass_close(FileInfo* self){
 }
 
 
-PyObject* FileClass_mode(FileInfo* self){
-    return FileClass_get_mode(self);
-}
-
-
-PyObject* FileClass_get_mode(FileInfo *self){
-    return PyLong_FromLong(self->flags);
-}
-
-
-
 PyObject* FileClass_available(FileInfo *self){
     int available = hdfsAvailable(self->fs, self->file);
     if (available < 0)
