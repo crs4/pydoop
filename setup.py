@@ -40,6 +40,14 @@ import itertools
 import subprocess
 import setuptools
 
+# bug: http://bugs.python.org/issue1222585
+# workaround: http://stackoverflow.com/questions/8106258
+from distutils.sysconfig import get_config_var
+_UNWANTED_OPTS = frozenset(['-Wstrict-prototypes'])
+os.environ['OPT'] = ' '.join(
+    _ for _ in get_config_var('OPT').strip().split() if _ not in _UNWANTED_OPTS
+)
+
 from distutils.core import setup, Extension
 from distutils.command.build import build
 from distutils.command.clean import clean
@@ -58,6 +66,7 @@ HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
 EXTENSION_MODULES = []
 GIT_COMMIT_FN = ".git_commit"
+EXTRA_COMPILE_ARGS = ["-Wno-write-strings"]  # http://bugs.python.org/issue6952
 
 
 # ---------
@@ -177,18 +186,20 @@ def build_hdfscore_native_impl():
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=hdfs_ext_sources,
         define_macros=jvm.get_macros() + libhdfs_macros,
-        extra_compile_args=['-Xlinker', '-rpath', JVM_LIB_PATH]
+        extra_compile_args=EXTRA_COMPILE_ARGS,
+        extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
     )
     EXTENSION_MODULES.append(native_hdfs_core)
 
 
 def build_sercore_extension():
+    extra_compile_args = EXTRA_COMPILE_ARGS + ["-O3"]
     binary_encoder = Extension(
         'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
             'protocol_codec.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
-        extra_compile_args=["-O3"]
+        extra_compile_args=extra_compile_args
     )
     EXTENSION_MODULES.append(binary_encoder)
 
