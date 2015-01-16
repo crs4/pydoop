@@ -369,7 +369,7 @@ setup(
     author=pydoop.__author__,
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
-    download_url="https://sourceforge.net/projects/pydoop/files/",
+    download_url="https://pypi.python.org/pypi/pydoop",
     extras_require={
         ':python_version=="2.6"': ['argparse'],
         'tool': []
