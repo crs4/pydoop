@@ -56,7 +56,7 @@ __author_email__ = ", ".join((
     "<mauro@crs4.it>",
     "<kikkomep@crs4.it>",
 ))
-__url__ = "http://pydoop.sourceforge.net"
+__url__ = "http://crs4.github.io/pydoop"
 
 
 def reset():
