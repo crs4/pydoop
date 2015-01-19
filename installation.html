@@ -46,8 +46,8 @@
              accesskey="P">previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
 	<li><a href="#">Download & Install</a>|&nbsp;</li>
-	<li><a href="https://sourceforge.net/projects/pydoop/forums/forum/990018">Support</a>|&nbsp;</li>
-	<li><a href="http://sourceforge.net/projects/pydoop/">Pydoop on SF</a></li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
  
       </ul>
     </div>
@@ -60,14 +60,17 @@
             <h3><a href="index.html">Table Of Contents</a></h3>
             <ul>
 <li><a class="reference internal" href="#">Installation</a><ul>
-<li><a class="reference internal" href="#supported-platforms">Supported Platforms</a></li>
+<li><a class="reference internal" href="#supported-platforms">Supported Platforms</a><ul>
+<li><a class="reference internal" href="#linux">Linux</a></li>
+<li><a class="reference internal" href="#apple-os-x">Apple OS X</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#get-pydoop">Get Pydoop</a><ul>
 <li><a class="reference internal" href="#source-distribution">Source Distribution</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#id4">Installation</a></li>
-<li><a class="reference internal" href="#multiple-hadoop-versions">Multiple Hadoop Versions</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 <li><a class="reference internal" href="#testing-your-installation">Testing your Installation</a><ul>
 <li><a class="reference internal" href="#superuser-privileges">Superuser Privileges</a></li>
@@ -87,7 +90,7 @@
 
 					<h4>Get Pydoop</h4>
 					<ul>
-						<li> <a href="http://sourceforge.net/projects/pydoop/files/">Download page</a> </li>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
 						<li> <a href="#"> Installation Instructions </a> </li>
 					</ul>
 
@@ -98,12 +101,6 @@
 						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
 					</a>
 					</p>
-
-					And generously hosted by:
-					<a href="http://sourceforge.net/projects/pydoop">
-						<img src="http://sflogo.sourceforge.net/sflogo.php?group_id=536922&amp;type=13" width="120" height="30" 
-						alt="Get Pydoop at SourceForge.net. Fast, secure and Free Open Source software downloads" />
-					</a>
           <div id="searchbox" style="display: none">
             <h3>Quick search</h3>
               <form class="search" action="search.html" method="get">
@@ -130,10 +127,18 @@
 <span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="supported-platforms">
 <h2>Supported Platforms<a class="headerlink" href="#supported-platforms" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
 <p>Pydoop has been tested on <a class="reference external" href="http://www.gentoo.org">Gentoo</a>, <a class="reference external" href="http://www.ubuntu.com">Ubuntu</a> and <a class="reference external" href="http://www.centos.org">CentOS</a>. Although we currently have no information
 regarding other Linux distributions, we expect Pydoop to work
 (possibly with some tweaking) on them as well.</p>
-<p>Other platforms are not supported.</p>
+</div>
+<div class="section" id="apple-os-x">
+<h3>Apple OS X<a class="headerlink" href="#apple-os-x" title="Permalink to this headline">¶</a></h3>
+<p>Pydoop has been tested on OsX 10.9 (Maverick) and OsX 10.10 (Yosemite). First
+install the <a class="reference external" href="http://brew.sh/">Homebrew</a> version of python and then follow the
+instructions below.</p>
+</div>
 </div>
 <div class="section" id="get-pydoop">
 <span id="id2"></span><h2>Get Pydoop<a class="headerlink" href="#get-pydoop" title="Permalink to this headline">¶</a></h2>
@@ -143,9 +148,7 @@ regarding other Linux distributions, we expect Pydoop to work
 <div class="highlight-python"><div class="highlight"><pre>pip install pydoop
 </pre></div>
 </div>
-<p>We also upload our releases to SourceForge at
-<a class="reference external" href="https://sourceforge.net/projects/pydoop/files">https://sourceforge.net/projects/pydoop/files</a>.</p>
-<p>Finally, Pydoop source code is available from the <a class="reference external" href="http://git-scm.com/">Git</a> repository:</p>
+<p>To get the source code, clone our <a class="reference external" href="http://git-scm.com/">Git</a> repository:</p>
 <div class="highlight-python"><div class="highlight"><pre>git clone https://github.com/crs4/pydoop.git
 </pre></div>
 </div>
@@ -158,12 +161,12 @@ the <tt class="docutils literal"><span class="pre">develop</span></tt> branch co
 <p>In order to build and install Pydoop, you need the following software:</p>
 <ul class="simple">
 <li><a class="reference external" href="http://www.python.org">Python</a> version 2.7 (or 2.6 with
-backports <a class="footnote-reference" href="#id7" id="id3">[1]</a>)</li>
+backports <a class="footnote-reference" href="#id6" id="id3">[1]</a>)</li>
 <li>either of the following:<ul>
 <li><a class="reference external" href="http://hadoop.apache.org">Apache Hadoop</a> version 1.0.4, 1.1.2,
-1.2.1, 2.2.0 or 2.4.1</li>
+1.2.1, 2.2.0, 2.4.1, 2.5.2 and 2.6.0</li>
 <li><a class="reference external" href="https://ccp.cloudera.com/display/SUPPORT/Downloads">CDH</a>
-version 4.2.0 or 4.3.0, installed from dist-specific packages or
+version 4 and 5 installed from dist-specific packages or
 Cloudera Manager parcels (no tarball)</li>
 </ul>
 </li>
@@ -228,42 +231,9 @@ accessible on the entire cluster.</p>
 <div class="highlight-python"><div class="highlight"><pre>python setup.py install --skip-build --home &lt;PATH&gt;
 </pre></div>
 </div>
-</div>
-<div class="section" id="multiple-hadoop-versions">
-<span id="id5"></span><h2>Multiple Hadoop Versions<a class="headerlink" href="#multiple-hadoop-versions" title="Permalink to this headline">¶</a></h2>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The following instructions apply to installations from
-tarballs. Running a package-based Hadoop installation together with
-a &#8220;from-tarball&#8221; one is neither advised not supported.</p>
-</div>
-<p>If you&#8217;d like to use your Pydoop installation with multiple versions of Hadoop,
-you will need to rebuild the modules for each version of Hadoop.</p>
-<p>After building Pydoop for the first time following the instructions above,
-modify your HADOOP-related environment variables to point to the other version
-of Hadoop to be supported.  Then repeat the build and installation commands
-again.</p>
-<p>Example:</p>
-<div class="highlight-python"><div class="highlight"><pre>export HADOOP_HOME=/opt/hadoop-1.0.4
-python setup.py install --user
-
-python setup.py clean --all
-
-export HADOOP_HOME=/opt/hadoop-1.2.1
-python setup.py install --user
-</pre></div>
-</div>
-<p>At run time, the appropriate version of the Pydoop modules will be
-loaded for the version of Hadoop selected by your <tt class="docutils literal"><span class="pre">HADOOP_HOME</span></tt>
-variable.  If Pydoop is not able to retrieve your Hadoop home
-directory from the environment or by looking into standard paths, it
-falls back to a default location that is hardwired at compile time:
-the setup script looks for a file named <tt class="docutils literal"><span class="pre">DEFAULT_HADOOP_HOME</span></tt> in the
-current working directory; if the file does not exist, it is created
-and filled with the path to the current Hadoop home.</p>
-</div>
+<span class="target" id="multiple-hadoop-versions"></span></div>
 <div class="section" id="troubleshooting">
-<span id="id6"></span><h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<span id="id5"></span><h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
 <li><p class="first">&#8220;java home not found&#8221; error, with <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> properly exported: try
 setting <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> in <tt class="docutils literal"><span class="pre">hadoop-env.sh</span></tt></p>
@@ -377,7 +347,7 @@ a low value:</p>
 </div>
 <p>then restart Hadoop daemons.</p>
 <p class="rubric">Footnotes</p>
-<table class="docutils footnote" frame="void" id="id7" rules="none">
+<table class="docutils footnote" frame="void" id="id6" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
 <tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>To make Pydoop work with Python 2.6 you need to install the
@@ -411,8 +381,8 @@ following additional modules: <a class="reference external" href="http://pypi.py
              >previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
 	<li><a href="#">Download & Install</a>|&nbsp;</li>
-	<li><a href="https://sourceforge.net/projects/pydoop/forums/forum/990018">Support</a>|&nbsp;</li>
-	<li><a href="http://sourceforge.net/projects/pydoop/">Pydoop on SF</a></li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
  
       </ul>
     </div>
