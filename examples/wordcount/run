@@ -2,3 +2,6 @@
 
 ./run_wc_minimal
 ./run_wc_full
+./run_wc_minimal_new_api
+./run_wc_full_new_api
+

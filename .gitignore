@@ -1,4 +1,5 @@
 *.pyc
+*~
 DEFAULT_HADOOP_HOME
 build
 docs/_build/
@@ -9,3 +10,19 @@ pydoop/version.py
 src/_hdfs_*_main.cpp
 src/_pipes_*_main.cpp
 src/hadoop*.patched/
+src/hadoop*/libhdfs/config.h
+src/hdfs/hdfs.xcodeproj
+src/hdfs/hdfs/*
+
+dist
+
+examples/**/*.class
+examples/**/*.jar
+
+test/timings/dataset
+
+pydoop.egg-info
+
+.DS_Store
+.idea
+*.xcodeproj

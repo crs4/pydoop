@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for s in wordcount_minimal wordcount_full; do
+    echo
+    echo "*** running ${s} ***"
+    echo
+    ./run_${s}
+done

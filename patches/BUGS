@@ -1,5 +1,0 @@
-hadoop-2.0.0-cdh4.1.0.patch
----------------------------
-
-The Java Pipes part does not work --
-org.apache.hadoop.mapred.TaskTracker is not available in mrv2.

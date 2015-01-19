@@ -17,18 +17,14 @@ reducer functions:
 .. code-block:: python
 
   def mapper(input_key, input_value, writer):
-    # your computation here
-    writer.emit(intermediate_key, intermediate_value)
+      # your computation here
+      writer.emit(intermediate_key, intermediate_value)
 
   def reducer(intermediate_key, value_iterator, writer):
-    # your computation here
-    writer.emit(output_key, output_value)
+      # your computation here
+      writer.emit(output_key, output_value)
 
-Upload your input data to HDFS::
-
-  hadoop fs -put input hdfs_input
-
-Run the pydoop script program::
+The program can be run as follows::
 
   pydoop script script.py hdfs_input hdfs_output
 
@@ -58,22 +54,19 @@ five lines of code:
 .. code-block:: python
 
   def mapper(_, text, writer):
-    for word in text.split():
-      writer.emit(word, "1")
+      for word in text.split():
+          writer.emit(word, "1")
 
   def reducer(word, icounts, writer):
-    writer.emit(word, sum(map(int, icounts)))
-
-Notice that in the reducer we had to convert the values to ``int``
-since all data come in as strings.
+      writer.emit(word, sum(map(int, icounts)))
 
 A few more lines allow to set a combiner for local aggregation:
 
 .. code-block:: python
 
   def combiner(word, icounts, writer):
-    writer.count('combiner calls', 1)
-    reducer(word, icounts, writer)
+      writer.count('combiner calls', 1)
+      reducer(word, icounts, writer)
 
 Run the example with::
 
@@ -100,13 +93,13 @@ this last "global" count we can use Hadoop counters:
 .. code-block:: python
 
   def mapper(_, text, writer):
-    wordlist = text.split()
-    for word in wordlist:
-      writer.emit(word, "1")
-    writer.count("num words", len(wordlist))
+      wordlist = text.split()
+      for word in wordlist:
+          writer.emit(word, "1")
+      writer.count("num words", len(wordlist))
 
   def reducer(word, count, writer):
-    writer.emit(word, sum(map(int, count)))
+      writer.emit(word, sum(map(int, count)))
 
 The counter value will show on the JobTracker's job page and will be
 present in the job logs.
@@ -119,7 +112,7 @@ To convert some text to lower case, create a module ``lowercase.py``:
 .. code-block:: python
 
   def mapper(_, text, writer):
-    writer.emit("", text.lower())
+      writer.emit("", text.lower())
 
 This is a map-only job, so we set the number of reducers to 0.  To
 avoid leading tabs in our results, we also want an empty separator for
@@ -136,8 +129,8 @@ given at run time.  Create a module ``grep.py``:
 .. code-block:: python
 
   def mapper(_, text, writer, conf):  # notice the fourth 'conf' argument
-    if text.find(conf['grep-expression']) >= 0:
-      writer.emit("", text)
+      if text.find(conf['grep-expression']) >= 0:
+          writer.emit("", text)
 
 Job parameters, like in ``hadoop pipes``, are passed via the -D
 option::

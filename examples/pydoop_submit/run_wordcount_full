@@ -1,0 +1,56 @@
+#!/bin/bash
+
+MODULE=wordcount_full
+MZIP=${MODULE}.zip
+MPY=${MODULE}.py
+DATA=../input/alice.txt
+RESULTS='results.txt'
+
+PROGNAME=${MODULE}-prog
+JOBNAME=${MODULE}-job
+
+LOGLEVEL=INFO
+
+INPUT=${MODULE}_input
+OUTPUT=${MODULE}_output
+
+SUBMIT_CMD="pydoop submit"
+
+PYTHONBIN=${PYTHONBIN:-python}
+
+if type -P hdfs >/dev/null; then
+	hdfs="$(type -P hdfs) dfs "
+elif type -P hadoop >/dev/null; then
+	hdfs="$(type -P hadoop) fs "
+else
+	echo "Cannot find hdfs or hadoop executables" >&2
+	exit 1
+fi
+
+zip -j ${MZIP} ../wordcount/new_api/${MPY}
+
+${hdfs} -rm -r /user/${USER}/${INPUT}
+${hdfs} -mkdir /user/${USER}/${INPUT}
+${hdfs} -rm -r /user/${USER}/${OUTPUT}
+${hdfs} -put ${DATA} ${INPUT}
+
+${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
+              -D hadoop.pipes.java.recordreader=false \
+              -D hadoop.pipes.java.recordwriter=false \
+							-D pydoop.hdfs.user=${USER} \
+              --module ${MODULE} --entry-point main \
+              --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
+              ${PROGNAME} ${INPUT} ${OUTPUT} 
+
+${hdfs} -cat ${OUTPUT}/part'*' > ${RESULTS}
+
+python <<EOF
+import pydoop.test_support as pts
+
+def check_results(data_in, data_out):
+    local_wc = pts.LocalWordCount(data_in)
+    print "result is:", local_wc.check(open(data_out).read())
+
+print "Checking results"
+check_results("${DATA}", "${RESULTS}")
+EOF

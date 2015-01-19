@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2015 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
+from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
+from pydoop.mapreduce.simulator import HadoopSimulatorLocal
+from pydoop.mapreduce.pipes import InputSplit
+import logging
+import os
+import shutil
+import tempfile
+import pydoop.test_support as pts
+
+import sys
+md_folder = os.path.realpath(os.path.abspath('../wordcount/new_api'))
+if md_folder not in sys.path:
+    sys.path.insert(0, md_folder)
+
+from wordcount_minimal import FACTORY as factory_minimal
+from wordcount_full import FACTORY as factory_full
+
+
+"""
+Use simulators to run wordcount
+===============================
+
+This example shows how to use the two different version of the
+HadoopSimulator to run wordcount with different configurations.
+
+"""
+
+
+def create_configuration():
+    data_in = '../input/alice.txt'
+    data_out = 'results.txt'
+    data_in_path = os.path.realpath(data_in)
+    data_in_uri = 'file://' + data_in_path
+    data_in_size = os.stat(data_in_path).st_size
+    output_dir = tempfile.mkdtemp(prefix="pydoop_")
+    output_dir_uri = 'file://' + os.path.realpath(output_dir)
+    conf = {
+        "mapred.map.tasks": "2",
+        "mapred.reduce.tasks": "1",
+        "mapred.job.name": "wordcount",
+        "mapred.work.output.dir": output_dir_uri,
+        "mapred.task.partition": "0",
+        }
+    input_split = InputSplit.to_string(data_in_uri, 0, data_in_size)
+    return data_in, data_out, conf, input_split, output_dir
+
+
+def dump_counters(hs, logger):
+    counters = hs.get_counters()
+    for phase in ['mapping', 'reducing']:
+        logger.info("%s counters:", phase.capitalize())
+        for group in counters[phase]:
+            logger.info("  Group %s", group)
+            for c, v in counters[phase][group].iteritems():
+                logger.info("   %s: %s", c, v)
+
+
+def clean_up(data_out, output_dir):
+    os.unlink(data_out)
+    shutil.rmtree(output_dir)
+
+
+def check_results(data_in, data_out, logger):
+    local_wc = pts.LocalWordCount(data_in)
+    logger.info("checking results")
+    logger.info(local_wc.check(open(data_out).read()))
+
+
+def run_network_minimal(logger):
+    program_name = '../wordcount/new_api/wordcount_minimal.py'
+    data_in, data_out, conf, input_split, output_dir = create_configuration()
+    hs = HadoopSimulatorNetwork(program=program_name, logger=logger,
+                                loglevel=logging.INFO)
+    hs.run(open(data_in), open(data_out, 'w'), conf)
+    dump_counters(hs, logger)
+    check_results(data_in, data_out, logger)
+    clean_up(data_out, output_dir)
+
+
+def run_local_minimal(logger):
+    hs = HadoopSimulatorLocal(factory=factory_minimal, logger=logger,
+                              loglevel=logging.INFO)
+    data_in, data_out, conf, input_split, output_dir = create_configuration()
+    hs.run(open(data_in), open(data_out, 'w'), conf)
+    dump_counters(hs, logger)
+    check_results(data_in, data_out, logger)
+    clean_up(data_out, output_dir)
+
+
+def run_local_full(logger):
+    data_in, data_out, conf, input_split, output_dir = create_configuration()
+    hsl = HadoopSimulatorLocal(factory=factory_full, logger=logger,
+                               loglevel=logging.INFO)
+    hsl.run(None, None, conf, input_split=input_split, num_reducers=1)
+    data_out = os.path.join(output_dir,
+                            'part-%05d' % int(conf["mapred.task.partition"]))
+    dump_counters(hsl, logger)
+    check_results(data_in, data_out, logger)
+    clean_up(data_out, output_dir)
+
+
+def run_network_full(logger):
+    program_name = '../wordcount/new_api/wordcount_full.py'
+    data_in, data_out, conf, input_split, output_dir = create_configuration()
+    hs = HadoopSimulatorNetwork(program=program_name, logger=logger,
+                                loglevel=logging.INFO)
+    hs.run(None, None, conf, input_split=input_split)
+    data_out = os.path.join(output_dir,
+                            'part-%05d' % int(conf["mapred.task.partition"]))
+    dump_counters(hs, logger)
+    check_results(data_in, data_out, logger)
+    clean_up(data_out, output_dir)
+
+
+def main():
+    logger = logging.getLogger("main")
+    logger.setLevel(logging.INFO)
+    logger.info("*** word count full using HadoopSimulatorNetwork ***")
+    run_network_full(logger)
+    logger.info("*** word count minimal using HadoopSimulatorNetwork ***")
+    run_network_minimal(logger)
+    logger.info("*** word count minimal using HadoopSimulatorLocal ***")
+    run_local_minimal(logger)
+    logger.info("*** word count full using HadoopSimulatorLocal ***")
+    run_local_full(logger)
+
+
+if __name__ == "__main__":
+    main()

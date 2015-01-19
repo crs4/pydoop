@@ -1,19 +1,34 @@
 #!/bin/bash
-trap exit ERR	
+trap exit ERR
 
 examples=(
     hdfs
     input_format
     pydoop_script
+    pydoop_submit
     self_contained
-    ipcount
     sequence_file
     wordcount
+    simulator
 )
+
+some_failed=0
 
 for e in ${examples[@]}; do
     pushd ${e}
-    echo -ne "\n *** RUNNING ${e} EXAMPLE(S) ***\n"
+    echo -ne "\n\n *** RUNNING ${e} EXAMPLE(S) ***\n\n"
     ./run
+    exit_code=$?
+    if [ ${exit_code} -ne 0 ]; then
+      echo -ne "\n\n #### Error!!  Example ${e} finished with code ${exit_code} ###\n\n" >&2
+      some_failed=1
+    fi
     popd
 done
+
+if [ ${some_failed} -ne 0 ]; then
+  echo "##############################################" >&2
+  echo "Some examples failed to run correctly.  Please" >&2
+  echo "verify your installation"                       >&2
+  echo "##############################################" >&2
+fi

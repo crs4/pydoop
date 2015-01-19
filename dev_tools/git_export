@@ -4,7 +4,11 @@
 Export git working copy including uncommitted changes
 """
 
-import sys, os, argparse, shutil, subprocess as sp
+import sys
+import os
+import argparse
+import shutil
+import subprocess as sp
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,38 +17,47 @@ DEFAULT_EXPORT_DIR = os.path.join(PARENT_DIR, "git_export")
 
 
 def get_sources():
-  cmd = "git ls-files --full-name %s" % PARENT_DIR
-  return sp.check_output(cmd, shell=True).splitlines()
+    cmd = "git ls-files --full-name %s" % PARENT_DIR
+    return sp.check_output(cmd, shell=True).splitlines()
 
 
 def export(sources, export_root):
-  if os.path.isdir(export_root):
-    shutil.rmtree(export_root)
-  os.makedirs(export_root)
-  for fn in sources:
-    d, bn = os.path.split(fn)
-    if bn.startswith(".git"):
-      print "skipping", fn
-      continue
-    d = os.path.join(export_root, d)
-    if not os.path.isdir(d):
-      os.makedirs(d)
-    shutil.copy(os.path.join(PARENT_DIR, fn), d)
+    if os.path.isdir(export_root):
+        shutil.rmtree(export_root)
+    os.makedirs(export_root)
+    for fn in sources:
+        d, bn = os.path.split(fn)
+        if bn.startswith(".git"):
+            print "skipping", fn
+            continue
+        d = os.path.join(export_root, d)
+        if not os.path.isdir(d):
+            os.makedirs(d)
+        in_path = os.path.join(PARENT_DIR, fn)
+        if os.path.islink(in_path):
+            in_path = os.path.realpath(in_path)
+            out_path = os.path.join(d, bn)
+            if os.path.isdir(in_path):
+                shutil.copytree(in_path, out_path, symlinks=True)
+            else:
+                shutil.copy(in_path, out_path)
+        else:
+            shutil.copy(in_path, d)
 
 
 def make_parser():
-  parser = argparse.ArgumentParser(description=__doc__)
-  parser.add_argument("-o", "--output-dir", metavar="DIR",
-                      help="output directory", default=DEFAULT_EXPORT_DIR)
-  return parser
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-o", "--output-dir", metavar="DIR",
+                        help="output directory", default=DEFAULT_EXPORT_DIR)
+    return parser
 
 
 def main(argv):
-  parser = make_parser()
-  args = parser.parse_args(argv[1:])
-  sources = get_sources()
-  export(sources, args.output_dir)
+    parser = make_parser()
+    args = parser.parse_args(argv[1:])
+    sources = get_sources()
+    export(sources, args.output_dir)
 
 
 if __name__ == "__main__":
-  main(sys.argv)
+    main(sys.argv)

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+python run_wc.py new_api/wordcount_full.py ../input \
+    -D hadoop.pipes.java.recordreader=false \
+    -D hadoop.pipes.java.recordwriter=false \
+    -D pydoop.hdfs.user=${USER}

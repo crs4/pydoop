@@ -1,49 +1,103 @@
 jdk: 
 - oraclejdk7
-after_success: 
-- #sudo apt-get install debhelper python-all-dev libboost-python-dev libssl-dev python-sphinx devscripts inkscape
-- #make debian
-- #cd sandbox
-- #python -c "import smtplib, glob;from email.mime.application import MIMEApplication;from email.mime.multipart import MIMEMultipart;from email.mime.text import MIMEText;fromaddr = 'travis.ci.rs4@gmail.com';toaddrs  = 'travis.ci.rs4@gmail.com';msg = MIMEMultipart();msg['Subject'] = 'New pydoop deb for $HADOOPVERSION build:$TRAVIS_BUILD_NUMBER';msg['From'] = 'travis.ci.rs4@gmail.com';msg['To'] = 'travis.ci.rs4@gmail.com';username = 'travis.ci.rs4';password = '$pw';part = MIMEText(msg['Subject']);msg.attach(part);deb_file_name = glob.glob('*.deb')[0];part = MIMEApplication(open(deb_file_name,'rb').read());part.add_header('Content-Disposition', 'attachment', filename=deb_file_name);msg.attach(part);server = smtplib.SMTP('smtp.gmail.com:587');server.starttls();server.login(username,password);server.sendmail(msg['From'], msg['To'], msg.as_string());server.quit()"
-env: 
+
+env:
   global: 
     secure: d1kOuK3dSEs2nNZdGFNcY9KLI5PuWOv7xq9V1b+/+rzhi/BezsvEAjRw+7SeVa/sBk5LcKuKtW06Mjst0npXk487TpQpuLSNzUbX1aaTw4+oG0iJWKeK559iiMs+MBSFYvC6XPts5DkNM+hn5KmhuzCTHBotCv7ZB9Zmuj/ULsg=
-  matrix: 
-  - HADOOPVERSION=0.20.2
-  - HADOOPVERSION=cdh3u4
-  - HADOOPVERSION=cdh3u5
-  - HADOOPVERSION=1.0.4
-  - HADOOPVERSION=1.1.2
-  - HADOOPVERSION=1.2.1
-  - HADOOPVERSION=2.2.0
-  - HADOOPVERSION=cdh4.2.0
-  - HADOOPVERSION=cdh4.2.0 YARN=true
-  - HADOOPVERSION=cdh4.3.0
-  - HADOOPVERSION=cdh4.3.0 YARN=true
-  - HADOOPVERSION=cdh4.4.0
-  - HADOOPVERSION=cdh4.4.0 YARN=true
-  - HADOOPVERSION=cdh4.5.0
-  - HADOOPVERSION=cdh4.5.0 YARN=true
-python: 
+
+  matrix:
+     # -------------------------------------------------------------
+     # Apache Hadoop Distributions
+     # -------------------------------------------------------------
+     # HADOOP standard 1.*
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=native
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=native
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.1.2 HDFS_BACKEND=native
+    - HADOOPVERSION=1.1.2 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.2.1 HDFS_BACKEND=native
+    - HADOOPVERSION=1.2.1 HDFS_BACKEND=jpype-bridged
+     # HADOOP standard 2.*
+    - HADOOPVERSION=2.2.0 HDFS_BACKEND=native
+    - HADOOPVERSION=2.2.0 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.4.1 HDFS_BACKEND=native
+    - HADOOPVERSION=2.4.1 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.5.2 HDFS_BACKEND=native
+    - HADOOPVERSION=2.5.2 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.6.0 HDFS_BACKEND=native
+    - HADOOPVERSION=2.6.0 HDFS_BACKEND=jpype-bridged
+    # -------------------------------------------------------------
+    # Cloudera Distributions
+    # -------------------------------------------------------------
+    # CDH v4
+    - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.3.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.3.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.3.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.3.0 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.4.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.4.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.4.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.4.0 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.5.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.5.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.5.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.5.0 YARN=true HDFS_BACKEND=jpype-bridged
+    # CDH v5
+    - HADOOPVERSION=cdh5.0.5 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.0.5 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.0.5 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.0.5 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.1.4 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.1.4 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.1.4 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.1.4 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.2.1 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.2.1 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.2.1 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.2.1 YARN=true HDFS_BACKEND=jpype-bridged
+
+
+python:
 - "2.7"
-install:
-- export LD_PRELOAD=/lib/x86_64-linux-gnu/libssl.so.1.0.0
-- python setup.py install
-before_install: 
-- sudo apt-get install build-essential python-all-dev libboost-python-dev libssl-dev
+
+before_install:
+- export PATH=$VIRTUAL_ENV/bin:$PATH
+- export PYTHONPATH=${VIRTUAL_ENV}/lib/python2.7/site-packages
+#- export JAVA_HOME=$(readlink -f /usr/bin/javac | sed "s:bin/javac::")
+- sudo apt-get install build-essential python-all-dev libssl-dev zip
+- virtualenv ${VIRTUAL_ENV}
+- source /home/travis/virtualenv/python2.7/bin/activate
+- if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then wget http://garr.dl.sourceforge.net/project/jpype/JPype/0.5.4/JPype-0.5.4.2.zip; unzip JPype-0.5.4.2.zip; cd JPype-0.5.4.2; $VIRTUAL_ENV/bin/python setup.py install; cd ../; fi
 - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
 - sudo groupadd admin
 - sudo usermod  -a -G admin $USER
 - groups $USER
-- . .travis/install_hadoop.sh
+- bash .travis/install_hadoop.sh
+- # load Hadoop variables set by installation script
+- . /tmp/set_travis_hadoop_env.sh
+- env
+- test -n "${HADOOP_HOME}" && export PATH="${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${PATH}"
+- if [[ "${HADOOPVERSION}" == *cdh* ]]; then unset HADOOP_HOME; fi
+- hadoop version
+- hadoop classpath
+
+install:
+- $VIRTUAL_ENV/bin/python setup.py build --hdfs-core-impl $HDFS_BACKEND
+- $VIRTUAL_ENV/bin/python setup.py install --skip-build
+- $VIRTUAL_ENV/bin/python setup.py bdist_wheel
 
 script:
-- #sudo jps
-- #export HADOOP_MAPRED_HOME=/usr/lib/hadoop-mapreduce/ 
-- python test/all_tests.py
-- cd examples
+- cd test;
+- $VIRTUAL_ENV/bin/python all_tests.py
+- cd ../examples
+- export PYTHONBIN=$VIRTUAL_ENV/bin/python
 - ./run_all
-- cd ../
+
 language: python
