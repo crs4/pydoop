@@ -3,7 +3,7 @@
 Pydoop is a Python MapReduce and HDFS API for
 [Hadoop](http://hadoop.apache.org/).
 
-Copyright 2009-2014 [CRS4](http://www.crs4.it/).
+Copyright 2009-2015 [CRS4](http://www.crs4.it/).
 
 Documentation, including installation instructions, is available under
 `docs/`.  For a general overview, you can also read the following
