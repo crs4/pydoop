@@ -1,4 +1,4 @@
-EXPORT_DIR = /tmp/pydoop_export
+TEMPDIR := $(shell mktemp -u)
 GIT_COMMIT_FN = .git_commit
 WHEEL_DIR=./dist
 PY_V := $(shell python -c 'import sys; print "%d.%d" % sys.version_info[:2]')
@@ -58,14 +58,22 @@ docs_py: install_user_py logo favicon
 docs_view: docs
 	yelp docs/_build/html/index.html &
 
+docs_update: docs
+	mkdir -p $(TEMPDIR)
+	mv docs/_build/html/* $(TEMPDIR)/
+	git stash
+	git checkout gh-pages
+	rsync -avz --delete --exclude '.??*' $(TEMPDIR)/ ./
+	rm -rf $(TEMPDIR)
+
 dist: docs
-	./dev_tools/git_export -o $(EXPORT_DIR)
-	git rev-parse HEAD >$(EXPORT_DIR)/$(GIT_COMMIT_FN)
-	rm -rf $(EXPORT_DIR)/docs/*
-	mv docs/_build/html $(EXPORT_DIR)/docs/
-	cd $(EXPORT_DIR) && python setup.py sdist
-	mv -i $(EXPORT_DIR)/dist/pydoop-*.tar.gz .
-	rm -rf $(EXPORT_DIR)
+	./dev_tools/git_export -o $(TEMPDIR)
+	git rev-parse HEAD >$(TEMPDIR)/$(GIT_COMMIT_FN)
+	rm -rf $(TEMPDIR)/docs/*
+	mv docs/_build/html $(TEMPDIR)/docs/
+	cd $(TEMPDIR) && python setup.py sdist
+	mv -i $(TEMPDIR)/dist/pydoop-*.tar.gz .
+	rm -rf $(TEMPDIR)
 
 clean:
 	python setup.py clean --all
