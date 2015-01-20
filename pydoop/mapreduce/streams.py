@@ -78,7 +78,7 @@ class PushBackStream(object):
 
     def __iter__(self):
         return self
-        
+
     def next(self):
         if self.lifo:
             return self.lifo.pop()

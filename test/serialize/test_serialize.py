@@ -185,13 +185,12 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(fn, new_fn)
 
 
-
 def _compile_java_part(java_class_file, classpath):
     java_file = os.path.splitext(
         os.path.realpath(java_class_file)
     )[0] + '.java'
     if (not os.path.exists(java_class_file) or
-        os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
+            os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
         cmd = ['javac', '-cp', classpath, java_file]
         try:
             subprocess.check_call(cmd, cwd=os.path.dirname(java_file))

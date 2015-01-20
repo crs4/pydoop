@@ -25,9 +25,11 @@ import os
 
 from pydoop.hdfs import common
 
+
 def _complain_ifclosed(closed):
     if closed:
         raise ValueError("I/O operation on closed HDFS file object")
+
 
 def _seek_with_boundary_checks(f, position, whence):
     if whence == os.SEEK_CUR:
@@ -38,8 +40,9 @@ def _seek_with_boundary_checks(f, position, whence):
     if position > f.size:
         raise IOError('cannot seek past end of file')
     if f.mode != 'r':
-        raise IOError('can seek only in read-only')            
+        raise IOError('can seek only in read-only')
     return position
+
 
 class hdfs_file(object):
     """
@@ -193,7 +196,7 @@ class hdfs_file(object):
         if position < 0:
             raise ValueError("position must be >= 0")
         if position > self.size:
-            raise IOError("position cannot be past EOF")            
+            raise IOError("position cannot be past EOF")
         if length < 0:
             length = self.size - position
         return self.f.pread(position, length)
@@ -214,7 +217,7 @@ class hdfs_file(object):
         """
         _complain_ifclosed(self.closed)
         if position > self.size:
-            raise IOError("position cannot be past EOF")            
+            raise IOError("position cannot be past EOF")
         return self.f.pread_chunk(position, chunk)
 
     def read(self, length=-1):

@@ -18,6 +18,7 @@
 
 import pydoop.hdfs as hdfs
 
+
 def kv_pair(s):
     return s.split("=", 1)
 

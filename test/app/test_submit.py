@@ -107,11 +107,12 @@ class TestAppSubmit(unittest.TestCase):
         [args, unknown] = parser.parse_known_args(argv)
         self.assertEqual(args.module, '')
 
+
 def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestAppSubmit('test_help'))
     suite_.addTest(TestAppSubmit('test_conf_file'))
-    suite_.addTest(TestAppSubmit('test_empty_param'))    
+    suite_.addTest(TestAppSubmit('test_empty_param'))
     return suite_
 
 

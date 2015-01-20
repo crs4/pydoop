@@ -139,6 +139,7 @@ class TestAvroIO(unittest.TestCase):
 
         class AWriter(AvroWriter):
             schema = AVRO_USER_SCHEMA
+
             def emit(self, key, value):
                 self.writer.append(key)
 

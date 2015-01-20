@@ -84,7 +84,7 @@ class PydoopScript(object):
         args.input_format = None
         args.output_format = None
         args.cache_file = None
-        args.cache_archive = None        
+        args.cache_archive = None
         args.upload_to_cache = None
         args.libjars = None
         args.mrv2 = False

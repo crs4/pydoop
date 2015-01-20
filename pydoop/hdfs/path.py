@@ -531,7 +531,8 @@ def access(path, mode, user=None):
         try:
             groups = common.get_groups(user)
         except KeyError:
-            # user isn't recognized on the system.  No group information available
+            # user isn't recognized on the system.  No group
+            # information available
             groups = []
         if st.st_gid in groups:
             mode <<= 3
