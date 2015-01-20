@@ -44,6 +44,8 @@ STREAM_2_DATA = [
 
 
 key = None
+
+
 def keyfunc(t):
     global key
     if t[0] == 'reduceKey':

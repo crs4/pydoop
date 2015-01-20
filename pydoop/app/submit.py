@@ -202,8 +202,9 @@ class PydoopSubmitter(object):
             lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
         if self.args.python_zip:
             pypath = ':'.join(self.args.python_zip + [pypath])
-        # Note that we have to explicitely put the working directory in the path
-        # otherwise it will miss cached modules and packages.
+        # Note that we have to explicitely put the working directory
+        # in the path otherwise it will miss cached modules and
+        # packages.
         lines.append('export PYTHONPATH="${PWD}:%s:$PYTHONPATH"' % (pypath))
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
@@ -211,7 +212,7 @@ class PydoopSubmitter(object):
         if self.args.log_level == "DEBUG":
             lines.append("echo ${PYTHONPATH} 1>&2")
             lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
-            lines.append("echo ${HOME} 1>&2")             
+            lines.append("echo ${HOME} 1>&2")
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         if self.args.log_level == "DEBUG":

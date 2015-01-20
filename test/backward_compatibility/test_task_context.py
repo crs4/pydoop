@@ -1,19 +1,19 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2015 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
 import unittest
@@ -22,19 +22,15 @@ from pydoop.pipes import InputSplit
 
 
 example_input_splits = [
-    # ('\x002hdfs://localhost:8020/user/kikkomep/WordCountInput\x00\x00\x00\x00\x00\x01G4\x00\x00\x00\x00\x00\x01G5',
-    # "hdfs://localhost:8020/user/kikkomep/WordCountInput",
-    # 1,2
-    # )
-    ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x08h(\x00\x00\x00\x00\x00\x08h\x05',
-    'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
-    550952, 550917),
-    ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
-    'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps',
-    0, 550952),
-    ('1hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
-    'hdfs://localhost:9000/user/zag/in-dir/images_list',
-    0, 36)
+    ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00'
+     '\x08h(\x00\x00\x00\x00\x00\x08h\x05',
+     'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps', 550952, 550917),
+    ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00'
+     '\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
+     'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps', 0, 550952),
+    ('1hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00'
+     '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
+     'hdfs://localhost:9000/user/zag/in-dir/images_list', 0, 36)
 ]
 if not pydoop.hadoop_version_info().has_variable_isplit_encoding():
     example_input_splits = [("\x00" + raw_split, fn, o, l)

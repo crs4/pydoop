@@ -21,8 +21,7 @@ import os
 
 from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 
-DATA = \
-"""1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
+DATA = """1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
 1	sitting on the riverbank with her elder sister, when she notices a
 1	talking, clothed White Rabbit with a pocket watch run past. She
 1	follows it down a rabbit hole when suddenly she falls a long way to a
@@ -34,8 +33,7 @@ DATA = \
 1	cake with "EAT ME" written on it in currants as the chapter closes.
 """
 
-FOOBAR_PY = \
-"""#!/usr/bin/env python
+FOOBAR_PY = """#!/usr/bin/env python
 
 import sys
 sys.path.insert(0, '../../')

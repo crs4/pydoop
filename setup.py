@@ -36,9 +36,9 @@ import time
 import os
 import glob
 import shutil
-import itertools
 import subprocess
 import setuptools
+print 'using setuptools version', setuptools.__version__
 
 # bug: http://bugs.python.org/issue1222585
 # workaround: http://stackoverflow.com/questions/8106258
@@ -373,7 +373,7 @@ setup(
     extras_require={
         ':python_version=="2.6"': ['argparse'],
         'tool': []
-        },  
+        },
     packages=[
         "pydoop",
         "pydoop.hdfs",

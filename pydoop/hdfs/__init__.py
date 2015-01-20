@@ -86,6 +86,7 @@ try:
 except NameError:
     _ORIG_CLASSPATH = os.getenv("CLASSPATH", "")
 
+
 #--- MODULE CONFIG ---
 def init():
     os.environ["CLASSPATH"] = "%s:%s:%s" % (

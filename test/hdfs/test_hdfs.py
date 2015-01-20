@@ -312,12 +312,12 @@ class TestHDFS(unittest.TestCase):
             def count(self):
                 return self.counter.count
 
-        some_data = "a" * (5 * 1024 * 1024) # 5 MB
+        some_data = "a" * (5 * 1024 * 1024)  # 5 MB
         counter = BusyContext()
 
         ###########################
         acceptable_threshold = 5
-        # The tests were sometimes failing on TravisCI (slower machines) with 
+        # The tests were sometimes failing on TravisCI (slower machines) with
         # counts below 100.  A test where we left the GIL locked showed that in
         # that case counter value doesn't change at all across calls, so in
         # theory even an increment of 1 would demonstrate that the mechanism is

@@ -25,34 +25,36 @@ Note that it does **NOT** work if you've already instantiated an hdfs
 handle, and this is NOT due to the caching system.
 """
 
-import sys, os, argparse
+import sys
+import os
+import argparse
 
 import pydoop.hdfs as hdfs
 
 
 def dump_status(fs):
-  print "(host, port, user) = %r" % ((fs.host, fs.port, fs.user),)
-  print "_CACHE = %r" % (fs._CACHE,)
-  print "_ALIASES = %r" % (fs._ALIASES,)
-  print
+    print "(host, port, user) = %r" % ((fs.host, fs.port, fs.user),)
+    print "_CACHE = %r" % (fs._CACHE,)
+    print "_ALIASES = %r" % (fs._ALIASES,)
+    print
 
 
 def main(argv=sys.argv[1:]):
-  parser = argparse.ArgumentParser(description=__doc__)
-  parser.add_argument("--conf-dir", metavar="HADOOP_CONF_DIR")
-  args = parser.parse_args(argv)
-  if args.conf_dir:
-    os.environ["HADOOP_CONF_DIR"] = os.path.abspath(args.conf_dir)
-    hdfs.reset()
-  fs = hdfs.hdfs()
-  print "--- OPEN ---"
-  dump_status(fs)
-  print "cwd:", fs.working_directory()
-  print
-  fs.close()
-  print "--- CLOSED ---"
-  dump_status(fs)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--conf-dir", metavar="HADOOP_CONF_DIR")
+    args = parser.parse_args(argv)
+    if args.conf_dir:
+        os.environ["HADOOP_CONF_DIR"] = os.path.abspath(args.conf_dir)
+        hdfs.reset()
+    fs = hdfs.hdfs()
+    print "--- OPEN ---"
+    dump_status(fs)
+    print "cwd:", fs.working_directory()
+    print
+    fs.close()
+    print "--- CLOSED ---"
+    dump_status(fs)
 
 
 if __name__ == "__main__":
-  main()
+    main()

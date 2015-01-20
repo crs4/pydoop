@@ -18,7 +18,6 @@
 
 import sys
 import os
-import re
 import logging
 
 logging.basicConfig(level=logging.INFO)

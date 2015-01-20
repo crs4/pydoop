@@ -1,4 +1,4 @@
-DRIVER_TEMPLATE="""
+DRIVER_TEMPLATE = """
 import sys, os, inspect
 sys.path.insert(0, os.getcwd())
 
