@@ -18,12 +18,12 @@ SUBMIT_CMD="pydoop submit"
 PYTHONBIN=${PYTHONBIN:-python}
 
 if type -P hdfs >/dev/null; then
-	hdfs="$(type -P hdfs) dfs "
+  hdfs="$(type -P hdfs) dfs "
 elif type -P hadoop >/dev/null; then
-	hdfs="$(type -P hadoop) fs "
+  hdfs="$(type -P hadoop) fs "
 else
-	echo "Cannot find hdfs or hadoop executables" >&2
-	exit 1
+  echo "Cannot find hdfs or hadoop executables" >&2
+  exit 1
 fi
 
 zip -j ${MZIP} ../wordcount/new_api/${MPY}
@@ -36,7 +36,7 @@ ${hdfs} -put ${DATA} ${INPUT}
 ${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
               -D hadoop.pipes.java.recordreader=false \
               -D hadoop.pipes.java.recordwriter=false \
-							-D pydoop.hdfs.user=${USER} \
+              -D pydoop.hdfs.user=${USER} \
               --entry-point main \
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
               ${MODULE} ${INPUT} ${OUTPUT}

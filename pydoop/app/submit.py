@@ -79,6 +79,7 @@ class PydoopSubmitter(object):
         self.remote_exe = None
         self.pipes_code = None
         self.files_to_upload = []
+        self.unknown_args = None
 
     def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
         cfiles = self.properties[prop] if self.properties[prop] else []
