@@ -79,6 +79,7 @@ class PydoopSubmitter(object):
         self.remote_exe = None
         self.pipes_code = None
         self.files_to_upload = []
+        self.unknown_args = None
 
     def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
         cfiles = self.properties[prop] if self.properties[prop] else []
@@ -212,7 +213,7 @@ class PydoopSubmitter(object):
         if self.args.log_level == "DEBUG":
             lines.append("echo ${PYTHONPATH} 1>&2")
             lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
-            lines.append("echo ${HOME} 1>&2")             
+            lines.append("echo ${HOME} 1>&2")
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         if self.args.log_level == "DEBUG":
