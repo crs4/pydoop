@@ -24,6 +24,7 @@ import os
 import sys
 import argparse
 import logging
+import uuid
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -121,7 +122,7 @@ class PydoopSubmitter(object):
         self.remote_wd = hdfs.path.join(
             parent, utils.make_random_str(prefix="pydoop_submit_")
         )
-        self.remote_exe = args.program
+        self.remote_exe = hdfs.path.join(self.remote_wd, str(uuid.uuid4()))
         self.properties[JOB_NAME] = args.job_name or 'pydoop'
         self.properties[IS_JAVA_RR] = (
             'false' if args.do_not_use_java_record_reader else 'true'
@@ -259,10 +260,9 @@ class PydoopSubmitter(object):
             hdfs.mkdir(self.remote_wd)
             hdfs.chmod(self.remote_wd, "a+rx")
             self.logger.debug("created and chmod-ed: %s", self.remote_wd)
-            if self.args.module:
-                pipes_code = self.__generate_pipes_code()
-                hdfs.dump(pipes_code, self.remote_exe)
-                self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
+            pipes_code = self.__generate_pipes_code()
+            hdfs.dump(pipes_code, self.remote_exe)
+            self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
             hdfs.chmod(self.remote_exe, "a+rx")
             self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
             for (l, h, _) in self.files_to_upload:
@@ -403,7 +403,8 @@ def add_parser_common_arguments(parser):
 
 def add_parser_arguments(parser):
     parser.add_argument(
-        'program', metavar='PROGRAM', help='the python mapreduce program',
+        'module', metavar='MODULE', type=str,
+        help=("The module containing the Python MapReduce program")
     )
     parser.add_argument(
         'input', metavar='INPUT', help='input path to the maps',
@@ -462,13 +463,6 @@ def add_parser_arguments(parser):
         action="append",
         help="Add this HDFS archive file to the distributed cache" +
              "as an archive."
-    )
-    parser.add_argument(
-        '--module', metavar='MODULE', type=str,
-        help=("Create a launcher that will execute MODULE code "
-              "in the appropriate launch environment."
-              "The resulting pydoop program will be written "
-              "at the HDFS path defined by PROGRAM")
     )
     parser.add_argument(
         '--entry-point', metavar='ENTRY_POINT', type=str,

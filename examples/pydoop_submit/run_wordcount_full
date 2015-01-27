@@ -6,7 +6,6 @@ MPY=${MODULE}.py
 DATA=../input/alice.txt
 RESULTS='results.txt'
 
-PROGNAME=${MODULE}-prog
 JOBNAME=${MODULE}-job
 
 LOGLEVEL=INFO
@@ -38,9 +37,9 @@ ${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
               -D hadoop.pipes.java.recordreader=false \
               -D hadoop.pipes.java.recordwriter=false \
 							-D pydoop.hdfs.user=${USER} \
-              --module ${MODULE} --entry-point main \
+              --entry-point main \
               --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
-              ${PROGNAME} ${INPUT} ${OUTPUT} 
+              ${MODULE} ${INPUT} ${OUTPUT}
 
 ${hdfs} -cat ${OUTPUT}/part'*' > ${RESULTS}
 
