@@ -113,10 +113,12 @@ class PydoopSubmitter(object):
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
 
-    def set_args(self, args, unknown_args=[]):
+    def set_args(self, args, unknown_args=None):
         """
         Configure job, based on the arguments provided.
         """
+        if unknown_args is None:
+            unknown_args = []
         self.logger.setLevel(getattr(logging, args.log_level))
 
         parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
@@ -337,7 +339,9 @@ class PydoopSubmitter(object):
                          (submitter_class, args, properties, classpath))
 
 
-def run(args, unknown_args=[]):
+def run(args, unknown_args=None):
+    if unknown_args is None:
+        unknown_args = []
     script = PydoopSubmitter()
     script.set_args(args, unknown_args)
     script.run()

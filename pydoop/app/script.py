@@ -120,7 +120,9 @@ class PydoopScript(object):
         os.unlink(self.zip_filename)
 
 
-def run(args, unknown_args=[]):
+def run(args, unknown_args=None):
+    if unknown_args is None:
+        unknown_args = []
     scripter = PydoopScript(args, unknown_args)
     scripter.run()
     scripter.clean()
