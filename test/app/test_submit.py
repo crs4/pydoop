@@ -75,7 +75,7 @@ class TestAppSubmit(unittest.TestCase):
                    ("--output-format", 'mapreduce.lib.input.TextOutputFormat'),
                    ("--num-reducers", 10),
                    ("--python-zip", 'allmymodules.zip'),
-                   ("--module", 'mymod1.mod2.mod3'))
+                   )
         try:
             with open(conf_file, 'w') as cf:
                 d = ''.join(['{}\n{}\n'.format(k, v)
@@ -84,12 +84,12 @@ class TestAppSubmit(unittest.TestCase):
                 cf.write(d)
             parser = app.make_parser()
             parser.format_help = nop
-            program = 'program'
+            module = 'mymod1.mod2.mod3'
             ainput = 'input'
             aoutput = 'output'
-            argv = ['submit', program, ainput, aoutput, '@' + conf_file]
+            argv = ['submit', module, ainput, aoutput, '@' + conf_file]
             [args, unknown] = parser.parse_known_args(argv)
-            self.assertEqual(args.program, program)
+            self.assertEqual(args.module, module)
             self.assertEqual(args.input, ainput)
             self.assertEqual(args.output, aoutput)
             self.assertEqual(len(unknown), 0)
