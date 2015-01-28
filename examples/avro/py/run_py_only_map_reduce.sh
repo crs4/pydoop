@@ -30,7 +30,6 @@ ${SUBMIT_CMD} --python-egg ${MZIP} --upload-to-cache ${AVRO_STATS_AVSC} \
                                    --upload-to-cache ${AVRO_USER_AVSC} \
               -D mapreduce.pipes.isjavarecordreader=false \
               -D mapreduce.pipes.isjavarecordwriter=false \
-              --module ${MODULE} \
               --log-level ${LOGLEVEL} ${MRV} --job-name ${JOBNAME} \
-              ${PROGNAME} ${INPUT} ${OUTPUT} 
+              ${MODULE} ${INPUT} ${OUTPUT}
 
