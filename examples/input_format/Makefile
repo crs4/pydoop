@@ -31,7 +31,7 @@ SUBMIT_CMD=pydoop submit
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
-HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rm -r,\
+HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rmr,\
 	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rmr,\
 	       HDFS_IS_MISSING))
 HDFS_PUT=${HDFS} -put
@@ -66,7 +66,6 @@ ${PYINPUTFORMAT_JAR}: $(CLASSES)
 
 data:
 	-${HDFS_MKDIR}  /user
-	-${HDFS_MKDIR} /user/${USER}
 	-${HDFS_MKDIR} /user/${USER}
 	-${HDFS_RMR} /user/${USER}/${INPUT}
 	-${HDFS_RMR} /user/${USER}/${OUTPUT}_*
