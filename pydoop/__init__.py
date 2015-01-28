@@ -103,27 +103,26 @@ def hadoop_classpath(hadoop_home=None):
     return _PATH_FINDER.hadoop_classpath(hadoop_home)
 
 
+##############################
+# Since Pydoop 1.0, we've stopped supporting installations for multiple
+# Hadoop versions, so we only have a single module, so the following
+# functions now return the same value regardless of the Hadoop version.
+##############################
+
 def jar_name(hadoop_vinfo=None):
-    if hadoop_vinfo is None:
-        hadoop_vinfo = hadoop_version_info()
-    return "pydoop_%s.jar" % hadoop_vinfo.tag()
+    return "pydoop.jar"
 
 
 def jar_path(hadoop_vinfo=None):
-    if hadoop_vinfo is None:
-        hadoop_vinfo = hadoop_version_info()
-    path = os.path.join(os.path.dirname(__file__), jar_name(hadoop_vinfo))
+    path = os.path.join(os.path.dirname(__file__), jar_name())
     if os.path.exists(path):
         return path
     else:
         return None
 
-
 def complete_mod_name(module, hadoop_vinfo=None):
-    if hadoop_vinfo is None:
-        hadoop_vinfo = hadoop_version_info()
-    return "%s.%s_%s" % (__package__, module, hadoop_vinfo.tag())
+    return "%s.%s" % (__package__, module)
 
 
 def import_version_specific_module(name):
-    return import_module(complete_mod_name(name))
+    return import_module(name)

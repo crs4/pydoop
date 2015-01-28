@@ -266,7 +266,7 @@ class JavaBuilder(object):
                 "WARNING: could not set classpath, java code may not compile"
             )
         class_dir = os.path.join(
-            self.build_temp, "pipes-%s" % jlib.hadoop_vinfo
+            self.build_temp, "pipes"
         )
         package_path = os.path.join(self.build_lib, "pydoop", jlib.jar_name)
         if not os.path.exists(class_dir):
