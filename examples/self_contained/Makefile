@@ -54,10 +54,10 @@ setup_io:
 submit: vowelcount.zip pydoop.tgz setup_io
 	${SUBMIT_CMD} --python-zip vowelcount.zip \
                 --upload-archive-to-cache pydoop.tgz\
+                --module vowelcount.mr.main --entry-point main\
                 --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
                 --no-override-home --no-override-env\
-                vowelcount.mr.main --entry-point main \
-	              ${INPUT} ${OUTPUT}
+	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
 submit2: vowelcount.tgz pydoop.tgz setup_io
 	${SUBMIT_CMD} --upload-archive-to-cache vowelcount.tgz\
