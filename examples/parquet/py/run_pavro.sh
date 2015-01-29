@@ -43,8 +43,9 @@ ${SUBMIT_CMD} --python-egg ${MZIP} \
               -D parquet.avro.projection="${USER_SCHEMA}" \
               -D avro.schema="${USER_SCHEMA}" \
               --libjars ${PARQUET_JAR} \
+              --module ${MODULE} \
               --log-level ${LOGLEVEL} ${MRV} --job-name ${JOBNAME} \
-              ${MODULE} ${INPUT} ${OUTPUT}
+              ${PROGNAME} ${INPUT} ${OUTPUT} 
 
 # ----- part 4 -----
 rm -rf ${OUTPUT}
