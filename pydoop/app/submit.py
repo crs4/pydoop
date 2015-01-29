@@ -24,6 +24,7 @@ import os
 import sys
 import argparse
 import logging
+import uuid
 logging.basicConfig(level=logging.INFO)
 
 import pydoop
@@ -78,6 +79,7 @@ class PydoopSubmitter(object):
         self.remote_exe = None
         self.pipes_code = None
         self.files_to_upload = []
+        self.unknown_args = None
 
     def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
         cfiles = self.properties[prop] if self.properties[prop] else []
@@ -111,17 +113,19 @@ class PydoopSubmitter(object):
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
 
-    def set_args(self, args, unknown_args=[]):
+    def set_args(self, args, unknown_args=None):
         """
         Configure job, based on the arguments provided.
         """
+        if unknown_args is None:
+            unknown_args = []
         self.logger.setLevel(getattr(logging, args.log_level))
 
         parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
         self.remote_wd = hdfs.path.join(
             parent, utils.make_random_str(prefix="pydoop_submit_")
         )
-        self.remote_exe = args.program
+        self.remote_exe = hdfs.path.join(self.remote_wd, str(uuid.uuid4()))
         self.properties[JOB_NAME] = args.job_name or 'pydoop'
         self.properties[IS_JAVA_RR] = (
             'false' if args.do_not_use_java_record_reader else 'true'
@@ -211,7 +215,7 @@ class PydoopSubmitter(object):
         if self.args.log_level == "DEBUG":
             lines.append("echo ${PYTHONPATH} 1>&2")
             lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
-            lines.append("echo ${HOME} 1>&2")             
+            lines.append("echo ${HOME} 1>&2")
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
         if self.args.log_level == "DEBUG":
@@ -258,10 +262,9 @@ class PydoopSubmitter(object):
             hdfs.mkdir(self.remote_wd)
             hdfs.chmod(self.remote_wd, "a+rx")
             self.logger.debug("created and chmod-ed: %s", self.remote_wd)
-            if self.args.module:
-                pipes_code = self.__generate_pipes_code()
-                hdfs.dump(pipes_code, self.remote_exe)
-                self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
+            pipes_code = self.__generate_pipes_code()
+            hdfs.dump(pipes_code, self.remote_exe)
+            self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
             hdfs.chmod(self.remote_exe, "a+rx")
             self.__warn_user_if_wd_maybe_unreadable(self.remote_wd)
             for (l, h, _) in self.files_to_upload:
@@ -335,7 +338,9 @@ class PydoopSubmitter(object):
                          (submitter_class, args, properties, classpath))
 
 
-def run(args, unknown_args=[]):
+def run(args, unknown_args=None):
+    if unknown_args is None:
+        unknown_args = []
     script = PydoopSubmitter()
     script.set_args(args, unknown_args)
     script.run()
@@ -402,7 +407,8 @@ def add_parser_common_arguments(parser):
 
 def add_parser_arguments(parser):
     parser.add_argument(
-        'program', metavar='PROGRAM', help='the python mapreduce program',
+        'module', metavar='MODULE', type=str,
+        help=("The module containing the Python MapReduce program")
     )
     parser.add_argument(
         'input', metavar='INPUT', help='input path to the maps',
@@ -461,13 +467,6 @@ def add_parser_arguments(parser):
         action="append",
         help="Add this HDFS archive file to the distributed cache" +
              "as an archive."
-    )
-    parser.add_argument(
-        '--module', metavar='MODULE', type=str,
-        help=("Create a launcher that will execute MODULE code "
-              "in the appropriate launch environment."
-              "The resulting pydoop program will be written "
-              "at the HDFS path defined by PROGRAM")
     )
     parser.add_argument(
         '--entry-point', metavar='ENTRY_POINT', type=str,

@@ -20,11 +20,10 @@ PYINPUTFORMAT_JAR=pydoop-input-formats.jar
 INPUT_FORMAT_MRV1=it.crs4.pydoop.mapred.TextInputFormat
 INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
-PROGNAME=input_format_test
 JOBNAME=input_format_test_job
 DATA := ../input
-INPUT=${PROGNAME}_input
-OUTPUT=${PROGNAME}_output
+INPUT=${JOBNAME}_input
+OUTPUT=${JOBNAME}_output
 
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 SUBMIT_CMD=pydoop submit
@@ -32,7 +31,7 @@ SUBMIT_CMD=pydoop submit
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
-HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rm -r,\
+HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rmr,\
 	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rmr,\
 	       HDFS_IS_MISSING))
 HDFS_PUT=${HDFS} -put
@@ -46,8 +45,8 @@ SRC = $(wildcard it/crs4/pydoop/mapred*/TextInputFormat.java)
 CLASSES = $(subst .java,.class,$(SRC))
 
 SUBMIT_ARGS = --upload-file-to-cache wordcount_rr.py \
+wordcount_rr \
 --libjars ${PYINPUTFORMAT_JAR}\
---module wordcount_rr\
 --do-not-use-java-record-reader\
 -D pydoop.input.issplitable=true\
 --log-level ${LOGLEVEL} --job-name ${JOBNAME}
@@ -68,7 +67,6 @@ ${PYINPUTFORMAT_JAR}: $(CLASSES)
 data:
 	-${HDFS_MKDIR}  /user
 	-${HDFS_MKDIR} /user/${USER}
-	-${HDFS_MKDIR} /user/${USER}
 	-${HDFS_RMR} /user/${USER}/${INPUT}
 	-${HDFS_RMR} /user/${USER}/${OUTPUT}_*
 	${HDFS_PUT} ${DATA} ${INPUT}
@@ -76,13 +74,13 @@ data:
 
 submit_mrv1: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
-		            ${PROGNAME} ${INPUT} ${OUTPUT}_MRV1
+		            ${INPUT} ${OUTPUT}_MRV1
 	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
 
 
 submit_mrv2: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} --mrv2\
-		            ${PROGNAME} ${INPUT} ${OUTPUT}_MRV2
+		            ${INPUT} ${OUTPUT}_MRV2
 	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
 
 
