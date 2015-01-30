@@ -10,14 +10,17 @@ machine -- see `the Hadoop web site <http://hadoop.apache.org>`_ for
 instructions.
 
 If your applications is contained in a single (local) file named
-``wc.py``, you can run it as follows::
+``wc.py``, with an entry point called ``__main__`` (see
+:ref:`api_tutorial`) you can run it as follows::
 
-  pydoop submit --upload-file-to-cache wc.py --module wc wordcount input output
+  pydoop submit --upload-file-to-cache wc.py wc input output
 
 where ``input`` (file or directory) and ``output`` (directory) are
 HDFS paths.  Note that the ``output`` directory will not be
 overwritten: instead, an error will be generated if it already exists
 when you launch the program.
+
+If your entry point has a different name, specify it via ``--entry-point``.
 
 The following table shows command line options for ``pydoop submit``:
 

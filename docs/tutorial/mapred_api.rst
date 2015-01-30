@@ -57,9 +57,9 @@ a similar way, the main difference being the fact that the reduce
 method gets a set of values for each key.  The context has several
 other functions that we will explore later.
 
-To run the above program, save it to a "wc.py" file and execute::
+To run the above program, save it to a ``wc.py`` file and execute::
 
-  pydoop submit --upload-file-to-cache wc.py --module wc wordcount input output
+  pydoop submit --upload-file-to-cache wc.py wc input output
 
 Where ``input`` is the HDFS input directory.
 
