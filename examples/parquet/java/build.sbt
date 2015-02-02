@@ -43,6 +43,9 @@ libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.7"
 
 
 libraryDependencies += "com.twitter" % "parquet-common" % parquetVersion
+
 libraryDependencies += "com.twitter" % "parquet-column" % parquetVersion
+
 libraryDependencies += "com.twitter" % "parquet-hadoop" % parquetVersion
+
 libraryDependencies += "com.twitter" % "parquet-avro" % parquetVersion
