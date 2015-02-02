@@ -14,29 +14,9 @@ seq( sbtavro.SbtAvro.avroSettings : _*)
 
 val parquetVersion = "1.5.0"
 
-libraryDependencies += "org.apache.hadoop" % "hadoop-client"  % "2.4.1" % "provided"
+val hadoopVersion = "2.6.0"
 
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-common"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-yarn-client"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-yarn-common"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-yarn-server-common"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-mapreduce-client-core"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-mapreduce-client-app"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-mapreduce-client-common"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-mapreduce-client-shuffle"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-mapreduce-client-jobclient"  % "2.4.1" % "provided"
-
-libraryDependencies += "org.apache.hadoop" % "hadoop-annotations"  % "2.4.1" % "provided"
+libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion % "provided"
 
 
 libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.7"
