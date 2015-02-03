@@ -1,12 +1,10 @@
-Avro-Parquet I/O
+Parquet-avro I/O
 ================
 
-
-Writing an Avro-Parquet file using Java
----------------------------------------
-
-The following runs an example Java MapReduce job that writes a
-`Parquet <http://parquet.incubator.apache.org>`_ file (requires `sbt
+The following runs an example Java MapReduce job that writes
+parquet-avro data, i.e., `Parquet
+<http://parquet.incubator.apache.org>`_ files that use the `Avro
+<http://avro.apache.org>`_ object model (requires `sbt
 <http://www.scala-sbt.org>`_):
 
 .. code-block:: bash
@@ -15,12 +13,9 @@ The following runs an example Java MapReduce job that writes a
    sbt assembly
    python create_input.py 20 foo.dat
    hdfs dfs -put foo.dat
+   hdfs dfs -put ../../avro/schemas/user.avsc
    hadoop jar ./target/ParquetMR-assembly-0.1.jar \
-     it.crs4.pydoop.ExampleParquetMRWrite foo.dat parquets
-
-
-Reading an Avro-Parquet file using Java
----------------------------------------
+     it.crs4.pydoop.ExampleParquetMRWrite foo.dat parquets user.avsc
 
 The following runs a MapReduce program that reads Parquet data and
 converts it to avro-encoded messages:
@@ -37,9 +32,5 @@ information on the right schema that should be used.
 .. code-block:: bash
 
    python dump_avro_data.py output
-
-
-Reading an Avro-Parquet file using Python
------------------------------------------
 
 For a full example see ``examples/parquet/py/run_pavro.sh``.

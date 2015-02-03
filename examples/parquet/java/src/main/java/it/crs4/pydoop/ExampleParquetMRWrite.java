@@ -15,20 +15,23 @@
  * under the License.
  *
  * END_COPYRIGHT
- */
-
-/*
- * Based on the Cloudera TestReadParquet example.
+ *
+ * A MapReduce application that reads ';'-separated text and writes
+ * parquet-avro data (i.e., Parquet files that use the Avro object model).
+ *
+ * Based on Cloudera Parquet examples.
  */
 
 package it.crs4.pydoop;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -51,17 +54,32 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
 
   private static final Log LOG = Log.getLog(ExampleParquetMRWrite.class);
 
-  private static final String USER_SCHEMA = "{\n\"namespace\": \"example.avro\",\n \"type\": \"record\",\n \"name\": \"User\",\n \"fields\": [\n     {\"name\": \"office\", \"type\": \"string\"},\n     {\"name\": \"name\", \"type\": \"string\"},\n     {\"name\": \"favorite_number\",  \"type\": [\"int\", \"null\"]},\n     {\"name\": \"favorite_color\", \"type\": [\"string\", \"null\"]}\n ]\n}";
+  private static final String SCHEMA_PATH_KEY = "paexample.schema.path";
+
+  private static Schema getSchema(Configuration conf)
+      throws IOException {
+    Path schemaPath = new Path(conf.get(SCHEMA_PATH_KEY));
+    FileSystem fs = FileSystem.get(conf);
+    InputStream in = fs.open(schemaPath);
+    Schema schema = new Schema.Parser().parse(in);
+    in.close();
+    return schema;
+  }
 
   public static class WriteUserMap
       extends Mapper<LongWritable, Text, NullWritable, Record> {
 
+    private Schema schema;
+
+    @Override
+    public void setup(Context context)
+        throws IOException, InterruptedException {
+      schema = getSchema(context.getConfiguration());
+    }
+
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
-
-      // FIXME -- this is clearly not the way to do it.
-      Schema schema = new Schema.Parser().parse(USER_SCHEMA);
       NullWritable outKey = NullWritable.get();
       Record user = new Record(schema);
       String[] elements = value.toString().split(";");
@@ -73,15 +91,22 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
   }
 
   public int run(String[] args) throws Exception {
-    if (args.length != 2) {
-      System.err.println("Usage: ExampleParquetMRWrite <input path> <output path>");
+
+    if (args.length < 3) {
+      System.err.println(
+        "Usage: ExampleParquetMRWrite <input path> <output path> <schema path>"
+      );
       return -1;
     }
-    Schema schema = new Schema.Parser().parse(USER_SCHEMA);
+    Path inputPath = new Path(args[0]);
+    Path outputPath = new Path(args[1]);
+    String schemaPathName = args[2];
 
     Configuration conf = getConf();
-    Job job = new Job(conf);
+    conf.set(SCHEMA_PATH_KEY, schemaPathName);
+    Schema schema = getSchema(conf);
 
+    Job job = new Job(conf);
     job.setJarByClass(getClass());
     job.setJobName(getClass().getName());
 
@@ -89,12 +114,11 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
 
     job.setMapperClass(WriteUserMap.class);
     job.setNumReduceTasks(0);
-
     job.setInputFormatClass(TextInputFormat.class);
     job.setOutputFormatClass(AvroParquetOutputFormat.class);
 
-    FileInputFormat.setInputPaths(job, new Path(args[0]));
-    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+    FileInputFormat.setInputPaths(job, inputPath);
+    FileOutputFormat.setOutputPath(job, outputPath);
 
     job.waitForCompletion(true);
 
