@@ -223,7 +223,9 @@ class JavaLib(object):
         self.classpath = pydoop.hadoop_classpath()
         self.java_files = []
         #if hadoop_vinfo.main >= (2, 2, 0):
-        if hadoop_vinfo.main >= (2, 0, 0) and hadoop_vinfo.is_yarn():
+        if (hadoop_vinfo.main >= (2, 0, 0)
+            and (not hadoop_vinfo.is_cloudera()
+                 or hadoop_vinfo.is_yarn())):
             self.java_files.extend([
                 "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
