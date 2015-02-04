@@ -28,7 +28,7 @@ def main(argv):
         dec = avro.io.BinaryDecoder(f)
         while f.tell() < len(data):
             u = dr.read(dec)
-            print u['office'], u['favorite_color']
+            print ';'.join(u[_] for _ in ('name', 'office', 'favorite_color'))
             f.read(1)  # skip the newline inserted by TextOutputFormat
 
 
