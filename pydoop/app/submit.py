@@ -309,7 +309,7 @@ class PydoopSubmitter(object):
         if self.args.input_format:
             job_args.extend(['-inputformat', self.args.input_format])
         if self.args.output_format:
-            job_args.extend(['-outputformat', self.args.output_format])
+            job_args.extend(['-writer', self.args.output_format])
         job_args.extend(['-input', self.args.input])
         job_args.extend(['-output', self.args.output])
         job_args.extend(['-program', self.remote_exe])
