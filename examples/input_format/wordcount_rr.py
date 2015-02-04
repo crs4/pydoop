@@ -38,42 +38,7 @@ class Reducer(api.Reducer):
         s = sum(context.values)
         context.emit(context.key, s)
 
-
-class Reader(api.RecordReader):
-    """
-    Mimics Hadoop's default LineRecordReader (keys are byte offsets with
-    respect to the whole file; values are text lines).
-    """
-    def __init__(self, context):
-        self.isplit = context.input_split
-        self.file = hdfs.open(self.isplit.filename)
-        self.file.seek(self.isplit.offset)
-        self.bytes_read = 0
-        if self.isplit.offset > 0:
-            discarded = self.file.readline()
-            self.bytes_read += len(discarded)
-
-    def close(self):
-        self.file.close()
-        self.file.fs.close()
-
-    def next(self):
-        if self.bytes_read > self.isplit.length:
-            raise StopIteration
-        key = serialize_to_string(self.isplit.offset + self.bytes_read)
-        record = self.file.readline()
-        if record == "":  # end of file
-            raise StopIteration
-        self.bytes_read += len(record)
-        return (key, record)
-
-    def get_progress(self):
-        return min(float(self.bytes_read) / self.isplit.length, 1.0)
-
-
-factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer,
-                     record_reader_class=Reader)
-
+factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer)
 
 def __main__():
     pp.run_task(factory)
