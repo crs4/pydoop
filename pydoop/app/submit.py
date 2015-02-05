@@ -133,12 +133,12 @@ class PydoopSubmitter(object):
         self.properties[IS_JAVA_RW] = (
             'false' if args.do_not_use_java_record_writer else 'true'
         )
-        if args.input_format:
-            self.properties[(INPUT_FORMAT_MRV2 if args.mrv2
-                             else INPUT_FORMAT_MRV1)] = args.input_format
-        if args.output_format:
-            self.properties[(OUTPUT_FORMAT_MRV2 if args.mrv2
-                             else OUTPUT_FORMAT_MRV1)] = args.output_format
+        # if args.input_format:
+        #     self.properties[(INPUT_FORMAT_MRV2 if args.mrv2
+        #                      else INPUT_FORMAT_MRV1)] = args.input_format
+        # if args.output_format:
+        #     self.properties[(OUTPUT_FORMAT_MRV2 if args.mrv2
+        #                      else OUTPUT_FORMAT_MRV1)] = args.output_format
         self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name
@@ -306,6 +306,10 @@ class PydoopSubmitter(object):
             classpath = None
         if self.args.hadoop_conf:
             job_args.extend(['-conf', self.args.hadoop_conf.name])
+        if self.args.input_format:
+            job_args.extend(['-inputformat', self.args.input_format])
+        if self.args.output_format:
+            job_args.extend(['-writer', self.args.output_format])
         job_args.extend(['-input', self.args.input])
         job_args.extend(['-output', self.args.output])
         job_args.extend(['-program', self.remote_exe])
