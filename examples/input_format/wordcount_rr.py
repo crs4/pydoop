@@ -20,8 +20,6 @@ import re
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-import pydoop.hdfs as hdfs
-from pydoop.utils.serialize import serialize_to_string
 
 
 class Mapper(api.Mapper):
@@ -39,6 +37,7 @@ class Reducer(api.Reducer):
         context.emit(context.key, s)
 
 factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer)
+
 
 def __main__():
     pp.run_task(factory)

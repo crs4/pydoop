@@ -41,10 +41,6 @@ DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 DEFAULT_ENTRY_POINT = '__main__'
 IS_JAVA_RR = "hadoop.pipes.java.recordreader"
 IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
-INPUT_FORMAT_MRV1 = "mapred.input.format.class"
-INPUT_FORMAT_MRV2 = "mapreduce.pipes.inputformat"
-OUTPUT_FORMAT_MRV1 = "mapred.output.format.class"
-OUTPUT_FORMAT_MRV2 = "mapreduce.pipes.outputformat"
 CACHE_FILES = "mapred.cache.files"
 CACHE_ARCHIVES = "mapred.cache.archives"
 USER_HOME = "mapreduce.admin.user.home.dir"
@@ -133,12 +129,6 @@ class PydoopSubmitter(object):
         self.properties[IS_JAVA_RW] = (
             'false' if args.do_not_use_java_record_writer else 'true'
         )
-        # if args.input_format:
-        #     self.properties[(INPUT_FORMAT_MRV2 if args.mrv2
-        #                      else INPUT_FORMAT_MRV1)] = args.input_format
-        # if args.output_format:
-        #     self.properties[(OUTPUT_FORMAT_MRV2 if args.mrv2
-        #                      else OUTPUT_FORMAT_MRV1)] = args.output_format
         self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name

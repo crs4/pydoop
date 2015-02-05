@@ -120,6 +120,7 @@ def jar_path(hadoop_vinfo=None):
     else:
         return None
 
+
 def complete_mod_name(module, hadoop_vinfo=None):
     return "%s.%s" % (__package__, module)
 
