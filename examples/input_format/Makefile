@@ -22,6 +22,8 @@ INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
 JOBNAME=input_format_test_job
 DATA := ../input
+WC_MODULE=wordcount_rr
+WC_MODULE_FILE=${WC_MODULE}.py
 INPUT=${JOBNAME}_input
 OUTPUT=${JOBNAME}_output
 
@@ -44,10 +46,8 @@ JAVA = java -classpath $(CLASSPATH)
 SRC = $(wildcard it/crs4/pydoop/mapred*/TextInputFormat.java)
 CLASSES = $(subst .java,.class,$(SRC))
 
-SUBMIT_ARGS = --upload-file-to-cache wordcount_rr.py \
-wordcount_rr \
+SUBMIT_ARGS = --upload-file-to-cache ${WC_MODULE_FILE} \
 --libjars ${PYINPUTFORMAT_JAR}\
---do-not-use-java-record-reader\
 -D pydoop.input.issplitable=true\
 --log-level ${LOGLEVEL} --job-name ${JOBNAME}
 
@@ -74,13 +74,13 @@ data:
 
 submit_mrv1: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
-		            ${INPUT} ${OUTPUT}_MRV1
+		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV1
 	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
 
 
 submit_mrv2: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} --mrv2\
-		            ${INPUT} ${OUTPUT}_MRV2
+		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV2
 	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
 
 
