@@ -2,10 +2,8 @@
 
 
 PARQUET_JAR=../java/target/ParquetMR-assembly-0.1.jar
-AVRO_USER_AVSC=../../avro/schemas/user.avsc
-
-SUBMIT_CMD="/home/zag/.local/bin/pydoop submit"
-
+SCHEMA_FILE_LOCAL=../../avro/schemas/user.avsc
+SCHEMA_FILE_HDFS=user.avsc
 
 # ----- part 1 -----
 INPUT_DATA=users.csv
@@ -16,30 +14,27 @@ python ../java/create_input.py ${N} ${INPUT_DATA}
 hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rmr /user/${USER}/${PARQUETS_DIR}
 hdfs dfs -put -f ${INPUT_DATA}
+hdfs dfs -put -f ${SCHEMA_FILE_LOCAL} ${SCHEMA_FILE_HDFS}
 hadoop jar ${PARQUET_JAR} it.crs4.pydoop.ExampleParquetMRWrite \
-                          ${INPUT_DATA} ${PARQUETS_DIR}
+    ${INPUT_DATA} ${PARQUETS_DIR} ${SCHEMA_FILE_HDFS}
 
 # ----- part 3 -----
 MODULE=pavropy
-MZIP=${MODULE}.zip
 MPY=${MODULE}.py
-PROGNAME=${MODULE}-prog
 JOBNAME=${MODULE}-job
 LOGLEVEL=INFO
 MRV="--mrv2"
-USER_SCHEMA=`cat ${AVRO_USER_AVSC}`
+USER_SCHEMA=`cat ${SCHEMA_FILE_LOCAL}`
+INPUT_FORMAT=it.crs4.pydoop.PydoopAvroParquetInputFormat
 
 INPUT=${PARQUETS_DIR}
 OUTPUT=results
 
 hdfs dfs -rmr /user/${USER}/${OUTPUT}
 
-zip ${MZIP} ${MPY}
-${SUBMIT_CMD} --python-egg ${MZIP} \
-              -D mapreduce.pipes.isjavarecordreader=true \
-              -D mapreduce.pipes.isjavarecordwriter=true \
+pydoop submit --upload-file-to-cache ${MPY} \
               --num-reducers 1 \
-              --input-format it.crs4.pydoop.PydoopAvroParquetInputFormat \
+              --input-format ${INPUT_FORMAT} \
               -D parquet.avro.projection="${USER_SCHEMA}" \
               -D avro.schema="${USER_SCHEMA}" \
               --libjars ${PARQUET_JAR} \
