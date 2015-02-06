@@ -68,6 +68,12 @@ import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
 
+// --- DEBUG ---
+import java.io.PrintWriter;
+import java.io.FileNotFoundException;
+// -------------
+
+
 /**
  * A command line parser for the CLI-based Pipes job submitter.
  */
@@ -89,6 +95,7 @@ class CommandLineParser {
         addOption("reduces", false, "number of reduces", "num");
         addOption("lazyOutput", false, "Optional. Create output lazily",
                   "boolean");
+        addOption("avro", false, "enable avro mode", "boolean");
     }
 
     void addOption(String longName, boolean required, String description, 
@@ -129,6 +136,7 @@ class CommandLineParser {
       System.out.println("  [-program <executable>] // executable URI");
       System.out.println("  [-reduces <num>] // number of reduces");
       System.out.println("  [-lazyOutput <true/false>] // createOutputLazily");
+      System.out.println("  [-avro <true/false>] // enable avro mode");
       System.out.println();
       GenericOptionsParser.printGenericCommandUsage(System.out);
     }
@@ -154,6 +162,8 @@ public class Submitter extends Configured implements Tool {
     public static final String PARTITIONER = "mapreduce.pipes.partitioner";
     public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
     public static final String PORT = "mapreduce.pipes.command.port";
+    public static final String IS_AVRO_MODE =
+        "pydoop.mapreduce.pipes.avro.mode";
 
     
     /**
@@ -312,6 +322,24 @@ public class Submitter extends Configured implements Tool {
         conf.setBoolean(Submitter.PRESERVE_COMMANDFILE, keep);
     }
 
+    /**
+     * Set whether the job is in avro mode.
+     * @param conf the configuration to modify
+     * @param value the new value
+     */
+    public static void setIsAvroMode(Configuration conf, boolean value) {
+        conf.setBoolean(Submitter.IS_AVRO_MODE, value);
+    }
+
+    /**
+     * Check whether the job is in avro mode.
+     * @param conf the configuration to check
+     * @return is avro mode on?
+     */
+    public static boolean getIsAvroMode(Configuration conf) {
+        return conf.getBoolean(Submitter.IS_AVRO_MODE, false);
+    }
+
     private static void setupPipesJob(Job job) throws IOException, ClassNotFoundException {
         Configuration conf = job.getConfiguration();
         // default map output types to Text
@@ -341,6 +369,27 @@ public class Submitter extends Configured implements Tool {
                           job.getInputFormatClass(), InputFormat.class);
             job.setInputFormatClass(PipesNonJavaInputFormat.class);
         }
+
+        // Avro mode
+        //if (getIsAvroMode(conf)) {
+        if (true) {  // FIXME: find out how to actually pass -avro
+            // FIXME: abort if user did not provide an input format class
+
+          // --- DEBUG ---
+          try {
+            PrintWriter out = new PrintWriter("/tmp/SIMLEO_DEBUG_2");
+            out.println("We are in avro mode");
+            out.close();
+          } catch (FileNotFoundException e) {
+            System.err.println("Aaah too bad");
+          }
+          // -------------
+
+            conf.setClass(Submitter.INPUT_FORMAT,
+                          job.getInputFormatClass(), InputFormat.class);
+            job.setInputFormatClass(PydoopAvroBridge.class);
+        }
+
     
         String exec = getExecutable(conf);
         if (exec == null) {
@@ -390,6 +439,18 @@ public class Submitter extends Configured implements Tool {
 
             CommandLine results = cli.parse(conf, args);
 
+
+            // --- DEBUG ---
+            try {
+              PrintWriter out = new PrintWriter("/tmp/SIMLEO_DEBUG_1");
+              out.println("avro: " + results.getOptionValue("avro"));
+              out.close();
+            } catch (FileNotFoundException e) {
+              System.err.println("Aaah too bad");
+            }
+            // -------------
+
+
             if (results.hasOption("input")) {
                 Path path = new Path(results.getOptionValue("input"));
                 FileInputFormat.setInputPaths(job, path);
@@ -436,6 +497,12 @@ public class Submitter extends Configured implements Tool {
                     LazyOutputFormat.setOutputFormatClass(job,
                                                           job.getOutputFormatClass());
                 }
+
+            if (results.hasOption("avro")) {
+                setIsAvroMode(conf, Boolean.parseBoolean(
+                    results.getOptionValue("avro")));
+            }
+
             }
             if (results.hasOption("program")) {
                 setExecutable(conf, results.getOptionValue("program"));
