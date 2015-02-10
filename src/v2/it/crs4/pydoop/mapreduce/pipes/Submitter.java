@@ -68,12 +68,6 @@ import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 
 
-// --- DEBUG ---
-import java.io.PrintWriter;
-import java.io.FileNotFoundException;
-// -------------
-
-
 /**
  * A command line parser for the CLI-based Pipes job submitter.
  */
@@ -370,21 +364,8 @@ public class Submitter extends Configured implements Tool {
             job.setInputFormatClass(PipesNonJavaInputFormat.class);
         }
 
-        // Avro mode
-        //if (getIsAvroMode(conf)) {
-        if (true) {  // FIXME: find out how to actually pass -avro
+        if (getIsAvroMode(conf)) {
             // FIXME: abort if user did not provide an input format class
-
-          // --- DEBUG ---
-          try {
-            PrintWriter out = new PrintWriter("/tmp/SIMLEO_DEBUG_2");
-            out.println("We are in avro mode");
-            out.close();
-          } catch (FileNotFoundException e) {
-            System.err.println("Aaah too bad");
-          }
-          // -------------
-
             conf.setClass(Submitter.INPUT_FORMAT,
                           job.getInputFormatClass(), InputFormat.class);
             job.setInputFormatClass(PydoopAvroBridge.class);
@@ -439,18 +420,6 @@ public class Submitter extends Configured implements Tool {
 
             CommandLine results = cli.parse(conf, args);
 
-
-            // --- DEBUG ---
-            try {
-              PrintWriter out = new PrintWriter("/tmp/SIMLEO_DEBUG_1");
-              out.println("avro: " + results.getOptionValue("avro"));
-              out.close();
-            } catch (FileNotFoundException e) {
-              System.err.println("Aaah too bad");
-            }
-            // -------------
-
-
             if (results.hasOption("input")) {
                 Path path = new Path(results.getOptionValue("input"));
                 FileInputFormat.setInputPaths(job, path);
@@ -497,13 +466,12 @@ public class Submitter extends Configured implements Tool {
                     LazyOutputFormat.setOutputFormatClass(job,
                                                           job.getOutputFormatClass());
                 }
-
+            }
             if (results.hasOption("avro")) {
                 setIsAvroMode(conf, Boolean.parseBoolean(
                     results.getOptionValue("avro")));
             }
 
-            }
             if (results.hasOption("program")) {
                 setExecutable(conf, results.getOptionValue("program"));
             }
