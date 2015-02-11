@@ -86,6 +86,7 @@ class TReducerWithCounters(Reducer):
 
 
 class TFactory(Factory):
+
     def __init__(self, combiner=None, partitioner=None, reducer_class=TReducer,
                  record_writer=None, record_reader=None):
         self.mclass = TMapper
@@ -115,6 +116,7 @@ class TFactory(Factory):
 
 
 class TestFramework(WDTestCase):
+
     def setUp(self):
         super(TestFramework, self).setUp()
         self.fname = self._mkfn('alice.txt')
@@ -130,6 +132,17 @@ class TestFramework(WDTestCase):
         )
         for k in mrv2_to_mrv1:
             self.assertEqual(jc[k], job_conf[mrv2_to_mrv1[k]])
+
+    def test_job_conf_getters(self):
+        values = ['int', '1', 'float', '2.3', 'bool', 'false']
+        conv_values = [1, 2.3, False]
+        jc = JobConf(values)
+        for i, k in enumerate(values[::2]):
+            getter = getattr(jc, 'get_%s' % k)
+            self.assertEqual(getter(k), conv_values[i])
+        for jc in JobConf([]), JobConf(['x', 'invalid']):
+            for d in False, True:
+                self.assertEqual(jc.get_bool('x', default=d), d)
 
     def test_map_only(self):
         job_conf = {'this.is.not.used': '22'}
@@ -195,6 +208,7 @@ class TestFramework(WDTestCase):
 def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestFramework('test_job_conf'))
+    suite_.addTest(TestFramework('test_job_conf_getters'))
     suite_.addTest(TestFramework('test_map_only'))
     suite_.addTest(TestFramework('test_map_reduce'))
     suite_.addTest(TestFramework('test_map_combiner_reduce'))
