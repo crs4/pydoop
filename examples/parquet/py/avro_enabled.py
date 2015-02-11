@@ -24,13 +24,29 @@ from collections import Counter
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-import pydoop.hdfs as hdfs
 
 from avro.io import DatumReader, BinaryDecoder
 import avro
 
 
-AVRO_SCHEMA_PATH = 'user.avsc'  # FIXME
+AVRO_MODE = 'pydoop.mapreduce.pipes.avro.mode'
+AVRO_VALUE_SCHEMA = 'pydoop.mapreduce.pipes.avro.value.schema'
+
+
+def get_schema(jc):
+    """
+    Get schema from JSON string.
+    """
+    schema_str = jc.get(AVRO_VALUE_SCHEMA)
+    return avro.schema.parse(schema_str)
+
+
+def get_schema_alt(jc):
+    """
+    Get schema from parsed JSON (alternate method for doc purposes).
+    """
+    schema_json = jc.get_json(AVRO_VALUE_SCHEMA)
+    return avro.schema.make_avsc_object(schema_json)
 
 
 class AvroContext(pp.TaskContext):
@@ -39,8 +55,16 @@ class AvroContext(pp.TaskContext):
 
     def set_job_conf(self, vals):
         super(AvroContext, self).set_job_conf(vals)
-        schema = avro.schema.parse(hdfs.load(AVRO_SCHEMA_PATH))
-        self.datum_reader = DatumReader(schema)
+        jc = self.get_job_conf()
+        assert jc.get_bool(AVRO_MODE)
+        try:
+            schema = get_schema(jc)
+        # FIXME: AVRO_VALUE_SCHEMA is *not* set in the reducer's context
+        except RuntimeError:
+            pass
+        else:
+            assert get_schema_alt(jc).to_json() == schema.to_json()
+            self.datum_reader = DatumReader(schema)
 
     def get_input_value(self):
         # FIXME reuse, reuse, reuse
@@ -52,22 +76,35 @@ class AvroContext(pp.TaskContext):
 
 class ColorPick(api.Mapper):
 
+    def __init__(self, ctx):
+        super(ColorPick, self).__init__(ctx)
+        is_avro_mode = ctx.job_conf.get_bool(AVRO_MODE)
+        schema = ctx.job_conf.get_json(AVRO_VALUE_SCHEMA)
+        sys.stderr.write('avro mode: %r\n' % (is_avro_mode,))
+        sys.stderr.write('avro value schema: %r\n' % (schema,))
+
     def map(self, ctx):
         user = ctx.value
         color = user['favorite_color']
-        sys.stderr.write('user: %r' % user)
+        sys.stderr.write('user: %r\n' % (user,))
         if color is not None:
             ctx.emit(user['office'], Counter({color: 1}))
 
 
 class ColorCount(api.Reducer):
 
+    def __init__(self, ctx):
+        super(ColorCount, self).__init__(ctx)
+        is_avro_mode = ctx.job_conf.get_bool(AVRO_MODE)
+        sys.stderr.write('avro mode: %r\n' % (is_avro_mode,))
+
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())
         ctx.emit(ctx.key, "%r" % s)
 
 
-pp.run_task(
-    pp.Factory(mapper_class=ColorPick, reducer_class=ColorCount),
-    private_encoding=True, context_class=AvroContext
-)
+def __main__():
+    pp.run_task(
+        pp.Factory(mapper_class=ColorPick, reducer_class=ColorCount),
+        private_encoding=True, context_class=AvroContext
+    )

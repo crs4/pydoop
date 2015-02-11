@@ -21,9 +21,15 @@ import org.apache.avro.io.BinaryEncoder;
 
 public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
 
+  // FIXME: add support for avro keys
+  public static final String AVRO_VALUE_SCHEMA =
+    "pydoop.mapreduce.pipes.avro.value.schema";
+
   private final RecordReader<?, ? extends IndexedRecord> actualReader;
   private LongWritable key;
   private Text value;
+  private IndexedRecord bufferedRecord;
+  private Schema schema;
 
   public PydoopAvroBridgeReader(
       RecordReader<?, ? extends IndexedRecord> actualReader) {
@@ -33,6 +39,15 @@ public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
   public void initialize(InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {
     actualReader.initialize(split, context);
+    // get a record so we can set the schema property
+    if (actualReader.nextKeyValue()) {
+      bufferedRecord = actualReader.getCurrentValue();
+      schema = bufferedRecord.getSchema();
+      context.getConfiguration().set(AVRO_VALUE_SCHEMA, schema.toString());
+      key = new LongWritable();
+      value = new Text();
+      key.set(0);  // FIXME
+    }
   }
 
   @Override
@@ -49,18 +64,19 @@ public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
 
   public synchronized boolean nextKeyValue()
       throws IOException, InterruptedException {
-    if (!actualReader.nextKeyValue()) {
-      return false;
+    IndexedRecord record;
+    if (bufferedRecord == null) {
+      if (!actualReader.nextKeyValue()) {
+        return false;
+      }
+      else {
+        record = actualReader.getCurrentValue();
+      }
     }
-    if (key == null) {
-      key = new LongWritable();
+    else {
+      record = bufferedRecord;
+      bufferedRecord = null;
     }
-    if (value == null) {
-      value = new Text();
-    }
-    key.set(0);  // FIXME
-    IndexedRecord record = actualReader.getCurrentValue();
-    Schema schema = record.getSchema();
     DatumWriter<GenericRecord> datumWriter =
         new GenericDatumWriter<GenericRecord>(schema);
     EncoderFactory fact = EncoderFactory.get();

@@ -25,6 +25,7 @@ must be subclassed by the developer, providing implementations for all
 methods called by the framework.
 """
 
+import json
 from abc import ABCMeta, abstractmethod
 
 from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
@@ -102,6 +103,9 @@ class JobConf(dict):
 
     def getBoolean(self, key, default=None):
         return self.get_bool(key, default)
+
+    def get_json(self, key, default=None):
+        return json.loads(self.get(key, default))
 
     #get below is deprecated behaviour, here only for backward compatibility
     def get(self, *args):

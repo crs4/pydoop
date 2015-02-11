@@ -156,6 +156,7 @@ public class Submitter extends Configured implements Tool {
     public static final String PARTITIONER = "mapreduce.pipes.partitioner";
     public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
     public static final String PORT = "mapreduce.pipes.command.port";
+    // FIXME: change to IS_AVRO_INPUT
     public static final String IS_AVRO_MODE =
         "pydoop.mapreduce.pipes.avro.mode";
 
