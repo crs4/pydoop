@@ -140,9 +140,10 @@ class TestFramework(WDTestCase):
         for i, k in enumerate(values[::2]):
             getter = getattr(jc, 'get_%s' % k)
             self.assertEqual(getter(k), conv_values[i])
-        for jc in JobConf([]), JobConf(['x', 'invalid']):
+        for jc in JobConf([]), JobConf(['x', 'foo']):
             for d in False, True:
                 self.assertEqual(jc.get_bool('x', default=d), d)
+        self.assertRaises(RuntimeError, JobConf(['x', 'foo']).get_bool, 'x')
 
     def test_map_only(self):
         job_conf = {'this.is.not.used': '22'}
