@@ -29,8 +29,8 @@ from avro.io import DatumReader, BinaryDecoder
 import avro
 
 
-AVRO_MODE = 'pydoop.mapreduce.pipes.avro.mode'
-AVRO_VALUE_SCHEMA = 'pydoop.mapreduce.pipes.avro.value.schema'
+AVRO_INPUT = 'pydoop.mapreduce.avro.input'
+AVRO_VALUE_SCHEMA = 'pydoop.mapreduce.avro.value.schema'
 
 
 def get_schema(jc):
@@ -56,13 +56,11 @@ class AvroContext(pp.TaskContext):
     def set_job_conf(self, vals):
         super(AvroContext, self).set_job_conf(vals)
         jc = self.get_job_conf()
-        assert jc.get_bool(AVRO_MODE)
-        try:
+        # This method is called both in map and reduce tasks.  Since
+        # AVRO_INPUT and AVRO_VALUE_SCHEMA are set by PydoopAvroBridgeReader,
+        # however, they will only be present in the map task's conf.
+        if jc.get_bool(AVRO_INPUT):
             schema = get_schema(jc)
-        # FIXME: AVRO_VALUE_SCHEMA is *not* set in the reducer's context
-        except RuntimeError:
-            pass
-        else:
             assert get_schema_alt(jc).to_json() == schema.to_json()
             self.datum_reader = DatumReader(schema)
 
@@ -76,13 +74,6 @@ class AvroContext(pp.TaskContext):
 
 class ColorPick(api.Mapper):
 
-    def __init__(self, ctx):
-        super(ColorPick, self).__init__(ctx)
-        is_avro_mode = ctx.job_conf.get_bool(AVRO_MODE)
-        schema = ctx.job_conf.get_json(AVRO_VALUE_SCHEMA)
-        sys.stderr.write('avro mode: %r\n' % (is_avro_mode,))
-        sys.stderr.write('avro value schema: %r\n' % (schema,))
-
     def map(self, ctx):
         user = ctx.value
         color = user['favorite_color']
@@ -92,11 +83,6 @@ class ColorPick(api.Mapper):
 
 
 class ColorCount(api.Reducer):
-
-    def __init__(self, ctx):
-        super(ColorCount, self).__init__(ctx)
-        is_avro_mode = ctx.job_conf.get_bool(AVRO_MODE)
-        sys.stderr.write('avro mode: %r\n' % (is_avro_mode,))
 
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())

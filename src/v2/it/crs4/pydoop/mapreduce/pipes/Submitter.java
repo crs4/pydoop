@@ -89,7 +89,8 @@ class CommandLineParser {
         addOption("reduces", false, "number of reduces", "num");
         addOption("lazyOutput", false, "Optional. Create output lazily",
                   "boolean");
-        addOption("avro", false, "enable avro mode", "boolean");
+        addOption("avroInput", false, "avro input mode", "boolean");
+        addOption("avroOutput", false, "avro output mode", "boolean");
     }
 
     void addOption(String longName, boolean required, String description, 
@@ -130,7 +131,8 @@ class CommandLineParser {
       System.out.println("  [-program <executable>] // executable URI");
       System.out.println("  [-reduces <num>] // number of reduces");
       System.out.println("  [-lazyOutput <true/false>] // createOutputLazily");
-      System.out.println("  [-avro <true/false>] // enable avro mode");
+      System.out.println("  [-avroInput <true/false>] // avro input mode");
+      System.out.println("  [-avroOutput <true/false>] // avro output mode");
       System.out.println();
       GenericOptionsParser.printGenericCommandUsage(System.out);
     }
@@ -141,6 +143,9 @@ class CommandLineParser {
 public class Submitter extends Configured implements Tool {
 
     protected static final Log LOG = LogFactory.getLog(Submitter.class);
+    protected static boolean avroInput = false;
+    protected static boolean avroOutput = false;
+
     public static final String PRESERVE_COMMANDFILE = 
         "mapreduce.pipes.commandfile.preserve";
     public static final String EXECUTABLE = "mapreduce.pipes.executable";
@@ -156,11 +161,7 @@ public class Submitter extends Configured implements Tool {
     public static final String PARTITIONER = "mapreduce.pipes.partitioner";
     public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
     public static final String PORT = "mapreduce.pipes.command.port";
-    // FIXME: change to IS_AVRO_INPUT
-    public static final String IS_AVRO_MODE =
-        "pydoop.mapreduce.pipes.avro.mode";
 
-    
     /**
      * Get the URI of the application's executable.
      * @param conf
@@ -317,24 +318,6 @@ public class Submitter extends Configured implements Tool {
         conf.setBoolean(Submitter.PRESERVE_COMMANDFILE, keep);
     }
 
-    /**
-     * Set whether the job is in avro mode.
-     * @param conf the configuration to modify
-     * @param value the new value
-     */
-    public static void setIsAvroMode(Configuration conf, boolean value) {
-        conf.setBoolean(Submitter.IS_AVRO_MODE, value);
-    }
-
-    /**
-     * Check whether the job is in avro mode.
-     * @param conf the configuration to check
-     * @return is avro mode on?
-     */
-    public static boolean getIsAvroMode(Configuration conf) {
-        return conf.getBoolean(Submitter.IS_AVRO_MODE, false);
-    }
-
     private static void setupPipesJob(Job job) throws IOException, ClassNotFoundException {
         Configuration conf = job.getConfiguration();
         // default map output types to Text
@@ -365,13 +348,15 @@ public class Submitter extends Configured implements Tool {
             job.setInputFormatClass(PipesNonJavaInputFormat.class);
         }
 
-        if (getIsAvroMode(conf)) {
+        if (avroInput) {
             // FIXME: abort if user did not provide an input format class
             conf.setClass(Submitter.INPUT_FORMAT,
                           job.getInputFormatClass(), InputFormat.class);
             job.setInputFormatClass(PydoopAvroBridge.class);
         }
-
+        if (avroOutput) {  // FIXME: TBD
+            throw new RuntimeException("avroOutput not yet implemented");
+        }
     
         String exec = getExecutable(conf);
         if (exec == null) {
@@ -468,9 +453,13 @@ public class Submitter extends Configured implements Tool {
                                                           job.getOutputFormatClass());
                 }
             }
-            if (results.hasOption("avro")) {
-                setIsAvroMode(conf, Boolean.parseBoolean(
-                    results.getOptionValue("avro")));
+            if (results.hasOption("avroInput")) {
+                avroInput = Boolean.parseBoolean(
+                    results.getOptionValue("avroInput"));
+            }
+            if (results.hasOption("avroOutput")) {
+                avroOutput = Boolean.parseBoolean(
+                    results.getOptionValue("avroOutput"));
             }
 
             if (results.hasOption("program")) {

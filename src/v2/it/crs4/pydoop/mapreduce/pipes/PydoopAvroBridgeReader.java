@@ -8,6 +8,7 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.conf.Configuration;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
@@ -21,9 +22,15 @@ import org.apache.avro.io.BinaryEncoder;
 
 public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
 
+  public static final String AVRO_INPUT = "pydoop.mapreduce.avro.input";
   // FIXME: add support for avro keys
+  // public static final String AVRO_KEY_SCHEMA =
+  //   "pydoop.mapreduce.avro.key.schema";
   public static final String AVRO_VALUE_SCHEMA =
-    "pydoop.mapreduce.pipes.avro.value.schema";
+    "pydoop.mapreduce.avro.value.schema";
+  // FIXME: put the following in the output dual
+  // public static final String AVRO_OUTPUT = "pydoop.mapreduce.avro.output";
+
 
   private final RecordReader<?, ? extends IndexedRecord> actualReader;
   private LongWritable key;
@@ -39,11 +46,13 @@ public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
   public void initialize(InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {
     actualReader.initialize(split, context);
+    Configuration conf = context.getConfiguration();
+    conf.setBoolean(AVRO_INPUT, true);
     // get a record so we can set the schema property
     if (actualReader.nextKeyValue()) {
       bufferedRecord = actualReader.getCurrentValue();
       schema = bufferedRecord.getSchema();
-      context.getConfiguration().set(AVRO_VALUE_SCHEMA, schema.toString());
+      conf.set(AVRO_VALUE_SCHEMA, schema.toString());
       key = new LongWritable();
       value = new Text();
       key.set(0);  // FIXME

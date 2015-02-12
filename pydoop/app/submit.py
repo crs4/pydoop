@@ -305,8 +305,10 @@ class PydoopSubmitter(object):
         job_args.extend(['-program', self.remote_exe])
         if libjars:
             job_args.extend(["-libjars", ','.join(libjars)])
-        if self.args.avro:
-            job_args.extend(['-avro', 'true'])
+        if self.args.avro_input:
+            job_args.extend(['-avroInput', 'true'])
+        if self.args.avro_output:
+            job_args.extend(['-avroOutput', 'true'])
 
         if not self.args.disable_property_name_conversion:
             ctable = (conv_tables.mrv1_to_mrv2
@@ -472,7 +474,10 @@ def add_parser_arguments(parser):
               "in the launcher script.")
     )
     parser.add_argument(
-        '--avro', action='store_true', help="Enable avro mode",
+        '--avro-input', action='store_true', help="Enable avro input mode",
+    )
+    parser.add_argument(
+        '--avro-output', action='store_true', help="Enable avro output mode",
     )
 
 
