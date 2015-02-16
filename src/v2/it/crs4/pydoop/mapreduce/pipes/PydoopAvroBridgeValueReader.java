@@ -20,7 +20,8 @@ import org.apache.avro.io.EncoderFactory;
 import org.apache.avro.io.BinaryEncoder;
 
 
-public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
+public class PydoopAvroBridgeValueReader
+    extends RecordReader<LongWritable, Text> {
 
   public static final String AVRO_INPUT = "pydoop.mapreduce.avro.input";
   // FIXME: add support for avro keys
@@ -38,7 +39,7 @@ public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
   private IndexedRecord bufferedRecord;
   private Schema schema;
 
-  public PydoopAvroBridgeReader(
+  public PydoopAvroBridgeValueReader(
       RecordReader<?, ? extends IndexedRecord> actualReader) {
     this.actualReader = actualReader;
   }

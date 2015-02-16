@@ -119,8 +119,8 @@ class CommandLineParser {
     System.out.println("  [-program <executable>] // executable URI");
     System.out.println("  [-reduces <num>] // number of reduces");
     System.out.println("  [-lazyOutput <true/false>] // createOutputLazily");
-    System.out.println("  [-avroInput <true/false>] // avro input mode");
-    System.out.println("  [-avroOutput <true/false>] // avro output mode");
+    System.out.println("  [-avroInput <k/v/kv>] // avro input");
+    System.out.println("  [-avroOutput <k/v/kv>] // avro output");
     System.out.println();
     GenericOptionsParser.printGenericCommandUsage(System.out);
   }
@@ -129,9 +129,11 @@ class CommandLineParser {
 
 public class Submitter extends Configured implements Tool {
 
+  private static enum AvroIO { K, V, KV };
+
   protected static final Log LOG = LogFactory.getLog(Submitter.class);
-  protected static boolean avroInput = false;
-  protected static boolean avroOutput = false;
+  protected static AvroIO avroInput;
+  protected static AvroIO avroOutput;
 
   public static final String PRESERVE_COMMANDFILE =
       "mapreduce.pipes.commandfile.preserve";
@@ -332,17 +334,43 @@ public class Submitter extends Configured implements Tool {
       job.setInputFormatClass(PipesNonJavaInputFormat.class);
     }
 
-    if (avroInput) {
+    if (avroInput != null) {
       // FIXME: abort if user did not provide an input format class
       conf.setClass(Submitter.INPUT_FORMAT, job.getInputFormatClass(),
           InputFormat.class);
-      job.setInputFormatClass(PydoopAvroInputBridge.class);
+      switch (avroInput) {
+      case K:
+        throw new UnsupportedOperationException("Not available yet");
+        // job.setInputFormatClass(PydoopAvroInputKeyBridge.class);
+        // break;
+      case V:
+        job.setInputFormatClass(PydoopAvroInputValueBridge.class);
+        break;
+      case KV:
+        throw new UnsupportedOperationException("Not available yet");
+        // job.setInputFormatClass(PydoopAvroInputKeyValueBridge.class);
+        // break;
+      default:
+        throw new IllegalArgumentException("Bad Avro input type");
+      }
     }
-    if (avroOutput) {
-      // FIXME: abort if user did not provide an output format class
-      // conf.setClass(Submitter.OUTPUT_FORMAT,
-      //               job.getOutputFormatClass(), OutputFormat.class);
-      // job.setOutputFormatClass(PydoopAvroOutputBridge.class);
+    if (avroOutput != null) {
+      throw new UnsupportedOperationException("Not available yet");
+      // // FIXME: abort if user did not provide an output format class
+      // conf.setClass(Submitter.OUTPUT_FORMAT, job.getOutputFormatClass(),
+      //     OutputFormat.class);
+      // switch (avroOutput) {
+      // case K:
+      //   job.setOutputFormatClass(PydoopAvroOutputKeyBridge.class);
+      //   break;
+      // case V:
+      //   job.setOutputFormatClass(PydoopAvroOutputValueBridge.class);
+      //   break;
+      // case KV:
+      //   job.setOutputFormatClass(PydoopAvroOutputKeyValueBridge.class);
+      //   break;
+      // default:
+      //   throw new IllegalArgumentException("Bad Avro output type");
     }
 
     String exec = getExecutable(conf);
@@ -437,10 +465,12 @@ public class Submitter extends Configured implements Tool {
         }
       }
       if (results.hasOption("avroInput")) {
-        avroInput = Boolean.parseBoolean(results.getOptionValue("avroInput"));
+        avroInput = AvroIO.valueOf(
+            results.getOptionValue("avroInput").toUpperCase());
       }
       if (results.hasOption("avroOutput")) {
-        avroOutput = Boolean.parseBoolean(results.getOptionValue("avroOutput"));
+        avroOutput = AvroIO.valueOf(
+            results.getOptionValue("avroOutput").toUpperCase());
       }
 
       if (results.hasOption("program")) {

@@ -47,6 +47,8 @@ USER_HOME = "mapreduce.admin.user.home.dir"
 JOB_REDUCES = "mapred.reduce.tasks"
 JOB_NAME = "mapred.job.name"
 COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
+AVRO_IO_CHOICES = ['k', 'v', 'kv']
+AVRO_IO_CHOICES += [_.upper() for _ in AVRO_IO_CHOICES]
 
 
 class PydoopSubmitter(object):
@@ -306,9 +308,9 @@ class PydoopSubmitter(object):
         if libjars:
             job_args.extend(["-libjars", ','.join(libjars)])
         if self.args.avro_input:
-            job_args.extend(['-avroInput', 'true'])
+            job_args.extend(['-avroInput', self.args.avro_input])
         if self.args.avro_output:
-            job_args.extend(['-avroOutput', 'true'])
+            job_args.extend(['-avroOutput', self.args.avro_output])
 
         if not self.args.disable_property_name_conversion:
             ctable = (conv_tables.mrv1_to_mrv2
@@ -474,10 +476,12 @@ def add_parser_arguments(parser):
               "in the launcher script.")
     )
     parser.add_argument(
-        '--avro-input', action='store_true', help="Enable avro input mode",
+        '--avro-input', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
+        help="Avro input mode (key, value or both)",
     )
     parser.add_argument(
-        '--avro-output', action='store_true', help="Enable avro output mode",
+        '--avro-output', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
+        help="Avro output mode (key, value or both)",
     )
 
 

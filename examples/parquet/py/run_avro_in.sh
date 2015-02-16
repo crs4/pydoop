@@ -35,7 +35,7 @@ hdfs dfs -rmr /user/${USER}/${OUTPUT}
 pydoop submit --upload-file-to-cache ${MPY} \
               --num-reducers 1 \
               --input-format ${INPUT_FORMAT} \
-              --avro-input \
+              --avro-input v \
               --libjars ${PARQUET_JAR} \
               --log-level ${LOGLEVEL} ${MRV} --job-name ${JOBNAME} \
               ${MODULE} ${INPUT} ${OUTPUT}

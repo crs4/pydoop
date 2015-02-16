@@ -16,7 +16,8 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
 
 
-public class PydoopAvroInputBridge extends InputFormat<LongWritable, Text> {
+public class PydoopAvroInputValueBridge
+    extends InputFormat<LongWritable, Text> {
 
   private InputFormat actualFormat;
 
@@ -36,7 +37,7 @@ public class PydoopAvroInputBridge extends InputFormat<LongWritable, Text> {
       InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {
     Configuration conf = context.getConfiguration();
-    return new PydoopAvroBridgeReader(
+    return new PydoopAvroBridgeValueReader(
         getActualFormat(conf).createRecordReader(split, context));
   }
 
