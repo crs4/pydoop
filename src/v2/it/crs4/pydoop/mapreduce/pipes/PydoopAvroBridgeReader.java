@@ -25,10 +25,10 @@ public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
   public static final String AVRO_INPUT = "pydoop.mapreduce.avro.input";
   // FIXME: add support for avro keys
   // public static final String AVRO_KEY_SCHEMA =
-  //   "pydoop.mapreduce.avro.key.schema";
+  //   "pydoop.mapreduce.avro.key.input.schema";
   public static final String AVRO_VALUE_SCHEMA =
-    "pydoop.mapreduce.avro.value.schema";
-  // FIXME: put the following in the output dual
+    "pydoop.mapreduce.avro.value.input.schema";
+  // FIXME: put the following in the output dual?
   // public static final String AVRO_OUTPUT = "pydoop.mapreduce.avro.output";
 
 
@@ -94,6 +94,7 @@ public class PydoopAvroBridgeReader extends RecordReader<LongWritable, Text> {
     try {
       datumWriter.write((GenericData.Record) record, enc);
       enc.flush();
+      stream.close();
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

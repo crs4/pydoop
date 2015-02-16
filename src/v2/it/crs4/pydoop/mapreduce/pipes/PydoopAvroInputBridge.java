@@ -16,7 +16,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
 
 
-public class PydoopAvroBridge extends InputFormat<LongWritable, Text> {
+public class PydoopAvroInputBridge extends InputFormat<LongWritable, Text> {
 
   private InputFormat actualFormat;
 

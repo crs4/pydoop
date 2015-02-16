@@ -160,6 +160,7 @@ public class Submitter extends Configured implements Tool {
         "mapreduce.pipes.isjavareducer";
     public static final String PARTITIONER = "mapreduce.pipes.partitioner";
     public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
+    public static final String OUTPUT_FORMAT = "mapreduce.pipes.outputformat";
     public static final String PORT = "mapreduce.pipes.command.port";
 
     /**
@@ -352,10 +353,13 @@ public class Submitter extends Configured implements Tool {
             // FIXME: abort if user did not provide an input format class
             conf.setClass(Submitter.INPUT_FORMAT,
                           job.getInputFormatClass(), InputFormat.class);
-            job.setInputFormatClass(PydoopAvroBridge.class);
+            job.setInputFormatClass(PydoopAvroInputBridge.class);
         }
-        if (avroOutput) {  // FIXME: TBD
-            throw new RuntimeException("avroOutput not yet implemented");
+        if (avroOutput) {
+            // FIXME: abort if user did not provide an output format class
+            // conf.setClass(Submitter.OUTPUT_FORMAT,
+            //               job.getOutputFormatClass(), OutputFormat.class);
+            // job.setOutputFormatClass(PydoopAvroOutputBridge.class);
         }
     
         String exec = getExecutable(conf);

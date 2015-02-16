@@ -19,7 +19,7 @@ hadoop jar ${PARQUET_JAR} it.crs4.pydoop.ExampleParquetMRWrite \
     ${INPUT_DATA} ${PARQUETS_DIR} ${SCHEMA_FILE_HDFS}
 
 # ----- part 3 -----
-MODULE=avro_enabled
+MODULE=avro_in
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG

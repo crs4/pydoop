@@ -30,14 +30,14 @@ import avro
 
 
 AVRO_INPUT = 'pydoop.mapreduce.avro.input'
-AVRO_VALUE_SCHEMA = 'pydoop.mapreduce.avro.value.schema'
+AVRO_VALUE_INPUT_SCHEMA = 'pydoop.mapreduce.avro.value.input.schema'
 
 
 def get_schema(jc):
     """
     Get schema from JSON string.
     """
-    schema_str = jc.get(AVRO_VALUE_SCHEMA)
+    schema_str = jc.get(AVRO_VALUE_INPUT_SCHEMA)
     return avro.schema.parse(schema_str)
 
 
@@ -45,7 +45,7 @@ def get_schema_alt(jc):
     """
     Get schema from parsed JSON (alternate method for doc purposes).
     """
-    schema_json = jc.get_json(AVRO_VALUE_SCHEMA)
+    schema_json = jc.get_json(AVRO_VALUE_INPUT_SCHEMA)
     return avro.schema.make_avsc_object(schema_json)
 
 
@@ -56,8 +56,8 @@ class AvroContext(pp.TaskContext):
     def set_job_conf(self, vals):
         super(AvroContext, self).set_job_conf(vals)
         jc = self.get_job_conf()
-        # This method is called both in map and reduce tasks.  Since
-        # AVRO_INPUT and AVRO_VALUE_SCHEMA are set by PydoopAvroBridgeReader,
+        # This method is called both in map and reduce tasks.  Since AVRO_INPUT
+        # and AVRO_VALUE_INPUT_SCHEMA are set by PydoopAvroBridgeReader,
         # however, they will only be present in the map task's conf.
         if jc.get_bool(AVRO_INPUT):
             schema = get_schema(jc)
