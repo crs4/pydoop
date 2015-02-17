@@ -152,6 +152,8 @@ public class Submitter extends Configured implements Tool {
   public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
   public static final String OUTPUT_FORMAT = "mapreduce.pipes.outputformat";
   public static final String PORT = "mapreduce.pipes.command.port";
+  // The input dual is set in the bridge record reader
+  public static final String AVRO_OUTPUT = "pydoop.mapreduce.avro.output";
 
   /**
    * Get the URI of the application's executable.
@@ -359,22 +361,25 @@ public class Submitter extends Configured implements Tool {
       }
     }
     if (avroOutput != null) {
-      throw new UnsupportedOperationException("Not available yet");
-      // // FIXME: abort if user did not provide an output format class
-      // conf.setClass(Submitter.OUTPUT_FORMAT, job.getOutputFormatClass(),
-      //     OutputFormat.class);
-      // switch (avroOutput) {
-      // case K:
-      //   job.setOutputFormatClass(PydoopAvroOutputKeyBridge.class);
-      //   break;
-      // case V:
-      //   job.setOutputFormatClass(PydoopAvroOutputValueBridge.class);
-      //   break;
-      // case KV:
-      //   job.setOutputFormatClass(PydoopAvroOutputKeyValueBridge.class);
-      //   break;
-      // default:
-      //   throw new IllegalArgumentException("Bad Avro output type");
+      // FIXME: abort if user did not provide an output format class
+      conf.setClass(Submitter.OUTPUT_FORMAT, job.getOutputFormatClass(),
+          OutputFormat.class);
+      conf.set(AVRO_OUTPUT, avroOutput.name());
+      switch (avroOutput) {
+      case K:
+        throw new UnsupportedOperationException("Not available yet");
+        // job.setOutputFormatClass(PydoopAvroOutputKeyBridge.class);
+        // break;
+      case V:
+        job.setOutputFormatClass(PydoopAvroOutputValueBridge.class);
+        break;
+      case KV:
+        throw new UnsupportedOperationException("Not available yet");
+        // job.setOutputFormatClass(PydoopAvroOutputKeyValueBridge.class);
+        // break;
+      default:
+        throw new IllegalArgumentException("Bad Avro output type");
+      }
     }
 
     String exec = getExecutable(conf);

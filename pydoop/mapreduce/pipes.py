@@ -173,6 +173,21 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self._progress_float = 0.0
         self._last_progress = 0
         self._registered_counters = []
+        # None = unknown (yet), e.g., while setting conf.  In this
+        # case, *both* is_mapper() and is_reducer() must return False
+        self._is_mapper = None
+
+    def set_is_mapper(self):
+        self._is_mapper = True
+
+    def set_is_reducer(self):
+        self._is_mapper = False
+
+    def is_mapper(self):
+        return self._is_mapper is True
+
+    def is_reducer(self):
+        return self._is_mapper is False
 
     def enable_private_encoding(self):
         self._private_encoding = self.private_encoding
@@ -335,10 +350,12 @@ class StreamRunner(object):
             elif cmd == 'setJobConf':
                 self.ctx.set_job_conf(args[0])
             elif cmd == 'runMap':
+                self.ctx.set_is_mapper()
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
                 break  # we can bail out, there is nothing more to do.
             elif cmd == 'runReduce':
+                self.ctx.set_is_reducer()
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
                 break  # we can bail out, there is nothing more to do.

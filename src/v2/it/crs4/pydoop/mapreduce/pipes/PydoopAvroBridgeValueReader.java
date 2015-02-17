@@ -29,9 +29,6 @@ public class PydoopAvroBridgeValueReader
   //   "pydoop.mapreduce.avro.key.input.schema";
   public static final String AVRO_VALUE_SCHEMA =
     "pydoop.mapreduce.avro.value.input.schema";
-  // FIXME: put the following in the output dual?
-  // public static final String AVRO_OUTPUT = "pydoop.mapreduce.avro.output";
-
 
   private final RecordReader<?, ? extends IndexedRecord> actualReader;
   private LongWritable key;

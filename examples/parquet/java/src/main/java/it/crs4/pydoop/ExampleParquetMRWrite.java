@@ -54,6 +54,7 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
 
   private static final Log LOG = Log.getLog(ExampleParquetMRWrite.class);
 
+  // FIXME: not needed, we're calling setSchema below
   private static final String SCHEMA_PATH_KEY = "paexample.schema.path";
 
   private static Schema getSchema(Configuration conf)
