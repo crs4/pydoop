@@ -129,7 +129,11 @@ class CommandLineParser {
 
 public class Submitter extends Configured implements Tool {
 
-  private static enum AvroIO { K, V, KV };
+  public static enum AvroIO {
+    K,   // {Input,Output}Format key type is avro record
+    V,   // {Input,Output}Format value type is avro record
+    KV,  // {Input,Output}Format {key,value} type is avro record
+  }
 
   protected static final Log LOG = LogFactory.getLog(Submitter.class);
   protected static AvroIO avroInput;

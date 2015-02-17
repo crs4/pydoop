@@ -59,7 +59,8 @@ class AvroContext(pp.TaskContext):
         # This method is called both in map and reduce tasks.  Since AVRO_INPUT
         # and AVRO_VALUE_INPUT_SCHEMA are set by PydoopAvroBridgeReader,
         # however, they will only be present in the map task's conf.
-        if jc.get_bool(AVRO_INPUT):
+        if AVRO_INPUT in jc:
+            assert jc.get(AVRO_INPUT).upper() == 'V'
             schema = get_schema(jc)
             assert get_schema_alt(jc).to_json() == schema.to_json()
             self.datum_reader = DatumReader(schema)

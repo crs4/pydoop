@@ -48,7 +48,7 @@ public class PydoopAvroBridgeValueReader
       throws IOException, InterruptedException {
     actualReader.initialize(split, context);
     Configuration conf = context.getConfiguration();
-    conf.setBoolean(AVRO_INPUT, true);
+    conf.set(AVRO_INPUT, Submitter.AvroIO.V.name());
     // get a record so we can set the schema property
     if (actualReader.nextKeyValue()) {
       bufferedRecord = actualReader.getCurrentValue();
