@@ -81,4 +81,4 @@ pydoop submit \
 rm -rf ${OUTPUT}
 hdfs dfs -get /user/${USER}/${OUTPUT}
 # this is intentionally hardwired.
-python check_results.py ${INPUT_DATA} ${OUTPUT}/part-r-00000
+python check_results.py ${INPUT_DATA} ${OUTPUT}/part-m-00000
