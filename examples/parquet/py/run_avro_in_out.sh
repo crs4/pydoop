@@ -33,7 +33,7 @@ INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
 OUTPUT_FORMAT=parquet.avro.AvroParquetOutputFormat
 
 INPUT=${PARQUETS_DIR}
-OUTPUT=results
+OUTPUT=cc_output
 
 hdfs dfs -rmr /user/${USER}/${OUTPUT}
 
@@ -52,5 +52,33 @@ pydoop submit \
     ${MODULE} ${INPUT} ${OUTPUT}
 
 
+# --- dump results ---
+MODULE=avro_dump_results
+MPY=${MODULE}.py
+JOBNAME=${MODULE}-job
+LOGLEVEL=DEBUG
+MRV="--mrv2"
+STATS_SCHEMA=`cat ${OUT_SCHEMA_FILE_LOCAL}`
+INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
+
+INPUT=cc_output
+OUTPUT=results
+
+hdfs dfs -rmr /user/${USER}/${OUTPUT}
+
+pydoop submit \
+    --upload-file-to-cache ${MPY} \
+    --num-reducers 0 \
+    --input-format ${INPUT_FORMAT} \
+    --avro-input v \
+    --libjars ${PARQUET_JAR} \
+    --log-level ${LOGLEVEL} ${MRV} \
+    --job-name ${JOBNAME} \
+    ${MODULE} ${INPUT} ${OUTPUT}
+
+
 # --- check results ---
-# FIXME: TBD
+rm -rf ${OUTPUT}
+hdfs dfs -get /user/${USER}/${OUTPUT}
+# this is intentionally hardwired.
+python check_results.py ${INPUT_DATA} ${OUTPUT}/part-r-00000
