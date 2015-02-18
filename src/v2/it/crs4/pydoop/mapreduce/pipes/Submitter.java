@@ -18,6 +18,8 @@
 
 package it.crs4.pydoop.mapreduce.pipes;
 
+import java.util.Properties;
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -25,6 +27,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+
+import java.io.PrintWriter;  // DEBUG
+import java.io.FileNotFoundException;  // DEBUG
+import java.util.Arrays;  // DEBUG
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -136,8 +142,14 @@ public class Submitter extends Configured implements Tool {
   }
 
   protected static final Log LOG = LogFactory.getLog(Submitter.class);
+  protected static final String PROP_FILE = "pydoop.properties";
   protected static AvroIO avroInput;
   protected static AvroIO avroOutput;
+  // --- pydoop properties ---
+  protected static Properties props;
+  // // FIXME: add support for avro keys
+  // AVRO_KEY_INPUT_SCHEMA;
+  // AVRO_KEY_OUTPUT_SCHEMA;
 
   public static final String PRESERVE_COMMANDFILE =
       "mapreduce.pipes.commandfile.preserve";
@@ -152,8 +164,43 @@ public class Submitter extends Configured implements Tool {
   public static final String INPUT_FORMAT = "mapreduce.pipes.inputformat";
   public static final String OUTPUT_FORMAT = "mapreduce.pipes.outputformat";
   public static final String PORT = "mapreduce.pipes.command.port";
-  // The input dual is set in the bridge record reader
-  public static final String AVRO_OUTPUT = "pydoop.mapreduce.avro.output";
+
+  public static Properties getPydoopProperties() {
+    Properties properties = new Properties();
+    InputStream stream = Submitter.class.getResourceAsStream(PROP_FILE);
+    try {
+      properties.load(stream);
+      stream.close();
+    } catch (NullPointerException e) {
+      throw new RuntimeException("Could not find " + PROP_FILE);
+    } catch (IOException e) {
+      throw new RuntimeException("Could not read from " + PROP_FILE);
+    }
+    // AVRO_INPUT = properties.getProperty("AVRO_INPUT");
+    // AVRO_OUTPUT = properties.getProperty("AVRO_OUTPUT");
+    // AVRO_VALUE_INPUT_SCHEMA = properties.getProperty(
+    //     "AVRO_VALUE_INPUT_SCHEMA");
+    // AVRO_VALUE_OUTPUT_SCHEMA = properties.getProperty(
+    //     "AVRO_VALUE_OUTPUT_SCHEMA");
+    return properties;
+  }
+
+  public Submitter() {
+    super();
+    props = getPydoopProperties();
+    // --- DEBUG ---
+    PrintWriter out = null;
+    try {
+      out = new PrintWriter("/tmp/SIMLEO_DEBUG");
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException("Could not open dump file");
+    }
+    for (String s: Arrays.asList("AVRO_INPUT", "AVRO_OUTPUT", "AVRO_VALUE_INPUT_SCHEMA", "AVRO_VALUE_OUTPUT_SCHEMA")) {
+      out.println(props.getProperty(s));
+    }
+    out.close();
+    // -------------
+  }
 
   /**
    * Get the URI of the application's executable.
@@ -364,7 +411,7 @@ public class Submitter extends Configured implements Tool {
       // FIXME: abort if user did not provide an output format class
       conf.setClass(Submitter.OUTPUT_FORMAT, job.getOutputFormatClass(),
           OutputFormat.class);
-      conf.set(AVRO_OUTPUT, avroOutput.name());
+      conf.set(props.getProperty("AVRO_OUTPUT"), avroOutput.name());
       switch (avroOutput) {
       case K:
         throw new UnsupportedOperationException("Not available yet");

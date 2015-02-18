@@ -1,5 +1,6 @@
 package it.crs4.pydoop.mapreduce.pipes;
 
+import java.util.Properties;
 import java.io.IOException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -17,12 +18,6 @@ import org.apache.avro.Schema;
 
 public class PydoopAvroOutputValueBridge
     extends OutputFormat<Text, Text> {
-
-  // FIXME: add support for avro keys
-  // public static final String AVRO_KEY_SCHEMA =
-  //   "pydoop.mapreduce.avro.key.output.schema";
-  public static final String AVRO_VALUE_SCHEMA =
-    "pydoop.mapreduce.avro.value.output.schema";
 
   private OutputFormat actualFormat;
 
@@ -55,8 +50,10 @@ public class PydoopAvroOutputValueBridge
   public RecordWriter<Text, Text>
       getRecordWriter(TaskAttemptContext context)
       throws IOException, InterruptedException {
+    Properties props = Submitter.getPydoopProperties();
     Configuration conf = context.getConfiguration();
-    Schema schema = Schema.parse(conf.get(AVRO_VALUE_SCHEMA));
+    Schema schema = Schema.parse(conf.get(
+        props.getProperty("AVRO_VALUE_OUTPUT_SCHEMA")));
     return new PydoopAvroBridgeValueWriter(
         getActualFormat(conf).getRecordWriter(context), schema);
   }

@@ -22,6 +22,7 @@ import sys
 from cStringIO import StringIO
 from collections import Counter
 
+import pydoop
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 
@@ -29,8 +30,8 @@ from avro.io import DatumReader, BinaryDecoder
 import avro
 
 
-AVRO_INPUT = 'pydoop.mapreduce.avro.input'
-AVRO_VALUE_INPUT_SCHEMA = 'pydoop.mapreduce.avro.value.input.schema'
+AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
+AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
 
 
 def get_schema(jc):

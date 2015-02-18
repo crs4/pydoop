@@ -68,6 +68,9 @@ EXTENSION_MODULES = []
 GIT_COMMIT_FN = ".git_commit"
 EXTRA_COMPILE_ARGS = ["-Wno-write-strings"]  # http://bugs.python.org/issue6952
 
+# properties file.  Since the source is in the root dir, filename = basename
+PROP_FN = PROP_BN = pydoop.__propfile_basename__
+
 
 # ---------
 # UTILITIES
@@ -280,6 +283,12 @@ class JavaBuilder(object):
             raise DistutilsSetupError(
                 "Error compiling java component.  Command: %s" % compile_cmd
             )
+        log.info("Copying properties file")
+        # FIXME: kinda hardwired for now
+        prop_file_dest = os.path.join(
+            class_dir, "it/crs4/pydoop/mapreduce/pipes", PROP_BN
+        )
+        shutil.copyfile(PROP_FN, prop_file_dest)
         log.info("Making Jar: %s", package_path)
         package_cmd = "jar -cf %(package_path)s -C %(class_dir)s ./it" % {
             'package_path': package_path, 'class_dir': class_dir
@@ -329,6 +338,7 @@ class BuildPydoop(build):
         print "hdfs core implementation: {0}".format(self.hdfs_core_impl)
         write_config(hdfs_core_impl=self.hdfs_core_impl)
         write_version()
+        shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
         build_sercore_extension()
         if self.hdfs_core_impl == hdfsimpl.NATIVE:
             build_hdfscore_native_impl()
@@ -384,6 +394,7 @@ setup(
         "pydoop.utils",
         "pydoop.utils.bridge",
     ],
+    package_data={"pydoop": [PROP_FN]},
     cmdclass={
         "build": BuildPydoop,
         "clean": Clean

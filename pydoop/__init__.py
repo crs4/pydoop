@@ -29,6 +29,8 @@ HDFS access.
 """
 
 import os
+import errno
+import ConfigParser
 from importlib import import_module
 import pydoop.hadoop_utils as hu
 
@@ -57,6 +59,7 @@ __author_email__ = ", ".join((
     "<kikkomep@crs4.it>",
 ))
 __url__ = "http://crs4.github.io/pydoop"
+__propfile_basename__ = "pydoop.properties"
 
 
 def reset():
@@ -127,3 +130,44 @@ def complete_mod_name(module, hadoop_vinfo=None):
 
 def import_version_specific_module(name):
     return import_module(name)
+
+
+# --- get properties ---
+PROP_FN = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), __propfile_basename__
+)
+
+
+# http://stackoverflow.com/questions/2819696
+class AddSectionWrapper(object):
+
+    SEC_NAME = 'dummy'
+
+    def __init__(self, f):
+        self.f = f
+        self.sechead = '[dummy]' + os.linesep
+
+    def readline(self):
+        if self.sechead:
+            try:
+                return self.sechead
+            finally:
+                self.sechead = None
+        else:
+            return self.f.readline()
+
+
+def read_properties(fname):
+    parser = ConfigParser.SafeConfigParser()
+    parser.optionxform = str  # preserve key case
+    try:
+        with open(fname) as f:
+            parser.readfp(AddSectionWrapper(f))
+    except IOError as e:
+        if e.errno != errno.ENOENT:
+            raise
+        return None  # compile time, prop file is not there
+    return dict(parser.items(AddSectionWrapper.SEC_NAME))
+
+
+PROPERTIES = read_properties(PROP_FN)
