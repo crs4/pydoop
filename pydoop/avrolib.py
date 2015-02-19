@@ -24,13 +24,90 @@ import logging
 logging.basicConfig()
 LOGGER = logging.getLogger('avrolib')
 LOGGER.setLevel(logging.DEBUG)
+from cStringIO import StringIO
 
 # FIXME: avro is not a dependency
+import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
-from avro.io import DatumReader, DatumWriter
+from avro.io import DatumReader, DatumWriter, BinaryDecoder, BinaryEncoder
 
+import pydoop
+import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
+
+
+AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
+AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
+AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
+AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
+
+
+class AvroContext(pp.TaskContext):
+    """
+    A specialized context class that allows mappers and reducers to
+    work with Avro records.
+
+    For now, this works only with the Hadoop 2 mapreduce pipes code
+    (``src/v2/it/crs4/pydoop/mapreduce/pipes``).  Avro I/O mode must
+    be explicitly requested when launching the application with pydoop
+    submit (``--avro-input``, ``--avro-output``).
+    """
+    def __init__(self, up_link, private_encoding=True):
+        super(AvroContext, self).__init__(up_link, private_encoding)
+        self._datum_reader = None
+        self._datum_writer = None
+
+    def set_job_conf(self, vals):
+        """
+        Set job conf and Avro datum reader/writer.
+        """
+        super(AvroContext, self).set_job_conf(vals)
+        jc = self.get_job_conf()
+        if AVRO_INPUT in jc:
+            assert jc.get(AVRO_INPUT).upper() == 'V'  # FIXME
+            schema = avro.schema.parse(jc.get(AVRO_VALUE_INPUT_SCHEMA))
+            self._datum_reader = DatumReader(schema)
+        if AVRO_OUTPUT in jc:
+            assert jc.get(AVRO_OUTPUT).upper() == 'V'  # FIXME
+            schema = avro.schema.parse(jc.get(AVRO_VALUE_OUTPUT_SCHEMA))
+            self._datum_writer = DatumWriter(schema)
+
+    def get_input_value(self):
+        """
+        Get input value and deserialize it to an Avro record.
+        """
+        f = StringIO(self._value)
+        dec = BinaryDecoder(f)
+        return self._datum_reader.read(dec)
+
+    def emit(self, key, value):
+        """Emit key and value, serializing Avro data as needed.
+
+        We need to perform Avro serialization if:
+
+        #. AVRO_OUTPUT is in the job conf and
+        #. we are either in a reducer or in a map-only app's mapper
+        """
+        if self.__serialize_avro():
+            f = StringIO()
+            encoder = BinaryEncoder(f)
+            self._datum_writer.write(value, encoder)
+            v = f.getvalue()
+        else:
+            v = value
+        super(AvroContext, self).emit(key, v)
+
+    def __serialize_avro(self):
+        jc = self.job_conf
+        if AVRO_OUTPUT not in jc:
+            return False
+        assert jc.get(AVRO_OUTPUT).upper() == 'V'  # FIXME
+        if self.is_reducer():
+            return True
+        return jc.get_int(
+            'mapred.reduce.tasks', jc.get_int('mapreduce.job.reduces', 0)
+        ) < 1
 
 
 class SeekableDataFileReader(DataFileReader):

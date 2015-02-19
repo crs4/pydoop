@@ -18,45 +18,9 @@
 #
 # END_COPYRIGHT
 
-import sys
-from cStringIO import StringIO
-
-import pydoop
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-
-from avro.io import DatumReader, BinaryDecoder
-import avro
-
-
-AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
-AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
-
-
-def get_schema(jc):
-    """
-    Get schema from JSON string.
-    """
-    schema_str = jc.get(AVRO_VALUE_INPUT_SCHEMA)
-    return avro.schema.parse(schema_str)
-
-
-class AvroContext(pp.TaskContext):
-
-    def set_job_conf(self, vals):
-        super(AvroContext, self).set_job_conf(vals)
-        jc = self.get_job_conf()
-        if AVRO_INPUT in jc:
-            assert jc.get(AVRO_INPUT).upper() == 'V'
-            schema = get_schema(jc)
-            self.datum_reader = DatumReader(schema)
-
-    def get_input_value(self):
-        # FIXME reuse, reuse, reuse
-        sys.stderr.write('value: %r\n' % self._value)
-        f = StringIO(self._value)
-        dec = BinaryDecoder(f)
-        return self.datum_reader.read(dec)
+from pydoop.avrolib import AvroContext
 
 
 class Mapper(api.Mapper):
