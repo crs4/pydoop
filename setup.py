@@ -225,7 +225,7 @@ class JavaLib(object):
         self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
         self.classpath = pydoop.hadoop_classpath()
         self.java_files = []
-        #if hadoop_vinfo.main >= (2, 2, 0):
+        self.dependencies = []
         if hadoop_vinfo.main >= (2, 0, 0) and hadoop_vinfo.is_yarn():
             self.java_files.extend([
                 "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
@@ -236,6 +236,8 @@ class JavaLib(object):
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
             ))
+            # for now we have only hadoop2 deps (avro-mapred)
+            self.dependencies.extend(glob.glob('lib/*.jar'))
         else:
             self.java_files.extend([
                 "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
@@ -261,9 +263,15 @@ class JavaBuilder(object):
 
     def __build_java_lib(self, jlib):
         log.info("Building java code for hadoop-%s" % jlib.hadoop_vinfo)
+        package_path = os.path.join(self.build_lib, "pydoop")
         compile_cmd = "javac"
         if jlib.classpath:
-            compile_cmd += " -classpath %s" % jlib.classpath
+            classpath = [jlib.classpath]
+            for src in jlib.dependencies:
+                dest = os.path.join(package_path, os.path.basename(src))
+                shutil.copyfile(src, dest)
+                classpath.append(dest)
+            compile_cmd += " -classpath %s" % (':'.join(classpath))
         else:
             log.warn(
                 "WARNING: could not set classpath, java code may not compile"
@@ -271,7 +279,7 @@ class JavaBuilder(object):
         class_dir = os.path.join(
             self.build_temp, "pipes"
         )
-        package_path = os.path.join(self.build_lib, "pydoop", jlib.jar_name)
+        jar_path = os.path.join(package_path, jlib.jar_name)
         if not os.path.exists(class_dir):
             os.mkdir(class_dir)
         compile_cmd += " -d '%s'" % class_dir
@@ -289,9 +297,9 @@ class JavaBuilder(object):
             class_dir, "it/crs4/pydoop/mapreduce/pipes", PROP_BN
         )
         shutil.copyfile(PROP_FN, prop_file_dest)
-        log.info("Making Jar: %s", package_path)
-        package_cmd = "jar -cf %(package_path)s -C %(class_dir)s ./it" % {
-            'package_path': package_path, 'class_dir': class_dir
+        log.info("Making Jar: %s", jar_path)
+        package_cmd = "jar -cf %(jar_path)s -C %(class_dir)s ./it" % {
+            'jar_path': jar_path, 'class_dir': class_dir
         }
         log.info("Packaging Java classes")
         log.info("Command: %s", package_cmd)
