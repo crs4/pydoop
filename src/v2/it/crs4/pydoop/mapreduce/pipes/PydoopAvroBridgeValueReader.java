@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.conf.Configuration;
 
@@ -22,10 +22,9 @@ import org.apache.avro.io.BinaryEncoder;
 
 
 public class PydoopAvroBridgeValueReader
-    extends RecordReader<LongWritable, Text> {
+    extends RecordReader<NullWritable, Text> {
 
   private final RecordReader<?, ? extends IndexedRecord> actualReader;
-  private LongWritable key;
   private Text value;
   private IndexedRecord bufferedRecord;
   private Schema schema;
@@ -47,16 +46,14 @@ public class PydoopAvroBridgeValueReader
       bufferedRecord = actualReader.getCurrentValue();
       schema = bufferedRecord.getSchema();
       conf.set(props.getProperty("AVRO_VALUE_INPUT_SCHEMA"), schema.toString());
-      key = new LongWritable();
       value = new Text();
-      key.set(0);  // FIXME
     }
   }
 
   @Override
-  public LongWritable getCurrentKey()
+  public NullWritable getCurrentKey()
       throws IOException, InterruptedException {
-    return key;
+    return NullWritable.get();
   }
 
   @Override
