@@ -23,7 +23,6 @@ def main(argv):
         with open(avro_fn, 'wb') as f_out:
             writer = DataFileWriter(f_out, DatumWriter(), schema)
             for row in reader:
-                print 'adding ', row
                 writer.append(dict(zip(FIELDS, row)))
             writer.close()
 

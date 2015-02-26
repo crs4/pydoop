@@ -39,7 +39,8 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
    * reader (it's the equivalent of getCurrent{Key,Value}, not of
    * nextKeyValue).
    */
-  protected abstract List<IndexedRecord> getInRecords();
+  protected abstract List<IndexedRecord> getInRecords()
+      throws IOException, InterruptedException;
 
   public void initialize(InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {

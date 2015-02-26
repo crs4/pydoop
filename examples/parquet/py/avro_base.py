@@ -18,6 +18,7 @@
 #
 # END_COPYRIGHT
 
+import abc
 from collections import Counter
 
 import pydoop.mapreduce.api as api
@@ -25,13 +26,36 @@ import pydoop.mapreduce.pipes as pp
 from pydoop.avrolib import AvroContext
 
 
-class ColorPick(api.Mapper):
+class ColorPickBase(api.Mapper):
+
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def get_user(self, ctx):
+        """
+        Get the user record.  This is just to avoid writing near identical
+        examples for the various key/value cases.  In a real application,
+        carrying records over keys or values would be a design decision,
+        so you would simply do, e.g., ``user = self.value``.
+        """
 
     def map(self, ctx):
-        user = ctx.value
+        user = self.get_user(ctx)
         color = user['favorite_color']
         if color is not None:
             ctx.emit(user['office'], Counter({color: 1}))
+
+
+class AvroKeyColorPick(ColorPickBase):
+
+    def get_user(self, ctx):
+        return ctx.key
+
+
+class AvroValueColorPick(ColorPickBase):
+
+    def get_user(self, ctx):
+        return ctx.value
 
 
 class ColorCount(api.Reducer):
@@ -41,8 +65,8 @@ class ColorCount(api.Reducer):
         ctx.emit(ctx.key, "%r" % s)
 
 
-def __main__():
+def run_task(mapper_class):
     pp.run_task(
-        pp.Factory(mapper_class=ColorPick, reducer_class=ColorCount),
+        pp.Factory(mapper_class=mapper_class, reducer_class=ColorCount),
         private_encoding=True, context_class=AvroContext
     )

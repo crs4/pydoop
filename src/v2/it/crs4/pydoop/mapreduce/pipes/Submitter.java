@@ -371,9 +371,8 @@ public class Submitter extends Configured implements Tool {
           InputFormat.class);
       switch (avroInput) {
       case K:
-        throw new UnsupportedOperationException("Not available yet");
-        // job.setInputFormatClass(PydoopAvroInputKeyBridge.class);
-        // break;
+        job.setInputFormatClass(PydoopAvroInputKeyBridge.class);
+        break;
       case V:
         job.setInputFormatClass(PydoopAvroInputValueBridge.class);
         break;
