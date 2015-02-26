@@ -19,6 +19,9 @@
 """
 Avro tools.
 """
+# DEV NOTE: since Avro is not a requirement, do *not* import this
+# module anywhere in the main code (importing it in the Avro examples
+# is OK, ofc).
 
 import logging
 logging.basicConfig()
@@ -26,7 +29,6 @@ LOGGER = logging.getLogger('avrolib')
 LOGGER.setLevel(logging.DEBUG)
 from cStringIO import StringIO
 
-# FIXME: avro is not a dependency
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter, BinaryDecoder, BinaryEncoder
@@ -39,6 +41,8 @@ import pydoop.hdfs as hdfs
 
 AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
 AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
+AVRO_KEY_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_INPUT_SCHEMA']
+AVRO_KEY_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_OUTPUT_SCHEMA']
 AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
 AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 
@@ -53,6 +57,19 @@ class AvroContext(pp.TaskContext):
     be explicitly requested when launching the application with pydoop
     submit (``--avro-input``, ``--avro-output``).
     """
+    @staticmethod
+    def deserializing(meth):
+        """
+        Decorate a key/value getter to make it auto-deserialize Avro
+        records.
+        """
+        def with_deserialization(self, *args, **kwargs):
+            ret = meth(self, *args, **kwargs)
+            f = StringIO(ret)
+            dec = BinaryDecoder(f)
+            return self._datum_reader.read(dec)
+        return with_deserialization
+
     def __init__(self, up_link, private_encoding=True):
         super(AvroContext, self).__init__(up_link, private_encoding)
         self._datum_reader = None
@@ -65,21 +82,29 @@ class AvroContext(pp.TaskContext):
         super(AvroContext, self).set_job_conf(vals)
         jc = self.get_job_conf()
         if AVRO_INPUT in jc:
-            assert jc.get(AVRO_INPUT).upper() == 'V'  # FIXME
-            schema = avro.schema.parse(jc.get(AVRO_VALUE_INPUT_SCHEMA))
-            self._datum_reader = DatumReader(schema)
+            avro_input = jc.get(AVRO_INPUT).upper()
+            if avro_input == 'K':
+                schema_str = jc.get(AVRO_KEY_INPUT_SCHEMA)
+                AvroContext.get_input_key = AvroContext.deserializing(
+                    AvroContext.get_input_key
+                )
+            elif avro_input == 'V':
+                schema_str = jc.get(AVRO_VALUE_INPUT_SCHEMA)
+                AvroContext.get_input_value = AvroContext.deserializing(
+                    AvroContext.get_input_value
+                )
+            elif avro_input == 'KV':
+                raise NotImplementedError  # FIXME: TBD
+            self._datum_reader = DatumReader(avro.schema.parse(schema_str))
         if AVRO_OUTPUT in jc:
-            assert jc.get(AVRO_OUTPUT).upper() == 'V'  # FIXME
-            schema = avro.schema.parse(jc.get(AVRO_VALUE_OUTPUT_SCHEMA))
-            self._datum_writer = DatumWriter(schema)
-
-    def get_input_value(self):
-        """
-        Get input value and deserialize it to an Avro record.
-        """
-        f = StringIO(self._value)
-        dec = BinaryDecoder(f)
-        return self._datum_reader.read(dec)
+            avro_output = jc.get(AVRO_OUTPUT).upper()
+            if avro_output == 'K':
+                schema_str = jc.get(AVRO_KEY_OUTPUT_SCHEMA)
+            elif avro_output == 'V':
+                schema_str = jc.get(AVRO_VALUE_OUTPUT_SCHEMA)
+            elif avro_output == 'KV':
+                raise NotImplementedError  # FIXME: TBD
+            self._datum_writer = DatumWriter(avro.schema.parse(schema_str))
 
     def emit(self, key, value):
         """Emit key and value, serializing Avro data as needed.
