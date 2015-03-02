@@ -391,9 +391,8 @@ public class Submitter extends Configured implements Tool {
       conf.set(props.getProperty("AVRO_OUTPUT"), avroOutput.name());
       switch (avroOutput) {
       case K:
-        throw new UnsupportedOperationException("Not available yet");
-        // job.setOutputFormatClass(PydoopAvroOutputKeyBridge.class);
-        // break;
+        job.setOutputFormatClass(PydoopAvroOutputKeyBridge.class);
+        break;
       case V:
         job.setOutputFormatClass(PydoopAvroOutputValueBridge.class);
         break;

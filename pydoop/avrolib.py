@@ -73,7 +73,7 @@ class AvroContext(pp.TaskContext):
     def __init__(self, up_link, private_encoding=True):
         super(AvroContext, self).__init__(up_link, private_encoding)
         self._datum_reader = None
-        self._datum_writer = None
+        self.__datum_writers = {'K': None, 'V': None}
 
     def set_job_conf(self, vals):
         """
@@ -97,39 +97,47 @@ class AvroContext(pp.TaskContext):
                 raise NotImplementedError  # FIXME: TBD
             self._datum_reader = DatumReader(avro.schema.parse(schema_str))
         if AVRO_OUTPUT in jc:
+            self.__datum_writers = {}
             avro_output = jc.get(AVRO_OUTPUT).upper()
-            if avro_output == 'K':
-                schema_str = jc.get(AVRO_KEY_OUTPUT_SCHEMA)
-            elif avro_output == 'V':
-                schema_str = jc.get(AVRO_VALUE_OUTPUT_SCHEMA)
-            elif avro_output == 'KV':
-                raise NotImplementedError  # FIXME: TBD
-            self._datum_writer = DatumWriter(avro.schema.parse(schema_str))
+            if avro_output == 'K' or avro_output == 'KV':
+                self.__datum_writers['K'] = DatumWriter(avro.schema.parse(
+                    jc.get(AVRO_KEY_OUTPUT_SCHEMA)
+                ))
+            elif avro_output == 'V' or avro_output == 'KV':
+                self.__datum_writers['V'] = DatumWriter(avro.schema.parse(
+                    jc.get(AVRO_VALUE_OUTPUT_SCHEMA)
+                ))
+            else:
+                raise RuntimeError('invalid avro output: %s' % avro_output)
 
     def emit(self, key, value):
-        """Emit key and value, serializing Avro data as needed.
+        """
+        Emit key and value, serializing Avro data as needed.
 
         We need to perform Avro serialization if:
 
         #. AVRO_OUTPUT is in the job conf and
         #. we are either in a reducer or in a map-only app's mapper
         """
-        if self.__serialize_avro():
-            f = StringIO()
-            encoder = BinaryEncoder(f)
-            self._datum_writer.write(value, encoder)
-            v = f.getvalue()
-        else:
-            v = value
-        super(AvroContext, self).emit(key, v)
+        key, value = self.__serialize_as_needed(key, value)
+        super(AvroContext, self).emit(key, value)
 
-    def __serialize_avro(self):
+    def __serialize_as_needed(self, key, value):
+        out_kv = {'K': key, 'V': value}
         jc = self.job_conf
-        if AVRO_OUTPUT not in jc:
-            return False
-        assert jc.get(AVRO_OUTPUT).upper() == 'V'  # FIXME
-        if self.is_reducer():
-            return True
+        if AVRO_OUTPUT in jc and (self.is_reducer() or self.__is_map_only()):
+            for mode, record in out_kv.iteritems():
+                datum_writer = self.__datum_writers.get(mode)
+                if datum_writer is not None:
+                    f = StringIO()
+                    encoder = BinaryEncoder(f)
+                    datum_writer.write(record, encoder)
+                    out_kv[mode] = f.getvalue()
+        return out_kv['K'], out_kv['V']
+
+    # move to super?
+    def __is_map_only(self):
+        jc = self.job_conf
         return jc.get_int(
             'mapred.reduce.tasks', jc.get_int('mapreduce.job.reduces', 0)
         ) < 1
