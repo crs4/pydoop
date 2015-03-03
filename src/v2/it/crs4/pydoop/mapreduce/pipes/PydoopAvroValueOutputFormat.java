@@ -20,11 +20,9 @@ package it.crs4.pydoop.mapreduce.pipes;
 
 import java.util.Properties;
 import java.io.IOException;
-import java.io.OutputStream;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.file.CodecFactory;
 import org.apache.avro.mapreduce.AvroOutputFormatBase;
 
 import org.apache.hadoop.conf.Configuration;
@@ -35,27 +33,6 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 public class PydoopAvroValueOutputFormat
     extends AvroOutputFormatBase<NullWritable, GenericRecord> {
-
-  // FIXME: do we need a factory?
-  private final RecordWriterFactory mRecordWriterFactory;
-
-  public PydoopAvroValueOutputFormat() {
-    this(new RecordWriterFactory());
-  }
-
-  protected PydoopAvroValueOutputFormat(
-      RecordWriterFactory recordWriterFactory) {
-    mRecordWriterFactory = recordWriterFactory;
-  }
-
-  protected static class RecordWriterFactory<T> {
-    protected RecordWriter<NullWritable, GenericRecord> create(
-        Schema writerSchema, CodecFactory compressionCodec,
-        OutputStream outputStream) throws IOException {
-      return new PydoopAvroValueRecordWriter(
-          writerSchema, compressionCodec, outputStream);
-    }
-  }
 
   @Override
   @SuppressWarnings("unchecked")
@@ -71,8 +48,9 @@ public class PydoopAvroValueOutputFormat
       throw new IOException(
           "PydoopAvroValueOutputFormat requires an output schema");
     }
-    return mRecordWriterFactory.create(
+    return new PydoopAvroValueRecordWriter(
         writerSchema, getCompressionCodec(context),
-        getAvroFileOutputStream(context));
+        getAvroFileOutputStream(context)
+    );
   }
 }

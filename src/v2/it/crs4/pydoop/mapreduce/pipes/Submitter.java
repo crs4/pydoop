@@ -143,9 +143,6 @@ public class Submitter extends Configured implements Tool {
   protected static AvroIO avroOutput;
   // --- pydoop properties ---
   protected static Properties props;
-  // // FIXME: add support for avro keys
-  // AVRO_KEY_INPUT_SCHEMA;
-  // AVRO_KEY_OUTPUT_SCHEMA;
 
   public static final String PRESERVE_COMMANDFILE =
       "mapreduce.pipes.commandfile.preserve";
