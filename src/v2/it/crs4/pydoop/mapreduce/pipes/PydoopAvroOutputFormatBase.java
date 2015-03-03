@@ -18,26 +18,27 @@
 
 package it.crs4.pydoop.mapreduce.pipes;
 
+import java.util.Properties;
 import java.io.IOException;
 
-import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.Schema;
+import org.apache.avro.mapreduce.AvroOutputFormatBase;
 
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 
-public class PydoopAvroValueOutputFormat
-    extends PydoopAvroOutputFormatBase<NullWritable, GenericRecord> {
+public abstract class PydoopAvroOutputFormatBase<K, V>
+    extends AvroOutputFormatBase<K, V> {
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public RecordWriter<NullWritable, GenericRecord> getRecordWriter(
-      TaskAttemptContext context) throws IOException {
-    return new PydoopAvroValueRecordWriter(
-        getOutputSchema(context, "AVRO_VALUE_OUTPUT_SCHEMA"),
-        getCompressionCodec(context),
-        getAvroFileOutputStream(context)
-    );
+  protected static Schema getOutputSchema(
+      TaskAttemptContext context, String propName) throws IOException {
+    Properties props = Submitter.getPydoopProperties();
+    Configuration conf = context.getConfiguration();
+    String schemaJSON = conf.get(props.getProperty(propName));
+    if (null == schemaJSON) {
+      throw new IOException("Avro output requires an output schema");
+    }
+    return Schema.parse(schemaJSON);
   }
 }
