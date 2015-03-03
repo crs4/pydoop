@@ -106,6 +106,10 @@ def hadoop_classpath(hadoop_home=None):
     return _PATH_FINDER.hadoop_classpath(hadoop_home)
 
 
+def package_dir():
+    return os.path.dirname(os.path.abspath(__file__))
+
+
 ##############################
 # Since Pydoop 1.0, we've stopped supporting installations for multiple
 # Hadoop versions, so we only have a single module, so the following
@@ -117,7 +121,7 @@ def jar_name(hadoop_vinfo=None):
 
 
 def jar_path(hadoop_vinfo=None):
-    path = os.path.join(os.path.dirname(__file__), jar_name())
+    path = os.path.join(package_dir(), jar_name())
     if os.path.exists(path):
         return path
     else:

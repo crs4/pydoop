@@ -58,15 +58,42 @@ class AvroValueColorPick(ColorPickBase):
         return ctx.value
 
 
-class ColorCount(api.Reducer):
+class ColorCountBase(api.Reducer):
+
+    __metaclass__ = abc.ABCMeta
 
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())
+        self.emit(s, ctx)
+
+    @abc.abstractmethod
+    def emit(self, s, ctx):
+        """
+        Emit the sum to the ctx.  As in the base mapper, this is just to
+        avoid writing near identical examples.
+        """
+
+
+class NoAvroColorCount(ColorCountBase):
+
+    def emit(self, s, ctx):
         ctx.emit(ctx.key, "%r" % s)
 
 
-def run_task(mapper_class):
+class AvroKeyColorCount(ColorCountBase):
+
+    def emit(self, s, ctx):
+        ctx.emit({'office': ctx.key, 'counts': s}, ctx.key)
+
+
+class AvroValueColorCount(ColorCountBase):
+
+    def emit(self, s, ctx):
+        ctx.emit(ctx.key, {'office': ctx.key, 'counts': s})
+
+
+def run_task(mapper_class, reducer_class=NoAvroColorCount):
     pp.run_task(
-        pp.Factory(mapper_class=mapper_class, reducer_class=ColorCount),
+        pp.Factory(mapper_class=mapper_class, reducer_class=reducer_class),
         private_encoding=True, context_class=AvroContext
     )

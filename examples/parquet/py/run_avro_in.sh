@@ -19,7 +19,7 @@ hadoop jar ${PARQUET_JAR} it.crs4.pydoop.ExampleParquetMRWrite \
     ${INPUT_DATA} ${PARQUETS_DIR} ${SCHEMA_FILE_HDFS}
 
 # ----- part 3 -----
-MODULE=avro_in
+MODULE=avro_value_in
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
@@ -33,6 +33,7 @@ OUTPUT=results
 hdfs dfs -rmr /user/${USER}/${OUTPUT}
 
 pydoop submit --upload-file-to-cache ${MPY} \
+              --upload-file-to-cache avro_base.py \
               --num-reducers 1 \
               --input-format ${INPUT_FORMAT} \
               --avro-input v \

@@ -23,7 +23,7 @@ hadoop jar ${PARQUET_JAR} it.crs4.pydoop.ExampleParquetMRWrite \
 
 
 # --- run color count ---
-MODULE=avro_in_out
+MODULE=avro_value_in_out
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
@@ -40,6 +40,7 @@ hdfs dfs -rmr /user/${USER}/${OUTPUT}
 pydoop submit \
     -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
     -D parquet.avro.schema="${STATS_SCHEMA}" \
+    --upload-file-to-cache avro_base.py \
     --upload-file-to-cache ${MPY} \
     --num-reducers 1 \
     --input-format ${INPUT_FORMAT} \

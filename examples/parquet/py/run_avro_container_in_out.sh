@@ -14,19 +14,23 @@ fi
 mode=$1
 if [ "${mode}" == "k" ]; then
     INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyInputFormat
-    MODULE=avro_key_in
+    OUTPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyOutputFormat
+    MODULE=avro_key_in_out
 elif [ "${mode}" == "v" ]; then
     INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroValueInputFormat
-    MODULE=avro_value_in
+    OUTPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroValueOutputFormat
+    MODULE=avro_value_in_out
 elif [ "${mode}" == "kv" ]; then
     # FIXME: not supported yet
     INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyValueInputFormat
-    MODULE=avro_key_value_in
+    OUTPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyValueOutputFormat
+    MODULE=avro_key_value_in_out
 else
     die "invalid mode: ${mode}"
 fi
 
-SCHEMA_FILE_LOCAL=../../avro/schemas/user.avsc
+IN_SCHEMA_FILE_LOCAL=../../avro/schemas/user.avsc
+OUT_SCHEMA_FILE_LOCAL=../../avro/schemas/stats.avsc
 CSV_FN=users.csv
 AVRO_FN=users.avro
 OUTPUT=results
@@ -34,7 +38,7 @@ OUTPUT=results
 # --- generate avro input ---
 N=20
 python ../java/create_input.py ${N} ${CSV_FN}
-python write_avro.py ${SCHEMA_FILE_LOCAL} ${CSV_FN} ${AVRO_FN}
+python write_avro.py ${IN_SCHEMA_FILE_LOCAL} ${CSV_FN} ${AVRO_FN}
 
 hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rm ${AVRO_FN}
@@ -45,24 +49,29 @@ MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
 MRV="--mrv2"
-USER_SCHEMA=`cat ${SCHEMA_FILE_LOCAL}`
+STATS_SCHEMA=`cat ${OUT_SCHEMA_FILE_LOCAL}`
 
 INPUT=${AVRO_FN}
 
 hdfs dfs -rmr /user/${USER}/${OUTPUT}
 
 pydoop submit \
+    -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
     --upload-file-to-cache avro_base.py \
     --upload-file-to-cache ${MPY} \
     --num-reducers 1 \
     --input-format ${INPUT_FORMAT} \
+    --output-format ${OUTPUT_FORMAT} \
     --avro-input ${mode} \
+    --avro-output ${mode} \
     --log-level ${LOGLEVEL} \
     --job-name ${JOBNAME} \
      ${MRV} ${MODULE} ${INPUT} ${OUTPUT}
 
-# --- check results ---
+
+# --- dump & check results ---
+DUMP_FN=stats.tsv
 rm -rf ${OUTPUT}
 hdfs dfs -get ${OUTPUT}
-# this is intentionally hardwired.
-python check_results.py ${CSV_FN} ${OUTPUT}/part-r-00000
+python avro_container_dump_results.py ${OUTPUT}/part-r-00000.avro ${DUMP_FN}
+python check_results.py ${CSV_FN} ${DUMP_FN}
