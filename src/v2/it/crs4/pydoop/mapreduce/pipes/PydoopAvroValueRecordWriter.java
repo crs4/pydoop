@@ -23,37 +23,23 @@ import java.io.OutputStream;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.file.CodecFactory;
-import org.apache.avro.file.DataFileWriter;
 
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.RecordWriter;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 
 public class PydoopAvroValueRecordWriter
-    extends RecordWriter<NullWritable, GenericRecord> {
-
-  private final DataFileWriter<GenericRecord> mAvroFileWriter;
+    extends PydoopAvroRecordWriterBase<NullWritable, GenericRecord> {
 
   public PydoopAvroValueRecordWriter(Schema writerSchema,
       CodecFactory compressionCodec, OutputStream outputStream)
       throws IOException {
-    mAvroFileWriter = new DataFileWriter<GenericRecord>(
-        new GenericDatumWriter<GenericRecord>(writerSchema));
-    mAvroFileWriter.setCodec(compressionCodec);
-    mAvroFileWriter.create(writerSchema, outputStream);
+    super(writerSchema, compressionCodec, outputStream);
   }
 
   @Override
   public void write(NullWritable ignore, GenericRecord record)
       throws IOException {
     mAvroFileWriter.append(record);
-  }
-
-  @Override
-  public void close(TaskAttemptContext context) throws IOException {
-    mAvroFileWriter.close();
   }
 }
