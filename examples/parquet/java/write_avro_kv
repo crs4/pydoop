@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# args: KEY_SCHEMA_FILE, VALUE_SCHEMA_FILE, CSV_IN_FILE AVRO_OUT_FILE
+sbt "run-main it.crs4.pydoop.WriteKV $*"

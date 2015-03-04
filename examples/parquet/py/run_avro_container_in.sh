@@ -19,23 +19,29 @@ elif [ "${mode}" == "v" ]; then
     INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroValueInputFormat
     MODULE=avro_value_in
 elif [ "${mode}" == "kv" ]; then
-    # FIXME: not supported yet
     INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyValueInputFormat
     MODULE=avro_key_value_in
 else
     die "invalid mode: ${mode}"
 fi
 
-SCHEMA_FILE_LOCAL=../../avro/schemas/user.avsc
+USER_SCHEMA_FILE=../../avro/schemas/user.avsc
+PET_SCHEMA_FILE=../../avro/schemas/pet.avsc
 CSV_FN=users.csv
-AVRO_FN=users.avro
+AVRO_FN=users.avro  # used also for KV
 OUTPUT=results
 
 # --- generate avro input ---
 N=20
 python ../java/create_input.py ${N} ${CSV_FN}
-python write_avro.py ${SCHEMA_FILE_LOCAL} ${CSV_FN} ${AVRO_FN}
-
+if [ "${mode}" == "kv" ]; then
+    pushd ../java >/dev/null
+    ./write_avro_kv ${USER_SCHEMA_FILE} ${PET_SCHEMA_FILE} \
+	../py/${CSV_FN} ../py/${AVRO_FN}
+    popd >/dev/null
+else
+    python write_avro.py ${USER_SCHEMA_FILE} ${CSV_FN} ${AVRO_FN}
+fi
 hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rm ${AVRO_FN}
 hdfs dfs -put ${AVRO_FN}
@@ -45,7 +51,7 @@ MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
 MRV="--mrv2"
-USER_SCHEMA=`cat ${SCHEMA_FILE_LOCAL}`
+USER_SCHEMA=`cat ${USER_SCHEMA_FILE}`
 
 INPUT=${AVRO_FN}
 

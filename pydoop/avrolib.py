@@ -37,7 +37,9 @@ import pydoop
 import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
+from pydoop.app.submit import AVRO_IO_CHOICES
 
+AVRO_IO_CHOICES = set(AVRO_IO_CHOICES)
 
 AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
 AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
@@ -72,7 +74,6 @@ class AvroContext(pp.TaskContext):
 
     def __init__(self, up_link, private_encoding=True):
         super(AvroContext, self).__init__(up_link, private_encoding)
-        #self.__datum_readers = {'K': None, 'V': None}
         self.__datum_writers = {'K': None, 'V': None}
 
     def set_job_conf(self, vals):
@@ -83,36 +84,34 @@ class AvroContext(pp.TaskContext):
         jc = self.get_job_conf()
         if AVRO_INPUT in jc:
             avro_input = jc.get(AVRO_INPUT).upper()
+            if avro_input not in AVRO_IO_CHOICES:
+                raise RuntimeError('invalid avro input: %s' % avro_input)
             if avro_input == 'K' or avro_input == 'KV':
                 reader = DatumReader(avro.schema.parse(
                     jc.get(AVRO_KEY_INPUT_SCHEMA)
                 ))
-                #self.__datum_readers['K'] = reader
                 AvroContext.get_input_key = AvroContext.deserializing(
                     AvroContext.get_input_key, reader
                 )
-            elif avro_input == 'V' or avro_input == 'KV':
+            if avro_input == 'V' or avro_input == 'KV':
                 reader = DatumReader(avro.schema.parse(
                     jc.get(AVRO_VALUE_INPUT_SCHEMA)
                 ))
-                #self.__datum_readers['V'] = reader
                 AvroContext.get_input_value = AvroContext.deserializing(
                     AvroContext.get_input_value, reader
                 )
-            else:
-                raise RuntimeError('invalid avro input: %s' % avro_input)
         if AVRO_OUTPUT in jc:
             avro_output = jc.get(AVRO_OUTPUT).upper()
+            if avro_output not in AVRO_IO_CHOICES:
+                raise RuntimeError('invalid avro output: %s' % avro_output)
             if avro_output == 'K' or avro_output == 'KV':
                 self.__datum_writers['K'] = DatumWriter(avro.schema.parse(
                     jc.get(AVRO_KEY_OUTPUT_SCHEMA)
                 ))
-            elif avro_output == 'V' or avro_output == 'KV':
+            if avro_output == 'V' or avro_output == 'KV':
                 self.__datum_writers['V'] = DatumWriter(avro.schema.parse(
                     jc.get(AVRO_VALUE_OUTPUT_SCHEMA)
                 ))
-            else:
-                raise RuntimeError('invalid avro output: %s' % avro_output)
 
     def emit(self, key, value):
         """

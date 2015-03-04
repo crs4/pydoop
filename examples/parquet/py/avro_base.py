@@ -18,6 +18,7 @@
 #
 # END_COPYRIGHT
 
+import sys
 import abc
 from collections import Counter
 
@@ -56,6 +57,16 @@ class AvroValueColorPick(ColorPickBase):
 
     def get_user(self, ctx):
         return ctx.value
+
+
+class AvroKeyValueColorPick(ColorPickBase):
+
+    def get_user(self, ctx):
+        return ctx.key
+
+    def map(self, ctx):
+        sys.stdout.write("value (unused): %r\n" % (ctx.value,))
+        super(AvroKeyValueColorPick, self).map(ctx)
 
 
 class ColorCountBase(api.Reducer):
