@@ -58,7 +58,7 @@ class AvroContext(pp.TaskContext):
     submit (``--avro-input``, ``--avro-output``).
     """
     @staticmethod
-    def deserializing(meth):
+    def deserializing(meth, datum_reader):
         """
         Decorate a key/value getter to make it auto-deserialize Avro
         records.
@@ -67,12 +67,12 @@ class AvroContext(pp.TaskContext):
             ret = meth(self, *args, **kwargs)
             f = StringIO(ret)
             dec = BinaryDecoder(f)
-            return self._datum_reader.read(dec)
+            return datum_reader.read(dec)
         return with_deserialization
 
     def __init__(self, up_link, private_encoding=True):
         super(AvroContext, self).__init__(up_link, private_encoding)
-        self._datum_reader = None
+        #self.__datum_readers = {'K': None, 'V': None}
         self.__datum_writers = {'K': None, 'V': None}
 
     def set_job_conf(self, vals):
@@ -83,21 +83,25 @@ class AvroContext(pp.TaskContext):
         jc = self.get_job_conf()
         if AVRO_INPUT in jc:
             avro_input = jc.get(AVRO_INPUT).upper()
-            if avro_input == 'K':
-                schema_str = jc.get(AVRO_KEY_INPUT_SCHEMA)
+            if avro_input == 'K' or avro_input == 'KV':
+                reader = DatumReader(avro.schema.parse(
+                    jc.get(AVRO_KEY_INPUT_SCHEMA)
+                ))
+                #self.__datum_readers['K'] = reader
                 AvroContext.get_input_key = AvroContext.deserializing(
-                    AvroContext.get_input_key
+                    AvroContext.get_input_key, reader
                 )
-            elif avro_input == 'V':
-                schema_str = jc.get(AVRO_VALUE_INPUT_SCHEMA)
+            elif avro_input == 'V' or avro_input == 'KV':
+                reader = DatumReader(avro.schema.parse(
+                    jc.get(AVRO_VALUE_INPUT_SCHEMA)
+                ))
+                #self.__datum_readers['V'] = reader
                 AvroContext.get_input_value = AvroContext.deserializing(
-                    AvroContext.get_input_value
+                    AvroContext.get_input_value, reader
                 )
-            elif avro_input == 'KV':
-                raise NotImplementedError  # FIXME: TBD
-            self._datum_reader = DatumReader(avro.schema.parse(schema_str))
+            else:
+                raise RuntimeError('invalid avro input: %s' % avro_input)
         if AVRO_OUTPUT in jc:
-            self.__datum_writers = {}
             avro_output = jc.get(AVRO_OUTPUT).upper()
             if avro_output == 'K' or avro_output == 'KV':
                 self.__datum_writers['K'] = DatumWriter(avro.schema.parse(
