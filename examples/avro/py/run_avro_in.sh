@@ -9,7 +9,7 @@ SCHEMA_FILE_HDFS=user.avsc
 INPUT_DATA=users.csv
 PARQUETS_DIR=parquets
 N=20
-python ../java/create_input.py ${N} ${INPUT_DATA}
+python create_input.py ${N} ${INPUT_DATA}
 
 hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rmr /user/${USER}/${PARQUETS_DIR}

@@ -10,7 +10,7 @@ OUTPUT=results
 
 # --- generate avro input ---
 N=20
-python ../java/create_input.py ${N} ${CSV_FN}
+python create_input.py ${N} ${CSV_FN}
 python write_avro.py ${USER_SCHEMA_FILE} ${CSV_FN} ${AVRO_FN}
 hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rm ${AVRO_FN}

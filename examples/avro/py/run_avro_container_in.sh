@@ -30,7 +30,7 @@ OUTPUT=results
 
 # --- generate avro input ---
 N=20
-python ../java/create_input.py ${N} ${CSV_FN}
+python create_input.py ${N} ${CSV_FN}
 if [ "${mode}" == "kv" ]; then
     pushd ../java >/dev/null
     ./write_avro_kv ${USER_SCHEMA_FILE} ${PET_SCHEMA_FILE} \
