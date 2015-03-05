@@ -13,6 +13,10 @@ import org.apache.avro.Schema;
 
 public class PydoopAvroOutputKeyBridge extends PydoopAvroOutputBridgeBase {
 
+  public PydoopAvroOutputKeyBridge() {
+    defaultActualFormat = PydoopAvroKeyOutputFormat.class;
+  }
+
   @Override
   public RecordWriter<Text, Text>
       getRecordWriter(TaskAttemptContext context)

@@ -16,13 +16,14 @@ public abstract class PydoopAvroOutputBridgeBase
     extends OutputFormat<Text, Text> {
 
   protected OutputFormat actualFormat;
+  protected Class<? extends OutputFormat> defaultActualFormat;
 
   protected OutputFormat getActualFormat(Configuration conf) {
     if (actualFormat == null) {
       actualFormat = ReflectionUtils.newInstance(
           conf.getClass(
               Submitter.OUTPUT_FORMAT,
-              TextOutputFormat.class,  // default (FIXME: should never happen)
+              defaultActualFormat,
               OutputFormat.class), conf);
         }
     return actualFormat;

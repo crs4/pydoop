@@ -142,6 +142,7 @@ public class Submitter extends Configured implements Tool {
   protected static AvroIO avroInput;
   protected static AvroIO avroOutput;
   protected static boolean explicitInputFormat = false;
+  protected static boolean explicitOutputFormat = false;
   // --- pydoop properties ---
   protected static Properties props;
 
@@ -383,9 +384,10 @@ public class Submitter extends Configured implements Tool {
       }
     }
     if (avroOutput != null) {
-      // FIXME: abort if user did not provide an output format class
-      conf.setClass(Submitter.OUTPUT_FORMAT, job.getOutputFormatClass(),
-          OutputFormat.class);
+      if (explicitOutputFormat) {
+        conf.setClass(Submitter.OUTPUT_FORMAT, job.getOutputFormatClass(),
+            OutputFormat.class);
+      }  // else let the bridge fall back to the appropriate Avro OF
       conf.set(props.getProperty("AVRO_OUTPUT"), avroOutput.name());
       switch (avroOutput) {
       case K:
@@ -484,6 +486,7 @@ public class Submitter extends Configured implements Tool {
             results.getOptionValue("reduces")));
       }
       if (results.hasOption("writer")) {
+        explicitOutputFormat = true;
         setIsJavaRecordWriter(conf, true);
         job.setOutputFormatClass(getClass(results, "writer", conf,
             OutputFormat.class));
