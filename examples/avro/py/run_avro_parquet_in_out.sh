@@ -54,7 +54,7 @@ pydoop submit \
 
 
 # --- dump results ---
-MODULE=avro_dump_results
+MODULE=avro_parquet_dump_results
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
