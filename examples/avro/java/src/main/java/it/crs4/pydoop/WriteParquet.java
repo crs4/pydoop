@@ -50,9 +50,9 @@ import org.apache.avro.generic.GenericData.Record;
 import org.apache.avro.Schema;
 
 
-public class ExampleParquetMRWrite extends Configured implements Tool {
+public class WriteParquet extends Configured implements Tool {
 
-  private static final Log LOG = Log.getLog(ExampleParquetMRWrite.class);
+  private static final Log LOG = Log.getLog(WriteParquet.class);
 
   // FIXME: not needed, we're calling setSchema below
   private static final String SCHEMA_PATH_KEY = "paexample.schema.path";
@@ -95,7 +95,7 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
 
     if (args.length < 3) {
       System.err.println(
-        "Usage: ExampleParquetMRWrite <input path> <output path> <schema path>"
+        "Usage: WriteParquet <input path> <output path> <schema path>"
       );
       return -1;
     }
@@ -129,7 +129,7 @@ public class ExampleParquetMRWrite extends Configured implements Tool {
   public static void main(String[] args) throws Exception {
     try {
       int res = ToolRunner.run(new Configuration(),
-                               new ExampleParquetMRWrite(), args);
+                               new WriteParquet(), args);
       System.exit(res);
     } catch (Exception e) {
       e.printStackTrace();

@@ -18,7 +18,7 @@ hdfs dfs -mkdir -p /user/${USER}
 hdfs dfs -rmr /user/${USER}/${PARQUETS_DIR}
 hdfs dfs -put -f ${INPUT_DATA}
 hdfs dfs -put -f ${IN_SCHEMA_FILE_LOCAL} ${IN_SCHEMA_FILE_HDFS}
-hadoop jar ${PARQUET_JAR} it.crs4.pydoop.ExampleParquetMRWrite \
+hadoop jar ${PARQUET_JAR} it.crs4.pydoop.WriteParquet \
     ${INPUT_DATA} ${PARQUETS_DIR} ${IN_SCHEMA_FILE_HDFS}
 
 
