@@ -1,6 +1,11 @@
 Parquet-avro I/O
 ================
 
+FIXME
+-----
+
+**These docs are obsolete.**
+
 This example shows how to do I/O with parquet-avro data, i.e.,
 `Parquet <http://parquet.incubator.apache.org>`_ files that use the
 `Avro <http://avro.apache.org>`_ object model.

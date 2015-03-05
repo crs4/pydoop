@@ -22,6 +22,7 @@ An interface to simplify pydoop jobs submission.
 
 import os
 import sys
+import glob
 import argparse
 import logging
 import uuid
@@ -47,6 +48,8 @@ USER_HOME = "mapreduce.admin.user.home.dir"
 JOB_REDUCES = "mapred.reduce.tasks"
 JOB_NAME = "mapred.job.name"
 COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
+AVRO_IO_CHOICES = ['k', 'v', 'kv']
+AVRO_IO_CHOICES += [_.upper() for _ in AVRO_IO_CHOICES]
 
 
 class PydoopSubmitter(object):
@@ -221,6 +224,11 @@ class PydoopSubmitter(object):
             raise RuntimeError("%r does not exist" % (self.args.input,))
         if hdfs.path.exists(self.args.output):
             raise RuntimeError("%r already exists" % (self.args.output,))
+        if self.args.avro_input or self.args.avro_output:
+            if not self.args.mrv2:
+                raise RuntimeError(
+                    "Avro mode is currently supported only for mrv2"
+                )
 
     def __clean_wd(self):
         if self.remote_wd:
@@ -268,7 +276,14 @@ class PydoopSubmitter(object):
         if self.args is None:
             raise RuntimeError("cannot run without args, please call set_args")
         self.__validate()
+        classpath = []
         libjars = []
+        if self.args.avro_input or self.args.avro_output:
+            avro_jars = glob.glob(os.path.join(
+                pydoop.package_dir(), "avro*.jar"
+            ))
+            classpath.extend(avro_jars)
+            libjars.extend(avro_jars)
         if self.args.libjars:
             libjars.extend(self.args.libjars)
         pydoop_jar = pydoop.jar_path()
@@ -281,7 +296,7 @@ class PydoopSubmitter(object):
         job_args = []
         if self.args.mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
-            classpath = pydoop_jar
+            classpath.append(pydoop_jar)
             libjars.append(pydoop_jar)
         elif self.args.local_fs:
             # FIXME we still need to handle the special case with
@@ -289,11 +304,10 @@ class PydoopSubmitter(object):
             raise RuntimeError("NOT IMPLEMENTED YET")
             # FIXME FAKE MODULE
             submitter_class = 'it.crs4.pydoop.mapred.pipes.Submitter'
-            classpath = pydoop_jar
+            classpath.append(pydoop_jar)
             libjars.append(pydoop_jar)
         else:
             submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
-            classpath = None
         if self.args.hadoop_conf:
             job_args.extend(['-conf', self.args.hadoop_conf.name])
         if self.args.input_format:
@@ -305,7 +319,10 @@ class PydoopSubmitter(object):
         job_args.extend(['-program', self.remote_exe])
         if libjars:
             job_args.extend(["-libjars", ','.join(libjars)])
-
+        if self.args.avro_input:
+            job_args.extend(['-avroInput', self.args.avro_input])
+        if self.args.avro_output:
+            job_args.extend(['-avroOutput', self.args.avro_output])
         if not self.args.disable_property_name_conversion:
             ctable = (conv_tables.mrv1_to_mrv2
                       if self.args.mrv2 else conv_tables.mrv2_to_mrv1)
@@ -468,6 +485,14 @@ def add_parser_arguments(parser):
         default=DEFAULT_ENTRY_POINT,
         help=("Explicitly execute MODULE.ENTRY_POINT() "
               "in the launcher script.")
+    )
+    parser.add_argument(
+        '--avro-input', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
+        help="Avro input mode (key, value or both)",
+    )
+    parser.add_argument(
+        '--avro-output', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
+        help="Avro output mode (key, value or both)",
     )
 
 

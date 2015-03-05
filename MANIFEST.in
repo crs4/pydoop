@@ -1,4 +1,4 @@
-include AUTHORS LICENSE VERSION README.md
+include AUTHORS LICENSE VERSION README.md pydoop.properties
 
 recursive-include src *
 
