@@ -226,7 +226,12 @@ class JavaLib(object):
         self.classpath = pydoop.hadoop_classpath()
         self.java_files = []
         self.dependencies = []
+        self.properties = []
         if hadoop_vinfo.main >= (2, 0, 0) and hadoop_vinfo.is_yarn():
+            # FIXME: kinda hardwired to avro for now
+            self.properties.append((os.path.join(
+                "it/crs4/pydoop/mapreduce/pipes", PROP_BN),
+                PROP_FN))
             self.java_files.extend([
                 "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
@@ -292,11 +297,9 @@ class JavaBuilder(object):
                 "Error compiling java component.  Command: %s" % compile_cmd
             )
         log.info("Copying properties file")
-        # FIXME: kinda hardwired for now
-        prop_file_dest = os.path.join(
-            class_dir, "it/crs4/pydoop/mapreduce/pipes", PROP_BN
-        )
-        shutil.copyfile(PROP_FN, prop_file_dest)
+        for p in jlib.properties:
+            prop_file_dest = os.path.join(class_dir, p[0])
+            shutil.copyfile(p[1], prop_file_dest)
         log.info("Making Jar: %s", jar_path)
         package_cmd = "jar -cf %(jar_path)s -C %(class_dir)s ./it" % {
             'jar_path': jar_path, 'class_dir': class_dir
