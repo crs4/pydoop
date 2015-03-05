@@ -22,9 +22,9 @@ else
     die "invalid mode: ${mode}"
 fi
 
-USER_SCHEMA_FILE=../../avro/schemas/user.avsc
-PET_SCHEMA_FILE=../../avro/schemas/pet.avsc
-STATS_SCHEMA_FILE=../../avro/schemas/stats.avsc
+USER_SCHEMA_FILE=../schemas/user.avsc
+PET_SCHEMA_FILE=../schemas/pet.avsc
+STATS_SCHEMA_FILE=../schemas/stats.avsc
 STATS_SCHEMA=`cat ${STATS_SCHEMA_FILE}`
 CSV_FN=users.csv
 AVRO_FN=users.avro  # used also for KV

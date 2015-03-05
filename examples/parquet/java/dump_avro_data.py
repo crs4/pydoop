@@ -9,7 +9,7 @@ import pydoop.hdfs as hdfs
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-SCHEMA_FN = os.path.join(THIS_DIR, '../../avro/schemas/user.avsc')
+SCHEMA_FN = os.path.join(THIS_DIR, '../schemas/user.avsc')
 
 
 def main(argv):

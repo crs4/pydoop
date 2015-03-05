@@ -1,8 +1,8 @@
 #!/bin/bash
 
 
-USER_SCHEMA_FILE=../../avro/schemas/user.avsc
-STATS_SCHEMA_FILE=../../avro/schemas/stats.avsc
+USER_SCHEMA_FILE=../schemas/user.avsc
+STATS_SCHEMA_FILE=../schemas/stats.avsc
 CSV_FN=users.csv
 AVRO_FN=users.avro
 OUTPUT=results

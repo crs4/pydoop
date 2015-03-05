@@ -2,7 +2,7 @@
 
 
 PARQUET_JAR=../java/target/ParquetMR-assembly-0.1.jar
-SCHEMA_FILE_LOCAL=../../avro/schemas/user.avsc
+SCHEMA_FILE_LOCAL=../schemas/user.avsc
 SCHEMA_FILE_HDFS=user.avsc
 
 # ----- part 1 -----

@@ -22,8 +22,8 @@ else
     die "invalid mode: ${mode}"
 fi
 
-USER_SCHEMA_FILE=../../avro/schemas/user.avsc
-PET_SCHEMA_FILE=../../avro/schemas/pet.avsc
+USER_SCHEMA_FILE=../schemas/user.avsc
+PET_SCHEMA_FILE=../schemas/pet.avsc
 CSV_FN=users.csv
 AVRO_FN=users.avro  # used also for KV
 OUTPUT=results
