@@ -12,6 +12,10 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 public class PydoopAvroInputKeyValueBridge
     extends PydoopAvroInputBridgeBase<Text, Text> {
 
+  public PydoopAvroInputKeyValueBridge() {
+    defaultActualFormat = PydoopAvroKeyValueInputFormat.class;
+  }
+
   @Override
   public RecordReader<Text, Text> createRecordReader(
       InputSplit split, TaskAttemptContext context)

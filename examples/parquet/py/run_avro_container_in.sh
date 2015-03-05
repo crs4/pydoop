@@ -13,13 +13,10 @@ if [ $# -ne $nargs ]; then
 fi
 mode=$1
 if [ "${mode}" == "k" ]; then
-    INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyInputFormat
     MODULE=avro_key_in
 elif [ "${mode}" == "v" ]; then
-    INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroValueInputFormat
     MODULE=avro_value_in
 elif [ "${mode}" == "kv" ]; then
-    INPUT_FORMAT=it.crs4.pydoop.mapreduce.pipes.PydoopAvroKeyValueInputFormat
     MODULE=avro_key_value_in
 else
     die "invalid mode: ${mode}"
@@ -61,7 +58,6 @@ pydoop submit \
     --upload-file-to-cache avro_base.py \
     --upload-file-to-cache ${MPY} \
     --num-reducers 1 \
-    --input-format ${INPUT_FORMAT} \
     --avro-input ${mode} \
     --log-level ${LOGLEVEL} \
     --job-name ${JOBNAME} \

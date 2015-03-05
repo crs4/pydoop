@@ -141,6 +141,7 @@ public class Submitter extends Configured implements Tool {
   protected static final String PROP_FILE = "pydoop.properties";
   protected static AvroIO avroInput;
   protected static AvroIO avroOutput;
+  protected static boolean explicitInputFormat = false;
   // --- pydoop properties ---
   protected static Properties props;
 
@@ -363,9 +364,10 @@ public class Submitter extends Configured implements Tool {
     }
 
     if (avroInput != null) {
-      // FIXME: abort if user did not provide an input format class
-      conf.setClass(Submitter.INPUT_FORMAT, job.getInputFormatClass(),
-          InputFormat.class);
+      if (explicitInputFormat) {
+        conf.setClass(Submitter.INPUT_FORMAT, job.getInputFormatClass(),
+            InputFormat.class);
+      }  // else let the bridge fall back to the appropriate Avro IF
       switch (avroInput) {
       case K:
         job.setInputFormatClass(PydoopAvroInputKeyBridge.class);
@@ -457,6 +459,7 @@ public class Submitter extends Configured implements Tool {
         job.setJar(results.getOptionValue("jar"));
       }
       if (results.hasOption("inputformat")) {
+        explicitInputFormat = true;
         setIsJavaRecordReader(conf, true);
         job.setInputFormatClass(getClass(results, "inputformat", conf,
             InputFormat.class));

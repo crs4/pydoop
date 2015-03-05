@@ -15,13 +15,14 @@ public abstract class PydoopAvroInputBridgeBase<K, V>
     extends InputFormat<K, V> {
 
   protected InputFormat actualFormat;
+  protected Class<? extends InputFormat> defaultActualFormat;
 
   protected InputFormat getActualFormat(Configuration conf) {
     if (actualFormat == null) {
       actualFormat = ReflectionUtils.newInstance(
           conf.getClass(
               Submitter.INPUT_FORMAT,
-              TextInputFormat.class,  // default (FIXME: should never happen)
+              defaultActualFormat,
               InputFormat.class), conf);
         }
     return actualFormat;
