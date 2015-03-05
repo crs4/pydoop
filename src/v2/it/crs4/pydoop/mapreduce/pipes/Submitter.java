@@ -393,9 +393,8 @@ public class Submitter extends Configured implements Tool {
         job.setOutputFormatClass(PydoopAvroOutputValueBridge.class);
         break;
       case KV:
-        throw new UnsupportedOperationException("Not available yet");
-        // job.setOutputFormatClass(PydoopAvroOutputKeyValueBridge.class);
-        // break;
+        job.setOutputFormatClass(PydoopAvroOutputKeyValueBridge.class);
+        break;
       default:
         throw new IllegalArgumentException("Bad Avro output type");
       }

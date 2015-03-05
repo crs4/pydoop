@@ -103,6 +103,13 @@ class AvroValueColorCount(ColorCountBase):
         ctx.emit(ctx.key, {'office': ctx.key, 'counts': s})
 
 
+class AvroKeyValueColorCount(ColorCountBase):
+
+    def emit(self, s, ctx):
+        record = {'office': ctx.key, 'counts': s}
+        ctx.emit(record, record)  # FIXME: do something fancier
+
+
 def run_task(mapper_class, reducer_class=NoAvroColorCount):
     pp.run_task(
         pp.Factory(mapper_class=mapper_class, reducer_class=reducer_class),
