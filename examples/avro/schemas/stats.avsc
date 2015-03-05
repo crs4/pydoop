@@ -1,9 +1,0 @@
-{
- "namespace": "example.avro",
- "type": "record",
- "name": "Stats",
- "fields": [
-     {"name": "office", "type": "string"},
-     {"name": "counts", "type": {"type": "map", "values": "long"}}
- ]
-}

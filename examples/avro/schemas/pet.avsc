@@ -1,9 +1,0 @@
-{
-    "namespace": "example.avro",
-    "type": "record",
-    "name": "Pet",
-    "fields": [
-        {"name": "name", "type": "string"},
-        {"name": "legs", "type": "int"}
-    ]
-}
