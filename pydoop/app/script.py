@@ -93,6 +93,8 @@ class PydoopScript(object):
         args.disable_property_name_conversion = True
         args.job_conf = [('mapred.textoutputformat.separator',
                           args.kv_separator)]
+        args.avro_input = None
+        args.avro_output = None
         # despicable hack...
         properties = dict(args.D or [])
         properties.update(dict(args.job_conf))
