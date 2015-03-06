@@ -1,0 +1,23 @@
+{
+    "type": "record",
+    "name": "AlignmentRecord",
+    "fields": [
+        {
+            "default": null,
+            "doc": "The global mapping quality of this read.",
+            "name": "mapq",
+            "type": ["null", "int"]
+        },
+        {
+            "default": null,
+            "doc": "The bases in this alignment. If the read has been hard clipped, this may\n   not represent all the bases in the original read.",
+            "name": "sequence",
+            "type": ["null", "string"]
+        },
+        {
+            "default": false,
+            "name": "readMapped",
+            "type": ["boolean", "null"]
+        }
+    ]
+}

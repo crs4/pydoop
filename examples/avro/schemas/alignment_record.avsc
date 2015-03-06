@@ -1,0 +1,281 @@
+{
+    "type": "record",
+    "name": "AlignmentRecord",
+    "fields": [
+        {
+            "default": null,
+            "doc": "The reference sequence details for the reference chromosome that\n   this read is aligned to. If the read is unaligned, this field should\n   be null.",
+            "name": "contig",
+            "type": [
+                "null",
+                {
+                    "type": "record",
+                    "name": "Contig",
+                    "doc": "Record for describing a reference assembly. Not used for storing the contents\n of said assembly.\n\n @see NucleotideContigFragment",
+                    "fields": [
+                        {
+                            "default": null,
+                            "doc": "The name of this contig in the assembly (e.g., \"chr1\").",
+                            "name": "contigName",
+                            "type": ["null", "string"]
+                        },
+                        {
+                            "default": null,
+                            "doc": "The length of this contig.",
+                            "name": "contigLength",
+                            "type": ["null", "long"]
+                        },
+                        {
+                            "default": null,
+                            "doc": "The MD5 checksum of the assembly for this contig.",
+                            "name": "contigMD5",
+                            "type": ["null", "string"]
+                        },
+                        {
+                            "default": null,
+                            "doc": "The URL at which this reference assembly can be found.",
+                            "name": "referenceURL",
+                            "type": ["null", "string"]
+                        },
+                        {
+                            "default": null,
+                            "doc": "The name of this assembly (e.g., \"hg19\").",
+                            "name": "assembly",
+                            "type": ["null", "string"]
+                        },
+                        {
+                            "default": null,
+                            "doc": "The species that this assembly is for.",
+                            "name": "species",
+                            "type": ["null", "string"]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "default": null,
+            "doc": "0 based reference position for the start of this read's alignment.\n   Should be null if the read is unaligned.",
+            "name": "start",
+            "type": ["null", "long"]
+        },
+        {
+            "default": null,
+            "doc": "0 based reference position where this read used to start before\n   local realignment.\n   Stores the same data as the OP field in the SAM format.",
+            "name": "oldPosition",
+            "type": ["null", "long"]
+        },
+        {
+            "default": null,
+            "doc": "0 based reference position for the end of this read's alignment.\n   Should be null if the read is unaligned.",
+            "name": "end",
+            "type": ["null", "long"]
+        },
+        {
+            "default": null,
+            "doc": "The global mapping quality of this read.",
+            "name": "mapq",
+            "type": ["null", "int"]
+        },
+        {
+            "default": null,
+            "doc": "The name of this read. This should be unique within the read group\n   that this read is from, and can be used to identify other reads that\n   are derived from a single fragment.",
+            "name": "readName",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "doc": "The bases in this alignment. If the read has been hard clipped, this may\n   not represent all the bases in the original read.",
+            "name": "sequence",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "doc": "The per-base quality scores in this alignment. If the read has been hard\n   clipped, this may not represent all the bases in the original read.\n   Additionally, if the error scores have been recalibrated, this field\n   will not contain the original base quality scores.\n\n   @see origQual",
+            "name": "qual",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "doc": "The Compact Ideosyncratic Gapped Alignment Report (CIGAR) string that\n   describes the local alignment of this read. Contains {length, operator}\n   pairs for all contiguous alignment operations. The operators include:\n   \n   * M, ALIGNMENT_MATCH: An alignment match indicates that a sequence can be\n     aligned to the reference without evidence of an INDEL. Unlike the\n     SEQUENCE_MATCH and SEQUENCE_MISMATCH operators, the ALIGNMENT_MATCH\n     operator does not indicate whether the reference and read sequences are an\n     exact match.\n   * I, INSERT: The insert operator indicates that the read contains evidence of\n     bases being inserted into the reference.\n   * D, DELETE: The delete operator indicates that the read contains evidence of\n     bases being deleted from the reference.\n   * N, SKIP: The skip operator indicates that this read skips a long segment of\n     the reference, but the bases have not been deleted. This operator is\n     commonly used when working with RNA-seq data, where reads may skip long\n     segments of the reference between exons.\n   * S, CLIP_SOFT: The soft clip operator indicates that bases at the start/end\n     of a read have not been considered during alignment. This may occur if the\n     majority of a read maps, except for low quality bases at the start/end of\n     a read. Bases that are soft clipped will still be stored in the read.\n   * H, CLIP_HARD: The hard clip operator indicates that bases at the start/end of\n     a read have been omitted from this alignment. This may occur if this linear\n     alignment is part of a chimeric alignment, or if the read has been trimmed\n     (e.g., during error correction, or to trim poly-A tails for RNA-seq).\n   * P, PAD: The pad operator indicates that there is padding in an alignment.\n   * =, SEQUENCE_MATCH: This operator indicates that this portion of the aligned\n     sequence exactly matches the reference (e.g., all bases are equal to the\n     reference bases).\n   * X, SEQUENCE_MISMATCH: This operator indicates that this portion of the \n     aligned sequence is an alignment match to the reference, but a sequence\n     mismatch (e.g., the bases are not equal to the reference). This can\n     indicate a SNP or a read error.",
+            "name": "cigar",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "doc": "Stores the CIGAR string present before local indel realignment.\n   Stores the same data as the OC field in the SAM format.\n\n   @see cigar",
+            "name": "oldCigar",
+            "type": ["null", "string"]
+        },
+        {
+            "default": 0,
+            "doc": "The number of bases in this read/alignment that have been trimmed from the\n   start of the read. By default, this is equal to 0. If the value is non-zero,\n   that means that the start of the read has been hard-clipped.\n\n   @see cigar",
+            "name": "basesTrimmedFromStart",
+            "type": ["int", "null"]
+        },
+        {
+            "default": 0,
+            "doc": "The number of bases in this read/alignment that have been trimmed from the\n   end of the read. By default, this is equal to 0. If the value is non-zero,\n   that means that the end of the read has been hard-clipped.\n\n   @see cigar",
+            "name": "basesTrimmedFromEnd",
+            "type": ["int", "null"]
+        },
+        {
+            "default": false,
+            "name": "readPaired",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "properPair",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "readMapped",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "mateMapped",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "firstOfPair",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "secondOfPair",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "failedVendorQualityChecks",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "name": "duplicateRead",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "doc": "True if this alignment is mapped as a reverse compliment. This field\n   defaults to false.",
+            "name": "readNegativeStrand",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "doc": "True if the mate pair of this alignment is mapped as a reverse compliment.\n   This field defaults to false.",
+            "name": "mateNegativeStrand",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "doc": "This field is true if this alignment is either the best linear alignment,\n   or the first linear alignment in a chimeric alignment. Defaults to false.\n\n   @see secondaryAlignment\n   @see supplementaryAlignment",
+            "name": "primaryAlignment",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "doc": "This field is true if this alignment is a lower quality linear alignment\n   for a multiply-mapped read. Defaults to false.\n\n   @see primaryAlignment\n   @see supplementaryAlignment",
+            "name": "secondaryAlignment",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": false,
+            "doc": "This field is true if this alignment is a non-primary linear alignment in\n   a chimeric alignment. Defaults to false.\n\n   @see primaryAlignment\n   @see secondaryAlignment",
+            "name": "supplementaryAlignment",
+            "type": ["boolean", "null"]
+        },
+        {
+            "default": null,
+            "name": "mismatchingPositions",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "origQual",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "attributes",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupName",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupSequencingCenter",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupDescription",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupRunDateEpoch",
+            "type": ["null", "long"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupFlowOrder",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupKeySequence",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupLibrary",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupPredictedMedianInsertSize",
+            "type": ["null", "int"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupPlatform",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupPlatformUnit",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "name": "recordGroupSample",
+            "type": ["null", "string"]
+        },
+        {
+            "default": null,
+            "doc": "The start position of the mate of this read. Should be set to null if the\n   mate is unaligned, or if the mate does not exist.",
+            "name": "mateAlignmentStart",
+            "type": ["null", "long"]
+        },
+        {
+            "default": null,
+            "doc": "The end position of the mate of this read. Should be set to null if the\n   mate is unaligned, or if the mate does not exist.",
+            "name": "mateAlignmentEnd",
+            "type": ["null", "long"]
+        },
+        {
+            "default": null,
+            "doc": "The reference contig of the mate of this read. Should be set to null if the\n   mate is unaligned, or if the mate does not exist.",
+            "name": "mateContig",
+            "type": ["null", "Contig"]
+        }
+    ]
+}
