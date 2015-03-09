@@ -18,22 +18,17 @@
 #
 # END_COPYRIGHT
 
-from collections import deque
-
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.avrolib import AvroContext
 
-#WIDTH = 21
+
 WIDTH = 5
 
 
 def window(s, width):
-    dq = deque([], width)
-    for x in iter(s):
-        dq.append(x)
-        if len(dq) == width:
-            yield ''.join(dq)
+    for i in xrange(len(s) - width + 1):
+        yield s[i:i+width]
 
 
 class Mapper(api.Mapper):
