@@ -9,4 +9,4 @@ Examples
    intro
    sequence_file
    input_format
-   parquet
+   avro
