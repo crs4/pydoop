@@ -24,5 +24,8 @@ recursive-include examples/wordcount/bin *.py
 recursive-include examples/wordcount run
 recursive-include examples/input_format *
 recursive-include examples/self_contained *
+recursive-include examples/avro *
 
 recursive-include docs *
+
+recursive-include lib *
