@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Writing Full-Featured Applications &mdash; Pydoop 1.0.0-rc1 documentation</title>
+    <title>Writing Full-Featured Applications &mdash; Pydoop 1.0.0-rc2 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.0.0-rc1',
+        VERSION:     '1.0.0-rc2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0-rc1 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.0.0-rc2 documentation" href="../index.html" />
     <link rel="up" title="Tutorial" href="index.html" />
     <link rel="next" title="Installation" href="../installation.html" />
     <link rel="prev" title="The HDFS API" href="hdfs_api.html" /> 
@@ -162,8 +162,8 @@ to the framework) intermediate key-value pairs.  The reducer works in
 a similar way, the main difference being the fact that the reduce
 method gets a set of values for each key.  The context has several
 other functions that we will explore later.</p>
-<p>To run the above program, save it to a &#8220;wc.py&#8221; file and execute:</p>
-<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-file-to-cache wc.py --module wc wordcount input output
+<p>To run the above program, save it to a <tt class="docutils literal"><span class="pre">wc.py</span></tt> file and execute:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-file-to-cache wc.py wc input output
 </pre></div>
 </div>
 <p>Where <tt class="docutils literal"><span class="pre">input</span></tt> is the HDFS input directory.</p>

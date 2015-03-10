@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>News &mdash; Pydoop 1.0.0-rc1 documentation</title>
+    <title>News &mdash; Pydoop 1.0.0-rc2 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0-rc1',
+        VERSION:     '1.0.0-rc2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0-rc1 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.0.0-rc2 documentation" href="index.html" />
     <link rel="next" title="Tutorial" href="tutorial/index.html" />
     <link rel="prev" title="Pydoop Documentation" href="index.html" /> 
   </head>
@@ -128,6 +128,11 @@
 <blockquote>
 <div><ul class="simple">
 <li>Pydoop now features a brand new, more pythonic <a class="reference internal" href="api_docs/mr_api.html#mr-api"><em>MapReduce API</em></a></li>
+<li>Added built-in <a class="reference external" href="http://avro.apache.org">Avro</a> support (for now,
+only with Hadoop 2).  By setting a few flags in the submitter and
+selecting <tt class="docutils literal"><span class="pre">AvroContext</span></tt> as your application&#8217;s context class, you
+can read and write Avro data, transparently manipulating records as
+Python dictionaries.  See the <a class="reference internal" href="examples/avro.html#avro-io"><em>Avro I/O</em></a> docs for further details.</li>
 <li>The new <a class="reference internal" href="running_pydoop_applications.html#running-apps"><em>pydoop submit</em></a> tool drastically
 simplifies job submission, in particular when running applications
 without installing Pydoop and other dependencies on the cluster

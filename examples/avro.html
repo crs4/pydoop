@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Avro I/O &mdash; Pydoop 1.0.0-rc2 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.0-rc2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.0.0-rc2 documentation" href="../index.html" />
+    <link rel="up" title="Examples" href="index.html" />
+    <link rel="next" title="Installation-free Usage" href="../self_contained.html" />
+    <link rel="prev" title="Writing a Custom InputFormat" href="input_format.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../self_contained.html" title="Installation-free Usage"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="input_format.html" title="Writing a Custom InputFormat"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">Examples</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Avro I/O</a><ul>
+<li><a class="reference internal" href="#avro-parquet-i-o">Avro-Parquet I/O</a></li>
+<li><a class="reference internal" href="#running-the-examples">Running the examples</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="input_format.html"
+                                  title="previous chapter">Writing a Custom InputFormat</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="../self_contained.html"
+                                  title="next chapter">Installation-free Usage</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="avro-i-o">
+<span id="avro-io"></span><h1>Avro I/O<a class="headerlink" href="#avro-i-o" title="Permalink to this headline">¶</a></h1>
+<p>Pydoop transparently supports reading and writing <a class="reference external" href="http://avro.apache.org">Avro</a> records in MapReduce applications (for now,
+<strong>only with Hadoop 2</strong>).  The following program implements a (slightly
+modified) version of the color count example from the Avro docs:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="kn">import</span> <span class="nn">pydoop.mapreduce.api</span> <span class="kn">as</span> <span class="nn">api</span>
+<span class="kn">import</span> <span class="nn">pydoop.mapreduce.pipes</span> <span class="kn">as</span> <span class="nn">pp</span>
+<span class="kn">from</span> <span class="nn">pydoop.avrolib</span> <span class="kn">import</span> <span class="n">AvroContext</span>
+
+<span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s">&#39;favorite_color&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s">&#39;office&#39;</span><span class="p">],</span> <span class="n">Counter</span><span class="p">({</span><span class="n">color</span><span class="p">:</span> <span class="mi">1</span><span class="p">}))</span>
+
+<span class="k">class</span> <span class="nc">Reducer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Reducer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">Counter</span><span class="p">())</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;office&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;counts&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">})</span>
+
+<span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
+    <span class="n">factory</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">)</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">private_encoding</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">context_class</span><span class="o">=</span><span class="n">AvroContext</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The application counts the per-office occurrence of favorite colors in
+a dataset of user records with the following structure:</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="p">{</span>
+    <span class="s2">&quot;namespace&quot;</span><span class="o">:</span> <span class="s2">&quot;example.avro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;record&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;User&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fields&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;office&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;favorite_number&quot;</span><span class="p">,</span>  <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="p">[</span><span class="s2">&quot;int&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;favorite_color&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="p">[</span><span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;null&quot;</span><span class="p">]}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>User records are read from an Avro container stored on HDFS, and
+results are written to another Avro container with the following
+schema:</p>
+<div class="highlight-javascript"><div class="highlight"><pre><span class="p">{</span>
+    <span class="s2">&quot;namespace&quot;</span><span class="o">:</span> <span class="s2">&quot;example.avro&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;record&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;Stats&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fields&quot;</span><span class="o">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;office&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;string&quot;</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;map&quot;</span><span class="p">,</span> <span class="s2">&quot;values&quot;</span><span class="o">:</span> <span class="s2">&quot;long&quot;</span><span class="p">}}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Pydoop transparently serializes and/or deserializes Avro data as
+needed, allowing you to work directly with Python dictionaries.  To
+get this behavior, you have to set the context class to
+<tt class="docutils literal"><span class="pre">AvroContext</span></tt>, as shown above.  Moreover, when launching the
+application with pydoop submit, you have to enable Avro I/O and
+specify the output schema as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export </span><span class="nv">STATS_SCHEMA</span><span class="o">=</span><span class="k">$(</span>cat stats.avsc<span class="k">)</span>
+pydoop submit <span class="se">\</span>
+  -D pydoop.mapreduce.avro.value.output.schema<span class="o">=</span><span class="s2">&quot;${STATS_SCHEMA}&quot;</span> <span class="se">\</span>
+  --avro-input v --avro-output v <span class="se">\</span>
+  --upload-file-to-cache color_count.py --mrv2 <span class="se">\</span>
+  color_count input output
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">--avro-input</span> <span class="pre">v</span></tt> and <tt class="docutils literal"><span class="pre">--avro-output</span> <span class="pre">v</span></tt> flags specify that we
+want to work with Avro records on MapReduce values; the other possible
+choices are <tt class="docutils literal"><span class="pre">&quot;k&quot;</span></tt>, where records are exchanged over keys, and
+<tt class="docutils literal"><span class="pre">&quot;kv&quot;</span></tt>, which assumes that the top-level record structure has two
+fields named <tt class="docutils literal"><span class="pre">&quot;key&quot;</span></tt> and <tt class="docutils literal"><span class="pre">&quot;value&quot;</span></tt> and passes the former on keys
+and the latter on values.</p>
+<p>Note that we did not have to specify any input schema: in this case,
+Avro automatically falls back to the <em>writer schema</em>, i.e., the one
+that&#8217;s been used to write the container file.</p>
+<p>The <tt class="docutils literal"><span class="pre">examples/avro</span></tt> directory contains examples for all I/O modes.</p>
+<div class="section" id="avro-parquet-i-o">
+<h2>Avro-Parquet I/O<a class="headerlink" href="#avro-parquet-i-o" title="Permalink to this headline">¶</a></h2>
+<p>The above example focuses on <a class="reference external" href="http://avro.apache.org/docs/1.7.6/spec.html#Object+Container+Files">Avro containers</a>.
+However, Pydoop supports any input/output format that exchanges Avro
+records.  In particular, it can be used to read from and write to
+Avro-Parquet files, i.e., <a class="reference external" href="http://parquet.incubator.apache.org">Parquet</a> files that use the Avro object
+model.</p>
+<p>The following application reproduces the k-mer count example from the
+<a class="reference external" href="https://github.com/bigdatagenomics/adam">ADAM</a> docs:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pydoop.mapreduce.api</span> <span class="kn">as</span> <span class="nn">api</span>
+<span class="kn">import</span> <span class="nn">pydoop.mapreduce.pipes</span> <span class="kn">as</span> <span class="nn">pp</span>
+<span class="kn">from</span> <span class="nn">pydoop.avrolib</span> <span class="kn">import</span> <span class="n">AvroContext</span>
+
+<span class="n">WIDTH</span> <span class="o">=</span> <span class="mi">21</span>
+
+<span class="k">def</span> <span class="nf">window</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">-</span> <span class="n">width</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">width</span><span class="p">]</span>
+
+<span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">seq</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s">&#39;sequence&#39;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">kmer</span> <span class="ow">in</span> <span class="n">window</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">WIDTH</span><span class="p">):</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">kmer</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Reducer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Reducer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span>
+        <span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">),</span>
+        <span class="n">context_class</span><span class="o">=</span><span class="n">AvroContext</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>To run the above program, execute pydoop submit as follows:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export </span><span class="nv">PROJECTION</span><span class="o">=</span><span class="k">$(</span>cat projection.avsc<span class="k">)</span>
+pydoop submit <span class="se">\</span>
+   -D parquet.avro.projection<span class="o">=</span><span class="s2">&quot;${PROJECTION}&quot;</span> <span class="se">\</span>
+  --upload-file-to-cache kmer_count.py <span class="se">\</span>
+  --input-format parquet.avro.AvroParquetInputFormat <span class="se">\</span>
+  --avro-input v --libjars <span class="s2">&quot;path/to/the/parquet/jar&quot;</span> --mrv2 <span class="se">\</span>
+  kmer_count input output
+</pre></div>
+</div>
+<p>Since we are using an external input format (Avro container input and
+output formats are integrated into the Java Pydoop code), we have to
+specify the corresponding class via <tt class="docutils literal"><span class="pre">--input-format</span></tt> and its jar
+with <tt class="docutils literal"><span class="pre">--libjars</span></tt>.  The optional parquet projection allows to extract
+only selected fields from the input data.  Note that, in this case,
+reading input records from values is not an option: that&#8217;s how
+<tt class="docutils literal"><span class="pre">AvroParquetInputFormat</span></tt> works.</p>
+<p>More Avro-Parquet examples are available under <tt class="docutils literal"><span class="pre">examples/avro</span></tt>.</p>
+</div>
+<div class="section" id="running-the-examples">
+<h2>Running the examples<a class="headerlink" href="#running-the-examples" title="Permalink to this headline">¶</a></h2>
+<p>To run the Avro examples you have to install the Python Avro package
+(you can get it from the Avro web site), while the <tt class="docutils literal"><span class="pre">avro</span></tt> jar is
+included in Hadoop 2 and the <tt class="docutils literal"><span class="pre">avro-mapred</span></tt> one is included in
+Pydoop.  Part of the examples code (e.g., input generation) is written
+in Java.  To compile it, you need <a class="reference external" href="http://www.scala-sbt.org">sbt</a>.
+Finally, since we use <tt class="docutils literal"><span class="pre">collections.Counter</span></tt>, the examples only run
+on Python 2.7.</p>
+<p>Move to the examples directory and compile the Java code:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd </span>examples/avro/java
+sbt assembly
+</pre></div>
+</div>
+<p>Now you should be able to run all examples under <tt class="docutils literal"><span class="pre">examples/avro/py</span></tt>.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../self_contained.html" title="Installation-free Usage"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="input_format.html" title="Writing a Custom InputFormat"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >Examples</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2015, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

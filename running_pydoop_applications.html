@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Pydoop Submit User Guide &mdash; Pydoop 1.0.0-rc1 documentation</title>
+    <title>Pydoop Submit User Guide &mdash; Pydoop 1.0.0-rc2 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0-rc1',
+        VERSION:     '1.0.0-rc2',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0-rc1 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.0.0-rc2 documentation" href="index.html" />
     <link rel="next" title="API Docs" href="api_docs/index.html" />
     <link rel="prev" title="Pydoop Script User Guide" href="pydoop_script.html" /> 
   </head>
@@ -115,20 +115,22 @@ available, you can bring up a single-node Hadoop cluster on your
 machine &#8211; see <a class="reference external" href="http://hadoop.apache.org">the Hadoop web site</a> for
 instructions.</p>
 <p>If your applications is contained in a single (local) file named
-<tt class="docutils literal"><span class="pre">wc.py</span></tt>, you can run it as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-file-to-cache wc.py --module wc wordcount input output
+<tt class="docutils literal"><span class="pre">wc.py</span></tt>, with an entry point called <tt class="docutils literal"><span class="pre">__main__</span></tt> (see
+<a class="reference internal" href="tutorial/mapred_api.html#api-tutorial"><em>Writing Full-Featured Applications</em></a>) you can run it as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-file-to-cache wc.py wc input output
 </pre></div>
 </div>
 <p>where <tt class="docutils literal"><span class="pre">input</span></tt> (file or directory) and <tt class="docutils literal"><span class="pre">output</span></tt> (directory) are
 HDFS paths.  Note that the <tt class="docutils literal"><span class="pre">output</span></tt> directory will not be
 overwritten: instead, an error will be generated if it already exists
 when you launch the program.</p>
+<p>If your entry point has a different name, specify it via <tt class="docutils literal"><span class="pre">--entry-point</span></tt>.</p>
 <p>The following table shows command line options for <tt class="docutils literal"><span class="pre">pydoop</span> <span class="pre">submit</span></tt>:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="4%" />
-<col width="19%" />
-<col width="78%" />
+<col width="20%" />
+<col width="76%" />
 </colgroup>
 <thead valign="bottom">
 <tr class="row-odd"><th class="head">Short</th>
@@ -230,10 +232,6 @@ when you launch the program.</p>
 <td>Add this HDFS archive file to the distributed cacheas an archive.</td>
 </tr>
 <tr class="row-odd"><td>&nbsp;</td>
-<td><tt class="docutils literal"><span class="pre">--module</span></tt></td>
-<td>Create a launcher that will execute MODULE code in the appropriate launch environment.The resulting pydoop program will be written at the HDFS path defined by PROGRAM</td>
-</tr>
-<tr class="row-even"><td>&nbsp;</td>
 <td><tt class="docutils literal"><span class="pre">--entry-point</span></tt></td>
 <td>Explicitly execute MODULE.ENTRY_POINT() in the launcher script.</td>
 </tr>
