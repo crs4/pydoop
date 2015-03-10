@@ -1,23 +1,28 @@
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2015 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
-import unittest, tempfile, os, stat, shutil
+import unittest
+import tempfile
+import os
+import stat
+import shutil
 import subprocess as sp
+
 from xml.dom.minidom import getDOMImplementation
 
 DOM_IMPL = getDOMImplementation()
@@ -79,7 +84,9 @@ class TestHadoopUtils(unittest.TestCase):
         cmd = sp.Popen([hadoop_exec, "version"], env=self.orig_env,
                        stdout=sp.PIPE, stderr=sp.PIPE)
         out, _ = cmd.communicate()
-        self.assertTrue(out.splitlines()[0].strip().lower().startswith("hadoop"))
+        self.assertTrue(
+            out.splitlines()[0].strip().lower().startswith("hadoop")
+        )
 
     def test_get_hadoop_version(self):
         # hadoop version from environment

@@ -417,7 +417,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
     def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
         logger = logger.getChild('HadoopSimulatorLocal') if logger \
-                 else logging.getLogger(self.__class__.__name__)
+            else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
         self.factory = factory
 
@@ -505,7 +505,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
                  sleep_delta=DEFAULT_SLEEP_DELTA):
         logger = logger.getChild('HadoopSimulatorNetwork') if logger \
-                 else logging.getLogger(self.__class__.__name__)
+            else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
         self.program = program
         self.sleep_delta = sleep_delta

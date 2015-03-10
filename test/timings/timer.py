@@ -18,7 +18,9 @@
 
 import time
 
+
 class Timer(object):
+
     def __init__(self, verbose=False):
         self.verbose = verbose
 

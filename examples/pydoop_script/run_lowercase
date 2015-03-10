@@ -40,9 +40,9 @@ else
 	exit 1
 fi
 
-${hdfs} -rm -r /user/${USER}/${INPUT}
+${hdfs} -rmr /user/${USER}/${INPUT}
 ${hdfs} -mkdir /user/${USER}/${INPUT}
-${hdfs} -rm -r /user/${USER}/${OUTPUT}
+${hdfs} -rmr /user/${USER}/${OUTPUT}
 ${hdfs} -put ${DATA} ${INPUT}
 
 ${SCRIPT_CMD} --num-reducers 0 -t '' -D mapred.map.tasks=4 ${SCRIPT} ${INPUT} ${OUTPUT}

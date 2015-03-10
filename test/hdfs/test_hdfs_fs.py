@@ -147,7 +147,7 @@ class TestHDFS(TestCommon):
             chunk_size = min(bs, 24*1048576)
             written = 0
             while written < size:
-                data = 'X'*min(chunk_size, size -written)
+                data = 'X'*min(chunk_size, size - written)
                 written += f.write(data)
 
         hd_info = pydoop.hadoop_version_info()
@@ -181,7 +181,6 @@ class TestHDFS(TestCommon):
         self.assertEqual(len(lines), lines_written)
         for i, l in enumerate(lines):
             self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
-
 
     def get_hosts(self):
         hd_info = pydoop.hadoop_version_info()

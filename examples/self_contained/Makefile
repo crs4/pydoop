@@ -54,10 +54,10 @@ setup_io:
 submit: vowelcount.zip pydoop.tgz setup_io
 	${SUBMIT_CMD} --python-zip vowelcount.zip \
                 --upload-archive-to-cache pydoop.tgz\
-                --module vowelcount.mr.main --entry-point main\
                 --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
                 --no-override-home --no-override-env\
-	              ${PROGNAME} ${INPUT} ${OUTPUT}
+                vowelcount.mr.main --entry-point main \
+	              ${INPUT} ${OUTPUT}
 
 submit2: vowelcount.tgz pydoop.tgz setup_io
 	${SUBMIT_CMD} --upload-archive-to-cache vowelcount.tgz\
@@ -73,8 +73,9 @@ vowelcount.zip: vowelcount
 vowelcount.tgz:
 	cd vowelcount; tar cfz ../vowelcount.tgz . ; cd -
 
+# don't use $(MAKE) -C ../.. wheel, top Makefile is only present in git repo
 pydoop.tgz:
-	$(MAKE) -C ../.. wheel
+	cd ../..; python setup.py bdist_wheel --dist-dir=./dist; cd -
 	${PIP} -t .  pydoop
 	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*

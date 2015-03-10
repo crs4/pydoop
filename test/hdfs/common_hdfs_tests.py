@@ -477,7 +477,7 @@ class TestCommon(unittest.TestCase):
             i = 0
             bufsize = 24*1024*1024
             while i < total_data_size:
-                data = 'X'*min(bufsize, total_data_size -i)
+                data = 'X'*min(bufsize, total_data_size - i)
                 f.write(data)
                 i += bufsize
 

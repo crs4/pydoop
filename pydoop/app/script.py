@@ -84,7 +84,7 @@ class PydoopScript(object):
         args.input_format = None
         args.output_format = None
         args.cache_file = None
-        args.cache_archive = None        
+        args.cache_archive = None
         args.upload_to_cache = None
         args.libjars = None
         args.mrv2 = False
@@ -93,6 +93,8 @@ class PydoopScript(object):
         args.disable_property_name_conversion = True
         args.job_conf = [('mapred.textoutputformat.separator',
                           args.kv_separator)]
+        args.avro_input = None
+        args.avro_output = None
         # despicable hack...
         properties = dict(args.D or [])
         properties.update(dict(args.job_conf))
@@ -120,7 +122,9 @@ class PydoopScript(object):
         os.unlink(self.zip_filename)
 
 
-def run(args, unknown_args=[]):
+def run(args, unknown_args=None):
+    if unknown_args is None:
+        unknown_args = []
     scripter = PydoopScript(args, unknown_args)
     scripter.run()
     scripter.clean()

@@ -1,24 +1,27 @@
 #!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
-# 
+#
 # Copyright 2009-2015 CRS4.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
 # of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-# 
+#
 # END_COPYRIGHT
 
-import sys, os, argparse, logging
+import sys
+import os
+import argparse
+import logging
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,7 +32,7 @@ import pydoop.test_support as pts
 from timer import Timer
 
 
-DEFAULT_SCRIPT="../../examples/wordcount/bin/wordcount-full.py"
+DEFAULT_SCRIPT = "../../examples/wordcount/bin/wordcount-full.py"
 
 CONF = {
     "mapred.map.tasks": "2",
@@ -45,6 +48,7 @@ HADOOP_CONF_DIR = pydoop.hadoop_conf()
 PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())
 LOCAL_FILE_PREFIX = "file:/"
 HDFS_FILE_PREFIX = "hdfs:///"
+
 
 def update_conf(args):
     if args.D:
@@ -90,7 +94,6 @@ def create_dataset(logger, max_file_size_in_mb=200):
 
     step_factor = 2
 
-    step = 0
     step_file_length = 0
     step_file_length_mb = 0
     while step_file_length_mb < max_file_size_in_mb:
@@ -138,10 +141,10 @@ def main(argv):
         with open(piped_code_file) as f:
             pipes_code = pts.add_sys_path(f.read())
 
-
         dataset = [d for d in os.listdir("dataset") if d.endswith("MB")]
-        dataset.sort(cmp=lambda x,y: cmp(int(x.replace("MB", "")), int(y.replace("MB", ""))))
-
+        dataset.sort(cmp=lambda x, y: cmp(
+            int(x.replace("MB", "")), int(y.replace("MB", ""))
+        ))
 
         logger.info(" Uploading dataset: { %s }", ', '.join(dataset))
         if not hadut.path_exists(os.path.join(DATASET_DIR)):
@@ -156,7 +159,6 @@ def main(argv):
                 logger.info(" -> uploading %s...", source_path)
                 hdfs.put(source_path, dest_path)
 
-
         update_conf(args)
 
         results = dict()
@@ -164,11 +166,13 @@ def main(argv):
 
             with Timer() as t:
                 runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
-                logger.info("Running the script %s with data input %s..", piped_code_file, data_input)
+                logger.info("Running the script %s with data input %s..",
+                            piped_code_file, data_input)
                 data_input_path = os.path.join(DATASET_DIR, data_input)
                 runner.set_input(data_input_path, put=False)
                 runner.set_exe(pipes_code)
-                runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
+                runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR,
+                           logger=logger)
                 res = runner.collect_output()
                 print data_input_path
                 local_wc = pts.LocalWordCount(data_input_path)
@@ -177,19 +181,17 @@ def main(argv):
                 #runner.clean()
             results[data_input] = (t.secs, t.msecs)
 
-
     print "\n\n RESULTs"
     print "=" * (len(piped_code_file) + 15)
     print " *  script: {0}".format(piped_code_file)
     print " *  mappers: {0}".format(CONF["mapred.map.tasks"])
     print " *  reducers: {0}".format(CONF["mapred.reduce.tasks"])
     print " *  dataset: [{0}]".format(",".join(dataset))
-
-    #total_time = 0
     print " *  times (input -> secs):"
     for data_input in dataset:
-        print "    - {0} -> {1} secs.".format(data_input, results[data_input][0])
-        #total_time += results[data_input][0]
+        print "    - {0} -> {1} secs.".format(
+            data_input, results[data_input][0]
+        )
     print "\n => Total execution time: {0}".format(total_time.secs)
     print "=" * (len(piped_code_file) + 15)
     print "\n"

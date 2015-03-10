@@ -25,6 +25,7 @@ must be subclassed by the developer, providing implementations for all
 methods called by the framework.
 """
 
+import json
 from abc import ABCMeta, abstractmethod
 
 from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
@@ -97,11 +98,29 @@ class JobConf(dict):
     def get_bool(self, key, default=None):
         """
         Same as :meth:`dict.get`, but the value is converted to a bool.
+
+        The boolean value is considered, respectively, :obj:`True` or
+        :obj:`False` if the string is equal, ignoring case, to
+        ``'true'`` or ``'false'``.
         """
-        return bool(self.get(key, default))
+        v = self.get(key, default)
+        if v != default:
+            v = v.strip().lower()
+            if v == 'true':
+                v = True
+            elif v == 'false':
+                v = False
+            elif default is None:
+                raise RuntimeError("invalid bool string: %s" % v)
+            else:
+                v = default
+        return v
 
     def getBoolean(self, key, default=None):
         return self.get_bool(key, default)
+
+    def get_json(self, key, default=None):
+        return json.loads(self.get(key, default))
 
     #get below is deprecated behaviour, here only for backward compatibility
     def get(self, *args):

@@ -16,9 +16,10 @@
 #
 # END_COPYRIGHT
 
-from pydoop.mapreduce.binary_streams import  BinaryWriter, MAP_ITEM, BinaryDownStreamFilter
+from pydoop.mapreduce.binary_streams import (
+    BinaryWriter, BinaryDownStreamFilter
+)
 
-import io
 import sys
 
 sys.path.append('./build/lib.linux-x86_64-2.7')
@@ -27,6 +28,7 @@ import dummy
 
 from timer import Timer
 
+
 def write_data(N, fname):
     with open(fname, 'w') as f:
         writer = BinaryWriter(f)
@@ -34,9 +36,11 @@ def write_data(N, fname):
             writer.send('mapItem', "key", "val")
         writer.send('close')
 
+
 # At system level, the following two routines are equivalent:
 # strace claims that they do the same set of buffered (4096 bytes) system read.
 # So, io is buffered and the buf size is 4096.
+
 #@profile
 def read_data(fname):
     with open(fname, 'rb', buffering=(4096*4)) as f:
@@ -44,15 +48,18 @@ def read_data(fname):
         for cmd, args in reader:
             pass
 
+
 def read_data1(N, fname):
     with open(fname, 'rb', buffering=(4096*4)) as f:
         for i in range(N):
-          args = dummy.decode_command(f)
+            dummy.decode_command(f)
+
 
 def read_data2(N, fname):
     with open(fname, 'rb', buffering=(4096*4)) as f:
-      args = dummy.decode_command(f, N)
-        
+        dummy.decode_command(f, N)
+
+
 def main():
     fname = 'foo.dat'
     N = 100000

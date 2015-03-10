@@ -147,7 +147,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         gargs = _pop_generic_args(args)
         for seq in gargs, args:
             _args.extend(map(str, seq))
-    logger.debug('args %s, cmd %s, properties %s', _args, cmd, properties)
+    logger.debug('final args: %r' % (_args,))
     p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = p.communicate()
     if p.returncode:
@@ -278,7 +278,7 @@ def run_class(class_name, args=None, properties=None, classpath=None,
             classpath = [classpath]
         classpath_list = [cp.strip() for s in classpath for cp in s.split(":")]
         os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
-        logger.debug('HADOOP_CLASSPATH %s',  os.environ['HADOOP_CLASSPATH'])
+        logger.debug('HADOOP_CLASSPATH: %r' % (os.getenv('HADOOP_CLASSPATH'),))
     res = run_cmd(class_name, args, properties,
                   hadoop_conf_dir=hadoop_conf_dir, logger=logger)
     if old_classpath is not None:

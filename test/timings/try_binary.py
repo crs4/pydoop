@@ -19,14 +19,17 @@
 import sys
 sys.path.insert(0, '../../build/lib.linux-x86_64-2.7')
 
-from pydoop.mapreduce.binary_streams import  BinaryDownStreamFilter, BinaryWriter
+from pydoop.mapreduce.binary_streams import (
+    BinaryDownStreamFilter, BinaryWriter
+)
 
 from timer import Timer
+
 
 def test_write(N, fname):
     with open(fname, 'w') as f:
         writer = BinaryWriter(f)
-        #gwriter =
+
         def foo():
             writer_send = writer.send
             while True:
@@ -35,7 +38,7 @@ def test_write(N, fname):
         foo_fg = foo()
         foo_fg.next()
         for i in range(N):
-            foo_fg.send(("key","val"))
+            foo_fg.send(("key", "val"))
 
 
 def write_data(N, fname):
@@ -55,7 +58,8 @@ def read_data(fname, N=None):
         else:
             for i in range(N):
                 cmd, args = reader.next()
-        
+
+
 def main():
     fname = 'foo.dat'
     N = 100000
@@ -76,8 +80,6 @@ def main():
     with Timer() as t:
         read_data(fname, 50000)
     print "=> read_data(50000): %s s" % t.secs
-
-
 
     with open(fname, 'rb', buffering=(4096*4)) as f:
         reader = BinaryDownStreamFilter(f)
