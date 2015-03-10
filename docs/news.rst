@@ -8,6 +8,11 @@ New in 1.0.0
 ------------
 
  * Pydoop now features a brand new, more pythonic :ref:`MapReduce API <mr_api>`
+ * Added built-in `Avro <http://avro.apache.org>`_ support (for now,
+   only with Hadoop 2).  By setting a few flags in the submitter and
+   selecting ``AvroContext`` as your application's context class, you
+   can read and write Avro data, transparently manipulating records as
+   Python dictionaries.  See the :ref:`avro_io` docs for further details.
  * The new :ref:`pydoop submit <running_apps>` tool drastically
    simplifies job submission, in particular when running applications
    without installing Pydoop and other dependencies on the cluster

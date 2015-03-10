@@ -73,8 +73,9 @@ vowelcount.zip: vowelcount
 vowelcount.tgz:
 	cd vowelcount; tar cfz ../vowelcount.tgz . ; cd -
 
+# don't use $(MAKE) -C ../.. wheel, top Makefile is only present in git repo
 pydoop.tgz:
-	$(MAKE) -C ../.. wheel
+	cd ../..; python setup.py bdist_wheel --dist-dir=./dist; cd -
 	${PIP} -t .  pydoop
 	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*
