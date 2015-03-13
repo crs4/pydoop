@@ -227,7 +227,7 @@ class JavaLib(object):
         self.java_files = []
         self.dependencies = []
         self.properties = []
-        if hadoop_vinfo.main >= (2, 0, 0) and hadoop_vinfo.is_yarn():
+        if hadoop_vinfo.main >= (2, 0, 0):
             # FIXME: kinda hardwired to avro for now
             self.properties.append((os.path.join(
                 "it/crs4/pydoop/mapreduce/pipes", PROP_BN),
