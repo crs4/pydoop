@@ -19,7 +19,7 @@
 import sys
 import logging
 import time
-from StringIO import StringIO
+from cStringIO import StringIO
 
 from pydoop import hadoop_version_info
 from pydoop.utils.serialize import (
