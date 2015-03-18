@@ -23,6 +23,13 @@ install the `Homebrew <http://brew.sh/>`_ version of python and then follow the
 instructions below.
 
 
+FreeBSD
+.......
+
+We have included a patch by `trtrmitya <https://github.com/trtrmitya>`_
+that adds FreeBSD support, but we have not tested it.
+
+
 .. _get_pydoop:
 
 Get Pydoop
