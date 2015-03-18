@@ -177,7 +177,7 @@ def build_hdfscore_native_impl():
         inc_dirs = (jvm.get_include_dirs() +
                     ['src/libhdfsV2', 'src/libhdfsV2/os/posix'])
     else:
-        src_dir = 'src/libhdfs/%d.%d.%d' % hadoop_t
+        src_dir = 'src/libhdfs/%d.%d.%d' % hadoop_t[0:3]
         hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
         inc_dirs = jvm.get_include_dirs() + [src_dir]
         libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
