@@ -48,6 +48,8 @@ def get_include_dirs():
         dirs += [os.path.join(java_home, 'include', 'win32')]
     elif sys.platform == 'darwin':
         dirs += [os.path.join(java_home, 'include', 'darwin')]
+    elif sys.platform.startswith('freebsd'):
+        dirs += [os.path.join(java_home, 'include', 'freebsd')]
     else:  # linux
         dirs += [os.path.join(java_home, 'include', 'linux')]
     return dirs
@@ -59,6 +61,8 @@ def get_libraries():
         libraries += ['Advapi32']
     elif sys.platform == 'darwin':
         libraries += ['dl', 'jvm']
+    elif sys.platform.startswith('freebsd'):
+        libraries += ['jvm']
     else:  # linux etc.
         libraries += ['dl', "jvm"]
     return libraries

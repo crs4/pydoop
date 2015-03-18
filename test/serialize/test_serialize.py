@@ -25,7 +25,7 @@
 #    javac -cp $(hadoop classpath) hadoop_serialize.java
 
 import unittest
-import StringIO
+from cStringIO import StringIO
 import random
 import os
 import subprocess
@@ -42,7 +42,7 @@ _HADOOP_SERIALIZE_CLASS = 'hadoop_serialize'
 class TestSerialize(unittest.TestCase):
 
     def setUp(self):
-        self.stream = StringIO.StringIO()
+        self.stream = StringIO()
 
     def test_int(self):
         stream = self.stream
@@ -168,7 +168,7 @@ class TestSerialize(unittest.TestCase):
         numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
         for n in numbers:
             s = srl.serialize_to_string(n)
-            stream = StringIO.StringIO(s)
+            stream = StringIO(s)
             x = srl.deserialize_vint(stream)
             self.assertEqual(n, x)
 
@@ -210,7 +210,7 @@ def _get_java_output_stream(wd):
         cwd=wd,
         stderr=open('/dev/null', 'w')
     )
-    stream = StringIO.StringIO(output)
+    stream = StringIO(output)
     return stream
 
 

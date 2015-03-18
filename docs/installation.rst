@@ -23,6 +23,13 @@ install the `Homebrew <http://brew.sh/>`_ version of python and then follow the
 instructions below.
 
 
+FreeBSD
+.......
+
+We have included a patch by `trtrmitya <https://github.com/trtrmitya>`_
+that adds FreeBSD support, but we have not tested it.
+
+
 .. _get_pydoop:
 
 Get Pydoop
@@ -78,6 +85,13 @@ Installation
 ------------
 
 Before compiling and installing Pydoop, install all missing dependencies.
+
+In addition, if your distribution does not include them by default,
+install basic development tools (such as a C/C++ compiler) and Python
+header files.  On Ubuntu, for instance, you can do that as follows::
+
+  sudo apt-get install build-essential python-dev
+
 Set the ``JAVA_HOME`` environment variable to your JDK installation
 directory, e.g.::
 

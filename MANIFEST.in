@@ -1,4 +1,4 @@
-include AUTHORS LICENSE VERSION README.md pydoop.properties
+include AUTHORS LICENSE VERSION README.md pydoop.properties .git_commit
 
 recursive-include src *
 

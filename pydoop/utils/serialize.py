@@ -84,7 +84,7 @@ The idea is to mimick Hadoop writable interface, so that we can then write:
 from __future__ import division
 import struct
 import xdrlib
-import StringIO
+from cStringIO import StringIO
 import cPickle as pickle
 
 import pydoop.sercore as codec_core
@@ -305,7 +305,7 @@ def deserialize(type_id, stream):
 
 
 def serialize_to_string(v, type_id=None):
-    f = StringIO.StringIO()
+    f = StringIO()
     serialize(v, f, type_id)
     return f.getvalue()
 
