@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation &mdash; Pydoop 1.0.0-rc2 documentation</title>
+    <title>Installation &mdash; Pydoop 1.0.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0-rc2',
+        VERSION:     '1.0.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0-rc2 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.0.0 documentation" href="index.html" />
     <link rel="next" title="Pydoop Script User Guide" href="pydoop_script.html" />
     <link rel="prev" title="Writing Full-Featured Applications" href="tutorial/mapred_api.html" /> 
   </head>
@@ -63,6 +63,7 @@
 <li><a class="reference internal" href="#supported-platforms">Supported Platforms</a><ul>
 <li><a class="reference internal" href="#linux">Linux</a></li>
 <li><a class="reference internal" href="#apple-os-x">Apple OS X</a></li>
+<li><a class="reference internal" href="#freebsd">FreeBSD</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#get-pydoop">Get Pydoop</a><ul>
@@ -139,6 +140,11 @@ regarding other Linux distributions, we expect Pydoop to work
 install the <a class="reference external" href="http://brew.sh/">Homebrew</a> version of python and then follow the
 instructions below.</p>
 </div>
+<div class="section" id="freebsd">
+<h3>FreeBSD<a class="headerlink" href="#freebsd" title="Permalink to this headline">¶</a></h3>
+<p>We have included a patch by <a class="reference external" href="https://github.com/trtrmitya">trtrmitya</a>
+that adds FreeBSD support, but we have not tested it.</p>
+</div>
 </div>
 <div class="section" id="get-pydoop">
 <span id="id2"></span><h2>Get Pydoop<a class="headerlink" href="#get-pydoop" title="Permalink to this headline">¶</a></h2>
@@ -183,8 +189,14 @@ different they are from the ones listed above.</p>
 </div>
 <div class="section" id="id4">
 <h2>Installation<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
-<p>Before compiling and installing Pydoop, install all missing dependencies.
-Set the <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> environment variable to your JDK installation
+<p>Before compiling and installing Pydoop, install all missing dependencies.</p>
+<p>In addition, if your distribution does not include them by default,
+install basic development tools (such as a C/C++ compiler) and Python
+header files.  On Ubuntu, for instance, you can do that as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install build-essential python-dev
+</pre></div>
+</div>
+<p>Set the <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> environment variable to your JDK installation
 directory, e.g.:</p>
 <div class="highlight-python"><div class="highlight"><pre>export JAVA_HOME=/usr/local/java/jdk
 </pre></div>
