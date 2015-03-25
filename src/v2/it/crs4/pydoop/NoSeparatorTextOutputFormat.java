@@ -22,15 +22,16 @@ package it.crs4.pydoop;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.RecordWriter;
-import org.apache.hadoop.mapred.TextOutputFormat;
+import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.*;
 import org.apache.hadoop.util.Progressable;
 
@@ -39,32 +40,29 @@ import org.apache.hadoop.util.Progressable;
  */
 public class NoSeparatorTextOutputFormat extends TextOutputFormat<Text, Text>
 {
-	 public RecordWriter<Text, Text> getRecordWriter(FileSystem ignored,
-                                                  JobConf job,
-                                                  String name,
-                                                  Progressable progress)
-    throws IOException {
+  public RecordWriter<Text, Text> 
+         getRecordWriter(TaskAttemptContext job
+                         ) throws IOException, InterruptedException {
+    final String keyValueSeparator = "";
+    Configuration conf = job.getConfiguration();
     boolean isCompressed = getCompressOutput(job);
-    String keyValueSeparator = "";
+    CompressionCodec codec = null;
+    String extension = "";
+    if (isCompressed) {
+      Class<? extends CompressionCodec> codecClass = 
+        getOutputCompressorClass(job, GzipCodec.class);
+      codec = (CompressionCodec) ReflectionUtils.newInstance(codecClass, conf);
+      extension = codec.getDefaultExtension();
+    }
+    Path file = getDefaultWorkFile(job, extension);
+    FileSystem fs = file.getFileSystem(conf);
     if (!isCompressed) {
-      Path file = TextOutputFormat.getTaskOutputPath(job, name);
-      FileSystem fs = file.getFileSystem(job);
-      FSDataOutputStream fileOut = fs.create(file, progress);
+      FSDataOutputStream fileOut = fs.create(file, false);
       return new LineRecordWriter<Text, Text>(fileOut, keyValueSeparator);
     } else {
-      Class<? extends CompressionCodec> codecClass =
-        getOutputCompressorClass(job, GzipCodec.class);
-      // create the named codec
-      CompressionCodec codec = ReflectionUtils.newInstance(codecClass, job);
-      // build the filename including the extension
-      Path file = 
-        TextOutputFormat.getTaskOutputPath(job, 
-                                           name + codec.getDefaultExtension());
-      FileSystem fs = file.getFileSystem(job);
-      FSDataOutputStream fileOut = fs.create(file, progress);
-      return new LineRecordWriter<Text, Text>(new DataOutputStream
-                                        (codec.createOutputStream(fileOut)),
-                                        keyValueSeparator);
+      FSDataOutputStream fileOut = fs.create(file, false);
+      return new LineRecordWriter<Text, Text>(
+          new DataOutputStream (codec.createOutputStream(fileOut)), keyValueSeparator);
     }
   }
 }
