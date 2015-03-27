@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for s in wordcount_minimal wordcount_full; do
+for s in wordcount_minimal wordcount_full nosep; do
     echo
     echo "*** running ${s} ***"
     echo
