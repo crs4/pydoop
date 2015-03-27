@@ -17,7 +17,7 @@
 // 
 // END_COPYRIGHT
 
-package it.crs4.pydoop;
+package it.crs4.pydoop.mapreduce.lib.output;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
