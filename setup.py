@@ -234,14 +234,18 @@ class JavaLib(object):
             self.properties.append((os.path.join(
                 "it/crs4/pydoop/mapreduce/pipes", PROP_BN),
                 PROP_FN))
+            # -- pydoop script is currently using v1
             self.java_files.extend([
-                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
+                "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/pipes/*.java'
             ))
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
+            ))
+            self.java_files.extend(glob.glob(
+                'src/v2/it/crs4/pydoop/mapreduce/lib/output/*.java'
             ))
             # for now we have only hadoop2 deps (avro-mapred)
             self.dependencies.extend(glob.glob('lib/*.jar'))
