@@ -110,11 +110,9 @@ def _apache_hadoop_jars_v2(hadoop_home):
 
 def _cdh_hadoop_jars_v1(hadoop_home):
     hadoop_hdfs = hadoop_home + "-hdfs"
-    hadoop_yarn = hadoop_home + "-yarn"
     hadoop_mapred_v1 = hadoop_home + "-0.20-mapreduce"
     dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
             hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
-            hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
             hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
     jars = _jars_from_dirs(dirs)
     return jars
@@ -133,11 +131,10 @@ def _cdh_hadoop_jars_v2(hadoop_home):
 
 
 def _hdp_hadoop_jars_v2(hadoop_home):
-    hadoop_hdfs = hadoop_home + "-hdfs"
-    hadoop_yarn = hadoop_home + "-yarn"
-    hadoop_mapred_v2 = hadoop_home + "-mapreduce"
-    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
-            hadoop_hdfs, hadoop_mapred_v2]
+    dirs = []
+    for ext in ['', '-hdfs', '-yarn', '-mapreduce']:
+        p = hadoop_home + ext
+        dirs.extend([p, os.path.join(p, 'lib')]) 
     jars = _jars_from_dirs(dirs)
     return jars
 

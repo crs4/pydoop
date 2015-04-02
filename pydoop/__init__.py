@@ -86,8 +86,8 @@ def hadoop_version_info(hadoop_home=None):
     return _PATH_FINDER.hadoop_version_info(hadoop_home)
 
 
-def is_cloudera(version=None, hadoop_home=None):
-    return _PATH_FINDER.cloudera(version, hadoop_home)
+def is_cloudera(hadoop_home=None):
+    return _PATH_FINDER.is_cloudera(hadoop_home)
 
 
 def hadoop_conf(hadoop_home=None):
