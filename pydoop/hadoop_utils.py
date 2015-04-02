@@ -89,11 +89,15 @@ def _jars_from_dirs(dirs):
     return jars
 
 
-def _hadoop1_jars(hadoop_home):
+def _hadoop_jars():
+    pass
+
+
+def _apache_hadoop_jars_v1(hadoop_home):
     return _jars_from_dirs([hadoop_home, os.path.join(hadoop_home, 'lib')])
 
 
-def _hadoop2_jars(hadoop_home):
+def _apache_hadoop_jars_v2(hadoop_home):
     jar_root = os.path.join(hadoop_home, 'share', 'hadoop')
     return _jars_from_dirs([os.path.join(jar_root, d) for d in (
         'hdfs',
@@ -104,24 +108,36 @@ def _hadoop2_jars(hadoop_home):
     )])
 
 
-def _cdh_jars(hadoop_home, is_yarn):
-
+def _cdh_hadoop_jars_v1(hadoop_home):
     hadoop_hdfs = hadoop_home + "-hdfs"
     hadoop_yarn = hadoop_home + "-yarn"
     hadoop_mapred_v1 = hadoop_home + "-0.20-mapreduce"
+    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+            hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
+            hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
+            hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
+    jars = _jars_from_dirs(dirs)
+    return jars
+
+
+def _cdh_hadoop_jars_v2(hadoop_home):
+    hadoop_hdfs = hadoop_home + "-hdfs"
+    hadoop_yarn = hadoop_home + "-yarn"
     hadoop_mapred_v2 = hadoop_home + "-mapreduce"
+    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+            hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
+            hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
+            hadoop_mapred_v2, os.path.join(hadoop_mapred_v2, "lib")]
+    jars = _jars_from_dirs(dirs)
+    return jars
 
-    if not is_yarn:
-        dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
-                hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
-                hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
-                hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
-    else:
-        dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
-                hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
-                hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
-                hadoop_mapred_v2, os.path.join(hadoop_mapred_v2, "lib")]
 
+def _hdp_hadoop_jars_v2(hadoop_home):
+    hadoop_hdfs = hadoop_home + "-hdfs"
+    hadoop_yarn = hadoop_home + "-yarn"
+    hadoop_mapred_v2 = hadoop_home + "-mapreduce"
+    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
+            hadoop_hdfs, hadoop_mapred_v2]
     jars = _jars_from_dirs(dirs)
     return jars
 
@@ -133,13 +149,8 @@ class HadoopVersion(object):
     Hadoop version strings are in the <MAIN>-<REST> format, where <MAIN>
     is in the typical dot-separated integers format, while <REST> is
     subject to a higher degree of variation.  Examples: '0.20.2',
-    '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT', '2.0.0-mr1-cdh4.1.0'.
-
-    The constructor parses the version string and stores:
-
-      * a ``main`` attribute for the <MAIN> part;
-      * a ``cdh`` attribute for the cdh part, if present;
-      * an ``ext`` attribute for other appendages, if present.
+    '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT', '2.0.0-mr1-cdh4.1.0',
+    '2.6.0.2.2.0.0-2041'.
 
     If the version string is not in the expected format, it raises
     ``HadoopVersionError``.  For consistency:
@@ -174,11 +185,21 @@ class HadoopVersion(object):
             self.main = tuple(map(int, version[0].split(".")))
         except ValueError:
             raise HadoopVersionError(self.__str)
-        if len(version) > 1:
-            self.cdh, self.ext = self.__parse_rest(version[1])
+        if len(version) > 1:  # not apache heuristics...
+            if len(self.main) == 7:  # hdp heuristics...
+                self.distribution = 'hdp'
+                self.dist_version = self.main[3:]
+                self.dist_ext = (version[1],)
+                self.main = self.main[:3]
+            else:
+                self.distribution = 'cdh'
+                self.dist_version, self.dist_ext = \
+                    self.__parse_rest(version[1])
         else:
-            self.cdh = self.ext = ()
-        self.__tuple = self.main + self.cdh + self.ext
+            self.distribution = 'apache'
+            self.dist_version, self.dist_ext = (), ()
+        self.__tuple = (self.main + (self.distribution,) +
+                        self.dist_version, self.dist_ext)
 
     def __parse_rest(self, rest_str):
         # older CDH3 releases
@@ -219,23 +240,32 @@ class HadoopVersion(object):
         return cdh_version, tuple(rest[1:])
 
     def is_cloudera(self):
-        return bool(self.cdh)
+        return self.distribution == 'cdh'
+
+    def is_hortonworks(self):
+        return self.distribution == 'hdp'
 
     def is_yarn(self):
         pf = PathFinder()
         return pf.is_yarn()
 
     def is_cdh_mrv2(self):
-        return self.cdh >= (4, 0, 0) and not self.ext
+        return (self.distribution == 'cdh'
+                and self.dist_version >= (4, 0, 0) and not self.dist_ext)
 
     def is_cdh_v5(self):
-        return self.cdh >= (5, 0, 0) and self.cdh < (6, 0, 0)
+        return (self.distribution == 'cdh'
+                and self.dist_version >= (5, 0, 0)
+                and self.dist_version < (6, 0, 0))
 
     def has_deprecated_bs(self):
-        return self.cdh[:2] >= (4, 3)
+        return (self.distribution == 'cdh'
+                and self.dist_version[:2] >= (4, 3))
 
     def has_security(self):
-        return self.cdh >= (3, 0, 0) or self.main >= (0, 20, 203)
+        return ((self.distribution == 'cdh'
+                 and self.dist_vesion >= (3, 0, 0))
+                or self.main >= (0, 20, 203))
 
     def has_variable_isplit_encoding(self):
         pf = PathFinder()
@@ -274,18 +304,6 @@ class HadoopVersion(object):
 
     def __str__(self):
         return self.__str
-
-
-def cdh_mr1_version(version):
-    if not isinstance(version, HadoopVersion):
-        version = HadoopVersion(version)
-        rtype = str
-    else:
-        rtype = HadoopVersion
-    if not version.is_cloudera():
-        raise ValueError("%r is not a cdh version string" % (str(version),))
-    mr1_version_str = str(version).replace("cdh", "mr1-cdh")
-    return rtype(mr1_version_str)
 
 
 def is_exe(fpath):
@@ -372,7 +390,6 @@ class PathFinder(object):
         self.__hadoop_conf = None
         self.__hadoop_version = None  # str
         self.__hadoop_version_info = None  # HadoopVersion
-        self.__is_cloudera = None
         self.__hadoop_params = None
         self.__hadoop_native = None
         self.__hadoop_classpath = None
@@ -455,6 +472,9 @@ class PathFinder(object):
             PathFinder.__error("hadoop version", "HADOOP_VERSION")
         return self.__hadoop_version
 
+    def is_cloudera(self, hadoop_home=None):
+        return self.hadoop_version_info(hadoop_home).is_cloudera()
+
     def hadoop_version_info(self, hadoop_home=None):
         if not self.__hadoop_version_info:
             self.__hadoop_version_info = HadoopVersion(
@@ -462,20 +482,12 @@ class PathFinder(object):
             )
         return self.__hadoop_version_info
 
-    def cloudera(self, version=None, hadoop_home=None):
-        if not self.__is_cloudera:
-            version_info = HadoopVersion(
-                version or self.hadoop_version(hadoop_home)
-            )
-            self.__is_cloudera = version_info.is_cloudera()
-        return self.__is_cloudera
-
     def hadoop_conf(self, hadoop_home=None):
         if not self.__hadoop_conf:
             try:
                 self.__hadoop_conf = os.environ["HADOOP_CONF_DIR"]
             except KeyError:
-                if self.cloudera():
+                if self.is_cloudera(hadoop_home):
                     candidate = '/etc/hadoop/conf'
                 elif os.path.isdir(self.RPM_HADOOP_HOME):
                     candidate = '/etc/hadoop'
@@ -518,7 +530,7 @@ class PathFinder(object):
                 )
                 return self.__hadoop_native
             v = self.hadoop_version_info(hadoop_home)
-            if not v.cdh or v.cdh < (4, 0, 0):
+            if v.distribution == 'apache':
                 if v.main >= (2, 0, 0):
                     self.__hadoop_native = os.path.join(
                         hadoop_home, 'lib', 'native'
@@ -528,11 +540,20 @@ class PathFinder(object):
                         hadoop_home, 'lib', 'native',
                         'Linux-%s-%s' % get_arch()
                     )
-            else:
+            elif v.distribution == 'hdp':
+                if v.main >= (2, 0, 0):
+                    self.__hadoop_native = os.path.join(
+                        hadoop_home, 'hadoop', 'lib', 'native'
+                    )
+                else:
+                    raise RuntimeError('%s is not supported' % v)
+            elif v.distribution == 'cdh':
                 hadoop_home = _cdh_hadoop_home()
                 self.__hadoop_native = os.path.join(
                     hadoop_home, 'lib', 'native'
                 )
+            else:
+                raise RuntimeError('%s is not supported' % v)
         return self.__hadoop_native
 
     def hadoop_classpath(self, hadoop_home=None):
@@ -540,14 +561,22 @@ class PathFinder(object):
             hadoop_home = self.hadoop_home()
         if not self.__hadoop_classpath:
             v = self.hadoop_version_info(hadoop_home)
-            if not v.cdh or v.cdh < (4, 0, 0):
-                if v.main >= (2, 0, 0):
-                    jars = _hadoop2_jars(hadoop_home)
+            if v.distribution == 'apache':
+                if v.main < (2, 0, 0):
+                    jars = _apache_hadoop_jars_v1(hadoop_home)
                 else:
-                    jars = _hadoop1_jars(hadoop_home)
-            else:
+                    jars = _apache_hadoop_jars_v2(hadoop_home)
+            elif v.distribution == 'cdh':
                 hadoop_home = _cdh_hadoop_home()
-                jars = _cdh_jars(hadoop_home, self.is_yarn())
+                if v.main < (2, 0, 0) or not v.is_yarn():
+                    jars = _cdh_hadoop_jars_v1(hadoop_home)
+                else:
+                    jars = _cdh_hadoop_jars_v2(hadoop_home)
+            elif v.distribution == 'hdp':
+                if v.main < (2, 0, 0):
+                    raise RuntimeError('%s is not supported' % v)
+                else:
+                    jars = _hdp_hadoop_jars_v2(hadoop_home)
             jars.extend([self.hadoop_native(), self.hadoop_conf()])
             self.__hadoop_classpath = ':'.join(jars)
         return self.__hadoop_classpath
