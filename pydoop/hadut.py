@@ -84,6 +84,13 @@ def _construct_property_args(prop_dict):
     return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
 
 
+# 'a:b:c' OR ['a', 'b', 'c'] OR ['a:b', 'c'] --> {'a', 'b', 'c'}
+def _to_set(classpath):
+    if isinstance(classpath, basestring):
+        classpath = [classpath]
+    return set(_.strip() for s in classpath for _ in s.split(":"))
+
+
 # inherits from RuntimeError for backwards compatibility
 class RunCmdError(RuntimeError):
     """
@@ -259,25 +266,35 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
 def run_class(class_name, args=None, properties=None, classpath=None,
               hadoop_conf_dir=None, logger=None):
     """
-    Run a class that needs the Hadoop jars in its class path.
+    Run a Java class with Hadoop (equivalent of running ``hadoop
+    <class_name>`` from the command line).
 
-    ``args`` and ``properties`` are passed to :func:`run_cmd`.
+    Additional ``HADOOP_CLASSPATH`` elements can be provided via
+    ``classpath`` (either as a non-string sequence where each element
+    is a classpath element or as a ``':'``-separated string).  Other
+    arguments are passed to :func:`run_cmd`.
 
     .. code-block:: python
 
       >>> cls = 'org.apache.hadoop.hdfs.tools.DFSAdmin'
       >>> print run_class(cls, args=['-help', 'report'])
       -report: Reports basic filesystem information and statistics.
+
+    .. note::
+
+      ``HADOOP_CLASSPATH`` makes dependencies available **only on the
+      client side**.  If you are running a MapReduce application, use
+      ``args=['-libjars', 'jar1,jar2,...']`` to make them available to
+      the server side as well.
     """
     if logger is None:
         logger = utils.NullLogger()
     old_classpath = None
     if classpath:
         old_classpath = os.getenv('HADOOP_CLASSPATH', '')
-        if isinstance(classpath, basestring):
-            classpath = [classpath]
-        classpath_list = [cp.strip() for s in classpath for cp in s.split(":")]
-        os.environ['HADOOP_CLASSPATH'] = ":".join(classpath_list)
+        os.environ['HADOOP_CLASSPATH'] = ":".join(
+            _to_set(old_classpath) | _to_set(classpath)
+        )
         logger.debug('HADOOP_CLASSPATH: %r' % (os.getenv('HADOOP_CLASSPATH'),))
     res = run_cmd(class_name, args, properties,
                   hadoop_conf_dir=hadoop_conf_dir, logger=logger)
