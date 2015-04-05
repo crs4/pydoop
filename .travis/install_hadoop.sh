@@ -312,7 +312,7 @@ function install_hdp2() {
 
     log "Adding repository"
     
-    if [ "$HRTWRKS_VER" -eq "2.2.0.0" ]; then
+    if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
         sudo -E wget -nv ${HRTWRKS_REPO}/GA/2.2.0.0/hdp.list -O /etc/apt/sources.list.d/hdp.list
         gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD && gpg -a --export 07513CAD | sudo apt-key add -        
         sudo apt-get update
