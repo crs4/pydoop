@@ -322,7 +322,7 @@ function install_hdp2() {
 
     log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
     
-    install_hdp2_ubuntu_packages(${HRTWRKS_VER})
+    install_hdp2_ubuntu_packages ${HRTWRKS_VER}
     
     if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
         sudo rm -rf ${HadoopConfDir}
