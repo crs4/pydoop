@@ -325,13 +325,19 @@ function install_hdp2() {
     
     if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
         local HadoopConfDir=/usr/hdp/2.2.0.0-2041/hadoop/conf
-        sudo rm -rf ${HadoopConfDir}
-        sudo cp -a "${PWD}/.travis/hadoop-2.6.0-conf" ${HadoopConfDir}
         local HDP_BASE=/usr/hdp/current/
         local HDP_NMND=${HDP_BASE}/hadoop-hdfs-namenode
         local HDFS=${HDP_NMND}/../hadoop/bin/hdfs        
         local HDFS_DAEMON=${HDP_NMND}/../hadoop/sbin/hadoop-daemon.sh
         local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
+
+        log "Removing old conf in ${HadoopConfDir}"
+        sudo rm -rf ${HadoopConfDir}
+        log "Copying new conf in ${HadoopConfDir}"        
+        sudo cp -a "${PWD}/.travis/hadoop-2.6.0-conf" ${HadoopConfDir}
+        log "Current contents of ${HadoopConfDir}"
+        ls -lR ${HadoopConfDir}
+        
         log "Formatting the NameNode"
         sudo ${HDFS} namenode -format
         log "Start HDFS"
