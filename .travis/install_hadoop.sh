@@ -301,6 +301,70 @@ function install_cdh4() {
 }
 
 
+function install_hdp2() {
+    [ $# -eq 1 ] || error "Missing HadoopVersion"
+    local HadoopVersion="${1}"
+    local HRTWRKS_REPO=http://public-repo-1.hortonworks.com/HDP/ubuntu12/2.x
+    local HRTWRKS_VER="${HDP%%HadoopVersion}"
+    local HadoopConfDir=/etc/hadoop/conf/
+
+    log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
+
+    log "Adding repository"
+    
+    if [ "$HRTWRKS_VER" -eq "2.2.0.0" ]; then
+        sudo -E wget -nv ${HRTWRKS_REPO}/GA/2.2.0.0/hdp.list -O /etc/apt/sources.list.d/hdp.list
+        gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD && gpg -a --export 07513CAD | sudo apt-key add -        
+        sudo apt-get update
+        sudo -E apt-get install hadoop hadoop-hdfs libhdfs0 \
+             hadoop-yarn hadoop-mapreduce hadoop-client \
+             openssl libsnappy1 libsnappy-dev
+    fi
+    export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"    
+    log "Adding mixing links"
+    ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-hdfs/
+    ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-yarn/
+    
+    log "Formatting the NameNode"
+    /usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf  namenode -format
+
+    log "Start HDFS"
+    /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
+    /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
+    
+    log "Create HDFS directories"
+    HDFS=/usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf
+    ${HDFS} dfs -mkdir /tmp
+    ${HDFS} -chmod -R 1777 /tmp
+    ${HDFS} -mkdir /var
+    ${HDFS} -mkdir /var/log
+    ${HDFS} -chmod -R 1775 /var/log
+#    ${HDFS} -chown yarn:mapred /var/log
+    ${HDFS} -mkdir /tmp/hadoop-yarn
+#    ${HDFS} -chown -R mapred:mapred /tmp/hadoop-yarn
+    ${HDFS} -mkdir -p /tmp/hadoop-yarn/staging/history/done_intermediate
+#    ${HDFS} -chown -R mapred:mapred /tmp/hadoop-yarn/staging
+    ${HDFS} -chmod -R 1777 /tmp
+    ${HDFS} -mkdir -p /var/log/hadoop-yarn/apps
+    ${HDFS} -chmod -R 1777 /var/log/hadoop-yarn/apps
+#    ${HDFS} -chown yarn:mapred /var/log/hadoop-yarn/apps
+    ${HDFS} -mkdir /user
+    ${HDFS} -mkdir /user/history
+#    ${HDFS} -chown mapred /user/history
+    ${HDFS} -mkdir /user/root
+    ${HDFS} -chmod -R 777 /user/root
+#    ${HDFS} -chown root /user/root
+
+    log "Verify directories"
+    ${HDFS} -ls -R /
+
+
+    log "Start yarn"    
+    /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start resourcemanager
+    /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
+    
+}
+
 function install_cdh5() {
     [ $# -eq 2 ] || error "Missing HadoopVersion and Yarn function argument"
     local HadoopVersion="${1}"
@@ -417,6 +481,8 @@ if [[ "${HADOOPVERSION}" == *cdh4* ]]; then
     install_cdh4 "${HADOOPVERSION}" "${YARN}"
 elif [[ "${HADOOPVERSION}" == *cdh5* ]]; then
     install_cdh5 "${HADOOPVERSION}" "${YARN}"
+elif [[ "${HADOOPVERSION}" == *HDP2* ]]; then
+    install_hdp2 "${HADOOPVERSION}"
 else # else hadoop
     install_standard_hadoop "${HADOOPVERSION}"
 fi
