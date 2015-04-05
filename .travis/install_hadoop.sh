@@ -305,7 +305,7 @@ function install_hdp2() {
     [ $# -eq 1 ] || error "Missing HadoopVersion"
     local HadoopVersion="${1}"
     local HRTWRKS_REPO=http://public-repo-1.hortonworks.com/HDP/ubuntu12/2.x
-    local HRTWRKS_VER="${HDP%%HadoopVersion}"
+    local HRTWRKS_VER="${HadoopVersion##HDP}"
     local HadoopConfDir=/etc/hadoop/conf/
 
     log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
