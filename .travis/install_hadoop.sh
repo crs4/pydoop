@@ -317,14 +317,14 @@ function install_hdp2_ubuntu_packages() {
 function install_hdp2() {
     [ $# -eq 1 ] || error "Missing HadoopVersion"
     local HadoopVersion="${1}"
-    local HRTWRKS_VER="${HadoopVersion##HDP}"    
-    local HadoopConfDir=/etc/hadoop/conf
-
+    local HRTWRKS_VER="${HadoopVersion##HDP}"
+    
     log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
     
     install_hdp2_ubuntu_packages ${HRTWRKS_VER}
     
     if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
+        local HadoopConfDir=/usr/hdp/2.2.0.0-2041/hadoop/conf
         sudo rm -rf ${HadoopConfDir}
         sudo cp -a "${PWD}/.travis/hadoop-2.6.0-conf" ${HadoopConfDir}
         local HDP_BASE=/usr/hdp/current/
