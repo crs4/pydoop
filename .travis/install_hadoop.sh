@@ -331,10 +331,8 @@ function install_hdp2() {
         local HDFS_DAEMON=${HDP_NMND}/../hadoop/sbin/hadoop-daemon.sh
         local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
 
-        log "Removing old conf in ${HadoopConfDir}"
-        sudo rm -rf ${HadoopConfDir}
         log "Copying new conf in ${HadoopConfDir}"        
-        sudo cp -a "${PWD}/.travis/hadoop-2.6.0-conf" ${HadoopConfDir}
+        sudo cp "${PWD}/.travis/hadoop-2.6.0-conf/*" ${HadoopConfDir}
         log "Current contents of ${HadoopConfDir}"
         ls -lR ${HadoopConfDir}
         
