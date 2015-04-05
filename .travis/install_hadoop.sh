@@ -300,40 +300,64 @@ function install_cdh4() {
     return 0
 }
 
+function install_hdp2_ubuntu_packages() {
+    local VERSION="${1}"
+    local HRTWRKS_REPO=http://public-repo-1.hortonworks.com/HDP/ubuntu12/2.x
+    local HDP_LIST=${HRTWRKS_REPO}/GA/${VERSION}/hdp.list
+
+    log "Adding repository"
+    sudo -E wget -nv ${HDP_LIST} -O /etc/apt/sources.list.d/hdp.list
+    gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD && gpg -a --export 07513CAD | sudo apt-key add -
+    sudo apt-get update
+    sudo -E apt-get install hadoop hadoop-hdfs libhdfs0 \
+            hadoop-yarn hadoop-mapreduce hadoop-client \
+            openssl libsnappy1 libsnappy-dev
+    }
 
 function install_hdp2() {
     [ $# -eq 1 ] || error "Missing HadoopVersion"
     local HadoopVersion="${1}"
-    local HRTWRKS_REPO=http://public-repo-1.hortonworks.com/HDP/ubuntu12/2.x
-    local HRTWRKS_VER="${HadoopVersion##HDP}"
-    local HadoopConfDir=/etc/hadoop/conf/
+    local HRTWRKS_VER="${HadoopVersion##HDP}"    
+    local HadoopConfDir=/etc/hadoop/conf
 
     log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
-
-    log "Adding repository"
+    
+    install_hdp2_ubuntu_packages(${HRTWRKS_VER})
     
     if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
-        sudo -E wget -nv ${HRTWRKS_REPO}/GA/2.2.0.0/hdp.list -O /etc/apt/sources.list.d/hdp.list
-        gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD && gpg -a --export 07513CAD | sudo apt-key add -        
-        sudo apt-get update
-        sudo -E apt-get install hadoop hadoop-hdfs libhdfs0 \
-             hadoop-yarn hadoop-mapreduce hadoop-client \
-             openssl libsnappy1 libsnappy-dev
-    fi
-    export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"    
-    log "Adding mixing links"
-    ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-hdfs/
-    ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-yarn/
+        sudo rm -rf ${HadoopConfDir}
+        sudo cp -a "${PWD}/.travis/hadoop-2.6.0-conf" ${HadoopConfDir}
+        local HDP_BASE=/usr/hdp/current/
+        local HDP_NMND=${HDP_BASE}/hadoop-hdfs-namenode
+        local HDFS=${HDP_NMND}/../hadoop/bin/hdfs        
+        local HDFS_DAEMON=${HDP_NMND}/../hadoop/sbin/hadoop-daemon.sh
+        local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
+        log "Formatting the NameNode"
+        sudo ${HDFS} namenode -format
+        log "Start HDFS"
+        sudo ${HDFS_DAEMON} start namenode
+        sudo ${HDFS_DAEMON} start datanode
+        sudo ${YARN_DAEMON} start resourcemanager        
+        sudo ${YARN_DAEMON} start nodemanager
+    elif [ "$HadoopVersion" = "HDP2.1.5.0" ]; then
+        # Currently broken.
+        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"    
+        log "Adding mixing links"
+        ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-hdfs/
+        ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-yarn/
     
-    log "Formatting the NameNode"
-    /usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf  namenode -format
+        log "Formatting the NameNode"
+        /usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf  namenode -format
 
-    log "Start HDFS"
-    /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
-    /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
-    
+        log "Start HDFS"
+        /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
+        /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
+        log "Start yarn"    
+        /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start resourcemanager
+        /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
+    fi
     log "Create HDFS directories"
-    HDFS=/usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf
+    HDFS=sudo hdfs
     ${HDFS} dfs -mkdir /tmp
     ${HDFS} -chmod -R 1777 /tmp
     ${HDFS} -mkdir /var
@@ -357,12 +381,6 @@ function install_hdp2() {
 
     log "Verify directories"
     ${HDFS} -ls -R /
-
-
-    log "Start yarn"    
-    /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start resourcemanager
-    /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
-    
 }
 
 function install_cdh5() {
