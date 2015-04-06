@@ -324,7 +324,8 @@ function install_hdp2() {
     install_hdp2_ubuntu_packages ${HRTWRKS_VER}
     
     if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
-        local HadoopConfDir=/usr/hdp/2.2.0.0-2041/hadoop/conf
+        #local HadoopConfDir=/usr/hdp/2.2.0.0-2041/hadoop/conf
+        local HadoopConfDir=/etc/hadoop/conf
         local HDP_BASE=/usr/hdp/current/
         local HDP_NMND=${HDP_BASE}/hadoop-hdfs-namenode
         local HDFS=${HDP_NMND}/../hadoop/bin/hdfs        
@@ -332,17 +333,17 @@ function install_hdp2() {
         local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
 
         log "Copying new conf in ${HadoopConfDir}"        
-        sudo cp "${PWD}/.travis/hadoop-2.6.0-conf/*" ${HadoopConfDir}
+        sudo -E cp ${PWD}/.travis/hadoop-2.6.0-conf/* ${HadoopConfDir}/
         log "Current contents of ${HadoopConfDir}"
-        ls -lR ${HadoopConfDir}
+        ls -lR ${HadoopConfDir}/
         
         log "Formatting the NameNode"
-        sudo ${HDFS} namenode -format
+        sudo -E ${HDFS} namenode -format
         log "Start HDFS"
-        sudo ${HDFS_DAEMON} start namenode
-        sudo ${HDFS_DAEMON} start datanode
-        sudo ${YARN_DAEMON} start resourcemanager        
-        sudo ${YARN_DAEMON} start nodemanager
+        sudo -E ${HDFS_DAEMON} start namenode
+        sudo -E ${HDFS_DAEMON} start datanode
+        sudo -E ${YARN_DAEMON} start resourcemanager        
+        sudo -E ${YARN_DAEMON} start nodemanager
     elif [ "$HadoopVersion" = "HDP2.1.5.0" ]; then
         # Currently broken.
         export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"    
@@ -361,30 +362,30 @@ function install_hdp2() {
         /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
     fi
     log "Create HDFS directories"
-    HDFS=sudo hdfs
-    ${HDFS} dfs -mkdir /tmp
-    ${HDFS} -chmod -R 1777 /tmp
-    ${HDFS} -mkdir /var
-    ${HDFS} -mkdir /var/log
-    ${HDFS} -chmod -R 1775 /var/log
-#    ${HDFS} -chown yarn:mapred /var/log
-    ${HDFS} -mkdir /tmp/hadoop-yarn
-#    ${HDFS} -chown -R mapred:mapred /tmp/hadoop-yarn
-    ${HDFS} -mkdir -p /tmp/hadoop-yarn/staging/history/done_intermediate
-#    ${HDFS} -chown -R mapred:mapred /tmp/hadoop-yarn/staging
-    ${HDFS} -chmod -R 1777 /tmp
-    ${HDFS} -mkdir -p /var/log/hadoop-yarn/apps
-    ${HDFS} -chmod -R 1777 /var/log/hadoop-yarn/apps
-#    ${HDFS} -chown yarn:mapred /var/log/hadoop-yarn/apps
-    ${HDFS} -mkdir /user
-    ${HDFS} -mkdir /user/history
-#    ${HDFS} -chown mapred /user/history
-    ${HDFS} -mkdir /user/root
-    ${HDFS} -chmod -R 777 /user/root
-#    ${HDFS} -chown root /user/root
+    HDFS_DFS=sudo -E hdfs dfs
+    ${HDFS_DFS} -mkdir /tmp
+    ${HDFS_DFS} -chmod -R 1777 /tmp
+    ${HDFS_DFS} -mkdir /var
+    ${HDFS_DFS} -mkdir /var/log
+    ${HDFS_DFS} -chmod -R 1775 /var/log
+#    ${HDFS_DFS} -chown yarn:mapred /var/log
+    ${HDFS_DFS} -mkdir /tmp/hadoop-yarn
+#    ${HDFS_DFS} -chown -R mapred:mapred /tmp/hadoop-yarn
+    ${HDFS_DFS} -mkdir -p /tmp/hadoop-yarn/staging/history/done_intermediate
+#    ${HDFS_DFS} -chown -R mapred:mapred /tmp/hadoop-yarn/staging
+    ${HDFS_DFS} -chmod -R 1777 /tmp
+    ${HDFS_DFS} -mkdir -p /var/log/hadoop-yarn/apps
+    ${HDFS_DFS} -chmod -R 1777 /var/log/hadoop-yarn/apps
+#    ${HDFS_DFS} -chown yarn:mapred /var/log/hadoop-yarn/apps
+    ${HDFS_DFS} -mkdir /user
+    ${HDFS_DFS} -mkdir /user/history
+#    ${HDFS_DFS} -chown mapred /user/history
+    ${HDFS_DFS} -mkdir /user/root
+    ${HDFS_DFS} -chmod -R 777 /user/root
+#    ${HDFS_DFS} -chown root /user/root
 
     log "Verify directories"
-    ${HDFS} -ls -R /
+    ${HDFS_DFS} -ls -R /
 }
 
 function install_cdh5() {
