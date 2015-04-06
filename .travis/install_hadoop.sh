@@ -362,7 +362,7 @@ function install_hdp2() {
         /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
     fi
     log "Create HDFS directories"
-    HDFS_DFS=sudo -E hdfs dfs
+    local HDFS_DFS="sudo -E hdfs dfs"
     ${HDFS_DFS} -mkdir /tmp
     ${HDFS_DFS} -chmod -R 1777 /tmp
     ${HDFS_DFS} -mkdir /var
