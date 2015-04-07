@@ -14,8 +14,6 @@ import org.apache.hadoop.io.Text;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
@@ -79,13 +77,13 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
     Iterator<Text> iterOutRecords = outRecords.iterator();
     while (iterRecords.hasNext()) {
       assert iterSchemas.hasNext() && iterOutRecords.hasNext();
-      DatumWriter<GenericRecord> datumWriter =
-          new GenericDatumWriter<GenericRecord>(iterSchemas.next());
+      DatumWriter<IndexedRecord> datumWriter =
+          new GenericDatumWriter<IndexedRecord>(iterSchemas.next());
       EncoderFactory fact = EncoderFactory.get();
       ByteArrayOutputStream stream = new ByteArrayOutputStream();
       BinaryEncoder enc = fact.binaryEncoder(stream, null);
       try {
-        datumWriter.write((GenericData.Record) iterRecords.next(), enc);
+        datumWriter.write(iterRecords.next(), enc);
         enc.flush();
         stream.close();
       } catch (IOException e) {
