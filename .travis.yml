@@ -28,6 +28,12 @@ env:
     - HADOOPVERSION=2.6.0 HDFS_BACKEND=native
     - HADOOPVERSION=2.6.0 HDFS_BACKEND=jpype-bridged
     # -------------------------------------------------------------
+    # Hortonworks Distributions
+    # -------------------------------------------------------------
+    # HDP2.2
+    # - HADOOPVERSION=HDP2.2.0.0 HDFS_BACKEND=native    
+    # - HADOOPVERSION=HDP2.2.0.0 HDFS_BACKEND=jpype-bridged    
+    # -------------------------------------------------------------
     # Cloudera Distributions
     # -------------------------------------------------------------
     # CDH v4
