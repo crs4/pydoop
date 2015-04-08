@@ -260,18 +260,18 @@ class HadoopVersion(object):
                 and self.dist_version >= (4, 0, 0) and not self.dist_ext)
 
     def is_cdh_v5(self):
-        return (self.distribution == 'cdh'
-                and self.dist_version >= (5, 0, 0)
-                and self.dist_version < (6, 0, 0))
+        return (self.distribution == 'cdh' and
+                self.dist_version >= (5, 0, 0) and
+                self.dist_version < (6, 0, 0))
 
     def has_deprecated_bs(self):
-        return (self.distribution == 'cdh'
-                and self.dist_version[:2] >= (4, 3))
+        return (self.distribution == 'cdh' and
+                self.dist_version[:2] >= (4, 3))
 
     def has_security(self):
-        return ((self.distribution == 'cdh'
-                 and self.dist_version >= (3, 0, 0))
-                or self.main >= (0, 20, 203))
+        return ((self.distribution == 'cdh' and
+                 self.dist_version >= (3, 0, 0)) or
+                self.main >= (0, 20, 203))
 
     def has_variable_isplit_encoding(self):
         pf = PathFinder()
