@@ -257,8 +257,8 @@ class HadoopVersion(object):
         return pf.is_yarn()
 
     def is_cdh_mrv2(self):
-        return (self.distribution == 'cdh'
-                and self.dist_version >= (4, 0, 0) and not self.dist_ext)
+        return (self.distribution == 'cdh' and
+                self.dist_version >= (4, 0, 0) and not self.dist_ext)
 
     def is_cdh_v5(self):
         return (self.distribution == 'cdh' and
