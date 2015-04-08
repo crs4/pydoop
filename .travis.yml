@@ -10,62 +10,62 @@ env:
      # Apache Hadoop Distributions
      # -------------------------------------------------------------
      # HADOOP standard 1.*
-    # - HADOOPVERSION=1.0.4 HDFS_BACKEND=native
-    # - HADOOPVERSION=1.0.4 HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=1.0.4 HDFS_BACKEND=native
-    # - HADOOPVERSION=1.0.4 HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=1.1.2 HDFS_BACKEND=native
-    # - HADOOPVERSION=1.1.2 HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=1.2.1 HDFS_BACKEND=native
-    # - HADOOPVERSION=1.2.1 HDFS_BACKEND=jpype-bridged
-    #  # HADOOP standard 2.*
-    # - HADOOPVERSION=2.2.0 HDFS_BACKEND=native
-    # - HADOOPVERSION=2.2.0 HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=2.4.1 HDFS_BACKEND=native
-    # - HADOOPVERSION=2.4.1 HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=2.5.2 HDFS_BACKEND=native
-    # - HADOOPVERSION=2.5.2 HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=2.6.0 HDFS_BACKEND=native
-    # - HADOOPVERSION=2.6.0 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=native
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=native
+    - HADOOPVERSION=1.0.4 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.1.2 HDFS_BACKEND=native
+    - HADOOPVERSION=1.1.2 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=1.2.1 HDFS_BACKEND=native
+    - HADOOPVERSION=1.2.1 HDFS_BACKEND=jpype-bridged
+     # HADOOP standard 2.*
+    - HADOOPVERSION=2.2.0 HDFS_BACKEND=native
+    - HADOOPVERSION=2.2.0 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.4.1 HDFS_BACKEND=native
+    - HADOOPVERSION=2.4.1 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.5.2 HDFS_BACKEND=native
+    - HADOOPVERSION=2.5.2 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.6.0 HDFS_BACKEND=native
+    - HADOOPVERSION=2.6.0 HDFS_BACKEND=jpype-bridged
     # -------------------------------------------------------------
     # Hortonworks Distributions
     # -------------------------------------------------------------
     # HDP2.2
-    - HADOOPVERSION=HDP2.2.0.0 HDFS_BACKEND=native    
+    # - HADOOPVERSION=HDP2.2.0.0 HDFS_BACKEND=native    
     # - HADOOPVERSION=HDP2.2.0.0 HDFS_BACKEND=jpype-bridged    
     # -------------------------------------------------------------
     # Cloudera Distributions
     # -------------------------------------------------------------
     # CDH v4
-    # - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.3.0 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.3.0 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.3.0 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.3.0 YARN=true HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.4.0 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.4.0 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.4.0 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.4.0 YARN=true HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.5.0 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.5.0 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh4.5.0 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh4.5.0 YARN=true HDFS_BACKEND=jpype-bridged
-    # # CDH v5
-    # - HADOOPVERSION=cdh5.0.5 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh5.0.5 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh5.0.5 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh5.0.5 YARN=true HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh5.1.4 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh5.1.4 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh5.1.4 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh5.1.4 YARN=true HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh5.2.1 YARN=false HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh5.2.1 YARN=false HDFS_BACKEND=jpype-bridged
-    # - HADOOPVERSION=cdh5.2.1 YARN=true HDFS_BACKEND=native
-    # - HADOOPVERSION=cdh5.2.1 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.2.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.2.0 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.3.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.3.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.3.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.3.0 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.4.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.4.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.4.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.4.0 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.5.0 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.5.0 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh4.5.0 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh4.5.0 YARN=true HDFS_BACKEND=jpype-bridged
+    # CDH v5
+    - HADOOPVERSION=cdh5.0.5 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.0.5 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.0.5 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.0.5 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.1.4 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.1.4 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.1.4 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.1.4 YARN=true HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.2.1 YARN=false HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.2.1 YARN=false HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=cdh5.2.1 YARN=true HDFS_BACKEND=native
+    - HADOOPVERSION=cdh5.2.1 YARN=true HDFS_BACKEND=jpype-bridged
 
 
 python:
