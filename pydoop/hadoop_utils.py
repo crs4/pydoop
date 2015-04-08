@@ -188,7 +188,7 @@ class HadoopVersion(object):
         except ValueError:
             raise HadoopVersionError(self.__str)
 
-    if version_str.upper().find('CDH') > -1:
+        if version_str.upper().find('CDH') > -1:
             self.distribution = 'cdh'
             self.dist_version, self.dist_ext = \
                 self.__parse_rest(version[1])
@@ -199,9 +199,10 @@ class HadoopVersion(object):
             self.dist_ext = (version[1],)
         else:
             self.distribution = 'apache'
-            self.dist_version, self.dist_ext = \
-                ((), ()) if len(version) == 1 else \
-                             self.__parse_rest(version[1])
+            self.dist_version, self.dist_ext = ((), ())
+            if len(version) > 1:
+                self.dist_version, self.dist_ext = \
+                    self.__parse_rest(version[1])
         self.__tuple = (self.main + self.dist_version + self.dist_ext)
 
     def __parse_rest(self, rest_str):
