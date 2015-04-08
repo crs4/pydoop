@@ -134,7 +134,7 @@ def _hdp_hadoop_jars_v2(hadoop_home):
     dirs = []
     for ext in ['', '-hdfs', '-yarn', '-mapreduce']:
         p = hadoop_home + ext
-        dirs.extend([p, os.path.join(p, 'lib')]) 
+        dirs.extend([p, os.path.join(p, 'lib')])
     jars = _jars_from_dirs(dirs)
     return jars
 
@@ -149,12 +149,10 @@ class HadoopVersion(object):
     '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT', '2.0.0-mr1-cdh4.1.0',
     '2.6.0.2.2.0.0-2041'.
 
-    Hadoop distribution detection is based on heuristics. 
+    Hadoop distribution detection is based on heuristics.
     Currently known hadoop distributions: Apache, Cloudera, Hortonworks.
     The attribute 'distribution' will contains, respectively, the string value
-    'apache', 'cdh', 'hdp'. 
-
-    
+    'apache', 'cdh', 'hdp'.
 
     If the version string is not in the expected format, it raises
     ``HadoopVersionError``.  For consistency:
@@ -190,7 +188,7 @@ class HadoopVersion(object):
         except ValueError:
             raise HadoopVersionError(self.__str)
 
-	if version_str.upper().find('CDH') > -1:
+    if version_str.upper().find('CDH') > -1:
             self.distribution = 'cdh'
             self.dist_version, self.dist_ext = \
                 self.__parse_rest(version[1])
