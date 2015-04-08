@@ -272,7 +272,7 @@ class HadoopVersion(object):
 
     def has_security(self):
         return ((self.distribution == 'cdh'
-                 and self.dist_vesion >= (3, 0, 0))
+                 and self.dist_version >= (3, 0, 0))
                 or self.main >= (0, 20, 203))
 
     def has_variable_isplit_encoding(self):
