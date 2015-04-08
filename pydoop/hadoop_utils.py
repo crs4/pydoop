@@ -149,6 +149,13 @@ class HadoopVersion(object):
     '0.20.203.0', '0.20.2-cdh3u4', '1.0.4-SNAPSHOT', '2.0.0-mr1-cdh4.1.0',
     '2.6.0.2.2.0.0-2041'.
 
+    Hadoop distribution detection is based on heuristics. 
+    Currently known hadoop distributions: Apache, Cloudera, Hortonworks.
+    The attribute 'distribution' will contains, respectively, the string value
+    'apache', 'cdh', 'hdp'. 
+
+    
+
     If the version string is not in the expected format, it raises
     ``HadoopVersionError``.  For consistency:
 
@@ -182,21 +189,22 @@ class HadoopVersion(object):
             self.main = tuple(map(int, version[0].split(".")))
         except ValueError:
             raise HadoopVersionError(self.__str)
-        if len(version) > 1:  # not apache heuristics...
-            if len(self.main) == 7:  # hdp heuristics...
-                self.distribution = 'hdp'
-                self.dist_version = self.main[3:]
-                self.dist_ext = (version[1],)
-                self.main = self.main[:3]
-            else:
-                self.distribution = 'cdh'
-                self.dist_version, self.dist_ext = \
-                    self.__parse_rest(version[1])
+
+	if version_str.upper().find('CDH') > -1:
+            self.distribution = 'cdh'
+            self.dist_version, self.dist_ext = \
+                self.__parse_rest(version[1])
+        elif len(self.main) >= 7:
+            self.distribution = 'hdp'
+            self.dist_version = self.main[3:]
+            self.main = self.main[:3]
+            self.dist_ext = (version[1],)
         else:
             self.distribution = 'apache'
-            self.dist_version, self.dist_ext = (), ()
-        self.__tuple = (self.main + (self.distribution,) +
-                        self.dist_version, self.dist_ext)
+            self.dist_version, self.dist_ext = \
+                ((), ()) if len(version) == 1 else \
+                             self.__parse_rest(version[1])
+        self.__tuple = (self.main + self.dist_version + self.dist_ext)
 
     def __parse_rest(self, rest_str):
         # older CDH3 releases
@@ -235,6 +243,9 @@ class HadoopVersion(object):
                 assert cdh_version[0] == 3
                 cdh_version = cdh_version[0], 2, cdh_version[1]
         return cdh_version, tuple(rest[1:])
+
+    def is_apache(self):
+        return self.distribution == 'apache'
 
     def is_cloudera(self):
         return self.distribution == 'cdh'

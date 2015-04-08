@@ -86,8 +86,14 @@ def hadoop_version_info(hadoop_home=None):
     return _PATH_FINDER.hadoop_version_info(hadoop_home)
 
 
+def is_apache(hadoop_home=None):
+    return _PATH_FINDER.is_apache(hadoop_home)
+
 def is_cloudera(hadoop_home=None):
     return _PATH_FINDER.is_cloudera(hadoop_home)
+
+def is_hortonworks(hadoop_home=None):
+    return _PATH_FINDER.is_hortonworks(hadoop_home)
 
 
 def hadoop_conf(hadoop_home=None):
