@@ -151,7 +151,7 @@ class HadoopVersion(object):
 
     Hadoop distribution detection is based on heuristics.
     Currently known hadoop distributions: Apache, Cloudera, Hortonworks.
-    The attribute 'distribution' will contains, respectively, the string value
+    The attribute 'distribution' will contain, respectively, the string value
     'apache', 'cdh', 'hdp'.
 
     If the version string is not in the expected format, it raises
