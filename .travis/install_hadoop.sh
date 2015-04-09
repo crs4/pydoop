@@ -300,6 +300,93 @@ function install_cdh4() {
     return 0
 }
 
+function install_hdp2_ubuntu_packages() {
+    local VERSION="${1}"
+    local HRTWRKS_REPO=http://public-repo-1.hortonworks.com/HDP/ubuntu12/2.x
+    local HDP_LIST=${HRTWRKS_REPO}/GA/${VERSION}/hdp.list
+
+    log "Adding repository"
+    sudo -E wget -nv ${HDP_LIST} -O /etc/apt/sources.list.d/hdp.list
+    gpg --keyserver pgp.mit.edu --recv-keys B9733A7A07513CAD && gpg -a --export 07513CAD | sudo apt-key add -
+    sudo apt-get update
+    sudo -E apt-get install hadoop hadoop-hdfs libhdfs0 \
+            hadoop-yarn hadoop-mapreduce hadoop-client \
+            openssl libsnappy1 libsnappy-dev
+    }
+
+function install_hdp2() {
+    [ $# -eq 1 ] || error "Missing HadoopVersion"
+    local HadoopVersion="${1}"
+    local HRTWRKS_VER="${HadoopVersion##HDP}"
+    
+    log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
+    
+    install_hdp2_ubuntu_packages ${HRTWRKS_VER}
+    
+    if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
+        #local HadoopConfDir=/usr/hdp/2.2.0.0-2041/hadoop/conf
+        local HadoopConfDir=/etc/hadoop/conf
+        local HDP_BASE=/usr/hdp/current/
+        local HDP_NMND=${HDP_BASE}/hadoop-hdfs-namenode
+        local HDFS=${HDP_NMND}/../hadoop/bin/hdfs        
+        local HDFS_DAEMON=${HDP_NMND}/../hadoop/sbin/hadoop-daemon.sh
+        local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
+
+        log "Copying new conf in ${HadoopConfDir}"        
+        sudo -E cp ${PWD}/.travis/hadoop-2.6.0-conf/* ${HadoopConfDir}/
+        log "Current contents of ${HadoopConfDir}"
+        ls -lR ${HadoopConfDir}/
+        
+        log "Formatting the NameNode"
+        sudo -E ${HDFS} namenode -format
+        log "Start HDFS"
+        sudo -E ${HDFS_DAEMON} start namenode
+        sudo -E ${HDFS_DAEMON} start datanode
+        sudo -E ${YARN_DAEMON} start resourcemanager        
+        sudo -E ${YARN_DAEMON} start nodemanager
+    elif [ "$HadoopVersion" = "HDP2.1.5.0" ]; then
+        # Currently broken.
+        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"    
+        log "Adding mixing links"
+        ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-hdfs/
+        ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-yarn/
+    
+        log "Formatting the NameNode"
+        /usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf  namenode -format
+
+        log "Start HDFS"
+        /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
+        /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
+        log "Start yarn"    
+        /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start resourcemanager
+        /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
+    fi
+    log "Create HDFS directories"
+    local HDFS_DFS="sudo -E hdfs dfs"
+    ${HDFS_DFS} -mkdir /tmp
+    ${HDFS_DFS} -chmod -R 1777 /tmp
+    ${HDFS_DFS} -mkdir /var
+    ${HDFS_DFS} -mkdir /var/log
+    ${HDFS_DFS} -chmod -R 1775 /var/log
+#    ${HDFS_DFS} -chown yarn:mapred /var/log
+    ${HDFS_DFS} -mkdir /tmp/hadoop-yarn
+#    ${HDFS_DFS} -chown -R mapred:mapred /tmp/hadoop-yarn
+    ${HDFS_DFS} -mkdir -p /tmp/hadoop-yarn/staging/history/done_intermediate
+#    ${HDFS_DFS} -chown -R mapred:mapred /tmp/hadoop-yarn/staging
+    ${HDFS_DFS} -chmod -R 1777 /tmp
+    ${HDFS_DFS} -mkdir -p /var/log/hadoop-yarn/apps
+    ${HDFS_DFS} -chmod -R 1777 /var/log/hadoop-yarn/apps
+#    ${HDFS_DFS} -chown yarn:mapred /var/log/hadoop-yarn/apps
+    ${HDFS_DFS} -mkdir /user
+    ${HDFS_DFS} -mkdir /user/history
+#    ${HDFS_DFS} -chown mapred /user/history
+    ${HDFS_DFS} -mkdir /user/root
+    ${HDFS_DFS} -chmod -R 777 /user/root
+#    ${HDFS_DFS} -chown root /user/root
+
+    log "Verify directories"
+    ${HDFS_DFS} -ls -R /
+}
 
 function install_cdh5() {
     [ $# -eq 2 ] || error "Missing HadoopVersion and Yarn function argument"
@@ -417,6 +504,8 @@ if [[ "${HADOOPVERSION}" == *cdh4* ]]; then
     install_cdh4 "${HADOOPVERSION}" "${YARN}"
 elif [[ "${HADOOPVERSION}" == *cdh5* ]]; then
     install_cdh5 "${HADOOPVERSION}" "${YARN}"
+elif [[ "${HADOOPVERSION}" == *HDP2* ]]; then
+    install_hdp2 "${HADOOPVERSION}"
 else # else hadoop
     install_standard_hadoop "${HADOOPVERSION}"
 fi
