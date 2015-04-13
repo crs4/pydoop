@@ -66,6 +66,18 @@ class JobConf(dict):
       '1'
       >>> jc.get_int('a')
       1
+
+    .. warning::
+
+      For the most part, a JobConf object behaves like a :class:`dict`.
+      For backwards compatibility, however, there are two important exceptions:
+
+      #. objects are constructed from a ``[key1, value1, key2, value2,
+         ...]`` sequence
+
+      #. if ``k`` is not in ``jc``, ``jc.get(k)`` raises :exc:`RuntimeError`
+         instead of returning :obj:`None` (``jc.get(k, None)`` returns
+         :obj:`None` as in :class:`dict`).
     """
 
     def __init__(self, values):
