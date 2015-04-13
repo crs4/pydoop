@@ -58,6 +58,9 @@ In order to build and install Pydoop, you need the following software:
 * `Python <http://www.python.org>`_ version 2.7 (or 2.6 with
   backports [#]_)
 
+* `setuptools <https://pypi.python.org/pypi/setuptools>`_ version 3.3
+  or higher
+
 * either of the following:
 
   * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0.4, 1.1.2,
