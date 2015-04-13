@@ -2742,7 +2742,7 @@ tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, const char *path)
     jthrowable jthr;
     jobject jFS = (jobject)fs;
     jobject jPath;
-    tOffset blockSize;
+    jlong blockSize; // jlong & tOffset are defined as aliases of int64_t
     JNIEnv* env = getJNIEnv();
 
     if (env == NULL) {
@@ -2764,7 +2764,7 @@ tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, const char *path)
             "FileSystem#getDefaultBlockSize", path);
         return -1;
     }
-    return blockSize;
+    return (tOffset) blockSize;
 }
 
 
