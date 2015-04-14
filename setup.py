@@ -48,7 +48,7 @@ os.environ['OPT'] = ' '.join(
     _ for _ in get_config_var('OPT').strip().split() if _ not in _UNWANTED_OPTS
 )
 
-from distutils.core import setup, Extension
+from setuptools import setup, find_packages, Extension
 from distutils.command.build import build
 from distutils.command.clean import clean
 from distutils.errors import DistutilsSetupError, DistutilsOptionError
@@ -397,26 +397,18 @@ setup(
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
     download_url="https://pypi.python.org/pypi/pydoop",
+    # install_requires=[],  # (currently we have no hard Python deps)
     extras_require={
-        ':python_version=="2.6"': ['argparse'],
-        'tool': []
+        ':python_version=="2.6"': ['argparse', 'importlib'],
+        'avro': ["avro>=1.7.4"],
         },
-    packages=[
-        "pydoop",
-        "pydoop.hdfs",
-        "pydoop.hdfs.core",
-        "pydoop.hdfs.core.bridged",
-        "pydoop.app",
-        "pydoop.mapreduce",
-        "pydoop.utils",
-        "pydoop.utils.bridge",
-    ],
+    packages=find_packages(),
     package_data={"pydoop": [PROP_FN]},
     cmdclass={
         "build": BuildPydoop,
         "clean": Clean
     },
-    scripts=["scripts/pydoop"],
+    entry_points={'console_scripts': ['pydoop = pydoop.app.main:main']},
     platforms=["Linux"],
     ext_modules=EXTENSION_MODULES,
     license="Apache-2.0",
