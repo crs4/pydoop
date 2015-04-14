@@ -1,11 +1,9 @@
-.. _news:
-
-News
-====
+News Archive
+------------
 
 
 New in 1.0.0
-------------
+^^^^^^^^^^^^
 
  * Pydoop now features a brand new, more pythonic :ref:`MapReduce API <mr_api>`
  * Added built-in `Avro <http://avro.apache.org>`_ support (for now,
@@ -34,21 +32,21 @@ New in 1.0.0
 
 
 New in 0.12.0
--------------
+^^^^^^^^^^^^^
 
  * YARN is now fully supported
  * Added support for CDH 4.4.0 and CDH 4.5.0
 
 
 New in 0.11.1
--------------
+^^^^^^^^^^^^^
 
  * Added support for hadoop 2.2.0
  * Added support for hadoop 1.2.1
 
    
 New in 0.10.0
--------------
+^^^^^^^^^^^^^
 
  * Added support for CDH 4.3.0
 
@@ -66,7 +64,7 @@ New in 0.10.0
 
 
 New in 0.9.0
-------------
+^^^^^^^^^^^^
 
 * Added explicit support for:
 
@@ -82,13 +80,13 @@ New in 0.9.0
 
 
 New in 0.8.1
-------------
+^^^^^^^^^^^^
 
 * Fixed a problem that was breaking installation from PyPI via pip install
 
 
 New in 0.8.0
-------------
+^^^^^^^^^^^^
 
 * Added support for Apple OS X Mountain Lion
 * Added support for Hadoop 1.1.1
@@ -100,19 +98,19 @@ New in 0.8.0
 
 
 New in 0.7.0
-------------
+^^^^^^^^^^^^
 
 * Added Debian package
 
 
 New in 0.7.0-rc3
-----------------
+^^^^^^^^^^^^^^^^
 
 * Fixed a bug in the hdfs instance caching method
 
 
 New in 0.7.0-rc2
-----------------
+^^^^^^^^^^^^^^^^
 
 * Support for HDFS append open mode
 
@@ -121,7 +119,7 @@ New in 0.7.0-rc2
 
 
 New in 0.7.0-rc1
-----------------
+^^^^^^^^^^^^^^^^
 
 * Works with CDH4, with the following limitations:
 
@@ -149,14 +147,14 @@ New in 0.7.0-rc1
 
 
 New in 0.6.6
-------------
+^^^^^^^^^^^^
 
 Fixed a bug that was causing the pipes runner to incorrectly preprocess
 command line options.
 
 
 New in 0.6.4
-------------
+^^^^^^^^^^^^
 
 Fixed several bugs triggered by using a local fs as the default fs for
 Hadoop.  This happens when you set a ``file:`` path as the value of
@@ -171,7 +169,7 @@ Hadoop.  This happens when you set a ``file:`` path as the value of
 
 
 New in 0.6.0
-------------
+^^^^^^^^^^^^
 
 * The HDFS API features new high-level tools for easier manipulation
   of files and directories. See the :ref:`API docs <hdfs-api>` for
@@ -183,7 +181,7 @@ New in 0.6.0
 
 
 New in 0.5.0
-------------
+^^^^^^^^^^^^
 
 * Pydoop now works with Hadoop 1.0
 * Multiple versions of Hadoop can now be supported by the same

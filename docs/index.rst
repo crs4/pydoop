@@ -18,7 +18,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   news
+   news/index
    tutorial/index
    installation
    pydoop_script
