@@ -180,32 +180,35 @@ class PydoopSubmitter(object):
                 )
                 break
 
-    def __generate_pipes_code(self):
+    def _generate_pipes_code(self):
+        env = dict()
+        for e in ('LD_LIBRARY_PATH', 'PYTHONPATH'):
+            env[e] = ''
         lines = []
         if not self.args.no_override_env:
-            ld_path = os.environ.get('LD_LIBRARY_PATH', None)
-            pypath = os.environ.get('PYTHONPATH', '')
-        else:
-            ld_path = None
-            pypath = ''
+            env['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
+            env['PYTHONPATH'] = os.environ.get('PYTHONPATH', '')
         executable = self.args.python_program
+        if self.args.python_zip:
+            env['PYTHONPATH'] = ':'.join(self.args.python_zip + [env['PYTHONPATH']])
+        # Note that we have to explicitely put the working directory
+        # in the python path otherwise it will miss cached modules and
+        # packages.
+        env['PYTHONPATH'] = "${PWD}:" + env['PYTHONPATH']
+
         lines.append("#!/bin/bash")
         lines.append('""":"')
         if self.args.log_level == "DEBUG":
             lines.append("printenv 1>&2")
             lines.append("echo ${PWD} 1>&2")
             lines.append("ls -l  1>&2")
-        if ld_path:
-            lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
-        if self.args.python_zip:
-            pypath = ':'.join(self.args.python_zip + [pypath])
-        # Note that we have to explicitely put the working directory
-        # in the path otherwise it will miss cached modules and
-        # packages.
-        lines.append('export PYTHONPATH="${PWD}:%s:$PYTHONPATH"' % (pypath))
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
+        # set environment variables
+        for var, value in env.iteritems():
+            if value:
+                lines.append('export %s="%s"' % (var, value))
         if self.args.log_level == "DEBUG":
             lines.append("echo ${PYTHONPATH} 1>&2")
             lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
@@ -255,13 +258,13 @@ class PydoopSubmitter(object):
         self.logger.debug("remotes: %s", self.files_to_upload)
         if self.args.module:
             self.logger.debug(
-                'Generated pipes_code:\n\n %s', self.__generate_pipes_code()
+                'Generated pipes_code:\n\n %s', self._generate_pipes_code()
             )
         if not self.args.pretend:
             hdfs.mkdir(self.remote_wd)
             hdfs.chmod(self.remote_wd, "a+rx")
             self.logger.debug("created and chmod-ed: %s", self.remote_wd)
-            pipes_code = self.__generate_pipes_code()
+            pipes_code = self._generate_pipes_code()
             hdfs.dump(pipes_code, self.remote_exe)
             self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
             hdfs.chmod(self.remote_exe, "a+rx")
