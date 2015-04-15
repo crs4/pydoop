@@ -19,10 +19,8 @@
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 
 WHEEL_DIR=../../dist
-# FIXME -- this should be fixed to be an get from pypi
-# FIXME -- note the --pre flag in the pip command below
-PIP=pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR}
 SUBMIT_CMD=pydoop submit
+SETUPTOOLS_VERSION := 3.3
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
@@ -76,7 +74,8 @@ vowelcount.tgz:
 # don't use $(MAKE) -C ../.. wheel, top Makefile is only present in git repo
 pydoop.tgz:
 	cd ../..; python setup.py bdist_wheel --dist-dir=./dist; cd -
-	${PIP} -t .  pydoop
+	pip wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
+	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} -t .  pydoop
 	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*
 
