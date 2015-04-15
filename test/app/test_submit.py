@@ -142,6 +142,8 @@ class TestAppSubmit(unittest.TestCase):
         old_ld_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
 
         try:
+            # we set this variable for this test since it may not be set in
+            # the environment
             os.environ['LD_LIBRARY_PATH'] = '/test_path'
             code = self.submitter._generate_pipes_code()
             self.assertTrue('export PATH=' in code)
@@ -149,6 +151,39 @@ class TestAppSubmit(unittest.TestCase):
             self.assertTrue('export LD_LIBRARY_PATH="/test_path"' in code)
         finally:
             os.environ['LD_LIBRARY_PATH'] = old_ld_lib_path
+
+    def test_generate_pipes_code_no_override_ld_path(self):
+        args = self._gen_default_args()
+        args.no_override_ld_path = True
+        self.submitter.set_args(args)
+        old_ld_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
+
+        try:
+            os.environ['LD_LIBRARY_PATH'] = '/test_path'
+            code = self.submitter._generate_pipes_code()
+            self.assertTrue('export PYTHONPATH=' in code)
+            self.assertFalse('export LD_LIBRARY_PATH=' in code)
+        finally:
+            os.environ['LD_LIBRARY_PATH'] = old_ld_lib_path
+
+    def test_generate_pipes_code_no_override_path(self):
+        args = self._gen_default_args()
+        args.no_override_path = True
+        self.submitter.set_args(args)
+
+        code = self.submitter._generate_pipes_code()
+        self.assertTrue('export PYTHONPATH=' in code)
+        self.assertFalse('export PATH=' in code)
+
+    def test_generate_pipes_code_no_override_pythonpath(self):
+        args = self._gen_default_args()
+        args.no_override_pypath = True
+        self.submitter.set_args(args)
+
+        code = self.submitter._generate_pipes_code()
+        self.assertTrue('export PYTHONPATH="${PWD}:${PYTHONPATH}"' in code)
+        self.assertTrue('export PATH=' in code)
+
 
     def test_generate_pipes_code_with_set_env(self):
         args = self._gen_default_args()

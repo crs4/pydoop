@@ -199,10 +199,15 @@ class PydoopSubmitter(object):
         for e in ('LD_LIBRARY_PATH', 'PATH', 'PYTHONPATH'):
             env[e] = ''
         lines = []
-        if not self.args.no_override_env:
+        if not self.args.no_override_env and not self.args.no_override_ld_path:
             env['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
+        if not self.args.no_override_env and not self.args.no_override_path:
             env['PATH'] = os.environ.get('PATH', '')
+
+        if not self.args.no_override_env and not self.args.no_override_pypath:
             env['PYTHONPATH'] = os.environ.get('PYTHONPATH', '')
+        else:
+            env['PYTHONPATH'] = "${PYTHONPATH}"
 
         # set user-requested env variables
         for var, value in self.requested_env.iteritems():
@@ -400,6 +405,21 @@ def add_parser_common_arguments(parser):
         '--no-override-env', action='store_true',
         help=("Use the default python executable and environment instead of "
               "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
+    )
+    parser.add_argument(
+        '--no-override-ld-path', action='store_true',
+        help=("Use the default LD_LIBRARY_PATH instead of copying it from the "
+              "submitting client node")
+    )
+    parser.add_argument(
+        '--no-override-pypath', action='store_true',
+        help=("Use the default PYTHONPATH instead of copying it from the "
+              "submitting client node")
+    )
+    parser.add_argument(
+        '--no-override-path', action='store_true',
+        help=("Use the default PATH instead of copying it from the "
+              "submitting client node")
     )
     parser.add_argument(
         '--set-env', metavar="VAR=VALUE", type=str, action="append",
