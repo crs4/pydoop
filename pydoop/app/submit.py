@@ -225,8 +225,8 @@ class PydoopSubmitter(object):
         lines.append('""":"')
         if self.args.log_level == "DEBUG":
             lines.append("printenv 1>&2")
-            lines.append("echo ${PWD} 1>&2")
-            lines.append("ls -l  1>&2")
+            lines.append("echo PWD=${PWD} 1>&2")
+            lines.append("echo ls -l; ls -l  1>&2")
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
@@ -236,15 +236,20 @@ class PydoopSubmitter(object):
                 self.logger.debug("Setting task's env variable %s=%s", var, value)
                 lines.append('export %s="%s"' % (var, value))
         if self.args.log_level == "DEBUG":
-            lines.append("echo ${PATH} 1>&2")
-            lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
-            lines.append("echo ${PYTHONPATH} 1>&2")
-            lines.append("echo ${HOME} 1>&2")
-        lines.append('exec "%s" -u "$0" "$@"' % executable)
+            lines.append("echo PATH=${PATH} 1>&2")
+            lines.append("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} 1>&2")
+            lines.append("echo PYTHONPATH=${PYTHONPATH} 1>&2")
+            lines.append("echo HOME=${HOME} 1>&2")
+            lines.append('echo "executable is $(type -P %s)" 1>&2' % executable)
+        cmd = 'exec "%s" -u "$0" "$@"' % executable
+        if self.args.log_level == 'DEBUG':
+            lines.append("echo cmd to execute: %s" % cmd)
+        lines.append(cmd)
         lines.append('":"""')
         if self.args.log_level == "DEBUG":
             lines.append('import sys')
             lines.append('sys.stderr.write("%r\\n" % sys.path)')
+            lines.append('sys.stderr.write("%s\\n" % sys.version)')
         lines.append('import %s as module' % self.args.module)
         lines.append('module.%s()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
