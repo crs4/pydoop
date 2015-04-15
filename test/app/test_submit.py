@@ -34,6 +34,12 @@ class Args(object):
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
 
+    def __getattr__(self, _):
+        """
+        If we don't have the requested attribute return None.
+        """
+        return None
+
 
 class TestAppSubmit(unittest.TestCase):
 
@@ -49,7 +55,9 @@ class TestAppSubmit(unittest.TestCase):
             no_override_env=False,
             no_override_home=False,
             python_program='python',
-            python_zip=[],
+            output="output_path",
+            job_name="job_name",
+            num_reducers=0,
             )
 
     def test_help(self):
@@ -128,8 +136,9 @@ class TestAppSubmit(unittest.TestCase):
         [args, unknown] = parser.parse_known_args(argv)
         self.assertEqual(args.module, '')
 
-    def test_generate_pipes_env_code(self):
-        self.submitter.args = self._gen_default_args()
+    def test_generate_pipes_code_env(self):
+        args = self._gen_default_args()
+        self.submitter.set_args(args)
         old_ld_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
 
         try:
@@ -141,15 +150,52 @@ class TestAppSubmit(unittest.TestCase):
         finally:
             os.environ['LD_LIBRARY_PATH'] = old_ld_lib_path
 
+    def test_generate_pipes_code_with_set_env(self):
+        args = self._gen_default_args()
+        args.set_env = ["PATH=/my/custom/path"]
+        self.submitter.set_args(args)
+        old_ld_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
+
+        try:
+            os.environ['LD_LIBRARY_PATH'] = '/test_path'
+            code = self.submitter._generate_pipes_code()
+            self.assertTrue('export PATH="/my/custom/path"' in code)
+            self.assertTrue('export PYTHONPATH=' in code)
+            self.assertTrue('export LD_LIBRARY_PATH="/test_path"' in code)
+        finally:
+            os.environ['LD_LIBRARY_PATH'] = old_ld_lib_path
+
     def test_generate_code_no_env_override(self):
-        self.submitter.args = self._gen_default_args()
-        self.submitter.args.no_override_env = True
+        args = self._gen_default_args()
+        args.no_override_env = True
+        self.submitter.set_args(args)
+
         code = self.submitter._generate_pipes_code()
         self.assertFalse('export PATH=' in code)
         self.assertFalse('export LD_LIBRARY_PATH="/test_path"' in code)
         # PYTHONPATH should still be there because we add the hadoop working directory
         self.assertTrue('export PYTHONPATH=' in code)
 
+    def test_generate_code_no_env_override_with_set_env(self):
+        args = self._gen_default_args()
+        args.no_override_env = True
+        args.set_env = ["PATH=/my/custom/path"]
+        self.submitter.set_args(args)
+
+        code = self.submitter._generate_pipes_code()
+
+        self.assertTrue('export PATH="/my/custom/path"' in code)
+        self.assertFalse('export LD_LIBRARY_PATH="/test_path"' in code)
+        # PYTHONPATH should still be there because we add the hadoop working directory
+        self.assertTrue('export PYTHONPATH=' in code)
+
+
+    def test_env_arg_to_dict(self):
+        env_arg = [ 'var1=value1', ' var2 = value2 ', 'var3 = str with = sign' ]
+        d = self.submitter._env_arg_to_dict(env_arg)
+        self.assertEquals('value1', d['var1'])
+        self.assertEquals('value2', d['var2'])
+        self.assertEquals('str with = sign', d['var3'])
 
 
 def suite():

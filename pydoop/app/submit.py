@@ -72,6 +72,7 @@ class PydoopSubmitter(object):
             'bl.libhdfs.opts': '-Xmx48m'
         }
         self.args = None
+        self.requested_env = dict()
         self.remote_wd = None
         self.remote_module = None
         self.remote_module_bn = None
@@ -112,6 +113,18 @@ class PydoopSubmitter(object):
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
 
+    @staticmethod
+    def _env_arg_to_dict(set_env_list):
+        retval = dict()
+        for item in set_env_list:
+            try:
+                name, value = item.split('=', 1)
+                retval[name.strip()] = value.strip()
+            except ValueError:
+                raise RuntimeError("Bad syntax in env variable argument '%s'" % item)
+        return retval
+
+
     def set_args(self, args, unknown_args=None):
         """
         Configure job, based on the arguments provided.
@@ -139,6 +152,7 @@ class PydoopSubmitter(object):
         self.properties.update(dict(args.job_conf or []))
         self.__set_files_to_cache(args)
         self.__set_archives_to_cache(args)
+        self.requested_env = self._env_arg_to_dict(args.set_env or [])
         self.args = args
         self.unknown_args = unknown_args
 
@@ -189,6 +203,11 @@ class PydoopSubmitter(object):
             env['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
             env['PATH'] = os.environ.get('PATH', '')
             env['PYTHONPATH'] = os.environ.get('PYTHONPATH', '')
+
+        # set user-requested env variables
+        for var, value in self.requested_env.iteritems():
+            env[var] = value
+
         executable = self.args.python_program
         if self.args.python_zip:
             env['PYTHONPATH'] = ':'.join(self.args.python_zip + [env['PYTHONPATH']])
@@ -209,6 +228,7 @@ class PydoopSubmitter(object):
         # set environment variables
         for var, value in env.iteritems():
             if value:
+                self.logger.debug("Setting task's env variable %s=%s", var, value)
                 lines.append('export %s="%s"' % (var, value))
         if self.args.log_level == "DEBUG":
             lines.append("echo ${PATH} 1>&2")
@@ -380,6 +400,11 @@ def add_parser_common_arguments(parser):
         '--no-override-env', action='store_true',
         help=("Use the default python executable and environment instead of "
               "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
+    )
+    parser.add_argument(
+        '--set-env', metavar="VAR=VALUE", type=str, action="append",
+        help=("Set environment variables for the tasks. Setting a variable "
+              "to '' causes it not be set by Pydoop.")
     )
     parser.add_argument(
         '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
