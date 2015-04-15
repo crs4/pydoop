@@ -37,8 +37,16 @@ import os
 import glob
 import shutil
 import subprocess
+
+SETUPTOOLS_MIN_VER = '3.3'
+
 import setuptools
+from pkg_resources import parse_version  # included in setuptools
 print 'using setuptools version', setuptools.__version__
+if parse_version(setuptools.__version__) < parse_version(SETUPTOOLS_MIN_VER):
+    raise RuntimeError(
+        'setuptools minimum required version: %s' % SETUPTOOLS_MIN_VER
+    )
 
 # bug: http://bugs.python.org/issue1222585
 # workaround: http://stackoverflow.com/questions/8106258
@@ -397,7 +405,7 @@ setup(
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
     download_url="https://pypi.python.org/pypi/pydoop",
-    # install_requires=[],  # (currently we have no hard Python deps)
+    install_requires=['setuptools>=%s' % SETUPTOOLS_MIN_VER],
     extras_require={
         ':python_version=="2.6"': ['argparse', 'importlib'],
         'avro': ["avro>=1.7.4"],
