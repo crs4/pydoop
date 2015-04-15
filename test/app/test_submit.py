@@ -22,14 +22,35 @@ import tempfile
 import os
 
 import pydoop.app.main as app
+from pydoop.app.submit import PydoopSubmitter
 import re
 
 
 def nop(x=None):
     pass
 
+class Args(object):
+    def __init__(self, **kwargs):
+        for k, v in kwargs.iteritems():
+            setattr(self, k, v)
+
 
 class TestAppSubmit(unittest.TestCase):
+
+    def setUp(self):
+        self.submitter = PydoopSubmitter()
+
+    @staticmethod
+    def _gen_default_args():
+        return Args(
+            entry_point='__main__',
+            log_level='INFO',
+            module='the_module',
+            no_override_env=False,
+            no_override_home=False,
+            python_program='python',
+            python_zip=[],
+            )
 
     def test_help(self):
         parser = app.make_parser()
@@ -107,12 +128,32 @@ class TestAppSubmit(unittest.TestCase):
         [args, unknown] = parser.parse_known_args(argv)
         self.assertEqual(args.module, '')
 
+    def test_generate_pipes_env_code(self):
+        self.submitter.args = self._gen_default_args()
+        old_ld_lib_path = os.environ.get('LD_LIBRARY_PATH', '')
+
+        try:
+            os.environ['LD_LIBRARY_PATH'] = '/test_path'
+            code = self.submitter._generate_pipes_code()
+            self.assertTrue('export PATH=' in code)
+            self.assertTrue('export PYTHONPATH=' in code)
+            self.assertTrue('export LD_LIBRARY_PATH="/test_path"' in code)
+        finally:
+            os.environ['LD_LIBRARY_PATH'] = old_ld_lib_path
+
+    def test_generate_code_no_env_override(self):
+        self.submitter.args = self._gen_default_args()
+        self.submitter.args.no_override_env = True
+        code = self.submitter._generate_pipes_code()
+        self.assertFalse('export PATH=' in code)
+        self.assertFalse('export LD_LIBRARY_PATH="/test_path"' in code)
+        # PYTHONPATH should still be there because we add the hadoop working directory
+        self.assertTrue('export PYTHONPATH=' in code)
+
+
 
 def suite():
-    suite_ = unittest.TestSuite()
-    suite_.addTest(TestAppSubmit('test_help'))
-    suite_.addTest(TestAppSubmit('test_conf_file'))
-    suite_.addTest(TestAppSubmit('test_empty_param'))
+    suite_ = unittest.TestLoader().loadTestsFromTestCase(TestAppSubmit)
     return suite_
 
 
