@@ -18,9 +18,9 @@ regarding other Linux distributions, we expect Pydoop to work
 Apple OS X
 ..........
 
-Pydoop has been tested on OsX 10.9 (Maverick) and OsX 10.10 (Yosemite). First
-install the `Homebrew <http://brew.sh/>`_ version of python and then follow the
-instructions below.
+Pydoop has been tested on OS X 10.9 (Maverick) and OS X 10.10
+(Yosemite).  Install the `Homebrew <http://brew.sh/>`_ version of
+Python, then follow the instructions below.
 
 
 FreeBSD
@@ -64,16 +64,22 @@ In order to build and install Pydoop, you need the following software:
 * either of the following:
 
   * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0.4, 1.1.2,
-    1.2.1, 2.2.0, 2.4.1, 2.5.2 and 2.6.0
+    1.2.1, 2.2.0, 2.4.1, 2.5.2 or 2.6.0
 
   * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_
-    version 4 and 5 installed from dist-specific packages or
+    version 4 or 5 installed from dist-specific packages or
     Cloudera Manager parcels (no tarball)
+
+  * `HDP <http://hortonworks.com/hdp/>`_ 2.2
 
 * `OpenSSL <http://www.openssl.org>`_
 
-If you want to install the optional JPype backend for HDFS, you also
-need `JPype <http://jpype.sourceforge.net/>`_.
+**Optional:**
+
+* `JPype <http://jpype.sourceforge.net/>`_ to build the alternate HDFS backend
+
+* `Avro <https://avro.apache.org/>`_ Python implementation to enable
+  :ref:`avro_io`
 
 These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes

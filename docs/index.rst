@@ -3,22 +3,54 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Pydoop Documentation
-====================
+**Pydoop** is a Python interface to `Hadoop
+<http://hadoop.apache.org>`_ that allows you to write MapReduce
+applications in pure Python:
 
-Welcome to the documentation for Pydoop |release|.  Pydoop is a
-package that provides a Python API for `Hadoop
-<http://hadoop.apache.org>`_.  To get started, read the :ref:`tutorial
-<tutorial>`.
+.. code-block:: python
+
+  import pydoop.mapreduce.api as api
+
+  class Mapper(api.Mapper):
+      def map(self, context):
+          words = context.value.split()
+          for w in words:
+              context.emit(w, 1)
+
+  class Reducer(api.Reducer):
+      def reduce(self, context):
+          s = sum(context.values)
+          context.emit(context.key, s)
+
+Pydoop offers several features not commonly found in other Python
+libraries for Hadoop:
+
+* a rich :ref:`HDFS API <hdfs_api_tutorial>`;
+
+* a :ref:`MapReduce API <api_tutorial>` that allows to write pure
+  Python record readers / writers, partitioners and combiners;
+
+* transparent :ref:`Avro (de)serialization <avro_io>`;
+
+* easy :ref:`installation-free <self_contained>` usage;
+
+Pydoop enables MapReduce programming via a pure (except for a
+performance-critical serialization section) Python client for Hadoop
+Pipes, and HDFS access through an extension module based on `libhdfs
+<https://hadoop.apache.org/docs/r2.6.0/hadoop-project-dist/hadoop-hdfs/LibHdfs.html>`_.
+
+To get started, read the :ref:`tutorial <tutorial>`.  Full docs,
+including :ref:`installation instructions <installation>`, are listed
+below.
 
 
 Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   news
+   news/index
    tutorial/index
    installation
    pydoop_script
@@ -27,40 +59,7 @@ Contents
    examples/index
    self_contained
    ideas_list
-
-
-How to Cite
-===========
-
-Pydoop is developed and maintained by researchers at `CRS4
-<http://www.crs4.it>`_ -- Distributed Computing group.  If you use
-Pydoop as part of your research work, please cite `the HPDC 2010 paper
-<http://dx.doi.org/10.1145/1851476.1851594>`_.
-
-**Plain text**::
-
-  S. Leo and G. Zanetti.  Pydoop: a Python MapReduce and HDFS API for
-  Hadoop.  In Proceedings of the 19th ACM International Symposium on
-  High Performance Distributed Computing, 819-825, 2010.
-
-**BibTeX**::
-
-  @inproceedings{Leo:2010:PPM:1851476.1851594,
-   author = {Leo, Simone and Zanetti, Gianluigi},
-   title = {{Pydoop: a Python MapReduce and HDFS API for Hadoop}},
-   booktitle = {{Proceedings of the 19th ACM International Symposium on High Performance Distributed Computing}},
-   series = {HPDC '10},
-   year = {2010},
-   isbn = {978-1-60558-942-8},
-   location = {Chicago, Illinois},
-   pages = {819--825},
-   numpages = {7},
-   url = {http://doi.acm.org/10.1145/1851476.1851594},
-   doi = {10.1145/1851476.1851594},
-   acmid = {1851594},
-   publisher = {ACM},
-   address = {New York, NY, USA},
-  } 
+   how_to_cite
 
 
 Indices and Tables
