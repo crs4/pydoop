@@ -182,11 +182,12 @@ class PydoopSubmitter(object):
 
     def _generate_pipes_code(self):
         env = dict()
-        for e in ('LD_LIBRARY_PATH', 'PYTHONPATH'):
+        for e in ('LD_LIBRARY_PATH', 'PATH', 'PYTHONPATH'):
             env[e] = ''
         lines = []
         if not self.args.no_override_env:
             env['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
+            env['PATH'] = os.environ.get('PATH', '')
             env['PYTHONPATH'] = os.environ.get('PYTHONPATH', '')
         executable = self.args.python_program
         if self.args.python_zip:
@@ -210,8 +211,9 @@ class PydoopSubmitter(object):
             if value:
                 lines.append('export %s="%s"' % (var, value))
         if self.args.log_level == "DEBUG":
-            lines.append("echo ${PYTHONPATH} 1>&2")
+            lines.append("echo ${PATH} 1>&2")
             lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
+            lines.append("echo ${PYTHONPATH} 1>&2")
             lines.append("echo ${HOME} 1>&2")
         lines.append('exec "%s" -u "$0" "$@"' % executable)
         lines.append('":"""')
