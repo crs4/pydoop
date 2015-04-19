@@ -11,6 +11,11 @@ su ${HDFS_USER} -c "${HADOOP_HOME}/bin/hdfs --config ${HADOOP_CONF_DIR} namenode
 # we should actually check that the namenode is up ...
 python /tmp/zk_set.py namenode up
 
-su ${HDFS_USER} -c "${HADOOP_HOME}/bin/hdfs --config ${HADOOP_CONF_DIR} namenode 2>&1 >/tmp/logs/namenode.out"
+su - ${HDFS_USER} -p -c "${HADOOP_HOME}/sbin/hadoop-daemon.sh --config ${HADOOP_CONF_DIR} start namenode"
 
+# we should actually check that the namenode is up ...
+python /tmp/zk_set.py namenode up
 
+echo "log is ${HDFS_LOG_DIR}/*namenode-${HOSTNAME}.out"
+
+tail -f ${HDFS_LOG_DIR}/*namenode-${HOSTNAME}.out

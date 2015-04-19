@@ -32,13 +32,13 @@ def generate_core_site(fname):
 
 def generate_hdfs_site(fname):
     generate_xml_conf_file(fname, (
-        ('hadoop.tmp.dir', '/tmp'),
+        ('hadoop.tmp.dir', os.environ['HADOOP_TMP_DIR']),
         ('dfs.replication', '1'),
-#        ('dfs.namenode.name.dir', 'file://' + os.environ['DFS_NAME_DIR']),
-#        ('dfs.datanode.data.dir', 'file://' + os.environ['DFS_DATA_DIR']),
-#        ('dfs.namenode.checkpoint.dir', os.environ['DFS_CHECKPOINT_DIR']),
-#        ('dfs.namenode.checkpoint.edits.dir',
-#         os.environ['DFS_CHECKPOINT_DIR']),
+        ('dfs.namenode.name.dir', 'file://' + os.environ['DFS_NAME_DIR']),
+        ('dfs.datanode.data.dir', 'file://' + os.environ['DFS_DATA_DIR']),
+        ('dfs.namenode.checkpoint.dir', os.environ['DFS_CHECKPOINT_DIR']),
+        ('dfs.namenode.checkpoint.edits.dir',
+            os.environ['DFS_CHECKPOINT_DIR']),
         ))
 
 
@@ -51,7 +51,7 @@ def generate_yarn_site(fname):
         # ('yarn.nodemanager.log-dirs',
         #     'file://' + os.environ['YARN_LOCAL_LOG_DIR']),
         ('yarn.nodemanager.remote-app-log-dir', 'logs'),
-#            os.environ['YARN_REMOTE_APP_LOG_DIR']),
+        #     os.environ['YARN_REMOTE_APP_LOG_DIR']),
         ('yarn.log-aggregation-enable', 'true'),
         ('yarn.log-aggregation.retain-seconds', '360000'),
         ('yarn.log-aggregation.retain-check-interval-seconds', '360'),

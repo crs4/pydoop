@@ -53,7 +53,8 @@ ENV YARN_USER yarn
 ENV MAPRED_USER mapred
 
 ENV HDP_DATA_ROOT /data/hadoop
-ENV LOG_DIR ${HDP_DATA_ROOT}/log
+ENV LOG_DIR /tmp/logs
+ENV HADOOP_TMP_DIR /tmp
 
 ENV DFS_NAME_DIR ${HDP_DATA_ROOT}/hdfs/nn
 ENV DFS_DATA_DIR ${HDP_DATA_ROOT}/hdfs/dn
@@ -133,4 +134,3 @@ RUN python2.7 /tmp/generate_conf_files.py ${HADOOP_CONF_DIR}
 ENV HADOOP_HOME /opt/hadoop
 ENV PATH ${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:$PATH
 
-RUN mkdir /tmp/logs && chmod 1777 /tmp/logs
