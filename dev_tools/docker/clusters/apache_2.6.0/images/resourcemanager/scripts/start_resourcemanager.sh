@@ -4,6 +4,8 @@ export YARN_LOG_DIR=${YARN_LOG_DIR}
 export HADOOP_PID_DIR=${HDFS_PID_DIR}
 export YARN_OPTS=''
 
+export HADOOP_MAPRED_LOG_DIR=${YARN_LOG_DIR}
+
 # YARN_OPTS="$YARN_OPTS -Dhadoop.log.dir=$YARN_LOG_DIR"
 # YARN_OPTS="$YARN_OPTS -Dyarn.log.dir=$YARN_LOG_DIR"
 # YARN_OPTS="$YARN_OPTS -Dhadoop.log.file=$YARN_LOGFILE"
@@ -17,6 +19,8 @@ export YARN_OPTS=''
 python /tmp/zk_wait.py resourcemanager
 
 su - ${YARN_USER} -p -c "${HADOOP_HOME}/sbin/yarn-daemon.sh --config $HADOOP_CONF_DIR start resourcemanager"
+
+# su - ${MAPRED_USER} -p -c "${HADOOP_HOME}/sbin/mr-jobhistory-daemon.sh --config ${HADOOP_CONF_DIR} start historyserver"
 
 # we should actually check that the resourcemanager is up ...
 python /tmp/zk_set.py resourcemanager up

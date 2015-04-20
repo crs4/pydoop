@@ -2,8 +2,24 @@ Apache 2.6.0 Docker Cluster
 ===========================
 
 
+<property>
+<name>yarn.nodemanager.remote-app-log-dir</name>
+<value>/tmp/logs</value>
+<source>yarn-default.xml</source>
+</property>
 
 
+<property>
+<name>yarn.nodemanager.log-dirs</name>
+<value>${yarn.log.dir}/userlogs</value>
+<source>yarn-default.xml</source>
+</property>
+
+<property>
+<name>yarn.nodemanager.remote-app-log-dir-suffix</name>
+<value>logs</value>
+<source>yarn-default.xml</source>
+</property>
 
 
 How to use this docker cluster
@@ -16,13 +32,11 @@ bash$ ../scripts/start_cluster.sh apache_260
 bash$ 
 
 
- scp -P 2222 run_client.sh root@localhost:
+scp -P 2222 run_client.sh root@localhost:
 scp -P 2222 run_client.sh root@localhost:
 ssh -p 2222 root@localhost
 
-zag@pflip apache_2.6.0 (docker)]$ ssh -p 2222 root@localhost
-root@localhost's password: 
-Permission denied, please try again.
+[zag@pflip-w apache_2.6.0 (docker_cluster)]$ ssh -p 2222 root@localhost
 root@localhost's password: 
 Linux minas-morgul 3.18.7-gentoo #1 SMP Mon Feb 23 17:39:58 PST 2015 x86_64
 
@@ -32,11 +46,16 @@ individual files in /usr/share/doc/*/copyright.
 
 Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
 permitted by applicable law.
-root@client:~# bash ./run_client.sh 
+Last login: Mon Apr 20 09:00:14 2015 from 172.17.42.1
+root@client:~# history
+    1  ls
+    2  bash ./run_client.sh 
+    3  cat run_client.sh 
+    4  su - aen -c '/bin/bash ./run_test_jar.sh'
+    5  history
 
 
 explain why we share /usr/local and how we use the client.
-
 
 
 Boostrap strategy

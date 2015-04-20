@@ -48,8 +48,13 @@ def generate_yarn_site(fname):
         ('yarn.nodemanager.aux-services', 'mapreduce_shuffle'),
         ('yarn.nodemanager.aux-services.mapreduce.shuffle.class',
             'org.apache.hadoop.mapred.ShuffleHandler'),
+        # seconds to delay before deleting application
+        # localized logs and files. > 0 if debugging.
+        ('yarn.nodemanager.delete.debug-delay-sec',
+            '600'),
         # ('yarn.nodemanager.log-dirs',
         #     'file://' + os.environ['YARN_LOCAL_LOG_DIR']),
+        ('yarn.log.dir', os.environ['YARN_LOG_DIR']),
         ('yarn.nodemanager.remote-app-log-dir', 'logs'),
         #     os.environ['YARN_REMOTE_APP_LOG_DIR']),
         ('yarn.log-aggregation-enable', 'true'),
