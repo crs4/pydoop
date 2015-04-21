@@ -20,6 +20,22 @@ HADOOP_BIN=${HADOOP_HOME}/bin
 su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -mkdir -p /tmp"
 su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -chmod -R 1777 /tmp"
 
+echo "Creating /tmp/hadoop-yarn (owner ${MAPRED_USER}:${HADOOP_GROUP})"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -mkdir -p /tmp/hadoop-yarn/staging"
+#su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -mkdir -p /tmp/hadoop-yarn/staging/history/tmp"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -chown -R ${MAPRED_USER}:${HADOOP_GROUP} /tmp/hadoop-yarn"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -chmod -R 1777 /tmp/hadoop-yarn"
+
+
+echo "Creating ${MAPRED_JH_INTERMEDIATE_DONE_DIR}"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -mkdir -p ${MAPRED_JH_INTERMEDIATE_DONE_DIR}"
+echo "Creating ${MAPRED_JH_DONE_DIR}"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -mkdir -p ${MAPRED_JH_DONE_DIR}"
+echo "Setting ownership (${MAPRED_USER}:${HADOOP_GROUP}) and permissions for ${MAPRED_JH_ROOT_DIR}"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -chown -R ${MAPRED_USER}:${HADOOP_GROUP} ${MAPRED_JH_ROOT_DIR}"
+su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -chmod -R 1777 ${MAPRED_JH_ROOT_DIR}"
+
+
 su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -mkdir -p /user/${UNPRIV_USER}"
 su ${HDFS_USER} -c "${HADOOP_BIN}/hdfs dfs -chown ${UNPRIV_USER} /user/${UNPRIV_USER}"
 
