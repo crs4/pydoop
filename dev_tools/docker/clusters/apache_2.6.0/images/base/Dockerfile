@@ -74,9 +74,9 @@ ENV YARN_REMOTE_APP_LOG_DIR   /app-logs
 ENV MAPRED_LOG_DIR   ${LOG_DIR_ROOT}/mapred
 ENV MAPRED_PID_DIR   ${HDP_DATA_ROOT}/pid/mapred
 
-
-ENV MAPRED_JH_INTERMEDIATE_DONE_DIR /mr-history/tmp
-ENV MAPRED_JH_DONE_DIR /mr-history/done
+ENV MAPRED_JH_ROOT_DIR /mr-history
+ENV MAPRED_JH_INTERMEDIATE_DONE_DIR ${MAPRED_JH_ROOT_DIR}/tmp
+ENV MAPRED_JH_DONE_DIR ${MAPRED_JH_ROOT_DIR}/done
 
 #----------------------------------------------------------
 
