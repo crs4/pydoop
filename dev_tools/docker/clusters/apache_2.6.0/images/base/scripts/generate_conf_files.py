@@ -54,13 +54,13 @@ def generate_yarn_site(fname):
         # localized logs and files. > 0 if debugging.
         ('yarn.nodemanager.delete.debug-delay-sec', '600'),
         ('yarn.nodemanager.log-dirs',
-             'file://' + os.environ['YARN_LOCAL_LOG_DIR']),
+            'file://' + os.environ['YARN_LOCAL_LOG_DIR']),
         ('yarn.log.dir', os.environ['YARN_LOG_DIR']),
         ('yarn.nodemanager.remote-app-log-dir', 'logs'),
         #     os.environ['YARN_REMOTE_APP_LOG_DIR']),
         ('yarn.log-aggregation-enable', 'true'),
-        #('yarn.log-aggregation.retain-seconds', '360000'),
-        #('yarn.log-aggregation.retain-check-interval-seconds', '360'),
+        # ('yarn.log-aggregation.retain-seconds', '360000'),
+        # ('yarn.log-aggregation.retain-check-interval-seconds', '360'),
         # ('yarn.log.server.url', 'http://historyserver:19888'),
         ))
 
@@ -77,15 +77,14 @@ def generate_mapred_site(fname):
         # History Server
         ('mapreduce.jobhistory.address', 'historyserver:10020'),
         ('mapreduce.jobhistory.webapp.address', 'historyserver:19888'),
-        ('mapreduce.jobhistory.intermediate-done-dir', os.environ['MAPRED_JH_INTERMEDIATE_DONE_DIR']),
+        ('mapreduce.jobhistory.intermediate-done-dir',
+            os.environ['MAPRED_JH_INTERMEDIATE_DONE_DIR']),
         ('mapreduce.jobhistory.done-dir', os.environ['MAPRED_JH_DONE_DIR']),
         ))
 
 
 def generate_capacity_scheduler(fname):
     generate_xml_conf_file(fname, (
-        #('yarn.scheduler.capacity.maximum-applications', '10000'),
-        #('yarn.scheduler.capacity.maximum-am-resource-percent', '0.1'),
         ('yarn.scheduler.capacity.resource-calculator',
          'org.apache.hadoop.yarn.util.resource.DefaultResourceCalculator'),
         ('yarn.scheduler.capacity.root.queues', 'default'),

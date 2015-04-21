@@ -9,7 +9,8 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# FIXME this will break if our name is a substring of the hosts we are linked to.
+# FIXME this will break if our name is a substring of the hosts we are linked
+# to.
 def etc_updated():
     hostname = platform.node()
     logger.info('Waiting for /etc/hosts to update on %s', hostname)

@@ -9,8 +9,9 @@ logging.basicConfig()
 logger = logging.getLogger('share_etc_hosts')
 logger.setLevel(logging.DEBUG)
 
+
 class App(object):
-    def __init__(self, compose_group_name):        
+    def __init__(self, compose_group_name):
         if platform.system() == 'Darwin':
             docker_port = "2376"
             docker_host = os.environ['DOCKER_HOST_IP']
@@ -18,7 +19,8 @@ class App(object):
             docker_base_url = "https://" + docker_host + ":" + docker_port
             docker_cert = os.path.join(docker_cert_path, 'cert.pem')
             docker_key = os.path.join(docker_cert_path, 'key.pem')
-            tls_config = TLSConfig(client_cert=(docker_cert, docker_key), verify=False)
+            tls_config = TLSConfig(client_cert=(docker_cert, docker_key),
+                                   verify=False)
             self.client = Client(base_url=docker_base_url, tls=tls_config)
         else:
             self.client = Client(base_url='unix://var/run/docker.sock')
@@ -27,7 +29,7 @@ class App(object):
     def _get_containers(self, compose_group_name):
         head = '/%s_' % compose_group_name
         cs = [c for c in self.client.containers()
-                  if c['Names'][0].startswith(head)]
+              if c['Names'][0].startswith(head)]
         return cs
 
     def _get_hosts(self):

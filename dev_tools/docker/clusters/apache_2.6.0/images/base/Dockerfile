@@ -24,7 +24,7 @@ RUN echo "tickTime=2000"                  > /opt/zookeeper/conf/zoo.cfg && \
     echo "clientPort ${ZOO_CLIENT_PORT}" >> /opt/zookeeper/conf/zoo.cfg && \
     echo 1 > ${ZOO_DATA_DIR}/myid
 
-# Note that we are forcing the installation to dist-packages,
+# Note that we are forcing the installation into dist-packages,
 # so that it will be possible to share kazoo and externally mount /usr/local later.
 RUN pip install kazoo -t /usr/lib/python2.7/dist-packages
 COPY scripts/zk_wait.py /tmp/
