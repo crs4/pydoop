@@ -6,9 +6,9 @@ export HADOOP_PID_DIR=${HDFS_PID_DIR}
 
 python /tmp/zk_wait.py namenode
 
-su ${HDFS_USER} -c "${HADOOP_HOME}/bin/hdfs --config ${HADOOP_CONF_DIR} namenode -format"
+su -l ${HDFS_USER} -c "${HADOOP_HOME}/bin/hdfs --config ${HADOOP_CONF_DIR} namenode -format"
 
-su - ${HDFS_USER} -p -c "${HADOOP_HOME}/sbin/hadoop-daemon.sh --config ${HADOOP_CONF_DIR} start namenode"
+su -l -p ${HDFS_USER} -c "${HADOOP_HOME}/sbin/hadoop-daemon.sh --config ${HADOOP_CONF_DIR} start namenode"
 
 # we should actually check that the namenode is up ...
 python /tmp/zk_set.py namenode up
