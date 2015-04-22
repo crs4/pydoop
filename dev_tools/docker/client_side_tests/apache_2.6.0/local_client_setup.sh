@@ -66,7 +66,8 @@ EOF
 
 
 #----------------------------------------------------
-# Fix bad sw versions
+# Fix bad sw versions and missing things
+apt-get install -y zip 
 pip install setuptools --upgrade
 
 #su - aen -c '/bin/bash ./prepare_pydoop.sh'
