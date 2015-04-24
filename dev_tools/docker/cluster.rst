@@ -153,18 +153,7 @@ a set of utility scripts. The specific command is::
    ....
    Cleaning up...
    Copying hadoop config from the resourcemanager container...
-   The authenticity of host 'client (172.17.0.105)' can't be established.
-   ECDSA key fingerprint is 69:e7:f2:43:13:e4:24:27:70:a3:48:33:99:53:8c:fa.
-   Are you sure you want to continue connecting (yes/no)? 
-   The authenticity of host 'client (172.17.0.105)' can't be established.
-   ECDSA key fingerprint is 69:e7:f2:43:13:e4:24:27:70:a3:48:33:99:53:8c:fa.
-   Are you sure you want to continue connecting (yes/no)? yes
-   Warning: Permanently added 'client,172.17.0.105' (ECDSA) to the list of known hosts.
-   root@client's password: 
    ...
-
-Note that the procedure requests the user to type two times the root password
-(it is hardwired to ``hadoop``).
 
 Log in on the client, install pydoop and run the tests::
 
