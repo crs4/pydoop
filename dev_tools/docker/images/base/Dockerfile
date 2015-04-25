@@ -33,3 +33,6 @@ ENV UNPRIV_USER aen
 RUN useradd -m ${UNPRIV_USER} -s /bin/bash && \
     echo "${UNPRIV_USER}:hadoop" | chpasswd
     
+RUN mkdir -p /root/.ssh && \
+    ssh-keygen -t dsa -P '' -f /root/.ssh/id_dsa && \
+    cat /root/.ssh/id_dsa.pub >> /root/.ssh/authorized_keys
