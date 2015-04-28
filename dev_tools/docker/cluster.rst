@@ -130,34 +130,25 @@ These are the basic steps.
 Change directory to ``client_side_tests``, choose a specific distribution, say
 ``apache_2.6.0`` and ``cd`` to that directory.
 
-Run the install script that configure the cluster client node. The script will
-install on the client the appropriate hadoop distribution, needed software, and
-a set of utility scripts. The specific command is::
+Run the following command::
 
- $ ./initialize.sh 
-   No explicit DOCKER_HOST_IP in your env: localhost is assumed
-   root@localhost's password: 
-   hadoop-2.6.0.tar.gz     100%  186MB  62.1MB/s  79.4MB/s   00:03    
-   local_client_setup.sh   100% 1724     1.7KB/s   1.7KB/s   00:00    
-   /opt ~
-   ~
-   Reading package lists...
-   Building dependency tree...
-   Reading state information...
-   The following extra packages will be installed:
-     unzip
-   The following NEW packages will be installed:
-     unzip zip
-   0 upgraded, 2 newly installed, 0 to remove and 1 not upgraded.
-   Need to get 531 kB of archives.
-   ....
-   Cleaning up...
-   Copying hadoop config from the resourcemanager container...
-   ...
+  $ ../../scripts/start_client.sh [<PORT>]
+
+The script will create a new docker container with a cluster client node that
+will respond to ssh connections on port ``PORT``, with 3333 as its default
+value.  The ``start_client.sh`` script will execute the bash script
+``initialize.sh``, see the provided client side tests for examples, to install
+on the client container the appropriate hadoop distribution, needed software,
+and a set of utility scripts.
+
+.. note::
+
+  You will probably have to answer twice 'yes' to ssh paranoia.
+
 
 Log in on the client, install pydoop and run the tests::
 
-  $ ssh -p 2222 root@localhost
+  $ ssh -p 3333 root@localhost
     Linux minas-morgul 3.18.7-gentoo #1 SMP Mon Feb 23 17:39:58 PST 2015 x86_64
     
     The programs included with the Debian GNU/Linux system are free software;
