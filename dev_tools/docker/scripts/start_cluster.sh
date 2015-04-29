@@ -1,8 +1,7 @@
 #!/bin/bash
 
 cluster_name=$1
-real_path=`realpath $0`
-script_dir=`dirname ${real_path}`
+script_dir=$(cd $(dirname ${BASH_SOURCE}); pwd; cd - >/dev/null)
 share_hosts_bin="python ${script_dir}/share_etc_hosts.py"
 cluster_path="${script_dir}/../clusters/${cluster_name}"
 
