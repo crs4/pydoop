@@ -1,9 +1,11 @@
 import os
 import sys
-import platform
-from docker.tls import TLSConfig
-from docker import Client
+import ssl
 import logging
+from docker import tls
+from docker import Client
+
+
 logging.basicConfig()
 
 logger = logging.getLogger('share_etc_hosts')
@@ -12,18 +14,7 @@ logger.setLevel(logging.DEBUG)
 
 class App(object):
     def __init__(self, compose_group_name):
-        if platform.system() == 'Darwin':
-            docker_port = "2376"
-            docker_host = os.environ['DOCKER_HOST_IP']
-            docker_cert_path = os.environ['DOCKER_CERT_PATH']
-            docker_base_url = "https://" + docker_host + ":" + docker_port
-            docker_cert = os.path.join(docker_cert_path, 'cert.pem')
-            docker_key = os.path.join(docker_cert_path, 'key.pem')
-            tls_config = TLSConfig(client_cert=(docker_cert, docker_key),
-                                   verify=False)
-            self.client = Client(base_url=docker_base_url, tls=tls_config)
-        else:
-            self.client = Client(base_url='unix://var/run/docker.sock')
+        self.client = docker_client()
         self.containers = self._get_containers(compose_group_name)
 
     def _get_containers(self, compose_group_name):
@@ -48,6 +39,37 @@ class App(object):
         for k in hosts:
             logger.debug('Updating %s', k)
             print self.client.execute(k, cmd)
+
+
+def docker_client():
+    """
+    Returns a docker-py client configured using environment variables
+    according to the same logic as the official Docker client.
+    """
+    cert_path = os.environ.get('DOCKER_CERT_PATH', '')
+    if cert_path == '':
+        cert_path = os.path.join(os.environ.get('HOME', ''), '.docker')
+
+    base_url = os.environ.get('DOCKER_HOST')
+    tls_config = None
+
+    if os.environ.get('DOCKER_TLS_VERIFY', '') != '':
+        parts = base_url.split('://', 1)
+        base_url = '%s://%s' % ('https', parts[1])
+
+        client_cert = (os.path.join(cert_path, 'cert.pem'), os.path.join(cert_path, 'key.pem'))
+        ca_cert = os.path.join(cert_path, 'ca.pem')
+
+        tls_config = tls.TLSConfig(
+            ssl_version=ssl.PROTOCOL_TLSv1,
+            verify=True,
+            assert_hostname=False,
+            client_cert=client_cert,
+            ca_cert=ca_cert,
+        )
+
+    timeout = int(os.environ.get('DOCKER_CLIENT_TIMEOUT', 60))
+    return Client(base_url=base_url, tls=tls_config, version='1.15', timeout=timeout)
 
 
 def main(argv):
