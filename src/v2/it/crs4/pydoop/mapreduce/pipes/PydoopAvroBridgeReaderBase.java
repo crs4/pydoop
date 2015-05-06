@@ -10,6 +10,7 @@ import java.io.ByteArrayOutputStream;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.io.Text;
 
 import org.apache.avro.Schema;
@@ -23,11 +24,20 @@ import org.apache.avro.io.BinaryEncoder;
 public abstract class PydoopAvroBridgeReaderBase<K, V>
     extends RecordReader<K, V> {
 
+  private static final String COUNTERS_GROUP =
+    PydoopAvroBridgeReaderBase.class.getName();
+
   protected RecordReader actualReader;
   protected List<Schema> schemas;
   protected List<Text> outRecords;
 
+  protected Counter nRecords;
+  protected Counter readTimeCounter;
+  protected Counter serTimeCounter;
+
   private List<IndexedRecord> bufferedInRecords;
+  private long start;
+  private boolean hasRecord;
 
   /**
    * Get current record(s) from the actual (input) RecordReader.
@@ -43,9 +53,16 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
   public void initialize(InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {
     actualReader.initialize(split, context);
+    nRecords = context.getCounter(COUNTERS_GROUP, "Number of records");
+    readTimeCounter = context.getCounter(COUNTERS_GROUP, "Read time (ms)");
+    serTimeCounter = context.getCounter(
+        COUNTERS_GROUP, "Serialization time (ms)");
     // peek at the record stream and save the schema(s) so that the concrete
     // subclass can set the schema property during initialization
-    if (actualReader.nextKeyValue()) {
+    start = System.nanoTime();
+    hasRecord = actualReader.nextKeyValue();
+    if (hasRecord) {
+      readTimeCounter.increment((System.nanoTime() - start) / 1000000);
       bufferedInRecords = getInRecords();
       schemas = new ArrayList<Schema>();
       outRecords = new ArrayList<Text>();
@@ -60,10 +77,13 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
       throws IOException, InterruptedException {
     List<IndexedRecord> records = null;
     if (bufferedInRecords == null) {
-      if (!actualReader.nextKeyValue()) {
+      start = System.nanoTime();
+      hasRecord = actualReader.nextKeyValue();
+      if (!hasRecord) {
         return false;
       }
       else {
+        readTimeCounter.increment((System.nanoTime() - start) / 1000000);
         records = getInRecords();
       }
     }
@@ -75,6 +95,7 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
     Iterator<IndexedRecord> iterRecords = records.iterator();
     Iterator<Schema> iterSchemas = schemas.iterator();
     Iterator<Text> iterOutRecords = outRecords.iterator();
+    start = System.nanoTime();
     while (iterRecords.hasNext()) {
       assert iterSchemas.hasNext() && iterOutRecords.hasNext();
       DatumWriter<IndexedRecord> datumWriter =
@@ -91,6 +112,8 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
       }
       iterOutRecords.next().set(new Text(stream.toByteArray()));
     }
+    serTimeCounter.increment((System.nanoTime() - start) / 1000000);
+    nRecords.increment(1);
     return true;
   }
 
