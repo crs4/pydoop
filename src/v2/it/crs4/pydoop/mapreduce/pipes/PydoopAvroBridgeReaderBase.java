@@ -30,6 +30,9 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
   protected RecordReader actualReader;
   protected List<Schema> schemas;
   protected List<Text> outRecords;
+  protected List<DatumWriter<IndexedRecord>> datumWriters;
+  protected List<BinaryEncoder> encoders;
+  protected List<ByteArrayOutputStream> outStreams;
 
   protected Counter nRecords;
   protected Counter readTimeCounter;
@@ -65,9 +68,17 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
       readTimeCounter.increment((System.nanoTime() - start) / 1000000);
       bufferedInRecords = getInRecords();
       schemas = new ArrayList<Schema>();
+      datumWriters = new ArrayList<DatumWriter<IndexedRecord>>();
+      outStreams = new ArrayList<ByteArrayOutputStream>();
+      encoders = new ArrayList<BinaryEncoder>();
       outRecords = new ArrayList<Text>();
       for (IndexedRecord r: bufferedInRecords) {
-        schemas.add(r.getSchema());
+        Schema s = r.getSchema();
+        schemas.add(s);
+        datumWriters.add(new GenericDatumWriter<IndexedRecord>(s));
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        outStreams.add(stream);
+        encoders.add(EncoderFactory.get().binaryEncoder(stream, null));
         outRecords.add(new Text());
       }
     }
@@ -93,24 +104,22 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
     }
     //--
     Iterator<IndexedRecord> iterRecords = records.iterator();
-    Iterator<Schema> iterSchemas = schemas.iterator();
+    Iterator<DatumWriter<IndexedRecord>> iterWriters = datumWriters.iterator();
+    Iterator<BinaryEncoder> iterEncoders = encoders.iterator();
+    Iterator<ByteArrayOutputStream> iterStreams = outStreams.iterator();
     Iterator<Text> iterOutRecords = outRecords.iterator();
     start = System.nanoTime();
     while (iterRecords.hasNext()) {
-      assert iterSchemas.hasNext() && iterOutRecords.hasNext();
-      DatumWriter<IndexedRecord> datumWriter =
-          new GenericDatumWriter<IndexedRecord>(iterSchemas.next());
-      EncoderFactory fact = EncoderFactory.get();
-      ByteArrayOutputStream stream = new ByteArrayOutputStream();
-      BinaryEncoder enc = fact.binaryEncoder(stream, null);
+      ByteArrayOutputStream stream = iterStreams.next();
+      BinaryEncoder enc = iterEncoders.next();
       try {
-        datumWriter.write(iterRecords.next(), enc);
+        iterWriters.next().write(iterRecords.next(), enc);
         enc.flush();
-        stream.close();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       iterOutRecords.next().set(new Text(stream.toByteArray()));
+      stream.reset();
     }
     serTimeCounter.increment((System.nanoTime() - start) / 1000000);
     nRecords.increment(1);
