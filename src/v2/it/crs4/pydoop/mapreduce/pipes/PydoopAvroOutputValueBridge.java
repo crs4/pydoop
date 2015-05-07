@@ -26,6 +26,6 @@ public class PydoopAvroOutputValueBridge extends PydoopAvroOutputBridgeBase {
     Schema schema = Schema.parse(conf.get(
         props.getProperty("AVRO_VALUE_OUTPUT_SCHEMA")));
     return new PydoopAvroBridgeValueWriter(
-        getActualFormat(conf).getRecordWriter(context), schema);
+        getActualFormat(conf).getRecordWriter(context), schema, context);
   }
 }

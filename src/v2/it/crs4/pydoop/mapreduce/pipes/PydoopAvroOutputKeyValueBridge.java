@@ -29,7 +29,8 @@ public class PydoopAvroOutputKeyValueBridge
     Schema valueSchema = Schema.parse(conf.get(
         props.getProperty("AVRO_VALUE_OUTPUT_SCHEMA")));
     return new PydoopAvroBridgeKeyValueWriter(
-        getActualFormat(conf).getRecordWriter(context), keySchema, valueSchema
+        getActualFormat(conf).getRecordWriter(context),
+        keySchema, valueSchema, context
     );
   }
 }

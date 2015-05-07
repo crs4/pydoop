@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.io.IOException;
 
 import org.apache.hadoop.mapreduce.RecordWriter;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 
@@ -19,7 +20,8 @@ public class PydoopAvroBridgeValueWriter extends PydoopAvroBridgeWriterBase {
 
   public PydoopAvroBridgeValueWriter(
       RecordWriter<NullWritable, ? super GenericRecord> actualWriter,
-      Schema schema) {
+      Schema schema, TaskAttemptContext context) {
+    super(context);
     this.actualWriter = actualWriter;
     this.schema = schema;
   }
