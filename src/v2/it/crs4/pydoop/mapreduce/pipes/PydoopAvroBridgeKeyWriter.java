@@ -28,9 +28,7 @@ public class PydoopAvroBridgeKeyWriter extends PydoopAvroBridgeWriterBase {
       throws IOException, InterruptedException {
     List<GenericRecord> outRecords = super.getOutRecords(
         Arrays.asList(key), Arrays.asList(schema));
-    assert outRecords.size() == 1;
-    actualWriter.write(outRecords.get(0), NullWritable.get());
-    // actualWriter.write(null, outRecords.get(0));
+    super.write(outRecords, Submitter.AvroIO.K);
   }
 
 }
