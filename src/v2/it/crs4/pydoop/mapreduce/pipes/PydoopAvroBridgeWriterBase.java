@@ -32,6 +32,7 @@ public abstract class PydoopAvroBridgeWriterBase
     PydoopAvroBridgeWriterBase.class.getName();
   private long start;
 
+  protected AvroIO mode;
   protected RecordWriter actualWriter;
   protected DecoderFactory decFactory;
   protected List<DatumReader<GenericRecord>> datumReaders;
@@ -61,6 +62,7 @@ public abstract class PydoopAvroBridgeWriterBase
       outRecords.add(null);
     }
     decFactory = DecoderFactory.get();
+    this.mode = mode;
     //--
     nRecords = context.getCounter(COUNTERS_GROUP, "Number of records");
     writeTimeCounter = context.getCounter(COUNTERS_GROUP, "Write time (ms)");
@@ -81,7 +83,7 @@ public abstract class PydoopAvroBridgeWriterBase
     return outRecords;
   }
 
-  protected void write(List<GenericRecord> outRecords, AvroIO mode)
+  protected void write(List<GenericRecord> outRecords)
       throws IOException, InterruptedException {
     start = System.nanoTime();
     switch (mode) {

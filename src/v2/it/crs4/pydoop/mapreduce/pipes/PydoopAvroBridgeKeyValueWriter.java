@@ -26,6 +26,6 @@ public class PydoopAvroBridgeKeyValueWriter
       throws IOException, InterruptedException {
     List<GenericRecord> outRecords = super.getOutRecords(
         Arrays.asList(key, value));
-    super.write(outRecords, Submitter.AvroIO.KV);
+    super.write(outRecords);
   }
 }

@@ -25,7 +25,7 @@ public class PydoopAvroBridgeValueWriter extends PydoopAvroBridgeWriterBase {
   public void write(Text ignore, Text value)
       throws IOException, InterruptedException {
     List<GenericRecord> outRecords = super.getOutRecords(Arrays.asList(value));
-    super.write(outRecords, Submitter.AvroIO.V);
+    super.write(outRecords);
   }
 
 }
