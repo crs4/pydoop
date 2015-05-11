@@ -14,6 +14,8 @@ seq( sbtavro.SbtAvro.avroSettings : _*)
 
 val parquetRoot = "com.twitter"
 
+// Parquet versions earlier than 1.6.0 have problems with object reuse:
+//   https://issues.apache.org/jira/browse/PARQUET-62
 val parquetVersion = "1.6.0"
 
 val hadoopVersion = "2.6.0"
