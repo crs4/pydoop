@@ -23,9 +23,8 @@
 Pydoop: a Python MapReduce and HDFS API for Hadoop
 --------------------------------------------------
 
-Pydoop provides a MapReduce and HDFS API for Hadoop that allows
-object-oriented Java-style MapReduce programming in CPython as well as
-HDFS access.
+Pydoop is a Python interface to Hadoop that allows you to write
+MapReduce applications and interact with HDFS in pure Python.
 """
 
 import os
