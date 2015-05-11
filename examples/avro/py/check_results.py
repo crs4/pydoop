@@ -36,7 +36,13 @@ def main():
             p = l.strip().split('\t')
             computed[p[0]] = eval(p[1])
 
-    print 'All is ok!' if expected == computed else 'Something is broken...'
+    if set(computed) != set(expected):
+        sys.exit("ERROR: computed keys != expected keys: %r != %r" % (
+            sorted(computed), sorted(expected)))
+    for k, v in expected.iteritems():
+        if computed[k] != v:
+            sys.exit("ERROR: %r: %r != %r" % (k, computed[k], dict(v)))
+    print 'All is ok!'
 
 
 if __name__ == '__main__':
