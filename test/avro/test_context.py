@@ -39,25 +39,58 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 class BaseMapper(api.Mapper):
 
     def map(self, ctx):
-        r = self.get_record(ctx)
-        k, v = r['name'], r['favorite_color']
-        print ' * k = %r, v = %r' % (k, v)
+        k, v = self.get_kv(ctx)
         ctx.emit(k, v)
 
-    def get_record(self, ctx):
+    def get_kv(self, ctx):
         raise NotImplementedError
 
 
 class ValueMapper(BaseMapper):
 
-    def get_record(self, ctx):
-        return ctx.value
+    def get_kv(self, ctx):
+        return ctx.value['name'], ctx.value['favorite_color']
 
 
 class KeyMapper(BaseMapper):
 
-    def get_record(self, ctx):
-        return ctx.key
+    def get_kv(self, ctx):
+        return ctx.key['name'], ctx.key['favorite_color']
+
+
+class DictWrapper(object):
+
+    def __init__(self, d):
+        self.__d = d
+
+    def __getattr__(self, name):
+        try:
+            return self.__d[name]
+        except KeyError:
+            raise AttributeError("no attribute %s" % name)
+
+
+class WrapperAvroContext(avrolib.AvroContext):
+
+    def deserializing(self, meth, datum_reader):
+        def deserialize_and_wrap(*args, **kwargs):
+            deserialize = super(WrapperAvroContext, self).deserializing(
+                meth, datum_reader
+            )
+            return DictWrapper(deserialize(*args, **kwargs))
+        return deserialize_and_wrap
+
+
+class KeyWrapperMapper(BaseMapper):
+
+    def get_kv(self, ctx):
+        return ctx.key.name, ctx.key.favorite_color
+
+
+class ValueWrapperMapper(BaseMapper):
+
+    def get_kv(self, ctx):
+        return ctx.value.name, ctx.value.favorite_color
 
 
 class TestContext(WDTestCase):
@@ -97,12 +130,11 @@ class TestContext(WDTestCase):
     def tearDown(self):
         super(TestContext, self).tearDown()
 
-    def __run_test(self, mode, mapper_class):
-        print
+    def __run_test(self, mode, mapper_class, context_class):
         cmd_file = self.__write_cmd_file(mode)
         pp.run_task(
             pp.Factory(mapper_class=mapper_class), private_encoding=False,
-            context_class=avrolib.AvroContext, cmd_file=cmd_file
+            context_class=context_class, cmd_file=cmd_file
         )
         out_fn = cmd_file + '.out'
         out_records = []
@@ -117,16 +149,24 @@ class TestContext(WDTestCase):
                 self.assertEqual(v, r[k])
 
     def test_key(self):
-        self.__run_test('K', KeyMapper)
+        self.__run_test('K', KeyMapper, avrolib.AvroContext)
 
     def test_value(self):
-        self.__run_test('V', ValueMapper)
+        self.__run_test('V', ValueMapper, avrolib.AvroContext)
+
+    def test_wrapper_key(self):
+        self.__run_test('K', KeyWrapperMapper, WrapperAvroContext)
+
+    def test_wrapper_value(self):
+        self.__run_test('V', ValueWrapperMapper, WrapperAvroContext)
 
 
 def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestContext('test_key'))
     suite_.addTest(TestContext('test_value'))
+    suite_.addTest(TestContext('test_wrapper_key'))
+    suite_.addTest(TestContext('test_wrapper_value'))
     return suite_
 
 
