@@ -36,13 +36,28 @@ from common import AvroSerializer, avro_user_record
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-class Mapper(api.Mapper):
+class BaseMapper(api.Mapper):
 
     def map(self, ctx):
-        r = ctx.value
+        r = self.get_record(ctx)
         k, v = r['name'], r['favorite_color']
         print ' * k = %r, v = %r' % (k, v)
         ctx.emit(k, v)
+
+    def get_record(self, ctx):
+        raise NotImplementedError
+
+
+class ValueMapper(BaseMapper):
+
+    def get_record(self, ctx):
+        return ctx.value
+
+
+class KeyMapper(BaseMapper):
+
+    def get_record(self, ctx):
+        return ctx.key
 
 
 class TestContext(WDTestCase):
@@ -50,34 +65,46 @@ class TestContext(WDTestCase):
     def setUp(self):
         super(TestContext, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
-            schema = avro.schema.parse(f.read())
+            self.schema = avro.schema.parse(f.read())
         self.records = [avro_user_record(_) for _ in xrange(3)]
-        serializer = AvroSerializer(schema)
-        #--
-        self.cmd_fn = self._mkfn('map_in')
-        with open(self.cmd_fn, 'w') as f:
+
+    def __write_cmd_file(self, mode):
+        if mode != 'K' and mode != 'V':
+            # FIXME: add support for 'KV'
+            raise RuntimeError("Mode %r not supported" % (mode,))
+        schema_prop = pydoop.PROPERTIES[
+            'AVRO_%s_INPUT_SCHEMA' % ('KEY' if mode == 'K' else 'VALUE')
+        ]
+        cmd_fn = self._mkfn('map_in')
+        serializer = AvroSerializer(self.schema)
+        with open(cmd_fn, 'w') as f:
             bwriter = BinaryWriter(f)
             bwriter.send('start', 0)
             bwriter.send('setJobConf', (
-                pydoop.PROPERTIES['AVRO_INPUT'], 'V',
-                pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA'], str(schema)
+                pydoop.PROPERTIES['AVRO_INPUT'], mode,
+                schema_prop, str(self.schema)
             )),
             bwriter.send('setInputTypes', 'key_type', 'value_type')
             bwriter.send('runMap', 'input_split', 0, False)
             for r in self.records:
-                bwriter.send('mapItem', 'k', serializer.serialize(r))
+                if mode == 'K':
+                    bwriter.send('mapItem', serializer.serialize(r), 'v')
+                else:
+                    bwriter.send('mapItem', 'k', serializer.serialize(r))
             bwriter.send('close')
+        return cmd_fn
 
     def tearDown(self):
         super(TestContext, self).tearDown()
 
-    def runTest(self):
+    def __run_test(self, mode, mapper_class):
         print
+        cmd_file = self.__write_cmd_file(mode)
         pp.run_task(
-            pp.Factory(mapper_class=Mapper), private_encoding=False,
-            context_class=avrolib.AvroContext, cmd_file=self.cmd_fn
+            pp.Factory(mapper_class=mapper_class), private_encoding=False,
+            context_class=avrolib.AvroContext, cmd_file=cmd_file
         )
-        out_fn = self.cmd_fn + '.out'
+        out_fn = cmd_file + '.out'
         out_records = []
         with open(out_fn) as ostream:
             for cmd, args in BinaryDownStreamFilter(ostream):
@@ -89,10 +116,17 @@ class TestContext(WDTestCase):
             for k, v in out_r.iteritems():
                 self.assertEqual(v, r[k])
 
+    def test_key(self):
+        self.__run_test('K', KeyMapper)
+
+    def test_value(self):
+        self.__run_test('V', ValueMapper)
+
 
 def suite():
     suite_ = unittest.TestSuite()
-    suite_.addTest(TestContext('runTest'))
+    suite_.addTest(TestContext('test_key'))
+    suite_.addTest(TestContext('test_value'))
     return suite_
 
 
