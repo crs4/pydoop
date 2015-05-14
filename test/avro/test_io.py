@@ -26,33 +26,34 @@ from avro.io import DatumReader, DatumWriter
 
 from pydoop.mapreduce.pipes import InputSplit
 from pydoop.avrolib import SeekableDataFileReader, AvroReader, AvroWriter
+from pydoop.test_utils import WDTestCase
+import pydoop.hdfs as hdfs
 
 from common import avro_user_record
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-AVRO_DATA = 'users.avro'
 
 
-class TestAvroIO(unittest.TestCase):
+class TestAvroIO(WDTestCase):
 
     def setUp(self):
+        super(TestAvroIO, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
             self.schema = avro.schema.parse(f.read())
 
-    def write_avro_file(self, file_object, rec_creator, n_samples,
-                        sync_interval):
+    def write_avro_file(self, rec_creator, n_samples, sync_interval):
         avdf.SYNC_INTERVAL = sync_interval
         self.assertEqual(avdf.SYNC_INTERVAL, sync_interval)
-        writer = avdf.DataFileWriter(file_object, DatumWriter(), self.schema)
-        for i in xrange(n_samples):
-            writer.append(rec_creator(i))
-        writer.close()
+        fo = self._mkf('data.avro')
+        with avdf.DataFileWriter(fo, DatumWriter(), self.schema) as writer:
+            for i in xrange(n_samples):
+                writer.append(rec_creator(i))
+        return fo.name
 
     def test_seekable(self):
-        with open(AVRO_DATA, 'wb') as f:
-            self.write_avro_file(f, avro_user_record, 500, 1024)
-        with open(AVRO_DATA, 'rb') as f:
+        fn = self.write_avro_file(avro_user_record, 500, 1024)
+        with open(fn, 'rb') as f:
             sreader = SeekableDataFileReader(f, DatumReader())
             res = [t for t in it.izip(it.imap(
                 lambda _: f.tell(), it.repeat(1)
@@ -86,27 +87,27 @@ class TestAvroIO(unittest.TestCase):
 
     def test_avro_reader(self):
 
+        N = 500
+        fn = self.write_avro_file(avro_user_record, N, 1024)
+        url = hdfs.path.abspath(fn, local=True)
+
         class FunkyCtx(object):
             def __init__(self, isplit):
                 self.input_split = isplit
-        url = '/'.join(['file://', THIS_DIR, AVRO_DATA])
 
         def get_areader(offset, length):
             isplit = InputSplit(InputSplit.to_string(url, offset, length))
             ctx = FunkyCtx(isplit)
             return AvroReader(ctx)
 
-        N = 500
-        with open(AVRO_DATA, 'wb') as f:
-            self.write_avro_file(f, avro_user_record, N, 1024)
         areader = get_areader(0, 14)
         file_length = areader.reader.file_length
         with self.assertRaises(StopIteration):
             areader.next()
         areader = get_areader(0, file_length)
-        sreader = SeekableDataFileReader(open(AVRO_DATA), DatumReader())
-        for (o, a), s in it.izip(areader, sreader):
-            self.assertEqual(a, s)
+        with SeekableDataFileReader(open(fn), DatumReader()) as sreader:
+            for (o, a), s in it.izip(areader, sreader):
+                self.assertEqual(a, s)
         mid_len = int(file_length / 2)
         lows = [x for x in get_areader(0, mid_len)]
         highs = [x for x in get_areader(mid_len, file_length)]
@@ -126,10 +127,9 @@ class TestAvroIO(unittest.TestCase):
             def emit(self_, key, value):
                 self_.writer.append(key)
 
-        url = '/'.join(['file://', THIS_DIR])
         ctx = FunkyCtx({
             'mapreduce.task.partition': 1,
-            'mapreduce.task.output.dir': url
+            'mapreduce.task.output.dir': hdfs.path.abspath(self.wd, local=True)
         })
         awriter = AWriter(ctx)
         N = 10
