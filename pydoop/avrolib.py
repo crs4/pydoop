@@ -59,18 +59,17 @@ class AvroContext(pp.TaskContext):
     be explicitly requested when launching the application with pydoop
     submit (``--avro-input``, ``--avro-output``).
     """
-    @staticmethod
-    def deserializing(meth, datum_reader):
+    def deserializing(self, meth, datum_reader):
         """
         Decorate a key/value getter to make it auto-deserialize Avro
         records.
         """
-        def with_deserialization(self, *args, **kwargs):
-            ret = meth(self, *args, **kwargs)
+        def deserialize(*args, **kwargs):
+            ret = meth(*args, **kwargs)
             f = StringIO(ret)
             dec = BinaryDecoder(f)
             return datum_reader.read(dec)
-        return with_deserialization
+        return deserialize
 
     def __init__(self, up_link, private_encoding=True):
         super(AvroContext, self).__init__(up_link, private_encoding)
@@ -90,15 +89,15 @@ class AvroContext(pp.TaskContext):
                 reader = DatumReader(avro.schema.parse(
                     jc.get(AVRO_KEY_INPUT_SCHEMA)
                 ))
-                AvroContext.get_input_key = AvroContext.deserializing(
-                    AvroContext.get_input_key, reader
+                self.get_input_key = self.deserializing(
+                    self.get_input_key, reader
                 )
             if avro_input == 'V' or avro_input == 'KV':
                 reader = DatumReader(avro.schema.parse(
                     jc.get(AVRO_VALUE_INPUT_SCHEMA)
                 ))
-                AvroContext.get_input_value = AvroContext.deserializing(
-                    AvroContext.get_input_value, reader
+                self.get_input_value = self.deserializing(
+                    self.get_input_value, reader
                 )
         if AVRO_OUTPUT in jc:
             avro_output = jc.get(AVRO_OUTPUT).upper()

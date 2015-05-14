@@ -425,15 +425,17 @@ class StreamRunner(object):
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             private_encoding=True, context_class=TaskContext):
+             private_encoding=True, context_class=TaskContext,
+             cmd_file=None):
     """
     Run the assigned task in the framework.
 
     :rtype: bool
     :return: :obj:`True` if the task succeeded.
     """
-    connections = resolve_connections(port,
-                                      istream=istream, ostream=ostream)
+    connections = resolve_connections(
+        port, istream=istream, ostream=ostream, cmd_file=cmd_file
+    )
     context = context_class(connections.up_link, private_encoding)
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
     stream_runner.run()
