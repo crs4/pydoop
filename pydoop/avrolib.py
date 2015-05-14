@@ -23,10 +23,6 @@ Avro tools.
 # module anywhere in the main code (importing it in the Avro examples
 # is OK, ofc).
 
-import logging
-logging.basicConfig()
-LOGGER = logging.getLogger('avrolib')
-LOGGER.setLevel(logging.DEBUG)
 from cStringIO import StringIO
 
 import avro.schema
@@ -182,7 +178,6 @@ class AvroReader(RecordReader):
     """
     def __init__(self, ctx):
         super(AvroReader, self).__init__(ctx)
-        self.logger = LOGGER.getChild('AvroReader')
         isplit = ctx.input_split
         self.region_start = isplit.offset
         self.region_end = isplit.offset + isplit.length
@@ -214,18 +209,14 @@ class AvroWriter(RecordWriter):
 
     def __init__(self, context):
         super(AvroWriter, self).__init__(context)
-        self.logger = LOGGER.getChild('AvroWriter')
         job_conf = context.job_conf
         part = int(job_conf['mapreduce.task.partition'])
         outdir = job_conf["mapreduce.task.output.dir"]
         outfn = "%s/part-r-%05d.avro" % (outdir, part)
         wh = hdfs.open(outfn, "w")
-        self.logger.debug('created hdfs file %s', outfn)
         self.writer = DataFileWriter(wh, DatumWriter(), self.schema)
-        self.logger.debug('opened AvroWriter')
 
     def close(self):
         self.writer.close()
         # FIXME do we really need to explicitly close the filesystem?
         self.writer.writer.fs.close()
-        self.logger.debug('closed AvroWriter')

@@ -76,7 +76,7 @@ class LifeThread(object):
                     s.connect(('localhost', self.port))
                     break
                 else:
-                    self.logger.critical('server appears to be dead.')
+                    self.logger.critical('server appears to be dead')
                     os._exit(1)
                 # FIXME protect with a try the next two
                 s.shutdown(socket.SHUT_RDWR)

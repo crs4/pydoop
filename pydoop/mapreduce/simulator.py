@@ -125,11 +125,11 @@ class SortAndShuffle(dict):
         self.enable_local_counters = enable_local_counters
 
     def output(self, key, value):
-        LOGGER.debug('SAS:output %r, %r', key, value)
+        LOGGER.debug('SAS: output %r, %r', key, value)
         self.setdefault(key, []).append(value)
 
     def send(self, cmd, *args):
-        LOGGER.debug('SAS:send %s %r', cmd, args)
+        LOGGER.debug('SAS: send %s %r', cmd, args)
         if cmd == 'output':
             key, value = args
             self.setdefault(key, []).append(value)
@@ -169,7 +169,7 @@ class CommandThread(threading.Thread):
             self.logger.debug('reading %s bytes from %s.', chunk_size,
                               self.down_bytes)
             buf = self.down_bytes.read(chunk_size)
-            self.logger.debug('%s bytes actually read.', len(buf))
+            self.logger.debug('%s bytes actually read', len(buf))
             if len(buf) == 0:
                 break
             self.ostream.write(buf)
@@ -177,7 +177,7 @@ class CommandThread(threading.Thread):
             if not_synced_yet:
                 not_synced_yet = False
                 self.sync_event.set()
-        self.logger.debug('Done.')
+        self.logger.debug('Done')
 
 
 class ResultThread(threading.Thread):
@@ -195,7 +195,7 @@ class ResultThread(threading.Thread):
         for cmd, args in up_cmd_stream:
             self.logger.debug('cmd: %r args:%r', cmd, args)
             if cmd == 'authenticationResp':
-                self.logger.debug('got an authenticationResp: %r', args)
+                self.logger.debug('got authenticationResp: %r', args)
             elif cmd == 'output':
                 key, value = args
                 self.ostream.output(key, value)
@@ -219,7 +219,7 @@ class ResultThread(threading.Thread):
                 self.simulator.register_counter(*args)
             elif cmd == 'incrementCounter':
                 self.simulator.increment_counter(*args)
-        self.logger.debug('Done.')
+        self.logger.debug('Done')
 
 
 class HadoopThreadHandler(SocketServer.BaseRequestHandler):
@@ -241,11 +241,11 @@ class HadoopThreadHandler(SocketServer.BaseRequestHandler):
         cmd_thread.start()
         cmd_flux_has_started.wait()
         res_thread.start()
-        self.server.logger.debug('Waiting in cmd_thread.join().')
+        self.server.logger.debug('Waiting in cmd_thread.join()')
         cmd_thread.join()
-        self.server.logger.debug('Waiting in res_thread.join().')
+        self.server.logger.debug('Waiting in res_thread.join()')
         res_thread.join()
-        self.server.logger.debug('handler is done.')
+        self.server.logger.debug('handler is done')
 
 
 class HadoopServer(SocketServer.TCPServer):
@@ -289,7 +289,7 @@ class HadoopSimulator(object):
         self.progress = 0
         self.status = 'Undefined'
         self.phase = 'Undefined'
-        self.logger.debug('initialized.')
+        self.logger.debug('initialized')
 
     def set_phase(self, phase):
         self.phase = phase
@@ -363,7 +363,7 @@ class HadoopSimulator(object):
         piped_input = file_in is not None
         self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
         f = self.tempf.file
-        self.logger.debug('writing map input data in %s', f.name)
+        self.logger.debug('writing map input data to %s', f.name)
         down_stream = BinaryWriter(f)
         self.write_header_down_stream(down_stream, authorization, job_conf)
         down_stream.send('runMap', input_split, num_reducers, piped_input)
@@ -376,7 +376,7 @@ class HadoopSimulator(object):
                 down_stream.send('mapItem', k, l)
                 pos = file_in.tell()
             down_stream.send('close')
-        self.logger.debug('\tdone writing, rewinding')
+        self.logger.debug('done writing, rewinding')
         f.seek(0)
         return f
 
@@ -426,9 +426,9 @@ class HadoopSimulatorLocal(HadoopSimulator):
         context = TaskContext(ustream)
         self.logger.debug('got context')
         stream_runner = StreamRunner(self.factory, context, dstream)
-        self.logger.debug('got runner, ready to run.')
+        self.logger.debug('got runner, ready to run')
         stream_runner.run()
-        self.logger.debug('done running!')
+        self.logger.debug('done')
         context.close()
 
     def run(self, file_in, file_out, job_conf, num_reducers=1, input_split=''):
@@ -460,16 +460,16 @@ class HadoopSimulatorLocal(HadoopSimulator):
         else:
             self.logger.info('running a map reduce job')
             sas = SortAndShuffle(self, enable_local_counters=True)
-            self.logger.info('running mapping phase')
+            self.logger.info('running map phase')
             self.set_phase('mapping')
             self.run_task(dstream, sas)
             bytes_flow = self.write_reduce_down_stream(sas, job_conf,
                                                        num_reducers)
             rstream = BinaryDownStreamFilter(bytes_flow)
-            self.logger.info('running reducing phase')
+            self.logger.info('running reduce phase')
             self.set_phase('reducing')
             self.run_task(rstream, rec_writer_stream)
-        self.logger.info('run done.')
+        self.logger.info('done')
 
 
 class HadoopSimulatorNetwork(HadoopSimulator):
@@ -521,12 +521,13 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                               logger=self.logger.getChild('HadoopServer'),
                               loglevel=self.logger.getEffectiveLevel())
         port = server.get_port()
-        self.logger.debug('serving on port: {}'.format(port))
-        self.logger.debug('secret location: {}'.format(self.tmp_file))
+        self.logger.debug('serving on port: %s', port)
+        self.logger.debug('secret location: %s', self.tmp_file)
         os.environ[CMD_PORT_KEY] = str(port)
         os.environ[SECRET_LOCATION_KEY] = self.tmp_file
-        self.logger.debug('delaying {} {} secs'.format(self.program,
-                                                       self.sleep_delta))
+        self.logger.debug(
+            'delaying %s %s secs', self.program, self.sleep_delta
+        )
         cmd_line = "(sleep {}; {})&".format(self.sleep_delta, self.program)
         os.system(cmd_line)
         server.handle_request()
@@ -563,7 +564,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         else:
             self.logger.info('running a map reduce job')
             sas = SortAndShuffle(self)
-            self.logger.info('running mapping phase')
+            self.logger.info('running map phase')
             self.set_phase('mapping')
             self.run_task(down_bytes, sas)
             # FIXME we only support a single reducer
@@ -588,8 +589,8 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                 sas, job_conf, reducer_id, authorization=auth,
                 piped_output=(file_out is not None)
             )
-            self.logger.info('running reducer')
+            self.logger.info('running reduce phase')
             self.set_phase('reducing')
             self.run_task(down_bytes, record_writer)
-        self.logger.info('run done.')
+        self.logger.info('done')
         os.unlink(self.tmp_file)

@@ -250,11 +250,11 @@ class TaskContext(api.MapContext, api.ReduceContext):
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
-                LOGGER.debug("Sending status %r", self._status)
+                LOGGER.debug("Sending status: %r", self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
             self.up_link.flush()
-            LOGGER.debug("Sending progress float %r", self._progress_float)
+            LOGGER.debug("Sending progress: %r", self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -331,21 +331,20 @@ class StreamRunner(object):
         try:
             with open(pfile_name) as f:
                 self.password = f.read()
-                self.logger.debug('password:%r', self.password)
+                self.logger.debug('password: %r', self.password)
         except IOError:
             self.logger.error('Could not open the password file')
 
     def run(self):
         self.logger.debug('start running')
         for cmd, args in self.cmd_stream:
-            self.logger.debug('dispatching cmd:%s, args: %s', cmd, args)
+            self.logger.debug('dispatching cmd: %s, args: %s', cmd, args)
             if cmd == 'authenticationReq':
                 digest, challenge = args
                 self.logger.debug(
                     'authenticationReq: %r, %r', digest, challenge)
                 if self.fails_to_authenticate(digest, challenge):
-                    self.logger.critical(
-                        'Server failed to authenticate. Exiting')
+                    self.logger.critical('Server failed to authenticate')
                     break  # bailing out
             elif cmd == 'setJobConf':
                 self.ctx.set_job_conf(args[0])
@@ -359,11 +358,11 @@ class StreamRunner(object):
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
                 break  # we can bail out, there is nothing more to do.
-        self.logger.debug('done running')
+        self.logger.debug('done')
 
     def fails_to_authenticate(self, digest, challenge):
         if self.password is None:
-            self.logger.info('No password, I assume we are in playback mode')
+            self.logger.info('No password, assuming playback mode')
             self.authenticated = True
             return False
         expected_digest = create_digest(self.password, challenge)
@@ -382,13 +381,13 @@ class StreamRunner(object):
         if n_reduces > 0:
             ctx.enable_private_encoding()
         ctx._input_split = input_split
-        LOGGER.debug("InputSPlit setted %r", input_split)
+        LOGGER.debug("Input split: %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
             if cmd == "setInputTypes":
                 ctx._input_key_class, ctx._input_value_class = args
-        LOGGER.debug("After setInputTypes: %r, %r", ctx.input_key_class,
-                     ctx.input_value_class)
+                LOGGER.debug("Input (key, value) class: (%r, %r)",
+                             ctx._input_key_class, ctx._input_value_class)
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise api.PydoopError('RecordReader not defined')
@@ -405,7 +404,7 @@ class StreamRunner(object):
                 progress_function()
             mapper_map(ctx)
         mapper.close()
-        self.logger.debug('done run_map')
+        self.logger.debug('done with run_map')
 
     def run_reduce(self, part, piped_output):
         self.logger.debug('start run_reduce')
@@ -421,7 +420,7 @@ class StreamRunner(object):
         for ctx._key, ctx._values in kvs_stream:
             reducer_reduce(ctx)
         reducer.close()
-        self.logger.debug('done run_reduce')
+        self.logger.debug('done with run_reduce')
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
