@@ -233,7 +233,7 @@ class PydoopSubmitter(object):
         # set environment variables
         for var, value in env.iteritems():
             if value:
-                self.logger.debug("Setting task's env variable %s=%s", var, value)
+                self.logger.debug("Setting env variable %s=%s", var, value)
                 lines.append('export %s="%s"' % (var, value))
         if self.args.log_level == "DEBUG":
             lines.append("echo PATH=${PATH} 1>&2")
