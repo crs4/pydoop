@@ -176,8 +176,8 @@ class Timer(object):
         self._start_times[s] = time.time()
 
     def stop(self, s):
-        delta = time.time() - self._start_times[s]
-        self.ctx.incrementCounter(self._get_time_counter(s), int(delta))
+        delta_ms = 1000*(time.time() - self._start_times[s])
+        self.ctx.incrementCounter(self._get_time_counter(s), int(delta_ms))
 
     def time_block(self, event_name):
         return self.TimingBlock(self, event_name)
