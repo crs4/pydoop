@@ -21,6 +21,7 @@ Miscellaneous utilities.
 """
 
 import logging
+import time
 import uuid
 from struct import pack
 
@@ -154,3 +155,42 @@ class NullLogger(logging.Logger):
 
 def make_random_str(prefix="pydoop_", postfix=''):
     return "%s%s%s" % (prefix, uuid.uuid4().hex, postfix)
+
+class Timer(object):
+    def __init__(self, ctx, counter_group=None):
+        self.ctx = ctx
+        self._start_times = {}
+        self._counters = {}
+        self._counter_group = counter_group if counter_group else "Timer"
+
+    def _gen_counter_name(self, event):
+        return "TIME_" + event.upper() + " (ms)"
+
+    def _get_time_counter(self, name):
+        if not self._counters.has_key(name):
+            counter_name = self._gen_counter_name(name)
+            self._counters[name] = self.ctx.getCounter(self._counter_group, counter_name)
+        return self._counters[name]
+
+    def start(self, s):
+        self._start_times[s] = time.time()
+
+    def stop(self, s):
+        delta_ms = 1000*(time.time() - self._start_times[s])
+        self.ctx.incrementCounter(self._get_time_counter(s), int(delta_ms))
+
+    def time_block(self, event_name):
+        return self.TimingBlock(self, event_name)
+
+    class TimingBlock(object):
+        def __init__(self, timer, event_name):
+            self._timer = timer
+            self._event_name = event_name
+
+        def __enter__(self):
+            self._timer.start(self._event_name)
+            return self._timer
+
+        def __exit__(self, exception_type, exception_val, exception_tb):
+            self._timer.stop(self._event_name)
+            return False
