@@ -12,7 +12,7 @@ fi
 SUBMIT_CMD="pydoop submit"
 MODULE=col0
 MPY=${MODULE}.py
-OUTPUT_FORMAT=it.crs4.pydoop.mapreduce.lib.output.NoSeparatorTextOutputFormat
+OUTPUT_FORMAT=it.crs4.pydoop.NoSeparatorTextOutputFormat
 
 LOGLEVEL=INFO
 MRV=--mrv2
