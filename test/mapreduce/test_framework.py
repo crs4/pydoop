@@ -113,6 +113,49 @@ class TReducerPE(Reducer):
             ctx.emit(k, s[k])
 
 
+class TCombinerPE(Reducer):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def reduce(self, ctx):
+        s = sum(ctx.values, Counter())
+        ctx.emit('', s)
+
+
+class TMapperSE(Mapper):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.counter = Counter()
+
+    def map(self, ctx):
+        self.counter.clear()
+        self.counter.update(ctx.value.split())
+        ctx.emit('', self.counter)
+
+
+class TReducerSE(Reducer):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def reduce(self, ctx):
+        s = sum(ctx.values, Counter())
+        for k in s:
+            ctx.emit(k, s[k])
+
+
+class TCombinerSE(Reducer):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def reduce(self, ctx):
+        s = sum(ctx.values, Counter())
+        ctx.emit('', s)
+
+
 class TFactory(Factory):
     def __init__(self, mapper=TMapper, reducer=TReducer,
                  combiner=None, partitioner=None,
@@ -235,8 +278,21 @@ class TestFramework(WDTestCase):
                      private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_2)
 
+    def test_map_reduce_comb_with_private_encoding(self):
+        factory = TFactory(mapper=TMapperPE, combiner=TCombinerPE,
+                           reducer=TReducerPE)
+        self._test_map_reduce_with_private_encoding_helper(factory)
+
     def test_map_reduce_with_private_encoding(self):
         factory = TFactory(mapper=TMapperPE, reducer=TReducerPE)
+        self._test_map_reduce_with_private_encoding_helper(factory)
+
+    def test_map_reduce_comb_with_side_effect(self):
+        factory = TFactory(mapper=TMapperSE, combiner=TCombinerSE,
+                           reducer=TReducerSE)
+        self._test_map_reduce_with_private_encoding_helper(factory)
+
+    def _test_map_reduce_with_private_encoding_helper(self, factory):
         self.stream3.close()
         cmd_file = self.stream3.name
         out_file = cmd_file + '.out'
@@ -303,6 +359,8 @@ def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestFramework('test_map_only'))
     suite_.addTest(TestFramework('test_map_reduce'))
+    suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
+    suite_.addTest(TestFramework('test_map_reduce_comb_with_side_effect'))
     suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_combiner_reduce'))
     suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
