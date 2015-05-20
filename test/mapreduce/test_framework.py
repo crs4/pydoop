@@ -25,6 +25,9 @@ from pydoop.mapreduce.string_utils import unquote_string
 from pydoop.test_utils import WDTestCase
 
 from test_text_stream import stream_writer
+from test_binary_streams import stream_writer as binary_stream_writer
+from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
+from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 
 
 STREAM_1 = [
@@ -48,7 +51,18 @@ STREAM_2 = [
     ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
     ('close',),
     ]
-    
+
+STREAM_3 = [
+    ('start', 0),
+    ('setJobConf', ('key1', 'value1', 'key2', 'value2')),
+    ('setInputTypes', 'key_type', 'value_type'),
+    ('runMap', 'input_split', 1, False),
+    ('mapItem', 'key1', 'the blue fox jumps on the table'),
+    ('mapItem', 'key1', 'a yellow fox turns around'),
+    ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
+    ('close',),
+    ]
+
 
 class TContext(TaskContext):
 
@@ -58,17 +72,6 @@ class TContext(TaskContext):
 
 
 class TMapper(Mapper):
-
-    def __init__(self, ctx):
-        self.ctx = ctx
-
-    def map(self, ctx):
-        words = ctx.value.split()
-        for w in words:
-            ctx.emit(w, '1')
-
-
-class TMapperSideEffect(Mapper):
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -89,14 +92,25 @@ class TReducer(Reducer):
         ctx.emit(ctx.key, str(s))
 
 
-class TReducerSideEffect(Reducer):
+class TMapperPE(Mapper):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def map(self, ctx):
+        words = ctx.value.split()
+        ctx.emit('', Counter(words))
+
+
+class TReducerPE(Reducer):
 
     def __init__(self, ctx):
         self.ctx = ctx
 
     def reduce(self, ctx):
-        s = sum(map(int, ctx.values))
-        ctx.emit(ctx.key, str(s))
+        s = sum(ctx.values, Counter())
+        for k in s:
+            ctx.emit(k, s[k])
 
 
 class TFactory(Factory):
@@ -137,13 +151,15 @@ class SortAndShuffle(object):
         self.out_stream = None
 
     def process(self, msg):
-        parts = msg.split('\t')
-        if parts[0] == 'output':
-            key = unquote_string(parts[1])
-            value = unquote_string(parts[2])
-            self.data.setdefault(key, []).append(value)
+        p = msg.split('\t')
+        if p[0] == 'output':
+            key = unquote_string(p[1])
+            val = unquote_string(p[2])
+            self.data.setdefault(key, []).append(val)
 
     def write(self, s):
+        import sys
+        sys.stderr.write('s:%r\n' % s)
         self.buffer.append(s)
         if s.endswith('\n'):
             msg = ''.join(self.buffer)
@@ -157,8 +173,12 @@ class SortAndShuffle(object):
         self.out_stream = self.get_reduce_stream()
 
     def readline(self):
+        import sys
         try:
-            return self.out_stream.next()
+            v = self.out_stream.next()
+            sys.stderr.write('readline: %r\n' % v)
+            return v
+            # return self.out_stream.next()
         except StopIteration:
             return ''
 
@@ -181,6 +201,9 @@ class TestFramework(WDTestCase):
         fname = self._mkfn('foo2.txt')
         stream_writer(fname, STREAM_2)
         self.stream2 = open(fname, 'r')
+        fname = self._mkfn('foo3.bin')
+        binary_stream_writer(fname, STREAM_3)
+        self.stream3 = open(fname, 'r')
 
     def tearDown(self):
         self.stream1.close()
@@ -212,6 +235,42 @@ class TestFramework(WDTestCase):
                      private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_2)
 
+    def test_map_reduce_with_private_encoding(self):
+        factory = TFactory(mapper=TMapperPE, reducer=TReducerPE)
+        self.stream3.close()
+        cmd_file = self.stream3.name
+        out_file = cmd_file + '.out'
+        reduce_infile = cmd_file + '.reduce'
+        reduce_outfile = reduce_infile + '.out'
+        run_task(factory, cmd_file=cmd_file, private_encoding=True)
+        data = {}
+        with open(out_file) as f:
+            bf = BinaryDownStreamFilter(f)
+            for cmd, args in bf:
+                if cmd == 'output':
+                    data.setdefault(args[0], []).append(args[1])
+        stream = []
+        stream.append(('start', 0))
+        stream.append(('setJobConf', ('key1', 'value1', 'key2', 'value2')))
+        stream.append(('runReduce', 0, False))
+        for k in data:
+            stream.append(('reduceKey', k))
+            for v in data[k]:
+                stream.append(('reduceValue', v))
+        stream.append(('close',))
+        binary_stream_writer(reduce_infile, stream)
+        run_task(factory, cmd_file=reduce_infile, private_encoding=True)
+        with open(reduce_outfile) as f, self._mkf('foo.out', mode='w') as o:
+            bf = BinaryUpStreamDecoder(f)
+            for cmd, args in bf:
+                if cmd == 'progress':
+                    o.write('progress\t%s\n' % args[0])
+                elif cmd == 'output':
+                    o.write('output\t%s\n' % '\t'.join(args))
+                elif cmd == 'done':
+                    o.write('done\n')
+        self.check_result('foo.out', STREAM_3)
+
     def test_map_combiner_reduce_with_context(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
@@ -228,14 +287,14 @@ class TestFramework(WDTestCase):
         with self._mkf(fname, mode='r') as i:
             data = i.read()
         lines = data.strip().split('\n')
-        self.assertEqual('progress\t0.0', lines[0])
-        self.assertEqual('done', lines[-1])
+        self.assertTrue(lines[0] in ['progress\t0.0', 'progress (0.0,)'])
+        self.assertTrue(lines[-1] in ['done', 'done ()'])
         counts = Counter(dict(map(lambda t: (t[0], int(t[1])),
                                   (l.split('\t')[1:] for l in lines[1:-1]))))
         ref_counts = Counter(sum(
             [x[2].split() for x in ref_data if x[0] == 'mapItem'], []
         ))
-        self.assertEqual(counts.keys(), ref_counts.keys())
+        self.assertEqual(sorted(counts.keys()), sorted(ref_counts.keys()))
         for k in counts.keys():
             self.assertEqual(ref_counts[k] * factor, counts[k])
 
@@ -244,6 +303,7 @@ def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestFramework('test_map_only'))
     suite_.addTest(TestFramework('test_map_reduce'))
+    suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_combiner_reduce'))
     suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
     return suite_
