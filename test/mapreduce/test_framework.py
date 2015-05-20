@@ -38,6 +38,17 @@ STREAM_1 = [
     ('close',),
     ]
 
+STREAM_2 = [
+    ('start', 0),
+    ('setJobConf', 'key1', 'value1', 'key2', 'value2'),
+    ('setInputTypes', 'key_type', 'value_type'),
+    ('runMap', 'input_split', 1, False),
+    ('mapItem', 'key1', 'the blue fox jumps on the table'),
+    ('mapItem', 'key1', 'a yellow fox turns around'),
+    ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
+    ('close',),
+    ]
+    
 
 class TContext(TaskContext):
 
@@ -47,6 +58,17 @@ class TContext(TaskContext):
 
 
 class TMapper(Mapper):
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def map(self, ctx):
+        words = ctx.value.split()
+        for w in words:
+            ctx.emit(w, '1')
+
+
+class TMapperSideEffect(Mapper):
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -67,12 +89,22 @@ class TReducer(Reducer):
         ctx.emit(ctx.key, str(s))
 
 
-class TFactory(Factory):
+class TReducerSideEffect(Reducer):
 
-    def __init__(self, combiner=None, partitioner=None,
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def reduce(self, ctx):
+        s = sum(map(int, ctx.values))
+        ctx.emit(ctx.key, str(s))
+
+
+class TFactory(Factory):
+    def __init__(self, mapper=TMapper, reducer=TReducer,
+                 combiner=None, partitioner=None,
                  record_writer=None, record_reader=None):
-        self.mclass = TMapper
-        self.rclass = TReducer
+        self.mclass = mapper
+        self.rclass = reducer
         self.cclass = combiner
         self.pclass = partitioner
         self.rwclass = record_writer
@@ -145,21 +177,25 @@ class TestFramework(WDTestCase):
         super(TestFramework, self).setUp()
         fname = self._mkfn('foo.txt')
         stream_writer(fname, STREAM_1)
-        self.stream = open(fname, 'r')
+        self.stream1 = open(fname, 'r')
+        fname = self._mkfn('foo2.txt')
+        stream_writer(fname, STREAM_2)
+        self.stream2 = open(fname, 'r')
 
     def tearDown(self):
-        self.stream.close()
+        self.stream1.close()
+        self.stream2.close()
         super(TestFramework, self).tearDown()
 
     def test_map_only(self):
         factory = TFactory()
         with self._mkf('foo_map_only.out') as o:
-            run_task(factory, istream=self.stream, ostream=o)
+            run_task(factory, istream=self.stream1, ostream=o)
 
     def test_map_reduce(self):
         factory = TFactory()
         sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas,
+        run_task(factory, istream=self.stream1, ostream=sas,
                  private_encoding=False)
         with self._mkf('foo_map_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
@@ -169,22 +205,24 @@ class TestFramework(WDTestCase):
     def test_map_combiner_reduce(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
-        run_task(factory, istream=self.stream, ostream=sas)
+        run_task(factory, istream=self.stream2, ostream=sas,
+                 private_encoding=False)
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
                      private_encoding=False)
-        self.check_result('foo_map_combiner_reduce.out', STREAM_1)
+        self.check_result('foo_map_combiner_reduce.out', STREAM_2)
 
     def test_map_combiner_reduce_with_context(self):
         factory = TFactory(combiner=TReducer)
         sas = SortAndShuffle()
         run_task(
-            factory, istream=self.stream, ostream=sas, context_class=TContext
+            factory, istream=self.stream2, ostream=sas, context_class=TContext,
+            private_encoding=False
         )
         with self._mkf('foo_map_combiner_reduce.out') as o:
             run_task(factory, istream=sas, ostream=o,
                      private_encoding=False)
-        self.check_result('foo_map_combiner_reduce.out', STREAM_1, 2)
+        self.check_result('foo_map_combiner_reduce.out', STREAM_2, 2)
 
     def check_result(self, fname, ref_data, factor=1):
         with self._mkf(fname, mode='r') as i:
@@ -194,7 +232,6 @@ class TestFramework(WDTestCase):
         self.assertEqual('done', lines[-1])
         counts = Counter(dict(map(lambda t: (t[0], int(t[1])),
                                   (l.split('\t')[1:] for l in lines[1:-1]))))
-        #--
         ref_counts = Counter(sum(
             [x[2].split() for x in ref_data if x[0] == 'mapItem'], []
         ))
