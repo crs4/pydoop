@@ -19,7 +19,9 @@
 import sys
 import logging
 import time
+import numbers
 from cStringIO import StringIO
+from copy import deepcopy
 
 from pydoop import hadoop_version_info
 from pydoop.utils.serialize import (
@@ -123,16 +125,26 @@ class InputSplit(object):
 
 class CombineRunner(api.RecordWriter):
 
-    def __init__(self, spill_bytes, context, reducer):
+    def __init__(self, spill_bytes, context, reducer, fast_combiner=False):
         self.spill_bytes = spill_bytes
         self.used_bytes = 0
         self.data = {}
         self.ctx = context
         self.reducer = reducer
+        self.fast_combiner = fast_combiner
+
+    def __defensive_copy(self, v):
+        if isinstance(v, (str, unicode, numbers.Number)):
+            return v
+        else:
+            return deepcopy(v)
 
     def emit(self, key, value):
         self.used_bytes += sys.getsizeof(key)
         self.used_bytes += sys.getsizeof(value)
+        if not self.fast_combiner:
+            key = self.__defensive_copy(key)
+            value = self.__defensive_copy(value)
         self.data.setdefault(key, []).append(value)
         if self.used_bytes >= self.spill_bytes:
             self.spill_all()
@@ -154,7 +166,8 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
-    def __init__(self, up_link, private_encoding=True):
+    def __init__(self, up_link, private_encoding=True, fast_combiner=False):
+        self._fast_combiner = fast_combiner
         self.private_encoding = private_encoding
         self._private_encoding = False
         self.up_link = up_link
@@ -205,8 +218,12 @@ class TaskContext(api.MapContext, api.ReduceContext):
             spill_size = self._job_conf.get_int(
                 MAPREDUCE_TASK_IO_SORT_MB_KEY, MAPREDUCE_TASK_IO_SORT_MB
             )
-            self.writer = CombineRunner(spill_size * 1024 * 1024,
-                                        self, reducer) if reducer else None
+            if reducer:
+                self.writer = CombineRunner(spill_size * 1024 * 1024,
+                                            self, reducer,
+                                            fast_combiner=self._fast_combiner)
+            else:
+                self.writer = None
 
     def emit(self, key, value):
         self.progress()
@@ -425,7 +442,7 @@ class StreamRunner(object):
 
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=True, context_class=TaskContext,
-             cmd_file=None):
+             cmd_file=None, fast_combiner=False):
     """
     Run the assigned task in the framework.
 
@@ -435,7 +452,9 @@ def run_task(factory, port=None, istream=None, ostream=None,
     connections = resolve_connections(
         port, istream=istream, ostream=ostream, cmd_file=cmd_file
     )
-    context = context_class(connections.up_link, private_encoding)
+    context = context_class(connections.up_link,
+                            private_encoding=private_encoding,
+                            fast_combiner=fast_combiner)
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
     stream_runner.run()
     context.close()
@@ -444,7 +463,7 @@ def run_task(factory, port=None, istream=None, ostream=None,
 
 
 def runTask(factory):
-    run_task(factory, private_encoding=False)
+    run_task(factory, private_encoding=False, fast_combiner=False)
 
 
 class RecordReaderWrapper(object):
