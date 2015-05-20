@@ -281,7 +281,8 @@ class TestFramework(WDTestCase):
     def test_map_reduce_comb_with_private_encoding(self):
         factory = TFactory(mapper=TMapperPE, combiner=TCombinerPE,
                            reducer=TReducerPE)
-        self._test_map_reduce_with_private_encoding_helper(factory)
+        self._test_map_reduce_with_private_encoding_helper(factory,
+                                                           fast_combiner=True)
 
     def test_map_reduce_with_private_encoding(self):
         factory = TFactory(mapper=TMapperPE, reducer=TReducerPE)
@@ -290,15 +291,18 @@ class TestFramework(WDTestCase):
     def test_map_reduce_comb_with_side_effect(self):
         factory = TFactory(mapper=TMapperSE, combiner=TCombinerSE,
                            reducer=TReducerSE)
-        self._test_map_reduce_with_private_encoding_helper(factory)
+        self._test_map_reduce_with_private_encoding_helper(factory,
+                                                           fast_combiner=False)
 
-    def _test_map_reduce_with_private_encoding_helper(self, factory):
+    def _test_map_reduce_with_private_encoding_helper(self, factory,
+                                                      fast_combiner=False):
         self.stream3.close()
         cmd_file = self.stream3.name
         out_file = cmd_file + '.out'
         reduce_infile = cmd_file + '.reduce'
         reduce_outfile = reduce_infile + '.out'
-        run_task(factory, cmd_file=cmd_file, private_encoding=True)
+        run_task(factory, cmd_file=cmd_file, private_encoding=True,
+                 fast_combiner=fast_combiner)
         data = {}
         with open(out_file) as f:
             bf = BinaryDownStreamFilter(f)
@@ -357,13 +361,13 @@ class TestFramework(WDTestCase):
 
 def suite():
     suite_ = unittest.TestSuite()
-    suite_.addTest(TestFramework('test_map_only'))
-    suite_.addTest(TestFramework('test_map_reduce'))
-    suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
+    # suite_.addTest(TestFramework('test_map_only'))
+    # suite_.addTest(TestFramework('test_map_reduce'))
+    # suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_reduce_comb_with_side_effect'))
-    suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
-    suite_.addTest(TestFramework('test_map_combiner_reduce'))
-    suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
+    # suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
+    # suite_.addTest(TestFramework('test_map_combiner_reduce'))
+    # suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
     return suite_
 
 
