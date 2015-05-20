@@ -201,8 +201,6 @@ class SortAndShuffle(object):
             self.data.setdefault(key, []).append(val)
 
     def write(self, s):
-        import sys
-        sys.stderr.write('s:%r\n' % s)
         self.buffer.append(s)
         if s.endswith('\n'):
             msg = ''.join(self.buffer)
@@ -216,12 +214,8 @@ class SortAndShuffle(object):
         self.out_stream = self.get_reduce_stream()
 
     def readline(self):
-        import sys
         try:
-            v = self.out_stream.next()
-            sys.stderr.write('readline: %r\n' % v)
-            return v
-            # return self.out_stream.next()
+            return self.out_stream.next()
         except StopIteration:
             return ''
 
@@ -361,13 +355,13 @@ class TestFramework(WDTestCase):
 
 def suite():
     suite_ = unittest.TestSuite()
-    # suite_.addTest(TestFramework('test_map_only'))
-    # suite_.addTest(TestFramework('test_map_reduce'))
-    # suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
+    suite_.addTest(TestFramework('test_map_only'))
+    suite_.addTest(TestFramework('test_map_reduce'))
+    suite_.addTest(TestFramework('test_map_combiner_reduce'))
+    suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
+    suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
+    suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_reduce_comb_with_side_effect'))
-    # suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
-    # suite_.addTest(TestFramework('test_map_combiner_reduce'))
-    # suite_.addTest(TestFramework('test_map_combiner_reduce_with_context'))
     return suite_
 
 
