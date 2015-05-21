@@ -391,6 +391,13 @@ class Clean(clean):
         ]
         for p in garbage_list:
             rm_rf(p, self.dry_run)
+        self._clean_examples()
+
+    @staticmethod
+    def _clean_examples():
+        for root, _, files in os.walk('examples'):
+            if 'Makefile' in files:
+                subprocess.call(["make", "-C", root, "clean" ])
 
 
 setup(
