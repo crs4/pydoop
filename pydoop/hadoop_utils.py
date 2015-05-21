@@ -260,6 +260,11 @@ class HadoopVersion(object):
         return (self.distribution == 'cdh' and
                 self.dist_version >= (4, 0, 0) and not self.dist_ext)
 
+    def has_mrv2(self):
+        return \
+            self.main >= (2, 0, 0) and \
+                (self.is_yarn() or not self.is_cloudera())
+
     def is_cdh_v5(self):
         return (self.distribution == 'cdh' and
                 self.dist_version >= (5, 0, 0) and
