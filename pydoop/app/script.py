@@ -87,7 +87,7 @@ class PydoopScript(object):
         args.cache_archive = None
         args.upload_to_cache = None
         args.libjars = None
-        args.mrv2 = False
+        args.mrv2 = pydoop.hadoop_version_info().has_mrv2()
         args.local_fs = False
         args.conf = None
         args.disable_property_name_conversion = True
@@ -95,6 +95,7 @@ class PydoopScript(object):
                           args.kv_separator)]
         args.avro_input = None
         args.avro_output = None
+
         # despicable hack...
         properties = dict(args.D or [])
         properties.update(dict(args.job_conf))
