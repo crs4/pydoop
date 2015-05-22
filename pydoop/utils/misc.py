@@ -156,7 +156,9 @@ class NullLogger(logging.Logger):
 def make_random_str(prefix="pydoop_", postfix=''):
     return "%s%s%s" % (prefix, uuid.uuid4().hex, postfix)
 
+
 class Timer(object):
+
     def __init__(self, ctx, counter_group=None):
         self.ctx = ctx
         self._start_times = {}
@@ -167,22 +169,25 @@ class Timer(object):
         return "TIME_" + event.upper() + " (ms)"
 
     def _get_time_counter(self, name):
-        if not self._counters.has_key(name):
+        if name not in self._counters:
             counter_name = self._gen_counter_name(name)
-            self._counters[name] = self.ctx.getCounter(self._counter_group, counter_name)
+            self._counters[name] = self.ctx.getCounter(
+                self._counter_group, counter_name
+            )
         return self._counters[name]
 
     def start(self, s):
         self._start_times[s] = time.time()
 
     def stop(self, s):
-        delta_ms = 1000*(time.time() - self._start_times[s])
+        delta_ms = 1000 * (time.time() - self._start_times[s])
         self.ctx.incrementCounter(self._get_time_counter(s), int(delta_ms))
 
     def time_block(self, event_name):
         return self.TimingBlock(self, event_name)
 
     class TimingBlock(object):
+
         def __init__(self, timer, event_name):
             self._timer = timer
             self._event_name = event_name
