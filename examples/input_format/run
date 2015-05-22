@@ -1,11 +1,8 @@
 #!/bin/bash
 
-set -o errexit
-set -o nounset
-
 PYTHONBIN=${PYTHONBIN:-python}
 
-CHK="import pydoop; hd_info = pydoop.hadoop_version_info(); print(hd_info.has_mrv2())"
+CHK="import pydoop; hd_info = pydoop.hadoop_version_info(); print(hd_info.tuple >= (2, 2, 0) and hd_info.is_yarn())"
 is_mrv2_ok=`${PYTHONBIN} -c "$CHK"`
 
 if [[ x${is_mrv2_ok} == xTrue ]]; then
