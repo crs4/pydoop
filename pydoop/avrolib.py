@@ -67,8 +67,8 @@ class AvroContext(pp.TaskContext):
             return datum_reader.read(dec)
         return deserialize
 
-    def __init__(self, up_link, private_encoding=True):
-        super(AvroContext, self).__init__(up_link, private_encoding)
+    def __init__(self, *args, **kwargs):
+        super(AvroContext, self).__init__(*args, **kwargs)
         self.__datum_writers = {'K': None, 'V': None}
 
     def set_job_conf(self, vals):
