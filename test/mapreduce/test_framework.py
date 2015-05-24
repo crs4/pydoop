@@ -18,11 +18,13 @@
 
 import unittest
 from collections import Counter
+import time
 
 from pydoop.mapreduce.api import Mapper, Reducer, Factory
 from pydoop.mapreduce.pipes import run_task, TaskContext
 from pydoop.mapreduce.string_utils import unquote_string
 from pydoop.test_utils import WDTestCase
+from pydoop.utils.misc import Timer
 
 from test_text_stream import stream_writer
 from test_binary_streams import stream_writer as binary_stream_writer
@@ -92,6 +94,18 @@ class TReducer(Reducer):
         ctx.emit(ctx.key, str(s))
 
 
+class SleepingMapper(TMapper):
+
+    def __init__(self, ctx):
+        super(SleepingMapper, self).__init__(ctx)
+        self.timer = Timer(ctx)
+
+    def map(self, ctx):
+        with self.timer.time_block("sleep"):
+            time.sleep(.001)
+        super(SleepingMapper, self).map(ctx)
+
+
 class TMapperPE(Mapper):
 
     def __init__(self, ctx):
@@ -157,6 +171,7 @@ class TCombinerSE(Reducer):
 
 
 class TFactory(Factory):
+
     def __init__(self, mapper=TMapper, reducer=TReducer,
                  combiner=None, partitioner=None,
                  record_writer=None, record_reader=None):
@@ -337,6 +352,22 @@ class TestFramework(WDTestCase):
                      private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_2, 2)
 
+    def test_timer(self):
+        factory = TFactory(mapper=SleepingMapper)
+        with self._mkf('foo_map_only.out') as o:
+            run_task(factory, istream=self.stream1, ostream=o)
+        count = Counter()
+        with open(o.name) as f:
+            for line in f:
+                count[line.strip().split('\t', 1)[0]] += 1
+        exp_count = {
+            'registerCounter': 1,
+            'incrementCounter': Counter([_[0] for _ in STREAM_1])['mapItem']
+        }
+        for k, v in exp_count.iteritems():
+            self.assertTrue(k in count)
+            self.assertEqual(count[k], v)
+
     def check_result(self, fname, ref_data, factor=1):
         with self._mkf(fname, mode='r') as i:
             data = i.read()
@@ -362,6 +393,7 @@ def suite():
     suite_.addTest(TestFramework('test_map_reduce_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_reduce_comb_with_side_effect'))
+    suite_.addTest(TestFramework('test_timer'))
     return suite_
 
 
