@@ -96,7 +96,8 @@ class AvroContext(pp.TaskContext):
         """
         def deserialize(*args, **kwargs):
             ret = meth(*args, **kwargs)
-            return deserializer.deserialize(ret)
+            with self.timer.time_block('avro deserialization'):
+                return deserializer.deserialize(ret)
         return deserialize
 
     def __init__(self, *args, **kwargs):
@@ -159,7 +160,8 @@ class AvroContext(pp.TaskContext):
             for mode, record in out_kv.iteritems():
                 serializer = self.__serializers.get(mode)
                 if serializer is not None:
-                    out_kv[mode] = serializer.serialize(record)
+                    with self.timer.time_block('avro serialization'):
+                        out_kv[mode] = serializer.serialize(record)
         return out_kv['K'], out_kv['V']
 
     # move to super?
