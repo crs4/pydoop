@@ -106,6 +106,16 @@ class SleepingMapper(TMapper):
         super(SleepingMapper, self).map(ctx)
 
 
+class SleepingMapperNoTimer(TMapper):
+
+    def __init__(self, ctx):
+        super(SleepingMapperNoTimer, self).__init__(ctx)
+
+    def map(self, ctx):
+        time.sleep(.001)
+        super(SleepingMapperNoTimer, self).map(ctx)
+
+
 class TMapperPE(Mapper):
 
     def __init__(self, ctx):
@@ -352,8 +362,8 @@ class TestFramework(WDTestCase):
                      private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_2, 2)
 
-    def test_timer(self):
-        factory = TFactory(mapper=SleepingMapper)
+    def test_instrumentation(self):
+        factory = TFactory(mapper=SleepingMapperNoTimer)
         with self._mkf('foo_map_only.out') as o:
             run_task(factory, istream=self.stream1, ostream=o)
         count = Counter()
@@ -368,6 +378,22 @@ class TestFramework(WDTestCase):
             self.assertTrue(k in count)
             self.assertEqual(count[k], v)
 
+    def test_timer(self):
+        factory = TFactory(mapper=SleepingMapper)
+        with self._mkf('foo_map_only.out') as o:
+            run_task(factory, istream=self.stream1, ostream=o)
+        count = Counter()
+        with open(o.name) as f:
+            for line in f:
+                count[line.strip().split('\t', 1)[0]] += 1
+        exp_count = {
+            'registerCounter': 2,
+            'incrementCounter': 2 * Counter([_[0] for _ in STREAM_1])['mapItem']
+        }
+        for k, v in exp_count.iteritems():
+            self.assertTrue(k in count)
+            self.assertEqual(count[k], v)
+
     def check_result(self, fname, ref_data, factor=1):
         with self._mkf(fname, mode='r') as i:
             data = i.read()
@@ -375,7 +401,9 @@ class TestFramework(WDTestCase):
         self.assertTrue(lines[0] in ['progress\t0.0', 'progress (0.0,)'])
         self.assertTrue(lines[-1] in ['done', 'done ()'])
         counts = Counter(dict(map(lambda t: (t[0], int(t[1])),
-                                  (l.split('\t')[1:] for l in lines[1:-1]))))
+                                  (l.split('\t')[1:] for l in lines[1:-1]
+                                   if l.startswith('output')
+                                   ))))
         ref_counts = Counter(sum(
             [x[2].split() for x in ref_data if x[0] == 'mapItem'], []
         ))
@@ -394,6 +422,7 @@ def suite():
     suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_reduce_comb_with_side_effect'))
     suite_.addTest(TestFramework('test_timer'))
+    suite_.addTest(TestFramework('test_instrumentation'))
     return suite_
 
 
