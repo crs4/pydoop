@@ -135,11 +135,12 @@ class CombineRunner(api.RecordWriter):
         self.ctx = context
         self.reducer = reducer
         self.fast_combiner = fast_combiner
-        self.spill_counter = self.ctx.get_counter('Pydoop CombineRunner', 'spills')
-        self.spilled_bytes_counter = self.ctx.get_counter('Pydoop CombineRunner',
-                                                          'spilled bytes')
-        self.in_rec_counter = self.ctx.get_counter('Pydoop CombineRunner',
-                                                   'input records')
+        self.spill_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'spills')
+        self.spilled_bytes_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'spilled bytes')
+        self.in_rec_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'input records')
 
     def __defensive_copy(self, v):
         if isinstance(v, (str, unicode, numbers.Number)):
