@@ -34,6 +34,9 @@ from pydoop.utils.serialize import (
     private_encode,
 )
 
+from pydoop.utils.misc import Timer
+
+
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
 from .string_utils import create_digest
@@ -132,6 +135,12 @@ class CombineRunner(api.RecordWriter):
         self.ctx = context
         self.reducer = reducer
         self.fast_combiner = fast_combiner
+        self.spill_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'spills')
+        self.spilled_bytes_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'spilled bytes')
+        self.in_rec_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'input records')
 
     def __defensive_copy(self, v):
         if isinstance(v, (str, unicode, numbers.Number)):
@@ -146,6 +155,7 @@ class CombineRunner(api.RecordWriter):
             key = self.__defensive_copy(key)
             value = self.__defensive_copy(value)
         self.data.setdefault(key, []).append(value)
+        self.ctx.increment_counter(self.in_rec_counter, 1)
         if self.used_bytes >= self.spill_bytes:
             self.spill_all()
 
@@ -153,12 +163,15 @@ class CombineRunner(api.RecordWriter):
         self.spill_all()
 
     def spill_all(self):
+        self.ctx.increment_counter(self.spill_counter, 1)
+        self.ctx.increment_counter(self.spilled_bytes_counter, self.used_bytes)
         ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
-        for key, values in self.data.iteritems():
-            ctx._key, ctx._values = key, iter(values)
-            self.reducer.reduce(ctx)
+        with ctx.timer.time_block('spill reduction'):
+            for key, values in self.data.iteritems():
+                ctx._key, ctx._values = key, iter(values)
+                self.reducer.reduce(ctx)
         ctx.writer = writer
         self.data.clear()
         self.used_bytes = 0
@@ -186,6 +199,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self._progress_float = 0.0
         self._last_progress = 0
         self._registered_counters = []
+        self.timer = Timer(self, 'Pydoop TaskContext')
         # None = unknown (yet), e.g., while setting conf.  In this
         # case, *both* is_mapper() and is_reducer() must return False
         self._is_mapper = None
@@ -419,7 +433,8 @@ class StreamRunner(object):
                 ctx._progress_float = reader.get_progress()
                 LOGGER.debug("Progress updated to %r ", ctx._progress_float)
                 progress_function()
-            mapper_map(ctx)
+            with ctx.timer.time_block('map calls'):
+                mapper_map(ctx)
         mapper.close()
         self.logger.debug('done with run_map')
 
@@ -435,7 +450,8 @@ class StreamRunner(object):
                                            ctx.private_encoding)
         reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
-            reducer_reduce(ctx)
+            with ctx.timer.time_block('reduce calls'):
+                reducer_reduce(ctx)
         reducer.close()
         self.logger.debug('done with run_reduce')
 
