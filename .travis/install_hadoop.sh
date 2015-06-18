@@ -178,14 +178,11 @@ export LIBHDFS_OPTS="-Xmx96m"\
 
     if [[ "${Yarn}" == true ]]; then  # MRv2 (YARN)
         ## hdfs-site.xml
-        sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml;
-        sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
+        sudo sed -i -e '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>' /etc/hadoop/conf/hdfs-site.xml
         ## mapred-site.xml
-        sudo sed '/\/configuration/ i\<property><name>mapreduce.framework.name</name><value>yarn</value></property><property><name>mapreduce.task.timeout</name><value>60000</value></property><property><name>mapred.task.timeout</name><value>60000</value></property>' <  /etc/hadoop/conf/mapred-site.xml > /tmp/mapred-site.xml;
-        sudo mv /tmp/mapred-site.xml /etc/hadoop/conf/mapred-site.xml
+        sudo sed -i -e '/\/configuration/ i\<property><name>mapreduce.framework.name</name><value>yarn</value></property><property><name>mapreduce.task.timeout</name><value>60000</value></property><property><name>mapred.task.timeout</name><value>60000</value></property>' /etc/hadoop/conf/mapred-site.xml
         ## yarn-site.xml
-        sudo sed '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' <  /etc/hadoop/conf/yarn-site.xml > /tmp/yarn-site.xml;
-        sudo mv /tmp/yarn-site.xml /etc/hadoop/conf/yarn-site.xml
+        sudo sed -i -e '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' /etc/hadoop/conf/yarn-site.xml
     else  # MRv1
         write_cdh_mrv1_config "${HadoopConfDir}"
     fi
