@@ -101,6 +101,7 @@ install:
 
 script:
 - cd test;
+- top -b -n 1 -c # run top in batch mode, 1 iteration, show command. top on Travis doesn't support sort (-o)
 - $VIRTUAL_ENV/bin/python all_tests.py
 - cd ../examples
 - export PYTHONBIN=$VIRTUAL_ENV/bin/python
