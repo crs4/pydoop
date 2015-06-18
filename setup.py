@@ -235,32 +235,38 @@ class JavaLib(object):
         self.java_files = []
         self.dependencies = []
         self.properties = []
-        if hadoop_vinfo.has_mrv2():
+        if hadoop_vinfo.main >= (2, 0, 0) and hadoop_vinfo.is_yarn():
+            # This version of Hadoop has the v2 pipes API
             # FIXME: kinda hardwired to avro for now
             self.properties.append((os.path.join(
                 "it/crs4/pydoop/mapreduce/pipes", PROP_BN),
                 PROP_FN))
-            self.java_files.extend([
-                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
-            ])
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/pipes/*.java'
             ))
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
             ))
+        else:
+            # Else we should be dealing with v1 pipes
+            self.java_files.extend(glob.glob(
+                'src/v1/org/apache/hadoop/mapred/pipes/*.java'
+            ))
+
+        if hadoop_vinfo.has_mrv2():
+            # If the installation has MRv2 we need to use v2 I/O classes
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/mapreduce/lib/output/*.java'
             ))
-            # for now we have only hadoop2 deps (avro-mapred)
+            self.java_files.extend([
+                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
+            ])
+            # for things such as avro-mapreduce
             self.dependencies.extend(glob.glob('lib/*.jar'))
         else:
             self.java_files.extend([
                 "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
-            self.java_files.extend(glob.glob(
-                'src/v1/org/apache/hadoop/mapred/pipes/*.java'
-            ))
 
 
 class JavaBuilder(object):
