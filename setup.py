@@ -247,6 +247,8 @@ class JavaLib(object):
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
             ))
+            # for things such as avro-mapreduce
+            self.dependencies.extend(glob.glob('lib/*.jar'))
         else:
             # Else we should be dealing with v1 pipes
             self.java_files.extend(glob.glob(
@@ -261,8 +263,6 @@ class JavaLib(object):
             self.java_files.extend([
                 "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
-            # for things such as avro-mapreduce
-            self.dependencies.extend(glob.glob('lib/*.jar'))
         else:
             self.java_files.extend([
                 "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
