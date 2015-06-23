@@ -154,18 +154,37 @@ function update_cdh_config_files(){
     # make configuration files editable by everyone to simplify setting up the machine... :-/
     sudo chmod -R 777 "${HadoopConfDir}"
 
+    # CDH5 sets clients to ask for 512 MB of heap memory.  That's too much for the current Travis VMs.
+    # So we lower heap sizes and we raise the heap size allocated by libhdfs (otherwise we get
+    # MemoryErrors in the tests).
+    sudo sed -i \
+      -e '/^export HADOOP_[A-Z]\+_OPTS/s/-Xmx[0-9]\+m\>/-Xmx128m/' \
+      -e '/HADOOP_.*HEAPSIZE=/s/^.*\(\<HADOOP_[A-Z_]*HEAPSIZE\)=.*/export \1=400/'
+      -e '$a\
+export LIBHDFS_OPTS="-Xmx96m"\
+' \
+      "${HadoopConfDir}/hadoop-env.sh"
+
+    sudo sed -i \
+      -e '/\<YARN_.*HEAPSIZE=/s/^.*\(\<YARN_[A-Z_]*HEAPSIZE\)=.*/export \1=256/'
+      "${HadoopConfDir}/yarn-env.sh"
+
+    sudo sed -i \
+      -e '/HADOOP_JOB_HISTORYSERVER_HEAPSIZE/s/\<HADOOP_JOB_HISTORYSERVER_HEAPSIZE=.*/HADOOP_JOB_HISTORYSERVER_HEAPSIZE=256/' \
+      -e '$a\
+export LIBHDFS_OPTS="-Xmx96m"\
+' \
+      "${HadoopConfDir}/mapred-env.sh"
+
     if [[ "${Yarn}" == true ]]; then  # MRv2 (YARN)
         ## hdfs-site.xml
-        sudo sed '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>' <  /etc/hadoop/conf/hdfs-site.xml > /tmp/hdfs-site.xml;
-	    sudo mv /tmp/hdfs-site.xml /etc/hadoop/conf/hdfs-site.xml
+        sudo sed -i -e '/\/configuration/ i\<property><name>dfs.permissions.supergroup<\/name><value>admin<\/value><\/property><property><name>dfs.namenode.fs-limits.min-block-size</name><value>512</value></property>' /etc/hadoop/conf/hdfs-site.xml
         ## mapred-site.xml
-	    sudo sed '/\/configuration/ i\<property><name>mapreduce.framework.name</name><value>yarn</value></property><property><name>mapreduce.task.timeout</name><value>60000</value></property><property><name>mapred.task.timeout</name><value>60000</value></property>' <  /etc/hadoop/conf/mapred-site.xml > /tmp/mapred-site.xml;
-	    sudo mv /tmp/mapred-site.xml /etc/hadoop/conf/mapred-site.xml
+        sudo sed -i -e '/\/configuration/ i\<property><name>mapreduce.framework.name</name><value>yarn</value></property><property><name>mapreduce.task.timeout</name><value>60000</value></property><property><name>mapred.task.timeout</name><value>60000</value></property>' /etc/hadoop/conf/mapred-site.xml
         ## yarn-site.xml
-	    sudo sed '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' <  /etc/hadoop/conf/yarn-site.xml > /tmp/yarn-site.xml;
-	    sudo mv /tmp/yarn-site.xml /etc/hadoop/conf/yarn-site.xml
+        sudo sed -i -e '/\/configuration/ i\<property><name>yarn.nodemanager.vmem-pmem-ratio</name><value>2.8</value></property>' /etc/hadoop/conf/yarn-site.xml
     else  # MRv1
-	    write_cdh_mrv1_config "${HadoopConfDir}"
+        write_cdh_mrv1_config "${HadoopConfDir}"
     fi
 
     # update the hadoop_env
@@ -189,7 +208,7 @@ function install_standard_hadoop() {
         export HADOOP_BIN="${HADOOP_HOME}/sbin/"
         export HADOOP_COMMON_LIB_NATIVE_DIR="${HADOOP_HOME}/lib/native"
         export HADOOP_OPTS="-Djava.library.path=${HADOOP_HOME}/lib"
-    else 
+    else
         export HADOOP_CONF_DIR="${HADOOP_HOME}/conf"
         export HADOOP_BIN="${HADOOP_HOME}/bin/"
         write_hadoop_standard_config_v1 "${HADOOP_CONF_DIR}"
@@ -202,7 +221,7 @@ function install_standard_hadoop() {
     if [[ -n "${PYTHONPATH}" ]]; then
       echo "export PYTHONPATH=${PYTHONPATH}" >> "${HADOOP_CONF_DIR}/hadoop-env.sh"
     fi
-    
+
     log "Formatting namenode"
     "${HADOOP_HOME}/bin/hadoop" namenode -format
     log "Starting daemons..."
@@ -227,7 +246,6 @@ function install_cdh4() {
     curl -s http://archive.cloudera.com/cdh4/ubuntu/precise/amd64/cdh/archive.key | sudo apt-key add -
     log "Updating packages"
     sudo apt-get update
-
 
     if [[ "${Yarn}" == false ]]; then
         log "Installing hadoop MR1"
@@ -318,46 +336,46 @@ function install_hdp2() {
     [ $# -eq 1 ] || error "Missing HadoopVersion"
     local HadoopVersion="${1}"
     local HRTWRKS_VER="${HadoopVersion##HDP}"
-    
+
     log "Installing Hortonworks Hadoop, version ${HadoopVersion}: START"
-    
+
     install_hdp2_ubuntu_packages ${HRTWRKS_VER}
-    
+
     if [ "$HadoopVersion" = "HDP2.2.0.0" ]; then
         #local HadoopConfDir=/usr/hdp/2.2.0.0-2041/hadoop/conf
         local HadoopConfDir=/etc/hadoop/conf
         local HDP_BASE=/usr/hdp/current/
         local HDP_NMND=${HDP_BASE}/hadoop-hdfs-namenode
-        local HDFS=${HDP_NMND}/../hadoop/bin/hdfs        
+        local HDFS=${HDP_NMND}/../hadoop/bin/hdfs
         local HDFS_DAEMON=${HDP_NMND}/../hadoop/sbin/hadoop-daemon.sh
         local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
 
-        log "Copying new conf in ${HadoopConfDir}"        
+        log "Copying new conf in ${HadoopConfDir}"
         sudo -E cp ${PWD}/.travis/hadoop-2.6.0-conf/* ${HadoopConfDir}/
         log "Current contents of ${HadoopConfDir}"
         ls -lR ${HadoopConfDir}/
-        
+
         log "Formatting the NameNode"
         sudo -E ${HDFS} namenode -format
         log "Start HDFS"
         sudo -E ${HDFS_DAEMON} start namenode
         sudo -E ${HDFS_DAEMON} start datanode
-        sudo -E ${YARN_DAEMON} start resourcemanager        
+        sudo -E ${YARN_DAEMON} start resourcemanager
         sudo -E ${YARN_DAEMON} start nodemanager
     elif [ "$HadoopVersion" = "HDP2.1.5.0" ]; then
         # Currently broken.
-        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"    
+        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"
         log "Adding mixing links"
         ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-hdfs/
         ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-yarn/
-    
+
         log "Formatting the NameNode"
         /usr/lib/hadoop-hdfs/bin/hdfs --config /shared/hadoop-conf  namenode -format
 
         log "Start HDFS"
         /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
         /usr/lib/hadoop/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
-        log "Start yarn"    
+        log "Start yarn"
         /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start resourcemanager
         /usr/lib/hadoop-yarn/sbin/yarn-daemon.sh --config /shared/hadoop-conf start nodemanager
     fi
