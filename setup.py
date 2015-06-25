@@ -235,7 +235,8 @@ class JavaLib(object):
         self.java_files = []
         self.dependencies = []
         self.properties = []
-        if hadoop_vinfo.main >= (2, 0, 0) and hadoop_vinfo.is_yarn():
+        if hadoop_vinfo.main >= (2, 0, 0) and \
+           (not hadoop_vinfo.is_cloudera() or hadoop_vinfo.is_yarn()):
             # This version of Hadoop has the v2 pipes API
             # FIXME: kinda hardwired to avro for now
             self.properties.append((os.path.join(
