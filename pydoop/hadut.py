@@ -112,13 +112,25 @@ class RunCmdError(RuntimeError):
             )
 
 
+# keep_streams must default to True for backwards compatibility
 def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
-            hadoop_conf_dir=None, logger=None):
+            hadoop_conf_dir=None, logger=None, keep_streams=True):
     """
     Run a Hadoop command.
 
-    If the command succeeds, return its output; if it fails, raise a
-    ``RunCmdError`` with its error output as the message.
+    If ``keep_streams`` is set to :obj:`True` (the default), the
+    stdout and stderr of the command will be buffered in memory.  If
+    the command succeeds, the former will be returned; if it fails, a
+    ``RunCmdError`` will be raised with the latter as the message.
+    This mode is appropriate for short-running commands whose "result"
+    is represented by their standard output (e.g., ``"dfsadmin",
+    ["-safemode", "get"]``).
+
+    If ``keep_streams`` is set to :obj:`False`, the command will write
+    directly to the stdout and stderr of the calling process, and the
+    return value will be empty.  This mode is appropriate for long
+    running commands that do not write their "real" output to stdout
+    (such as pipes).
 
     .. code-block:: python
 
@@ -155,8 +167,16 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         for seq in gargs, args:
             _args.extend(map(str, seq))
     logger.debug('final args: %r' % (_args,))
-    p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, error = p.communicate()
+    if keep_streams:
+        p = subprocess.Popen(
+            _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        output, error = p.communicate()
+    else:
+        p = subprocess.Popen(_args, stdout=None, stderr=None, bufsize=1)
+        ret = p.wait()
+        error = 'command exited with %d status' % ret if ret else ''
+        output = ''
     if p.returncode:
         raise RunCmdError(p.returncode, ' '.join(_args), error)
     return output
@@ -185,7 +205,7 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
     else:
         stdout = run_cmd("job", ["-list-active-trackers"],
                          properties=properties,
-                         hadoop_conf_dir=hadoop_conf_dir)
+                         hadoop_conf_dir=hadoop_conf_dir, keep_streams=True)
         task_trackers = []
         for l in stdout.splitlines():
             if not l:
@@ -210,7 +230,8 @@ def dfs(args=None, properties=None, hadoop_conf_dir=None):
 
     ``args`` and ``properties`` are passed to :func:`run_cmd`.
     """
-    return run_cmd("dfs", args, properties, hadoop_conf_dir=hadoop_conf_dir)
+    return run_cmd("dfs", args, properties, hadoop_conf_dir=hadoop_conf_dir,
+                   keep_streams=True)
 
 
 def path_exists(path, properties=None, hadoop_conf_dir=None):
@@ -230,7 +251,8 @@ def path_exists(path, properties=None, hadoop_conf_dir=None):
     return True
 
 
-def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
+def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
+            keep_streams=True):
     """
     Run a jar on Hadoop (``hadoop jar`` command).
 
@@ -257,14 +279,15 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
         if more_args is not None:
             args.extend(more_args)
         return run_cmd(
-            "jar", args, properties, hadoop_conf_dir=hadoop_conf_dir
+            "jar", args, properties, hadoop_conf_dir=hadoop_conf_dir,
+            keep_streams=keep_streams
         )
     else:
         raise ValueError("Can't read jar file %s" % jar_name)
 
 
 def run_class(class_name, args=None, properties=None, classpath=None,
-              hadoop_conf_dir=None, logger=None):
+              hadoop_conf_dir=None, logger=None, keep_streams=True):
     """
     Run a Java class with Hadoop (equivalent of running ``hadoop
     <class_name>`` from the command line).
@@ -297,7 +320,8 @@ def run_class(class_name, args=None, properties=None, classpath=None,
         )
         logger.debug('HADOOP_CLASSPATH: %r' % (os.getenv('HADOOP_CLASSPATH'),))
     res = run_cmd(class_name, args, properties,
-                  hadoop_conf_dir=hadoop_conf_dir, logger=logger)
+                  hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                  keep_streams=keep_streams)
     if old_classpath is not None:
         os.environ['HADOOP_CLASSPATH'] = old_classpath
     return res
@@ -305,7 +329,7 @@ def run_class(class_name, args=None, properties=None, classpath=None,
 
 def run_pipes(executable, input_path, output_path, more_args=None,
               properties=None, force_pydoop_submitter=False,
-              hadoop_conf_dir=None, logger=None):
+              hadoop_conf_dir=None, logger=None, keep_streams=False):
     """
     Run a pipes command.
 
@@ -355,10 +379,12 @@ def run_pipes(executable, input_path, output_path, more_args=None,
         pydoop_jar = pydoop.jar_path()
         args.extend(("-libjars", pydoop_jar))
         return run_class(submitter, args, properties,
-                         classpath=pydoop_jar, logger=logger)
+                         classpath=pydoop_jar, logger=logger,
+                         keep_streams=keep_streams)
     else:
         return run_cmd("pipes", args, properties,
-                       hadoop_conf_dir=hadoop_conf_dir, logger=logger)
+                       hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                       keep_streams=keep_streams)
 
 
 def find_jar(jar_name, root_path=None):
