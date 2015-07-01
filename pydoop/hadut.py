@@ -17,8 +17,8 @@
 # END_COPYRIGHT
 
 """
-The hadut module provides access to some Hadoop functionalities
-available via the Hadoop shell.
+The hadut module provides access to some functionalities available
+via the Hadoop shell.
 """
 
 import os
