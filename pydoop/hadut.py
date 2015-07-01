@@ -134,21 +134,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
 
     .. code-block:: python
 
-      >>> import uuid
-      >>> properties = {'dfs.block.size': 32*2**20}
-      >>> args = ['-put', 'hadut.py', uuid.uuid4().hex]
-      >>> res = run_cmd('fs', args, properties)
-      >>> res
-      ''
-      >>> print run_cmd('dfsadmin', ['-help', 'report'])
-      -report: Reports basic filesystem information and statistics.
-      >>> try:
-      ...     run_cmd('foo')
-      ... except RunCmdError as e:
-      ...     print e
-      ...
-      Exception in thread "main" java.lang.NoClassDefFoundError: foo
-      ...
+      >>> hadoop_classpath = run_cmd('classpath')
     """
     if logger is None:
         logger = utils.NullLogger()
@@ -258,21 +244,6 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
 
     ``more_args`` (after prepending ``jar_name``) and ``properties`` are
     passed to :func:`run_cmd`.
-
-    .. code-block:: python
-
-      >>> import glob, pydoop
-      >>> hadoop_home = pydoop.hadoop_home()
-      >>> v = pydoop.hadoop_version_info()
-      >>> if v.cdh >= (4, 0, 0): hadoop_home += '-0.20-mapreduce'
-      >>> jar_name = glob.glob('%s/*examples*.jar' % hadoop_home)[0]
-      >>> more_args = ['wordcount']
-      >>> try:
-      ...     run_jar(jar_name, more_args=more_args)
-      ... except RunCmdError as e:
-      ...     print e
-      ...
-      Usage: wordcount <in> <out>
     """
     if hu.is_readable(jar_name):
         args = [jar_name]
@@ -299,9 +270,10 @@ def run_class(class_name, args=None, properties=None, classpath=None,
 
     .. code-block:: python
 
-      >>> cls = 'org.apache.hadoop.hdfs.tools.DFSAdmin'
-      >>> print run_class(cls, args=['-help', 'report'])
-      -report: Reports basic filesystem information and statistics.
+      >>> cls = 'org.apache.hadoop.fs.FsShell'
+      >>> try: out = run_class(cls, args=['-test', '-e', 'file:/tmp'])
+      ... except RunCmdError: tmp_exists = False
+      ... else: tmp_exists = True
 
     .. note::
 
