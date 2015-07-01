@@ -33,7 +33,7 @@ logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
-
+import pydoop
 from pydoop.utils.serialize import serialize_to_string
 from pydoop.sercore import fdopen as ph_fdopen
 
@@ -54,6 +54,8 @@ TASK_PARTITION_V2 = 'mapreduce.task.partition'
 OUTPUT_DIR_V1 = 'mapred.work.output.dir'
 OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
 DEFAULT_SLEEP_DELTA = 3
+
+AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
 
 
 class TrivialRecordWriter(object):
@@ -282,7 +284,7 @@ class HadoopSimulator(object):
     Common HadoopSimulator components.
     """
 
-    def __init__(self, logger, loglevel=logging.CRITICAL):
+    def __init__(self, logger, loglevel=logging.CRITICAL, context_cls=None):
         self.logger = logger
         self.logger.setLevel(loglevel)
         self.counters = {}
@@ -290,6 +292,7 @@ class HadoopSimulator(object):
         self.status = 'Undefined'
         self.phase = 'Undefined'
         self.logger.debug('initialized')
+        self.context_cls = context_cls or TaskContext
 
     def set_phase(self, phase):
         self.phase = phase
@@ -369,12 +372,27 @@ class HadoopSimulator(object):
         down_stream.send('runMap', input_split, num_reducers, piped_input)
         if piped_input:
             down_stream.send('setInputTypes', input_key_type, input_value_type)
-            pos = file_in.tell()
-            for l in file_in:
-                self.logger.debug("Line: %s", l)
-                k = serialize_to_string(pos)
-                down_stream.send('mapItem', k, l)
+            if AVRO_VALUE_INPUT_SCHEMA in job_conf:
+
+                from pydoop.avrolib import Serializer
+                from avro.datafile import DataFileReader
+                from avro.io import DatumReader
+
+                reader = DataFileReader(file_in, DatumReader())
+                serializer = Serializer(
+                    job_conf.get(AVRO_VALUE_INPUT_SCHEMA)
+                )
+                for record in reader:
+                    value = serializer.serialize(record)
+                    down_stream.send('mapItem', '', value)
+
+            else:
                 pos = file_in.tell()
+                for l in file_in:
+                    self.logger.debug("Line: %s", l)
+                    k = serialize_to_string(pos)
+                    down_stream.send('mapItem', k, l)
+                    pos = file_in.tell()
             down_stream.send('close')
         self.logger.debug('done writing, rewinding')
         f.seek(0)
@@ -415,15 +433,15 @@ class HadoopSimulatorLocal(HadoopSimulator):
       counters = hs.get_counters()
     """
 
-    def __init__(self, factory, logger=None, loglevel=logging.CRITICAL):
+    def __init__(self, factory, logger=None, loglevel=logging.CRITICAL, context_cls=None):
         logger = logger.getChild('HadoopSimulatorLocal') if logger \
             else logging.getLogger(self.__class__.__name__)
-        super(HadoopSimulatorLocal, self).__init__(logger, loglevel)
+        super(HadoopSimulatorLocal, self).__init__(logger, loglevel, context_cls)
         self.factory = factory
 
     def run_task(self, dstream, ustream):
         self.logger.debug('run task')
-        context = TaskContext(ustream)
+        context = self.context_cls(ustream)
         self.logger.debug('got context')
         stream_runner = StreamRunner(self.factory, context, dstream)
         self.logger.debug('got runner, ready to run')
@@ -503,10 +521,10 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     """
 
     def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
-                 sleep_delta=DEFAULT_SLEEP_DELTA):
+                 sleep_delta=DEFAULT_SLEEP_DELTA, context_cls=None):
         logger = logger.getChild('HadoopSimulatorNetwork') if logger \
             else logging.getLogger(self.__class__.__name__)
-        super(HadoopSimulatorNetwork, self).__init__(logger, loglevel)
+        super(HadoopSimulatorNetwork, self).__init__(logger, loglevel, context_cls)
         self.program = program
         self.sleep_delta = sleep_delta
         tfile = tempfile.NamedTemporaryFile(delete=False)
