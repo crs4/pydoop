@@ -173,7 +173,7 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
     Get the list of task trackers in the Hadoop cluster.
 
     Each element in the returned list is in the ``(host, port)`` format.
-    ``properties`` is passed to :func:`run_cmd`.
+    All arguments are passed to :func:`run_class`.
 
     If ``offline`` is :obj:`True`, try getting the list of task trackers from
     the ``slaves`` file in Hadoop's configuration directory (no attempt is
@@ -189,9 +189,12 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
         except IOError:
             task_trackers = []
     else:
-        stdout = run_cmd("job", ["-list-active-trackers"],
-                         properties=properties,
-                         hadoop_conf_dir=hadoop_conf_dir, keep_streams=True)
+        # run JobClient directly (avoids "hadoop job" deprecation)
+        stdout = run_class(
+            "org.apache.hadoop.mapred.JobClient", ["-list-active-trackers"],
+            properties=properties, hadoop_conf_dir=hadoop_conf_dir,
+            keep_streams=True
+        )
         task_trackers = []
         for l in stdout.splitlines():
             if not l:
@@ -205,26 +208,29 @@ def get_num_nodes(properties=None, hadoop_conf_dir=None, offline=False):
     """
     Get the number of task trackers in the Hadoop cluster.
 
-    ``properties`` is passed to :func:`get_task_trackers`.
+    All arguments are passed to :func:`get_task_trackers`.
     """
     return len(get_task_trackers(properties, hadoop_conf_dir, offline))
 
 
 def dfs(args=None, properties=None, hadoop_conf_dir=None):
     """
-    Run Hadoop dfs/fs.
+    Run the Hadoop file system shell.
 
-    ``args`` and ``properties`` are passed to :func:`run_cmd`.
+    All arguments are passed to :func:`run_class`.
     """
-    return run_cmd("dfs", args, properties, hadoop_conf_dir=hadoop_conf_dir,
-                   keep_streams=True)
+    # run FsShell directly (avoids "hadoop dfs" deprecation)
+    return run_class(
+        "org.apache.hadoop.fs.FsShell", args, properties,
+        hadoop_conf_dir=hadoop_conf_dir, keep_streams=True
+    )
 
 
 def path_exists(path, properties=None, hadoop_conf_dir=None):
     """
     Return :obj:`True` if ``path`` exists in the default HDFS.
 
-    ``properties`` is passed to :func:`dfs`.
+    Keyword arguments are passed to :func:`dfs`.
 
     This function does the same thing as :func:`hdfs.path.exists
     <pydoop.hdfs.path.exists>`, but it uses a wrapper for the Hadoop
@@ -242,8 +248,8 @@ def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
     """
     Run a jar on Hadoop (``hadoop jar`` command).
 
-    ``more_args`` (after prepending ``jar_name``) and ``properties`` are
-    passed to :func:`run_cmd`.
+    All arguments are passed to :func:`run_cmd` (``args = [jar_name] +
+    more_args``) .
     """
     if hu.is_readable(jar_name):
         args = [jar_name]
