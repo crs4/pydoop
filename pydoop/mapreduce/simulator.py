@@ -36,6 +36,7 @@ LOGGER.setLevel(logging.CRITICAL)
 import pydoop
 from pydoop.utils.serialize import serialize_to_string
 from pydoop.sercore import fdopen as ph_fdopen
+from pydoop.avrolib import Serializer as AvroSerializer
 
 from .pipes import TaskContext, StreamRunner
 from .api import RecordReader, PydoopError
@@ -44,6 +45,9 @@ from .binary_streams import (
 )
 from .string_utils import create_digest
 from .connections import BUF_SIZE
+from avro.datafile import DataFileReader
+from avro.io import DatumReader
+from collections import defaultdict
 
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
@@ -55,7 +59,12 @@ OUTPUT_DIR_V1 = 'mapred.work.output.dir'
 OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
 DEFAULT_SLEEP_DELTA = 3
 
+AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
+AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
+AVRO_KEY_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_INPUT_SCHEMA']
+AVRO_KEY_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_OUTPUT_SCHEMA']
 AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
+AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 
 
 class TrivialRecordWriter(object):
@@ -372,19 +381,35 @@ class HadoopSimulator(object):
         down_stream.send('runMap', input_split, num_reducers, piped_input)
         if piped_input:
             down_stream.send('setInputTypes', input_key_type, input_value_type)
-            if AVRO_VALUE_INPUT_SCHEMA in job_conf:
-
-                from pydoop.avrolib import Serializer
-                from avro.datafile import DataFileReader
-                from avro.io import DatumReader
-
+            if AVRO_INPUT in job_conf:
+                serializers = defaultdict(lambda: lambda r: '')
+                avro_input = job_conf[AVRO_INPUT].upper()
                 reader = DataFileReader(file_in, DatumReader())
-                serializer = Serializer(
-                    job_conf.get(AVRO_VALUE_INPUT_SCHEMA)
-                )
+
+                if avro_input == 'K' or avro_input == 'KV':
+                    serializer = AvroSerializer(
+                        job_conf.get(AVRO_KEY_INPUT_SCHEMA)
+                    )
+                    serializers['K'] = serializer.serialize
+
+                if avro_input == 'V' or avro_input == 'KV':
+                    serializer = AvroSerializer(
+                        job_conf.get(AVRO_VALUE_INPUT_SCHEMA)
+                    )
+                    serializers['V'] = serializer.serialize
+
                 for record in reader:
-                    value = serializer.serialize(record)
-                    down_stream.send('mapItem', '', value)
+                    if avro_input == 'KV':
+                        record_k = record['key']
+                        record_v = record['value']
+                    else:
+                        record_v = record_k = record
+
+                    down_stream.send(
+                        'mapItem',
+                        serializers['K'](record_k),
+                        serializers['V'](record_v),
+                    )
 
             else:
                 pos = file_in.tell()
