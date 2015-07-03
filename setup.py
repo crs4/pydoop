@@ -421,7 +421,7 @@ setup(
         ':python_version=="2.6"': ['argparse', 'importlib'],
         'avro': ["avro>=1.7.4"],
         },
-    packages=find_packages(),
+    packages=find_packages(exclude=['test', 'test.*']),
     package_data={"pydoop": [PROP_FN]},
     cmdclass={
         "build": BuildPydoop,
