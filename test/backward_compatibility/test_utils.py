@@ -31,6 +31,7 @@ import pydoop.hadoop_utils as hu
 
 
 class TestHadoopUtils(unittest.TestCase):
+
     def setUp(self):
         self.hadoop_version = "0.20.2"
         self.hadoop_version_tuple = (0, 20, 2)
@@ -70,6 +71,8 @@ class TestHadoopUtils(unittest.TestCase):
             self.assertEqual(v.is_apache(), dist == 'apache')
             self.assertEqual(v.is_hortonworks(), dist == 'hdp')
             self.assertEqual(v.tuple, main + dver + dext)
+            # minimal check -- tag is currently unused
+            self.assertTrue(dist in v.tag())
         for s in "bla", '0.20.str', '0.20.2+str':
             self.assertRaises(hu.HadoopVersionError, hu.HadoopVersion, s)
 
