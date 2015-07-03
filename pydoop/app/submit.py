@@ -373,16 +373,16 @@ class PydoopSubmitter(object):
                         else self.fake_run_class)
             executor(submitter_class, args=job_args,
                      properties=self.properties, classpath=classpath,
-                     logger=self.logger)
+                     logger=self.logger, keep_streams=False)
             self.logger.info("Done")
         finally:
             self.__clean_wd()
 
-    def fake_run_class(self, submitter_class, args, properties, classpath,
-                       logger):
-        logger.info("Fake run class")
-        sys.stdout.write("hadut.run_class(%s, %s, %s, %s)\n" %
-                         (submitter_class, args, properties, classpath))
+    def fake_run_class(self, *args, **kwargs):
+        kwargs['logger'].info("Fake run class")
+        repr_list = map(repr, args)
+        repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
+        sys.stdout.write("hadut.run_class(%s)\n" % ', '.join(repr_list))
 
 
 def run(args, unknown_args=None):

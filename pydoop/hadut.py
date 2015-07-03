@@ -17,8 +17,8 @@
 # END_COPYRIGHT
 
 """
-The hadut module provides access to some Hadoop functionalities
-available via the Hadoop shell.
+The hadut module provides access to some functionalities available
+via the Hadoop shell.
 """
 
 import os
@@ -112,31 +112,29 @@ class RunCmdError(RuntimeError):
             )
 
 
+# keep_streams must default to True for backwards compatibility
 def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
-            hadoop_conf_dir=None, logger=None):
+            hadoop_conf_dir=None, logger=None, keep_streams=True):
     """
     Run a Hadoop command.
 
-    If the command succeeds, return its output; if it fails, raise a
-    ``RunCmdError`` with its error output as the message.
+    If ``keep_streams`` is set to :obj:`True` (the default), the
+    stdout and stderr of the command will be buffered in memory.  If
+    the command succeeds, the former will be returned; if it fails, a
+    ``RunCmdError`` will be raised with the latter as the message.
+    This mode is appropriate for short-running commands whose "result"
+    is represented by their standard output (e.g., ``"dfsadmin",
+    ["-safemode", "get"]``).
+
+    If ``keep_streams`` is set to :obj:`False`, the command will write
+    directly to the stdout and stderr of the calling process, and the
+    return value will be empty.  This mode is appropriate for long
+    running commands that do not write their "real" output to stdout
+    (such as pipes).
 
     .. code-block:: python
 
-      >>> import uuid
-      >>> properties = {'dfs.block.size': 32*2**20}
-      >>> args = ['-put', 'hadut.py', uuid.uuid4().hex]
-      >>> res = run_cmd('fs', args, properties)
-      >>> res
-      ''
-      >>> print run_cmd('dfsadmin', ['-help', 'report'])
-      -report: Reports basic filesystem information and statistics.
-      >>> try:
-      ...     run_cmd('foo')
-      ... except RunCmdError as e:
-      ...     print e
-      ...
-      Exception in thread "main" java.lang.NoClassDefFoundError: foo
-      ...
+      >>> hadoop_classpath = run_cmd('classpath')
     """
     if logger is None:
         logger = utils.NullLogger()
@@ -155,8 +153,16 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         for seq in gargs, args:
             _args.extend(map(str, seq))
     logger.debug('final args: %r' % (_args,))
-    p = subprocess.Popen(_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, error = p.communicate()
+    if keep_streams:
+        p = subprocess.Popen(
+            _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        output, error = p.communicate()
+    else:
+        p = subprocess.Popen(_args, stdout=None, stderr=None, bufsize=1)
+        ret = p.wait()
+        error = 'command exited with %d status' % ret if ret else ''
+        output = ''
     if p.returncode:
         raise RunCmdError(p.returncode, ' '.join(_args), error)
     return output
@@ -167,7 +173,7 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
     Get the list of task trackers in the Hadoop cluster.
 
     Each element in the returned list is in the ``(host, port)`` format.
-    ``properties`` is passed to :func:`run_cmd`.
+    All arguments are passed to :func:`run_class`.
 
     If ``offline`` is :obj:`True`, try getting the list of task trackers from
     the ``slaves`` file in Hadoop's configuration directory (no attempt is
@@ -183,9 +189,12 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
         except IOError:
             task_trackers = []
     else:
-        stdout = run_cmd("job", ["-list-active-trackers"],
-                         properties=properties,
-                         hadoop_conf_dir=hadoop_conf_dir)
+        # run JobClient directly (avoids "hadoop job" deprecation)
+        stdout = run_class(
+            "org.apache.hadoop.mapred.JobClient", ["-list-active-trackers"],
+            properties=properties, hadoop_conf_dir=hadoop_conf_dir,
+            keep_streams=True
+        )
         task_trackers = []
         for l in stdout.splitlines():
             if not l:
@@ -199,25 +208,29 @@ def get_num_nodes(properties=None, hadoop_conf_dir=None, offline=False):
     """
     Get the number of task trackers in the Hadoop cluster.
 
-    ``properties`` is passed to :func:`get_task_trackers`.
+    All arguments are passed to :func:`get_task_trackers`.
     """
     return len(get_task_trackers(properties, hadoop_conf_dir, offline))
 
 
 def dfs(args=None, properties=None, hadoop_conf_dir=None):
     """
-    Run Hadoop dfs/fs.
+    Run the Hadoop file system shell.
 
-    ``args`` and ``properties`` are passed to :func:`run_cmd`.
+    All arguments are passed to :func:`run_class`.
     """
-    return run_cmd("dfs", args, properties, hadoop_conf_dir=hadoop_conf_dir)
+    # run FsShell directly (avoids "hadoop dfs" deprecation)
+    return run_class(
+        "org.apache.hadoop.fs.FsShell", args, properties,
+        hadoop_conf_dir=hadoop_conf_dir, keep_streams=True
+    )
 
 
 def path_exists(path, properties=None, hadoop_conf_dir=None):
     """
     Return :obj:`True` if ``path`` exists in the default HDFS.
 
-    ``properties`` is passed to :func:`dfs`.
+    Keyword arguments are passed to :func:`dfs`.
 
     This function does the same thing as :func:`hdfs.path.exists
     <pydoop.hdfs.path.exists>`, but it uses a wrapper for the Hadoop
@@ -230,41 +243,28 @@ def path_exists(path, properties=None, hadoop_conf_dir=None):
     return True
 
 
-def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None):
+def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
+            keep_streams=True):
     """
     Run a jar on Hadoop (``hadoop jar`` command).
 
-    ``more_args`` (after prepending ``jar_name``) and ``properties`` are
-    passed to :func:`run_cmd`.
-
-    .. code-block:: python
-
-      >>> import glob, pydoop
-      >>> hadoop_home = pydoop.hadoop_home()
-      >>> v = pydoop.hadoop_version_info()
-      >>> if v.cdh >= (4, 0, 0): hadoop_home += '-0.20-mapreduce'
-      >>> jar_name = glob.glob('%s/*examples*.jar' % hadoop_home)[0]
-      >>> more_args = ['wordcount']
-      >>> try:
-      ...     run_jar(jar_name, more_args=more_args)
-      ... except RunCmdError as e:
-      ...     print e
-      ...
-      Usage: wordcount <in> <out>
+    All arguments are passed to :func:`run_cmd` (``args = [jar_name] +
+    more_args``) .
     """
     if hu.is_readable(jar_name):
         args = [jar_name]
         if more_args is not None:
             args.extend(more_args)
         return run_cmd(
-            "jar", args, properties, hadoop_conf_dir=hadoop_conf_dir
+            "jar", args, properties, hadoop_conf_dir=hadoop_conf_dir,
+            keep_streams=keep_streams
         )
     else:
         raise ValueError("Can't read jar file %s" % jar_name)
 
 
 def run_class(class_name, args=None, properties=None, classpath=None,
-              hadoop_conf_dir=None, logger=None):
+              hadoop_conf_dir=None, logger=None, keep_streams=True):
     """
     Run a Java class with Hadoop (equivalent of running ``hadoop
     <class_name>`` from the command line).
@@ -276,9 +276,10 @@ def run_class(class_name, args=None, properties=None, classpath=None,
 
     .. code-block:: python
 
-      >>> cls = 'org.apache.hadoop.hdfs.tools.DFSAdmin'
-      >>> print run_class(cls, args=['-help', 'report'])
-      -report: Reports basic filesystem information and statistics.
+      >>> cls = 'org.apache.hadoop.fs.FsShell'
+      >>> try: out = run_class(cls, args=['-test', '-e', 'file:/tmp'])
+      ... except RunCmdError: tmp_exists = False
+      ... else: tmp_exists = True
 
     .. note::
 
@@ -297,7 +298,8 @@ def run_class(class_name, args=None, properties=None, classpath=None,
         )
         logger.debug('HADOOP_CLASSPATH: %r' % (os.getenv('HADOOP_CLASSPATH'),))
     res = run_cmd(class_name, args, properties,
-                  hadoop_conf_dir=hadoop_conf_dir, logger=logger)
+                  hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                  keep_streams=keep_streams)
     if old_classpath is not None:
         os.environ['HADOOP_CLASSPATH'] = old_classpath
     return res
@@ -305,7 +307,7 @@ def run_class(class_name, args=None, properties=None, classpath=None,
 
 def run_pipes(executable, input_path, output_path, more_args=None,
               properties=None, force_pydoop_submitter=False,
-              hadoop_conf_dir=None, logger=None):
+              hadoop_conf_dir=None, logger=None, keep_streams=False):
     """
     Run a pipes command.
 
@@ -355,10 +357,12 @@ def run_pipes(executable, input_path, output_path, more_args=None,
         pydoop_jar = pydoop.jar_path()
         args.extend(("-libjars", pydoop_jar))
         return run_class(submitter, args, properties,
-                         classpath=pydoop_jar, logger=logger)
+                         classpath=pydoop_jar, logger=logger,
+                         keep_streams=keep_streams)
     else:
         return run_cmd("pipes", args, properties,
-                       hadoop_conf_dir=hadoop_conf_dir, logger=logger)
+                       hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                       keep_streams=keep_streams)
 
 
 def find_jar(jar_name, root_path=None):
