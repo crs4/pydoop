@@ -37,13 +37,14 @@ if md_folder not in sys.path:
 avro_folder = os.path.realpath(os.path.abspath('../avro/py'))
 if avro_folder not in sys.path:
     sys.path.insert(0, avro_folder)
-import subprocess
+
 
 from wordcount_minimal import FACTORY as factory_minimal
 from wordcount_full import FACTORY as factory_full
 import avro_base
 import check_results as avro_check_results
-
+import create_input
+import write_avro
 
 
 """
@@ -144,16 +145,11 @@ def run_network_full(logger):
 
 def prepare_avro_data(csv_fn, avro_fn, schema_fn):
 
-    subprocess.call(['python', os.path.join(avro_folder, 'create_input.py'), '20', csv_fn])
-    subprocess.call([
-        'python',
-        os.path.join(avro_folder, 'write_avro.py'),
-        schema_fn,
-        csv_fn, avro_fn
-    ])
+    create_input.main(20, csv_fn)
+    write_avro.main(schema_fn, csv_fn, avro_fn)
 
 
-def run_local_avro_value_in(logger,file_in, data_in, schema):
+def run_local_avro_value_in(logger,file_in, data_in):
     data_out = '/tmp/pydoop-test-avro_out'
 
     factory = pp.Factory(mapper_class=avro_base.AvroValueColorPick, reducer_class=avro_base.NoAvroColorCount)
@@ -165,7 +161,7 @@ def run_local_avro_value_in(logger,file_in, data_in, schema):
     dump_counters(hsl, logger)
     avro_check_results.main(data_in, data_out)
 
-def run_local_avro_key_in(logger,file_in, data_in, schema):
+def run_local_avro_key_in(logger,file_in, data_in):
     data_out = '/tmp/pydoop-test-avro_out'
 
     factory = pp.Factory(mapper_class=avro_base.AvroKeyColorPick, reducer_class=avro_base.NoAvroColorCount)
@@ -195,10 +191,8 @@ def main():
     schema_fn = os.path.join(avro_folder, '../schemas/user.avsc')
     prepare_avro_data(csv_fn, avro_fn, schema_fn)
 
-    with open(schema_fn) as f:
-        schema = f.read()
-    run_local_avro_value_in(logger, avro_fn, csv_fn, schema)
-    run_local_avro_key_in(logger, avro_fn, csv_fn, schema)
+    run_local_avro_value_in(logger, avro_fn, csv_fn)
+    run_local_avro_key_in(logger, avro_fn, csv_fn)
 
 
 

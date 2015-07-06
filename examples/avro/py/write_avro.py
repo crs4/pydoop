@@ -9,15 +9,11 @@ from avro.io import DatumWriter
 FIELDS = ['name', 'office', 'favorite_color']
 
 
-def main(argv):
-    try:
-        schema_fn = argv[1]
-        csv_fn = argv[2]
-        avro_fn = argv[3]
-    except IndexError:
-        sys.exit('Usage: %s SCHEMA_FILE CSV_FILE AVRO_FILE' % argv[0])
+def main(schema_fn, csv_fn, avro_fn):
+
     with open(schema_fn) as f_in:
         schema = avro.schema.parse(f_in.read())
+
     with open(csv_fn) as f_in:
         reader = csv.reader(f_in, delimiter=';')
         with open(avro_fn, 'wb') as f_out:
@@ -28,4 +24,10 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    try:
+        schema_fn = sys.argv[1]
+        csv_fn = sys.argv[2]
+        avro_fn = sys.argv[3]
+    except IndexError:
+        sys.exit('Usage: %s SCHEMA_FILE CSV_FILE AVRO_FILE' % argv[0])
+    main(schema_fn, csv_fn, avro_fn)
