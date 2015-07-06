@@ -28,6 +28,7 @@ import logging
 import os
 import shutil
 import tempfile
+import subprocess
 import pydoop.test_support as pts
 
 import sys
@@ -174,6 +175,19 @@ def run_local_avro_key_in(logger,file_in, data_in):
     avro_check_results.main(data_in, data_out)
 
 
+def run_local_avro_key_value_in(logger,file_in, data_in):
+    data_out = '/tmp/pydoop-test-avro_out'
+    factory = pp.Factory(mapper_class=avro_base.AvroKeyValueColorPick, reducer_class=avro_base.NoAvroColorCount)
+    hsl = HadoopSimulatorLocal(factory=factory, logger=logger,
+                               loglevel=logging.INFO, context_cls=AvroContext, avro_input='kv')
+
+    hsl.run(open(file_in), open(data_out, 'w'), {}, num_reducers=1)
+
+    dump_counters(hsl, logger)
+    avro_check_results.main(data_in, data_out)
+
+
+
 def main():
     logger = logging.getLogger("main")
     logger.setLevel(logging.INFO)
@@ -188,11 +202,18 @@ def main():
 
     csv_fn = '/tmp/users.csv'
     avro_fn = '/tmp/users.avro'
-    schema_fn = os.path.join(avro_folder, '../schemas/user.avsc')
-    prepare_avro_data(csv_fn, avro_fn, schema_fn)
-
+    users_schema = os.path.join(avro_folder, '../schemas/user.avsc')
+    pets_schema = os.path.join(avro_folder, '../schemas/pet.avsc')
+    prepare_avro_data(csv_fn, avro_fn, users_schema)
+    #
     run_local_avro_value_in(logger, avro_fn, csv_fn)
     run_local_avro_key_in(logger, avro_fn, csv_fn)
+
+
+    users_pets_fn = '/tmp/users_pets.avro'
+    subprocess.check_call(['./write_avro_kv', users_schema,  pets_schema, csv_fn, users_pets_fn],
+                          cwd=os.path.realpath(os.path.abspath('../avro/java')))
+    run_local_avro_key_value_in(logger, users_pets_fn, csv_fn)
 
 
 

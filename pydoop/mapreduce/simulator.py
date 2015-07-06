@@ -478,8 +478,13 @@ class HadoopSimulator(object):
                 jc[AVRO_KEY_INPUT_SCHEMA] = schema
             else:
                 schema_obj = json.loads(schema)
-                jc[AVRO_VALUE_INPUT_SCHEMA] = json.dumps(schema_obj['value'])
-                jc[AVRO_KEY_INPUT_SCHEMA] = json.dumps(schema_obj['key'])
+                for field in schema_obj['fields']:
+                    if field['name'] == 'key':
+                        key_schema = field['type']
+                    else:
+                        value_schema = field['type']
+                jc[AVRO_VALUE_INPUT_SCHEMA] = json.dumps(value_schema)
+                jc[AVRO_KEY_INPUT_SCHEMA] = json.dumps(key_schema)
 
         return jc
 
