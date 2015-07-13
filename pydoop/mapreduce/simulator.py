@@ -118,19 +118,38 @@ def reader_iterator(max=10):
 class AvroRecordWriter(TrivialRecordWriter):
     def __init__(self, simulator, stream):
         super(AvroRecordWriter, self).__init__(simulator, stream)
-        self.serializer = AvroSerializer(self.simulator.avro_output_schema)
-
-        schema = avro.schema.parse(self.simulator.avro_output_schema)
-        self.writer = DataFileWriter(self.stream, DatumWriter(), schema)
 
         self.deserializers = {}
-        if self.simulator.avro_output == 'k':
-            self.deserializers['k'] = AvroDeserializer(self.simulator.avro_output_schema)
-        elif self.simulator.avro_output == 'v':
-            self.deserializers['v'] = AvroDeserializer(self.simulator.avro_output_schema)
-        else:
-            self.deserializers['k'] = AvroDeserializer(json.dumps(schema['key']))
-            self.deserializers['v'] = AvroDeserializer(json.dumps(schema['value']))
+        schema = None
+        if self.simulator.avro_output_key_schema:
+            self.deserializers['k'] = AvroDeserializer(self.simulator.avro_output_key_schema)
+            schema = avro.schema.parse(self.simulator.avro_output_key_schema)
+
+        if self.simulator.avro_output_value_schema:
+            self.deserializers['v'] = AvroDeserializer(self.simulator.avro_output_value_schema)
+            schema = avro.schema.parse(self.simulator.avro_output_value_schema)
+
+        if self.simulator.avro_output == 'kv':
+            schema_k_parsed = avro.schema.parse(self.simulator.avro_output_key_schema)
+            schema_v_parsed = avro.schema.parse(self.simulator.avro_output_value_schema)
+
+            schema_k = json.loads(self.simulator.avro_output_key_schema)
+            schema_k.pop('namespace', None)
+            schema_v = json.loads(self.simulator.avro_output_value_schema)
+            schema_v.pop('namespace', None)
+            # schema_k['namespace'] = 'bla'
+            schema = {
+                'type': 'record',
+                'name': 'kv',
+                'fields': [
+                   {'name': 'key', 'type': schema_k},
+                   {'name': 'value', 'type': schema_v if schema_k_parsed.fullname != schema_v_parsed.fullname
+                   else schema_k_parsed.name}
+                ]
+            }
+            schema = avro.schema.parse(json.dumps(schema))
+
+        self.writer = DataFileWriter(self.stream, DatumWriter(), schema)
 
     def send(self, cmd, *vals):
         if cmd == 'done':
@@ -344,7 +363,8 @@ class HadoopSimulator(object):
             context_cls=None,
             avro_input=None,
             avro_output=None,
-            avro_output_schema=None
+            avro_output_key_schema=None,
+            avro_output_value_schema=None
     ):
         self.logger = logger
         self.logger.setLevel(loglevel)
@@ -363,8 +383,8 @@ class HadoopSimulator(object):
 
             if not AVRO_INSTALLED:
                 raise RuntimeError('avro is not installed')
-            if avro_output and not avro_output_schema:
-                ValueError('Invalid value for avro_output_schema. Expected json string, found %s' % avro_output_schema)
+            if avro_output and not avro_output_key_schema:
+                ValueError('Invalid value for avro_output_schema. Expected json string, found %s' % avro_output_key_schema)
 
             if context_cls is None:
                 context_cls = AvroContext
@@ -372,7 +392,8 @@ class HadoopSimulator(object):
         self.context_cls = context_cls or TaskContext
         self.avro_input = avro_input
         self.avro_output = avro_output
-        self.avro_output_schema = avro_output_schema
+        self.avro_output_key_schema = avro_output_key_schema
+        self.avro_output_value_schema = avro_output_value_schema
 
     def set_phase(self, phase):
         self.phase = phase
@@ -514,17 +535,6 @@ class HadoopSimulator(object):
         f.seek(0)
         return f
 
-    @staticmethod
-    def _set_schema_kv(jc, schema_str, key_prop, value_prop):
-            schema_obj = json.loads(schema_str)
-            for field in schema_obj['fields']:
-                if field['name'] == 'key':
-                    key_schema = field['type']
-                else:
-                    value_schema = field['type']
-            jc[value_prop] = json.dumps(value_schema)
-            jc[key_prop] = json.dumps(key_schema)
-
     def _get_jc_for_avro_input(self, file_in, job_conf):
 
         jc = dict(job_conf)
@@ -538,7 +548,15 @@ class HadoopSimulator(object):
             elif self.avro_input == 'k':
                 jc[AVRO_KEY_INPUT_SCHEMA] = schema
             else:
-                self._set_schema_kv(schema, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA)
+                schema_obj = json.loads(schema)
+                for field in schema_obj['fields']:
+                    if field['name'] == 'key':
+                        key_schema = field['type']
+                    else:
+                        value_schema = field['type']
+                jc[AVRO_KEY_INPUT_SCHEMA] = json.dumps(key_schema)
+                jc[AVRO_VALUE_INPUT_SCHEMA] = json.dumps(value_schema)
+
         return jc
 
     def _get_jc_for_avro_output(self, job_conf):
@@ -546,11 +564,14 @@ class HadoopSimulator(object):
         if self.avro_output:
             jc[AVRO_OUTPUT] = self.avro_input
             if self.avro_output == 'v':
-                jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_schema
+                jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_value_schema
             elif self.avro_output == 'k':
-                jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_schema
+                jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_key_schema
+
             else:
-                self._set_schema_kv(jc, self.avro_output_schema, AVRO_KEY_OUTPUT_SCHEMA, AVRO_VALUE_OUTPUT_SCHEMA)
+                jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_key_schema
+                jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_value_schema
+
         return jc
 
 
@@ -575,12 +596,13 @@ class HadoopSimulatorLocal(HadoopSimulator):
             context_cls=None,
             avro_input=None,
             avro_output=None,
-            avro_output_schema=None
+            avro_output_key_schema=None,
+            avro_output_value_schema=None
     ):
         logger = logger.getChild('HadoopSimulatorLocal') if logger \
             else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorLocal, self).__init__(
-            logger, loglevel, context_cls, avro_input, avro_output, avro_output_schema)
+            logger, loglevel, context_cls, avro_input, avro_output, avro_output_key_schema, avro_output_value_schema)
 
         self.factory = factory
 
@@ -680,12 +702,13 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             context_cls=None,
             avro_input=None,
             avro_output=None,
-            avro_output_schema=None
+            avro_output_key_schema=None,
+            avro_output_value_schema=None
     ):
         logger = logger.getChild('HadoopSimulatorNetwork') if logger \
             else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorNetwork, self).__init__(
-            logger, loglevel, context_cls, avro_input, avro_output, avro_output_schema)
+            logger, loglevel, context_cls, avro_input, avro_output, avro_output_key_schema, avro_output_value_schema)
 
         self.program = program
         self.sleep_delta = sleep_delta
