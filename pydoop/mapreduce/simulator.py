@@ -65,9 +65,11 @@ AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 import json
 
 try:
-    from avro.datafile import DataFileReader
-    from avro.io import DatumReader
-    from pydoop.avrolib import Serializer as AvroSerializer, AvroContext
+    from avro.datafile import DataFileReader, DataFileWriter
+    from avro.io import DatumReader, DatumWriter
+    from pydoop.avrolib import AvroSerializer, AvroDeserializer, AvroContext
+    import avro.schema
+    from pyavroc import AvroFileWriter
 
     AVRO_INSTALLED = True
 except ImportError:
@@ -111,6 +113,41 @@ class TrivialRecordWriter(object):
 def reader_iterator(max=10):
     for i in range(1, max+1):
         yield i, "The string %s" % i
+
+
+class AvroRecordWriter(TrivialRecordWriter):
+    def __init__(self, simulator, stream):
+        super(AvroRecordWriter, self).__init__(simulator, stream)
+        self.serializer = AvroSerializer(self.simulator.avro_output_schema)
+
+        schema = avro.schema.parse(self.simulator.avro_output_schema)
+        self.writer = DataFileWriter(self.stream, DatumWriter(), schema)
+
+        self.deserializers = {}
+        if self.simulator.avro_output == 'k':
+            self.deserializers['k'] = AvroDeserializer(self.simulator.avro_output_schema)
+        elif self.simulator.avro_output == 'v':
+            self.deserializers['v'] = AvroDeserializer(self.simulator.avro_output_schema)
+        else:
+            self.deserializers['k'] = AvroDeserializer(json.dumps(schema['key']))
+            self.deserializers['v'] = AvroDeserializer(json.dumps(schema['value']))
+
+    def send(self, cmd, *vals):
+        if cmd == 'done':
+            self.writer.close()
+        super(AvroRecordWriter, self).send(cmd, *vals)
+
+    def output(self, key, value):
+        if self.simulator.avro_output == 'k':
+            obj_to_append = self.deserializers['k'].deserialize(key)
+        elif self.simulator.avro_output == 'v':
+            obj_to_append = self.deserializers['v'].deserialize(value)
+        else:
+            obj_to_append = {
+                'key': self.deserializers['k'].deserialize(key),
+                'value': self.deserializers['v'].deserialize(value)
+            }
+        self.writer.append(obj_to_append)
 
 
 class TrivialRecordReader(RecordReader):
@@ -300,7 +337,15 @@ class HadoopSimulator(object):
     Common HadoopSimulator components.
     """
 
-    def __init__(self, logger, loglevel=logging.CRITICAL, context_cls=None, avro_input=None, avro_output=None):
+    def __init__(
+            self,
+            logger,
+            loglevel=logging.CRITICAL,
+            context_cls=None,
+            avro_input=None,
+            avro_output=None,
+            avro_output_schema=None
+    ):
         self.logger = logger
         self.logger.setLevel(loglevel)
         self.counters = {}
@@ -311,19 +356,23 @@ class HadoopSimulator(object):
         if avro_input or avro_output:
             avail_value = {'k', 'v', 'kv', None}
             if {avro_input, avro_output} | avail_value > avail_value:
-                raise TypeError(
+                raise ValueError(
                     'Invalid values for avro_input and/or avro_output. Valid ones: %s, found %s %s' %
                     (avail_value, avro_input, avro_output)
                 )
 
             if not AVRO_INSTALLED:
                 raise RuntimeError('avro is not installed')
+            if avro_output and not avro_output_schema:
+                ValueError('Invalid value for avro_output_schema. Expected json string, found %s' % avro_output_schema)
+
             if context_cls is None:
                 context_cls = AvroContext
 
         self.context_cls = context_cls or TaskContext
         self.avro_input = avro_input
         self.avro_output = avro_output
+        self.avro_output_schema = avro_output_schema
 
     def set_phase(self, phase):
         self.phase = phase
@@ -465,7 +514,19 @@ class HadoopSimulator(object):
         f.seek(0)
         return f
 
-    def _get_jc_for_avro(self, file_in, job_conf):
+    @staticmethod
+    def _set_schema_kv(jc, schema_str, key_prop, value_prop):
+            schema_obj = json.loads(schema_str)
+            for field in schema_obj['fields']:
+                if field['name'] == 'key':
+                    key_schema = field['type']
+                else:
+                    value_schema = field['type']
+            jc[value_prop] = json.dumps(value_schema)
+            jc[key_prop] = json.dumps(key_schema)
+
+    def _get_jc_for_avro_input(self, file_in, job_conf):
+
         jc = dict(job_conf)
         if self.avro_input:
             jc[AVRO_INPUT] = self.avro_input
@@ -477,15 +538,19 @@ class HadoopSimulator(object):
             elif self.avro_input == 'k':
                 jc[AVRO_KEY_INPUT_SCHEMA] = schema
             else:
-                schema_obj = json.loads(schema)
-                for field in schema_obj['fields']:
-                    if field['name'] == 'key':
-                        key_schema = field['type']
-                    else:
-                        value_schema = field['type']
-                jc[AVRO_VALUE_INPUT_SCHEMA] = json.dumps(value_schema)
-                jc[AVRO_KEY_INPUT_SCHEMA] = json.dumps(key_schema)
+                self._set_schema_kv(schema, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA)
+        return jc
 
+    def _get_jc_for_avro_output(self, job_conf):
+        jc = dict(job_conf)
+        if self.avro_output:
+            jc[AVRO_OUTPUT] = self.avro_input
+            if self.avro_output == 'v':
+                jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_schema
+            elif self.avro_output == 'k':
+                jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_schema
+            else:
+                self._set_schema_kv(jc, self.avro_output_schema, AVRO_KEY_OUTPUT_SCHEMA, AVRO_VALUE_OUTPUT_SCHEMA)
         return jc
 
 
@@ -509,11 +574,14 @@ class HadoopSimulatorLocal(HadoopSimulator):
             loglevel=logging.CRITICAL,
             context_cls=None,
             avro_input=None,
-            avro_output=None
+            avro_output=None,
+            avro_output_schema=None
     ):
         logger = logger.getChild('HadoopSimulatorLocal') if logger \
             else logging.getLogger(self.__class__.__name__)
-        super(HadoopSimulatorLocal, self).__init__(logger, loglevel, context_cls, avro_input, avro_output)
+        super(HadoopSimulatorLocal, self).__init__(
+            logger, loglevel, context_cls, avro_input, avro_output, avro_output_schema)
+
         self.factory = factory
 
     def run_task(self, dstream, ustream):
@@ -539,7 +607,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
         :class:`~.api.RecordWriter` with appropriate parameters in
         ``job_conf``.
         """
-        jc_avro_input = self._get_jc_for_avro(file_in, job_conf)
+        jc_avro_input = self._get_jc_for_avro_input(file_in, job_conf)
         bytes_flow = self.write_map_down_stream(
             file_in, jc_avro_input, num_reducers, input_split=input_split
         )
@@ -547,7 +615,10 @@ class HadoopSimulatorLocal(HadoopSimulator):
         # FIXME this is a quick hack to avoid crashes with user defined
         # RecordWriter
         f = cStringIO.StringIO() if file_out is None else file_out
-        rec_writer_stream = TrivialRecordWriter(self, f)
+        if self.avro_output:
+            rec_writer_stream = AvroRecordWriter(self, f)
+        else:
+            rec_writer_stream = TrivialRecordWriter(self, f)
         if num_reducers == 0:
             self.logger.info('running a map only job')
             self.set_phase('mapping')
@@ -559,12 +630,14 @@ class HadoopSimulatorLocal(HadoopSimulator):
             self.set_phase('mapping')
             self.run_task(dstream, sas)
 
-            bytes_flow = self.write_reduce_down_stream(sas, job_conf,
+            jc_avro_output = self._get_jc_for_avro_output(job_conf)
+            bytes_flow = self.write_reduce_down_stream(sas, jc_avro_output,
                                                        num_reducers)
             rstream = BinaryDownStreamFilter(bytes_flow)
             self.logger.info('running reduce phase')
             self.set_phase('reducing')
             self.run_task(rstream, rec_writer_stream)
+        rec_writer_stream.close()
         self.logger.info('done')
 
 
@@ -598,11 +671,22 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     seconds after framework initialization.
     """
 
-    def __init__(self, program=None, logger=None, loglevel=logging.CRITICAL,
-                 sleep_delta=DEFAULT_SLEEP_DELTA, context_cls=None, avro_input=None, avro_output=None):
+    def __init__(
+            self,
+            program=None,
+            logger=None,
+            loglevel=logging.CRITICAL,
+            sleep_delta=DEFAULT_SLEEP_DELTA,
+            context_cls=None,
+            avro_input=None,
+            avro_output=None,
+            avro_output_schema=None
+    ):
         logger = logger.getChild('HadoopSimulatorNetwork') if logger \
             else logging.getLogger(self.__class__.__name__)
-        super(HadoopSimulatorNetwork, self).__init__(logger, loglevel, context_cls, avro_input, avro_output)
+        super(HadoopSimulatorNetwork, self).__init__(
+            logger, loglevel, context_cls, avro_input, avro_output, avro_output_schema)
+
         self.program = program
         self.sleep_delta = sleep_delta
         tfile = tempfile.NamedTemporaryFile(delete=False)
