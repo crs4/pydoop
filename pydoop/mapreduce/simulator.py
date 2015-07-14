@@ -137,7 +137,7 @@ class AvroRecordWriter(TrivialRecordWriter):
             schema_k.pop('namespace', None)
             schema_v = json.loads(self.simulator.avro_output_value_schema)
             schema_v.pop('namespace', None)
-            # schema_k['namespace'] = 'bla'
+
             schema = {
                 'type': 'record',
                 'name': 'kv',
@@ -167,6 +167,13 @@ class AvroRecordWriter(TrivialRecordWriter):
                 'value': self.deserializers['v'].deserialize(value)
             }
         self.writer.append(obj_to_append)
+
+    def close(self):
+        try:
+            self.writer.close()
+        except ValueError:  # let's ignore if already closed
+            pass
+        self.stream.close()
 
 
 class TrivialRecordReader(RecordReader):
@@ -754,12 +761,19 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         challenge = 'what? me worry?'
         digest = create_digest(self.password, challenge)
         auth = (digest, challenge)
+        jc_avro_input = self._get_jc_for_avro_input(file_in, job_conf)
         down_bytes = self.write_map_down_stream(
-            file_in, job_conf, num_reducers, authorization=auth,
+            file_in, jc_avro_input, num_reducers, authorization=auth,
             input_split=input_split
         )
-        record_writer = TrivialRecordWriter(
-            self, file_out) if file_out else None
+        if file_out:
+            if self.avro_output:
+                record_writer = AvroRecordWriter(self, file_out)
+            else:
+                record_writer = TrivialRecordWriter(self, file_out)
+        else:
+            record_writer = None
+
         if num_reducers == 0:
             self.logger.info('running a map only job')
             self.set_phase('mapping')
@@ -788,12 +802,15 @@ class HadoopSimulatorNetwork(HadoopSimulator):
                 outdir_uri = 'file://' + outdir_path
                 job_conf[OUTPUT_DIR_V1] = outdir_uri
                 job_conf[OUTPUT_DIR_V2] = outdir_uri
+            jc_avro_output = self._get_jc_for_avro_output(job_conf)
             down_bytes = self.write_reduce_down_stream(
-                sas, job_conf, reducer_id, authorization=auth,
+                sas, jc_avro_output, reducer_id, authorization=auth,
                 piped_output=(file_out is not None)
             )
             self.logger.info('running reduce phase')
             self.set_phase('reducing')
             self.run_task(down_bytes, record_writer)
+            if file_out:
+                file_out.close()
         self.logger.info('done')
         os.unlink(self.tmp_file)

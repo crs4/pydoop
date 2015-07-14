@@ -23,3 +23,7 @@ from avro_base import AvroKeyColorPick, AvroKeyColorCount, run_task
 
 def __main__():
     run_task(AvroKeyColorPick, AvroKeyColorCount)
+
+
+if __name__ == '__main__':
+    __main__()

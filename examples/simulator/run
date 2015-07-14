@@ -159,6 +159,37 @@ def run_local_avro_value_in(logger, file_in, data_in):
     dump_counters(hsl, logger)
     avro_check_results.main(data_in, DATA_OUT)
 
+
+def run_network_avro(
+        program_name,
+        logger,
+        file_in,
+        data_in,
+        avro_input=None,
+        avro_output=None,
+        schema_k_out=None,
+        schema_v_out=None
+):
+
+    hsl = HadoopSimulatorNetwork(
+        program_name,
+        logger,
+        logging.INFO,
+        context_cls=AvroContext,
+        avro_input=avro_input,
+        avro_output=avro_output,
+        avro_output_key_schema=schema_k_out,
+        avro_output_value_schema=schema_v_out
+    )
+    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
+    dump_counters(hsl, logger)
+    if avro_output:
+        data_out_des = DATA_OUT + '-des'
+        avro_container_dump_results.main(DATA_OUT, data_out_des, avro_output)
+        avro_check_results.main(data_in, data_out_des)
+    else:
+        avro_check_results.main(data_in, DATA_OUT)
+
 def run_local_avro_value_in_out(logger, file_in, data_in):
     factory = pp.Factory(mapper_class=avro_base.AvroValueColorPick, reducer_class=avro_base.AvroValueColorCount)
     with open(STATS_SCHEMA) as schema_f:
@@ -216,7 +247,7 @@ def run_local_avro_key_value_in_out(logger, file_in, data_in):
 
 def main():
     logger = logging.getLogger("main")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     logger.info("*** word count full using HadoopSimulatorNetwork ***")
     run_network_full(logger)
     logger.info("*** word count minimal using HadoopSimulatorNetwork ***")
@@ -230,18 +261,50 @@ def main():
     avro_fn = '/tmp/users.avro'
     users_schema = os.path.join(avro_folder, '../schemas/user.avsc')
     pets_schema = os.path.join(avro_folder, '../schemas/pet.avsc')
+    with open(STATS_SCHEMA) as schema_f:
+        stats_schema_str = schema_f.read()
     prepare_avro_data(csv_fn, avro_fn, users_schema)
 
+    logger.info("*** avro_input v using HadoopSimulatorLocal ***")
     run_local_avro_value_in(logger, avro_fn, csv_fn)
+
+    logger.info("*** avro_input/ouput v using HadoopSimulatorLocal ***")
     run_local_avro_value_in_out(logger, avro_fn, csv_fn)
+    logger.info("*** avro_input k using HadoopSimulatorLocal ***")
     run_local_avro_key_in(logger, avro_fn, csv_fn)
+
+    logger.info("*** avro_input/output k using HadoopSimulatorLocal ***")
     run_local_avro_key_in_out(logger, avro_fn, csv_fn)
 
     users_pets_fn = '/tmp/users_pets.avro'
     subprocess.check_call(['./write_avro_kv', users_schema,  pets_schema, csv_fn, users_pets_fn],
                           cwd=os.path.realpath(os.path.abspath('../avro/java')))
+
+    logger.info("*** avro_input kv using HadoopSimulatorLocal ***")
     run_local_avro_key_value_in(logger, users_pets_fn, csv_fn)
+
+    logger.info("*** avro_input/output kv using HadoopSimulatorLocal ***")
     run_local_avro_key_value_in_out(logger, users_pets_fn, csv_fn)
+
+    logger.info("*** avro_input v using HadoopSimulatorNetwork ***")
+    run_network_avro('../avro/py/avro_value_in.py', logger, avro_fn, csv_fn, 'v', None)
+
+    logger.info("*** avro_input k using HadoopSimulatorNetwork ***")
+    run_network_avro('../avro/py/avro_key_in.py', logger, avro_fn, csv_fn, 'k', None)
+
+    logger.info("*** avro_input kv using HadoopSimulatorNetwork ***")
+    run_network_avro('../avro/py/avro_key_value_in.py', logger, users_pets_fn, csv_fn, 'kv', None)
+
+    logger.info("*** avro_input/output v using HadoopSimulatorNetwork ***")
+    run_network_avro('../avro/py/avro_value_in_out.py', logger, avro_fn, csv_fn, 'v', 'v', None, stats_schema_str)
+
+    logger.info("*** avro_input/output k using HadoopSimulatorNetwork ***")
+    run_network_avro('../avro/py/avro_key_in_out.py', logger, avro_fn, csv_fn, 'k', 'k', stats_schema_str)
+
+    logger.info("*** avro_input/output kv using HadoopSimulatorNetwork ***")
+    run_network_avro(
+        '../avro/py/avro_key_value_in_out.py', logger, users_pets_fn, csv_fn, 'kv', 'kv', stats_schema_str, stats_schema_str
+    )
 
 
 if __name__ == "__main__":
