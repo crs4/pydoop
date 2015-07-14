@@ -47,7 +47,8 @@ import check_results as avro_check_results
 import create_input
 import write_avro
 import avro_container_dump_results
-
+DATA_OUT = '/tmp/pydoop-test-avro_out'
+STATS_SCHEMA = os.path.join(avro_folder, '../schemas/stats.avsc')
 
 """
 Use simulators to run wordcount
@@ -146,98 +147,71 @@ def run_network_full(logger):
 
 
 def prepare_avro_data(csv_fn, avro_fn, schema_fn):
-
     create_input.main(20, csv_fn)
     write_avro.main(schema_fn, csv_fn, avro_fn)
 
 
-def run_local_avro_value_in(logger,file_in, data_in):
-    data_out = '/tmp/pydoop-test-avro_out'
-
+def run_local_avro_value_in(logger, file_in, data_in):
     factory = pp.Factory(mapper_class=avro_base.AvroValueColorPick, reducer_class=avro_base.NoAvroColorCount)
     hsl = HadoopSimulatorLocal(factory=factory, logger=logger,
                                loglevel=logging.INFO, context_cls=AvroContext, avro_input='v')
-
-    hsl.run(open(file_in), open(data_out, 'w'), {}, num_reducers=1)
-
+    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
     dump_counters(hsl, logger)
-    avro_check_results.main(data_in, data_out)
+    avro_check_results.main(data_in, DATA_OUT)
 
-
-def run_local_avro_value_in_out(logger,file_in, data_in):
-    data_out = '/tmp/pydoop-test-avro_out'
-    stats_schema = os.path.join(avro_folder, '../schemas/stats.avsc')
+def run_local_avro_value_in_out(logger, file_in, data_in):
     factory = pp.Factory(mapper_class=avro_base.AvroValueColorPick, reducer_class=avro_base.AvroValueColorCount)
-
-    with open(stats_schema) as schema_f:
+    with open(STATS_SCHEMA) as schema_f:
         hsl = HadoopSimulatorLocal(
             factory, logger, logging.INFO, AvroContext, 'v', 'v', None,  schema_f.read())
-
     with open(file_in) as f_in:
-        with open(data_out, 'wb') as f_out:
+        with open(DATA_OUT, 'wb') as f_out:
             hsl.run(f_in, f_out, {}, num_reducers=1)
 
     dump_counters(hsl, logger)
-    data_out_des = data_out + '-des'
-    avro_container_dump_results.main(data_out, data_out_des, 'v')
-
+    data_out_des = DATA_OUT + '-des'
+    avro_container_dump_results.main(DATA_OUT, data_out_des, 'v')
     avro_check_results.main(data_in, data_out_des)
 
-
-def run_local_avro_key_in(logger,file_in, data_in):
-    data_out = '/tmp/pydoop-test-avro_out'
-
+def run_local_avro_key_in(logger, file_in, data_in):
     factory = pp.Factory(mapper_class=avro_base.AvroKeyColorPick, reducer_class=avro_base.NoAvroColorCount)
     hsl = HadoopSimulatorLocal(factory=factory, logger=logger,
                                loglevel=logging.DEBUG, context_cls=AvroContext, avro_input='k')
-
-    hsl.run(open(file_in), open(data_out, 'w'), {}, num_reducers=1)
-
+    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
     dump_counters(hsl, logger)
-    avro_check_results.main(data_in, data_out)
+    avro_check_results.main(data_in, DATA_OUT)
 
 def run_local_avro_key_in_out(logger, file_in, data_in):
-    data_out = '/tmp/pydoop-test-avro_out'
-    stats_schema = os.path.join(avro_folder, '../schemas/stats.avsc')
     factory = pp.Factory(mapper_class=avro_base.AvroKeyColorPick, reducer_class=avro_base.AvroKeyColorCount)
-    with open(stats_schema) as schema_f:
+    with open(STATS_SCHEMA) as schema_f:
         hsl = HadoopSimulatorLocal(factory, logger, logging.DEBUG, AvroContext, 'k', 'k', schema_f.read())
-
-    hsl.run(open(file_in), open(data_out, 'w'), {}, num_reducers=1)
+    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
 
     dump_counters(hsl, logger)
-    data_out_des = data_out + '-des'
-    avro_container_dump_results.main(data_out, data_out_des, 'k')
-
+    data_out_des = DATA_OUT + '-des'
+    avro_container_dump_results.main(DATA_OUT, data_out_des, 'k')
     avro_check_results.main(data_in, data_out_des)
 
-
 def run_local_avro_key_value_in(logger,file_in, data_in):
-    data_out = '/tmp/pydoop-test-avro_out'
     factory = pp.Factory(mapper_class=avro_base.AvroKeyValueColorPick, reducer_class=avro_base.NoAvroColorCount)
     hsl = HadoopSimulatorLocal(factory=factory, logger=logger,
                                loglevel=logging.INFO, context_cls=AvroContext, avro_input='kv')
 
-    hsl.run(open(file_in), open(data_out, 'w'), {}, num_reducers=1)
-
+    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
     dump_counters(hsl, logger)
-    avro_check_results.main(data_in, data_out)
+    avro_check_results.main(data_in, DATA_OUT)
 
-def run_local_avro_key_value_in_out(logger,file_in, data_in):
-    data_out = '/tmp/pydoop-test-avro_out'
-    stats_schema = os.path.join(avro_folder, '../schemas/stats.avsc')
+def run_local_avro_key_value_in_out(logger, file_in, data_in):
     factory = pp.Factory(mapper_class=avro_base.AvroKeyValueColorPick, reducer_class=avro_base.AvroKeyValueColorCount)
-    with open(stats_schema) as schema_f:
+    with open(STATS_SCHEMA) as schema_f:
         schema_str = schema_f.read()
         hsl = HadoopSimulatorLocal(factory, logger, logging.INFO, AvroContext, 'kv', 'kv', schema_str, schema_str)
-
-    hsl.run(open(file_in), open(data_out, 'w'), {}, num_reducers=1)
+    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
 
     dump_counters(hsl, logger)
-    data_out_des = data_out + '-des'
-    avro_container_dump_results.main(data_out, data_out_des, 'kv')
+    data_out_des = DATA_OUT + '-des'
+    avro_container_dump_results.main(DATA_OUT, data_out_des, 'kv')
     avro_check_results.main(data_in, data_out_des)
-
 
 
 def main():
