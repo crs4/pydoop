@@ -307,11 +307,11 @@ class HadoopVersion(object):
         return self.tuple.__ge__(other.tuple)
 
     def tag(self):
-        parts = self.main
-        if self.cdh:
-            parts += ("cdh",) + self.cdh
-        if self.ext:
-            parts += self.ext
+        parts = self.main + (self.distribution,)
+        if self.dist_version:
+            parts += self.dist_version
+        if self.dist_ext:
+            parts += self.dist_ext
         return "_".join(map(str, parts))
 
     def __str__(self):
