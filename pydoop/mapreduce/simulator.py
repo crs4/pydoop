@@ -69,8 +69,7 @@ try:
     from avro.io import DatumReader, DatumWriter
     from pydoop.avrolib import AvroSerializer, AvroDeserializer, AvroContext
     import avro.schema
-    from pyavroc import AvroFileWriter
-
+    
     AVRO_INSTALLED = True
 except ImportError:
     AVRO_INSTALLED = False
