@@ -69,7 +69,14 @@ try:
     from avro.io import DatumReader, DatumWriter
     from pydoop.avrolib import AvroSerializer, AvroDeserializer, AvroContext
     import avro.schema
-    
+
+    def get_avro_reader(fp):
+        try:
+            from pyavroc import AvroFileReader
+            return AvroFileReader(fp, False)
+        except ImportError:
+            return DataFileReader(fp, DatumReader())
+
     AVRO_INSTALLED = True
 except ImportError:
     AVRO_INSTALLED = False
@@ -482,7 +489,7 @@ class HadoopSimulator(object):
             if AVRO_INPUT in job_conf:
                 serializers = defaultdict(lambda: lambda r: '')
                 avro_input = job_conf[AVRO_INPUT].upper()
-                reader = DataFileReader(file_in, DatumReader())
+                reader = get_avro_reader(file_in)
 
                 if avro_input == 'K' or avro_input == 'KV':
                     serializer = AvroSerializer(
