@@ -225,17 +225,19 @@ def main():
     logger.info("*** word count full using HadoopSimulatorLocal ***")
     run_local_full(logger)
 
-    csv_fn = '/tmp/users.csv'
-    avro_fn = '/tmp/users.avro'
-    users_schema = os.path.join(avro_folder, '../schemas/user.avsc')
-    pets_schema = os.path.join(avro_folder, '../schemas/pet.avsc')
+    csv_fn = os.path.realpath(os.path.abspath('data/users.csv'))
+    avro_fn = os.path.realpath(os.path.abspath('data/users.avro'))
+
     with open(STATS_SCHEMA) as schema_f:
         stats_schema_str = schema_f.read()
-    prepare_avro_data(csv_fn, avro_fn, users_schema)
 
-    users_pets_fn = '/tmp/users_pets.avro'
-    subprocess.check_call(['./write_avro_kv', users_schema,  pets_schema, csv_fn, users_pets_fn],
-                          cwd=os.path.realpath(os.path.abspath('../avro/java')))
+    # users_schema = os.path.join(avro_folder, '../schemas/user.avsc')
+    # pets_schema = os.path.join(avro_folder, '../schemas/pet.avsc')
+    # prepare_avro_data(csv_fn, avro_fn, users_schema)
+
+    users_pets_fn = os.path.realpath(os.path.abspath('data/users_pets.avro'))
+    # subprocess.check_call(['./write_avro_kv', users_schema,  pets_schema, csv_fn, users_pets_fn],
+    #                       cwd=os.path.realpath(os.path.abspath('../avro/java')))
 
     logger.info("*** avro_input v using HadoopSimulatorLocal ***")
     run_local_avro(avro_base.AvroValueColorPick, avro_base.NoAvroColorCount, logger, avro_fn, csv_fn, avro_input='v')
