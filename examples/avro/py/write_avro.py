@@ -29,5 +29,5 @@ if __name__ == '__main__':
         csv_fn = sys.argv[2]
         avro_fn = sys.argv[3]
     except IndexError:
-        sys.exit('Usage: %s SCHEMA_FILE CSV_FILE AVRO_FILE' % argv[0])
+        sys.exit('Usage: %s SCHEMA_FILE CSV_FILE AVRO_FILE' % sys.argv[0])
     main(schema_fn, csv_fn, avro_fn)
