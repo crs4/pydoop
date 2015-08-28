@@ -33,8 +33,9 @@ def create_input(n, stream):
         ]) + '\n')
 
 
-def main(argv):
-    with open(argv[2], 'w') as f:
-        create_input(int(argv[1]), f)
+def main(n, filename):
+    with open(filename, 'w') as f:
+        create_input(n, f)
 
-main(sys.argv)
+if __name__ == '__main__':
+    main(int(sys.argv[1]), sys.argv[2])

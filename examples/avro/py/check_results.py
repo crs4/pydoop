@@ -20,9 +20,7 @@ import sys
 from collections import Counter
 
 
-def main():
-    efname = sys.argv[1]
-    rfname = sys.argv[2]
+def main(efname, rfname):
 
     expected = {}
     with open(efname) as f:
@@ -46,4 +44,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1], sys.argv[2])
