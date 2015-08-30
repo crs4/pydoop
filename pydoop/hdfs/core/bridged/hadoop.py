@@ -351,15 +351,15 @@ class CoreHdfsFile(CoreFileApi):
             raise IOError
         if length is None or length > 0:
             if isinstance(data, bytearray):
-                a = data
+                to_write = data
             elif isinstance(data, ctypes.Array):
-                a = data[:]
+                to_write = data[:]
             else:
                 if isinstance(data, unicode):
                     data = data.encode(TEXT_ENCODING)
-                a = self._jbytearray(data)
-            self._stream.write(a)
-            length = len(data)
+                to_write = self._jbytearray(data)
+            self._stream.write(to_write)
+            length = len(to_write)
         return length
 
     def tell(self):
