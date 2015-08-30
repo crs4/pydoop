@@ -17,6 +17,7 @@
 # END_COPYRIGHT
 
 import os
+import ctypes
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -349,10 +350,17 @@ class CoreHdfsFile(CoreFileApi):
         if length < 0:
             raise IOError
         if length is None or length > 0:
-            if isinstance(data, unicode):
-                data = data.encode(TEXT_ENCODING)
-            self._stream.write(self._jbytearray(data))
-        return len(data)
+            if isinstance(data, bytearray):
+                a = data
+            elif isinstance(data, ctypes.Array):
+                a = data[:]
+            else:
+                if isinstance(data, unicode):
+                    data = data.encode(TEXT_ENCODING)
+                a = self._jbytearray(data)
+            self._stream.write(a)
+            length = len(data)
+        return length
 
     def tell(self):
         if not self._stream:
