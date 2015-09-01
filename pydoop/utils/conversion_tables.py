@@ -16,6 +16,7 @@
 #
 # END_COPYRIGHT
 
+# up-to-date as of Hadoop 2.7.1: http://hadoop.apache.org/docs/r2.7.1/hadoop-project-dist/hadoop-common/DeprecatedProperties.html
 mrv1_to_mrv2 = {
     'create.empty.dir.if.nonexist':
     'mapreduce.jobcontrol.createdir.ifnotexist',
@@ -62,11 +63,11 @@ mrv1_to_mrv2 = {
     'dfs.https.need.client.auth':
     'dfs.client.https.need-auth',
 
-    'dfs.max-repl-streams':
-    'dfs.namenode.replication.max-streams',
-
     'dfs.max.objects':
     'dfs.namenode.max.objects',
+
+    'dfs.max-repl-streams':
+    'dfs.namenode.replication.max-streams',
 
     'dfs.name.dir':
     'dfs.namenode.name.dir',
@@ -143,11 +144,11 @@ mrv1_to_mrv2 = {
     'hadoop.pipes.command-file.keep':
     'mapreduce.pipes.commandfile.preserve',
 
-    'hadoop.pipes.executable':
-    'mapreduce.pipes.executable',
-
     'hadoop.pipes.executable.interpretor':
     'mapreduce.pipes.executable.interpretor',
+
+    'hadoop.pipes.executable':
+    'mapreduce.pipes.executable',
 
     'hadoop.pipes.java.mapper':
     'mapreduce.pipes.isjavamapper',
@@ -179,6 +180,15 @@ mrv1_to_mrv2 = {
     'io.sort.spill.percent':
     'mapreduce.map.sort.spill.percent',
 
+    'jobclient.completion.poll.interval':
+    'mapreduce.client.completion.pollinterval',
+
+    'jobclient.output.filter':
+    'mapreduce.client.output.filter',
+
+    'jobclient.progress.monitor.poll.interval':
+    'mapreduce.client.progressmonitor.pollinterval',
+
     'job.end.notification.url':
     'mapreduce.job.end-notification.url',
 
@@ -190,15 +200,6 @@ mrv1_to_mrv2 = {
 
     'job.local.dir':
     'mapreduce.job.local.dir',
-
-    'jobclient.completion.poll.interval':
-    'mapreduce.client.completion.pollinterval',
-
-    'jobclient.output.filter':
-    'mapreduce.client.output.filter',
-
-    'jobclient.progress.monitor.poll.interval':
-    'mapreduce.client.progressmonitor.pollinterval',
 
     'keep.failed.task.files':
     'mapreduce.task.files.preserve.failedtasks',
@@ -299,23 +300,23 @@ mrv1_to_mrv2 = {
     'mapred.heartbeats.in.second':
     'mapreduce.jobtracker.heartbeats.in.second',
 
-    'mapred.hosts':
-    'mapreduce.jobtracker.hosts.filename',
-
     'mapred.hosts.exclude':
     'mapreduce.jobtracker.hosts.exclude.filename',
 
+    'mapred.hosts':
+    'mapreduce.jobtracker.hosts.filename',
+
     'mapred.inmem.merge.threshold':
     'mapreduce.reduce.merge.inmem.threshold',
-
-    'mapred.input.dir':
-    'mapreduce.input.fileinputformat.inputdir',
 
     'mapred.input.dir.formats':
     'mapreduce.input.multipleinputs.dir.formats',
 
     'mapred.input.dir.mappers':
     'mapreduce.input.multipleinputs.dir.mappers',
+
+    'mapred.input.dir':
+    'mapreduce.input.fileinputformat.inputdir',
 
     'mapred.input.pathFilter.class':
     'mapreduce.input.pathFilter.class',
@@ -331,6 +332,9 @@ mrv1_to_mrv2 = {
 
     'mapred.job.id':
     'mapreduce.job.id',
+
+    'mapred.jobinit.threads':
+    'mapreduce.jobtracker.jobinit.threads',
 
     'mapred.job.map.memory.mb':
     'mapreduce.map.memory.mb',
@@ -365,9 +369,6 @@ mrv1_to_mrv2 = {
     'mapred.job.shuffle.merge.percent':
     'mapreduce.reduce.shuffle.merge.percent',
 
-    'mapred.job.tracker':
-    'mapreduce.jobtracker.address',
-
     'mapred.job.tracker.handler.count':
     'mapreduce.jobtracker.handler.count',
 
@@ -377,8 +378,20 @@ mrv1_to_mrv2 = {
     'mapred.job.tracker.http.address':
     'mapreduce.jobtracker.http.address',
 
+    'mapred.jobtracker.instrumentation':
+    'mapreduce.jobtracker.instrumentation',
+
+    'mapred.jobtracker.job.history.block.size':
+    'mapreduce.jobtracker.jobhistory.block.size',
+
     'mapred.job.tracker.jobhistory.lru.cache.size':
     'mapreduce.jobtracker.jobhistory.lru.cache.size',
+
+    'mapred.job.tracker':
+    'mapreduce.jobtracker.address',
+
+    'mapred.jobtracker.maxtasks.per.job':
+    'mapreduce.jobtracker.maxtasks.perjob',
 
     'mapred.job.tracker.persist.jobstatus.active':
     'mapreduce.jobtracker.persist.jobstatus.active',
@@ -389,35 +402,23 @@ mrv1_to_mrv2 = {
     'mapred.job.tracker.persist.jobstatus.hours':
     'mapreduce.jobtracker.persist.jobstatus.hours',
 
-    'mapred.job.tracker.retire.jobs':
-    'mapreduce.jobtracker.retirejobs',
+    'mapred.jobtracker.restart.recover':
+    'mapreduce.jobtracker.restart.recover',
 
     'mapred.job.tracker.retiredjobs.cache.size':
     'mapreduce.jobtracker.retiredjobs.cache.size',
 
-    'mapred.jobinit.threads':
-    'mapreduce.jobtracker.jobinit.threads',
+    'mapred.job.tracker.retire.jobs':
+    'mapreduce.jobtracker.retirejobs',
 
-    'mapred.jobtracker.instrumentation':
-    'mapreduce.jobtracker.instrumentation',
-
-    'mapred.jobtracker.job.history.block.size':
-    'mapreduce.jobtracker.jobhistory.block.size',
-
-    'mapred.jobtracker.maxtasks.per.job':
-    'mapreduce.jobtracker.maxtasks.perjob',
-
-    'mapred.jobtracker.restart.recover':
-    'mapreduce.jobtracker.restart.recover',
+    'mapred.jobtracker.taskalloc.capacitypad':
+    'mapreduce.jobtracker.taskscheduler.taskalloc.capacitypad',
 
     'mapred.jobtracker.taskScheduler':
     'mapreduce.jobtracker.taskscheduler',
 
     'mapred.jobtracker.taskScheduler.maxRunningTasksPerJob':
     'mapreduce.jobtracker.taskscheduler.maxrunningtasks.perjob',
-
-    'mapred.jobtracker.taskalloc.capacitypad':
-    'mapreduce.jobtracker.taskscheduler.taskalloc.capacitypad',
 
     'mapred.join.expr':
     'mapreduce.join.expr',
@@ -458,6 +459,18 @@ mrv1_to_mrv2 = {
     'mapred.map.output.compression.codec':
     'mapreduce.map.output.compress.codec',
 
+    'mapred.mapoutput.key.class':
+    'mapreduce.map.output.key.class',
+
+    'mapred.mapoutput.value.class':
+    'mapreduce.map.output.value.class',
+
+    'mapred.mapper.regex.group':
+    'mapreduce.mapper.regexmapper..group',
+
+    'mapred.mapper.regex':
+    'mapreduce.mapper.regex',
+
     'mapred.map.task.debug.script':
     'mapreduce.map.debug.script',
 
@@ -466,18 +479,6 @@ mrv1_to_mrv2 = {
 
     'mapred.map.tasks.speculative.execution':
     'mapreduce.map.speculative',
-
-    'mapred.mapoutput.key.class':
-    'mapreduce.map.output.key.class',
-
-    'mapred.mapoutput.value.class':
-    'mapreduce.map.output.value.class',
-
-    'mapred.mapper.regex':
-    'mapreduce.mapper.regex',
-
-    'mapred.mapper.regex.group':
-    'mapreduce.mapper.regexmapper..group',
 
     'mapred.max.map.failures.percent':
     'mapreduce.map.failures.maxpercent',
@@ -506,14 +507,14 @@ mrv1_to_mrv2 = {
     'mapred.min.split.size.per.rack':
     'mapreduce.input.fileinputformat.split.minsize.per.rack',
 
-    'mapred.output.compress':
-    'mapreduce.output.fileoutputformat.compress',
-
     'mapred.output.compression.codec':
     'mapreduce.output.fileoutputformat.compress.codec',
 
     'mapred.output.compression.type':
     'mapreduce.output.fileoutputformat.compress.type',
+
+    'mapred.output.compress':
+    'mapreduce.output.fileoutputformat.compress',
 
     'mapred.output.dir':
     'mapreduce.output.fileoutputformat.outputdir',
@@ -638,15 +639,6 @@ mrv1_to_mrv2 = {
     'mapred.task.timeout':
     'mapreduce.task.timeout',
 
-    'mapred.task.tracker.http.address':
-    'mapreduce.tasktracker.http.address',
-
-    'mapred.task.tracker.report.address':
-    'mapreduce.tasktracker.report.address',
-
-    'mapred.task.tracker.task-controller':
-    'mapreduce.tasktracker.taskcontroller',
-
     'mapred.tasktracker.dns.interface':
     'mapreduce.tasktracker.dns.interface',
 
@@ -658,6 +650,9 @@ mrv1_to_mrv2 = {
 
     'mapred.tasktracker.expiry.interval':
     'mapreduce.jobtracker.expire.trackers.interval',
+
+    'mapred.task.tracker.http.address':
+    'mapreduce.tasktracker.http.address',
 
     'mapred.tasktracker.indexcache.mb':
     'mapreduce.tasktracker.indexcache.mb',
@@ -676,6 +671,12 @@ mrv1_to_mrv2 = {
 
     'mapred.tasktracker.reduce.tasks.maximum':
     'mapreduce.tasktracker.reduce.tasks.maximum',
+
+    'mapred.task.tracker.report.address':
+    'mapreduce.tasktracker.report.address',
+
+    'mapred.task.tracker.task-controller':
+    'mapreduce.tasktracker.taskcontroller',
 
     'mapred.tasktracker.taskmemorymanager.monitoring-interval':
     'mapreduce.tasktracker.taskmemorymanager.monitoringinterval',
@@ -697,21 +698,6 @@ mrv1_to_mrv2 = {
 
     'mapred.tip.id':
     'mapreduce.task.id',
-
-    'mapred.used.genericoptionsparser':
-    'mapreduce.client.genericoptionsparser.used',
-
-    'mapred.userlog.limit.kb':
-    'mapreduce.task.userlog.limit.kb',
-
-    'mapred.userlog.retain.hours':
-    'mapreduce.job.userlog.retain.hours',
-
-    'mapred.work.output.dir':
-    'mapreduce.task.output.dir',
-
-    'mapred.working.dir':
-    'mapreduce.job.working.dir',
 
     'mapreduce.combine.class':
     'mapreduce.job.combine.class',
@@ -737,6 +723,21 @@ mrv1_to_mrv2 = {
     'mapreduce.reduce.class':
     'mapreduce.job.reduce.class',
 
+    'mapred.used.genericoptionsparser':
+    'mapreduce.client.genericoptionsparser.used',
+
+    'mapred.userlog.limit.kb':
+    'mapreduce.task.userlog.limit.kb',
+
+    'mapred.userlog.retain.hours':
+    'mapreduce.job.userlog.retain.hours',
+
+    'mapred.working.dir':
+    'mapreduce.job.working.dir',
+
+    'mapred.work.output.dir':
+    'mapreduce.task.output.dir',
+
     'min.num.spills.for.combine':
     'mapreduce.map.combine.minspills',
 
@@ -761,6 +762,10 @@ mrv1_to_mrv2 = {
     'session.id':
     'dfs.metrics.session-id',
 
+    # duplicate key :-o
+    'slave.host.name':
+    'dfs.datanode.hostname',
+
     'slave.host.name':
     'mapreduce.tasktracker.host.name',
 
@@ -784,6 +789,9 @@ mrv1_to_mrv2 = {
 
     'webinterface.private.actions':
     'mapreduce.jobtracker.webinterface.trusted',
+
+    'yarn.app.mapreduce.yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts':
+    'yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts',
 }
 
 mrv2_to_mrv1 = dict((t[1], t[0]) for t in mrv1_to_mrv2.iteritems())
