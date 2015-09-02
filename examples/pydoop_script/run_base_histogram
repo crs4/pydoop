@@ -44,4 +44,4 @@ ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rmr /user/${USER}/${OUTPUT}
 ${hdfs} -put ${DATA} ${INPUT}
 
-${SCRIPT_CMD} ${SCRIPT} ${INPUT} ${OUTPUT}
+${SCRIPT_CMD} --log-level DEBUG ${SCRIPT} ${INPUT} ${OUTPUT}
