@@ -14,7 +14,7 @@ MODULE=col0
 MPY=${MODULE}.py
 OUTPUT_FORMAT=it.crs4.pydoop.NoSeparatorTextOutputFormat
 
-LOGLEVEL=INFO
+LOGLEVEL=DEBUG
 JOBNAME=${MODULE}
 
 INPUT=${MODULE}.input

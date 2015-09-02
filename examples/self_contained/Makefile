@@ -27,7 +27,7 @@ HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
 	       HDFS_IS_MISSING))
 
 
-LOGLEVEL=INFO
+LOGLEVEL=DEBUG
 PROGNAME=self_contained
 JOBNAME=self_contained
 DATA := ../input
