@@ -101,8 +101,6 @@ class PydoopSubmitter(object):
     def __set_files_to_cache(self, args):
         if args.upload_file_to_cache is None:
             args.upload_file_to_cache = []
-        if args.python_zip:
-            args.upload_file_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_FILES,
                                          args.upload_file_to_cache,
                                          args.cache_file)
@@ -110,6 +108,8 @@ class PydoopSubmitter(object):
     def __set_archives_to_cache(self, args):
         if args.upload_archive_to_cache is None:
             args.upload_archive_to_cache = []
+        if args.python_zip:
+            args.upload_archive_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_ARCHIVES,
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
