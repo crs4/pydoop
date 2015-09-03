@@ -78,7 +78,10 @@ before_install:
 - sudo apt-get install build-essential python-all-dev libssl-dev zip
 - virtualenv ${VIRTUAL_ENV}
 - source /home/travis/virtualenv/python2.7/bin/activate
-- if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then wget http://garr.dl.sourceforge.net/project/jpype/JPype/0.5.4/JPype-0.5.4.2.zip; unzip JPype-0.5.4.2.zip; cd JPype-0.5.4.2; $VIRTUAL_ENV/bin/python setup.py install; cd ../; fi
+# JPype-0.5.4.2 @ SourceForge
+#- if [[ $HDFS_BACKEND == "jpype-bridged" ]]; then wget http://sourceforge.net/projects/jpype/files/JPype/0.5.4/JPype-0.5.4.2.zip; unzip JPype-0.5.4.2.zip; cd JPype-0.5.4.2; $VIRTUAL_ENV/bin/python setup.py install; cd ../; fi
+# JPype-0.6.1 @ originell/jpype
+- if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then git clone https://github.com/originell/jpype.git; cd jpype; $VIRTUAL_ENV/bin/python setup.py install; cd ../; fi
 - ${VIRTUAL_ENV}/bin/pip install avro
 - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
