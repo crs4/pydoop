@@ -17,6 +17,7 @@
 # END_COPYRIGHT
 
 import sys
+import os
 import logging
 import time
 import numbers
@@ -36,22 +37,46 @@ from pydoop.utils.serialize import (
 
 from pydoop.utils.misc import Timer
 
-
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
 from .string_utils import create_digest
-from .environment_keys import (
-    MAPREDUCE_TASK_IO_SORT_MB_KEY,
-    MAPREDUCE_TASK_IO_SORT_MB,
-    resolve_environment_port,
-    resolve_environment_file,
-    resolve_environment_secret_location_key,
-    resolve_environment_secret_location,
-)
 
 logging.basicConfig()
 LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
+
+DEFAULT_IO_SORT_MB = 100
+_PORT_KEYS = [
+    "hadoop.pipes.command.port",  # Hadoop 1
+    "mapreduce.pipes.command.port",  # Hadoop 2
+]
+_FILE_KEYS = [
+    "hadoop.pipes.command.file",  # Hadoop 1
+    "mapreduce.pipes.commandfile"  # Hadoop 2.  No dot.
+]
+_SECRET_LOCATION_KEYS = [
+    "hadoop.pipes.shared.secret.location"  # All versions
+]
+
+
+def _get_from_env(candidate_keys):
+    for k in candidate_keys:
+        v = os.getenv(k)
+        if v is not None:
+            return v
+    return None
+
+
+def get_command_port():
+    return _get_from_env(_PORT_KEYS)
+
+
+def get_command_file():
+    return _get_from_env(_FILE_KEYS)
+
+
+def get_secret_location():
+    return _get_from_env(_SECRET_LOCATION_KEYS)
 
 
 class Factory(api.Factory):
@@ -230,7 +255,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
             self.partitioner = factory.create_partitioner(self)
             reducer = factory.create_combiner(self)
             spill_size = self._job_conf.get_int(
-                MAPREDUCE_TASK_IO_SORT_MB_KEY, MAPREDUCE_TASK_IO_SORT_MB
+                "mapreduce.task.io.sort.mb", DEFAULT_IO_SORT_MB
             )
             if reducer:
                 self.writer = CombineRunner(spill_size * 1024 * 1024,
@@ -325,8 +350,8 @@ def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
     """
     Select appropriate connection streams and protocol.
     """
-    port = port or resolve_environment_port()
-    cmd_file = cmd_file or resolve_environment_file()
+    port = port or get_command_port()
+    cmd_file = cmd_file or get_command_file()
     if port is not None:
         port = int(port)
         conn = connections.open_network_connections(port)
@@ -353,9 +378,8 @@ class StreamRunner(object):
         self.get_password()
 
     def get_password(self):
-        secret_location_key = resolve_environment_secret_location_key()
-        pfile_name = resolve_environment_secret_location(secret_location_key)
-        self.logger.debug('%r: %r', secret_location_key, pfile_name)
+        pfile_name = get_secret_location()
+        self.logger.debug('secret location: %r', pfile_name)
         if pfile_name is None:
             self.password = None
             return
