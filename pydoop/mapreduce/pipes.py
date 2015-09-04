@@ -17,9 +17,12 @@
 # END_COPYRIGHT
 
 import sys
+import os
 import logging
 import time
+import numbers
 from cStringIO import StringIO
+from copy import deepcopy
 
 from pydoop import hadoop_version_info
 from pydoop.utils.serialize import (
@@ -32,21 +35,48 @@ from pydoop.utils.serialize import (
     private_encode,
 )
 
+from pydoop.utils.misc import Timer
+
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
 from .string_utils import create_digest
-from .environment_keys import (
-    MAPREDUCE_TASK_IO_SORT_MB_KEY,
-    MAPREDUCE_TASK_IO_SORT_MB,
-    resolve_environment_port,
-    resolve_environment_file,
-    resolve_environment_secret_location_key,
-    resolve_environment_secret_location,
-)
 
 logging.basicConfig()
 LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
+
+DEFAULT_IO_SORT_MB = 100
+_PORT_KEYS = [
+    "hadoop.pipes.command.port",  # Hadoop 1
+    "mapreduce.pipes.command.port",  # Hadoop 2
+]
+_FILE_KEYS = [
+    "hadoop.pipes.command.file",  # Hadoop 1
+    "mapreduce.pipes.commandfile"  # Hadoop 2.  No dot.
+]
+_SECRET_LOCATION_KEYS = [
+    "hadoop.pipes.shared.secret.location"  # All versions
+]
+
+
+def _get_from_env(candidate_keys):
+    for k in candidate_keys:
+        v = os.getenv(k)
+        if v is not None:
+            return v
+    return None
+
+
+def get_command_port():
+    return _get_from_env(_PORT_KEYS)
+
+
+def get_command_file():
+    return _get_from_env(_FILE_KEYS)
+
+
+def get_secret_location():
+    return _get_from_env(_SECRET_LOCATION_KEYS)
 
 
 class Factory(api.Factory):
@@ -123,17 +153,34 @@ class InputSplit(object):
 
 class CombineRunner(api.RecordWriter):
 
-    def __init__(self, spill_bytes, context, reducer):
+    def __init__(self, spill_bytes, context, reducer, fast_combiner=False):
         self.spill_bytes = spill_bytes
         self.used_bytes = 0
         self.data = {}
         self.ctx = context
         self.reducer = reducer
+        self.fast_combiner = fast_combiner
+        self.spill_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'spills')
+        self.spilled_bytes_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'spilled bytes')
+        self.in_rec_counter = self.ctx.get_counter(
+            'Pydoop CombineRunner', 'input records')
+
+    def __defensive_copy(self, v):
+        if isinstance(v, (str, unicode, numbers.Number)):
+            return v
+        else:
+            return deepcopy(v)
 
     def emit(self, key, value):
         self.used_bytes += sys.getsizeof(key)
         self.used_bytes += sys.getsizeof(value)
+        if not self.fast_combiner:
+            key = self.__defensive_copy(key)
+            value = self.__defensive_copy(value)
         self.data.setdefault(key, []).append(value)
+        self.ctx.increment_counter(self.in_rec_counter, 1)
         if self.used_bytes >= self.spill_bytes:
             self.spill_all()
 
@@ -141,12 +188,15 @@ class CombineRunner(api.RecordWriter):
         self.spill_all()
 
     def spill_all(self):
+        self.ctx.increment_counter(self.spill_counter, 1)
+        self.ctx.increment_counter(self.spilled_bytes_counter, self.used_bytes)
         ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
-        for key, values in self.data.iteritems():
-            ctx._key, ctx._values = key, iter(values)
-            self.reducer.reduce(ctx)
+        with ctx.timer.time_block('spill reduction'):
+            for key, values in self.data.iteritems():
+                ctx._key, ctx._values = key, iter(values)
+                self.reducer.reduce(ctx)
         ctx.writer = writer
         self.data.clear()
         self.used_bytes = 0
@@ -154,7 +204,8 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
-    def __init__(self, up_link, private_encoding=True):
+    def __init__(self, up_link, private_encoding=True, fast_combiner=False):
+        self._fast_combiner = fast_combiner
         self.private_encoding = private_encoding
         self._private_encoding = False
         self.up_link = up_link
@@ -173,6 +224,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self._progress_float = 0.0
         self._last_progress = 0
         self._registered_counters = []
+        self.timer = Timer(self, 'Pydoop TaskContext')
         # None = unknown (yet), e.g., while setting conf.  In this
         # case, *both* is_mapper() and is_reducer() must return False
         self._is_mapper = None
@@ -203,10 +255,14 @@ class TaskContext(api.MapContext, api.ReduceContext):
             self.partitioner = factory.create_partitioner(self)
             reducer = factory.create_combiner(self)
             spill_size = self._job_conf.get_int(
-                MAPREDUCE_TASK_IO_SORT_MB_KEY, MAPREDUCE_TASK_IO_SORT_MB
+                "mapreduce.task.io.sort.mb", DEFAULT_IO_SORT_MB
             )
-            self.writer = CombineRunner(spill_size * 1024 * 1024,
-                                        self, reducer) if reducer else None
+            if reducer:
+                self.writer = CombineRunner(spill_size * 1024 * 1024,
+                                            self, reducer,
+                                            fast_combiner=self._fast_combiner)
+            else:
+                self.writer = None
 
     def emit(self, key, value):
         self.progress()
@@ -250,11 +306,11 @@ class TaskContext(api.MapContext, api.ReduceContext):
             self._last_progress = now
             if self._status_set:
                 self.up_link.send("status", self._status)
-                LOGGER.debug("Sending status %r", self._status)
+                LOGGER.debug("Sending status: %r", self._status)
                 self._status_set = False
             self.up_link.send("progress", self._progress_float)
             self.up_link.flush()
-            LOGGER.debug("Sending progress float %r", self._progress_float)
+            LOGGER.debug("Sending progress: %r", self._progress_float)
 
     def set_status(self, status):
         self._status = status
@@ -294,8 +350,8 @@ def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
     """
     Select appropriate connection streams and protocol.
     """
-    port = port or resolve_environment_port()
-    cmd_file = cmd_file or resolve_environment_file()
+    port = port or get_command_port()
+    cmd_file = cmd_file or get_command_file()
     if port is not None:
         port = int(port)
         conn = connections.open_network_connections(port)
@@ -322,30 +378,28 @@ class StreamRunner(object):
         self.get_password()
 
     def get_password(self):
-        secret_location_key = resolve_environment_secret_location_key()
-        pfile_name = resolve_environment_secret_location(secret_location_key)
-        self.logger.debug('%r: %r', secret_location_key, pfile_name)
+        pfile_name = get_secret_location()
+        self.logger.debug('secret location: %r', pfile_name)
         if pfile_name is None:
             self.password = None
             return
         try:
             with open(pfile_name) as f:
                 self.password = f.read()
-                self.logger.debug('password:%r', self.password)
+                self.logger.debug('password: %r', self.password)
         except IOError:
             self.logger.error('Could not open the password file')
 
     def run(self):
         self.logger.debug('start running')
         for cmd, args in self.cmd_stream:
-            self.logger.debug('dispatching cmd:%s, args: %s', cmd, args)
+            self.logger.debug('dispatching cmd: %s, args: %s', cmd, args)
             if cmd == 'authenticationReq':
                 digest, challenge = args
                 self.logger.debug(
                     'authenticationReq: %r, %r', digest, challenge)
                 if self.fails_to_authenticate(digest, challenge):
-                    self.logger.critical(
-                        'Server failed to authenticate. Exiting')
+                    self.logger.critical('Server failed to authenticate')
                     break  # bailing out
             elif cmd == 'setJobConf':
                 self.ctx.set_job_conf(args[0])
@@ -359,11 +413,11 @@ class StreamRunner(object):
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
                 break  # we can bail out, there is nothing more to do.
-        self.logger.debug('done running')
+        self.logger.debug('done')
 
     def fails_to_authenticate(self, digest, challenge):
         if self.password is None:
-            self.logger.info('No password, I assume we are in playback mode')
+            self.logger.info('No password, assuming playback mode')
             self.authenticated = True
             return False
         expected_digest = create_digest(self.password, challenge)
@@ -382,13 +436,13 @@ class StreamRunner(object):
         if n_reduces > 0:
             ctx.enable_private_encoding()
         ctx._input_split = input_split
-        LOGGER.debug("InputSPlit setted %r", input_split)
+        LOGGER.debug("Input split: %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
             if cmd == "setInputTypes":
                 ctx._input_key_class, ctx._input_value_class = args
-        LOGGER.debug("After setInputTypes: %r, %r", ctx.input_key_class,
-                     ctx.input_value_class)
+                LOGGER.debug("Input (key, value) class: (%r, %r)",
+                             ctx._input_key_class, ctx._input_value_class)
         reader = factory.create_record_reader(ctx)
         if reader is None and piped_input is None:
             raise api.PydoopError('RecordReader not defined')
@@ -403,9 +457,10 @@ class StreamRunner(object):
                 ctx._progress_float = reader.get_progress()
                 LOGGER.debug("Progress updated to %r ", ctx._progress_float)
                 progress_function()
-            mapper_map(ctx)
+            with ctx.timer.time_block('map calls'):
+                mapper_map(ctx)
         mapper.close()
-        self.logger.debug('done run_map')
+        self.logger.debug('done with run_map')
 
     def run_reduce(self, part, piped_output):
         self.logger.debug('start run_reduce')
@@ -419,22 +474,27 @@ class StreamRunner(object):
                                            ctx.private_encoding)
         reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
-            reducer_reduce(ctx)
+            with ctx.timer.time_block('reduce calls'):
+                reducer_reduce(ctx)
         reducer.close()
-        self.logger.debug('done run_reduce')
+        self.logger.debug('done with run_reduce')
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
-             private_encoding=True, context_class=TaskContext):
+             private_encoding=True, context_class=TaskContext,
+             cmd_file=None, fast_combiner=False):
     """
     Run the assigned task in the framework.
 
     :rtype: bool
     :return: :obj:`True` if the task succeeded.
     """
-    connections = resolve_connections(port,
-                                      istream=istream, ostream=ostream)
-    context = context_class(connections.up_link, private_encoding)
+    connections = resolve_connections(
+        port, istream=istream, ostream=ostream, cmd_file=cmd_file
+    )
+    context = context_class(connections.up_link,
+                            private_encoding=private_encoding,
+                            fast_combiner=fast_combiner)
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
     stream_runner.run()
     context.close()
@@ -443,7 +503,7 @@ def run_task(factory, port=None, istream=None, ostream=None,
 
 
 def runTask(factory):
-    run_task(factory, private_encoding=False)
+    run_task(factory, private_encoding=False, fast_combiner=False)
 
 
 class RecordReaderWrapper(object):

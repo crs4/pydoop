@@ -31,6 +31,7 @@ __all__ = [
     'NullHandler',
     'NullLogger',
     'make_random_str',
+    'split_hdfs_path',
 ]
 
 from .misc import (  # backward compatibility
@@ -44,4 +45,5 @@ from .misc import (  # backward compatibility
     NullHandler,
     NullLogger,
     make_random_str,
+    split_hdfs_path,
 )

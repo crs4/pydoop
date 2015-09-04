@@ -10,12 +10,11 @@ import java.io.ByteArrayOutputStream;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.io.Text;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.IndexedRecord;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.DatumWriter;
 import org.apache.avro.io.EncoderFactory;
@@ -25,11 +24,23 @@ import org.apache.avro.io.BinaryEncoder;
 public abstract class PydoopAvroBridgeReaderBase<K, V>
     extends RecordReader<K, V> {
 
+  private static final String COUNTERS_GROUP =
+    PydoopAvroBridgeReaderBase.class.getName();
+
   protected RecordReader actualReader;
   protected List<Schema> schemas;
   protected List<Text> outRecords;
+  protected List<DatumWriter<IndexedRecord>> datumWriters;
+  protected List<BinaryEncoder> encoders;
+  protected List<ByteArrayOutputStream> outStreams;
+
+  protected Counter nRecords;
+  protected Counter readTimeCounter;
+  protected Counter serTimeCounter;
 
   private List<IndexedRecord> bufferedInRecords;
+  private long start;
+  private boolean hasRecord;
 
   /**
    * Get current record(s) from the actual (input) RecordReader.
@@ -45,14 +56,29 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
   public void initialize(InputSplit split, TaskAttemptContext context)
       throws IOException, InterruptedException {
     actualReader.initialize(split, context);
+    nRecords = context.getCounter(COUNTERS_GROUP, "Number of records");
+    readTimeCounter = context.getCounter(COUNTERS_GROUP, "Read time (ms)");
+    serTimeCounter = context.getCounter(
+        COUNTERS_GROUP, "Serialization time (ms)");
     // peek at the record stream and save the schema(s) so that the concrete
     // subclass can set the schema property during initialization
-    if (actualReader.nextKeyValue()) {
+    start = System.nanoTime();
+    hasRecord = actualReader.nextKeyValue();
+    if (hasRecord) {
+      readTimeCounter.increment((System.nanoTime() - start) / 1000000);
       bufferedInRecords = getInRecords();
       schemas = new ArrayList<Schema>();
+      datumWriters = new ArrayList<DatumWriter<IndexedRecord>>();
+      outStreams = new ArrayList<ByteArrayOutputStream>();
+      encoders = new ArrayList<BinaryEncoder>();
       outRecords = new ArrayList<Text>();
       for (IndexedRecord r: bufferedInRecords) {
-        schemas.add(r.getSchema());
+        Schema s = r.getSchema();
+        schemas.add(s);
+        datumWriters.add(new GenericDatumWriter<IndexedRecord>(s));
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        outStreams.add(stream);
+        encoders.add(EncoderFactory.get().binaryEncoder(stream, null));
         outRecords.add(new Text());
       }
     }
@@ -62,10 +88,13 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
       throws IOException, InterruptedException {
     List<IndexedRecord> records = null;
     if (bufferedInRecords == null) {
-      if (!actualReader.nextKeyValue()) {
+      start = System.nanoTime();
+      hasRecord = actualReader.nextKeyValue();
+      if (!hasRecord) {
         return false;
       }
       else {
+        readTimeCounter.increment((System.nanoTime() - start) / 1000000);
         records = getInRecords();
       }
     }
@@ -75,24 +104,25 @@ public abstract class PydoopAvroBridgeReaderBase<K, V>
     }
     //--
     Iterator<IndexedRecord> iterRecords = records.iterator();
-    Iterator<Schema> iterSchemas = schemas.iterator();
+    Iterator<DatumWriter<IndexedRecord>> iterWriters = datumWriters.iterator();
+    Iterator<BinaryEncoder> iterEncoders = encoders.iterator();
+    Iterator<ByteArrayOutputStream> iterStreams = outStreams.iterator();
     Iterator<Text> iterOutRecords = outRecords.iterator();
+    start = System.nanoTime();
     while (iterRecords.hasNext()) {
-      assert iterSchemas.hasNext() && iterOutRecords.hasNext();
-      DatumWriter<GenericRecord> datumWriter =
-          new GenericDatumWriter<GenericRecord>(iterSchemas.next());
-      EncoderFactory fact = EncoderFactory.get();
-      ByteArrayOutputStream stream = new ByteArrayOutputStream();
-      BinaryEncoder enc = fact.binaryEncoder(stream, null);
+      ByteArrayOutputStream stream = iterStreams.next();
+      BinaryEncoder enc = iterEncoders.next();
       try {
-        datumWriter.write((GenericData.Record) iterRecords.next(), enc);
+        iterWriters.next().write(iterRecords.next(), enc);
         enc.flush();
-        stream.close();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       iterOutRecords.next().set(new Text(stream.toByteArray()));
+      stream.reset();
     }
+    serTimeCounter.increment((System.nanoTime() - start) / 1000000);
+    nRecords.increment(1);
     return true;
   }
 

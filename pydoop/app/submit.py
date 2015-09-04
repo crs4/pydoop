@@ -72,6 +72,7 @@ class PydoopSubmitter(object):
             'bl.libhdfs.opts': '-Xmx48m'
         }
         self.args = None
+        self.requested_env = dict()
         self.remote_wd = None
         self.remote_module = None
         self.remote_module_bn = None
@@ -112,6 +113,18 @@ class PydoopSubmitter(object):
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
 
+    @staticmethod
+    def _env_arg_to_dict(set_env_list):
+        retval = dict()
+        for item in set_env_list:
+            try:
+                name, value = item.split('=', 1)
+                retval[name.strip()] = value.strip()
+            except ValueError:
+                raise RuntimeError("Bad syntax in env variable argument '%s'" % item)
+        return retval
+
+
     def set_args(self, args, unknown_args=None):
         """
         Configure job, based on the arguments provided.
@@ -139,6 +152,7 @@ class PydoopSubmitter(object):
         self.properties.update(dict(args.job_conf or []))
         self.__set_files_to_cache(args)
         self.__set_archives_to_cache(args)
+        self.requested_env = self._env_arg_to_dict(args.set_env or [])
         self.args = args
         self.unknown_args = unknown_args
 
@@ -180,41 +194,62 @@ class PydoopSubmitter(object):
                 )
                 break
 
-    def __generate_pipes_code(self):
+    def _generate_pipes_code(self):
+        env = dict()
+        for e in ('LD_LIBRARY_PATH', 'PATH', 'PYTHONPATH'):
+            env[e] = ''
         lines = []
-        if not self.args.no_override_env:
-            ld_path = os.environ.get('LD_LIBRARY_PATH', None)
-            pypath = os.environ.get('PYTHONPATH', '')
+        if not self.args.no_override_env and not self.args.no_override_ld_path:
+            env['LD_LIBRARY_PATH'] = os.environ.get('LD_LIBRARY_PATH', '')
+        if not self.args.no_override_env and not self.args.no_override_path:
+            env['PATH'] = os.environ.get('PATH', '')
+
+        if not self.args.no_override_env and not self.args.no_override_pypath:
+            env['PYTHONPATH'] = os.environ.get('PYTHONPATH', '')
         else:
-            ld_path = None
-            pypath = ''
+            env['PYTHONPATH'] = "${PYTHONPATH}"
+
+        # set user-requested env variables
+        for var, value in self.requested_env.iteritems():
+            env[var] = value
+
         executable = self.args.python_program
+        if self.args.python_zip:
+            env['PYTHONPATH'] = ':'.join(self.args.python_zip + [env['PYTHONPATH']])
+        # Note that we have to explicitely put the working directory
+        # in the python path otherwise it will miss cached modules and
+        # packages.
+        env['PYTHONPATH'] = "${PWD}:" + env['PYTHONPATH']
+
         lines.append("#!/bin/bash")
         lines.append('""":"')
         if self.args.log_level == "DEBUG":
             lines.append("printenv 1>&2")
-            lines.append("echo ${PWD} 1>&2")
-            lines.append("ls -l  1>&2")
-        if ld_path:
-            lines.append('export LD_LIBRARY_PATH="%s"' % ld_path)
-        if self.args.python_zip:
-            pypath = ':'.join(self.args.python_zip + [pypath])
-        # Note that we have to explicitely put the working directory
-        # in the path otherwise it will miss cached modules and
-        # packages.
-        lines.append('export PYTHONPATH="${PWD}:%s:$PYTHONPATH"' % (pypath))
+            lines.append("echo PWD=${PWD} 1>&2")
+            lines.append("echo ls -l; ls -l  1>&2")
         if (USER_HOME not in self.properties and "HOME" in os.environ
            and not self.args.no_override_home):
             lines.append('export HOME="%s"' % os.environ['HOME'])
+        # set environment variables
+        for var, value in env.iteritems():
+            if value:
+                self.logger.debug("Setting env variable %s=%s", var, value)
+                lines.append('export %s="%s"' % (var, value))
         if self.args.log_level == "DEBUG":
-            lines.append("echo ${PYTHONPATH} 1>&2")
-            lines.append("echo ${LD_LIBRARY_PATH} 1>&2")
-            lines.append("echo ${HOME} 1>&2")
-        lines.append('exec "%s" -u "$0" "$@"' % executable)
+            lines.append("echo PATH=${PATH} 1>&2")
+            lines.append("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} 1>&2")
+            lines.append("echo PYTHONPATH=${PYTHONPATH} 1>&2")
+            lines.append("echo HOME=${HOME} 1>&2")
+            lines.append('echo "executable is $(type -P %s)" 1>&2' % executable)
+        cmd = 'exec "%s" -u "$0" "$@"' % executable
+        if self.args.log_level == 'DEBUG':
+            lines.append("echo cmd to execute: %s" % cmd)
+        lines.append(cmd)
         lines.append('":"""')
         if self.args.log_level == "DEBUG":
             lines.append('import sys')
             lines.append('sys.stderr.write("%r\\n" % sys.path)')
+            lines.append('sys.stderr.write("%s\\n" % sys.version)')
         lines.append('import %s as module' % self.args.module)
         lines.append('module.%s()' % self.args.entry_point)
         return os.linesep.join(lines) + os.linesep
@@ -255,13 +290,13 @@ class PydoopSubmitter(object):
         self.logger.debug("remotes: %s", self.files_to_upload)
         if self.args.module:
             self.logger.debug(
-                'Generated pipes_code:\n\n %s', self.__generate_pipes_code()
+                'Generated pipes_code:\n\n %s', self._generate_pipes_code()
             )
         if not self.args.pretend:
             hdfs.mkdir(self.remote_wd)
             hdfs.chmod(self.remote_wd, "a+rx")
             self.logger.debug("created and chmod-ed: %s", self.remote_wd)
-            pipes_code = self.__generate_pipes_code()
+            pipes_code = self._generate_pipes_code()
             hdfs.dump(pipes_code, self.remote_exe)
             self.logger.debug("dumped pipes_code to: %s", self.remote_exe)
             hdfs.chmod(self.remote_exe, "a+rx")
@@ -338,16 +373,16 @@ class PydoopSubmitter(object):
                         else self.fake_run_class)
             executor(submitter_class, args=job_args,
                      properties=self.properties, classpath=classpath,
-                     logger=self.logger)
+                     logger=self.logger, keep_streams=False)
             self.logger.info("Done")
         finally:
             self.__clean_wd()
 
-    def fake_run_class(self, submitter_class, args, properties, classpath,
-                       logger):
-        logger.info("Fake run class")
-        sys.stdout.write("hadut.run_class(%s, %s, %s, %s)\n" %
-                         (submitter_class, args, properties, classpath))
+    def fake_run_class(self, *args, **kwargs):
+        kwargs['logger'].info("Fake run class")
+        repr_list = map(repr, args)
+        repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
+        sys.stdout.write("hadut.run_class(%s)\n" % ', '.join(repr_list))
 
 
 def run(args, unknown_args=None):
@@ -375,6 +410,26 @@ def add_parser_common_arguments(parser):
         '--no-override-env', action='store_true',
         help=("Use the default python executable and environment instead of "
               "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
+    )
+    parser.add_argument(
+        '--no-override-ld-path', action='store_true',
+        help=("Use the default LD_LIBRARY_PATH instead of copying it from the "
+              "submitting client node")
+    )
+    parser.add_argument(
+        '--no-override-pypath', action='store_true',
+        help=("Use the default PYTHONPATH instead of copying it from the "
+              "submitting client node")
+    )
+    parser.add_argument(
+        '--no-override-path', action='store_true',
+        help=("Use the default PATH instead of copying it from the "
+              "submitting client node")
+    )
+    parser.add_argument(
+        '--set-env', metavar="VAR=VALUE", type=str, action="append",
+        help=("Set environment variables for the tasks. Setting a variable "
+              "to '' causes it not be set by Pydoop.")
     )
     parser.add_argument(
         '-D', metavar="NAME=VALUE", type=kv_pair, action="append",

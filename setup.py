@@ -37,8 +37,16 @@ import os
 import glob
 import shutil
 import subprocess
+
+SETUPTOOLS_MIN_VER = '3.3'
+
 import setuptools
+from pkg_resources import parse_version  # included in setuptools
 print 'using setuptools version', setuptools.__version__
+if parse_version(setuptools.__version__) < parse_version(SETUPTOOLS_MIN_VER):
+    raise RuntimeError(
+        'setuptools minimum required version: %s' % SETUPTOOLS_MIN_VER
+    )
 
 # bug: http://bugs.python.org/issue1222585
 # workaround: http://stackoverflow.com/questions/8106258
@@ -48,7 +56,7 @@ os.environ['OPT'] = ' '.join(
     _ for _ in get_config_var('OPT').strip().split() if _ not in _UNWANTED_OPTS
 )
 
-from distutils.core import setup, Extension
+from setuptools import setup, find_packages, Extension
 from distutils.command.build import build
 from distutils.command.clean import clean
 from distutils.errors import DistutilsSetupError, DistutilsOptionError
@@ -177,7 +185,7 @@ def build_hdfscore_native_impl():
         inc_dirs = (jvm.get_include_dirs() +
                     ['src/libhdfsV2', 'src/libhdfsV2/os/posix'])
     else:
-        src_dir = 'src/libhdfs/%d.%d.%d' % hadoop_t
+        src_dir = 'src/libhdfs/%d.%d.%d' % hadoop_t[0:3]
         hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
         inc_dirs = jvm.get_include_dirs() + [src_dir]
         libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
@@ -227,31 +235,39 @@ class JavaLib(object):
         self.java_files = []
         self.dependencies = []
         self.properties = []
-        if (hadoop_vinfo.main >= (2, 0, 0)
-            and (not hadoop_vinfo.is_cloudera()
-                 or hadoop_vinfo.is_yarn())):
+        if hadoop_vinfo.main >= (2, 0, 0) and \
+           (not hadoop_vinfo.is_cloudera() or hadoop_vinfo.is_yarn()):
+            # This version of Hadoop has the v2 pipes API
             # FIXME: kinda hardwired to avro for now
             self.properties.append((os.path.join(
                 "it/crs4/pydoop/mapreduce/pipes", PROP_BN),
                 PROP_FN))
-            self.java_files.extend([
-                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
-            ])
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/pipes/*.java'
             ))
             self.java_files.extend(glob.glob(
                 'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
             ))
-            # for now we have only hadoop2 deps (avro-mapred)
+            # for things such as avro-mapreduce
             self.dependencies.extend(glob.glob('lib/*.jar'))
+        else:
+            # Else we should be dealing with v1 pipes
+            self.java_files.extend(glob.glob(
+                'src/v1/org/apache/hadoop/mapred/pipes/*.java'
+            ))
+
+        if hadoop_vinfo.has_mrv2():
+            # If the installation has MRv2 we need to use v2 I/O classes
+            self.java_files.extend(glob.glob(
+                'src/v2/it/crs4/pydoop/mapreduce/lib/output/*.java'
+            ))
+            self.java_files.extend([
+                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
+            ])
         else:
             self.java_files.extend([
                 "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
             ])
-            self.java_files.extend(glob.glob(
-                'src/v1/org/apache/hadoop/mapred/pipes/*.java'
-            ))
 
 
 class JavaBuilder(object):
@@ -382,6 +398,13 @@ class Clean(clean):
         ]
         for p in garbage_list:
             rm_rf(p, self.dry_run)
+        self._clean_examples()
+
+    @staticmethod
+    def _clean_examples():
+        for root, _, files in os.walk('examples'):
+            if 'Makefile' in files:
+                subprocess.call(["make", "-C", root, "clean" ])
 
 
 setup(
@@ -393,26 +416,18 @@ setup(
     author_email=pydoop.__author_email__,
     url=pydoop.__url__,
     download_url="https://pypi.python.org/pypi/pydoop",
+    install_requires=['setuptools>=%s' % SETUPTOOLS_MIN_VER],
     extras_require={
-        ':python_version=="2.6"': ['argparse'],
-        'tool': []
+        ':python_version=="2.6"': ['argparse', 'importlib'],
+        'avro': ["avro>=1.7.4"],
         },
-    packages=[
-        "pydoop",
-        "pydoop.hdfs",
-        "pydoop.hdfs.core",
-        "pydoop.hdfs.core.bridged",
-        "pydoop.app",
-        "pydoop.mapreduce",
-        "pydoop.utils",
-        "pydoop.utils.bridge",
-    ],
+    packages=find_packages(exclude=['test', 'test.*']),
     package_data={"pydoop": [PROP_FN]},
     cmdclass={
         "build": BuildPydoop,
         "clean": Clean
     },
-    scripts=["scripts/pydoop"],
+    entry_points={'console_scripts': ['pydoop = pydoop.app.main:main']},
     platforms=["Linux"],
     ext_modules=EXTENSION_MODULES,
     license="Apache-2.0",

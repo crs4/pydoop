@@ -1,0 +1,83 @@
+zookeeper:
+  image: crs4_pydoop/apache_2.6.0_zookeeper:latest
+  name: zookeeper
+  hostname: zookeeper
+  ports:
+    - "2181:2181"
+
+bootstrap:
+  image: crs4_pydoop/apache_2.6.0_bootstrap:latest
+  name: bootstrap
+  hostname: bootstrap
+  links:
+    - zookeeper
+    
+namenode:
+  image: crs4_pydoop/apache_2.6.0_namenode:latest
+  name: namenode
+  hostname: namenode
+  volumes:
+    - ./logs:/tmp/logs
+  links:
+    - zookeeper
+  ports:
+    - "9000:9000"
+    - "50070:50070"
+
+datanode:
+  image: crs4_pydoop/apache_2.6.0_datanode:latest
+  name: datanode
+  hostname: datanode
+  volumes_from:
+    - namenode
+  links:
+    - zookeeper
+  ports:
+    - "50020:50020"        
+    
+resourcemanager:
+  image: crs4_pydoop/apache_2.6.0_resourcemanager:latest
+  name: resourcemanager
+  hostname: resourcemanager
+  volumes_from:
+    - namenode
+  links:
+    - zookeeper
+  ports:
+    - "8088:8088"
+    - "8021:8021"    
+    - "8031:8031"
+    - "8033:8033"    
+
+historyserver:
+  image: crs4_pydoop/apache_2.6.0_historyserver:latest
+  name: historyserver
+  hostname: historyserver
+  volumes_from:
+    - namenode
+  links:
+    - zookeeper
+  ports:
+    - "10020:10020"
+    - "19888:19888"
+
+nodemanager:
+  image: crs4_pydoop/apache_2.6.0_nodemanager:latest
+  name: nodemanager
+  hostname: nodemanager
+  links:
+    - zookeeper
+  ports:
+    - "8042:8042"
+  volumes_from:
+    - namenode
+    - client
+    
+client:
+  image: crs4_pydoop/client:latest
+  name: client
+  hostname: client
+  ports:
+    - "2222:22"
+  volumes:
+    - ./local:/usr/local

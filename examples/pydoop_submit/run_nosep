@@ -1,0 +1,72 @@
+#!/bin/bash
+
+PYTHONBIN=${PYTHONBIN:-python}
+
+CHK="import pydoop; hd_info = pydoop.hadoop_version_info(); print(hd_info.tuple >= (2, 2, 0) and hd_info.is_yarn())"
+is_mrv2_ok=`${PYTHONBIN} -c "$CHK"`
+
+if [[ x${is_mrv2_ok} != xTrue ]]; then
+    exit
+fi
+
+SUBMIT_CMD="pydoop submit"
+MODULE=col0
+MPY=${MODULE}.py
+OUTPUT_FORMAT=it.crs4.pydoop.NoSeparatorTextOutputFormat
+
+LOGLEVEL=INFO
+MRV=--mrv2
+JOBNAME=${MODULE}
+
+INPUT=${MODULE}.input
+OUTPUT=${MODULE}.output
+
+cat > ${MPY} <<EOF
+import sys
+import pydoop.mapreduce.api as api
+import pydoop.mapreduce.pipes as pp
+
+class Mapper(api.Mapper):
+    def map(self, ctx):
+        p = ctx.value.strip().split('\t')
+        ctx.emit(p[0], p[1])
+
+def __main__():
+    factory = pp.Factory(Mapper, None)
+    pp.run_task(factory)
+
+EOF
+
+cat > ${INPUT} <<EOF 
+foo1	bar1
+foo2	bar2
+foo3	bar3
+foo4	bar4
+EOF
+
+hdfs dfs -mkdir -p /user/${USER}
+hdfs dfs -rm -r ${INPUT}
+hdfs dfs -put ${INPUT} ${INPUT}
+hdfs dfs -rm -r ${OUTPUT}
+
+${SUBMIT_CMD} \
+    --python-program ${PYTHONBIN}\
+    --upload-file-to-cache ${MPY}\
+    --num-reducers 0\
+    --output-format ${OUTPUT_FORMAT}\
+    ${MRV}\
+    --log-level ${LOGLEVEL}\
+    --job-name ${JOBNAME}\
+    ${MODULE} ${INPUT} ${OUTPUT}
+
+rm -rf ${OUTPUT}
+hdfs dfs -get ${OUTPUT}
+tr -d "\t" < col0.input | sort > col0.A
+sort col0.output/part-m-00000  > col0.B
+r=`diff col0.A col0.B`
+if [ -z "$r" ]; then RES="OK" ; else RES="NOT OK" ; fi
+echo "result is: $RES."
+
+
+
+

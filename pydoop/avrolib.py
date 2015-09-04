@@ -23,10 +23,6 @@ Avro tools.
 # module anywhere in the main code (importing it in the Avro examples
 # is OK, ofc).
 
-import logging
-logging.basicConfig()
-LOGGER = logging.getLogger('avrolib')
-LOGGER.setLevel(logging.DEBUG)
 from cStringIO import StringIO
 
 import avro.schema
@@ -38,6 +34,40 @@ import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
 from pydoop.app.submit import AVRO_IO_CHOICES
+
+
+class Deserializer(object):
+    def __init__(self, schema_str):
+        schema = avro.schema.parse(schema_str)
+        self.reader = DatumReader(schema)
+
+    def deserialize(self, rec_bytes):
+        return self.reader.read(BinaryDecoder(StringIO(rec_bytes)))
+
+
+class Serializer(object):
+
+    def __init__(self, schema_str):
+        schema = avro.schema.parse(schema_str)
+        self.writer = DatumWriter(schema)
+
+    def serialize(self, record):
+        f = StringIO()
+        encoder = BinaryEncoder(f)
+        self.writer.write(record, encoder)
+        return f.getvalue()
+
+
+try:
+    from pyavroc import AvroDeserializer
+except ImportError as e:
+    AvroDeserializer = Deserializer
+
+try:
+    from pyavroc import AvroSerializer
+except ImportError as e:
+    AvroSerializer = Serializer
+
 
 AVRO_IO_CHOICES = set(AVRO_IO_CHOICES)
 
@@ -59,22 +89,20 @@ class AvroContext(pp.TaskContext):
     be explicitly requested when launching the application with pydoop
     submit (``--avro-input``, ``--avro-output``).
     """
-    @staticmethod
-    def deserializing(meth, datum_reader):
+    def deserializing(self, meth, deserializer):
         """
         Decorate a key/value getter to make it auto-deserialize Avro
         records.
         """
-        def with_deserialization(self, *args, **kwargs):
-            ret = meth(self, *args, **kwargs)
-            f = StringIO(ret)
-            dec = BinaryDecoder(f)
-            return datum_reader.read(dec)
-        return with_deserialization
+        def deserialize(*args, **kwargs):
+            ret = meth(*args, **kwargs)
+            with self.timer.time_block('avro deserialization'):
+                return deserializer.deserialize(ret)
+        return deserialize
 
-    def __init__(self, up_link, private_encoding=True):
-        super(AvroContext, self).__init__(up_link, private_encoding)
-        self.__datum_writers = {'K': None, 'V': None}
+    def __init__(self, *args, **kwargs):
+        super(AvroContext, self).__init__(*args, **kwargs)
+        self.__serializers = {'K': None, 'V': None}
 
     def set_job_conf(self, vals):
         """
@@ -87,31 +115,31 @@ class AvroContext(pp.TaskContext):
             if avro_input not in AVRO_IO_CHOICES:
                 raise RuntimeError('invalid avro input: %s' % avro_input)
             if avro_input == 'K' or avro_input == 'KV':
-                reader = DatumReader(avro.schema.parse(
+                deserializer = AvroDeserializer(
                     jc.get(AVRO_KEY_INPUT_SCHEMA)
-                ))
-                AvroContext.get_input_key = AvroContext.deserializing(
-                    AvroContext.get_input_key, reader
+                )
+                self.get_input_key = self.deserializing(
+                    self.get_input_key, deserializer
                 )
             if avro_input == 'V' or avro_input == 'KV':
-                reader = DatumReader(avro.schema.parse(
+                deserializer = AvroDeserializer(
                     jc.get(AVRO_VALUE_INPUT_SCHEMA)
-                ))
-                AvroContext.get_input_value = AvroContext.deserializing(
-                    AvroContext.get_input_value, reader
+                )
+                self.get_input_value = self.deserializing(
+                    self.get_input_value, deserializer
                 )
         if AVRO_OUTPUT in jc:
             avro_output = jc.get(AVRO_OUTPUT).upper()
             if avro_output not in AVRO_IO_CHOICES:
                 raise RuntimeError('invalid avro output: %s' % avro_output)
             if avro_output == 'K' or avro_output == 'KV':
-                self.__datum_writers['K'] = DatumWriter(avro.schema.parse(
+                self.__serializers['K'] = AvroSerializer(
                     jc.get(AVRO_KEY_OUTPUT_SCHEMA)
-                ))
+                )
             if avro_output == 'V' or avro_output == 'KV':
-                self.__datum_writers['V'] = DatumWriter(avro.schema.parse(
+                self.__serializers['V'] = AvroSerializer(
                     jc.get(AVRO_VALUE_OUTPUT_SCHEMA)
-                ))
+                )
 
     def emit(self, key, value):
         """
@@ -130,12 +158,10 @@ class AvroContext(pp.TaskContext):
         jc = self.job_conf
         if AVRO_OUTPUT in jc and (self.is_reducer() or self.__is_map_only()):
             for mode, record in out_kv.iteritems():
-                datum_writer = self.__datum_writers.get(mode)
-                if datum_writer is not None:
-                    f = StringIO()
-                    encoder = BinaryEncoder(f)
-                    datum_writer.write(record, encoder)
-                    out_kv[mode] = f.getvalue()
+                serializer = self.__serializers.get(mode)
+                if serializer is not None:
+                    with self.timer.time_block('avro serialization'):
+                        out_kv[mode] = serializer.serialize(record)
         return out_kv['K'], out_kv['V']
 
     # move to super?
@@ -174,7 +200,7 @@ class SeekableDataFileReader(DataFileReader):
             pos += len(data)
 
 
-#FIXME this is just an example with no error checking
+# FIXME this is just an example with no error checking
 class AvroReader(RecordReader):
     """
     Avro data file reader.
@@ -183,7 +209,6 @@ class AvroReader(RecordReader):
     """
     def __init__(self, ctx):
         super(AvroReader, self).__init__(ctx)
-        self.logger = LOGGER.getChild('AvroReader')
         isplit = ctx.input_split
         self.region_start = isplit.offset
         self.region_end = isplit.offset + isplit.length
@@ -215,18 +240,14 @@ class AvroWriter(RecordWriter):
 
     def __init__(self, context):
         super(AvroWriter, self).__init__(context)
-        self.logger = LOGGER.getChild('AvroWriter')
         job_conf = context.job_conf
         part = int(job_conf['mapreduce.task.partition'])
         outdir = job_conf["mapreduce.task.output.dir"]
         outfn = "%s/part-r-%05d.avro" % (outdir, part)
         wh = hdfs.open(outfn, "w")
-        self.logger.debug('created hdfs file %s', outfn)
         self.writer = DataFileWriter(wh, DatumWriter(), self.schema)
-        self.logger.debug('opened AvroWriter')
 
     def close(self):
         self.writer.close()
         # FIXME do we really need to explicitly close the filesystem?
         self.writer.writer.fs.close()
-        self.logger.debug('closed AvroWriter')

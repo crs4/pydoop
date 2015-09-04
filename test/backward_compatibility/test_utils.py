@@ -31,6 +31,7 @@ import pydoop.hadoop_utils as hu
 
 
 class TestHadoopUtils(unittest.TestCase):
+
     def setUp(self):
         self.hadoop_version = "0.20.2"
         self.hadoop_version_tuple = (0, 20, 2)
@@ -53,19 +54,25 @@ class TestHadoopUtils(unittest.TestCase):
         shutil.rmtree(self.hadoop_home)
 
     def test_HadoopVersion(self):
-        for vs, main, cdh, ext in [
-            ("0.20.2", (0, 20, 2), (), ()),
-            ("0.20.203.0", (0, 20, 203, 0), (), ()),
-            ("0.20.2-cdh3u4", (0, 20, 2), (3, 2, 4), ()),
-            ("1.0.4-SNAPSHOT", (1, 0, 4), (), ("SNAPSHOT",)),
-            ("2.0.0-mr1-cdh4.1.0", (2, 0, 0), (4, 1, 0), ("mr1",)),
-            ("0.20.2+320", (0, 20, 2), (3, 0, 320), ()),
+        for vs, main, dist, dver, dext in [
+            ("0.20.2", (0, 20, 2), 'apache', (), ()),
+            ("0.20.203.0", (0, 20, 203, 0), 'apache', (), ()),
+            ("0.20.2-cdh3u4", (0, 20, 2), 'cdh', (3, 2, 4), ()),
+            ("1.0.4-SNAPSHOT", (1, 0, 4), 'apache', (), ("SNAPSHOT",)),
+            ("2.0.0-mr1-cdh4.1.0", (2, 0, 0), 'cdh', (4, 1, 0), ("mr1",)),
+            ("0.20.2+320", (0, 20, 2), 'apache', (3, 0, 320), ()),
+            ("2.6.0.2.2.0.0-2041", (2, 6, 0), 'hdp', (2, 2, 0, 0), ('2041',)),
         ]:
             v = hu.HadoopVersion(vs)
-            for name, attr in ("main", main), ("cdh", cdh), ("ext", ext):
+            for name, attr in ("main", main), ('distribution', dist), \
+                              ("dist_version", dver), ("dist_ext", dext):
                 self.assertEqual(getattr(v, name), attr)
-            self.assertEqual(v.is_cloudera(), len(v.cdh) > 0)
-            self.assertEqual(v.tuple, main + cdh + ext)
+            self.assertEqual(v.is_cloudera(), dist == 'cdh')
+            self.assertEqual(v.is_apache(), dist == 'apache')
+            self.assertEqual(v.is_hortonworks(), dist == 'hdp')
+            self.assertEqual(v.tuple, main + dver + dext)
+            # minimal check -- tag is currently unused
+            self.assertTrue(dist in v.tag())
         for s in "bla", '0.20.str', '0.20.2+str':
             self.assertRaises(hu.HadoopVersionError, hu.HadoopVersion, s)
 
