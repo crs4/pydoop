@@ -10,3 +10,4 @@ Contents:
    mr_api
    hdfs_api
    simulator
+   hadut

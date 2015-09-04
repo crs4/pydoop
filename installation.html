@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation &mdash; Pydoop 1.0.0 documentation</title>
+    <title>Installation &mdash; Pydoop 1.1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0',
+        VERSION:     '1.1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.1.0 documentation" href="index.html" />
     <link rel="next" title="Pydoop Script User Guide" href="pydoop_script.html" />
     <link rel="prev" title="Writing Full-Featured Applications" href="tutorial/mapred_api.html" /> 
   </head>
@@ -136,9 +136,9 @@ regarding other Linux distributions, we expect Pydoop to work
 </div>
 <div class="section" id="apple-os-x">
 <h3>Apple OS X<a class="headerlink" href="#apple-os-x" title="Permalink to this headline">¶</a></h3>
-<p>Pydoop has been tested on OsX 10.9 (Maverick) and OsX 10.10 (Yosemite). First
-install the <a class="reference external" href="http://brew.sh/">Homebrew</a> version of python and then follow the
-instructions below.</p>
+<p>Pydoop has been tested on OS X 10.9 (Maverick) and OS X 10.10
+(Yosemite).  Install the <a class="reference external" href="http://brew.sh/">Homebrew</a> version of
+Python, then follow the instructions below.</p>
 </div>
 <div class="section" id="freebsd">
 <h3>FreeBSD<a class="headerlink" href="#freebsd" title="Permalink to this headline">¶</a></h3>
@@ -168,18 +168,25 @@ the <tt class="docutils literal"><span class="pre">develop</span></tt> branch co
 <ul class="simple">
 <li><a class="reference external" href="http://www.python.org">Python</a> version 2.7 (or 2.6 with
 backports <a class="footnote-reference" href="#id6" id="id3">[1]</a>)</li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/setuptools">setuptools</a> version 3.3
+or higher</li>
 <li>either of the following:<ul>
 <li><a class="reference external" href="http://hadoop.apache.org">Apache Hadoop</a> version 1.0.4, 1.1.2,
-1.2.1, 2.2.0, 2.4.1, 2.5.2 and 2.6.0</li>
+1.2.1, 2.2.0, 2.4.1, 2.5.2 or 2.6.0</li>
 <li><a class="reference external" href="https://ccp.cloudera.com/display/SUPPORT/Downloads">CDH</a>
-version 4 and 5 installed from dist-specific packages or
+version 4 or 5 installed from dist-specific packages or
 Cloudera Manager parcels (no tarball)</li>
+<li><a class="reference external" href="http://hortonworks.com/hdp/">HDP</a> 2.2</li>
 </ul>
 </li>
 <li><a class="reference external" href="http://www.openssl.org">OpenSSL</a></li>
 </ul>
-<p>If you want to install the optional JPype backend for HDFS, you also
-need <a class="reference external" href="http://jpype.sourceforge.net/">JPype</a>.</p>
+<p><strong>Optional:</strong></p>
+<ul class="simple">
+<li><a class="reference external" href="http://jpype.sourceforge.net/">JPype</a> to build the alternate HDFS backend</li>
+<li><a class="reference external" href="https://avro.apache.org/">Avro</a> Python implementation to enable
+<a class="reference internal" href="examples/avro.html#avro-io"><em>Avro I/O</em></a></li>
+</ul>
 <p>These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
 (or to an NFS share) is <em>not</em> required: see <a class="reference internal" href="self_contained.html"><em>Installation-free Usage</em></a> for

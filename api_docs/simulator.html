@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pydoop.mapreduce.simulator — Hadoop Simulator API &mdash; Pydoop 1.0.0 documentation</title>
+    <title>pydoop.mapreduce.simulator — Hadoop Simulator API &mdash; Pydoop 1.1.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.0.0',
+        VERSION:     '1.1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,9 +24,9 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
     <link rel="up" title="API Docs" href="index.html" />
-    <link rel="next" title="Examples" href="../examples/index.html" />
+    <link rel="next" title="pydoop.hadut — Hadoop shell interaction" href="hadut.html" />
     <link rel="prev" title="pydoop.hdfs — HDFS API" href="hdfs_api.html" /> 
   </head>
   <body>
@@ -40,7 +40,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="../examples/index.html" title="Examples"
+          <a href="hadut.html" title="pydoop.hadut — Hadoop shell interaction"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="hdfs_api.html" title="pydoop.hdfs — HDFS API"
@@ -63,8 +63,8 @@
             <p class="topless"><a href="hdfs_api.html"
                                   title="previous chapter"><tt class="docutils literal"><span class="pre">pydoop.hdfs</span></tt> &#8212; HDFS API</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="../examples/index.html"
-                                  title="next chapter">Examples</a></p>
+            <p class="topless"><a href="hadut.html"
+                                  title="next chapter"><tt class="docutils literal"><span class="pre">pydoop.hadut</span></tt> &#8212; Hadoop shell interaction</a></p>
 
 					<h4>Get Pydoop</h4>
 					<ul>
@@ -107,7 +107,7 @@
 debugging support.</p>
 <dl class="class">
 <dt id="pydoop.mapreduce.simulator.HadoopSimulatorLocal">
-<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.simulator.</tt><tt class="descname">HadoopSimulatorLocal</tt><big>(</big><em>factory</em>, <em>logger=None</em>, <em>loglevel=50</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorLocal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.simulator.</tt><tt class="descname">HadoopSimulatorLocal</tt><big>(</big><em>factory</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>context_cls=None</em>, <em>avro_input=None</em>, <em>avro_output=None</em>, <em>avro_output_key_schema=None</em>, <em>avro_output_value_schema=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorLocal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simulates the invocation of program components in a Hadoop workflow.</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">my_mr_app</span> <span class="kn">import</span> <span class="n">Factory</span>
 <span class="n">hs</span> <span class="o">=</span> <span class="n">HadoopSimulatorLocal</span><span class="p">(</span><span class="n">Factory</span><span class="p">())</span>
@@ -135,7 +135,7 @@ suitable <a class="reference internal" href="mr_api.html#pydoop.mapreduce.pipes.
 
 <dl class="class">
 <dt id="pydoop.mapreduce.simulator.HadoopSimulatorNetwork">
-<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.simulator.</tt><tt class="descname">HadoopSimulatorNetwork</tt><big>(</big><em>program=None</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>sleep_delta=3</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorNetwork" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.simulator.</tt><tt class="descname">HadoopSimulatorNetwork</tt><big>(</big><em>program=None</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>sleep_delta=3</em>, <em>context_cls=None</em>, <em>avro_input=None</em>, <em>avro_output=None</em>, <em>avro_output_key_schema=None</em>, <em>avro_output_value_schema=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorNetwork" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simulates the invocation of program components in a Hadoop
 workflow using network connections to communicate with a
 user-provided pipes program.</p>
@@ -194,7 +194,7 @@ which case the program is expected to have a
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="../examples/index.html" title="Examples"
+          <a href="hadut.html" title="pydoop.hadut — Hadoop shell interaction"
              >next</a> |</li>
         <li class="right" >
           <a href="hdfs_api.html" title="pydoop.hdfs — HDFS API"

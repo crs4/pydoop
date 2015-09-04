@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Pydoop Submit User Guide &mdash; Pydoop 1.0.0 documentation</title>
+    <title>Pydoop Submit User Guide &mdash; Pydoop 1.1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0',
+        VERSION:     '1.1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.1.0 documentation" href="index.html" />
     <link rel="next" title="API Docs" href="api_docs/index.html" />
     <link rel="prev" title="Pydoop Script User Guide" href="pydoop_script.html" /> 
   </head>
@@ -149,7 +149,23 @@ when you launch the program.</p>
 </tr>
 <tr class="row-even"><td>&nbsp;</td>
 <td><tt class="docutils literal"><span class="pre">--no-override-env</span></tt></td>
-<td>Use the default python executable and environment instead of overriding HOME, LD_LIBRARY_PATH and PYTHONPATH</td>
+<td>Use the default python executable and environment instead of overriding HOME, PATH, LD_LIBRARY_PATH and PYTHONPATH</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-ld-path</span></tt></td>
+<td>Use the default LD_LIBRARY_PATH, instead of copying it from the client</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-pypath</span></tt></td>
+<td>Use the default PYTHONPATH, instead of copying it from the client</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-path</span></tt></td>
+<td>Use the default PATH, instead of copying it from the client</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--set-env</span></tt></td>
+<td>Set an environment variable for task. Specify it as VAR=value.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">-D</span></tt></td>
 <td>&nbsp;</td>

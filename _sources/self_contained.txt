@@ -41,6 +41,16 @@ directory of each task before it is executed.  If you include in each
 archive the *contents* of the corresponding package, they will be
 available for import.
 
+The archive must be in one of the formats supported by Hadoop: zip, tar or tgz.
+
+.. note::
+
+  Pydoop submit automatically builds the name of the symlink that
+  points to the unpacked archive by stripping the last extension.
+  Thus, ``foo.tar.gz`` will not work as expected, since the link will
+  be called ``foo.tar``. Always use the ``.tgz`` extension in this
+  case.
+
 The example is supposed to work with Pydoop and vowelcount *not*
 installed on the slave nodes (you do need Pydoop on the client machine
 used to run the example, however).

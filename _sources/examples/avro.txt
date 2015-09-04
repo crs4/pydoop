@@ -108,6 +108,15 @@ Avro-Parquet files, i.e., `Parquet
 <http://parquet.incubator.apache.org>`_ files that use the Avro object
 model.
 
+.. note::
+
+  Make sure you have Parquet version 1.6 or later to avoid running
+  into `object reuse problems
+  <https://issues.apache.org/jira/browse/PARQUET-62>`_.  More
+  generally, the record writer must be aware of the fact that records
+  passed to its ``write`` method are mutable and can be reused by the
+  caller.
+
 The following application reproduces the k-mer count example from the
 `ADAM <https://github.com/bigdatagenomics/adam>`_ docs:
 

@@ -271,3 +271,31 @@ The following snippet shows how to set the partitioner and combiner
 
   pp.runTask(pp.Factory(Mapper, Reducer, partitioner_class=Partitioner,
       combiner_class=Reducer))
+
+.. _timers:
+
+Timers
+------
+
+``Timer`` objects can help debug performance issues in mapreduce
+applications:
+
+.. code-block:: python
+
+  from pydoop.utils.misc import Timer
+
+  class Mapper(api.Mapper):
+
+      def __init__(self, context):
+          super(Mapper, self).__init__(context)
+          self.timer = Timer(context)
+
+      def map(self, context):
+          with self.timer.time_block("tokenize"):
+              words = context.value.split()
+          for w in words:
+              context.emit(w, 1)
+
+With the above coding, the total time spent to execute
+``context.value.split()`` (in ms) will be automatically accumulated in
+a ``TIME_TOKENIZE`` counter under the ``Timer`` counter group.
