@@ -87,7 +87,6 @@ class PydoopScript(object):
         args.cache_archive = None
         args.upload_to_cache = None
         args.libjars = None
-        args.mrv2 = pydoop.hadoop_version_info().has_mrv2()
         args.local_fs = False
         args.conf = None
         args.disable_property_name_conversion = True
@@ -146,7 +145,10 @@ def add_parser_arguments(parser):
                         help="--combine-fn alias for backwards compatibility")
     parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
                         help="output key-value separator")
-
+    parser.add_argument(
+        '--mrv1', action='store_true',
+        help=("Force use of MRv1. InputFormat and OutputFormat classes must be mrv1-compliant")
+    )
 
 def add_parser(subparsers):
     parser = subparsers.add_parser(

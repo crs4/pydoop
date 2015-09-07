@@ -47,7 +47,7 @@ hdfs dfs -put ${AVRO_FN}
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 USER_SCHEMA=`cat ${USER_SCHEMA_FILE}`
 
 INPUT=${AVRO_FN}

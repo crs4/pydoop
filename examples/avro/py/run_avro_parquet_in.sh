@@ -23,7 +23,7 @@ MODULE=avro_value_in
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 USER_SCHEMA=`cat ${SCHEMA_FILE_LOCAL}`
 INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
 
