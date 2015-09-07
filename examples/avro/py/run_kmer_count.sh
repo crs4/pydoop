@@ -3,7 +3,7 @@ MODULE=kmer_count
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
 PROJECTION=`cat ../schemas/alignment_record_proj.avsc`
 

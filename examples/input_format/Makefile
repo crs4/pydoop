@@ -73,13 +73,13 @@ data:
 
 
 submit_mrv1: data ${PYINPUTFORMAT_JAR}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1}\
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1} --mrv1 \
 		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV1
 	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
 
 
 submit_mrv2: data ${PYINPUTFORMAT_JAR}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} --mrv2\
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} \
 		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV2
 	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
 
