@@ -82,6 +82,11 @@ class PydoopSubmitter(object):
         self.unknown_args = None
         self._use_mrv2 = None
 
+    @staticmethod
+    def __cache_archive_link(archive_name):
+        # XXX: should we really be dropping the extension from the link name?
+        return os.path.splitext(os.path.basename(archive_name))[0]
+
     def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
         cfiles = self.properties[prop] if self.properties[prop] else []
         cfiles += cache if cache else []
@@ -89,7 +94,7 @@ class PydoopSubmitter(object):
             upf_to_cache = [
                 ('file://' + os.path.realpath(e),
                  hdfs.path.join(self.remote_wd, bn),
-                 bn if prop == CACHE_FILES else os.path.splitext(bn)[0])
+                 bn if prop == CACHE_FILES else self.__cache_archive_link(e))
                 for (e, bn) in ((e, os.path.basename(e))
                                 for e in upload_and_cache)
             ]
@@ -101,8 +106,6 @@ class PydoopSubmitter(object):
     def __set_files_to_cache(self, args):
         if args.upload_file_to_cache is None:
             args.upload_file_to_cache = []
-        if args.python_zip:
-            args.upload_file_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_FILES,
                                          args.upload_file_to_cache,
                                          args.cache_file)
@@ -110,6 +113,8 @@ class PydoopSubmitter(object):
     def __set_archives_to_cache(self, args):
         if args.upload_archive_to_cache is None:
             args.upload_archive_to_cache = []
+        if args.python_zip:
+            args.upload_archive_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_ARCHIVES,
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
@@ -217,7 +222,8 @@ class PydoopSubmitter(object):
 
         executable = self.args.python_program
         if self.args.python_zip:
-            env['PYTHONPATH'] = ':'.join(self.args.python_zip + [env['PYTHONPATH']])
+            env['PYTHONPATH'] = \
+                ':'.join([ self.__cache_archive_link(ar) for ar in self.args.python_zip ] + [env['PYTHONPATH']])
         # Note that we have to explicitely put the working directory
         # in the python path otherwise it will miss cached modules and
         # packages.

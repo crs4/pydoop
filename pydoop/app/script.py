@@ -34,6 +34,7 @@ import pydoop
 import pydoop.hadut as hadut
 import pydoop.utils as utils
 import argparse
+from tempfile import NamedTemporaryFile
 from zipfile import ZipFile
 from .submit import PydoopSubmitter, add_parser_common_arguments
 from .script_template import DRIVER_TEMPLATE
@@ -47,6 +48,8 @@ DESCRIPTION = "Simplified interface for running simple MapReduce jobs"
 
 class PydoopScript(object):
     def __init__(self, args, unknown_args):
+        self.script_archive = None
+        self.args = None
         self.convert_args(args, unknown_args)
 
     @staticmethod
@@ -64,14 +67,23 @@ class PydoopScript(object):
         return os.linesep.join(lines) + os.linesep
 
     def convert_args(self, args, unknown_args):
-        zip_filename = utils.make_random_str(prefix="pydoop_script_",
-                                             postfix='.zip')
-        mr_module = utils.make_random_str(prefix="pydoop_script_module_")
+        # Create a zip archive containing all we need to run the script (including
+        # the script itself.  We use NamedTemporaryFile which will take care of
+        # deleting the temp archive once we're done
+        self.script_archive = NamedTemporaryFile(
+                prefix="pydoop_script_",
+                suffix='.zip')
+        zip_filename = self.script_archive.name
+        # Create a one-off temporary file name to avoid name clashes in the distcache.
+        # Keep the same module extension -- it may be a source file or a byte-compiled file
+        mr_module = utils.make_random_str(prefix="pydoop_script_module_",
+                postfix=os.path.basename(args.module))
         mr_driver = utils.make_random_str(prefix="pydoop_script_driver_")
         with ZipFile(zip_filename, 'w') as zipf:
-            zipf.write(args.module, arcname=mr_module+'.py')
+            zipf.write(args.module, arcname=mr_module)
             zipf.writestr(mr_driver+'.py',
-                          self.generate_driver(mr_module, args))
+                          self.generate_driver(os.path.splitext(mr_module)[0], # use name without ext
+                          args))
         if args.python_zip is None:
             args.python_zip = [zip_filename]
         else:
@@ -110,7 +122,6 @@ class PydoopScript(object):
                     warnings.warn(("Can't find pydoop.jar, output will "
                                    "probably be tab-separated"))
         self.args, self.unknown_args = args, unknown_args
-        self.zip_filename = zip_filename
 
     def run(self):
         submitter = PydoopSubmitter()
@@ -119,7 +130,7 @@ class PydoopScript(object):
         return 0
 
     def clean(self):
-        os.unlink(self.zip_filename)
+        self.script_archive.close()
 
 
 def run(args, unknown_args=None):
