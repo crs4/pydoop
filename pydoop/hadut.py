@@ -157,7 +157,13 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         p = subprocess.Popen(
             _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        output, error = p.communicate()
+        error = ""
+        stderr_iterator = iter(p.stderr.readline, b"")
+        for line in stderr_iterator:
+            error += line
+            logger.info("cmd stderr line: " + line.strip())
+
+        output, _ = p.communicate()
     else:
         p = subprocess.Popen(_args, stdout=None, stderr=None, bufsize=1)
         ret = p.wait()
