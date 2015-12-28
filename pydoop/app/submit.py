@@ -80,6 +80,12 @@ class PydoopSubmitter(object):
         self.pipes_code = None
         self.files_to_upload = []
         self.unknown_args = None
+        self._use_mrv2 = None
+
+    @staticmethod
+    def __cache_archive_link(archive_name):
+        # XXX: should we really be dropping the extension from the link name?
+        return os.path.splitext(os.path.basename(archive_name))[0]
 
     def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
         cfiles = self.properties[prop] if self.properties[prop] else []
@@ -88,7 +94,7 @@ class PydoopSubmitter(object):
             upf_to_cache = [
                 ('file://' + os.path.realpath(e),
                  hdfs.path.join(self.remote_wd, bn),
-                 bn if prop == CACHE_FILES else os.path.splitext(bn)[0])
+                 bn if prop == CACHE_FILES else self.__cache_archive_link(e))
                 for (e, bn) in ((e, os.path.basename(e))
                                 for e in upload_and_cache)
             ]
@@ -100,8 +106,6 @@ class PydoopSubmitter(object):
     def __set_files_to_cache(self, args):
         if args.upload_file_to_cache is None:
             args.upload_file_to_cache = []
-        if args.python_zip:
-            args.upload_file_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_FILES,
                                          args.upload_file_to_cache,
                                          args.cache_file)
@@ -109,6 +113,8 @@ class PydoopSubmitter(object):
     def __set_archives_to_cache(self, args):
         if args.upload_archive_to_cache is None:
             args.upload_archive_to_cache = []
+        if args.python_zip:
+            args.upload_archive_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_ARCHIVES,
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
@@ -155,6 +161,7 @@ class PydoopSubmitter(object):
         self.requested_env = self._env_arg_to_dict(args.set_env or [])
         self.args = args
         self.unknown_args = unknown_args
+        self._use_mrv2 = pydoop.has_mrv2() and not self.args.mrv1
 
     def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
         """
@@ -215,7 +222,8 @@ class PydoopSubmitter(object):
 
         executable = self.args.python_program
         if self.args.python_zip:
-            env['PYTHONPATH'] = ':'.join(self.args.python_zip + [env['PYTHONPATH']])
+            env['PYTHONPATH'] = \
+                ':'.join([ self.__cache_archive_link(ar) for ar in self.args.python_zip ] + [env['PYTHONPATH']])
         # Note that we have to explicitely put the working directory
         # in the python path otherwise it will miss cached modules and
         # packages.
@@ -260,9 +268,9 @@ class PydoopSubmitter(object):
         if hdfs.path.exists(self.args.output):
             raise RuntimeError("%r already exists" % (self.args.output,))
         if self.args.avro_input or self.args.avro_output:
-            if not self.args.mrv2:
+            if not self._use_mrv2:
                 raise RuntimeError(
-                    "Avro mode is currently supported only for mrv2"
+                    "Avro mode is currently supported only for MRv2"
                 )
 
     def __clean_wd(self):
@@ -322,14 +330,16 @@ class PydoopSubmitter(object):
         if self.args.libjars:
             libjars.extend(self.args.libjars)
         pydoop_jar = pydoop.jar_path()
-        if self.args.mrv2 and pydoop_jar is None:
+        if self._use_mrv2 and pydoop_jar is None:
             raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")
         if self.args.local_fs and pydoop_jar is None:
             raise RuntimeError(
                 "Can't find pydoop.jar, cannot use local fs patch"
             )
         job_args = []
-        if self.args.mrv2:
+        self.logger.debug("Selecting Submitter.  self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2() %s",
+                self._use_mrv2, self.args.mrv1, pydoop.has_mrv2())
+        if self._use_mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
             classpath.append(pydoop_jar)
             libjars.append(pydoop_jar)
@@ -343,6 +353,7 @@ class PydoopSubmitter(object):
             libjars.append(pydoop_jar)
         else:
             submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
+        self.logger.debug("Submitter class: %s", submitter_class)
         if self.args.hadoop_conf:
             job_args.extend(['-conf', self.args.hadoop_conf.name])
         if self.args.input_format:
@@ -360,7 +371,7 @@ class PydoopSubmitter(object):
             job_args.extend(['-avroOutput', self.args.avro_output])
         if not self.args.disable_property_name_conversion:
             ctable = (conv_tables.mrv1_to_mrv2
-                      if self.args.mrv2 else conv_tables.mrv2_to_mrv1)
+                      if self._use_mrv2 else conv_tables.mrv2_to_mrv1)
             props = [
                 (ctable.get(k, k), v) for (k, v) in self.properties.iteritems()
             ]
@@ -488,9 +499,8 @@ def add_parser_arguments(parser):
         help="Do not adapt property names to the hadoop version used."
     )
     parser.add_argument(
-        '--mrv2', action='store_true',
-        help=("Use mapreduce v2 Hadoop Pipes framework. InputFormat and "
-              "OutputFormat classes should be mrv2 compliant")
+        '--mrv1', action='store_true',
+        help=("Force MRv1, even if MRv2 is available.")
     )
     parser.add_argument(
         '--local-fs', action='store_true',

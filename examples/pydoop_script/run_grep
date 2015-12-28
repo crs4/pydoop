@@ -45,7 +45,7 @@ ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rmr /user/${USER}/${OUTPUT}
 ${hdfs} -put ${DATA} ${INPUT}
 
-${SCRIPT_CMD} --num-reducers 0 -t '' \
+${SCRIPT_CMD} --log-level DEBUG --num-reducers 0 -t '' \
               -D mapred.map.tasks=4 -D grep-expression=March \
               ${SCRIPT} ${INPUT} ${OUTPUT}
 

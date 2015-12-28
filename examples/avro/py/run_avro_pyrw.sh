@@ -22,7 +22,7 @@ MODULE=avro_pyrw
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 INPUT=${AVRO_FN}
 
 hdfs dfs -rmr /user/${USER}/${OUTPUT}

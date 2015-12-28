@@ -8,7 +8,7 @@ RESULTS='results.txt'
 
 JOBNAME=${MODULE}-job
 
-LOGLEVEL=INFO
+LOGLEVEL=DEBUG
 
 INPUT=${MODULE}_input
 OUTPUT=${MODULE}_output

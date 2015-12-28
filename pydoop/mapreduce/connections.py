@@ -22,6 +22,7 @@ import socket
 from threading import Thread, Event
 import logging
 
+from pydoop.utils.misc import get_logger
 from pydoop.sercore import fdopen as ph_fdopen
 from .text_streams import TextDownStreamFilter, TextUpStreamFilter
 from .binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
@@ -64,7 +65,7 @@ class LifeThread(object):
         self.all_done = all_done
         self.port = port
         self.max_tries = max_tries
-        self.logger = LOGGER.getChild('LifeThread')
+        self.logger = get_logger(LOGGER, 'LifeThread')
 
     def __call__(self):
         while True:
@@ -86,7 +87,7 @@ class LifeThread(object):
 class NetworkConnections(Connections):
 
     def __init__(self, cmd_stream, up_link, sock, port):
-        self.logger = LOGGER.getChild('NetworkConnections')
+        self.logger = get_logger(LOGGER, 'NetworkConnections')
         super(NetworkConnections, self).__init__(cmd_stream, up_link)
         self.all_done = Event()
         self.socket = sock

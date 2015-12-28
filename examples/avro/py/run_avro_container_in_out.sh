@@ -49,7 +49,7 @@ hdfs dfs -put ${AVRO_FN}
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 
 INPUT=${AVRO_FN}
 

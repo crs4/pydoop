@@ -27,7 +27,7 @@ MODULE=avro_value_in_out
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 STATS_SCHEMA=`cat ${OUT_SCHEMA_FILE_LOCAL}`
 INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
 OUTPUT_FORMAT=parquet.avro.AvroParquetOutputFormat
@@ -58,7 +58,7 @@ MODULE=avro_parquet_dump_results
 MPY=${MODULE}.py
 JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
-MRV="--mrv2"
+MRV=""
 STATS_SCHEMA=`cat ${OUT_SCHEMA_FILE_LOCAL}`
 INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
 
