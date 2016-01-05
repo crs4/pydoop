@@ -18,6 +18,7 @@
 
 from .streams import DownStreamFilter, UpStreamFilter
 from pydoop.utils.serialize import codec, codec_core
+from pydoop.utils.misc import get_logger
 
 import logging
 logging.basicConfig()
@@ -71,7 +72,7 @@ class BinaryWriter(object):
 
     def __init__(self, stream):
         self.stream = stream
-        self.logger = LOGGER.getChild('BinaryWriter')
+        self.logger = get_logger(LOGGER, 'BinaryWriter')
 
     def send(self, cmd, *args):
         self.logger.debug('writing %r, %r', cmd, args)
@@ -82,7 +83,7 @@ class BinaryDownStreamFilter(DownStreamFilter):
 
     def __init__(self, stream):
         super(BinaryDownStreamFilter, self).__init__(stream)
-        self.logger = LOGGER.getChild('BinaryDownStreamFilter')
+        self.logger = get_logger(LOGGER, 'BinaryDownStreamFilter')
 
     def __iter__(self):
         return self.fast_iterator()
@@ -107,7 +108,7 @@ class BinaryUpStreamFilter(UpStreamFilter):
 
     def __init__(self, stream):
         super(BinaryUpStreamFilter, self).__init__(stream)
-        self.logger = LOGGER.getChild('BinaryUpStreamFilter')
+        self.logger = get_logger(LOGGER, 'BinaryUpStreamFilter')
         self.logger.debug('initialize on stream: %s', stream)
 
     def send(self, cmd, *args):
@@ -118,4 +119,4 @@ class BinaryUpStreamFilter(UpStreamFilter):
 class BinaryUpStreamDecoder(BinaryDownStreamFilter):
     def __init__(self, stream):
         super(BinaryUpStreamDecoder, self).__init__(stream)
-        self.logger = LOGGER.getChild('BinaryUpStreamDecoder')
+        self.logger = get_logger(LOGGER, 'BinaryUpStreamDecoder')
