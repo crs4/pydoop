@@ -34,6 +34,7 @@ LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
 import pydoop
+from pydoop.utils.misc import get_logger
 from pydoop.utils.serialize import serialize_to_string
 from pydoop.sercore import fdopen as ph_fdopen
 
@@ -86,7 +87,7 @@ class TrivialRecordWriter(object):
 
     def __init__(self, simulator, stream):
         self.stream = stream
-        self.logger = LOGGER.getChild('TrivialRecordWriter')
+        self.logger = get_logger(LOGGER, 'TrivialRecordWriter')
         self.simulator = simulator
 
     def output(self, key, value):
@@ -242,7 +243,7 @@ class SortAndShuffle(dict):
 class CommandThread(threading.Thread):
     def __init__(self, sync_event, down_bytes, ostream, logger):
         super(CommandThread, self).__init__()
-        self.logger = logger.getChild('CommandThread')
+        self.logger = get_logger(logger, 'CommandThread')
         self.down_bytes = down_bytes
         self.ostream = ostream
         self.sync_event = sync_event
@@ -270,7 +271,7 @@ class CommandThread(threading.Thread):
 class ResultThread(threading.Thread):
     def __init__(self, simulator, up_bytes, ostream, logger):
         super(ResultThread, self).__init__()
-        self.logger = logger.getChild('ResultThread')
+        self.logger = get_logger(logger, 'ResultThread')
         self.up_bytes = up_bytes
         self.ostream = ostream
         self.simulator = simulator
@@ -348,8 +349,7 @@ class HadoopServer(SocketServer.TCPServer):
         out_writer is an object with a .send() method that can handle 'output'
         and  'done' commands.
         """
-        self.logger = logger.getChild('HadoopServer') if logger \
-            else logging.getLogger('HadoopServer')
+        self.logger = get_logger(logger, 'HadoopServer')
         self.logger.setLevel(loglevel)
         self.simulator = simulator
         self.down_bytes = down_bytes
@@ -612,8 +612,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
             avro_output_key_schema=None,
             avro_output_value_schema=None
     ):
-        logger = logger.getChild('HadoopSimulatorLocal') if logger \
-            else logging.getLogger(self.__class__.__name__)
+        logger = get_logger(logger, 'HadoopSimulatorLocal')
         super(HadoopSimulatorLocal, self).__init__(
             logger, loglevel, context_cls, avro_input, avro_output, avro_output_key_schema, avro_output_value_schema)
 
@@ -718,8 +717,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             avro_output_key_schema=None,
             avro_output_value_schema=None
     ):
-        logger = logger.getChild('HadoopSimulatorNetwork') if logger \
-            else logging.getLogger(self.__class__.__name__)
+        logger = get_logger(logger, 'HadoopSimulatorNetwork')
         super(HadoopSimulatorNetwork, self).__init__(
             logger, loglevel, context_cls, avro_input, avro_output, avro_output_key_schema, avro_output_value_schema)
 
@@ -734,7 +732,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
     def run_task(self, down_bytes, out_writer):
         self.logger.debug('run_task: started HadoopServer')
         server = HadoopServer(self, 0, down_bytes, out_writer,
-                              logger=self.logger.getChild('HadoopServer'),
+                              logger=get_logger(self.logger, 'HadoopServer'),
                               loglevel=self.logger.getEffectiveLevel())
         port = server.get_port()
         self.logger.debug('serving on port: %s', port)

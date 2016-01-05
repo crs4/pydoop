@@ -21,12 +21,29 @@ Miscellaneous utilities.
 """
 
 import logging
+import sys
 import time
 import uuid
 from struct import pack
 
+import logging
 
+logging.basicConfig()
+LOGGER = logging.getLogger('base')
 DEFAULT_LOG_LEVEL = "WARNING"
+
+def python_version():
+    "Return python version triplet"
+    return tuple([int(r) for r in sys.version.split()[0].split('.')])
+
+def get_logger(plogger, name, level=logging.CRITICAL):
+    "Compose logger object"
+    if  python_version() > (2, 7, 0) and plogger:
+        logger = plogger.getChild(name)
+    else:
+        logger = logging.getLogger(name)
+    logger.setLevel(level)
+    return logger
 
 
 def split_hdfs_path(hdfs_path, user=None):  # backwards compatibility
