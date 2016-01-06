@@ -75,6 +75,7 @@ before_install:
 - export PATH=$VIRTUAL_ENV/bin:$PATH
 - export PYTHONPATH=${VIRTUAL_ENV}/lib/python2.7/site-packages
 #- export JAVA_HOME=$(readlink -f /usr/bin/javac | sed "s:bin/javac::")
+- sudo apt-get update
 - sudo apt-get install build-essential python-all-dev libssl-dev zip
 - virtualenv ${VIRTUAL_ENV}
 - source /home/travis/virtualenv/python2.7/bin/activate
