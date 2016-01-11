@@ -144,7 +144,7 @@ class TestHDFS(TestCommon):
 
         def _write_prefix(f, size, bs):
             # Avoid memory problem with JVM
-            chunk_size = min(bs, 24*1048576)
+            chunk_size = min(bs, 12*1048576)
             written = 0
             while written < size:
                 data = 'X'*min(chunk_size, size - written)
