@@ -24,6 +24,7 @@ import numbers
 from cStringIO import StringIO
 from copy import deepcopy
 
+from pydoop.utils.misc import get_logger
 from pydoop import hadoop_version_info
 from pydoop.utils.serialize import (
     deserialize_text,
@@ -369,7 +370,7 @@ def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
 class StreamRunner(object):
 
     def __init__(self, factory, context, cmd_stream):
-        self.logger = LOGGER.getChild('StreamRunner')
+        self.logger = get_logger(LOGGER, 'StreamRunner')
         self.factory = factory
         self.ctx = context
         self.cmd_stream = cmd_stream

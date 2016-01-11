@@ -21,12 +21,36 @@ Miscellaneous utilities.
 """
 
 import logging
+import sys
 import time
 import uuid
 from struct import pack
 
-
+logging.basicConfig()
+LOGGER = logging.getLogger('base')
 DEFAULT_LOG_LEVEL = "WARNING"
+
+
+def get_logger(parent, name, level=logging.CRITICAL):
+    """
+    Get a logger object with the specified name and level.
+
+    If ``parent`` is a logger, the returned logger will be a
+    descendant to it.
+    """
+    try:
+        logger = parent.getChild(name)
+    except AttributeError:
+        try:
+            root = parent.root
+        except AttributeError:  # parent is not a logger
+            logger = logging.getLogger(name)
+        else:  # old Python version, copy getChild code from Python 2.7
+            if parent is not root:
+                name = '.'.join((parent.name, name))
+            logger = parent.manager.getLogger(name)
+    logger.setLevel(level)
+    return logger
 
 
 def split_hdfs_path(hdfs_path, user=None):  # backwards compatibility

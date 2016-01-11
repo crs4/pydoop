@@ -36,6 +36,7 @@ import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.utils.serialize import serialize_to_string
 import pydoop.hdfs as hdfs
+from pydoop.utils.misc import get_logger
 
 WORDCOUNT = "WORDCOUNT"
 INPUT_WORDS = "INPUT_WORDS"
@@ -46,7 +47,7 @@ class Mapper(api.Mapper):
 
     def __init__(self, context):
         super(Mapper, self).__init__(context)
-        self.logger = LOGGER.getChild("Mapper")
+        self.logger = get_logger(LOGGER, "Mapper")
         context.set_status("initializing mapper")
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
@@ -76,7 +77,7 @@ class Reader(api.RecordReader):
     """
     def __init__(self, context):
         super(Reader, self).__init__(context)
-        self.logger = LOGGER.getChild("Reader")
+        self.logger = get_logger(LOGGER, "Reader")
         self.logger.debug('started')
         self.isplit = context.input_split
         for a in "filename", "offset", "length":
@@ -113,7 +114,7 @@ class Writer(api.RecordWriter):
 
     def __init__(self, context):
         super(Writer, self).__init__(context)
-        self.logger = LOGGER.getChild("Writer")
+        self.logger = get_logger(LOGGER, "Writer")
         jc = context.job_conf
         part = jc.get_int("mapred.task.partition")
         out_dir = jc["mapred.work.output.dir"]
@@ -135,7 +136,7 @@ class Partitioner(api.Partitioner):
 
     def __init__(self, context):
         super(Partitioner, self).__init__(context)
-        self.logger = LOGGER.getChild("Partitioner")
+        self.logger = get_logger(LOGGER, "Partitioner")
 
     def partition(self, key, num_reduces):
         reducer_id = (hash(key) & sys.maxint) % num_reduces

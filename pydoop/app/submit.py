@@ -337,7 +337,7 @@ class PydoopSubmitter(object):
                 "Can't find pydoop.jar, cannot use local fs patch"
             )
         job_args = []
-        self.logger.debug("Selecting Submitter.  self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2()",
+        self.logger.debug("Selecting Submitter.  self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2(): %s",
                 self._use_mrv2, self.args.mrv1, pydoop.has_mrv2())
         if self._use_mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
