@@ -39,6 +39,7 @@ else
 	exit 1
 fi
 
+cd "$(dirname $0)"
 ${hdfs} -rmr /user/${USER}/${INPUT}
 ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rmr /user/${USER}/${OUTPUT}
