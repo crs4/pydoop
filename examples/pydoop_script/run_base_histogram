@@ -42,6 +42,6 @@ fi
 ${hdfs} -rmr /user/${USER}/${INPUT}
 ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rmr /user/${USER}/${OUTPUT}
-${hdfs} -put ${DATA} ${INPUT}
+${hdfs} -put ${DATA} ${INPUT} || { echo "Error uploading ${DATA}" >&2; exit 1 ; }
 
 ${SCRIPT_CMD} --log-level DEBUG ${SCRIPT} ${INPUT} ${OUTPUT}
