@@ -27,6 +27,8 @@ env:
     - HADOOPVERSION=2.5.2 HDFS_BACKEND=jpype-bridged
     - HADOOPVERSION=2.6.0 HDFS_BACKEND=native
     - HADOOPVERSION=2.6.0 HDFS_BACKEND=jpype-bridged
+    - HADOOPVERSION=2.7.2 HDFS_BACKEND=native
+    - HADOOPVERSION=2.7.2 HDFS_BACKEND=jpype-bridged
     # -------------------------------------------------------------
     # Hortonworks Distributions
     # -------------------------------------------------------------

@@ -204,7 +204,7 @@ function install_standard_hadoop() {
 
     export HADOOP_HOME="${PWD}/hadoop-${HadoopVersion}"
     if [[ "${HadoopVersion}" == 2.*.* ]]; then
-        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-${HadoopVersion}-conf/"
+        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2-conf/"
         export HADOOP_BIN="${HADOOP_HOME}/sbin/"
         export HADOOP_COMMON_LIB_NATIVE_DIR="${HADOOP_HOME}/lib/native"
         export HADOOP_OPTS="-Djava.library.path=${HADOOP_HOME}/lib"
@@ -351,7 +351,7 @@ function install_hdp2() {
         local YARN_DAEMON=${HDP_BASE}/hadoop-yarn-nodemanager/sbin/yarn-daemon.sh
 
         log "Copying new conf in ${HadoopConfDir}"
-        sudo -E cp ${PWD}/.travis/hadoop-2.6.0-conf/* ${HadoopConfDir}/
+        sudo -E cp ${PWD}/.travis/hadoop-2-conf/* ${HadoopConfDir}/
         log "Current contents of ${HadoopConfDir}"
         ls -lR ${HadoopConfDir}/
 
@@ -364,7 +364,7 @@ function install_hdp2() {
         sudo -E ${YARN_DAEMON} start nodemanager
     elif [ "$HadoopVersion" = "HDP2.1.5.0" ]; then
         # Currently broken.
-        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2.6.0-conf/"
+        export HADOOP_CONF_DIR="${PWD}/.travis/hadoop-2-conf/"
         log "Adding mixing links"
         ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-hdfs/
         ln -s /usr/lib/hadoop/libexec /usr/lib/hadoop-yarn/
