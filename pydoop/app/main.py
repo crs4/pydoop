@@ -26,6 +26,7 @@ import importlib
 
 
 from pydoop.version import version
+from pydoop import LocalModeNotSupported
 
 SUBMOD_NAMES = [
     "script",
@@ -78,4 +79,7 @@ def main(argv=None):
             args.combine_fn = args.combiner_fn  # backwards compatibility
     except AttributeError:  # not the script app
         pass
-    args.func(args, unknown)
+    try:
+        args.func(args, unknown)
+    except LocalModeNotSupported as ex:
+        exit('ERROR: %s' % ex.message)

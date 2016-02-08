@@ -180,4 +180,9 @@ def read_properties(fname):
     return dict(parser.items(AddSectionWrapper.SEC_NAME))
 
 
+class LocalModeNotSupported(Exception):
+    def __init__(self, message='Job submission failed, local mode is not supported.', *args):
+        super(LocalModeNotSupported, self).__init__(message, *args)
+
+
 PROPERTIES = read_properties(PROP_FN)

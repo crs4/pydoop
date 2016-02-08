@@ -446,6 +446,10 @@ class PipesRunner(object):
     job to succeed).
     """
     def __init__(self, prefix=None, logger=None):
+        hadoop_version_info = pydoop.hadoop_version_info()
+        if hadoop_version_info.is_local():
+            raise pydoop.LocalModeNotSupported()
+
         self.wd = self.exe = self.input = self.output = None
         self.logger = logger or utils.NullLogger()
         if prefix:

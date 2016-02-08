@@ -332,7 +332,8 @@ class JavaBuilder(object):
 
 
 class BuildPydoop(build):
-
+    if HADOOP_VERSION_INFO.is_local():
+        exit('Build failed, local mode is not supported.')
     user_options = build.user_options
     user_options.append((
         'hdfs-core-impl=', None,
