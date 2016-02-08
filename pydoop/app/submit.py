@@ -419,8 +419,8 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--no-override-env', action='store_true',
-        help=("Use the default python executable and environment instead of "
-              "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
+        help=("Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead "
+              "of copying them from the submitting client node")
     )
     parser.add_argument(
         '--no-override-ld-path', action='store_true',
@@ -439,8 +439,8 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--set-env', metavar="VAR=VALUE", type=str, action="append",
-        help=("Set environment variables for the tasks. Setting a variable "
-              "to '' causes it not be set by Pydoop.")
+        help=("Set environment variables for the tasks. If a variable "
+              "is set to '', it will not be overridden by Pydoop.")
     )
     parser.add_argument(
         '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
@@ -500,7 +500,8 @@ def add_parser_arguments(parser):
     )
     parser.add_argument(
         '--mrv1', action='store_true',
-        help=("Force MRv1, even if MRv2 is available.")
+        help=("Force Pydoop to use MRv1, even if MRv2 is available. The "
+              "InputFormat and OutputFormat classes must be MRv1-compliant")
     )
     parser.add_argument(
         '--local-fs', action='store_true',
