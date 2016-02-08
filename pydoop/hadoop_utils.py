@@ -619,9 +619,15 @@ class PathFinder(object):
         ).lower() == 'yarn'
 
     def is_local(self, hadoop_conf=None, hadoop_home=None):
-        v = self.hadoop_version_info(hadoop_home)
         framework_name = self.hadoop_params(hadoop_conf, hadoop_home).get(
-            'mapreduce.framework.name', '').lower()
+            'mapreduce.framework.name', '').lower()  # only for hadoop >= 2.0.0
 
-        return (framework_name == 'local' or framework_name == '') if v.main > (2, 0, 0) else \
-            self.hadoop_params(hadoop_conf, hadoop_home).get('mapred.job.tracker') is None
+        # According to
+        # https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/SingleCluster.html
+        # to install a single node hadoop you have to set the file system param.
+        fs = self.hadoop_params(hadoop_conf, hadoop_home).get('fs.defaultFS')
+        if fs is None:
+            # support for deprecated param
+            fs = self.hadoop_params(hadoop_conf, hadoop_home).get('fs.default.name')
+        return framework_name == 'local' if framework_name else \
+            fs is None or fs == 'file:///'
