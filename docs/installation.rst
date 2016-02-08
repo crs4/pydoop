@@ -55,8 +55,7 @@ Prerequisites
 
 In order to build and install Pydoop, you need the following software:
 
-* `Python <http://www.python.org>`_ version 2.7 (or 2.6 with
-  backports [#]_)
+* `Python <http://www.python.org>`_ version 2.7
 
 * `setuptools <https://pypi.python.org/pypi/setuptools>`_ version 3.3
   or higher
@@ -311,11 +310,3 @@ a low value:
   </property>
 
 then restart Hadoop daemons.
-
-
-.. rubric:: Footnotes
-
-.. [#] To make Pydoop work with Python 2.6 you need to install the
-   following additional modules: `importlib
-   <http://pypi.python.org/pypi/importlib>`_ and `argparse
-   <http://pypi.python.org/pypi/argparse>`_.
