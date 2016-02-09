@@ -85,6 +85,7 @@ These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
 (or to an NFS share) is *not* required: see :doc:`self_contained` for
 additional info.
+Moreover, being based on Pipes, Pydoop cannot be used with Hadoop standalone installations.
 
 Other versions of Hadoop may or may not work depending on how
 different they are from the ones listed above.
