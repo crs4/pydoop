@@ -332,8 +332,6 @@ class JavaBuilder(object):
 
 
 class BuildPydoop(build):
-    if HADOOP_VERSION_INFO.is_local():
-        exit('Build failed, local mode is not supported.')
     user_options = build.user_options
     user_options.append((
         'hdfs-core-impl=', None,
@@ -365,6 +363,11 @@ class BuildPydoop(build):
         shutil.rmtree(self.build_temp)
 
     def run(self):
+        # `is_local` requires running the local hadoop executable.
+        # Don't move this call into other methods of the class that
+        # may be called while executing other commands (e.g., clean)
+        if HADOOP_VERSION_INFO.is_local():
+            exit('Build failed, local mode is not supported.')
         print "hdfs core implementation: {0}".format(self.hdfs_core_impl)
         write_config(hdfs_core_impl=self.hdfs_core_impl)
         write_version()
