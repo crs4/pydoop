@@ -319,11 +319,17 @@ class HadoopVersion(object):
 
 
 def is_exe(fpath):
-    return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+    """
+    Path references an executable file.
+    """
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 
 def is_readable(fpath):
-    return os.path.exists(fpath) and os.access(fpath, os.R_OK)
+    """
+    Path references a readable file.
+    """
+    return os.path.isfile(fpath) and os.access(fpath, os.R_OK)
 
 
 def extract_text(node):
