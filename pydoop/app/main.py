@@ -23,6 +23,7 @@ Pydoop command line tool.
 import os
 import argparse
 import importlib
+import sys
 
 
 from pydoop.version import version
@@ -78,4 +79,7 @@ def main(argv=None):
             args.combine_fn = args.combiner_fn  # backwards compatibility
     except AttributeError:  # not the script app
         pass
-    args.func(args, unknown)
+    try:
+        args.func(args, unknown)
+    except Exception as e:
+        sys.exit("ERROR - {}:  {}".format(type(e).__name__, e))

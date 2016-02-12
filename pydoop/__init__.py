@@ -181,8 +181,9 @@ def read_properties(fname):
 
 
 class LocalModeNotSupported(RuntimeError):
-    def __init__(self, message='Job submission failed, local mode is not supported.', *args):
-        super(LocalModeNotSupported, self).__init__(message, *args)
+    def __init__(self):
+        msg ='Job submission failed. Your Hadoop is configured to run in local mode, which is not supported.'
+        super(LocalModeNotSupported, self).__init__(msg)
 
 
 PROPERTIES = read_properties(PROP_FN)
