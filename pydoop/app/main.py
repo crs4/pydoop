@@ -81,5 +81,5 @@ def main(argv=None):
         pass
     try:
         args.func(args, unknown)
-    except Exception as e:
+    except RuntimeError as e:
         sys.exit("ERROR - {}:  {}".format(type(e).__name__, e))
