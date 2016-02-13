@@ -23,10 +23,10 @@ Pydoop command line tool.
 import os
 import argparse
 import importlib
+import sys
 
 
 from pydoop.version import version
-from pydoop import LocalModeNotSupported
 
 SUBMOD_NAMES = [
     "script",
@@ -81,5 +81,5 @@ def main(argv=None):
         pass
     try:
         args.func(args, unknown)
-    except LocalModeNotSupported as ex:
-        exit('ERROR: %s' % ex.message)
+    except Exception as e:
+        sys.exit("ERROR - {}:  {}".format(type(e).__name__, e))
