@@ -319,11 +319,17 @@ class HadoopVersion(object):
 
 
 def is_exe(fpath):
-    return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+    """
+    Path references an executable file.
+    """
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 
 def is_readable(fpath):
-    return os.path.exists(fpath) and os.access(fpath, os.R_OK)
+    """
+    Path references a readable file.
+    """
+    return os.path.isfile(fpath) and os.access(fpath, os.R_OK)
 
 
 def extract_text(node):
@@ -425,12 +431,12 @@ class PathFinder(object):
                 first_dir_in_glob("/opt/hadoop*")
             )
         if not self.__hadoop_home:
-            PathFinder.__error("hadoop home", "HADOOP_HOME")
+            PathFinder.__error("hadoop home", "HADOOP_PREFIX or HADOOP_HOME")
         return self.__hadoop_home
 
     def mapred_exec(self, hadoop_home=None):
         if not self.__mapred_exec:
-            if not (hadoop_home or os.getenv("HADOOP_HOME")):
+            if not (hadoop_home or os.getenv("HADOOP_PREFIX", os.getenv("HADOOP_HOME"))):
                 if is_exe(self.CDH_HADOOP_EXEC):
                     self.__mapred_exec = self.CDH_HADOOP_EXEC
             else:
@@ -446,7 +452,7 @@ class PathFinder(object):
     def hadoop_exec(self, hadoop_home=None):
         if not self.__hadoop_exec:
             # allow overriding of package-installed hadoop exec
-            if not (hadoop_home or os.getenv("HADOOP_HOME")):
+            if not (hadoop_home or os.getenv("HADOOP_PREFIX", os.getenv("HADOOP_HOME"))):
                 if is_exe(self.CDH_HADOOP_EXEC):
                     self.__hadoop_exec = self.CDH_HADOOP_EXEC
             else:
@@ -456,7 +462,7 @@ class PathFinder(object):
                 if is_exe(fn):
                     self.__hadoop_exec = fn
         if not self.__hadoop_exec:
-            PathFinder.__error("hadoop executable", "HADOOP_HOME or PATH")
+            PathFinder.__error("hadoop executable", "HADOOP_PREFIX or HADOOP_HOME or PATH")
         return self.__hadoop_exec
 
     def hadoop_version(self, hadoop_home=None):
@@ -471,6 +477,8 @@ class PathFinder(object):
                 else:
                     try:
                         env = os.environ.copy()
+                        # why pop HADOOP_HOME?
+                        env.pop("HADOOP_PREFIX", None)
                         env.pop("HADOOP_HOME", None)
                         p = sp.Popen([hadoop, "version"], stdout=sp.PIPE,
                                      stderr=sp.PIPE, env=env)

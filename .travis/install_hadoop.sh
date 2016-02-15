@@ -159,14 +159,14 @@ function update_cdh_config_files(){
     # MemoryErrors in the tests).
     sudo sed -i \
       -e '/^export HADOOP_[A-Z]\+_OPTS/s/-Xmx[0-9]\+m\>/-Xmx128m/' \
-      -e '/HADOOP_.*HEAPSIZE=/s/^.*\(\<HADOOP_[A-Z_]*HEAPSIZE\)=.*/export \1=400/'
+      -e '/HADOOP_.*HEAPSIZE=/s/^.*\(\<HADOOP_[A-Z_]*HEAPSIZE\)=.*/export \1=400/' \
       -e '$a\
 export LIBHDFS_OPTS="-Xmx96m"\
 ' \
       "${HadoopConfDir}/hadoop-env.sh"
 
     sudo sed -i \
-      -e '/\<YARN_.*HEAPSIZE=/s/^.*\(\<YARN_[A-Z_]*HEAPSIZE\)=.*/export \1=256/'
+      -e '/\<YARN_.*HEAPSIZE=/s/^.*\(\<YARN_[A-Z_]*HEAPSIZE\)=.*/export \1=256/' \
       "${HadoopConfDir}/yarn-env.sh"
 
     sudo sed -i \
