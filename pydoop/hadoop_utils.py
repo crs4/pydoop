@@ -256,6 +256,10 @@ class HadoopVersion(object):
         pf = PathFinder()
         return pf.is_yarn()
 
+    def is_local(self):
+        pf = PathFinder()
+        return pf.is_local()
+
     def is_cdh_mrv2(self):
         return (self.distribution == 'cdh' and
                 self.dist_version >= (4, 0, 0) and not self.dist_ext)
@@ -621,3 +625,14 @@ class PathFinder(object):
         return self.hadoop_params(hadoop_conf, hadoop_home).get(
             'mapreduce.framework.name', ''
         ).lower() == 'yarn'
+
+    def is_local(self, hadoop_conf=None, hadoop_home=None):
+        conf = self.hadoop_params(hadoop_conf, hadoop_home)
+
+        framework_name = conf.get('mapreduce.framework.name', '').lower()  # only for hadoop >= 2.0.0
+        if not framework_name:
+            framework_name = conf.get('mapred.job.tracker', '').lower() # for per-yarn versions
+
+        # We also interpret the empty string as 'local' since it's the default value
+        # for both the properties above.
+        return framework_name == 'local' or framework_name == ''

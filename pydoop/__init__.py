@@ -180,4 +180,10 @@ def read_properties(fname):
     return dict(parser.items(AddSectionWrapper.SEC_NAME))
 
 
+class LocalModeNotSupported(RuntimeError):
+    def __init__(self):
+        msg ='Job submission failed. Your Hadoop is configured to run in local mode, which is not supported.'
+        super(LocalModeNotSupported, self).__init__(msg)
+
+
 PROPERTIES = read_properties(PROP_FN)
