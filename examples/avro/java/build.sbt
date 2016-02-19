@@ -10,17 +10,17 @@ autoScalaLibrary := false
 
 seq( sbtavro.SbtAvro.avroSettings : _*)
 
-(version in avroConfig) := "1.7.4"
+(version in avroConfig) := "1.7.6"
 
-val parquetRoot = "com.twitter"
+val parquetRoot = "org.apache.parquet"
 
 // Parquet versions earlier than 1.6.0 have problems with object reuse:
 //   https://issues.apache.org/jira/browse/PARQUET-62
-val parquetVersion = "1.6.0"
+val parquetVersion = "1.8.1"
 
-val hadoopVersion = "2.6.0"
+val hadoopVersion = "2.6.4"
 
-val avroVersion = "1.7.4"
+val avroVersion = "1.7.6"
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion % "provided"
 
