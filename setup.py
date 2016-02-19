@@ -367,7 +367,7 @@ class BuildPydoop(build):
         # Don't move this call into other methods of the class that
         # may be called while executing other commands (e.g., clean)
         if HADOOP_VERSION_INFO.is_local():
-            exit('Build failed, local mode is not supported.')
+            raise pydoop.LocalModeNotSupported()
         print "hdfs core implementation: {0}".format(self.hdfs_core_impl)
         write_config(hdfs_core_impl=self.hdfs_core_impl)
         write_version()
