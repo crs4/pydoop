@@ -418,7 +418,6 @@ setup(
     download_url="https://pypi.python.org/pypi/pydoop",
     install_requires=['setuptools>=%s' % SETUPTOOLS_MIN_VER],
     extras_require={
-        ':python_version=="2.6"': ['argparse', 'importlib'],
         'avro': ["avro>=1.7.4"],
         },
     packages=find_packages(exclude=['test', 'test.*']),
