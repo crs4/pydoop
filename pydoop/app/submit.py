@@ -268,9 +268,9 @@ class PydoopSubmitter(object):
 
     def __validate(self):
         if not hdfs.path.exists(self.args.input):
-            raise RuntimeError("%r does not exist" % (self.args.input,))
+            raise RuntimeError("Input path %r does not exist" % (self.args.input,))
         if hdfs.path.exists(self.args.output):
-            raise RuntimeError("%r already exists" % (self.args.output,))
+            raise RuntimeError("Output path %r already exists" % (self.args.output,))
         if self.args.avro_input or self.args.avro_output:
             if not self._use_mrv2:
                 raise RuntimeError(
