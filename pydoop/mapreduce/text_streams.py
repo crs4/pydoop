@@ -47,7 +47,7 @@ class TextDownStreamFilter(DownStreamFilter):
         'runReduce': ('runReduce', 2, lambda p: [int(p[0]), toBool(p[1])]),
         'abort': ('abort', 0, None),
         'close': ('close', 0, None),
-        }
+    }
 
     @classmethod
     def convert_message(cls, cmd, args):

@@ -139,7 +139,7 @@ class hdfs_file(object):
         """
         _complain_ifclosed(self.closed)
         eol = self.__read_chunks_until_nl()
-        line = "".join(self.buffer_list) + self.chunk[self.p:eol+1]
+        line = "".join(self.buffer_list) + self.chunk[self.p: eol + 1]
         self.buffer_list = []
         self.p = eol + 1
         return line

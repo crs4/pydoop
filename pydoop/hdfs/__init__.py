@@ -87,7 +87,7 @@ except NameError:
     _ORIG_CLASSPATH = os.getenv("CLASSPATH", "")
 
 
-#--- MODULE CONFIG ---
+# --- MODULE CONFIG ---
 def init():
     os.environ["CLASSPATH"] = "%s:%s:%s" % (
         pydoop.hadoop_classpath(), _ORIG_CLASSPATH, pydoop.hadoop_conf()
@@ -102,7 +102,7 @@ init()
 def reset():
     pydoop.reset()
     init()
-#---------------------
+# ---------------------
 
 
 from .fs import hdfs, default_is_local
@@ -134,7 +134,7 @@ def dump(data, hdfs_path, **kwargs):
         i = 0
         bufsize = common.BUFSIZE
         while i < len(data):
-            fo.write(data[i:i+bufsize])
+            fo.write(data[i: i + bufsize])
             i += bufsize
     fo.fs.close()
 
@@ -190,12 +190,12 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
         for d, p in ((src, src_hdfs_path), (dest, dest_hdfs_path)):
             d["host"], d["port"], d["path"] = path.split(p)
             d["fs"] = hdfs(d["host"], d["port"])
-        #--- does src exist? ---
+        # --- does src exist? ---
         try:
             src["info"] = src["fs"].get_path_info(src["path"])
         except IOError:
             raise IOError("no such file or directory: %r" % (src["path"]))
-        #--- src exists. Does dest exist? ---
+        # --- src exists. Does dest exist? ---
         try:
             dest["info"] = dest["fs"].get_path_info(dest["path"])
         except IOError:
@@ -209,10 +209,10 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
                 for item in src["fs"].list_directory(src["path"]):
                     cp(item["name"], dest_hdfs_path, **kwargs)
                 return
-        #--- dest exists. Is it a file? ---
+        # --- dest exists. Is it a file? ---
         if dest["info"]["kind"] == "file":
             raise IOError("%r already exists" % (dest["path"]))
-        #--- dest is a directory ---
+        # --- dest is a directory ---
         dest["path"] = path.join(dest["path"], path.basename(src["path"]))
         if dest["fs"].exists(dest["path"]):
             raise IOError("%r already exists" % (dest["path"]))

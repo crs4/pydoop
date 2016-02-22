@@ -16,7 +16,8 @@
 #
 # END_COPYRIGHT
 
-# up-to-date as of Hadoop 2.7.1: http://hadoop.apache.org/docs/r2.7.1/hadoop-project-dist/hadoop-common/DeprecatedProperties.html
+# up-to-date as of Hadoop 2.7.1: http://hadoop.apache.org/docs/r2.7.1/
+#   hadoop-project-dist/hadoop-common/DeprecatedProperties.html
 mrv1_to_mrv2 = {
     'create.empty.dir.if.nonexist':
     'mapreduce.jobcontrol.createdir.ifnotexist',
@@ -790,7 +791,8 @@ mrv1_to_mrv2 = {
     'webinterface.private.actions':
     'mapreduce.jobtracker.webinterface.trusted',
 
-    'yarn.app.mapreduce.yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts':
+    ('yarn.app.mapreduce.yarn.app.mapreduce.'
+     'client-am.ipc.max-retries-on-timeouts'):
     'yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts',
 }
 

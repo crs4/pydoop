@@ -110,6 +110,6 @@ def load_class(package, bridge_name):
     """
     module_name = bridge_name.lower() + "_loader"
     module_path = package + "." + module_name
-    class_str = bridge_name+"ClassLoader"
+    class_str = bridge_name + "ClassLoader"
     module = importlib.import_module(module_path)
     return getattr(module, class_str)

@@ -25,7 +25,7 @@ TEST_MODULE_NAMES = [
     'test_hdfs_fs',
     'test_path',
     'test_hdfs',
-    ]
+]
 
 
 def suite(path=None):

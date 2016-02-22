@@ -228,12 +228,12 @@ class AvroReader(RecordReader):
         Give a rough estimate of the progress done.
         """
         pos = self.reader.reader.tell()
-        return min((pos - self.region_start)
-                   / float(self.region_end - self.region_start),
+        return min((pos - self.region_start) /
+                   float(self.region_end - self.region_start),
                    1.0)
 
 
-#FIXME this is just an example with no error checking
+# FIXME this is just an example with no error checking
 class AvroWriter(RecordWriter):
 
     schema = None

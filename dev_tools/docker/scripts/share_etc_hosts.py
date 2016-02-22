@@ -57,7 +57,8 @@ def docker_client():
         parts = base_url.split('://', 1)
         base_url = '%s://%s' % ('https', parts[1])
 
-        client_cert = (os.path.join(cert_path, 'cert.pem'), os.path.join(cert_path, 'key.pem'))
+        client_cert = (os.path.join(cert_path, 'cert.pem'),
+                       os.path.join(cert_path, 'key.pem'))
         ca_cert = os.path.join(cert_path, 'ca.pem')
 
         tls_config = tls.TLSConfig(
@@ -69,7 +70,9 @@ def docker_client():
         )
 
     timeout = int(os.environ.get('DOCKER_CLIENT_TIMEOUT', 60))
-    return Client(base_url=base_url, tls=tls_config, version='1.15', timeout=timeout)
+    return Client(
+        base_url=base_url, tls=tls_config, version='1.15', timeout=timeout
+    )
 
 
 def main(argv):

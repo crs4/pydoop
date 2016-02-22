@@ -29,7 +29,7 @@ from pydoop.test_utils import UNI_CHR
 
 
 def uni_last(tup):
-    return tup[:-1] + (tup[-1]+UNI_CHR,)
+    return tup[:-1] + (tup[-1] + UNI_CHR,)
 
 
 class TestSplit(unittest.TestCase):
@@ -63,7 +63,7 @@ class TestSplit(unittest.TestCase):
         for p, r in cases:
             self.assertEqual(hdfs.path.split(p), r)
         for p, r in cases[1:]:
-            self.assertEqual(hdfs.path.split(p+UNI_CHR), uni_last(r))
+            self.assertEqual(hdfs.path.split(p + UNI_CHR), uni_last(r))
 
     def good_with_user(self):
         if hdfs.default_is_local():
@@ -80,7 +80,7 @@ class TestSplit(unittest.TestCase):
             ]
         for p, u, r in cases:
             self.assertEqual(hdfs.path.split(p, u), r)
-            self.assertEqual(hdfs.path.split(p+UNI_CHR, u), uni_last(r))
+            self.assertEqual(hdfs.path.split(p + UNI_CHR, u), uni_last(r))
 
     def bad(self):
         cases = [
@@ -101,7 +101,7 @@ class TestSplit(unittest.TestCase):
     def splitext(self):
         for pre in '', 'file:', 'hdfs://host:1':
             name, ext = '%sfoo' % pre, '.txt'
-            self.assertEqual(hdfs.path.splitext(name+ext), (name, ext))
+            self.assertEqual(hdfs.path.splitext(name + ext), (name, ext))
         p = 'hdfs://foo.com:1/'
         self.assertEqual(hdfs.path.splitext(p), (p, ''))
 
@@ -431,7 +431,7 @@ class TestNorm(unittest.TestCase):
         for pre in '', 'file:', 'hdfs://host:1':
             post = '/a/./b/c/../../foo'
             npost = '/a/foo'
-            self.assertEqual(hdfs.path.normpath(pre+post), pre + npost)
+            self.assertEqual(hdfs.path.normpath(pre + post), pre + npost)
             self.assertEqual(hdfs.path.normpath('a/./b/c/../../foo'), 'a/foo')
 
 
@@ -467,7 +467,7 @@ class TestSame(unittest.TestCase):
 
     def samefile_norm(self):
         for pre in '', 'file:/', 'hdfs://host:1/':
-            self.assertTrue(hdfs.path.samefile(pre+'a/b/../c', pre+'a/c'))
+            self.assertTrue(hdfs.path.samefile(pre + 'a/b/../c', pre + 'a/c'))
 
     def samefile_user(self):
         if not hdfs.default_is_local():

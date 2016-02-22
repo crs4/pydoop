@@ -72,10 +72,10 @@ class TestSerialize(unittest.TestCase):
         for f in numbers:
             x = srl.deserialize_float(stream)
             # be paranoid...
-            if abs(x+f) == 0:
-                self.assertTrue(abs(f-x) < 1e-6)
+            if abs(x + f) == 0:
+                self.assertTrue(abs(f - x) < 1e-6)
             else:
-                self.assertTrue(abs(f-x)/abs(x+f) < 1e-6)
+                self.assertTrue(abs(f - x) / abs(x + f) < 1e-6)
 
     def test_string(self):
         N = 10
@@ -109,7 +109,7 @@ class TestSerialize(unittest.TestCase):
                 self.assertEqual(v, x)
             elif isinstance(v, float):
                 x = srl.deserialize_float(stream)
-                self.assertTrue(abs(v-x)/abs(v+x) < 1e-6)
+                self.assertTrue(abs(v - x) / abs(v + x) < 1e-6)
             elif isinstance(v, str):
                 x = srl.deserialize_text(stream)
                 self.assertEqual(v, x)
@@ -140,7 +140,7 @@ class TestSerialize(unittest.TestCase):
             # final piece is an encoded Text object
             self.assertEqual(
                 u"à Text object", srl.deserialize_text(byte_stream)
-                )
+            )
         finally:
             shutil.rmtree(wd)
 
@@ -175,7 +175,7 @@ class TestSerialize(unittest.TestCase):
     def test_private_serialize(self):
         for obj in [1, 0.4, "Hello", [1, 2, 3], {"key": "value"}]:
             self.assertEqual(obj, srl.private_decode(srl.private_encode(obj)))
-            #s = srl.private_encode(obj)
+            # s = srl.private_encode(obj)
 
     def test_serialize_old_style_filename(self):
         fn = 'some_filename.file'

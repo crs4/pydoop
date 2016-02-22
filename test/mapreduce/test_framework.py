@@ -41,7 +41,7 @@ STREAM_1 = [
     ('mapItem', 'key1', 'a yellow fox turns around'),
     ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
     ('close',),
-    ]
+]
 
 STREAM_2 = [
     ('start', 0),
@@ -52,7 +52,7 @@ STREAM_2 = [
     ('mapItem', 'key1', 'a yellow fox turns around'),
     ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
     ('close',),
-    ]
+]
 
 STREAM_3 = [
     ('start', 0),
@@ -63,7 +63,7 @@ STREAM_3 = [
     ('mapItem', 'key1', 'a yellow fox turns around'),
     ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
     ('close',),
-    ]
+]
 
 
 class TContext(TaskContext):
@@ -388,7 +388,9 @@ class TestFramework(WDTestCase):
                 count[line.strip().split('\t', 1)[0]] += 1
         exp_count = {
             'registerCounter': 2,
-            'incrementCounter': 2 * Counter([_[0] for _ in STREAM_1])['mapItem']
+            'incrementCounter': 2 * Counter(
+                [_[0] for _ in STREAM_1]
+            )['mapItem']
         }
         for k, v in exp_count.iteritems():
             self.assertTrue(k in count)

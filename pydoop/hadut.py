@@ -33,7 +33,7 @@ import pydoop.hdfs as hdfs
 
 GLOB_CHARS = frozenset('*,?[]{}')
 
-#--- FIXME: perhaps we need a more sophisticated tool for setting args ---
+# --- FIXME: perhaps we need a more sophisticated tool for setting args ---
 GENERIC_ARGS = frozenset([
     "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
 ])
@@ -50,11 +50,11 @@ def _pop_generic_args(args):
     while i >= 0:
         if args[i] in GENERIC_ARGS:
             try:
-                args[i+1]
+                args[i + 1]
             except IndexError:
                 raise ValueError("option %s has no value" % args[i])
-            generic_args.extend(args[i:i+2])
-            del args[i:i+2]
+            generic_args.extend(args[i: i + 2])
+            del args[i: i + 2]
         i -= 1
     return generic_args
 
@@ -66,18 +66,18 @@ def _merge_csv_args(args):
     while i >= 0:
         if args[i] in CSV_ARGS:
             try:
-                args[i+1]
+                args[i + 1]
             except IndexError:
                 raise ValueError("option %s has no value" % args[i])
-            k, v = args[i:i+2]
+            k, v = args[i: i + 2]
             merge_map.setdefault(k, []).append(v.strip())
-            del args[i:i+2]
+            del args[i: i + 2]
         i -= 1
     for k, vlist in merge_map.iteritems():
         args.extend([k, ",".join(vlist)])
 
 # FIXME: the above functions share a lot of code
-#-------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 
 
 def _construct_property_args(prop_dict):

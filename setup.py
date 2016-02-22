@@ -408,7 +408,7 @@ class Clean(clean):
     def _clean_examples():
         for root, _, files in os.walk('examples'):
             if 'Makefile' in files:
-                subprocess.call(["make", "-C", root, "clean" ])
+                subprocess.call(["make", "-C", root, "clean"])
 
 
 setup(
@@ -423,7 +423,7 @@ setup(
     install_requires=['setuptools>=%s' % SETUPTOOLS_MIN_VER],
     extras_require={
         'avro': ["avro>=1.7.4"],
-        },
+    },
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={"pydoop": [PROP_FN]},
     cmdclass={

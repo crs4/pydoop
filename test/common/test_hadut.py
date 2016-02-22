@@ -28,7 +28,7 @@ import pydoop.hadut as hadut
 
 
 def pair_set(seq):
-    return set((seq[i], seq[i+1]) for i in xrange(0, len(seq), 2))
+    return set((seq[i], seq[i + 1]) for i in xrange(0, len(seq), 2))
 
 
 class TestHadut(unittest.TestCase):

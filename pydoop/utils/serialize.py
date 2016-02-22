@@ -296,7 +296,8 @@ def register_deserializer(class_id, deser_func):
 
 
 def serialize(v, stream, type_id=None):
-    type_id = type_id if not type_id is None else type(v)
+    if type_id is None:
+        type_id = type(v)
     return DEFAULT_STORE.serializer(type_id)(v, stream)
 
 

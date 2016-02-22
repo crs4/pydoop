@@ -28,7 +28,8 @@ STREAM_1_DATA = [
     ('mapItem', 'key3', 'val3'),
     ('close',),
     ('mapItem', 'key3', 'val3'),  # should not get here
-    ]
+]
+
 STREAM_2_DATA = [
     ('reduceKey', 'key1'),
     ('reduceValue', 'val11'),
@@ -40,7 +41,7 @@ STREAM_2_DATA = [
     ('reduceValue', 'val23'),
     ('close',),
     ('reduceValue', 'val24'),  # should not get here
-    ]
+]
 
 
 key = None
