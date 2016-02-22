@@ -85,7 +85,7 @@ before_install:
 #- if [[ $HDFS_BACKEND == "jpype-bridged" ]]; then wget http://sourceforge.net/projects/jpype/files/JPype/0.5.4/JPype-0.5.4.2.zip; unzip JPype-0.5.4.2.zip; cd JPype-0.5.4.2; $VIRTUAL_ENV/bin/python setup.py install; cd ../; fi
 # JPype-0.6.1 @ originell/jpype
 - if [[ $HDFS_BACKEND == "jpype-bridged"  ]]; then git clone https://github.com/originell/jpype.git; cd jpype; $VIRTUAL_ENV/bin/python setup.py install; cd ../; fi
-- ${VIRTUAL_ENV}/bin/pip install avro
+- ${VIRTUAL_ENV}/bin/pip install avro flake8
 - ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa
 - cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys
 - echo NoHostAuthenticationForLocalhost=yes >> ~/.ssh/config
@@ -105,6 +105,9 @@ install:
 - $VIRTUAL_ENV/bin/python setup.py build --hdfs-core-impl $HDFS_BACKEND
 - $VIRTUAL_ENV/bin/python setup.py install --skip-build
 - $VIRTUAL_ENV/bin/python setup.py bdist_wheel
+
+before_script:
+  - ${VIRTUAL_ENV}/bin/flake8 -v .
 
 script:
 - cd test;
