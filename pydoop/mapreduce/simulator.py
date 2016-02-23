@@ -406,12 +406,10 @@ class HadoopSimulator(object):
 
             if not AVRO_INSTALLED:
                 raise RuntimeError('avro is not installed')
-            if avro_output and not avro_output_key_schema:
-                raise ValueError(
-                    'Invalid value for avro_output_schema. '
-                    'Expected json string, found %s' %
-                    avro_output_key_schema
-                )
+            if not avro_output_key_schema and avro_output in ['k', 'kv']:
+                raise ValueError('Missing avro output key schema')
+            if not avro_output_value_schema and avro_output in ['v', 'kv']:
+                raise ValueError('Missing avro output value schema')
 
             if context_cls is None:
                 context_cls = AvroContext
