@@ -134,7 +134,7 @@ class JobConf(dict):
     def get_json(self, key, default=None):
         return json.loads(self.get(key, default))
 
-    #get below is deprecated behaviour, here only for backward compatibility
+    # get below is deprecated behaviour, here only for backward compatibility
     def get(self, *args):
         if len(args) == 2:
             return super(JobConf, self).get(*args)

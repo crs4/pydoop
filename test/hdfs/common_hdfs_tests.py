@@ -70,9 +70,9 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, **kwargs) as fo:
             i = 0
             bytes_written = 0
-            bufsize = 24*1024*1024
+            bufsize = 24 * 1024 * 1024
             while i < len(content):
-                bytes_written += fo.write(content[i:i+bufsize])
+                bytes_written += fo.write(content[i: i + bufsize])
                 i += bufsize
 
         self.assertEqual(bytes_written, len(content))
@@ -314,7 +314,7 @@ class TestCommon(unittest.TestCase):
         path = self._make_random_file(content=content)
         with self.fs.open_file(path) as f:
             self.assertEqual(
-                f.pread(offset, length), content[offset:offset+length]
+                f.pread(offset, length), content[offset: offset + length]
             )
             self.assertEqual(f.tell(), 0)
             self.assertEqual(content[1:], f.pread(1, -1))
@@ -333,7 +333,7 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             bytes_read = f.pread_chunk(offset, chunk)
             self.assertEqual(bytes_read, length)
-            self.assertEqual(chunk.value, content[offset:offset+length])
+            self.assertEqual(chunk.value, content[offset: offset + length])
             self.assertEqual(f.tell(), 0)
 
     def copy_on_self(self):
@@ -386,7 +386,7 @@ class TestCommon(unittest.TestCase):
             "foo\nbar\n\ntar\n",
             "\n\n\n", "\n", "",
             "foobartar",
-            ]
+        ]
         path = self._make_random_path()
         for text in samples:
             expected_lines = text.splitlines(True)
@@ -469,21 +469,22 @@ class TestCommon(unittest.TestCase):
         if hd_info.has_deprecated_bs():
             bs = hdfs.fs.hdfs().default_block_size()
         else:
-            #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
             bs = max(1048576, N * utils.get_bytes_per_checksum())
             kwargs['blocksize'] = bs
         total_data_size = 2 * bs
         with self.fs.open_file(path, "w", **kwargs) as f:
             i = 0
-            bufsize = 12*1024*1024
+            bufsize = 12 * 1024 * 1024
             while i < total_data_size:
-                data = 'X'*min(bufsize, total_data_size - i)
+                data = 'X' * min(bufsize, total_data_size - i)
                 f.write(data)
                 i += bufsize
 
         with self.fs.open_file(path) as f:
             p = total_data_size - CHUNK_SIZE
-            for pos in 0, 1, bs-1, bs, bs+1, p-1, p, p+1, total_data_size-1:
+            for pos in (0, 1, bs - 1, bs, bs + 1, p - 1, p, p + 1,
+                        total_data_size - 1):
                 expected_len = (
                     CHUNK_SIZE if pos <= p else total_data_size - pos
                 )
@@ -570,4 +571,4 @@ def common_tests():
         'block_boundary',
         'walk',
         'exists',
-        ]
+    ]

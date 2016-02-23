@@ -53,10 +53,10 @@ STREAM_1 = [
     ('reduceKey', 'key2'),
     ('reduceValue', 'val3'),
     ('close',),
-    ]
+]
 
 STREAM_2 = [
-    ('status',  'I am ok'),
+    ('status', 'I am ok'),
     ('registerCounter', 1, 'group', 'name'),
     ('incrementCounter', 1, 289189289),
     ('progress', 0.5),
@@ -64,9 +64,9 @@ STREAM_2 = [
     ('output', 'key2', 'value2'),
     ('output', 'key3', 'value3'),
     ('output', 'key4', 'value4'),
-    ('status',  'I am still ok'),
+    ('status', 'I am still ok'),
     ('done',),
-    ]
+]
 
 
 def stream_writer(fname, data):
@@ -87,8 +87,8 @@ class TestBinaryStream(WDTestCase):
             try:
                 for (cmd, args), vals in it.izip(stream, STREAM_1):
                     self.assertEqual(cmd, vals[0])
-                    self.assertTrue((len(vals) == 1 and not args)
-                                    or (vals[1:] == args))
+                    self.assertTrue((len(vals) == 1 and not args) or
+                                    (vals[1:] == args))
             except ProtocolError as e:
                 print 'error -- %s' % e
 

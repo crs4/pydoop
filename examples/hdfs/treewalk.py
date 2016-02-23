@@ -44,7 +44,7 @@ def main():
             sys.exit("%r does not exist" % root)
         print "BS(MB)\tBYTES"
         for k, v in usage_by_bs(fs, root).iteritems():
-            print "%.1f\t%d" % (k/float(MB), v)
+            print "%.1f\t%d" % (k / float(MB), v)
     finally:
         fs.close()
 

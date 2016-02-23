@@ -131,9 +131,10 @@ class PydoopSubmitter(object):
                 name, value = item.split('=', 1)
                 retval[name.strip()] = value.strip()
             except ValueError:
-                raise RuntimeError("Bad syntax in env variable argument '%s'" % item)
+                raise RuntimeError(
+                    "Bad syntax in env variable argument '%s'" % item
+                )
         return retval
-
 
     def set_args(self, args, unknown_args=None):
         """
@@ -193,7 +194,7 @@ class PydoopSubmitter(object):
         fs = hdfs.hdfs(host, port)
         for i in xrange(0, len(path_pieces)):
             part = os.path.join(
-                host_port, os.path.sep.join(path_pieces[0:i+1])
+                host_port, os.path.sep.join(path_pieces[0: i + 1])
             )
             permissions = fs.get_path_info(part)['permissions']
             if permissions & 0111 != 0111:
@@ -226,8 +227,9 @@ class PydoopSubmitter(object):
 
         executable = self.args.python_program
         if self.args.python_zip:
-            env['PYTHONPATH'] = \
-                ':'.join([ self.__cache_archive_link(ar) for ar in self.args.python_zip ] + [env['PYTHONPATH']])
+            env['PYTHONPATH'] = ':'.join([
+                self.__cache_archive_link(ar) for ar in self.args.python_zip
+            ] + [env['PYTHONPATH']])
         # Note that we have to explicitely put the working directory
         # in the python path otherwise it will miss cached modules and
         # packages.
@@ -239,8 +241,11 @@ class PydoopSubmitter(object):
             lines.append("printenv 1>&2")
             lines.append("echo PWD=${PWD} 1>&2")
             lines.append("echo ls -l; ls -l  1>&2")
-        if (USER_HOME not in self.properties and "HOME" in os.environ
-           and not self.args.no_override_home):
+        if (
+            USER_HOME not in self.properties and
+            "HOME" in os.environ and
+            not self.args.no_override_home
+        ):
             lines.append('export HOME="%s"' % os.environ['HOME'])
         # set environment variables
         for var, value in env.iteritems():
@@ -252,7 +257,8 @@ class PydoopSubmitter(object):
             lines.append("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} 1>&2")
             lines.append("echo PYTHONPATH=${PYTHONPATH} 1>&2")
             lines.append("echo HOME=${HOME} 1>&2")
-            lines.append('echo "executable is $(type -P %s)" 1>&2' % executable)
+            lines.append('echo "executable is $(type -P %s)" 1>&2' %
+                         executable)
         cmd = 'exec "%s" -u "$0" "$@"' % executable
         if self.args.log_level == 'DEBUG':
             lines.append("echo cmd to execute: %s" % cmd)
@@ -341,8 +347,11 @@ class PydoopSubmitter(object):
                 "Can't find pydoop.jar, cannot use local fs patch"
             )
         job_args = []
-        self.logger.debug("Selecting Submitter.  self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2(): %r",
-                self._use_mrv2, self.args.mrv1, pydoop.has_mrv2())
+        self.logger.debug(
+            "Selecting Submitter. "
+            "self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2(): %r",
+            self._use_mrv2, self.args.mrv1, pydoop.has_mrv2()
+        )
         if self._use_mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
             classpath.append(pydoop_jar)
@@ -461,7 +470,7 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--upload-archive-to-cache', metavar='FILE',
-        type=a_file_that_can_be_read,  action="append",
+        type=a_file_that_can_be_read, action="append",
         help="Upload and add this archive file to the distributed cache."
     )
     parser.add_argument(

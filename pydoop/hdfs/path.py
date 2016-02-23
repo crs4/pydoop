@@ -56,14 +56,14 @@ class StatResult(object):
         self.st_atime = path_info['last_access']
         self.st_mtime = path_info['last_mod']
         self.st_ctime = 0
-        #--
+        # --
         self.st_blksize = path_info['block_size']
         if self.st_blksize:
             n, r = divmod(path_info['size'], self.st_blksize)
             self.st_blocks = n + (r != 0)
         else:
             self.st_blocks = 0
-        #--
+        # --
         self.kind = path_info['kind']
         self.name = path_info['name']
         self.replication = path_info['replication']
@@ -311,14 +311,14 @@ def exists(hdfs_path, user=None):
     return retval
 
 
-#-- libhdfs does not support fs.FileStatus.isSymlink() --
+# -- libhdfs does not support fs.FileStatus.isSymlink() --
 def lstat(hdfs_path, user=None):
     return stat(hdfs_path, user=user)
 
 
 def lexists(hdfs_path, user=None):
     return exists(hdfs_path, user=user)
-#--------------------------------------------------------
+# --------------------------------------------------------
 
 
 def kind(path, user=None):
@@ -500,7 +500,8 @@ def samefile(path1, path2, user=None):
     """
     Return :obj:`True` if both path arguments refer to the same path.
     """
-    tr = lambda p: abspath(normpath(realpath(p)), user=user)
+    def tr(p):
+        return abspath(normpath(realpath(p)), user=user)
     return tr(path1) == tr(path2)
 
 

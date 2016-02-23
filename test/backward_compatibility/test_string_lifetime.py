@@ -56,7 +56,7 @@ class str_lifetime_tc(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(str_lifetime_tc('push_leak_map_context'))
-    #suite.addTest(str_lifetime_tc('garbage_collect'))
+    # suite.addTest(str_lifetime_tc('garbage_collect'))
     return suite
 
 

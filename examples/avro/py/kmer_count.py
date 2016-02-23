@@ -28,7 +28,7 @@ WIDTH = 5
 
 def window(s, width):
     for i in xrange(len(s) - width + 1):
-        yield s[i:i+width]
+        yield s[i: i + width]
 
 
 class Mapper(api.Mapper):

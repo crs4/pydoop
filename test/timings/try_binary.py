@@ -50,7 +50,7 @@ def write_data(N, fname):
 
 
 def read_data(fname, N=None):
-    with open(fname, 'rb', buffering=(4096*4)) as f:
+    with open(fname, 'rb', buffering=(4096 * 4)) as f:
         reader = BinaryDownStreamFilter(f)
         if N is None:
             for cmd, args in reader:
@@ -81,7 +81,7 @@ def main():
         read_data(fname, 50000)
     print "=> read_data(50000): %s s" % t.secs
 
-    with open(fname, 'rb', buffering=(4096*4)) as f:
+    with open(fname, 'rb', buffering=(4096 * 4)) as f:
         reader = BinaryDownStreamFilter(f)
         for i in range(10):
             cmd, args = reader.next()

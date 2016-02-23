@@ -100,7 +100,7 @@ def create_dataset(logger, max_file_size_in_mb=200):
         step_file_length = (step_file_length
                             if step_file_length > 0
                             else base_text_file_length) * step_factor
-        step_file_length_mb = int(step_file_length/1048576)
+        step_file_length_mb = int(step_file_length / 1048576)
 
         if step_file_length_mb == 0:
             continue
@@ -177,8 +177,8 @@ def main(argv):
                 print data_input_path
                 local_wc = pts.LocalWordCount(data_input_path)
                 logging.info(local_wc.check(res))
-                #print res
-                #runner.clean()
+                # print res
+                # runner.clean()
             results[data_input] = (t.secs, t.msecs)
 
     print "\n\n RESULTs"

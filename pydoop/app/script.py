@@ -67,23 +67,29 @@ class PydoopScript(object):
         return os.linesep.join(lines) + os.linesep
 
     def convert_args(self, args, unknown_args):
-        # Create a zip archive containing all we need to run the script (including
-        # the script itself.  We use NamedTemporaryFile which will take care of
-        # deleting the temp archive once we're done
+        # Create a zip archive containing all we need to run the
+        # script (including the script itself.  We use
+        # NamedTemporaryFile which will take care of deleting the temp
+        # archive once we're done
         self.script_archive = NamedTemporaryFile(
-                prefix="pydoop_script_",
-                suffix='.zip')
+            prefix="pydoop_script_",
+            suffix='.zip'
+        )
         zip_filename = self.script_archive.name
-        # Create a one-off temporary file name to avoid name clashes in the distcache.
-        # Keep the same module extension -- it may be a source file or a byte-compiled file
-        mr_module = utils.make_random_str(prefix="pydoop_script_module_",
-                postfix=os.path.basename(args.module))
+        # Create a one-off temporary file name to avoid name clashes
+        # in the distcache.  Keep the same module extension -- it may
+        # be a source file or a byte-compiled file
+        mr_module = utils.make_random_str(
+            prefix="pydoop_script_module_",
+            postfix=os.path.basename(args.module)
+        )
         mr_driver = utils.make_random_str(prefix="pydoop_script_driver_")
         with ZipFile(zip_filename, 'w') as zipf:
             zipf.write(args.module, arcname=mr_module)
-            zipf.writestr(mr_driver+'.py',
-                          self.generate_driver(os.path.splitext(mr_module)[0], # use name without ext
-                          args))
+            zipf.writestr(
+                mr_driver + '.py',
+                self.generate_driver(os.path.splitext(mr_module)[0], args)
+            )
         if args.python_zip is None:
             args.python_zip = [zip_filename]
         else:
@@ -158,8 +164,10 @@ def add_parser_arguments(parser):
                         help="output key-value separator")
     parser.add_argument(
         '--mrv1', action='store_true',
-        help=("Force use of MRv1. InputFormat and OutputFormat classes must be mrv1-compliant")
+        help=("Force use of MRv1. InputFormat and OutputFormat classes "
+              "must be mrv1-compliant")
     )
+
 
 def add_parser(subparsers):
     parser = subparsers.add_parser(

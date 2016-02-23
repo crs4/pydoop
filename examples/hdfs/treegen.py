@@ -29,7 +29,7 @@ import pydoop.hdfs as hdfs
 from common import isdir, MB, TEST_ROOT
 
 
-BS_RANGE = [_*MB for _ in range(50, 101, 10)]
+BS_RANGE = [_ * MB for _ in range(50, 101, 10)]
 
 
 def treegen(fs, root, depth, span):
@@ -45,14 +45,14 @@ def treegen(fs, root, depth, span):
                     bs = random.sample(BS_RANGE, 1)[0]
                     kwargs['blocksize'] = bs
                 sys.stderr.write(
-                    "%s %s %d\n" % (kind[0].upper(), path, (bs/MB))
+                    "%s %s %d\n" % (kind[0].upper(), path, (bs / MB))
                 )
                 with fs.open_file(path, "w", **kwargs) as f:
                     f.write(path)
             else:
                 sys.stderr.write("%s %s 0\n" % (kind[0].upper(), path))
                 fs.create_directory(path)
-                treegen(fs, path, depth-1, span)
+                treegen(fs, path, depth - 1, span)
 
 
 def main(argv):

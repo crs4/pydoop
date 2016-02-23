@@ -13,7 +13,7 @@ def main(argv):
         data.sort(key=itemgetter(1), reverse=True)
         for i, t in enumerate(data):
             print '%s\t%d' % t
-            if i+1 >= LIMIT:
+            if i + 1 >= LIMIT:
                 break
 
 

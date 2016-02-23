@@ -28,7 +28,7 @@ def main():
     data_in = './users.avro'
     path = os.path.realpath(data_in)
     length = os.stat(path).st_size
-    input_split = InputSplit.to_string('file://'+path, 0, length)
+    input_split = InputSplit.to_string('file://' + path, 0, length)
     out_path = os.path.realpath('.')
     conf = {
         "mapreduce.task.partition": "0",

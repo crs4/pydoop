@@ -24,6 +24,3 @@ while not done:
     done = kz.exists(path)
     kz.stop()
     time.sleep(10)
-    
-
-

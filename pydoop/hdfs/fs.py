@@ -529,7 +529,7 @@ class hdfs(object):
         who = m.group(1)
         what_op = m.group(2)
         which_perm = m.group(3)
-        #--
+        # --
         old_mode = self.fs.get_path_info(path)['permissions']
         # The mode to be applied by the operation, repeated three
         # times in a list, for user, group, and other respectively.
