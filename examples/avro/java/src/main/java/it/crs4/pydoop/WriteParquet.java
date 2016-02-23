@@ -43,8 +43,8 @@ import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 
-import parquet.Log;
-import parquet.avro.AvroParquetOutputFormat;
+import org.apache.parquet.Log;
+import org.apache.parquet.avro.AvroParquetOutputFormat;
 
 import org.apache.avro.generic.GenericData.Record;
 import org.apache.avro.Schema;

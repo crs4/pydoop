@@ -10,30 +10,24 @@ autoScalaLibrary := false
 
 seq( sbtavro.SbtAvro.avroSettings : _*)
 
-(version in avroConfig) := "1.7.4"
+(version in avroConfig) := "1.7.6"
 
-val parquetRoot = "com.twitter"
+val parquetRoot = "org.apache.parquet"
 
 // Parquet versions earlier than 1.6.0 have problems with object reuse:
 //   https://issues.apache.org/jira/browse/PARQUET-62
-val parquetVersion = "1.6.0"
+val parquetVersion = "1.8.1"
 
-val hadoopVersion = "2.6.0"
+val hadoopVersion = "2.6.4"
 
-val avroVersion = "1.7.4"
+val avroVersion = "1.7.6"
 
-libraryDependencies += "org.apache.hadoop" % "hadoop-client" % hadoopVersion % "provided"
-
-
-libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.7"
-
-libraryDependencies += parquetRoot % "parquet-common" % parquetVersion
-
-libraryDependencies += parquetRoot % "parquet-column" % parquetVersion
-
-libraryDependencies += parquetRoot % "parquet-hadoop" % parquetVersion
-
-libraryDependencies += parquetRoot % "parquet-avro" % parquetVersion
-
-
-libraryDependencies += "org.apache.avro" % "avro-mapred" % avroVersion
+libraryDependencies ++= Seq(
+	"org.apache.hadoop" % "hadoop-client" % hadoopVersion % "provided",
+	"org.slf4j" % "slf4j-log4j12" % "1.7.7",
+	parquetRoot % "parquet-common" % parquetVersion,
+	parquetRoot % "parquet-column" % parquetVersion,
+	parquetRoot % "parquet-hadoop" % parquetVersion,
+	parquetRoot % "parquet-avro" % parquetVersion,
+	"org.apache.avro" % "avro-mapred" % avroVersion
+)

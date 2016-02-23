@@ -29,8 +29,8 @@ JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
 MRV=""
 STATS_SCHEMA=`cat ${OUT_SCHEMA_FILE_LOCAL}`
-INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
-OUTPUT_FORMAT=parquet.avro.AvroParquetOutputFormat
+INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
+OUTPUT_FORMAT=org.apache.parquet.avro.AvroParquetOutputFormat
 
 INPUT=${PARQUETS_DIR}
 OUTPUT=cc_output
@@ -60,7 +60,7 @@ JOBNAME=${MODULE}-job
 LOGLEVEL=DEBUG
 MRV=""
 STATS_SCHEMA=`cat ${OUT_SCHEMA_FILE_LOCAL}`
-INPUT_FORMAT=parquet.avro.AvroParquetInputFormat
+INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
 
 INPUT=cc_output
 OUTPUT=results
