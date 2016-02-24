@@ -181,8 +181,6 @@ To run the Avro examples you have to install the Python Avro package
 included in Hadoop 2 and the ``avro-mapred`` one is included in
 Pydoop.  Part of the examples code (e.g., input generation) is written
 in Java.  To compile it, you need `sbt <http://www.scala-sbt.org>`_.
-Finally, since we use ``collections.Counter``, the examples only run
-on Python 2.7.
 
 Move to the examples directory and compile the Java code:
 
