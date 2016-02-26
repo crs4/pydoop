@@ -16,7 +16,7 @@ recursive-include examples run_all README
 recursive-include examples/input *.txt
 recursive-include examples/pydoop_script *.py run* matrix.txt example.sam
 recursive-include examples/pydoop_submit run*
-recursive-include examples/simulator run
+recursive-include examples/simulator *
 recursive-include examples/hdfs run* *.py
 recursive-include examples/sequence_file/bin *.py
 recursive-include examples/sequence_file run*
