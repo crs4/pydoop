@@ -55,8 +55,7 @@ Prerequisites
 
 In order to build and install Pydoop, you need the following software:
 
-* `Python <http://www.python.org>`_ version 2.7 (or 2.6 with
-  backports [#]_)
+* `Python <http://www.python.org>`_ version 2.7
 
 * `setuptools <https://pypi.python.org/pypi/setuptools>`_ version 3.3
   or higher
@@ -85,6 +84,7 @@ These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
 (or to an NFS share) is *not* required: see :doc:`self_contained` for
 additional info.
+Moreover, being based on Pipes, Pydoop cannot be used with Hadoop standalone installations.
 
 Other versions of Hadoop may or may not work depending on how
 different they are from the ones listed above.
@@ -311,11 +311,3 @@ a low value:
   </property>
 
 then restart Hadoop daemons.
-
-
-.. rubric:: Footnotes
-
-.. [#] To make Pydoop work with Python 2.6 you need to install the
-   following additional modules: `importlib
-   <http://pypi.python.org/pypi/importlib>`_ and `argparse
-   <http://pypi.python.org/pypi/argparse>`_.

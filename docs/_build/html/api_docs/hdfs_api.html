@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pydoop.hdfs — HDFS API &mdash; Pydoop 1.1.0 documentation</title>
+    <title>pydoop.hdfs — HDFS API &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="API Docs" href="index.html" />
     <link rel="next" title="pydoop.mapreduce.simulator — Hadoop Simulator API" href="simulator.html" />
     <link rel="prev" title="pydoop.mapreduce.api — MapReduce API" href="mr_api.html" /> 
@@ -781,17 +781,17 @@ as in the input dict.</p>
 <p>The <tt class="docutils literal"><span class="pre">user</span></tt> arg is passed to <a class="reference internal" href="#pydoop.hdfs.path.split" title="pydoop.hdfs.path.split"><tt class="xref py py-func docutils literal"><span class="pre">split()</span></tt></a>. The <tt class="docutils literal"><span class="pre">local</span></tt> argument
 forces <tt class="docutils literal"><span class="pre">hdfs_path</span></tt> to be interpreted as an ordinary local path:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">os</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s">&#39;/tmp&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s1">&#39;/tmp&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pydoop.hdfs.path</span> <span class="kn">as</span> <span class="nn">hpath</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;file:/tmp&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;file:/tmp&#39;</span><span class="p">)</span>
 <span class="go">&#39;file:/tmp&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;file:/tmp&#39;</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;file:/tmp&#39;</span><span class="p">,</span> <span class="n">local</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="go">&#39;file:/tmp/file:/tmp&#39;</span>
 </pre></div>
 </div>
 <p>Note that this function always return a full URI:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pydoop.hdfs.path</span> <span class="kn">as</span> <span class="nn">hpath</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s">&#39;/tmp&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s1">&#39;/tmp&#39;</span><span class="p">)</span>
 <span class="go">&#39;hdfs://localhost:9000/tmp&#39;</span>
 </pre></div>
 </div>
@@ -910,9 +910,9 @@ followed by a colon).</p>
 previous components will be discarded.  However, full URIs (see
 <a class="reference internal" href="#pydoop.hdfs.path.isfull" title="pydoop.hdfs.path.isfull"><tt class="xref py py-func docutils literal"><span class="pre">isfull()</span></tt></a>) take precedence over incomplete ones:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pydoop.hdfs.path</span> <span class="kn">as</span> <span class="nn">hpath</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;bar&#39;</span><span class="p">,</span> <span class="s">&#39;/foo&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;/foo&#39;</span><span class="p">)</span>
 <span class="go">&#39;/foo&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&#39;hdfs://host:1/&#39;</span><span class="p">,</span> <span class="s">&#39;/foo&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hpath</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;hdfs://host:1/&#39;</span><span class="p">,</span> <span class="s1">&#39;/foo&#39;</span><span class="p">)</span>
 <span class="go">&#39;hdfs://host:1/foo&#39;</span>
 </pre></div>
 </div>
@@ -1788,7 +1788,7 @@ file is opened and updated when it is closed.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Easy Hadoop Scripting with Pydoop Script &mdash; Pydoop 1.0.0 documentation</title>
+    <title>Easy Hadoop Scripting with Pydoop Script &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.0.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="Tutorial" href="index.html" />
     <link rel="next" title="The HDFS API" href="hdfs_api.html" />
     <link rel="prev" title="Tutorial" href="index.html" /> 
@@ -127,11 +127,11 @@ MapReduce model: the mapper and reducer functions.</p>
 <p>Write a <tt class="docutils literal"><span class="pre">script.py</span></tt> Python module that contains the mapper and
 reducer functions:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">input_key</span><span class="p">,</span> <span class="n">input_value</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
-    <span class="c"># your computation here</span>
+    <span class="c1"># your computation here</span>
     <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">intermediate_key</span><span class="p">,</span> <span class="n">intermediate_value</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">intermediate_key</span><span class="p">,</span> <span class="n">value_iterator</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
-    <span class="c"># your computation here</span>
+    <span class="c1"># your computation here</span>
     <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">output_key</span><span class="p">,</span> <span class="n">output_value</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -157,7 +157,7 @@ programming tutorial.  The Pydoop Script implementation requires only
 five lines of code:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="s">&quot;1&quot;</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
     <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">icounts</span><span class="p">)))</span>
@@ -165,7 +165,7 @@ five lines of code:</p>
 </div>
 <p>A few more lines allow to set a combiner for local aggregation:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">combiner</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
-    <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&#39;combiner calls&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;combiner calls&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -190,8 +190,8 @@ this last &#8220;global&#8221; count we can use Hadoop counters:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
     <span class="n">wordlist</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">wordlist</span><span class="p">:</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="s">&quot;1&quot;</span><span class="p">)</span>
-    <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&quot;num words&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">wordlist</span><span class="p">))</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;num words&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">wordlist</span><span class="p">))</span>
 
 <span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
     <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">count</span><span class="p">)))</span>
@@ -204,7 +204,7 @@ present in the job logs.</p>
 <h3>Lower Case<a class="headerlink" href="#lower-case" title="Permalink to this headline">¶</a></h3>
 <p>To convert some text to lower case, create a module <tt class="docutils literal"><span class="pre">lowercase.py</span></tt>:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
-    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
 </pre></div>
 </div>
 <p>This is a map-only job, so we set the number of reducers to 0.  To
@@ -218,9 +218,9 @@ output key-value pairs: this is done via the <tt class="docutils literal"><span 
 <h3>Job Parameters<a class="headerlink" href="#job-parameters" title="Permalink to this headline">¶</a></h3>
 <p>Suppose you want to select all lines containing a substring to be
 given at run time.  Create a module <tt class="docutils literal"><span class="pre">grep.py</span></tt>:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">conf</span><span class="p">):</span>  <span class="c"># notice the fourth &#39;conf&#39; argument</span>
-    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">conf</span><span class="p">[</span><span class="s">&#39;grep-expression&#39;</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">conf</span><span class="p">):</span>  <span class="c1"># notice the fourth &#39;conf&#39; argument</span>
+    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;grep-expression&#39;</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Job parameters, like in <tt class="docutils literal"><span class="pre">hadoop</span> <span class="pre">pipes</span></tt>, are passed via the -D
@@ -283,7 +283,7 @@ Systems Design and Implementation, 2004</td></tr>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

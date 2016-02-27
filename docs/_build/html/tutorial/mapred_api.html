@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Writing Full-Featured Applications &mdash; Pydoop 1.1.0 documentation</title>
+    <title>Writing Full-Featured Applications &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="Tutorial" href="index.html" />
     <link rel="next" title="Installation" href="../installation.html" />
     <link rel="prev" title="The HDFS API" href="hdfs_api.html" /> 
@@ -187,8 +187,8 @@ counters and status updates:</p>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
-        <span class="n">context</span><span class="o">.</span><span class="n">setStatus</span><span class="p">(</span><span class="s">&quot;initializing mapper&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_counter</span><span class="p">(</span><span class="s">&quot;WC&quot;</span><span class="p">,</span> <span class="s">&quot;INPUT_WORDS&quot;</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">setStatus</span><span class="p">(</span><span class="s2">&quot;initializing mapper&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_counter</span><span class="p">(</span><span class="s2">&quot;WC&quot;</span><span class="p">,</span> <span class="s2">&quot;INPUT_WORDS&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
         <span class="n">words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
@@ -200,8 +200,8 @@ counters and status updates:</p>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Reducer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
-        <span class="n">context</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="s">&quot;initializing reducer&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_counter</span><span class="p">(</span><span class="s">&quot;WC&quot;</span><span class="p">,</span> <span class="s">&quot;OUTPUT_WORDS&quot;</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="s2">&quot;initializing reducer&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_counter</span><span class="p">(</span><span class="s2">&quot;WC&quot;</span><span class="p">,</span> <span class="s2">&quot;OUTPUT_WORDS&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
@@ -238,7 +238,7 @@ text lines:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">offset</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="c"># read by reader of previous split</span>
+            <span class="c1"># read by reader of previous split</span>
             <span class="n">discarded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">discarded</span><span class="p">)</span>
 
@@ -247,11 +247,11 @@ text lines:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">length</span><span class="p">:</span>  <span class="c"># end of input split</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">length</span><span class="p">:</span>  <span class="c1"># end of input split</span>
             <span class="k">raise</span> <span class="ne">StopIteration</span>
         <span class="n">key</span> <span class="o">=</span> <span class="n">serialize_to_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">offset</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span><span class="p">)</span>
         <span class="n">record</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">record</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span>  <span class="c"># end of file</span>
+        <span class="k">if</span> <span class="n">record</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>  <span class="c1"># end of file</span>
             <span class="k">raise</span> <span class="ne">StopIteration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="n">record</span>
@@ -294,19 +294,19 @@ want to do something different, you have to write a custom
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">Writer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
         <span class="n">jc</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">job_conf</span>
-        <span class="n">part</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get_int</span><span class="p">(</span><span class="s">&quot;mapred.task.partition&quot;</span><span class="p">)</span>
-        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">jc</span><span class="p">[</span><span class="s">&quot;mapred.work.output.dir&quot;</span><span class="p">]</span>
-        <span class="n">outfn</span> <span class="o">=</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s">/part-</span><span class="si">%05d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">part</span><span class="p">)</span>
-        <span class="n">hdfs_user</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;pydoop.hdfs.user&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">outfn</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">hdfs_user</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sep</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;mapred.textoutputformat.separator&quot;</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\t</span><span class="s">&quot;</span><span class="p">)</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get_int</span><span class="p">(</span><span class="s2">&quot;mapred.task.partition&quot;</span><span class="p">)</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">jc</span><span class="p">[</span><span class="s2">&quot;mapred.work.output.dir&quot;</span><span class="p">]</span>
+        <span class="n">outfn</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/part-</span><span class="si">%05d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">part</span><span class="p">)</span>
+        <span class="n">hdfs_user</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pydoop.hdfs.user&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">outfn</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">hdfs_user</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sep</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mapred.textoutputformat.separator&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&quot;</span><span class="si">%s%s%s</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s%s%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>Since we want to use our own record reader, we have to pass the class
@@ -368,7 +368,7 @@ applications:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">time_block</span><span class="p">(</span><span class="s">&quot;tokenize&quot;</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">time_block</span><span class="p">(</span><span class="s2">&quot;tokenize&quot;</span><span class="p">):</span>
             <span class="n">words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
             <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
@@ -410,7 +410,7 @@ a <tt class="docutils literal"><span class="pre">TIME_TOKENIZE</span></tt> count
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

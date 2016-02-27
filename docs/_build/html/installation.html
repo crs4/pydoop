@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Installation &mdash; Pydoop 1.1.0 documentation</title>
+    <title>Installation &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
     <link rel="next" title="Pydoop Script User Guide" href="pydoop_script.html" />
     <link rel="prev" title="Writing Full-Featured Applications" href="tutorial/mapred_api.html" /> 
   </head>
@@ -71,7 +71,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
-<li><a class="reference internal" href="#id4">Installation</a></li>
+<li><a class="reference internal" href="#id3">Installation</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 <li><a class="reference internal" href="#testing-your-installation">Testing your Installation</a><ul>
 <li><a class="reference internal" href="#superuser-privileges">Superuser Privileges</a></li>
@@ -166,8 +166,7 @@ the <tt class="docutils literal"><span class="pre">develop</span></tt> branch co
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
 <p>In order to build and install Pydoop, you need the following software:</p>
 <ul class="simple">
-<li><a class="reference external" href="http://www.python.org">Python</a> version 2.7 (or 2.6 with
-backports <a class="footnote-reference" href="#id6" id="id3">[1]</a>)</li>
+<li><a class="reference external" href="http://www.python.org">Python</a> version 2.7</li>
 <li><a class="reference external" href="https://pypi.python.org/pypi/setuptools">setuptools</a> version 3.3
 or higher</li>
 <li>either of the following:<ul>
@@ -190,12 +189,13 @@ Cloudera Manager parcels (no tarball)</li>
 <p>These are also runtime requirements for all cluster nodes. Note that
 installing Pydoop and your MapReduce application to all cluster nodes
 (or to an NFS share) is <em>not</em> required: see <a class="reference internal" href="self_contained.html"><em>Installation-free Usage</em></a> for
-additional info.</p>
+additional info.
+Moreover, being based on Pipes, Pydoop cannot be used with Hadoop standalone installations.</p>
 <p>Other versions of Hadoop may or may not work depending on how
 different they are from the ones listed above.</p>
 </div>
-<div class="section" id="id4">
-<h2>Installation<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id3">
+<h2>Installation<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
 <p>Before compiling and installing Pydoop, install all missing dependencies.</p>
 <p>In addition, if your distribution does not include them by default,
 install basic development tools (such as a C/C++ compiler) and Python
@@ -252,7 +252,7 @@ accessible on the entire cluster.</p>
 </div>
 <span class="target" id="multiple-hadoop-versions"></span></div>
 <div class="section" id="troubleshooting">
-<span id="id5"></span><h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<span id="id4"></span><h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
 <li><p class="first">&#8220;java home not found&#8221; error, with <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> properly exported: try
 setting <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> in <tt class="docutils literal"><span class="pre">hadoop-env.sh</span></tt></p>
@@ -365,14 +365,6 @@ a low value:</p>
 </pre></div>
 </div>
 <p>then restart Hadoop daemons.</p>
-<p class="rubric">Footnotes</p>
-<table class="docutils footnote" frame="void" id="id6" rules="none">
-<colgroup><col class="label" /><col /></colgroup>
-<tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>To make Pydoop work with Python 2.6 you need to install the
-following additional modules: <a class="reference external" href="http://pypi.python.org/pypi/importlib">importlib</a> and <a class="reference external" href="http://pypi.python.org/pypi/argparse">argparse</a>.</td></tr>
-</tbody>
-</table>
 </div>
 </div>
 </div>
@@ -406,7 +398,7 @@ following additional modules: <a class="reference external" href="http://pypi.py
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
