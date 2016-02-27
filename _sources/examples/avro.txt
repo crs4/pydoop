@@ -80,7 +80,7 @@ specify the output schema as follows:
   pydoop submit \
     -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
     --avro-input v --avro-output v \
-    --upload-file-to-cache color_count.py --mrv2 \
+    --upload-file-to-cache color_count.py \
     color_count input output
 
 The ``--avro-input v`` and ``--avro-output v`` flags specify that we
@@ -159,7 +159,7 @@ To run the above program, execute pydoop submit as follows:
      -D parquet.avro.projection="${PROJECTION}" \
     --upload-file-to-cache kmer_count.py \
     --input-format parquet.avro.AvroParquetInputFormat \
-    --avro-input v --libjars "path/to/the/parquet/jar" --mrv2 \
+    --avro-input v --libjars "path/to/the/parquet/jar" \
     kmer_count input output
 
 Since we are using an external input format (Avro container input and
@@ -181,8 +181,6 @@ To run the Avro examples you have to install the Python Avro package
 included in Hadoop 2 and the ``avro-mapred`` one is included in
 Pydoop.  Part of the examples code (e.g., input generation) is written
 in Java.  To compile it, you need `sbt <http://www.scala-sbt.org>`_.
-Finally, since we use ``collections.Counter``, the examples only run
-on Python 2.7.
 
 Move to the examples directory and compile the Java code:
 

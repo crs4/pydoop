@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Avro I/O &mdash; Pydoop 1.1.0 documentation</title>
+    <title>Avro I/O &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="Examples" href="index.html" />
     <link rel="next" title="Installation-free Usage" href="../self_contained.html" />
     <link rel="prev" title="Writing a Custom InputFormat" href="input_format.html" /> 
@@ -125,15 +125,15 @@ modified) version of the color count example from the Avro docs:</p>
 
     <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
         <span class="n">user</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">value</span>
-        <span class="n">color</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s">&#39;favorite_color&#39;</span><span class="p">]</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;favorite_color&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s">&#39;office&#39;</span><span class="p">],</span> <span class="n">Counter</span><span class="p">({</span><span class="n">color</span><span class="p">:</span> <span class="mi">1</span><span class="p">}))</span>
+            <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;office&#39;</span><span class="p">],</span> <span class="n">Counter</span><span class="p">({</span><span class="n">color</span><span class="p">:</span> <span class="mi">1</span><span class="p">}))</span>
 
 <span class="k">class</span> <span class="nc">Reducer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Reducer</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ctx</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">Counter</span><span class="p">())</span>
-        <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s">&#39;office&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="s">&#39;counts&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">})</span>
+        <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;office&#39;</span><span class="p">:</span> <span class="n">ctx</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="s1">&#39;counts&#39;</span><span class="p">:</span> <span class="n">s</span><span class="p">})</span>
 
 <span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
     <span class="n">factory</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">)</span>
@@ -175,11 +175,11 @@ get this behavior, you have to set the context class to
 <tt class="docutils literal"><span class="pre">AvroContext</span></tt>, as shown above.  Moreover, when launching the
 application with pydoop submit, you have to enable Avro I/O and
 specify the output schema as follows:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export </span><span class="nv">STATS_SCHEMA</span><span class="o">=</span><span class="k">$(</span>cat stats.avsc<span class="k">)</span>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export</span> <span class="nv">STATS_SCHEMA</span><span class="o">=</span><span class="k">$(</span>cat stats.avsc<span class="k">)</span>
 pydoop submit <span class="se">\</span>
-  -D pydoop.mapreduce.avro.value.output.schema<span class="o">=</span><span class="s2">&quot;${STATS_SCHEMA}&quot;</span> <span class="se">\</span>
+  -D pydoop.mapreduce.avro.value.output.schema<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">STATS_SCHEMA</span><span class="si">}</span><span class="s2">&quot;</span> <span class="se">\</span>
   --avro-input v --avro-output v <span class="se">\</span>
-  --upload-file-to-cache color_count.py --mrv2 <span class="se">\</span>
+  --upload-file-to-cache color_count.py <span class="se">\</span>
   color_count input output
 </pre></div>
 </div>
@@ -223,7 +223,7 @@ caller.</p>
 <span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
-        <span class="n">seq</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s">&#39;sequence&#39;</span><span class="p">]</span>
+        <span class="n">seq</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s1">&#39;sequence&#39;</span><span class="p">]</span>
         <span class="k">for</span> <span class="n">kmer</span> <span class="ow">in</span> <span class="n">window</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">WIDTH</span><span class="p">):</span>
             <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">kmer</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -240,12 +240,12 @@ caller.</p>
 </pre></div>
 </div>
 <p>To run the above program, execute pydoop submit as follows:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export </span><span class="nv">PROJECTION</span><span class="o">=</span><span class="k">$(</span>cat projection.avsc<span class="k">)</span>
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">export</span> <span class="nv">PROJECTION</span><span class="o">=</span><span class="k">$(</span>cat projection.avsc<span class="k">)</span>
 pydoop submit <span class="se">\</span>
-   -D parquet.avro.projection<span class="o">=</span><span class="s2">&quot;${PROJECTION}&quot;</span> <span class="se">\</span>
+   -D parquet.avro.projection<span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">PROJECTION</span><span class="si">}</span><span class="s2">&quot;</span> <span class="se">\</span>
   --upload-file-to-cache kmer_count.py <span class="se">\</span>
   --input-format parquet.avro.AvroParquetInputFormat <span class="se">\</span>
-  --avro-input v --libjars <span class="s2">&quot;path/to/the/parquet/jar&quot;</span> --mrv2 <span class="se">\</span>
+  --avro-input v --libjars <span class="s2">&quot;path/to/the/parquet/jar&quot;</span> <span class="se">\</span>
   kmer_count input output
 </pre></div>
 </div>
@@ -264,11 +264,9 @@ reading input records from values is not an option: that&#8217;s how
 (you can get it from the Avro web site), while the <tt class="docutils literal"><span class="pre">avro</span></tt> jar is
 included in Hadoop 2 and the <tt class="docutils literal"><span class="pre">avro-mapred</span></tt> one is included in
 Pydoop.  Part of the examples code (e.g., input generation) is written
-in Java.  To compile it, you need <a class="reference external" href="http://www.scala-sbt.org">sbt</a>.
-Finally, since we use <tt class="docutils literal"><span class="pre">collections.Counter</span></tt>, the examples only run
-on Python 2.7.</p>
+in Java.  To compile it, you need <a class="reference external" href="http://www.scala-sbt.org">sbt</a>.</p>
 <p>Move to the examples directory and compile the Java code:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd </span>examples/avro/java
+<div class="highlight-bash"><div class="highlight"><pre><span class="nb">cd</span> examples/avro/java
 sbt assembly
 </pre></div>
 </div>
@@ -306,7 +304,7 @@ sbt assembly
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

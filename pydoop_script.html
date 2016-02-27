@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Pydoop Script User Guide &mdash; Pydoop 1.0.0 documentation</title>
+    <title>Pydoop Script User Guide &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '1.0.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.0.0 documentation" href="index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
     <link rel="next" title="Pydoop Submit User Guide" href="running_pydoop_applications.html" />
     <link rel="prev" title="Installation" href="installation.html" /> 
   </head>
@@ -160,7 +160,23 @@ your job&#8217;s output directory.</p>
 </tr>
 <tr class="row-even"><td>&nbsp;</td>
 <td><tt class="docutils literal"><span class="pre">--no-override-env</span></tt></td>
-<td>Use the default python executable and environment instead of overriding HOME, LD_LIBRARY_PATH and PYTHONPATH</td>
+<td>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-ld-path</span></tt></td>
+<td>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-pypath</span></tt></td>
+<td>Use the default PYTHONPATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-path</span></tt></td>
+<td>Use the default PATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--set-env</span></tt></td>
+<td>Set environment variables for the tasks. If a variable is set to &#8216;&#8217;, it will not be overridden by Pydoop.</td>
 </tr>
 <tr class="row-odd"><td><tt class="docutils literal"><span class="pre">-D</span></tt></td>
 <td>&nbsp;</td>
@@ -210,9 +226,17 @@ your job&#8217;s output directory.</p>
 <td><tt class="docutils literal"><span class="pre">--combine-fn</span></tt></td>
 <td>name of combine function within module</td>
 </tr>
-<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">-t</span></tt></td>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--combiner-fn</span></tt></td>
+<td>&#8211;combine-fn alias for backwards compatibility</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">-t</span></tt></td>
 <td><tt class="docutils literal"><span class="pre">--kv-separator</span></tt></td>
 <td>output key-value separator</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--mrv1</span></tt></td>
+<td>Force use of MRv1. InputFormat and OutputFormat classes must be mrv1-compliant</td>
 </tr>
 </tbody>
 </table>
@@ -221,13 +245,13 @@ your job&#8217;s output directory.</p>
 <p>Here is the word count example modified to ignore stop words from a
 file that is distributed to all the nodes via the Hadoop distributed
 cache:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">&#39;stop.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;stop.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">STOP_WORDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">l</span><span class="o">.</span><span class="n">isspace</span><span class="p">())</span>
 
 <span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">STOP_WORDS</span><span class="p">:</span>
-            <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s">&quot;STOP_WORDS&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;STOP_WORDS&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
       <span class="k">else</span><span class="p">:</span>
           <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
@@ -371,7 +395,7 @@ separated by the key-value separator.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

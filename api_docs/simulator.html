@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pydoop.mapreduce.simulator — Hadoop Simulator API &mdash; Pydoop 1.1.0 documentation</title>
+    <title>pydoop.mapreduce.simulator — Hadoop Simulator API &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="API Docs" href="index.html" />
     <link rel="next" title="pydoop.hadut — Hadoop shell interaction" href="hadut.html" />
     <link rel="prev" title="pydoop.hdfs — HDFS API" href="hdfs_api.html" /> 
@@ -139,18 +139,18 @@ suitable <a class="reference internal" href="mr_api.html#pydoop.mapreduce.pipes.
 <dd><p>Simulates the invocation of program components in a Hadoop
 workflow using network connections to communicate with a
 user-provided pipes program.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">program_name</span> <span class="o">=</span> <span class="s">&#39;../wordcount/new_api/wordcount_full.py&#39;</span>
-<span class="n">data_in</span> <span class="o">=</span> <span class="s">&#39;../input/alice.txt&#39;</span>
-<span class="n">output_dir</span> <span class="o">=</span> <span class="s">&#39;./output&#39;</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">program_name</span> <span class="o">=</span> <span class="s1">&#39;../wordcount/new_api/wordcount_full.py&#39;</span>
+<span class="n">data_in</span> <span class="o">=</span> <span class="s1">&#39;../input/alice.txt&#39;</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="s1">&#39;./output&#39;</span>
 <span class="n">data_in_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">data_in</span><span class="p">)</span>
-<span class="n">data_in_uri</span> <span class="o">=</span> <span class="s">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">data_in_path</span>
+<span class="n">data_in_uri</span> <span class="o">=</span> <span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">data_in_path</span>
 <span class="n">data_in_size</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">data_in_path</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
 <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
-<span class="n">output_dir_uri</span> <span class="o">=</span> <span class="s">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
+<span class="n">output_dir_uri</span> <span class="o">=</span> <span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span>
 <span class="n">conf</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s">&quot;mapred.job.name&quot;</span><span class="p">:</span> <span class="s">&quot;wordcount&quot;</span><span class="p">,</span>
-  <span class="s">&quot;mapred.work.output.dir&quot;</span><span class="p">:</span> <span class="n">output_dir_uri</span><span class="p">,</span>
-  <span class="s">&quot;mapred.task.partition&quot;</span><span class="p">:</span> <span class="s">&quot;0&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;mapred.job.name&quot;</span><span class="p">:</span> <span class="s2">&quot;wordcount&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;mapred.work.output.dir&quot;</span><span class="p">:</span> <span class="n">output_dir_uri</span><span class="p">,</span>
+  <span class="s2">&quot;mapred.task.partition&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span><span class="p">,</span>
 <span class="p">}</span>
 <span class="n">input_split</span> <span class="o">=</span> <span class="n">InputSplit</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">data_in_uri</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">data_in_size</span><span class="p">)</span>
 <span class="n">hsn</span> <span class="o">=</span> <span class="n">HadoopSimulatorNetwork</span><span class="p">(</span><span class="n">program</span><span class="o">=</span><span class="n">program_name</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
@@ -208,7 +208,7 @@ which case the program is expected to have a
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

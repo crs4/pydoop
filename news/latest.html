@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>New in 1.1.0 &mdash; Pydoop 1.1.0 documentation</title>
+    <title>New in 1.2.0 &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="News" href="index.html" />
     <link rel="next" title="News Archive" href="archive.html" />
     <link rel="prev" title="News" href="index.html" /> 
@@ -101,20 +101,17 @@
         <div class="bodywrapper">
           <div class="body">
             
-  <div class="section" id="new-in-1-1-0">
-<h1>New in 1.1.0<a class="headerlink" href="#new-in-1-1-0" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="new-in-1-2-0">
+<h1>New in 1.2.0<a class="headerlink" href="#new-in-1-2-0" title="Permalink to this headline">¶</a></h1>
 <blockquote>
 <div><ul class="simple">
-<li>Added support for <a class="reference external" href="http://hortonworks.com/hdp/">HDP</a> 2.2.</li>
-<li><a class="reference external" href="https://github.com/Byhiras/pyavroc">Pyavroc</a> is now
-automatically loaded if installed, enabling much faster (30-40x)
-Avro (de)serialization.</li>
-<li>Added <a class="reference internal" href="../tutorial/mapred_api.html#timers"><em>Timer objects</em></a> to help debug performance
-issues.</li>
-<li><tt class="docutils literal"><span class="pre">NoSeparatorTextOutputFormat</span></tt> is now available for all MR
-versions.</li>
-<li>Added Avro support to the <a class="reference internal" href="../api_docs/simulator.html#simulator-api"><em>Hadoop Simulator</em></a>.</li>
-<li>Bug fixes and performance improvements.</li>
+<li>Added support for Hadoop 2.7.2.</li>
+<li>Dropped support for Python 2.6. Maintaining 2.6 compatibility would
+require adding another dimension to the Travis matrix, vastly
+increasing the build time and ultimately slowing down the
+development. Since the default Python version in all major
+distributions is 2.7, the added effort would gain us little.</li>
+<li>Bug fixes.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -149,7 +146,7 @@ versions.</li>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pydoop.hadut — Hadoop shell interaction &mdash; Pydoop 1.1.0 documentation</title>
+    <title>pydoop.hadut — Hadoop shell interaction &mdash; Pydoop 1.2.0 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     '1.1.0',
+        VERSION:     '1.2.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.1.0 documentation" href="../index.html" />
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
     <link rel="up" title="API Docs" href="index.html" />
     <link rel="next" title="Examples" href="../examples/index.html" />
     <link rel="prev" title="pydoop.mapreduce.simulator — Hadoop Simulator API" href="simulator.html" /> 
@@ -251,8 +251,8 @@ shell rather than the hdfs extension.</p>
 <tt class="docutils literal"><span class="pre">classpath</span></tt> (either as a non-string sequence where each element
 is a classpath element or as a <tt class="docutils literal"><span class="pre">':'</span></tt>-separated string).  Other
 arguments are passed to <a class="reference internal" href="#pydoop.hadut.run_cmd" title="pydoop.hadut.run_cmd"><tt class="xref py py-func docutils literal"><span class="pre">run_cmd()</span></tt></a>.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cls</span> <span class="o">=</span> <span class="s">&#39;org.apache.hadoop.fs.FsShell&#39;</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">run_class</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;-test&#39;</span><span class="p">,</span> <span class="s">&#39;-e&#39;</span><span class="p">,</span> <span class="s">&#39;file:/tmp&#39;</span><span class="p">])</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cls</span> <span class="o">=</span> <span class="s1">&#39;org.apache.hadoop.fs.FsShell&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">run_class</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;-test&#39;</span><span class="p">,</span> <span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="s1">&#39;file:/tmp&#39;</span><span class="p">])</span>
 <span class="gp">... </span><span class="k">except</span> <span class="n">RunCmdError</span><span class="p">:</span> <span class="n">tmp_exists</span> <span class="o">=</span> <span class="bp">False</span>
 <span class="gp">... </span><span class="k">else</span><span class="p">:</span> <span class="n">tmp_exists</span> <span class="o">=</span> <span class="bp">True</span>
 </pre></div>
@@ -282,7 +282,7 @@ directly to the stdout and stderr of the calling process, and the
 return value will be empty.  This mode is appropriate for long
 running commands that do not write their &#8220;real&#8221; output to stdout
 (such as pipes).</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">hadoop_classpath</span> <span class="o">=</span> <span class="n">run_cmd</span><span class="p">(</span><span class="s">&#39;classpath&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">hadoop_classpath</span> <span class="o">=</span> <span class="n">run_cmd</span><span class="p">(</span><span class="s1">&#39;classpath&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -345,7 +345,7 @@ passing the argument force_pydoop_submitter=True.</p>
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2009-2015, CRS4.
+        &copy; Copyright 2009-2016, CRS4.
       Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
