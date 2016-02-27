@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -41,7 +41,7 @@ class CoreHdfsFs(object):
                   readline_chunk_size=16384):
         pass
 
-    #@property
+    # @property
     def capacity(self):
         return self.get_capacity()
 
@@ -57,7 +57,7 @@ class CoreHdfsFs(object):
     def create_directory(self, path):
         pass
 
-    #@property
+    # @property
     def default_block_size(self):
         return self.get_default_block_size()
 
@@ -105,7 +105,7 @@ class CoreHdfsFs(object):
     def set_working_directory(self, path):
         pass
 
-    #@property
+    # @property
     def used(self):
         return self.get_used()
 
@@ -113,7 +113,7 @@ class CoreHdfsFs(object):
     def get_used(self):
         pass
 
-    #@property
+    # @property
     def working_directory(self):
         return self.get_working_directory()
 

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -228,12 +228,12 @@ class AvroReader(RecordReader):
         Give a rough estimate of the progress done.
         """
         pos = self.reader.reader.tell()
-        return min((pos - self.region_start)
-                   / float(self.region_end - self.region_start),
+        return min((pos - self.region_start) /
+                   float(self.region_end - self.region_start),
                    1.0)
 
 
-#FIXME this is just an example with no error checking
+# FIXME this is just an example with no error checking
 class AvroWriter(RecordWriter):
 
     schema = None

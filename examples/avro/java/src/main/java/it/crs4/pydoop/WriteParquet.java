@@ -1,6 +1,6 @@
 /* BEGIN_COPYRIGHT
  *
- * Copyright 2009-2015 CRS4.
+ * Copyright 2009-2016 CRS4.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -43,8 +43,8 @@ import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 
-import parquet.Log;
-import parquet.avro.AvroParquetOutputFormat;
+import org.apache.parquet.Log;
+import org.apache.parquet.avro.AvroParquetOutputFormat;
 
 import org.apache.avro.generic.GenericData.Record;
 import org.apache.avro.Schema;

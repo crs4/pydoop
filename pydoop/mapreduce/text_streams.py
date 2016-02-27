@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -47,7 +47,7 @@ class TextDownStreamFilter(DownStreamFilter):
         'runReduce': ('runReduce', 2, lambda p: [int(p[0]), toBool(p[1])]),
         'abort': ('abort', 0, None),
         'close': ('close', 0, None),
-        }
+    }
 
     @classmethod
     def convert_message(cls, cmd, args):

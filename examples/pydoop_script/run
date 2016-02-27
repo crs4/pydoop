@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd "$(dirname $0)"
 for s in base_histogram lowercase transpose grep caseswitch; do
     echo "running ${s}"
     ./run_${s}

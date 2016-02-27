@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -28,7 +28,8 @@ STREAM_1_DATA = [
     ('mapItem', 'key3', 'val3'),
     ('close',),
     ('mapItem', 'key3', 'val3'),  # should not get here
-    ]
+]
+
 STREAM_2_DATA = [
     ('reduceKey', 'key1'),
     ('reduceValue', 'val11'),
@@ -40,7 +41,7 @@ STREAM_2_DATA = [
     ('reduceValue', 'val23'),
     ('close',),
     ('reduceValue', 'val24'),  # should not get here
-    ]
+]
 
 
 key = None

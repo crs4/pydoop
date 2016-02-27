@@ -29,7 +29,7 @@ def generate_core_site(fname):
     generate_xml_conf_file(fname, (
         ('fs.defaultFS', 'hdfs://%s:8020' % hostname),
         ('hadoop.tmp.dir', 'file://' + os.environ['HADOOP_TMP_DIR'])
-        ))
+    ))
 
 
 def generate_hdfs_site(fname):
@@ -40,7 +40,7 @@ def generate_hdfs_site(fname):
         ('dfs.namenode.checkpoint.dir', os.environ['DFS_CHECKPOINT_DIR']),
         ('dfs.namenode.checkpoint.edits.dir',
             os.environ['DFS_CHECKPOINT_DIR']),
-        ))
+    ))
 
 
 def generate_yarn_site(fname):
@@ -62,7 +62,7 @@ def generate_yarn_site(fname):
         # ('yarn.log-aggregation.retain-seconds', '360000'),
         # ('yarn.log-aggregation.retain-check-interval-seconds', '360'),
         # ('yarn.log.server.url', 'http://historyserver:19888'),
-        ))
+    ))
 
 
 def generate_mapred_site(fname):
@@ -80,7 +80,7 @@ def generate_mapred_site(fname):
         ('mapreduce.jobhistory.intermediate-done-dir',
             os.environ['MAPRED_JH_INTERMEDIATE_DONE_DIR']),
         ('mapreduce.jobhistory.done-dir', os.environ['MAPRED_JH_DONE_DIR']),
-        ))
+    ))
 
 
 def generate_capacity_scheduler(fname):

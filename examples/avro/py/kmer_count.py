@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -28,7 +28,7 @@ WIDTH = 5
 
 def window(s, width):
     for i in xrange(len(s) - width + 1):
-        yield s[i:i+width]
+        yield s[i: i + width]
 
 
 class Mapper(api.Mapper):

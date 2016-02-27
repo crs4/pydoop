@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -41,7 +41,9 @@ class TestHDFS(unittest.TestCase):
         basenames = ["test_path_%d" % i for i in xrange(2)]
         self.local_paths = ["%s/%s" % (self.local_wd, bn) for bn in basenames]
         self.hdfs_paths = ["%s/%s" % (self.hdfs_wd, bn) for bn in basenames]
-        self.data = make_random_data(4*BUFSIZE + BUFSIZE/2, printable=False)
+        self.data = make_random_data(
+            4 * BUFSIZE + BUFSIZE / 2, printable=False
+        )
         for path in self.local_paths:
             self.assertTrue(path.startswith("file:"))
         for path in self.hdfs_paths:
@@ -173,12 +175,8 @@ class TestHDFS(unittest.TestCase):
 
     def cp(self):
         for wd in self.local_wd, self.hdfs_wd:
-            #print "  on %s ..." % wd
-            #print "    file ..."
             self.__cp_file(wd)
-            #print "    dir ..."
             self.__cp_dir(wd)
-            #print "    recursive ..."
             self.__cp_recursive(wd)
 
     def put(self):

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -28,6 +28,7 @@ import re
 
 def nop(x=None):
     pass
+
 
 class Args(object):
     def __init__(self, **kwargs):
@@ -58,7 +59,7 @@ class TestAppSubmit(unittest.TestCase):
             output="output_path",
             job_name="job_name",
             num_reducers=0,
-            )
+        )
 
     def test_help(self):
         parser = app.make_parser()
@@ -99,7 +100,7 @@ class TestAppSubmit(unittest.TestCase):
         wd = tempfile.mkdtemp(prefix='pydoop_')
         conf_file = os.path.join(wd, 'pydoop.conf')
         args_kv = (("--pretend", None),
-                   ("--mrv2", None),
+                   ("--mrv1", None),
                    ("--input-format", 'mapreduce.lib.input.TextInputFormat'),
                    ("--output-format", 'mapreduce.lib.input.TextOutputFormat'),
                    ("--num-reducers", 10),
@@ -184,7 +185,6 @@ class TestAppSubmit(unittest.TestCase):
         self.assertTrue('export PYTHONPATH="${PWD}:${PYTHONPATH}"' in code)
         self.assertTrue('export PATH=' in code)
 
-
     def test_generate_pipes_code_with_set_env(self):
         args = self._gen_default_args()
         args.set_env = ["PATH=/my/custom/path"]
@@ -208,7 +208,8 @@ class TestAppSubmit(unittest.TestCase):
         code = self.submitter._generate_pipes_code()
         self.assertFalse('export PATH=' in code)
         self.assertFalse('export LD_LIBRARY_PATH="/test_path"' in code)
-        # PYTHONPATH should still be there because we add the hadoop working directory
+        # PYTHONPATH should still be there because we add the hadoop
+        # working directory
         self.assertTrue('export PYTHONPATH=' in code)
 
     def test_generate_code_no_env_override_with_set_env(self):
@@ -221,12 +222,12 @@ class TestAppSubmit(unittest.TestCase):
 
         self.assertTrue('export PATH="/my/custom/path"' in code)
         self.assertFalse('export LD_LIBRARY_PATH="/test_path"' in code)
-        # PYTHONPATH should still be there because we add the hadoop working directory
+        # PYTHONPATH should still be there because we add the hadoop
+        # working directory
         self.assertTrue('export PYTHONPATH=' in code)
 
-
     def test_env_arg_to_dict(self):
-        env_arg = [ 'var1=value1', ' var2 = value2 ', 'var3 = str with = sign' ]
+        env_arg = ['var1=value1', ' var2 = value2 ', 'var3 = str with = sign']
         d = self.submitter._env_arg_to_dict(env_arg)
         self.assertEquals('value1', d['var1'])
         self.assertEquals('value2', d['var2'])

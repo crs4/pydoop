@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -66,8 +66,8 @@ class HadoopXMLError(Exception):
 
 
 def get_arch():
-    #if SYSTEM == 'darwin':
-    #  return "", ""
+    # if SYSTEM == 'darwin':
+    #     return "", ""
     bits, _ = platform.architecture()
     if bits == "64bit":
         return "amd64", "64"
@@ -256,6 +256,10 @@ class HadoopVersion(object):
         pf = PathFinder()
         return pf.is_yarn()
 
+    def is_local(self):
+        pf = PathFinder()
+        return pf.is_local()
+
     def is_cdh_mrv2(self):
         return (self.distribution == 'cdh' and
                 self.dist_version >= (4, 0, 0) and not self.dist_ext)
@@ -263,7 +267,8 @@ class HadoopVersion(object):
     def has_mrv2(self):
         return \
             self.main >= (2, 0, 0) and self.is_yarn() and \
-                (not self.is_cloudera() or (self.is_cloudera() and self.dist_version >= (5, 0, 0)))
+            (not self.is_cloudera() or (
+                self.is_cloudera() and self.dist_version >= (5, 0, 0)))
 
     def is_cdh_v5(self):
         return (self.distribution == 'cdh' and
@@ -319,11 +324,17 @@ class HadoopVersion(object):
 
 
 def is_exe(fpath):
-    return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+    """
+    Path references an executable file.
+    """
+    return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 
 def is_readable(fpath):
-    return os.path.exists(fpath) and os.access(fpath, os.R_OK)
+    """
+    Path references a readable file.
+    """
+    return os.path.isfile(fpath) and os.access(fpath, os.R_OK)
 
 
 def extract_text(node):
@@ -425,12 +436,13 @@ class PathFinder(object):
                 first_dir_in_glob("/opt/hadoop*")
             )
         if not self.__hadoop_home:
-            PathFinder.__error("hadoop home", "HADOOP_HOME")
+            PathFinder.__error("hadoop home", "HADOOP_PREFIX or HADOOP_HOME")
         return self.__hadoop_home
 
     def mapred_exec(self, hadoop_home=None):
         if not self.__mapred_exec:
-            if not (hadoop_home or os.getenv("HADOOP_HOME")):
+            if not (hadoop_home or
+                    os.getenv("HADOOP_PREFIX", os.getenv("HADOOP_HOME"))):
                 if is_exe(self.CDH_HADOOP_EXEC):
                     self.__mapred_exec = self.CDH_HADOOP_EXEC
             else:
@@ -446,7 +458,8 @@ class PathFinder(object):
     def hadoop_exec(self, hadoop_home=None):
         if not self.__hadoop_exec:
             # allow overriding of package-installed hadoop exec
-            if not (hadoop_home or os.getenv("HADOOP_HOME")):
+            if not (hadoop_home or
+                    os.getenv("HADOOP_PREFIX", os.getenv("HADOOP_HOME"))):
                 if is_exe(self.CDH_HADOOP_EXEC):
                     self.__hadoop_exec = self.CDH_HADOOP_EXEC
             else:
@@ -456,7 +469,9 @@ class PathFinder(object):
                 if is_exe(fn):
                     self.__hadoop_exec = fn
         if not self.__hadoop_exec:
-            PathFinder.__error("hadoop executable", "HADOOP_HOME or PATH")
+            PathFinder.__error(
+                "hadoop executable", "HADOOP_PREFIX or HADOOP_HOME or PATH"
+            )
         return self.__hadoop_exec
 
     def hadoop_version(self, hadoop_home=None):
@@ -471,6 +486,8 @@ class PathFinder(object):
                 else:
                     try:
                         env = os.environ.copy()
+                        # why pop HADOOP_HOME?
+                        env.pop("HADOOP_PREFIX", None)
                         env.pop("HADOOP_HOME", None)
                         p = sp.Popen([hadoop, "version"], stdout=sp.PIPE,
                                      stderr=sp.PIPE, env=env)
@@ -613,3 +630,12 @@ class PathFinder(object):
         return self.hadoop_params(hadoop_conf, hadoop_home).get(
             'mapreduce.framework.name', ''
         ).lower() == 'yarn'
+
+    def is_local(self, hadoop_conf=None, hadoop_home=None):
+        conf = self.hadoop_params(hadoop_conf, hadoop_home)
+        framework_name = conf.get('mapreduce.framework.name', '').lower()
+        if not framework_name:  # pre-yarn version
+            framework_name = conf.get('mapred.job.tracker', '').lower()
+        # We also interpret the empty string as 'local' since it's the
+        # default value for both the properties above.
+        return framework_name == 'local' or framework_name == ''

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -39,7 +39,7 @@ STREAM_1 = [
     ('reduceKey', 'key2'),
     ('reduceValue', 'val3'),
     ('close',),
-    ]
+]
 
 
 def stream_writer(fname, data):
@@ -58,8 +58,8 @@ class TestTextStream(WDTestCase):
             try:
                 for (cmd, args), vals in it.izip(stream, STREAM_1):
                     self.assertEqual(cmd, vals[0])
-                    self.assertTrue((len(vals) == 1 and not args)
-                                    or (vals[1:] == args))
+                    self.assertTrue((len(vals) == 1 and not args) or
+                                    (vals[1:] == args))
             except ProtocolError as e:
                 print 'error -- %s' % e
 

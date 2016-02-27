@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -33,7 +33,7 @@ import pydoop.hdfs as hdfs
 
 GLOB_CHARS = frozenset('*,?[]{}')
 
-#--- FIXME: perhaps we need a more sophisticated tool for setting args ---
+# --- FIXME: perhaps we need a more sophisticated tool for setting args ---
 GENERIC_ARGS = frozenset([
     "-conf", "-D", "-fs", "-jt", "-files", "-libjars", "-archives"
 ])
@@ -50,11 +50,11 @@ def _pop_generic_args(args):
     while i >= 0:
         if args[i] in GENERIC_ARGS:
             try:
-                args[i+1]
+                args[i + 1]
             except IndexError:
                 raise ValueError("option %s has no value" % args[i])
-            generic_args.extend(args[i:i+2])
-            del args[i:i+2]
+            generic_args.extend(args[i: i + 2])
+            del args[i: i + 2]
         i -= 1
     return generic_args
 
@@ -66,18 +66,18 @@ def _merge_csv_args(args):
     while i >= 0:
         if args[i] in CSV_ARGS:
             try:
-                args[i+1]
+                args[i + 1]
             except IndexError:
                 raise ValueError("option %s has no value" % args[i])
-            k, v = args[i:i+2]
+            k, v = args[i: i + 2]
             merge_map.setdefault(k, []).append(v.strip())
-            del args[i:i+2]
+            del args[i: i + 2]
         i -= 1
     for k, vlist in merge_map.iteritems():
         args.extend([k, ",".join(vlist)])
 
 # FIXME: the above functions share a lot of code
-#-------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 
 
 def _construct_property_args(prop_dict):
@@ -157,7 +157,13 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         p = subprocess.Popen(
             _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
-        output, error = p.communicate()
+        error = ""
+        stderr_iterator = iter(p.stderr.readline, b"")
+        for line in stderr_iterator:
+            error += line
+            logger.info("cmd stderr line: " + line.strip())
+
+        output, _ = p.communicate()
     else:
         p = subprocess.Popen(_args, stdout=None, stderr=None, bufsize=1)
         ret = p.wait()
@@ -440,6 +446,10 @@ class PipesRunner(object):
     job to succeed).
     """
     def __init__(self, prefix=None, logger=None):
+        hadoop_version_info = pydoop.hadoop_version_info()
+        if hadoop_version_info.is_local():
+            raise pydoop.LocalModeNotSupported()
+
         self.wd = self.exe = self.input = self.output = None
         self.logger = logger or utils.NullLogger()
         if prefix:

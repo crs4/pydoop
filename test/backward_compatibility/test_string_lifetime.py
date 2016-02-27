@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -56,7 +56,7 @@ class str_lifetime_tc(unittest.TestCase):
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(str_lifetime_tc('push_leak_map_context'))
-    #suite.addTest(str_lifetime_tc('garbage_collect'))
+    # suite.addTest(str_lifetime_tc('garbage_collect'))
     return suite
 
 

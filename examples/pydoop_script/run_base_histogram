@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -39,9 +39,10 @@ else
 	exit 1
 fi
 
+cd "$(dirname $0)"
 ${hdfs} -rmr /user/${USER}/${INPUT}
 ${hdfs} -mkdir /user/${USER}/${INPUT}
 ${hdfs} -rmr /user/${USER}/${OUTPUT}
-${hdfs} -put ${DATA} ${INPUT}
+${hdfs} -put ${DATA} ${INPUT} || { echo "Error uploading ${DATA}" >&2; exit 1 ; }
 
-${SCRIPT_CMD} ${SCRIPT} ${INPUT} ${OUTPUT}
+${SCRIPT_CMD} --log-level DEBUG ${SCRIPT} ${INPUT} ${OUTPUT}

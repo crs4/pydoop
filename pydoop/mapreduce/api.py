@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -134,7 +134,7 @@ class JobConf(dict):
     def get_json(self, key, default=None):
         return json.loads(self.get(key, default))
 
-    #get below is deprecated behaviour, here only for backward compatibility
+    # get below is deprecated behaviour, here only for backward compatibility
     def get(self, *args):
         if len(args) == 2:
             return super(JobConf, self).get(*args)

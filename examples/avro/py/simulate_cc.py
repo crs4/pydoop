@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -28,7 +28,7 @@ def main():
     data_in = './users.avro'
     path = os.path.realpath(data_in)
     length = os.stat(path).st_size
-    input_split = InputSplit.to_string('file://'+path, 0, length)
+    input_split = InputSplit.to_string('file://' + path, 0, length)
     out_path = os.path.realpath('.')
     conf = {
         "mapreduce.task.partition": "0",

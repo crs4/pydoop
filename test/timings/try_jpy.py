@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -29,4 +29,4 @@ with Timer() as t:
     bz = bytearray(z)  # view string as bytearray
     a = jpy.array('byte', bz)  # project this to a java array
     ba = bytearray(a)  # bring it back to a python bytearray
-print "=> round trip for size %sKB: %ss [%s KB/sec]" % (N, t.secs, N/t.secs)
+print "=> round trip for size %sKB: %ss [%s KB/sec]" % (N, t.secs, N / t.secs)

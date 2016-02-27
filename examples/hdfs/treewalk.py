@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -44,7 +44,7 @@ def main():
             sys.exit("%r does not exist" % root)
         print "BS(MB)\tBYTES"
         for k, v in usage_by_bs(fs, root).iteritems():
-            print "%.1f\t%d" % (k/float(MB), v)
+            print "%.1f\t%d" % (k / float(MB), v)
     finally:
         fs.close()
 

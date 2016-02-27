@@ -9,6 +9,7 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 # FIXME this will break if our name is a substring of the hosts we are linked
 # to.
 def etc_updated():
@@ -19,6 +20,7 @@ def etc_updated():
     with open('/etc/hosts') as f:
         return sum(x.find(hostname) > -1 for x in f) > 1
     logger.info('\tdone')
+
 
 def boot_node(kz, nodename):
     logger.info('Booting %s', nodename)
@@ -42,8 +44,7 @@ def main():
     os.system('bash /tmp/create_hdfs_dirs.sh')
     boot_node(kz, 'resourcemanager')
     boot_node(kz, 'nodemanager')
-    boot_node(kz, 'historyserver')    
+    boot_node(kz, 'historyserver')
     logger.info('Done with bootstrap.')
 
 main()
-    

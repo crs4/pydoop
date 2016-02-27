@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 # 
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -27,7 +27,7 @@ HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
 	       HDFS_IS_MISSING))
 
 
-LOGLEVEL=INFO
+LOGLEVEL=DEBUG
 PROGNAME=self_contained
 JOBNAME=self_contained
 DATA := ../input

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -144,10 +144,10 @@ class TestHDFS(TestCommon):
 
         def _write_prefix(f, size, bs):
             # Avoid memory problem with JVM
-            chunk_size = min(bs, 24*1048576)
+            chunk_size = min(bs, 12 * 1048576)
             written = 0
             while written < size:
-                data = 'X'*min(chunk_size, size - written)
+                data = 'X' * min(chunk_size, size - written)
                 written += f.write(data)
 
         hd_info = pydoop.hadoop_version_info()
@@ -155,12 +155,12 @@ class TestHDFS(TestCommon):
         if hd_info.has_deprecated_bs():
             bs = hdfs.fs.hdfs().default_block_size()
         else:
-            #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
             bs = 1048576
             kwargs['blocksize'] = bs
 
         line = "012345678\n"
-        offset = bs - (10*len(line) + 5)
+        offset = bs - (10 * len(line) + 5)
         path = self._make_random_path()
         with self.fs.open_file(path, flags="w", **kwargs) as f:
             bytes_written = lines_written = 0
@@ -188,7 +188,7 @@ class TestHDFS(TestCommon):
         if hd_info.has_deprecated_bs() and not hd_info.is_cdh_v5():
             blocksize = hdfs.fs.hdfs().default_block_size()
         else:
-            #(dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
             blocksize = 1048576
             kwargs['blocksize'] = blocksize
         N = 4
@@ -198,7 +198,7 @@ class TestHDFS(TestCommon):
         for i in xrange(N):
             length = blocksize * i + 1
             hosts_per_block = self.fs.get_hosts(path, start, length)
-            self.assertEqual(len(hosts_per_block), i+1)
+            self.assertEqual(len(hosts_per_block), i + 1)
 
 
 def suite():

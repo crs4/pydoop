@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -110,6 +110,6 @@ def load_class(package, bridge_name):
     """
     module_name = bridge_name.lower() + "_loader"
     module_path = package + "." + module_name
-    class_str = bridge_name+"ClassLoader"
+    class_str = bridge_name + "ClassLoader"
     module = importlib.import_module(module_path)
     return getattr(module, class_str)

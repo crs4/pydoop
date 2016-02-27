@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -25,7 +25,7 @@ TEST_MODULE_NAMES = [
     'test_hdfs_fs',
     'test_path',
     'test_hdfs',
-    ]
+]
 
 
 def suite(path=None):

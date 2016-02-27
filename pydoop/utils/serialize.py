@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -296,7 +296,8 @@ def register_deserializer(class_id, deser_func):
 
 
 def serialize(v, stream, type_id=None):
-    type_id = type_id if not type_id is None else type(v)
+    if type_id is None:
+        type_id = type(v)
     return DEFAULT_STORE.serializer(type_id)(v, stream)
 
 

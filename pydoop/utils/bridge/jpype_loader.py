@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -24,7 +24,7 @@ class JPypeClassLoader(ClassLoader):
 
     wrapper_for_java_builtin_type = {
         "byte": jpype.JByte,
-        #"short": jpype.JShort,
+        # "short": jpype.JShort,
         "int": jpype.JInt,
         "long": jpype.JLong,
         "float": jpype.JFloat,
@@ -36,7 +36,7 @@ class JPypeClassLoader(ClassLoader):
     def init(self, classpath, opts):
         jvm = jpype.getDefaultJVMPath()
         if not jpype.isJVMStarted():
-            jpype.startJVM(jvm, "-Djava.class.path="+classpath)
+            jpype.startJVM(jvm, "-Djava.class.path=" + classpath)
 
     def load_class(self, fully_qualified_class):
         return jpype.JClass(self.process_class_name(fully_qualified_class))
@@ -52,7 +52,7 @@ class JPypeClassLoader(ClassLoader):
         wrapper = self.wrapper_for_java_builtin_type.get(
             fully_qualified_class_name
         )
-        if not wrapper is None:
+        if wrapper is not None:
             fully_qualified_class_name = wrapper
         return fully_qualified_class_name
 

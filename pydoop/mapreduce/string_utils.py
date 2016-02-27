@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -28,13 +28,13 @@ QUOTE_MAP = {
     '\t': '\\t',
     '\n': '\\n',
     ' ': '\\s',
-    }
+}
 UNQUOTE_MAP = {
     't': '\t',
     'n': '\n',
     's': ' ',
     'X': '\\',
-    }
+}
 
 
 def quote_string(in_string, deliminators='\\'):
@@ -49,7 +49,7 @@ def unquote_head(p):
 
 
 def unquote_string(in_string):
-    #FIXME HACK HACK
+    # FIXME HACK HACK
     s = in_string.replace('\\\\', '\\X')
     parts = s.split('\\')
     return ''.join([parts[0]] + [unquote_head(p) for p in parts[1:]])

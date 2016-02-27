@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -529,7 +529,7 @@ class hdfs(object):
         who = m.group(1)
         what_op = m.group(2)
         which_perm = m.group(3)
-        #--
+        # --
         old_mode = self.fs.get_path_info(path)['permissions']
         # The mode to be applied by the operation, repeated three
         # times in a list, for user, group, and other respectively.

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -23,6 +23,7 @@ Pydoop command line tool.
 import os
 import argparse
 import importlib
+import sys
 
 
 from pydoop.version import version
@@ -78,4 +79,7 @@ def main(argv=None):
             args.combine_fn = args.combiner_fn  # backwards compatibility
     except AttributeError:  # not the script app
         pass
-    args.func(args, unknown)
+    try:
+        args.func(args, unknown)
+    except RuntimeError as e:
+        sys.exit("ERROR - {}:  {}".format(type(e).__name__, e))

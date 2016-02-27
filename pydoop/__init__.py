@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -85,11 +85,17 @@ def hadoop_version_info(hadoop_home=None):
     return _PATH_FINDER.hadoop_version_info(hadoop_home)
 
 
+def has_mrv2(hadoop_home=None):
+    return _PATH_FINDER.hadoop_version_info(hadoop_home).has_mrv2()
+
+
 def is_apache(hadoop_home=None):
     return _PATH_FINDER.is_apache(hadoop_home)
 
+
 def is_cloudera(hadoop_home=None):
     return _PATH_FINDER.is_cloudera(hadoop_home)
+
 
 def is_hortonworks(hadoop_home=None):
     return _PATH_FINDER.is_hortonworks(hadoop_home)
@@ -177,6 +183,12 @@ def read_properties(fname):
             raise
         return None  # compile time, prop file is not there
     return dict(parser.items(AddSectionWrapper.SEC_NAME))
+
+
+class LocalModeNotSupported(RuntimeError):
+    def __init__(self):
+        msg = 'ERROR: Hadoop is configured to run in local mode'
+        super(LocalModeNotSupported, self).__init__(msg)
 
 
 PROPERTIES = read_properties(PROP_FN)

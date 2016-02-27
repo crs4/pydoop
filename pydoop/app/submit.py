@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -63,6 +63,10 @@ class PydoopSubmitter(object):
     DESCRIPTION = "Simplified pydoop jobs submission"
 
     def __init__(self):
+        hadoop_version_info = pydoop.hadoop_version_info()
+        if hadoop_version_info.is_local():
+            raise pydoop.LocalModeNotSupported()
+
         self.logger = logging.getLogger("PydoopSubmitter")
         self.properties = {
             CACHE_FILES: '',
@@ -80,6 +84,12 @@ class PydoopSubmitter(object):
         self.pipes_code = None
         self.files_to_upload = []
         self.unknown_args = None
+        self._use_mrv2 = None
+
+    @staticmethod
+    def __cache_archive_link(archive_name):
+        # XXX: should we really be dropping the extension from the link name?
+        return os.path.splitext(os.path.basename(archive_name))[0]
 
     def __set_files_to_cache_helper(self, prop, upload_and_cache, cache):
         cfiles = self.properties[prop] if self.properties[prop] else []
@@ -88,7 +98,7 @@ class PydoopSubmitter(object):
             upf_to_cache = [
                 ('file://' + os.path.realpath(e),
                  hdfs.path.join(self.remote_wd, bn),
-                 bn if prop == CACHE_FILES else os.path.splitext(bn)[0])
+                 bn if prop == CACHE_FILES else self.__cache_archive_link(e))
                 for (e, bn) in ((e, os.path.basename(e))
                                 for e in upload_and_cache)
             ]
@@ -100,8 +110,6 @@ class PydoopSubmitter(object):
     def __set_files_to_cache(self, args):
         if args.upload_file_to_cache is None:
             args.upload_file_to_cache = []
-        if args.python_zip:
-            args.upload_file_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_FILES,
                                          args.upload_file_to_cache,
                                          args.cache_file)
@@ -109,6 +117,8 @@ class PydoopSubmitter(object):
     def __set_archives_to_cache(self, args):
         if args.upload_archive_to_cache is None:
             args.upload_archive_to_cache = []
+        if args.python_zip:
+            args.upload_archive_to_cache += args.python_zip
         self.__set_files_to_cache_helper(CACHE_ARCHIVES,
                                          args.upload_archive_to_cache,
                                          args.cache_archive)
@@ -121,9 +131,10 @@ class PydoopSubmitter(object):
                 name, value = item.split('=', 1)
                 retval[name.strip()] = value.strip()
             except ValueError:
-                raise RuntimeError("Bad syntax in env variable argument '%s'" % item)
+                raise RuntimeError(
+                    "Bad syntax in env variable argument '%s'" % item
+                )
         return retval
-
 
     def set_args(self, args, unknown_args=None):
         """
@@ -155,6 +166,7 @@ class PydoopSubmitter(object):
         self.requested_env = self._env_arg_to_dict(args.set_env or [])
         self.args = args
         self.unknown_args = unknown_args
+        self._use_mrv2 = pydoop.has_mrv2() and not self.args.mrv1
 
     def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
         """
@@ -182,7 +194,7 @@ class PydoopSubmitter(object):
         fs = hdfs.hdfs(host, port)
         for i in xrange(0, len(path_pieces)):
             part = os.path.join(
-                host_port, os.path.sep.join(path_pieces[0:i+1])
+                host_port, os.path.sep.join(path_pieces[0: i + 1])
             )
             permissions = fs.get_path_info(part)['permissions']
             if permissions & 0111 != 0111:
@@ -215,7 +227,9 @@ class PydoopSubmitter(object):
 
         executable = self.args.python_program
         if self.args.python_zip:
-            env['PYTHONPATH'] = ':'.join(self.args.python_zip + [env['PYTHONPATH']])
+            env['PYTHONPATH'] = ':'.join([
+                self.__cache_archive_link(ar) for ar in self.args.python_zip
+            ] + [env['PYTHONPATH']])
         # Note that we have to explicitely put the working directory
         # in the python path otherwise it will miss cached modules and
         # packages.
@@ -227,8 +241,11 @@ class PydoopSubmitter(object):
             lines.append("printenv 1>&2")
             lines.append("echo PWD=${PWD} 1>&2")
             lines.append("echo ls -l; ls -l  1>&2")
-        if (USER_HOME not in self.properties and "HOME" in os.environ
-           and not self.args.no_override_home):
+        if (
+            USER_HOME not in self.properties and
+            "HOME" in os.environ and
+            not self.args.no_override_home
+        ):
             lines.append('export HOME="%s"' % os.environ['HOME'])
         # set environment variables
         for var, value in env.iteritems():
@@ -240,7 +257,8 @@ class PydoopSubmitter(object):
             lines.append("echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH} 1>&2")
             lines.append("echo PYTHONPATH=${PYTHONPATH} 1>&2")
             lines.append("echo HOME=${HOME} 1>&2")
-            lines.append('echo "executable is $(type -P %s)" 1>&2' % executable)
+            lines.append('echo "executable is $(type -P %s)" 1>&2' %
+                         executable)
         cmd = 'exec "%s" -u "$0" "$@"' % executable
         if self.args.log_level == 'DEBUG':
             lines.append("echo cmd to execute: %s" % cmd)
@@ -256,13 +274,17 @@ class PydoopSubmitter(object):
 
     def __validate(self):
         if not hdfs.path.exists(self.args.input):
-            raise RuntimeError("%r does not exist" % (self.args.input,))
+            raise RuntimeError(
+                "Input path %r does not exist" % (self.args.input,)
+            )
         if hdfs.path.exists(self.args.output):
-            raise RuntimeError("%r already exists" % (self.args.output,))
+            raise RuntimeError(
+                "Output path %r already exists" % (self.args.output,)
+            )
         if self.args.avro_input or self.args.avro_output:
-            if not self.args.mrv2:
+            if not self._use_mrv2:
                 raise RuntimeError(
-                    "Avro mode is currently supported only for mrv2"
+                    "Avro mode is currently supported only for MRv2"
                 )
 
     def __clean_wd(self):
@@ -322,14 +344,19 @@ class PydoopSubmitter(object):
         if self.args.libjars:
             libjars.extend(self.args.libjars)
         pydoop_jar = pydoop.jar_path()
-        if self.args.mrv2 and pydoop_jar is None:
+        if self._use_mrv2 and pydoop_jar is None:
             raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")
         if self.args.local_fs and pydoop_jar is None:
             raise RuntimeError(
                 "Can't find pydoop.jar, cannot use local fs patch"
             )
         job_args = []
-        if self.args.mrv2:
+        self.logger.debug(
+            "Selecting Submitter. "
+            "self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2(): %r",
+            self._use_mrv2, self.args.mrv1, pydoop.has_mrv2()
+        )
+        if self._use_mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
             classpath.append(pydoop_jar)
             libjars.append(pydoop_jar)
@@ -343,6 +370,7 @@ class PydoopSubmitter(object):
             libjars.append(pydoop_jar)
         else:
             submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
+        self.logger.debug("Submitter class: %s", submitter_class)
         if self.args.hadoop_conf:
             job_args.extend(['-conf', self.args.hadoop_conf.name])
         if self.args.input_format:
@@ -360,7 +388,7 @@ class PydoopSubmitter(object):
             job_args.extend(['-avroOutput', self.args.avro_output])
         if not self.args.disable_property_name_conversion:
             ctable = (conv_tables.mrv1_to_mrv2
-                      if self.args.mrv2 else conv_tables.mrv2_to_mrv1)
+                      if self._use_mrv2 else conv_tables.mrv2_to_mrv1)
             props = [
                 (ctable.get(k, k), v) for (k, v) in self.properties.iteritems()
             ]
@@ -408,8 +436,8 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--no-override-env', action='store_true',
-        help=("Use the default python executable and environment instead of "
-              "overriding HOME, LD_LIBRARY_PATH and PYTHONPATH")
+        help=("Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead "
+              "of copying them from the submitting client node")
     )
     parser.add_argument(
         '--no-override-ld-path', action='store_true',
@@ -428,8 +456,8 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--set-env', metavar="VAR=VALUE", type=str, action="append",
-        help=("Set environment variables for the tasks. Setting a variable "
-              "to '' causes it not be set by Pydoop.")
+        help=("Set environment variables for the tasks. If a variable "
+              "is set to '', it will not be overridden by Pydoop.")
     )
     parser.add_argument(
         '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
@@ -446,7 +474,7 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '--upload-archive-to-cache', metavar='FILE',
-        type=a_file_that_can_be_read,  action="append",
+        type=a_file_that_can_be_read, action="append",
         help="Upload and add this archive file to the distributed cache."
     )
     parser.add_argument(
@@ -488,9 +516,9 @@ def add_parser_arguments(parser):
         help="Do not adapt property names to the hadoop version used."
     )
     parser.add_argument(
-        '--mrv2', action='store_true',
-        help=("Use mapreduce v2 Hadoop Pipes framework. InputFormat and "
-              "OutputFormat classes should be mrv2 compliant")
+        '--mrv1', action='store_true',
+        help=("Force Pydoop to use MRv1, even if MRv2 is available. The "
+              "InputFormat and OutputFormat classes must be MRv1-compliant")
     )
     parser.add_argument(
         '--local-fs', action='store_true',

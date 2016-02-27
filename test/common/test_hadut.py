@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2015 CRS4.
+# Copyright 2009-2016 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -28,7 +28,7 @@ import pydoop.hadut as hadut
 
 
 def pair_set(seq):
-    return set((seq[i], seq[i+1]) for i in xrange(0, len(seq), 2))
+    return set((seq[i], seq[i + 1]) for i in xrange(0, len(seq), 2))
 
 
 class TestHadut(unittest.TestCase):
