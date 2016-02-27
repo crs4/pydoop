@@ -2,7 +2,6 @@
 *~
 DEFAULT_HADOOP_HOME
 build
-docs/_build/
 docs/_static/favicon.ico
 docs/_static/logo.png
 pydoop/config.py
