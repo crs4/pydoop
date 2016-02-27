@@ -1,0 +1,232 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Contents &mdash; Pydoop 1.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.1.0 documentation" href="#" />
+    <link rel="next" title="News" href="news/index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="news/index.html" title="News"
+             accesskey="N">next</a> |</li>
+	<li><a href="#">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="#">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="#">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Contents</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and Tables</a></li>
+</ul>
+
+            <h4>Next topic</h4>
+            <p class="topless"><a href="news/index.html"
+                                  title="next chapter">News</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <p><strong>Pydoop</strong> is a Python interface to <a class="reference external" href="http://hadoop.apache.org">Hadoop</a> that allows you to write MapReduce
+applications in pure Python:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pydoop.mapreduce.api</span> <span class="kn">as</span> <span class="nn">api</span>
+
+<span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Reducer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Reducer</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Pydoop offers several features not commonly found in other Python
+libraries for Hadoop:</p>
+<ul class="simple">
+<li>a rich <a class="reference internal" href="tutorial/hdfs_api.html#hdfs-api-tutorial"><em>HDFS API</em></a>;</li>
+<li>a <a class="reference internal" href="tutorial/mapred_api.html#api-tutorial"><em>MapReduce API</em></a> that allows to write pure
+Python record readers / writers, partitioners and combiners;</li>
+<li>transparent <a class="reference internal" href="examples/avro.html#avro-io"><em>Avro (de)serialization</em></a>;</li>
+<li>easy <a class="reference internal" href="self_contained.html#self-contained"><em>installation-free</em></a> usage;</li>
+</ul>
+<p>Pydoop enables MapReduce programming via a pure (except for a
+performance-critical serialization section) Python client for Hadoop
+Pipes, and HDFS access through an extension module based on <a class="reference external" href="https://hadoop.apache.org/docs/r2.6.0/hadoop-project-dist/hadoop-hdfs/LibHdfs.html">libhdfs</a>.</p>
+<p>To get started, read the <a class="reference internal" href="tutorial/index.html#tutorial"><em>tutorial</em></a>.  Full docs,
+including <a class="reference internal" href="installation.html#installation"><em>installation instructions</em></a>, are listed
+below.</p>
+<div class="section" id="contents">
+<h1>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="news/index.html">News</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="news/latest.html">New in 1.1.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="news/archive.html">News Archive</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial/index.html">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/pydoop_script.html">Easy Hadoop Scripting with Pydoop Script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/hdfs_api.html">The HDFS API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorial/mapred_api.html">Writing Full-Featured Applications</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#supported-platforms">Supported Platforms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#get-pydoop">Get Pydoop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#id4">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#testing-your-installation">Testing your Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pydoop_script.html">Pydoop Script User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pydoop_script.html#command-line-tool">Command Line Tool</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pydoop_script.html#writing-your-map-and-reduce-functions">Writing your Map and Reduce Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="running_pydoop_applications.html">Pydoop Submit User Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="running_pydoop_applications.html#setting-the-environment-for-your-program">Setting the Environment for your Program</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api_docs/index.html">API Docs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api_docs/mr_api.html"><tt class="docutils literal"><span class="pre">pydoop.mapreduce.api</span></tt> &#8212; MapReduce API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_docs/hdfs_api.html"><tt class="docutils literal"><span class="pre">pydoop.hdfs</span></tt> &#8212; HDFS API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_docs/simulator.html"><tt class="docutils literal"><span class="pre">pydoop.mapreduce.simulator</span></tt> &#8212; Hadoop Simulator API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api_docs/hadut.html"><tt class="docutils literal"><span class="pre">pydoop.hadut</span></tt> &#8212; Hadoop shell interaction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/intro.html">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/sequence_file.html">Using the Hadoop SequenceFile Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/input_format.html">Writing a Custom InputFormat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/avro.html">Avro I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="self_contained.html">Installation-free Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="self_contained.html#example-application-count-vowels">Example Application: Count Vowels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="self_contained.html#how-it-works">How it Works</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ideas_list.html">Ideas List</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ideas_list.html#customizing-inputsplits-in-python">Customizing InputSplits in Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ideas_list.html#python-3-porting">Python 3 porting</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="how_to_cite.html">How to Cite</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and Tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="news/index.html" title="News"
+             >next</a> |</li>
+	<li><a href="#">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2015, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
