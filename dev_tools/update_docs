@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -eu
+
+die() {
+    echo "$1" 1>&2
+    exit 1
+}
+
+DOCS_PREFIX="docs/_build/html"
+REPO="https://github.com/crs4/pydoop.git"
+
+[ -f "setup.py" ] || die "ERROR: run from the main repo dir"
+
+git subtree pull --prefix="${DOCS_PREFIX}" "${REPO}" gh-pages --squash
+make docs
+git add "${DOCS_PREFIX}"
+git commit -a -m "updated gh-pages"
+git subtree push --prefix="${DOCS_PREFIX}" "${REPO}" gh-pages --squash

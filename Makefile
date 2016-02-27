@@ -58,14 +58,6 @@ docs_py: install_user_py logo favicon
 docs_view: docs
 	yelp docs/_build/html/index.html &
 
-docs_update: docs
-	mkdir -p $(TEMPDIR)
-	mv docs/_build/html/* $(TEMPDIR)/
-	git stash
-	git checkout gh-pages
-	rsync -avz --delete --exclude '.??*' $(TEMPDIR)/ ./
-	rm -rf $(TEMPDIR)
-
 dist: docs
 	./dev_tools/git_export -o $(TEMPDIR)
 	git rev-parse HEAD >$(TEMPDIR)/$(GIT_COMMIT_FN)
