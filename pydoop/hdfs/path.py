@@ -25,7 +25,7 @@ from builtins import object
 import os
 import re
 import time
-from past.builtins import int
+from builtins import int
 from . import common, fs as hdfs_fs
 
 curdir, pardir, sep = '.', '..', '/'  # pylint: disable=C0103
