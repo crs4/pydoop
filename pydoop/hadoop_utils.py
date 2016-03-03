@@ -33,6 +33,8 @@ import platform
 import subprocess as sp
 import xml.dom.minidom as dom
 from xml.parsers.expat import ExpatError
+from builtins import map
+from builtins import object
 
 try:
     from pydoop.config import DEFAULT_HADOOP_HOME
@@ -489,8 +491,9 @@ class PathFinder(object):
                         # why pop HADOOP_HOME?
                         env.pop("HADOOP_PREFIX", None)
                         env.pop("HADOOP_HOME", None)
-                        p = sp.Popen([hadoop, "version"], stdout=sp.PIPE,
-                                     stderr=sp.PIPE, env=env)
+                        p = sp.Popen([hadoop, "version"],
+                                     stdout=sp.PIPE, stderr=sp.PIPE,
+                                     env=env, universal_newlines=True)
                         out, err = p.communicate()
                         if p.returncode:
                             raise RuntimeError(err or out)

@@ -21,6 +21,11 @@ pydoop.hdfs.file -- HDFS File Objects
 -------------------------------------
 """
 
+from builtins import str
+from past.builtins import basestring
+from builtins import object
+from io import FileIO
+
 import os
 
 from pydoop.hdfs import common
@@ -144,7 +149,7 @@ class hdfs_file(object):
         self.p = eol + 1
         return line
 
-    def next(self):
+    def __next__(self):
         """
         Return the next input line, or raise :class:`StopIteration`
         when EOF is hit.
@@ -319,7 +324,7 @@ class hdfs_file(object):
         return self.f.flush()
 
 
-class local_file(file):
+class local_file(FileIO):
 
     def __init__(self, fs, name, flags):
         if not flags.startswith("r"):
@@ -354,7 +359,7 @@ class local_file(file):
 
     def write(self, data):
         _complain_ifclosed(self.closed)
-        if isinstance(data, unicode):
+        if isinstance(data, str):
             data = data.encode(common.TEXT_ENCODING)
         elif not isinstance(data, (basestring, bytearray)):
             # access non string data through a buffer

@@ -26,10 +26,13 @@ Pydoop: a Python MapReduce and HDFS API for Hadoop
 Pydoop is a Python interface to Hadoop that allows you to write
 MapReduce applications and interact with HDFS in pure Python.
 """
-
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
+ 
 import os
 import errno
-import ConfigParser
+import configparser
 from importlib import import_module
 import pydoop.hadoop_utils as hu
 
@@ -162,6 +165,12 @@ class AddSectionWrapper(object):
         self.f = f
         self.sechead = '[dummy]' + os.linesep
 
+    def __iter__(self):
+        line = self.readline()
+        while line:
+            yield line
+            line = self.readline()
+
     def readline(self):
         if self.sechead:
             try:
@@ -171,12 +180,13 @@ class AddSectionWrapper(object):
         else:
             return self.f.readline()
 
-
 def read_properties(fname):
-    parser = ConfigParser.SafeConfigParser()
+    parser = configparser.SafeConfigParser()
     parser.optionxform = str  # preserve key case
     try:
-        with open(fname) as f:
+        with open(fname, 'rt') as f:
+            # use readfp instead of read_file because of p2.7
+            # compatibility
             parser.readfp(AddSectionWrapper(f))
     except IOError as e:
         if e.errno != errno.ENOENT:
