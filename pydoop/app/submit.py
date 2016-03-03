@@ -19,6 +19,11 @@
 """
 An interface to simplify pydoop jobs submission.
 """
+from builtins import map
+from builtins import str
+from builtins import oct
+from builtins import range
+from builtins import object
 
 import os
 import sys
@@ -192,12 +197,12 @@ class PydoopSubmitter(object):
             host_port = "hdfs://%s:%s/" % (host, port)
         path_pieces = path.strip('/').split(os.path.sep)
         fs = hdfs.hdfs(host, port)
-        for i in xrange(0, len(path_pieces)):
+        for i in range(0, len(path_pieces)):
             part = os.path.join(
                 host_port, os.path.sep.join(path_pieces[0: i + 1])
             )
             permissions = fs.get_path_info(part)['permissions']
-            if permissions & 0111 != 0111:
+            if permissions & 0o111 != 0o111:
                 self.logger.warning(
                     ("remote module %s may not be readable by the task "
                      "tracker when initializing the distributed cache.  "
@@ -222,7 +227,7 @@ class PydoopSubmitter(object):
             env['PYTHONPATH'] = "${PYTHONPATH}"
 
         # set user-requested env variables
-        for var, value in self.requested_env.iteritems():
+        for var, value in self.requested_env.items():
             env[var] = value
 
         executable = self.args.python_program
@@ -248,7 +253,7 @@ class PydoopSubmitter(object):
         ):
             lines.append('export HOME="%s"' % os.environ['HOME'])
         # set environment variables
-        for var, value in env.iteritems():
+        for var, value in env.items():
             if value:
                 self.logger.debug("Setting env variable %s=%s", var, value)
                 lines.append('export %s="%s"' % (var, value))
@@ -390,7 +395,7 @@ class PydoopSubmitter(object):
             ctable = (conv_tables.mrv1_to_mrv2
                       if self._use_mrv2 else conv_tables.mrv2_to_mrv1)
             props = [
-                (ctable.get(k, k), v) for (k, v) in self.properties.iteritems()
+                (ctable.get(k, k), v) for (k, v) in self.properties.items()
             ]
             self.properties = dict(props)
             self.logger.debug("properties after projection: %r",
@@ -408,8 +413,8 @@ class PydoopSubmitter(object):
 
     def fake_run_class(self, *args, **kwargs):
         kwargs['logger'].info("Fake run class")
-        repr_list = map(repr, args)
-        repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
+        repr_list = list(map(repr, args))
+        repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.items())
         sys.stdout.write("hadut.run_class(%s)\n" % ', '.join(repr_list))
 
 

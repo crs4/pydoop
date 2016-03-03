@@ -27,6 +27,7 @@ a map-reduce program using functions contained in a user provided
 python module.
 
 """
+from builtins import object
 
 import os
 import warnings
