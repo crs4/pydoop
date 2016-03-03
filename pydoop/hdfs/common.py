@@ -38,7 +38,7 @@ TEXT_ENCODING = 'utf-8'
 
 
 def encode_path(path):
-    if isinstance(path, unicode):
+    if isinstance(path, str):
         path = path.encode('utf-8')
     return path
 
@@ -50,7 +50,7 @@ def decode_path(path):
 
 
 def encode_host(host):
-    if isinstance(host, unicode):
+    if isinstance(host, str):
         host = host.encode('idna')
     return host
 

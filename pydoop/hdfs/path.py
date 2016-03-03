@@ -20,11 +20,12 @@
 pydoop.hdfs.path -- Path Name Manipulations
 -------------------------------------------
 """
+from builtins import object
 
 import os
 import re
 import time
-from past.builtins import long
+from past.builtins import int
 from . import common, fs as hdfs_fs
 
 curdir, pardir, sep = '.', '..', '/'  # pylint: disable=C0103
@@ -47,7 +48,7 @@ class StatResult(object):
     def __init__(self, path_info):
         self.st_mode = path_info['permissions']
         self.st_ino = 0
-        self.st_dev = long(0)
+        self.st_dev = int(0)
         self.st_nlink = 1
         self.st_uid = path_info['owner']
         self.st_gid = path_info['group']

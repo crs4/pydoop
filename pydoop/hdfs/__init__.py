@@ -47,6 +47,7 @@ appropriate for most applications.  If your needs are different, you
 can set the environment variable externally and it will override the
 above setting.
 """
+from builtins import next
 
 __all__ = [
     'path',
