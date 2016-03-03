@@ -21,6 +21,11 @@ import ctypes
 import logging
 logging.basicConfig(level=logging.INFO)
 
+from builtins import chr
+from builtins import str
+from builtins import range
+from builtins import object
+
 from pydoop.hdfs.core.api import CoreHdfsFs as CoreFsApi
 from pydoop.hdfs.core.api import CoreHdfsFile as CoreFileApi
 
@@ -38,7 +43,7 @@ def _unsigned_bytes(jbuf, off=0, length=None):
     stop = off + length
     if stop > len(jbuf):
         raise IndexError('buffer index out of range')
-    return ''.join(chr(jbuf[_] & 0xff) for _ in xrange(off, stop))
+    return ''.join(chr(jbuf[_] & 0xff) for _ in range(off, stop))
 
 
 class JavaClassName(object):
@@ -335,7 +340,7 @@ class CoreHdfsFile(CoreFileApi):
             raise IOError
         try:
             self._stream.close()
-        except Exception, e:
+        except Exception as e:
             raise IOError(e.message)
 
     def write_chunk(self, chunk):
@@ -355,7 +360,7 @@ class CoreHdfsFile(CoreFileApi):
             elif isinstance(data, ctypes.Array):
                 to_write = data[:]
             else:
-                if isinstance(data, unicode):
+                if isinstance(data, str):
                     data = data.encode(TEXT_ENCODING)
                 to_write = self._jbytearray(data)
             self._stream.write(to_write)
@@ -365,12 +370,12 @@ class CoreHdfsFile(CoreFileApi):
     def tell(self):
         if not self._stream:
             raise IOError
-        return long(self._stream.getPos())
+        return int(self._stream.getPos())
 
     def seek(self, position):
         if not self._stream or self._stream_type != self.INPUT:
             raise IOError
-        self._stream.seek(long(position))
+        self._stream.seek(int(position))
 
     def read(self, length=-1):
         if not self._stream or self._stream_type != self.INPUT:
@@ -406,7 +411,7 @@ class CoreHdfsFile(CoreFileApi):
         jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
         bb = jbyte_buffer_class.allocate(length)
         buf = bb.array()
-        read = self._stream.read(long(position), buf, 0, length)
+        read = self._stream.read(int(position), buf, 0, length)
         return _unsigned_bytes(buf, length=read)
 
     def pread_chunk(self, position, chunk):
@@ -416,7 +421,7 @@ class CoreHdfsFile(CoreFileApi):
         jbyte_buffer_class = wrap_class(JavaClassName.ByteBuffer)
         bb = jbyte_buffer_class.allocate(length)
         buf = bb.array()
-        read = self._stream.read(long(position), buf, 0, length)
+        read = self._stream.read(int(position), buf, 0, length)
         chunk[:read] = _unsigned_bytes(buf, length=read)
         return read
 
