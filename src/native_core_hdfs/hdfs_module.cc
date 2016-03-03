@@ -211,7 +211,11 @@ static struct PyModuleDef module_def = {
 
 
 PyMODINIT_FUNC
+#if IS_PY3K
+PyInit_native_core_hdfs(void)
+#else
 initnative_core_hdfs(void)
+#endif
 {
   PyObject* m;
 
