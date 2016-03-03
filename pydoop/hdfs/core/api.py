@@ -19,18 +19,18 @@
 """
 Abstract low-level HDFS interface.
 """
+from builtins import object
 
 from abc import ABCMeta, abstractmethod
 
 from pydoop.hdfs.common import BUFSIZE
+from future.utils import with_metaclass
 
 
-class CoreHdfsFs(object):
+class CoreHdfsFs(with_metaclass(ABCMeta, object)):
     """
     Abstract filesystem interface.
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def close(self):
@@ -134,12 +134,10 @@ class CoreHdfsFs(object):
         pass
 
 
-class CoreHdfsFile(object):
+class CoreHdfsFile(with_metaclass(ABCMeta, object)):
     """
     Abstract file object interface.
     """
-
-    __metaclass__ = ABCMeta
 
     @property
     def mode(self):
