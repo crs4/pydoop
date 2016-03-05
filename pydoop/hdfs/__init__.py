@@ -157,7 +157,7 @@ def load(hdfs_path, **kwargs):
             else:
                 break
     fi.fs.close()
-    return "".join(data)
+    return b"".join(data)
 
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):

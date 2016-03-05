@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2016 CRS4.
@@ -16,6 +15,8 @@ from __future__ import absolute_import
 # under the License.
 #
 # END_COPYRIGHT
+
+from __future__ import absolute_import
 
 import unittest
 import getpass

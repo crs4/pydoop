@@ -59,7 +59,7 @@ class hdfs_file(object):
     open an HDFS file, use :meth:`~.fs.hdfs.open_file`, or the
     top-level ``open`` function in the hdfs package.
     """
-    ENDL = os.linesep
+    ENDL = os.linesep.encode()
 
     def __init__(self, raw_hdfs_file, fs, name, flags,
                  chunk_size=common.BUFSIZE):
@@ -76,7 +76,7 @@ class hdfs_file(object):
 
     def __reset(self):
         self.buffer_list = []
-        self.chunk = ""
+        self.chunk = b""
         self.EOF = False
         self.p = 0
 
@@ -135,21 +135,32 @@ class hdfs_file(object):
             eol = self.chunk.find(self.ENDL, self.p)
         return eol if eol > -1 else len(self.chunk)
 
-    def readline(self):
+    def readline(self, encoding='utf-8', errors='strict'):
         """
         Read and return a line of text.
+
+        :type encoding: str
+        :param encoding: the encoding with which to decode the bytes.
+
+        :type errors: str
+
+        :param errors: The error handling scheme to use for the handling of
+        decoding errors. The default is 'strict' meaning that decoding errors
+        raise a UnicodeDecodeError. Other possible values are 'ignore' and
+        'replace' as well as any other name registered  with codecs.register_error
+        that can handle UnicodeDecodeErrors.
 
         :rtype: str
 
         :return: the next line of text in the file, including the
-          newline character
+        newline character
         """
         _complain_ifclosed(self.closed)
         eol = self.__read_chunks_until_nl()
-        line = "".join(self.buffer_list) + self.chunk[self.p: eol + 1]
+        line = b"".join(self.buffer_list) + self.chunk[self.p: eol + 1]
         self.buffer_list = []
         self.p = eol + 1
-        return line
+        return line.decode(encoding=encoding, errors=errors)
 
     def __next__(self):
         """
@@ -247,11 +258,11 @@ class hdfs_file(object):
             if length <= 0:
                 break
             c = self.f.read(min(self.chunk_size, length))
-            if c == "":
+            if c == b"":
                 break
             chunks.append(c)
             length -= len(c)
-        return "".join(chunks)
+        return b"".join(chunks)
 
     def read_chunk(self, chunk):
         r"""
