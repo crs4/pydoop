@@ -411,3 +411,25 @@ class local_file(FileIO):
 
     def write_chunk(self, chunk):
         return self.write(chunk)
+    
+    def readline(self, encoding='utf-8', errors='strict'):
+        """
+        Read and return a line of text.
+
+        :type encoding: str
+        :param encoding: the encoding with which to decode the bytes.
+
+        :type errors: str
+
+        :param errors: The error handling scheme to use for the handling of
+        decoding errors. The default is 'strict' meaning that decoding errors
+        raise a UnicodeDecodeError. Other possible values are 'ignore' and
+        'replace' as well as any other name registered  with codecs.register_error
+        that can handle UnicodeDecodeErrors.
+
+        :rtype: str
+
+        :return: the next line of text in the file, including the
+        newline character
+        """
+        return super().readline().decode(encoding=encoding, errors=errors)

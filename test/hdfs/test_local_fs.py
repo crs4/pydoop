@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # BEGIN_COPYRIGHT
 #
 # Copyright 2009-2016 CRS4.
