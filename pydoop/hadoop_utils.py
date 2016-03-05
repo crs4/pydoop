@@ -368,6 +368,12 @@ def parse_hadoop_conf_file(fn):
 
 
 def _hadoop_home_from_version_cmd():
+    def clean_jar_path(jarpath):
+        dirname = os.path.dirname(jarpath)
+        m = re.match(r'(.*)/share/hadoop/common', dirname)
+        if m:
+            return m.group(1)
+        return dirname
     def get_hh_from_version_output(output):
         """
         the ``hadoop version`` command prints out some information.  The
@@ -379,7 +385,7 @@ def _hadoop_home_from_version_cmd():
         last_line = output.splitlines()[-1]
         m = re.match(r'This command was run using (.*\.jar)', last_line)
         if m:
-            home = os.path.dirname(m.group(1))
+            home = clean_jar_path(m.group(1))
             return home
         return None
 
@@ -393,7 +399,8 @@ def _hadoop_home_from_version_cmd():
 
     if hadoop_exec:
         try:
-            output = sp.check_output([hadoop_exec, 'version'])
+            output = sp.check_output([hadoop_exec, 'version'],
+                                     universal_newlines=True)
             return get_hh_from_version_output(output)
         except sp.CalledProcessError:
             pass
