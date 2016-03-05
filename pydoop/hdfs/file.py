@@ -356,6 +356,10 @@ class local_file(FileIO):
     def size(self):
         return self.__size
 
+    @property
+    def mode(self):
+        return (super().mode).replace('b', '')
+
     def write(self, data):
         _complain_ifclosed(self.closed)
         if isinstance(data, str):
