@@ -23,6 +23,7 @@ pydoop.hdfs.file -- HDFS File Objects
 
 from builtins import str
 from builtins import super
+from builtins import bytes
 from past.builtins import basestring
 from builtins import object
 from io import FileIO
@@ -359,10 +360,10 @@ class local_file(FileIO):
         _complain_ifclosed(self.closed)
         if isinstance(data, str):
             data = data.encode(common.TEXT_ENCODING)
-        elif not isinstance(data, (basestring, bytearray)):
+        elif not isinstance(data, (basestring, bytearray, bytes)):
             # access non string data through a buffer
-            data = str(buffer(data))
-        super(local_file, self).write(data)
+            data = bytearray(data)
+        super().write(data)
         return len(data)
 
     def available(self):
@@ -374,11 +375,11 @@ class local_file(FileIO):
             self.flush()
             os.fsync(self.fileno())
             self.__size = os.fstat(self.fileno()).st_size
-        super(local_file, self).close()
+        super().close()
 
     def seek(self, position, whence=os.SEEK_SET):
         position = _seek_with_boundary_checks(self, position, whence)
-        return super(local_file, self).seek(position)
+        return super().seek(position)
 
     def pread(self, position, length):
         _complain_ifclosed(self.closed)
