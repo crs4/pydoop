@@ -19,11 +19,15 @@
 """
 Common hdfs utilities.
 """
+from builtins import str
 
 import getpass
 import pwd
 import grp
+import sys
 
+__is_py3 = sys.version_info >= (3, 0)
+    
 
 BUFSIZE = 16384
 DEFAULT_PORT = 8020  # org/apache/hadoop/hdfs/server/namenode/NameNode.java
@@ -38,24 +42,32 @@ TEXT_ENCODING = 'utf-8'
 
 
 def encode_path(path):
+    if __is_py3:
+        return path
     if isinstance(path, str):
         path = path.encode('utf-8')
     return path
 
 
 def decode_path(path):
+    if __is_py3:
+        return path
     if isinstance(path, str):
         path = path.decode('utf-8')
     return path
 
 
 def encode_host(host):
+    if __is_py3:
+        return host
     if isinstance(host, str):
         host = host.encode('idna')
     return host
 
 
 def decode_host(host):
+    if __is_py3:
+        return host
     if isinstance(host, str):
         host = host.decode('idna')
     return host
