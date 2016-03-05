@@ -22,6 +22,7 @@ pydoop.hdfs.file -- HDFS File Objects
 """
 
 from builtins import str
+from builtins import super
 from past.builtins import basestring
 from builtins import object
 from io import FileIO
@@ -325,14 +326,15 @@ class hdfs_file(object):
 
 
 class local_file(FileIO):
-
+    "Support class to handle local_file(s)"
     def __init__(self, fs, name, flags):
         if not flags.startswith("r"):
             local_file.__make_parents(fs, name)
-        super(local_file, self).__init__(name, flags)
+        name = os.path.abspath(name)
+        super().__init__(name, flags)
         self.__fs = fs
-        self.__name = os.path.abspath(super(local_file, self).name)
-        self.__size = os.fstat(super(local_file, self).fileno()).st_size
+        self.__name = name
+        self.__size = os.fstat(super().fileno()).st_size
         self.f = self
         self.chunk_size = 0
 
@@ -348,10 +350,6 @@ class local_file(FileIO):
     @property
     def fs(self):
         return self.__fs
-
-    @property
-    def name(self):
-        return self.__name
 
     @property
     def size(self):
