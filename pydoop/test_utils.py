@@ -19,6 +19,9 @@
 """
 Utilities for unit tests.
 """
+from builtins import chr
+from builtins import range
+from builtins import object
 
 import sys
 import os
@@ -130,9 +133,9 @@ def make_wd(fs, prefix="pydoop_test_"):
 def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
     randint = random.randint
     if printable:
-        return "".join([chr(randint(32, 126)) for _ in xrange(size)])
+        return bytes(randint(32, 126) for _ in range(size))
     else:
-        return "".join([chr(randint(0, 255)) for _ in xrange(size)])
+        return bytes(randint(0, 255) for _ in range(size))        
 
 
 def get_bytes_per_checksum():

@@ -44,7 +44,7 @@ class RecordReader(new_RR):
     Breaks the data into key/value pairs for input to the :class:`Mapper`.
     """
     # we have to override next to document the different return value
-    def next(self):
+    def __next__(self):
         """
         Called by the framework to provide a key/value pair to the
         :class:`Mapper`.  Applications must override this.

@@ -107,7 +107,7 @@ class LocalWordCount(object):
             self._wordcount_file(wc, self.input_path)
 
         if self.min_occurrence:
-            wc = dict(t for t in wc.items() if t[1] >= self.min_occurrence)
+            wc = dict(t for t in list(wc.items()) if t[1] >= self.min_occurrence)
         return wc
 
     def _wordcount_file(self, wc, fn, path=None):
