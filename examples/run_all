@@ -9,7 +9,7 @@ examples=(
 #    self_contained
     sequence_file
     wordcount
-    simulator
+#    simulator
 )
 
 some_failed=0
