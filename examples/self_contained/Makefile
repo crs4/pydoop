@@ -21,9 +21,10 @@ pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 WHEEL_DIR=../../dist
 SUBMIT_CMD=pydoop submit
 SETUPTOOLS_VERSION := 3.3
-PYTHON=python2.7
-PIP=pip2.7
-ARCHIVES=pydoop.tgz future.tgz
+PYTHON=python
+PIP=pip
+PACKAGES=pydoop
+ARCHIVES=$(foreach pkg,${PACKAGES},${pkg}.tgz)
 ARCHIVES_UPLOAD_FLAG=$(foreach tgz,${ARCHIVES},--upload-archive-to-cache ${tgz})
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
@@ -80,8 +81,7 @@ ${ARCHIVES}:
 	cd ../..; ${PYTHON} setup.py bdist_wheel --dist-dir=./dist; cd -
 	${PIP} wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
 	${PIP} install --use-wheel --pre --find-links=${WHEEL_DIR} -t ./pkgs  pydoop
-	rm -rf ./pkgs/*dist-info
-	cd pkgs; for x in *; do cd ${x}; tar cfz ../../${x}.tgz . ; cd ..; done; cd ..
+	cd pkgs; for x in ${PACKAGES}; do cd ${x}; tar cfz ../../${x}.tgz . ; cd ..; done; cd ..
 	rm -rf pkgs
 
 clean:

@@ -6,7 +6,7 @@ examples=(
     input_format
     pydoop_script
     pydoop_submit
-    self_contained
+#    self_contained
     sequence_file
     wordcount
     simulator
