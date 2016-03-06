@@ -80,7 +80,7 @@ ${ARCHIVES}:
 	cd ../..; ${PYTHON} setup.py bdist_wheel --dist-dir=./dist; cd -
 	${PIP} wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
 	${PIP} install --use-wheel --pre --find-links=${WHEEL_DIR} -t ./pkgs  pydoop
-	rm ./pkgs/*dist-info
+	rm -rf ./pkgs/*dist-info
 	cd pkgs; for x in *; do cd ${x}; tar cfz ../../${x}.tgz . ; cd ..; done; cd ..
 	rm -rf pkgs
 
