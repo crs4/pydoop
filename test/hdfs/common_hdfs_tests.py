@@ -527,9 +527,11 @@ class TestCommon(unittest.TestCase):
             l.sort(key=operator.itemgetter("name"))
         self.assertEqual(infos, expected_infos)
         nonexistent_walk = self.fs.walk(self._make_random_path())
-        self.assertRaises(IOError, nonexistent_walk.__next__)
+        with self.assertRaises(IOError):
+            next(nonexistent_walk)
         for top in '', None:
-            self.assertRaises(ValueError, self.fs.walk(top).__next__)
+            with self.assertRaises(ValueError):            
+                next(self.fs.walk(top))
 
     def exists(self):
         self.assertFalse(self.fs.exists('some_file'))
