@@ -47,6 +47,7 @@ appropriate for most applications.  If your needs are different, you
 can set the environment variable externally and it will override the
 above setting.
 """
+from builtins import next
 
 __all__ = [
     'path',
@@ -156,7 +157,7 @@ def load(hdfs_path, **kwargs):
             else:
                 break
     fi.fs.close()
-    return "".join(data)
+    return b"".join(data)
 
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
@@ -293,7 +294,7 @@ def lsl(hdfs_path, user=None, recursive=False):
         dir_list = fs.list_directory(path_)
     else:
         treewalk = fs.walk(path_)
-        top = treewalk.next()
+        top = next(treewalk)
         if top['kind'] == 'directory':
             dir_list = list(treewalk)
         else:

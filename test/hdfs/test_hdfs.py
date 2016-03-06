@@ -16,11 +16,17 @@
 #
 # END_COPYRIGHT
 
+from __future__ import division
+from builtins import zip
+from builtins import range
+from builtins import object
+from past.utils import old_div
+
 import unittest
 import tempfile
 import os
 import stat
-from itertools import izip
+
 from threading import Thread
 
 import pydoop.hdfs as hdfs
@@ -38,11 +44,11 @@ class TestHDFS(unittest.TestCase):
         fs.create_directory(wd_bn)
         self.hdfs_wd = fs.get_path_info(wd_bn)["name"]
         fs.close()
-        basenames = ["test_path_%d" % i for i in xrange(2)]
+        basenames = ["test_path_%d" % i for i in range(2)]
         self.local_paths = ["%s/%s" % (self.local_wd, bn) for bn in basenames]
         self.hdfs_paths = ["%s/%s" % (self.hdfs_wd, bn) for bn in basenames]
         self.data = make_random_data(
-            4 * BUFSIZE + BUFSIZE / 2, printable=False
+            4 * BUFSIZE + old_div(BUFSIZE, 2), printable=False
         )
         for path in self.local_paths:
             self.assertTrue(path.startswith("file:"))
@@ -76,7 +82,7 @@ class TestHDFS(unittest.TestCase):
             self.assertEqual(rdata, self.data)
 
     def __ls(self, ls_func, path_transform):
-        for wd, paths in izip(
+        for wd, paths in zip(
             (self.local_wd, self.hdfs_wd), (self.local_paths, self.hdfs_paths)
         ):
             for p in paths:
@@ -182,7 +188,7 @@ class TestHDFS(unittest.TestCase):
     def put(self):
         src = hdfs.path.split(self.local_paths[0])[-1]
         dest = self.hdfs_paths[0]
-        with open(src, "w") as f:
+        with open(src, "wb") as f:
             f.write(self.data)
         hdfs.put(src, dest)
         with hdfs.open(dest) as fi:
@@ -194,7 +200,7 @@ class TestHDFS(unittest.TestCase):
         dest = hdfs.path.split(self.local_paths[0])[-1]
         hdfs.dump(self.data, src)
         hdfs.get(src, dest)
-        with open(dest) as fi:
+        with open(dest, 'rb') as fi:
             rdata = fi.read()
         self.assertEqual(rdata, self.data)
 

@@ -20,10 +20,16 @@
 pydoop.hdfs.fs -- File System Handles
 -------------------------------------
 """
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from past.builtins import basestring
+from builtins import object
+from functools import reduce
 
 import os
 import socket
-import urlparse
+import urllib.parse
 import getpass
 import re
 import operator as ops
@@ -62,7 +68,7 @@ def _get_ip(host, default=None):
 
 def _get_connection_info(host, port, user):
     fs = core_hdfs_fs(host, port, user)
-    res = urlparse.urlparse(fs.get_working_directory())
+    res = urllib.parse.urlparse(fs.get_working_directory())
     if res.scheme == "file":
         h, p, u = "", 0, getpass.getuser()
         fs.set_working_directory(os.getcwd())  # libhdfs "remembers" old cwd
@@ -211,7 +217,7 @@ class hdfs(object):
         self.__status.refcount -= 1
         if self.refcount == 0:
             self.fs.close()
-            for k, status in self._CACHE.items():  # yes, we want a copy
+            for k, status in list(self._CACHE.items()):  # yes, we want a copy
                 if status.refcount == 0:
                     del self._CACHE[k]
 

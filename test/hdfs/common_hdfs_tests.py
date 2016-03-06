@@ -22,8 +22,17 @@ import unittest
 import uuid
 import shutil
 import operator
-from itertools import izip
+
 from ctypes import create_string_buffer
+
+# Python3 compatibility
+from builtins import zip
+from builtins import str
+from builtins import next
+from builtins import map
+from builtins import range
+from builtins import open
+from builtins import bytearray
 
 import pydoop.hdfs as hdfs
 import pydoop
@@ -117,8 +126,8 @@ class TestCommon(unittest.TestCase):
         local_fs = hdfs.hdfs('', 0)
         local_wd = utils.make_wd(local_fs)
         from_path = os.path.join(local_wd, uuid.uuid4().hex)
-        content = uuid.uuid4().hex
-        with open(from_path, "w") as f:
+        content = uuid.uuid4().bytes
+        with open(from_path, "wb") as f:
             f.write(content)
         to_path = self._make_random_file()
         local_fs.copy(from_path, self.fs, to_path)
@@ -129,7 +138,7 @@ class TestCommon(unittest.TestCase):
         shutil.rmtree(local_wd)
 
     def move(self):
-        content = uuid.uuid4().hex
+        content = uuid.uuid4().bytes
         from_path = self._make_random_file(content=content)
         to_path = self._make_random_path()
         self.fs.move(from_path, self.fs, to_path)
@@ -139,7 +148,7 @@ class TestCommon(unittest.TestCase):
         self.assertRaises(ValueError, self.fs.move, "", self.fs, "")
 
     def chmod(self):
-        new_perm = 0777
+        new_perm = 0o777
         path = self._make_random_dir()
         old_perm = self.fs.get_path_info(path)["permissions"]
         assert old_perm != new_perm
@@ -156,28 +165,28 @@ class TestCommon(unittest.TestCase):
 
     def chmod_w_string(self):
         path = self._make_random_dir()
-        self.fs.chmod(path, 0500)
+        self.fs.chmod(path, 0o500)
         # each user
-        self.__set_and_check_perm(path, "u+w", 0700)
-        self.__set_and_check_perm(path, "g+w", 0720)
-        self.__set_and_check_perm(path, "o+w", 0722)
+        self.__set_and_check_perm(path, "u+w", 0o700)
+        self.__set_and_check_perm(path, "g+w", 0o720)
+        self.__set_and_check_perm(path, "o+w", 0o722)
         # each permission mode
-        self.__set_and_check_perm(path, "o+r", 0726)
-        self.__set_and_check_perm(path, "o+x", 0727)
+        self.__set_and_check_perm(path, "o+r", 0o726)
+        self.__set_and_check_perm(path, "o+x", 0o727)
         # subtract operation, and multiple permission modes
-        self.__set_and_check_perm(path, "o-rwx", 0720)
+        self.__set_and_check_perm(path, "o-rwx", 0o720)
         # multiple users
         self.__set_and_check_perm(path, "ugo-rwx", 0000)
         # 'a' user
-        self.__set_and_check_perm(path, "a+r", 0444)
+        self.__set_and_check_perm(path, "a+r", 0o444)
         # blank user -- should respect the user's umask
-        umask = os.umask(0007)
+        umask = os.umask(0o007)
         self.fs.chmod(path, "+w")
         perm = self.fs.get_path_info(path)["permissions"]
         os.umask(umask)
-        self.assertEqual(0664, perm)
+        self.assertEqual(0o664, perm)
         # assignment op
-        self.__set_and_check_perm(path, "a=rwx", 0777)
+        self.__set_and_check_perm(path, "a=rwx", 0o777)
 
     def file_attrs(self):
         path = self._make_random_path()
@@ -241,7 +250,7 @@ class TestCommon(unittest.TestCase):
                 chunk = chunk_factory(chunk_size)
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
-                self.assertEqual(_get_value(chunk), content[:bytes_read])
+                self.assertEqual(chunk[:bytes_read], content[:bytes_read])
 
     def read_chunk(self):
         for factory in bytearray, create_string_buffer:
@@ -333,7 +342,8 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             bytes_read = f.pread_chunk(offset, chunk)
             self.assertEqual(bytes_read, length)
-            self.assertEqual(chunk.value, content[offset: offset + length])
+            self.assertEqual(chunk[:bytes_read],
+                             content[offset: offset + length])
             self.assertEqual(f.tell(), 0)
 
     def copy_on_self(self):
@@ -366,12 +376,12 @@ class TestCommon(unittest.TestCase):
         new_d = self._make_random_dir()
 
         self.assertEqual(self.fs.list_directory(new_d), [])
-        paths = [self._make_random_file(where=new_d) for _ in xrange(3)]
+        paths = [self._make_random_file(where=new_d) for _ in range(3)]
         paths.sort(key=os.path.basename)
         infos = self.fs.list_directory(new_d)
         infos.sort(key=lambda p: os.path.basename(p["name"]))
         self.assertEqual(len(infos), len(paths))
-        for i, p in izip(infos, paths):
+        for i, p in zip(infos, paths):
             self.__check_path_info(i, kind="file")
             self.assertTrue(i['name'].endswith(p))
         self.assertRaises(
@@ -410,7 +420,7 @@ class TestCommon(unittest.TestCase):
         self.__check_readline(get_lines)
 
     def readline_big(self):
-        for i in xrange(10, 23):
+        for i in range(10, 23):
             x = '*' * (2**i) + "\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
@@ -425,7 +435,7 @@ class TestCommon(unittest.TestCase):
             lines = []
             while 1:
                 try:
-                    lines.append(f.next())
+                    lines.append(next(f))
                 except StopIteration:
                     break
             return lines
@@ -500,15 +510,15 @@ class TestCommon(unittest.TestCase):
             )
         top = new_d
         cache = [top]
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=top))
         parent = self._make_random_dir(where=top)
         cache.append(parent)
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=parent))
         child = self._make_random_dir(where=parent)
         cache.append(child)
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=child))
         infos = list(self.fs.walk(top))
         expected_infos = [self.fs.get_path_info(p) for p in cache]
@@ -517,9 +527,11 @@ class TestCommon(unittest.TestCase):
             l.sort(key=operator.itemgetter("name"))
         self.assertEqual(infos, expected_infos)
         nonexistent_walk = self.fs.walk(self._make_random_path())
-        self.assertRaises(IOError, nonexistent_walk.next)
+        with self.assertRaises(IOError):
+            next(nonexistent_walk)
         for top in '', None:
-            self.assertRaises(ValueError, self.fs.walk(top).next)
+            with self.assertRaises(ValueError):
+                next(self.fs.walk(top))
 
     def exists(self):
         self.assertFalse(self.fs.exists('some_file'))
@@ -535,7 +547,7 @@ class TestCommon(unittest.TestCase):
                 'permissions', 'block_size', 'last_access', 'size')
         for k in keys:
             self.assertTrue(k in info)
-        for k, exp_v in expected_values.iteritems():
+        for k, exp_v in expected_values.items():
             v = info[k]
             self.assertEqual(v, exp_v)
 

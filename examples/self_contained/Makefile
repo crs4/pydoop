@@ -21,6 +21,11 @@ pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 WHEEL_DIR=../../dist
 SUBMIT_CMD=pydoop submit
 SETUPTOOLS_VERSION := 3.3
+PYTHON=python
+PIP=pip
+PACKAGES=pydoop
+ARCHIVES=$(foreach pkg,${PACKAGES},${pkg}.tgz)
+ARCHIVES_UPLOAD_FLAG=$(foreach tgz,${ARCHIVES},--upload-archive-to-cache ${tgz})
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
@@ -39,7 +44,7 @@ OUTPUT=${PROGNAME}_output
 run: check_result
 
 check_result: submit
-	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
+	${PYTHON} check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
 
 setup_io:
 	-${HDFS} -rmr /user/${USER}/${INPUT}
@@ -51,7 +56,7 @@ setup_io:
 
 submit: vowelcount.zip pydoop.tgz setup_io
 	${SUBMIT_CMD} --python-zip vowelcount.zip \
-                --upload-archive-to-cache pydoop.tgz\
+                ${ARCHIVES_UPLOAD_FLAG}\
                 --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
                 --no-override-home --no-override-env\
                 vowelcount.mr.main --entry-point main \
@@ -59,7 +64,7 @@ submit: vowelcount.zip pydoop.tgz setup_io
 
 submit2: vowelcount.tgz pydoop.tgz setup_io
 	${SUBMIT_CMD} --upload-archive-to-cache vowelcount.tgz\
-                --upload-archive-to-cache pydoop.tgz\
+                ${ARCHIVES_UPLOAD_FLAG}\
                 --module vowelcount.mr.main --entry-point main\
                 --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
                 --no-override-home --no-override-env\
@@ -72,12 +77,14 @@ vowelcount.tgz:
 	cd vowelcount; tar cfz ../vowelcount.tgz . ; cd -
 
 # don't use $(MAKE) -C ../.. wheel, top Makefile is only present in git repo
-pydoop.tgz:
-	cd ../..; python setup.py bdist_wheel --dist-dir=./dist; cd -
-	pip wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
-	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} -t .  pydoop
-	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
-	rm -rf pydoop pydoop-*
+${ARCHIVES}:
+	cd ../..; ${PYTHON} setup.py bdist_wheel --dist-dir=./dist; cd -
+	${PIP} wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
+	${PIP} install --use-wheel --pre --find-links=${WHEEL_DIR} -t ./pkgs  pydoop
+	cd pkgs; for x in ${PACKAGES}; do cd ${x}; tar cfz ../../${x}.tgz . ; cd ..; done; cd ..
+	rm -rf pkgs
 
 clean:
-	rm -rf pydoop.tgz vowelcount.zip
+	rm -rf ${ARCHIVES} vowelcount.zip
+
+

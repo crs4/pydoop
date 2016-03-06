@@ -20,6 +20,9 @@
 The hadut module provides access to some functionalities available
 via the Hadoop shell.
 """
+from builtins import map
+from past.builtins import basestring
+from builtins import object
 
 import os
 import shlex
@@ -73,7 +76,7 @@ def _merge_csv_args(args):
             merge_map.setdefault(k, []).append(v.strip())
             del args[i: i + 2]
         i -= 1
-    for k, vlist in merge_map.iteritems():
+    for k, vlist in merge_map.items():
         args.extend([k, ",".join(vlist)])
 
 # FIXME: the above functions share a lot of code
@@ -81,7 +84,7 @@ def _merge_csv_args(args):
 
 
 def _construct_property_args(prop_dict):
-    return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
+    return sum((['-D', '%s=%s' % p] for p in prop_dict.items()), [])
 
 
 # 'a:b:c' OR ['a', 'b', 'c'] OR ['a:b', 'c'] --> {'a', 'b', 'c'}
@@ -151,7 +154,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         _merge_csv_args(args)
         gargs = _pop_generic_args(args)
         for seq in gargs, args:
-            _args.extend(map(str, seq))
+            _args.extend(list(map(str, seq)))
     logger.debug('final args: %r' % (_args,))
     if keep_streams:
         p = subprocess.Popen(

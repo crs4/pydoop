@@ -31,7 +31,7 @@
 #include <hdfs.h>
 
 #include "structmember.h"
-
+#include "../buf_macros.h"
 
 typedef struct {
     PyObject_HEAD

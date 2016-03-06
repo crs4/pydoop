@@ -19,11 +19,17 @@
 """
 Avro tools.
 """
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import next
+from past.utils import old_div
+from builtins import object
 # DEV NOTE: since Avro is not a requirement, do *not* import this
 # module anywhere in the main code (importing it in the Avro examples
 # is OK, ofc).
 
-from cStringIO import StringIO
+from io import StringIO
 
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
@@ -157,7 +163,7 @@ class AvroContext(pp.TaskContext):
         out_kv = {'K': key, 'V': value}
         jc = self.job_conf
         if AVRO_OUTPUT in jc and (self.is_reducer() or self.__is_map_only()):
-            for mode, record in out_kv.iteritems():
+            for mode, record in out_kv.items():
                 serializer = self.__serializers.get(mode)
                 if serializer is not None:
                     with self.timer.time_block('avro serialization'):
@@ -216,11 +222,11 @@ class AvroReader(RecordReader):
                                              DatumReader())
         self.reader.align_after(isplit.offset)
 
-    def next(self):
+    def __next__(self):
         pos = self.reader.reader.tell()
         if pos > self.region_end and self.reader.block_count == 0:
             raise StopIteration
-        record = self.reader.next()
+        record = next(self.reader)
         return pos, record
 
     def get_progress(self):
@@ -228,8 +234,8 @@ class AvroReader(RecordReader):
         Give a rough estimate of the progress done.
         """
         pos = self.reader.reader.tell()
-        return min((pos - self.region_start) /
-                   float(self.region_end - self.region_start),
+        return min(old_div((pos - self.region_start),
+                   float(self.region_end - self.region_start)),
                    1.0)
 
 

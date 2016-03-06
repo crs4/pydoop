@@ -1811,7 +1811,7 @@ char* hdfsGetWorkingDirectory(hdfsFS fs, char* buffer, size_t bufferSize)
 
     //Copy to user-provided buffer
     ret = snprintf(buffer, bufferSize, "%s", jPathChars);
-    if (ret >= bufferSize) {
+    if (ret >= (int) bufferSize) {
         ret = ENAMETOOLONG;
         goto done;
     }

@@ -19,6 +19,8 @@
 """
 Miscellaneous utilities for testing.
 """
+from __future__ import print_function
+from builtins import object
 
 import re
 import sys
@@ -68,7 +70,7 @@ def parse_mr_output(output, vtype=str):
 
 def compare_counts(c1, c2):
     if len(c1) != len(c2):
-        print len(c1), len(c2)
+        print(len(c1), len(c2))
         return "number of keys differs"
     keys = sorted(c1)
     if sorted(c2) != keys:
@@ -105,7 +107,8 @@ class LocalWordCount(object):
             self._wordcount_file(wc, self.input_path)
 
         if self.min_occurrence:
-            wc = dict(t for t in wc.iteritems() if t[1] >= self.min_occurrence)
+            wc = dict(t for t in list(wc.items())
+                      if t[1] >= self.min_occurrence)
         return wc
 
     def _wordcount_file(self, wc, fn, path=None):

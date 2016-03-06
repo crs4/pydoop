@@ -89,7 +89,7 @@ static const struct ExceptionInfo gExceptionInfo[] = {
 void getExceptionInfo(const char *excName, int noPrintFlags,
                       int *excErrno, int *shouldPrint)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < EXCEPTION_INFO_LEN; i++) {
         if (strstr(gExceptionInfo[i].name, excName)) {
@@ -108,7 +108,7 @@ void getExceptionInfo(const char *excName, int noPrintFlags,
 int printExceptionAndFreeV(JNIEnv *env, jthrowable exc, int noPrintFlags,
         const char *fmt, va_list ap)
 {
-    int i, noPrint, excErrno;
+    unsigned int i, noPrint, excErrno;
     char *className = NULL;
     jstring jStr = NULL;
     jvalue jVal;
