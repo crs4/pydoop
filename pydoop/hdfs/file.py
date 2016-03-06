@@ -378,7 +378,10 @@ class local_file(FileIO):
         elif not isinstance(data, (basestring, bytearray, bytes)):
             # access non string data through a buffer
             data = bytearray(data)
-        super().write(data)
+        try: # For some mysterious reason, it will raise a ValueError in py2.7
+            super().write(data)
+        except ValueError as e:
+            raise IOError(*e.args)
         return len(data)
 
     def available(self):
