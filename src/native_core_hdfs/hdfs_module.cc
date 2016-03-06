@@ -27,7 +27,7 @@
 #include "hdfs_file.h"
 #include <jni.h>
 
-static char* module__name__ = "native_hdfs";
+static char* module__name__ = "native_core_hdfs";
 static char* module__doc__ = "native_hdfs_core implementation";
 
 /* FsType */
@@ -210,27 +210,18 @@ static struct PyModuleDef module_def = {
 #endif
 
 
-PyMODINIT_FUNC
 #if IS_PY3K
+
+PyMODINIT_FUNC
 PyInit_native_core_hdfs(void)
-#else
-initnative_core_hdfs(void)
-#endif
 {
   PyObject* m;
 
   if (PyType_Ready(&FsType) < 0)
     return NULL;
-
   if (PyType_Ready(&FileType) < 0)
     return NULL;
-#if IS_PY3K
   m = PyModule_Create(&module_def);
-#else
-  m = Py_InitModule3(module__name__, module_methods,
-                     module__doc__);
-#endif
-
   if (m == NULL)
     return NULL;
 
@@ -242,4 +233,26 @@ initnative_core_hdfs(void)
   return m;
 }
 
+#else
+
+PyMODINIT_FUNC
+initnative_core_hdfs(void)
+{
+  PyObject* m;
+
+  if (PyType_Ready(&FsType) < 0)
+    return;
+  if (PyType_Ready(&FileType) < 0)
+    return;
+  m = Py_InitModule3(module__name__, module_methods,
+                     module__doc__);
+  if (m == NULL)
+    return;
+
+  Py_INCREF(&FsType);
+  Py_INCREF(&FileType);
+  PyModule_AddObject(m, "CoreHdfsFs", (PyObject *)&FsType);
+  PyModule_AddObject(m, "CoreHdfsFile", (PyObject *)&FileType);
+}
+#endif
 
