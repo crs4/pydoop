@@ -376,8 +376,7 @@ class BuildPydoop(build):
         write_config(hdfs_core_impl=self.hdfs_core_impl)
         write_version()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
-        # FIXME temporarily disabled 
-        # build_sercore_extension()
+        build_sercore_extension()
         if self.hdfs_core_impl == hdfsimpl.NATIVE:
             build_hdfscore_native_impl()
         build.run(self)
