@@ -27,7 +27,7 @@ import grp
 import sys
 
 __is_py3 = sys.version_info >= (3, 0)
-    
+
 
 BUFSIZE = 16384
 DEFAULT_PORT = 8020  # org/apache/hadoop/hdfs/server/namenode/NameNode.java

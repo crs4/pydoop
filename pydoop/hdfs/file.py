@@ -147,8 +147,8 @@ class hdfs_file(object):
         :param errors: The error handling scheme to use for the handling of
         decoding errors. The default is 'strict' meaning that decoding errors
         raise a UnicodeDecodeError. Other possible values are 'ignore' and
-        'replace' as well as any other name registered  with codecs.register_error
-        that can handle UnicodeDecodeErrors.
+        'replace' as well as any other name registered  with
+        codecs.register_error that can handle UnicodeDecodeErrors.
 
         :rtype: str
 
@@ -378,7 +378,7 @@ class local_file(FileIO):
         elif not isinstance(data, (basestring, bytearray, bytes)):
             # access non string data through a buffer
             data = bytearray(data)
-        try: # For some mysterious reason, it will raise a ValueError in py2.7
+        try:  # For some mysterious reason, it will raise a ValueError in py2.7
             super().write(data)
         except ValueError as e:
             raise IOError(*e.args)
@@ -425,7 +425,7 @@ class local_file(FileIO):
 
     def write_chunk(self, chunk):
         return self.write(chunk)
-    
+
     def readline(self, encoding='utf-8', errors='strict'):
         """
         Read and return a line of text.
@@ -438,8 +438,8 @@ class local_file(FileIO):
         :param errors: The error handling scheme to use for the handling of
         decoding errors. The default is 'strict' meaning that decoding errors
         raise a UnicodeDecodeError. Other possible values are 'ignore' and
-        'replace' as well as any other name registered  with codecs.register_error
-        that can handle UnicodeDecodeErrors.
+        'replace' as well as any other name registered
+        with codecs.register_error that can handle UnicodeDecodeErrors.
 
         :rtype: str
 

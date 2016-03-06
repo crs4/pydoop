@@ -40,7 +40,6 @@ from .file import hdfs_file, local_file
 from .core import core_hdfs_fs
 
 
-
 class _FSStatus(object):
 
     def __init__(self, fs, host, port, user, refcount=1):

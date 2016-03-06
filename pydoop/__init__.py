@@ -29,7 +29,7 @@ MapReduce applications and interact with HDFS in pure Python.
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
- 
+
 import os
 import errno
 import configparser
@@ -179,6 +179,7 @@ class AddSectionWrapper(object):
                 self.sechead = None
         else:
             return self.f.readline()
+
 
 def read_properties(fname):
     parser = configparser.SafeConfigParser()

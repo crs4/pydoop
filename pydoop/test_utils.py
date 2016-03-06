@@ -19,7 +19,6 @@
 """
 Utilities for unit tests.
 """
-from builtins import chr
 from builtins import range
 from builtins import object
 
@@ -135,7 +134,7 @@ def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
     if printable:
         return bytes(randint(32, 126) for _ in range(size))
     else:
-        return bytes(randint(0, 255) for _ in range(size))        
+        return bytes(randint(0, 255) for _ in range(size))
 
 
 def get_bytes_per_checksum():

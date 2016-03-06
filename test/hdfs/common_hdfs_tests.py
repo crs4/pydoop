@@ -250,7 +250,6 @@ class TestCommon(unittest.TestCase):
                 chunk = chunk_factory(chunk_size)
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
-                #self.assertEqual(_get_value(chunk), content[:bytes_read])
                 self.assertEqual(chunk[:bytes_read], content[:bytes_read])
 
     def read_chunk(self):
@@ -343,7 +342,8 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             bytes_read = f.pread_chunk(offset, chunk)
             self.assertEqual(bytes_read, length)
-            self.assertEqual(chunk[:bytes_read], content[offset: offset + length])
+            self.assertEqual(chunk[:bytes_read],
+                             content[offset: offset + length])
             self.assertEqual(f.tell(), 0)
 
     def copy_on_self(self):
@@ -530,7 +530,7 @@ class TestCommon(unittest.TestCase):
         with self.assertRaises(IOError):
             next(nonexistent_walk)
         for top in '', None:
-            with self.assertRaises(ValueError):            
+            with self.assertRaises(ValueError):
                 next(self.fs.walk(top))
 
     def exists(self):
