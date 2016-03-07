@@ -399,6 +399,10 @@ class Clean(clean):
             "pydoop.egg-info",
             "pydoop/config.py",
             "pydoop/version.py",
+            "examples/avro/java/target",
+            "examples/avro/java/project/project",
+            "examples/avro/java/project/target",
+            "examples/avro/py/to_from_avro",
         ]
         for p in garbage_list:
             rm_rf(p, self.dry_run)

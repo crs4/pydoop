@@ -80,4 +80,4 @@ pydoop.tgz:
 	rm -rf pydoop pydoop-*
 
 clean:
-	rm -rf pydoop.tgz vowelcount.zip
+	rm -rf pydoop.tgz vowelcount.zip _markerlib easy_install.py easy_install.pyc pkg_resources.py pkg_resources.pyc setuptools setuptools-*
