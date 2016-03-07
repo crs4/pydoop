@@ -29,9 +29,12 @@ MapReduce applications and interact with HDFS in pure Python.
 
 import os
 import errno
-import ConfigParser
 from importlib import import_module
 import pydoop.hadoop_utils as hu
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 try:
     from pydoop.config import DEFAULT_HADOOP_HOME
