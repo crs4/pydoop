@@ -1,3 +1,7 @@
+branches:
+  except:
+    - develop-py3
+
 jdk: 
 - oraclejdk7
 
