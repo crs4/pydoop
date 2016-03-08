@@ -192,12 +192,12 @@ class PydoopSubmitter(object):
             host_port = "hdfs://%s:%s/" % (host, port)
         path_pieces = path.strip('/').split(os.path.sep)
         fs = hdfs.hdfs(host, port)
-        for i in xrange(0, len(path_pieces)):
+        for i in range(0, len(path_pieces)):
             part = os.path.join(
                 host_port, os.path.sep.join(path_pieces[0: i + 1])
             )
             permissions = fs.get_path_info(part)['permissions']
-            if permissions & 0111 != 0111:
+            if permissions & 0o111 != 0o111:
                 self.logger.warning(
                     ("remote module %s may not be readable by the task "
                      "tracker when initializing the distributed cache.  "

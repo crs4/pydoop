@@ -20,6 +20,8 @@
 Miscellaneous utilities for testing.
 """
 
+from __future__ import print_function
+
 import re
 import sys
 import os
@@ -68,7 +70,7 @@ def parse_mr_output(output, vtype=str):
 
 def compare_counts(c1, c2):
     if len(c1) != len(c2):
-        print len(c1), len(c2)
+        print(len(c1), len(c2))
         return "number of keys differs"
     keys = sorted(c1)
     if sorted(c2) != keys:

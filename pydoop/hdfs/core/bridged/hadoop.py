@@ -335,7 +335,7 @@ class CoreHdfsFile(CoreFileApi):
             raise IOError
         try:
             self._stream.close()
-        except Exception, e:
+        except Exception as e:
             raise IOError(e.message)
 
     def write_chunk(self, chunk):
