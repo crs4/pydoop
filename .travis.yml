@@ -107,7 +107,7 @@ install:
 - $VIRTUAL_ENV/bin/python setup.py bdist_wheel
 
 before_script:
-  - ${VIRTUAL_ENV}/bin/flake8 -v .
+  - ${VIRTUAL_ENV}/bin/flake8 .
 
 script:
 - cd test;
