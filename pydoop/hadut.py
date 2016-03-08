@@ -21,6 +21,7 @@ The hadut module provides access to some functionalities available
 via the Hadoop shell.
 """
 
+import logging
 import os
 import shlex
 import subprocess
@@ -153,7 +154,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         gargs = _pop_generic_args(args)
         for seq in gargs, args:
             _args.extend(map(str, seq))
-    logger.debug('final args: %r' % (_args,))
+    logger.debug('final args: %r', (_args,))
     if keep_streams:
         p = subprocess.Popen(
             _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -162,7 +163,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         stderr_iterator = iter(p.stderr.readline, b"")
         for line in stderr_iterator:
             error += line
-            logger.info("cmd stderr line: " + line.strip())
+            logger.info("cmd stderr line: %s", line.strip())
 
         output, _ = p.communicate()
     else:
@@ -483,7 +484,7 @@ class PipesRunner(object):
             hdfs.put(input_, self.input)
         else:
             self.input = input_
-            self.logger.info("assigning input to %s" % self.input)
+            self.logger.info("assigning input to %s", self.input)
 
     def set_output(self, output):
         """
@@ -491,7 +492,7 @@ class PipesRunner(object):
         instantiated with a prefix.
         """
         self.output = output
-        self.logger.info("assigning output to %s" % self.output)
+        self.logger.info("assigning output to %s", self.output)
 
     def set_exe(self, pipes_code):
         """
@@ -516,10 +517,11 @@ class PipesRunner(object):
         """
         Run :func:`collect_output` on the job's output directory.
         """
-        self.logger.info("collecting output%s" % (
-            " to %s" % out_file if out_file else ''
-        ))
-        self.logger.info("self.output %s", self.output)
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info("collecting output %s",
+                " to %s" % out_file if out_file else ''
+            )
+            self.logger.info("self.output %s", self.output)
         return collect_output(self.output, out_file)
 
     def __str__(self):
