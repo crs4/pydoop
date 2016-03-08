@@ -25,6 +25,14 @@ import os
 from io import FileIO
 
 from pydoop.hdfs import common
+from pydoop.utils.py3compat import _is_py3
+
+if _is_py3:
+    class unicode(str):
+        pass
+
+    class basestring(str):
+        pass
 
 
 def _complain_ifclosed(closed):
@@ -53,7 +61,7 @@ class hdfs_file(object):
     open an HDFS file, use :meth:`~.fs.hdfs.open_file`, or the
     top-level ``open`` function in the hdfs package.
     """
-    ENDL = os.linesep
+    ENDL = os.linesep.encode()
 
     def __init__(self, raw_hdfs_file, fs, name, flags,
                  chunk_size=common.BUFSIZE):
@@ -70,7 +78,7 @@ class hdfs_file(object):
 
     def __reset(self):
         self.buffer_list = []
-        self.chunk = ""
+        self.chunk = b""
         self.EOF = False
         self.p = 0
 
@@ -129,23 +137,41 @@ class hdfs_file(object):
             eol = self.chunk.find(self.ENDL, self.p)
         return eol if eol > -1 else len(self.chunk)
 
-    def readline(self):
+    def readline(self, encoding='utf-8', errors='strict'):
         """
         Read and return a line of text.
+
+        :type encoding: str
+        :param encoding: the encoding with which to decode the bytes.
+
+        :type errors: str
+
+        :param errors: The error handling scheme to use for the handling of
+        decoding errors. The default is 'strict' meaning that decoding errors
+        raise a UnicodeDecodeError. Other possible values are 'ignore' and
+        'replace' as well as any other name registered  with
+        codecs.register_error that can handle UnicodeDecodeErrors.
 
         :rtype: str
 
         :return: the next line of text in the file, including the
-          newline character
+        newline character
         """
         _complain_ifclosed(self.closed)
         eol = self.__read_chunks_until_nl()
-        line = "".join(self.buffer_list) + self.chunk[self.p: eol + 1]
+        line = b"".join(self.buffer_list) + self.chunk[self.p: eol + 1]
         self.buffer_list = []
         self.p = eol + 1
-        return line
+        return line.decode(encoding=encoding, errors=errors)
 
     def next(self):
+        """
+        Return the next input line, or raise :class:`StopIteration`
+        when EOF is hit.
+        """
+        return self.__next__()
+
+    def __next__(self):
         """
         Return the next input line, or raise :class:`StopIteration`
         when EOF is hit.
@@ -241,11 +267,11 @@ class hdfs_file(object):
             if length <= 0:
                 break
             c = self.f.read(min(self.chunk_size, length))
-            if c == "":
+            if c == b"":
                 break
             chunks.append(c)
             length -= len(c)
-        return "".join(chunks)
+        return b"".join(chunks)
 
     def read_chunk(self, chunk):
         r"""
@@ -321,13 +347,14 @@ class hdfs_file(object):
 
 
 class local_file(FileIO):
-
+    "Support class to handle local_file(s)"
     def __init__(self, fs, name, flags):
         if not flags.startswith("r"):
             local_file.__make_parents(fs, name)
+        name = os.path.abspath(name)
         super(local_file, self).__init__(name, flags)
         self.__fs = fs
-        self.__name = os.path.abspath(super(local_file, self).name)
+        self.__name = name
         self.__size = os.fstat(super(local_file, self).fileno()).st_size
         self.f = self
         self.chunk_size = 0
@@ -346,21 +373,24 @@ class local_file(FileIO):
         return self.__fs
 
     @property
-    def name(self):
-        return self.__name
-
-    @property
     def size(self):
         return self.__size
+
+    @property
+    def mode(self):
+        return (super(local_file, self).mode).replace('b', '')
 
     def write(self, data):
         _complain_ifclosed(self.closed)
         if isinstance(data, unicode):
             data = data.encode(common.TEXT_ENCODING)
-        elif not isinstance(data, (basestring, bytearray)):
+        elif not isinstance(data, (basestring, bytearray, bytes)):
             # access non string data through a buffer
-            data = str(buffer(data))
-        super(local_file, self).write(data)
+            data = bytearray(data)
+        try:  # For some mysterious reason, it will raise a ValueError in py2.7
+            super(local_file, self).write(data)
+        except ValueError as e:
+            raise IOError(*e.args)
         return len(data)
 
     def available(self):
@@ -404,3 +434,26 @@ class local_file(FileIO):
 
     def write_chunk(self, chunk):
         return self.write(chunk)
+
+    def readline(self, encoding='utf-8', errors='strict'):
+        """
+        Read and return a line of text.
+
+        :type encoding: str
+        :param encoding: the encoding with which to decode the bytes.
+
+        :type errors: str
+
+        :param errors: The error handling scheme to use for the handling of
+        decoding errors. The default is 'strict' meaning that decoding errors
+        raise a UnicodeDecodeError. Other possible values are 'ignore' and
+        'replace' as well as any other name registered
+        with codecs.register_error that can handle UnicodeDecodeErrors.
+
+        :rtype: str
+
+        :return: the next line of text in the file, including the
+        newline character
+        """
+        return super(local_file, self).readline().decode(encoding=encoding,
+                                                         errors=errors)

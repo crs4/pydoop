@@ -16,13 +16,14 @@
 #
 # END_COPYRIGHT
 import sys
-PY3 = sys.version_info[0] == 3
+_is_py3 = sys.version_info[0] == 3
 
-if PY3:
+if _is_py3:
     class clong(int):
+        pass
+    class unicode(str):
         pass
 else:
     class clong(long):
         pass
-
 

@@ -216,7 +216,7 @@ class hdfs(object):
         self.__status.refcount -= 1
         if self.refcount == 0:
             self.fs.close()
-            for k, status in self._CACHE.items():  # yes, we want a copy
+            for k, status in list(self._CACHE.items()):  # yes, we want a copy
                 if status.refcount == 0:
                     del self._CACHE[k]
 
