@@ -29,9 +29,16 @@ MapReduce applications and interact with HDFS in pure Python.
 
 import os
 import errno
-import ConfigParser
 from importlib import import_module
 import pydoop.hadoop_utils as hu
+try:
+    import configparser
+    def parser_read(parser, f):
+        parser.readfp(f)
+except ImportError:
+    import ConfigParser as configparser
+    def parser_read(parser, f):
+        parser.read_file(f)
 
 try:
     from pydoop.config import DEFAULT_HADOOP_HOME
@@ -162,6 +169,15 @@ class AddSectionWrapper(object):
         self.f = f
         self.sechead = '[dummy]' + os.linesep
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        l = self.readline()
+        if not l:
+            raise StopIteration
+        return l
+
     def readline(self):
         if self.sechead:
             try:
@@ -173,11 +189,11 @@ class AddSectionWrapper(object):
 
 
 def read_properties(fname):
-    parser = ConfigParser.SafeConfigParser()
+    parser = configparser.SafeConfigParser()
     parser.optionxform = str  # preserve key case
     try:
         with open(fname) as f:
-            parser.readfp(AddSectionWrapper(f))
+            parser_read(parser, AddSectionWrapper(f))
     except IOError as e:
         if e.errno != errno.ENOENT:
             raise

@@ -31,6 +31,7 @@ Other relevant environment variables include::
 
   HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
 """
+from __future__ import print_function
 
 import time
 import os
@@ -42,7 +43,7 @@ SETUPTOOLS_MIN_VER = '3.3'
 
 import setuptools
 from pkg_resources import parse_version  # included in setuptools
-print 'using setuptools version', setuptools.__version__
+print('using setuptools version', setuptools.__version__)
 if parse_version(setuptools.__version__) < parse_version(SETUPTOOLS_MIN_VER):
     raise RuntimeError(
         'setuptools minimum required version: %s' % SETUPTOOLS_MIN_VER
@@ -155,7 +156,8 @@ def get_git_commit():
             return f.read().strip()
     try:
         return subprocess.check_output(
-            ['git', 'rev-parse', 'HEAD']
+            ['git', 'rev-parse', 'HEAD'],
+            universal_newlines=True
         ).rstrip('\n')
     except subprocess.CalledProcessError:
         return None
@@ -368,7 +370,7 @@ class BuildPydoop(build):
         # may be called while executing other commands (e.g., clean)
         if HADOOP_VERSION_INFO.is_local():
             raise pydoop.LocalModeNotSupported()
-        print "hdfs core implementation: {0}".format(self.hdfs_core_impl)
+        print("hdfs core implementation: {0}".format(self.hdfs_core_impl))
         write_config(hdfs_core_impl=self.hdfs_core_impl)
         write_version()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
@@ -440,7 +442,8 @@ setup(
     license="Apache-2.0",
     keywords=["hadoop", "mapreduce"],
     classifiers=[
-        "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX :: Linux",
         "Topic :: Software Development :: Libraries :: Application Frameworks",

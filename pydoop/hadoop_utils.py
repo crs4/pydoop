@@ -391,7 +391,8 @@ def _hadoop_home_from_version_cmd():
 
     if hadoop_exec:
         try:
-            output = sp.check_output([hadoop_exec, 'version'])
+            output = sp.check_output([hadoop_exec, 'version'],
+                                     universal_newlines=True)
             return get_hh_from_version_output(output)
         except sp.CalledProcessError:
             pass
@@ -490,7 +491,8 @@ class PathFinder(object):
                         env.pop("HADOOP_PREFIX", None)
                         env.pop("HADOOP_HOME", None)
                         p = sp.Popen([hadoop, "version"], stdout=sp.PIPE,
-                                     stderr=sp.PIPE, env=env)
+                                     stderr=sp.PIPE, env=env,
+                                     universal_newlines=True)
                         out, err = p.communicate()
                         if p.returncode:
                             raise RuntimeError(err or out)
