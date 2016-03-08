@@ -18,5 +18,11 @@
 import sys
 PY3 = sys.version_info[0] == 3
 
-zero_long = 0 if PY3 else 0L
+if PY3:
+    class clong(int):
+        pass
+else:
+    class clong(long):
+        pass
+
 
