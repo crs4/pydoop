@@ -333,16 +333,18 @@ class PydoopSubmitter(object):
         if self.args is None:
             raise RuntimeError("cannot run without args, please call set_args")
         self.__validate()
-        classpath = []
+        pydoop_classpath = []
         libjars = []
+        if self.args.libjars:
+            libjars.extend(self.args.libjars)
         if self.args.avro_input or self.args.avro_output:
+            # append Pydoop's avro-mapred jar.  Don't put it at the front of the list
+            # or the user won't be able to override it.
             avro_jars = glob.glob(os.path.join(
                 pydoop.package_dir(), "avro*.jar"
             ))
-            classpath.extend(avro_jars)
+            pydoop_classpath.extend(avro_jars)
             libjars.extend(avro_jars)
-        if self.args.libjars:
-            libjars.extend(self.args.libjars)
         pydoop_jar = pydoop.jar_path()
         if self._use_mrv2 and pydoop_jar is None:
             raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")
@@ -358,7 +360,7 @@ class PydoopSubmitter(object):
         )
         if self._use_mrv2:
             submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
-            classpath.append(pydoop_jar)
+            pydoop_classpath.append(pydoop_jar)
             libjars.append(pydoop_jar)
         elif self.args.local_fs:
             # FIXME we still need to handle the special case with
@@ -366,7 +368,7 @@ class PydoopSubmitter(object):
             raise RuntimeError("NOT IMPLEMENTED YET")
             # FIXME FAKE MODULE
             submitter_class = 'it.crs4.pydoop.mapred.pipes.Submitter'
-            classpath.append(pydoop_jar)
+            pydoop_classpath.append(pydoop_jar)
             libjars.append(pydoop_jar)
         else:
             submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
@@ -400,7 +402,7 @@ class PydoopSubmitter(object):
             executor = (hadut.run_class if not self.args.pretend
                         else self.fake_run_class)
             executor(submitter_class, args=job_args,
-                     properties=self.properties, classpath=classpath,
+                     properties=self.properties, classpath=pydoop_classpath,
                      logger=self.logger, keep_streams=False)
             self.logger.info("Done")
         finally:

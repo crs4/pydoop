@@ -300,15 +300,21 @@ def run_class(class_name, args=None, properties=None, classpath=None,
     old_classpath = None
     if classpath:
         old_classpath = os.getenv('HADOOP_CLASSPATH', '')
+        if isinstance(classpath, basestring):
+            classpath = [classpath]
+        # Prepend the classpaths provided by the user to the existing HADOOP_CLASSPATH value.
+        # Order matters.  We could work a little harder to avoid duplicates, but it's not essential
         os.environ['HADOOP_CLASSPATH'] = ":".join(
-            _to_set(old_classpath) | _to_set(classpath)
+            classpath + old_classpath.split(':', 1)
         )
-        logger.debug('HADOOP_CLASSPATH: %r' % (os.getenv('HADOOP_CLASSPATH'),))
-    res = run_cmd(class_name, args, properties,
-                  hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                  keep_streams=keep_streams)
-    if old_classpath is not None:
-        os.environ['HADOOP_CLASSPATH'] = old_classpath
+        logger.debug('HADOOP_CLASSPATH: %r', os.getenv('HADOOP_CLASSPATH'))
+    try:
+        res = run_cmd(class_name, args, properties,
+                      hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                      keep_streams=keep_streams)
+    finally:
+        if old_classpath is not None:
+            os.environ['HADOOP_CLASSPATH'] = old_classpath
     return res
 
 
