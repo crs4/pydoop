@@ -338,8 +338,8 @@ class PydoopSubmitter(object):
         if self.args.libjars:
             libjars.extend(self.args.libjars)
         if self.args.avro_input or self.args.avro_output:
-            # append Pydoop's avro-mapred jar.  Don't put it at the front of the list
-            # or the user won't be able to override it.
+            # append Pydoop's avro-mapred jar.  Don't put it at the front of
+            # the list or the user won't be able to override it.
             avro_jars = glob.glob(os.path.join(
                 pydoop.package_dir(), "avro*.jar"
             ))

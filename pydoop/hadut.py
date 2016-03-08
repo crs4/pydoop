@@ -303,8 +303,9 @@ def run_class(class_name, args=None, properties=None, classpath=None,
         old_classpath = os.getenv('HADOOP_CLASSPATH', '')
         if isinstance(classpath, basestring):
             classpath = [classpath]
-        # Prepend the classpaths provided by the user to the existing HADOOP_CLASSPATH value.
-        # Order matters.  We could work a little harder to avoid duplicates, but it's not essential
+        # Prepend the classpaths provided by the user to the existing
+        # HADOOP_CLASSPATH value.  Order matters.  We could work a little
+        # harder to avoid duplicates, but it's not essential
         os.environ['HADOOP_CLASSPATH'] = ":".join(
             classpath + old_classpath.split(':', 1)
         )
@@ -518,8 +519,8 @@ class PipesRunner(object):
         Run :func:`collect_output` on the job's output directory.
         """
         if self.logger.isEnabledFor(logging.INFO):
-            self.logger.info("collecting output %s",
-                " to %s" % out_file if out_file else ''
+            self.logger.info(
+                "collecting output %s", " to %s" % out_file if out_file else ''
             )
             self.logger.info("self.output %s", self.output)
         return collect_output(self.output, out_file)
