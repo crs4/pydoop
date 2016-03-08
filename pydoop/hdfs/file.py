@@ -22,6 +22,7 @@ pydoop.hdfs.file -- HDFS File Objects
 """
 
 import os
+from io import FileIO
 
 from pydoop.hdfs import common
 
@@ -319,7 +320,7 @@ class hdfs_file(object):
         return self.f.flush()
 
 
-class local_file(file):
+class local_file(FileIO):
 
     def __init__(self, fs, name, flags):
         if not flags.startswith("r"):
