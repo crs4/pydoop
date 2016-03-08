@@ -22,7 +22,12 @@ import unittest
 import uuid
 import shutil
 import operator
-from itertools import izip
+
+try:
+    from itertools import izip as zip
+except ImportError as e:
+    pass
+
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
@@ -139,7 +144,7 @@ class TestCommon(unittest.TestCase):
         self.assertRaises(ValueError, self.fs.move, "", self.fs, "")
 
     def chmod(self):
-        new_perm = 0777
+        new_perm = 0o777
         path = self._make_random_dir()
         old_perm = self.fs.get_path_info(path)["permissions"]
         assert old_perm != new_perm
@@ -156,28 +161,28 @@ class TestCommon(unittest.TestCase):
 
     def chmod_w_string(self):
         path = self._make_random_dir()
-        self.fs.chmod(path, 0500)
+        self.fs.chmod(path, 0o500)
         # each user
-        self.__set_and_check_perm(path, "u+w", 0700)
-        self.__set_and_check_perm(path, "g+w", 0720)
-        self.__set_and_check_perm(path, "o+w", 0722)
+        self.__set_and_check_perm(path, "u+w", 0o700)
+        self.__set_and_check_perm(path, "g+w", 0o720)
+        self.__set_and_check_perm(path, "o+w", 0o722)
         # each permission mode
-        self.__set_and_check_perm(path, "o+r", 0726)
-        self.__set_and_check_perm(path, "o+x", 0727)
+        self.__set_and_check_perm(path, "o+r", 0o726)
+        self.__set_and_check_perm(path, "o+x", 0o727)
         # subtract operation, and multiple permission modes
-        self.__set_and_check_perm(path, "o-rwx", 0720)
+        self.__set_and_check_perm(path, "o-rwx", 0o720)
         # multiple users
-        self.__set_and_check_perm(path, "ugo-rwx", 0000)
+        self.__set_and_check_perm(path, "ugo-rwx", 0o000)
         # 'a' user
-        self.__set_and_check_perm(path, "a+r", 0444)
+        self.__set_and_check_perm(path, "a+r", 0o444)
         # blank user -- should respect the user's umask
-        umask = os.umask(0007)
+        umask = os.umask(0o007)
         self.fs.chmod(path, "+w")
         perm = self.fs.get_path_info(path)["permissions"]
         os.umask(umask)
-        self.assertEqual(0664, perm)
+        self.assertEqual(0o664, perm)
         # assignment op
-        self.__set_and_check_perm(path, "a=rwx", 0777)
+        self.__set_and_check_perm(path, "a=rwx", 0o777)
 
     def file_attrs(self):
         path = self._make_random_path()
@@ -371,7 +376,7 @@ class TestCommon(unittest.TestCase):
         infos = self.fs.list_directory(new_d)
         infos.sort(key=lambda p: os.path.basename(p["name"]))
         self.assertEqual(len(infos), len(paths))
-        for i, p in izip(infos, paths):
+        for i, p in zip(infos, paths):
             self.__check_path_info(i, kind="file")
             self.assertTrue(i['name'].endswith(p))
         self.assertRaises(
