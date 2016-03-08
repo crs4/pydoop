@@ -51,7 +51,7 @@ PyObject* FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 void FsClass_dealloc(FsInfo* self)
 {
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -209,7 +209,7 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
         for (int iBlockHost = 0; hosts[blockNumber][iBlockHost] != NULL; ++iBlockHost)
         {
-            PyObject* str = PyString_FromString(hosts[blockNumber][iBlockHost]);
+            PyObject* str = PyUnicode_FromString(hosts[blockNumber][iBlockHost]);
             if (!str) goto mem_error;
             if (PyList_Append(blockHosts, str) < 0) goto mem_error;
         }
@@ -491,14 +491,14 @@ static int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
     // Prepare the values.  We'll check for all errors in the "set" loop below
     // The order of these values MUST match the order of the keys above
     values[i++] = PyUnicode_FromString(fileInfo->mName);
-    values[i++] = PyString_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file");
-    values[i++] = PyString_FromString(fileInfo->mGroup);
-    values[i++] = PyInt_FromLong(fileInfo->mLastMod);
-    values[i++] = PyInt_FromLong(fileInfo->mLastAccess);
-    values[i++] = PyInt_FromSize_t(fileInfo->mReplication);
-    values[i++] = PyString_FromString(fileInfo->mOwner);
-    values[i++] = PyInt_FromSize_t(fileInfo->mPermissions);
-    values[i++] = PyInt_FromLong(fileInfo->mBlockSize);
+    values[i++] = PyUnicode_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file");
+    values[i++] = PyUnicode_FromString(fileInfo->mGroup);
+    values[i++] = PyLong_FromLong(fileInfo->mLastMod);
+    values[i++] = PyLong_FromLong(fileInfo->mLastAccess);
+    values[i++] = PyLong_FromSize_t(fileInfo->mReplication);
+    values[i++] = PyUnicode_FromString(fileInfo->mOwner);
+    values[i++] = PyLong_FromSize_t(fileInfo->mPermissions);
+    values[i++] = PyLong_FromLong(fileInfo->mBlockSize);
     values[i++] = PyUnicode_FromString(fileInfo->mName);
     values[i++] = PyLong_FromLongLong(fileInfo->mSize);
 
