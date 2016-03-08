@@ -23,6 +23,9 @@ Common hdfs utilities.
 import getpass
 import pwd
 import grp
+import sys
+
+__is_py3 = sys.version_info >= (3, 0)
 
 
 BUFSIZE = 16384
@@ -37,28 +40,38 @@ TEXT_ENCODING = 'utf-8'
 # used by the native extension.
 
 
-def encode_path(path):
-    if isinstance(path, unicode):
-        path = path.encode('utf-8')
-    return path
+if __is_py3:
+    def encode_path(path):
+        return path
 
+    def decode_path(path):
+        return path
 
-def decode_path(path):
-    if isinstance(path, str):
-        path = path.decode('utf-8')
-    return path
+    def encode_host(host):
+        return host
 
+    def decode_host(host):
+        return host
+else:
+    def encode_path(path):
+        if isinstance(path, unicode):
+            path = path.encode('utf-8')
+        return path
 
-def encode_host(host):
-    if isinstance(host, unicode):
-        host = host.encode('idna')
-    return host
+    def decode_path(path):
+        if isinstance(path, str):
+            path = path.decode('utf-8')
+        return path
 
+    def encode_host(host):
+        if isinstance(host, unicode):
+            host = host.encode('idna')
+        return host
 
-def decode_host(host):
-    if isinstance(host, str):
-        host = host.decode('idna')
-    return host
+    def decode_host(host):
+        if isinstance(host, str):
+            host = host.decode('idna')
+        return host
 
 
 def get_groups(user=DEFAULT_USER):
