@@ -21,6 +21,8 @@
 #define PYTHON_HDFS_FILE_TYPE
 
 #include <Python.h>
+
+
 #include <string>
 #include <map>
 #include <utility>  // std::pair support
@@ -31,6 +33,9 @@
 #include <hdfs.h>
 
 #include "structmember.h"
+#include "../buf_macros.h"
+
+
 
 
 typedef struct {
