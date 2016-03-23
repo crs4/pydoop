@@ -21,6 +21,7 @@
 
 #define PYDOOP_TEXT_ENCODING  "utf-8"
 
+
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
     FileInfo *self;
@@ -58,7 +59,7 @@ static bool hdfsFileIsOpenForRead(FileInfo *f){
 void FileClass_dealloc(FileInfo* self)
 {
     self->file = NULL;
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -125,7 +126,7 @@ static int _ensure_open_for_writing(FileInfo* self) {
     return 1; // True
 }
 
-static Py_ssize_t _read_into_str(FileInfo *self, char* buf, Py_ssize_t nbytes) {
+static Py_ssize_t _read_into_pybuf(FileInfo *self, char* buf, Py_ssize_t nbytes) {
 
     if (nbytes < 0) {
         PyErr_SetString(PyExc_ValueError, "nbytes must be >= 0");
@@ -145,20 +146,22 @@ static Py_ssize_t _read_into_str(FileInfo *self, char* buf, Py_ssize_t nbytes) {
     return bytes_read;
 }
 
-static PyObject* _read_new_pystr(FileInfo* self, Py_ssize_t nbytes) {
+static PyObject* _read_new_pybuf(FileInfo* self, Py_ssize_t nbytes) {
 
     if (nbytes < 0) {
         PyErr_SetString(PyExc_ValueError, "nbytes must be >= 0");
         return NULL;
     }
 
-    // Allocate an uninitialized string object.
-    // We then access and directly modify the string's internal memory. This is
+    // Allocate an uninitialized buffer object.
+    // We then access and directly modify the buffer's internal memory. This is
     // ok until we release this string "into the wild".
-    PyObject* retval = PyString_FromStringAndSize(NULL, nbytes);
+
+    PyObject* retval = _PyBuf_FromStringAndSize(NULL, nbytes);    
     if (!retval) return PyErr_NoMemory();
 
-    Py_ssize_t bytes_read = _read_into_str(self, PyString_AS_STRING(retval), nbytes);
+    Py_ssize_t bytes_read = _read_into_pybuf(self, _PyBuf_AS_STRING(retval),
+                                             nbytes);
 
     if (bytes_read >= 0) {
         // If bytes_read >= 0, read worked properly. But, if bytes_read < nbytes
@@ -166,7 +169,7 @@ static PyObject* _read_new_pystr(FileInfo* self, Py_ssize_t nbytes) {
         // to shrink the string to the correct length.  In case of error the
         // call to _PyString_Resize frees the original string, sets the
         // appropriate python exception and returns -1.
-        if (bytes_read >= nbytes || _PyString_Resize(&retval, bytes_read) >= 0)
+        if (bytes_read >= nbytes || _PyBuf_Resize(&retval, bytes_read) >= 0)  
             return retval; // all good
     }
 
@@ -181,7 +184,8 @@ static PyObject* _read_new_pystr(FileInfo* self, Py_ssize_t nbytes) {
  * \return: Number of bytes read. In case of error this function sets
  * the appropriate Python exception and returns -1.
  */
-static Py_ssize_t _pread_into_str(FileInfo *self, char* buffer, Py_ssize_t pos, Py_ssize_t nbytes) {
+static Py_ssize_t _pread_into_pybuf(FileInfo *self, char* buffer, Py_ssize_t pos,
+                                    Py_ssize_t nbytes) {
 
     Py_ssize_t orig_position = hdfsTell(self->fs, self->file);
     if (orig_position < 0) {
@@ -194,7 +198,7 @@ static Py_ssize_t _pread_into_str(FileInfo *self, char* buffer, Py_ssize_t pos, 
         return -1;
     }
 
-    tSize bytes_read = _read_into_str(self, buffer, nbytes);
+    tSize bytes_read = _read_into_pybuf(self, buffer, nbytes);
 
     if (bytes_read < 0) {
         PyErr_SetFromErrno(PyExc_IOError);
@@ -209,7 +213,7 @@ static Py_ssize_t _pread_into_str(FileInfo *self, char* buffer, Py_ssize_t pos, 
     return bytes_read;
 }
 
-static PyObject* _pread_new_pystr(FileInfo* self, Py_ssize_t pos, Py_ssize_t nbytes) {
+static PyObject* _pread_new_pybuf(FileInfo* self, Py_ssize_t pos, Py_ssize_t nbytes) {
 
     if (nbytes < 0) {
         PyErr_SetString(PyExc_ValueError, "nbytes must be >= 0");
@@ -217,10 +221,11 @@ static PyObject* _pread_new_pystr(FileInfo* self, Py_ssize_t pos, Py_ssize_t nby
     }
 
     // Allocate an uninitialized string object.
-    PyObject* retval = PyString_FromStringAndSize(NULL, nbytes);
+    PyObject* retval = _PyBuf_FromStringAndSize(NULL, nbytes);    
     if (!retval) return PyErr_NoMemory();
 
-    Py_ssize_t bytes_read = _pread_into_str(self, PyString_AS_STRING(retval), pos, nbytes);
+    Py_ssize_t bytes_read = _pread_into_pybuf(self, _PyBuf_AS_STRING(retval),
+                                              pos, nbytes);
 
     if (bytes_read >= 0) {
         // If bytes_read >= 0, read worked properly. But, if bytes_read < nbytes
@@ -228,7 +233,7 @@ static PyObject* _pread_new_pystr(FileInfo* self, Py_ssize_t pos, Py_ssize_t nby
         // to shrink the string to the correct length.  In case of error the
         // call to _PyString_Resize frees the original string, sets the
         // appropriate python exception and returns -1.
-        if (bytes_read >= nbytes || _PyString_Resize(&retval, bytes_read) >= 0)
+        if (bytes_read >= nbytes || _PyBuf_Resize(&retval, bytes_read) >= 0)
             return retval; // all good
     }
 
@@ -253,11 +258,11 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
     else if (nbytes == 0) {
-      return PyString_FromString("");
+      return _PyBuf_FromString("");
     }
     // else nbytes > 0
 
-    return _read_new_pystr(self, nbytes);
+    return _read_new_pybuf(self, nbytes);
 }
 
 
@@ -271,7 +276,7 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
     if (! PyArg_ParseTuple(args, "w*",  &buffer))
         return NULL;
 
-    Py_ssize_t bytes_read = _read_into_str(self, (char*)buffer.buf, buffer.len);
+    Py_ssize_t bytes_read = _read_into_pybuf(self, (char*)buffer.buf, buffer.len);
     PyBuffer_Release(&buffer);
 
     if (bytes_read >= 0)
@@ -298,11 +303,11 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
     }
 
     if (nbytes == 0)
-      return PyString_FromString("");
+      return _PyBuf_FromString("");
 
     // else
 
-    return _pread_new_pystr(self, position, nbytes);
+    return _pread_new_pybuf(self, position, nbytes);
 }
 
 
@@ -322,7 +327,8 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
     }
 
-    Py_ssize_t bytes_read = _pread_into_str(self, (char*)buffer.buf, position, buffer.len);
+    Py_ssize_t bytes_read = _pread_into_pybuf(self, (char*)buffer.buf, position,
+                                              buffer.len);
     PyBuffer_Release(&buffer);
 
     if (bytes_read >= 0)
@@ -393,7 +399,8 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
     }
 
     if (PyObject_GetBuffer(input, &buffer, PyBUF_SIMPLE) < 0) {
-        PyErr_SetString(PyExc_TypeError, "Argument is not accessible as a Python buffer");
+        PyErr_SetString(PyExc_TypeError,
+                        "Argument is not accessible as a Python buffer");
     }
     else {
         Py_ssize_t written;
@@ -401,6 +408,7 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
             written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
         Py_END_ALLOW_THREADS;
         PyBuffer_Release(&buffer);
+        
 
         if (written >= 0)
             retval = Py_BuildValue("n", written);
