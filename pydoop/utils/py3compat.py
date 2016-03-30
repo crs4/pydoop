@@ -23,7 +23,11 @@ if _is_py3:
         pass
     class unicode(str):
         pass
+    def xchr(x):
+        return x
 else:
     class clong(long):
         pass
+    def xchr(x):
+        return chr(x)
 

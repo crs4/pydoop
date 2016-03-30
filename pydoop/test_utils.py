@@ -33,6 +33,7 @@ import warnings
 import pydoop
 
 
+
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32
@@ -130,9 +131,9 @@ def make_wd(fs, prefix="pydoop_test_"):
 def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
     randint = random.randint
     if printable:
-        return "".join([chr(randint(32, 126)) for _ in xrange(size)])
+        return bytearray([randint(32, 126) for _ in range(size)])
     else:
-        return "".join([chr(randint(0, 255)) for _ in xrange(size)])
+        return bytearray([randint(0, 255) for _ in range(size)])
 
 
 def get_bytes_per_checksum():
