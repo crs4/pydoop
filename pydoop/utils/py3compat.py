@@ -16,21 +16,26 @@
 #
 # END_COPYRIGHT
 import sys
+
 _is_py3 = sys.version_info[0] == 3
 
 
+def __identity(x):
+    return x
+
+
+def __chr(x):
+    return chr(x)
+
+
 if _is_py3:
-    class clong(int):
-        pass
-    class unicode(str):
-        pass
-    def xchr(x):
-        return x
+    clong = int
+    #  something that should be interpreted as a string
     basestring = str
-    from functools import reduce
+    unicode = str
+    xchr = __identity
 else:
-    class clong(long):
-        pass
-    def xchr(x):
-        return chr(x)
+    #  something that should be interpreted as bytes    
+    clong = long
+    xchr = __chr
 
