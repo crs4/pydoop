@@ -33,13 +33,14 @@ from ctypes import create_string_buffer
 import pydoop.hdfs as hdfs
 import pydoop
 import pydoop.test_utils as utils
+from pydoop.utils.py3compat import _is_py3
 
 
 def _get_value(buf):
     try:
         return buf.value  # e.g., ctypes string buffer
     except AttributeError:
-        return create_string_buffer(str(buf)).value  # e.g., bytearray
+        return create_string_buffer(bytes(buf)).value  # e.g., bytearray
 
 
 class TestCommon(unittest.TestCase):
@@ -122,8 +123,8 @@ class TestCommon(unittest.TestCase):
         local_fs = hdfs.hdfs('', 0)
         local_wd = utils.make_wd(local_fs)
         from_path = os.path.join(local_wd, uuid.uuid4().hex)
-        content = uuid.uuid4().hex
-        with open(from_path, "w") as f:
+        content = uuid.uuid4().bytes
+        with open(from_path, "wb") as f:
             f.write(content)
         to_path = self._make_random_file()
         local_fs.copy(from_path, self.fs, to_path)
@@ -371,7 +372,7 @@ class TestCommon(unittest.TestCase):
         new_d = self._make_random_dir()
 
         self.assertEqual(self.fs.list_directory(new_d), [])
-        paths = [self._make_random_file(where=new_d) for _ in xrange(3)]
+        paths = [self._make_random_file(where=new_d) for _ in range(3)]
         paths.sort(key=os.path.basename)
         infos = self.fs.list_directory(new_d)
         infos.sort(key=lambda p: os.path.basename(p["name"]))
@@ -415,7 +416,7 @@ class TestCommon(unittest.TestCase):
         self.__check_readline(get_lines)
 
     def readline_big(self):
-        for i in xrange(10, 23):
+        for i in range(10, 23):
             x = '*' * (2**i) + "\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
@@ -505,15 +506,15 @@ class TestCommon(unittest.TestCase):
             )
         top = new_d
         cache = [top]
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=top))
         parent = self._make_random_dir(where=top)
         cache.append(parent)
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=parent))
         child = self._make_random_dir(where=parent)
         cache.append(child)
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=child))
         infos = list(self.fs.walk(top))
         expected_infos = [self.fs.get_path_info(p) for p in cache]
@@ -522,9 +523,12 @@ class TestCommon(unittest.TestCase):
             l.sort(key=operator.itemgetter("name"))
         self.assertEqual(infos, expected_infos)
         nonexistent_walk = self.fs.walk(self._make_random_path())
-        self.assertRaises(IOError, nonexistent_walk.next)
+        if _is_py3:
+            self.assertRaises(OSError, lambda : next(nonexistent_walk))
+        else:
+            self.assertRaises(IOError, lambda : next(nonexistent_walk))
         for top in '', None:
-            self.assertRaises(ValueError, self.fs.walk(top).next)
+            self.assertRaises(ValueError, lambda : next(self.fs.walk(top)))
 
     def exists(self):
         self.assertFalse(self.fs.exists('some_file'))
@@ -540,7 +544,7 @@ class TestCommon(unittest.TestCase):
                 'permissions', 'block_size', 'last_access', 'size')
         for k in keys:
             self.assertTrue(k in info)
-        for k, exp_v in expected_values.iteritems():
+        for k, exp_v in list(expected_values.items()):
             v = info[k]
             self.assertEqual(v, exp_v)
 
