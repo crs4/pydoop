@@ -25,6 +25,7 @@ if _is_py3:
         pass
     def xchr(x):
         return x
+    basestring = str
 else:
     class clong(long):
         pass
