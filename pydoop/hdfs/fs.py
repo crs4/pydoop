@@ -32,6 +32,11 @@ import pydoop
 from . import common
 from .file import hdfs_file, local_file
 from .core import core_hdfs_fs
+
+# py3 compatibility
+from functools import reduce
+
+from pydoop.utils.py3compat import basestring 
 try:
     from urllib.parse import urlparse
 except ImportError:
