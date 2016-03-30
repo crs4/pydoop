@@ -18,6 +18,7 @@
 import sys
 _is_py3 = sys.version_info[0] == 3
 
+
 if _is_py3:
     class clong(int):
         pass
@@ -26,6 +27,7 @@ if _is_py3:
     def xchr(x):
         return x
     basestring = str
+    from functools import reduce
 else:
     class clong(long):
         pass
