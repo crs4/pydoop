@@ -134,7 +134,7 @@ class TestCommon(unittest.TestCase):
         shutil.rmtree(local_wd)
 
     def move(self):
-        content = uuid.uuid4().hex
+        content = uuid.uuid4().bytes
         from_path = self._make_random_file(content=content)
         to_path = self._make_random_path()
         self.fs.move(from_path, self.fs, to_path)
