@@ -25,14 +25,7 @@ import os
 from io import FileIO
 
 from pydoop.hdfs import common
-from pydoop.utils.py3compat import _is_py3
-
-if _is_py3:
-    class unicode(str):
-        pass
-
-    class basestring(str):
-        pass
+from pydoop.utils.py3compat import unicode, basestring
 
 
 def _complain_ifclosed(closed):
@@ -318,7 +311,7 @@ class hdfs_file(object):
         """
         Write ``data`` to the file.
 
-        :type data: string
+        :type data: bytes
         :param data: the data to be written to the file
         :rtype: int
         :return: the number of bytes written
@@ -383,7 +376,10 @@ class local_file(FileIO):
     def write(self, data):
         _complain_ifclosed(self.closed)
         if isinstance(data, unicode):
+            # this will capture str in python3
             data = data.encode(common.TEXT_ENCODING)
+        # in py3 we map basestring to str so all 'basestring's will be filtered
+        # by the check above
         elif not isinstance(data, (basestring, bytearray, bytes)):
             # access non string data through a buffer
             data = bytearray(data)
