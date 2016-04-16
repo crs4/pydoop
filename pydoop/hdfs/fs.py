@@ -43,7 +43,6 @@ except ImportError:
     from urlparse import urlparse
 
 
-
 class _FSStatus(object):
 
     def __init__(self, fs, host, port, user, refcount=1):
@@ -55,6 +54,20 @@ class _FSStatus(object):
 
     def __repr__(self):
         return "_FSStatus(%s, %s)" % (self.fs, self.refcount)
+
+
+class _walker_wrapper(object):
+    def __init__(self, walker):
+        self.walker = walker
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.__next__()
+
+    def __next__(self):
+        return self.walker.__next__()
 
 
 def _complain_ifclosed(closed):
@@ -612,6 +625,14 @@ class hdfs(object):
         _complain_ifclosed(self.closed)
         return self.fs.utime(path, int(mtime), int(atime))
 
+    def _walk(self, top):
+        ""
+        yield top
+        if top['kind'] == 'directory':
+            for info in self.list_directory(top['name']):
+                for item in self._walk(info):
+                    yield item
+
     def walk(self, top):
         """
         Generate infos for all paths in the tree rooted at ``top`` (included).
@@ -631,8 +652,4 @@ class hdfs(object):
             raise ValueError("Empty path")
         if isinstance(top, basestring):
             top = self.get_path_info(top)
-        yield top
-        if top['kind'] == 'directory':
-            for info in self.list_directory(top['name']):
-                for item in self.walk(info):
-                    yield item
+        return _walker_wrapper(self._walk(top))
