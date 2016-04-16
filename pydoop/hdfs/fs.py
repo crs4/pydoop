@@ -627,6 +627,8 @@ class hdfs(object):
 
     def _walk(self, top):
         ""
+        if isinstance(top, basestring):
+            top = self.get_path_info(top)
         yield top
         if top['kind'] == 'directory':
             for info in self.list_directory(top['name']):
@@ -650,6 +652,4 @@ class hdfs(object):
         """
         if not top:
             raise ValueError("Empty path")
-        if isinstance(top, basestring):
-            top = self.get_path_info(top)
         return _walker_wrapper(self._walk(top))
