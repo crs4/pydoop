@@ -34,8 +34,10 @@ if _is_py3:
     basestring = str
     unicode = str
     xchr = __identity
+    czip = zip
 else:
     #  something that should be interpreted as bytes    
     clong = long
     xchr = __chr
+    from itertools import izip as czip
 
