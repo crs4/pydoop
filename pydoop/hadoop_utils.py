@@ -372,12 +372,18 @@ def _hadoop_home_from_version_cmd():
         last line contains the absolute path to the ``hadoop-core``
         jar, which should be in the Hadoop home directory.
         """
+        def find_hadoop_root(dpath):
+            while not os.path.exists(os.path.join(dpath, 'README.txt')):
+                dpath = os.path.dirname(dpath)
+                if dpath == '/':
+                    return None
+            return dpath
         if not output:
             return None
         last_line = output.splitlines()[-1]
         m = re.match(r'This command was run using (.*\.jar)', last_line)
         if m:
-            home = os.path.dirname(m.group(1))
+            home = find_hadoop_root(os.path.dirname(m.group(1)))
             return home
         return None
 
