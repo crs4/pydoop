@@ -25,7 +25,13 @@
 #    javac -cp $(hadoop classpath) hadoop_serialize.java
 
 import unittest
-from cStringIO import StringIO
+
+try:
+    from cStringIO import StringIO    
+except ImportError:
+    # We expect to be in python3
+    from io import BytesIO as StringIO
+
 import random
 import os
 import subprocess
@@ -46,16 +52,16 @@ class TestSerialize(unittest.TestCase):
 
     def test_int(self):
         stream = self.stream
-        for i in xrange(-16782, 16782):
+        for i in range(-16782, 16782):
             srl.serialize_vint(i, stream)
         stream.seek(0)
-        for i in xrange(-16782, 16782):
+        for i in range(-16782, 16782):
             x = srl.deserialize_vint(stream)
             self.assertEqual(i, x)
 
     def test_int_big(self):
         stream = self.stream
-        numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
+        numbers = random.sample(range(-18999289888, 18999289888), 10000)
         for i in numbers:
             srl.serialize_vint(i, stream)
         stream.seek(0)
@@ -165,7 +171,7 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(4000000000, wu.readVLong(self.stream))
 
     def test_serialize_to_string(self):
-        numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
+        numbers = random.sample(range(-18999289888, 18999289888), 10000)
         for n in numbers:
             s = srl.serialize_to_string(n)
             stream = StringIO(s)
