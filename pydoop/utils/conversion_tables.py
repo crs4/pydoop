@@ -796,4 +796,4 @@ mrv1_to_mrv2 = {
     'yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts',
 }
 
-mrv2_to_mrv1 = dict((t[1], t[0]) for t in mrv1_to_mrv2.iteritems())
+mrv2_to_mrv1 = dict((t[1], t[0]) for t in mrv1_to_mrv2.items())
