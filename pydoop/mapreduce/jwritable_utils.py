@@ -20,6 +20,7 @@
 Python equivalents for Hadoop's WritableUtils.
 """
 
+from ..utils.py3compat import unicode
 import pydoop.utils.serialize as pser
 import struct
 
