@@ -84,8 +84,17 @@ The idea is to mimick Hadoop writable interface, so that we can then write:
 from __future__ import division
 import struct
 import xdrlib
-from cStringIO import StringIO
-import cPickle as pickle
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import BytesIO as StringIO
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
+from .py3compat import unicode
 
 import pydoop.sercore as codec_core
 
@@ -153,7 +162,7 @@ def deserialize_vint(stream):
     if b >= -112:
         return b
     (negative, l) = (True, -120 - b) if b < -120 else (False, -112 - b)
-    q = struct.unpack('>Q', '\x00' * (8 - l) + read_buffer(l, stream))[0]
+    q = struct.unpack('>Q', b'\x00' * (8 - l) + read_buffer(l, stream))[0]
     return q ^ -1 if negative else q
 
 
