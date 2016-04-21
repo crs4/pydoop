@@ -29,6 +29,7 @@ import pydoop
 import pydoop.utils.misc as utils
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
+from .utils.py3compat import basestring
 
 
 GLOB_CHARS = frozenset('*,?[]{}')
@@ -73,7 +74,7 @@ def _merge_csv_args(args):
             merge_map.setdefault(k, []).append(v.strip())
             del args[i: i + 2]
         i -= 1
-    for k, vlist in merge_map.iteritems():
+    for k, vlist in merge_map.items():
         args.extend([k, ",".join(vlist)])
 
 # FIXME: the above functions share a lot of code
@@ -81,7 +82,7 @@ def _merge_csv_args(args):
 
 
 def _construct_property_args(prop_dict):
-    return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
+    return sum((['-D', '%s=%s' % p] for p in prop_dict.items()), [])
 
 
 # 'a:b:c' OR ['a', 'b', 'c'] OR ['a:b', 'c'] --> {'a', 'b', 'c'}

@@ -24,6 +24,7 @@ import unittest
 import os
 import tempfile
 import shutil
+from imp import reload
 
 import pydoop
 
