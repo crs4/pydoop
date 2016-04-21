@@ -82,7 +82,7 @@ def _merge_csv_args(args):
 
 
 def _construct_property_args(prop_dict):
-    return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
+    return sum((['-D', '%s=%s' % p] for p in prop_dict.items()), [])
 
 
 # 'a:b:c' OR ['a', 'b', 'c'] OR ['a:b', 'c'] --> {'a', 'b', 'c'}
