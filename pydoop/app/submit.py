@@ -40,14 +40,14 @@ from .argparse_types import a_comma_separated_list, a_hdfs_file
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 DEFAULT_ENTRY_POINT = '__main__'
-IS_JAVA_RR = "hadoop.pipes.java.recordreader"
-IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
-CACHE_FILES = "mapred.cache.files"
-CACHE_ARCHIVES = "mapred.cache.archives"
+IS_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
+IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+CACHE_FILES = "mapreduce.job.cache.files"
+CACHE_ARCHIVES = "mapreduce.job.cache.archives"
 USER_HOME = "mapreduce.admin.user.home.dir"
-JOB_REDUCES = "mapred.reduce.tasks"
-JOB_NAME = "mapred.job.name"
-COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
+JOB_REDUCES = "mapreduce.job.reduces"
+JOB_NAME = "mapreduce.job.name"
+COMPRESS_MAP_OUTPUT = "mapreduce.map.output.compress"
 AVRO_IO_CHOICES = ['k', 'v', 'kv']
 AVRO_IO_CHOICES += [_.upper() for _ in AVRO_IO_CHOICES]
 
@@ -68,13 +68,7 @@ class PydoopSubmitter(object):
             raise pydoop.LocalModeNotSupported()
 
         self.logger = logging.getLogger("PydoopSubmitter")
-        self.properties = {
-            CACHE_FILES: '',
-            CACHE_ARCHIVES: '',
-            'mapred.create.symlink': 'yes',  # backward compatibility
-            COMPRESS_MAP_OUTPUT: 'true',
-            'bl.libhdfs.opts': '-Xmx48m'
-        }
+        self.properties = self.__default_properties()
         self.args = None
         self.requested_env = dict()
         self.remote_wd = None
@@ -85,6 +79,27 @@ class PydoopSubmitter(object):
         self.files_to_upload = []
         self.unknown_args = None
         self._use_mrv2 = None
+
+    def __default_properties(self):
+        return {
+            CACHE_FILES: '',
+            CACHE_ARCHIVES: '',
+            'mapred.create.symlink': 'yes',  # backward compatibility
+            COMPRESS_MAP_OUTPUT: 'true',
+            'bl.libhdfs.opts': '-Xmx48m'
+        }
+
+    def __use_mrv1_properties(self):
+        global IS_JAVA_RR, IS_JAVA_RW, CACHE_FILES, CACHE_ARCHIVES, \
+            USER_HOME, JOB_REDUCES, JOB_NAME, COMPRESS_MAP_OUTPUT
+        IS_JAVA_RR = "hadoop.pipes.java.recordreader"
+        IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
+        CACHE_FILES = "mapred.cache.files"
+        CACHE_ARCHIVES = "mapred.cache.archives"
+        USER_HOME = "mapreduce.admin.user.home.dir"
+        JOB_REDUCES = "mapred.reduce.tasks"
+        JOB_NAME = "mapred.job.name"
+        COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
 
     @staticmethod
     def __cache_archive_link(archive_name):
@@ -143,12 +158,16 @@ class PydoopSubmitter(object):
         if unknown_args is None:
             unknown_args = []
         self.logger.setLevel(getattr(logging, args.log_level))
-
         parent = hdfs.path.dirname(hdfs.path.abspath(args.output.rstrip("/")))
         self.remote_wd = hdfs.path.join(
             parent, utils.make_random_str(prefix="pydoop_submit_")
         )
         self.remote_exe = hdfs.path.join(self.remote_wd, str(uuid.uuid4()))
+        self._use_mrv2 = pydoop.has_mrv2() and not args.mrv1
+        if not self._use_mrv2:
+            self.__use_mrv1_properties()
+            # we have to reset default properties because they use Hadoop property names
+            self.properties = self.__default_properties()
         self.properties[JOB_NAME] = args.job_name or 'pydoop'
         self.properties[IS_JAVA_RR] = (
             'false' if args.do_not_use_java_record_reader else 'true'
@@ -166,7 +185,6 @@ class PydoopSubmitter(object):
         self.requested_env = self._env_arg_to_dict(args.set_env or [])
         self.args = args
         self.unknown_args = unknown_args
-        self._use_mrv2 = pydoop.has_mrv2() and not self.args.mrv1
 
     def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
         """
