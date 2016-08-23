@@ -28,6 +28,14 @@ def __chr(x):
     return chr(x)
 
 
+def __iteritems_2(x):
+    return x.iteritems()
+
+
+def __iteritems_3(x):
+    return x.items()
+
+
 if _is_py3:
     clong = int
     #  something that should be interpreted as a string
@@ -35,9 +43,14 @@ if _is_py3:
     unicode = str
     xchr = __identity
     czip = zip
+    cmap = map
+    cfilter = filter
+    iteritems = __iteritems_3
 else:
-    #  something that should be interpreted as bytes    
+    #  something that should be interpreted as bytes
     clong = long
     xchr = __chr
+    iteritems = __iteritems_2
     from itertools import izip as czip
-
+    from itertools import imap as cmap
+    from itertools import ifilter as cfilter
