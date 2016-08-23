@@ -175,6 +175,29 @@ namespace HadoopUtils {
     HADOOP_ASSERT(bytes == buflen, "unexpected end of string reached");
   }
 
+  BufferInStream::BufferInStream(void) {}
+
+  bool BufferInStream::open(const char* buf, size_t buflen) {
+    buffer = buf;
+    size = buflen;
+    itr = buffer;
+    return true;
+  }
+                            
+  void BufferInStream::read(void *buf, size_t buflen) {
+    size_t bytes = 0;
+    char* output = (char*) buf;
+    const char* end = buffer + size;
+    while (bytes < buflen) {
+      output[bytes++] = *itr;
+      ++itr;
+      if (itr == end) {
+        break;
+      }
+    }
+    HADOOP_ASSERT(bytes == buflen, "unexpected end of string reached");
+  }
+  
   void serializeInt(int32_t t, OutStream& stream) {
     serializeLong(t,stream);
   }
@@ -269,6 +292,14 @@ namespace HadoopUtils {
     }
   }
 
+  void serializeBuffer(const char *buf, std::size_t len, OutStream& stream)
+  {
+    serializeInt(len, stream);
+    if (len > 0) {
+      stream.write(buf, len);
+    }
+  }
+  
   void deserializeString(std::string& t, InStream& stream)
   {
     int32_t len = deserializeInt(stream);

@@ -74,6 +74,7 @@ namespace HadoopUtils {
      * @throws Error if there are problems reading
      */
     virtual void read(void *buf, size_t len) = 0;
+    virtual bool close() {return true;};
     virtual ~InStream() {}
   };
 
@@ -93,6 +94,7 @@ namespace HadoopUtils {
      * Flush the data to the underlying store.
      */
     virtual void flush() = 0;
+    virtual inline bool close() { flush(); return true;};    
     virtual ~OutStream() {}
   };
 
@@ -156,6 +158,22 @@ namespace HadoopUtils {
     const std::string& buffer;
     std::string::const_iterator itr;
   };
+
+  /**
+   * A stream that reads from a buffer.
+   */
+  class BufferInStream: public InStream {
+  public:
+    BufferInStream();
+    bool open(const char* buffer, size_t buflen);
+    virtual void read(void *buf, size_t buflen);
+  private:
+    const char* buffer;
+    std::size_t size;
+    const char* itr;
+  };
+
+  
 
   void serializeInt(int32_t t, OutStream& stream);
   int32_t deserializeInt(InStream& stream);
