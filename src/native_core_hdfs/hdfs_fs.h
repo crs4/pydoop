@@ -29,9 +29,10 @@
 #include <typeinfo>
 
 #include <hdfs.h>
+#include <structmember.h>
 
-#include "structmember.h"
-#include "../buf_macros.h"
+#include "../py3k_compat.h"
+
 
 typedef struct {
     PyObject_HEAD

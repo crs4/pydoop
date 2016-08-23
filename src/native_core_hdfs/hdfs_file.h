@@ -32,9 +32,8 @@
 
 #include <hdfs.h>
 
-#include "structmember.h"
-#include "../buf_macros.h"
-
+#include <structmember.h>
+#include "../py3k_compat.h"
 
 
 
