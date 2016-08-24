@@ -210,7 +210,9 @@ def build_sercore_extension():
     binary_encoder = Extension(
         'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
-            'protocol_codec.cc', 'SerialUtils.cc', 'StringUtils.cc'
+            'sermodule.cc',
+            'serialization_rules.cc', 'flow.cc', 'writable.cc',
+            'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
         extra_compile_args=extra_compile_args
     )
