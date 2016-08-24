@@ -31,10 +31,10 @@ namespace HadoopUtils {
   Error::Error(const std::string& msg): error(msg) {
   }
 
-  Error::Error(const std::string& msg, 
-               const std::string& file, int line, 
+  Error::Error(const std::string& msg,
+               const std::string& file, int line,
                const std::string& function) {
-    error = msg + " at " + file + ":" + toString(line) + 
+    error = msg + " at " + file + ":" + toString(line) +
             " in " + function;
   }
 
@@ -183,7 +183,7 @@ namespace HadoopUtils {
     itr = buffer;
     return true;
   }
-                            
+
   void BufferInStream::read(void *buf, size_t buflen) {
     size_t bytes = 0;
     char* output = (char*) buf;
@@ -197,7 +197,7 @@ namespace HadoopUtils {
     }
     HADOOP_ASSERT(bytes == buflen, "unexpected end of string reached");
   }
-  
+
   void serializeInt(int32_t t, OutStream& stream) {
     serializeLong(t,stream);
   }
@@ -209,22 +209,22 @@ namespace HadoopUtils {
       stream.write(&b, 1);
       return;
     }
-        
+
     int8_t len = -112;
     if (t < 0) {
       t ^= -1ll; // reset the sign bit
       len = -120;
     }
-        
+
     uint64_t tmp = t;
     while (tmp != 0) {
       tmp = tmp >> 8;
       len--;
     }
-  
-    stream.write(&len, 1);      
+
+    stream.write(&len, 1);
     len = (len < -120) ? -(len + 120) : -(len + 112);
-        
+
     for (uint32_t idx = len; idx != 0; idx--) {
       uint32_t shiftbits = (idx - 1) * 8;
       uint64_t mask = 0xFFll << shiftbits;
@@ -299,7 +299,7 @@ namespace HadoopUtils {
       stream.write(buf, len);
     }
   }
-  
+
   void deserializeString(std::string& t, InStream& stream)
   {
     int32_t len = deserializeInt(stream);

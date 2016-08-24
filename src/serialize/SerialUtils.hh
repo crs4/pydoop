@@ -40,7 +40,7 @@ namespace HadoopUtils {
      * Construct an error object with the given message that was created on
      * the given file, line, and functino.
      */
-    Error(const std::string& msg, 
+    Error(const std::string& msg,
           const std::string& file, int line, const std::string& function);
 
     /**
@@ -94,7 +94,7 @@ namespace HadoopUtils {
      * Flush the data to the underlying store.
      */
     virtual void flush() = 0;
-    virtual inline bool close() { flush(); return true;};    
+    virtual inline bool close() { flush(); return true;};
     virtual ~OutStream() {}
   };
 
@@ -173,7 +173,7 @@ namespace HadoopUtils {
     const char* itr;
   };
 
-  
+
 
   void serializeInt(int32_t t, OutStream& stream);
   int32_t deserializeInt(InStream& stream);
