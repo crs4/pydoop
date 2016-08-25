@@ -20,6 +20,7 @@
 #include "SerialUtils.hh"
 #include <errno.h>
 
+
 #include "../py3k_compat.h"
 
 inline
@@ -174,7 +175,7 @@ PyObject* deserialize(hu::InStream* stream, const std::string& srule) {
       Py_DECREF(result);
       return NULL;
     }
-    // Note that the SET_ITEM steal a ref from item
+    // Note that the SET_ITEM steals a ref from item
     PyTuple_SET_ITEM(result, i, item);
   }
   return result;

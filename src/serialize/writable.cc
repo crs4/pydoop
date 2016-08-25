@@ -19,6 +19,7 @@
 #include "writable.hh"
 #include "../py3k_compat.h"
 
+
 static inline
 PyObject* get_default_type(PyObject* o) {
   if (o != Py_None && !PyType_Check(o)) {
@@ -44,7 +45,6 @@ inline PyObject* insert_props(PyObject* obj,
     int res = PyObject_SetAttrString(obj, rule->at(i).first.c_str(),
                                      PyTuple_GET_ITEM(data, i));
     if (res < 0) {
-      Py_DECREF(obj);
       PyErr_SetString(PyExc_ValueError, "Cannot set attribute.");
       return NULL;
     }
@@ -82,14 +82,13 @@ PyObject* extract_props(PyObject* data, PyObject* obj,
   assert(PyTuple_GET_SIZE(data) == rule->size());  
   for(std::size_t i = 0; i < rule->size(); ++i) {
     std::string aname = rule->at(i).first;
-    // FIXME will this add a ref?
+    // This returns a new reference.
     PyObject* item = PyObject_GetAttrString(obj, aname.c_str());
     if (item == NULL) {
-      for(std::size_t j = 0; j < i; ++j) {
-        Py_DECREF(PyTuple_GET_ITEM(data, j));
-      }
       return NULL;
     }
+    // SET_ITEM does not incref(item). So, when data will be garbage collected
+    // item will be decref and gc if nobody else is using it.
     PyTuple_SET_ITEM(data, i, item);
   }
   return data;
@@ -115,6 +114,7 @@ PyObject* WritableReader::read(PyObject* type) {
   PyObject* res;
   if (rule->at(0).first.size() == 0) { // special case, no attributes
     assert(rule->size() == 1);
+    assert(PyTuple_GET_SIZE(data) == 1);    
     res = PyTuple_GET_ITEM(data, 0);
     // otherwise it gets DECREFed when data is DECREFed
     Py_INCREF(res);
@@ -139,8 +139,13 @@ PyObject* WritableWriter::write(PyObject* obj) {
   if (rule->size() == 1 && rule->at(0).first.size() == 0) {
     // special case,
     PyTuple_SET_ITEM(data, 0, obj);
+    // we need to incref obj, since SET_ITEM attach obj to data but does not
+    // incref(obj). Therefore, when data will be garbage collected it will
+    // decref obj too behind python's back.
+    Py_INCREF(obj);
   } else {
     if (extract_props(data, obj, rule) == NULL) {
+      Py_DECREF(data);
       return NULL;
     }
   }

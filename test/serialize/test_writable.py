@@ -52,6 +52,7 @@ class TestWritable(unittest.TestCase):
                     else:
                         self.assertEqual(x, r)
 
+    # @unittest.skip('disabled')
     def test_exceptions(self):
         fname = 'goo.bin'
         with open(fname, 'wb') as f:
@@ -66,20 +67,22 @@ class TestWritable(unittest.TestCase):
             self.assertRaises(ValueError, sc.WritableReader,
                               f, self.rules, None)
 
+    # @unittest.skip('disabled')
     def test_wr_default(self):
         fname = 'goo.bin'
-        values = range(1, 100)
+        values = [('we-%s' % i).encode('utf-8') for i in range(1000)]
         with open(fname, 'wb') as f:
             ww = sc.WritableWriter(f, self.rules)
             for x in values:
                 ww.write(x)
             ww.flush()
         with open(fname, 'rb') as f:
-            wr = sc.WritableReader(f, self.rules, int)
+            wr = sc.WritableReader(f, self.rules, bytes)
             for v in values:
                 g = wr.read(None)
                 self.assertEqual(g, v)
 
+    # @unittest.skip('disabled')
     def test_wr_eof(self):
         fname = 'goo.bin'
         with open(fname, 'wb') as f:
@@ -88,6 +91,7 @@ class TestWritable(unittest.TestCase):
             wr = sc.WritableReader(f, self.rules, int)
             self.assertRaises(EOFError, wr.read, None)
 
+    # @unittest.skip('disabled')
     def test_wr_buffer(self):
         fname = 'goo.bin'
         values = range(1, 1000)
@@ -103,10 +107,12 @@ class TestWritable(unittest.TestCase):
             g = wr.read(None)
             self.assertEqual(g, v)
 
+    # @unittest.skip('disabled')
     def test_intrinsics(self):
         values = [1, 10, 20, 849898989, 0.333, b'this here is bytes']
         self.writable_writer_helper(values)
 
+    # @unittest.skip('disabled')
     def test_user_defined_simple_types(self):
         class LongLong(int):
             pass
@@ -114,6 +120,7 @@ class TestWritable(unittest.TestCase):
         values = [LongLong(x) for x in [89289839898, 8938988989]]
         self.writable_writer_helper(values)
 
+    # @unittest.skip('disabled')
     def test_user_defined_complex_types(self):
         class Foo():
             def __init__(self):
