@@ -21,6 +21,29 @@ from abc import ABCMeta, abstractmethod
 from pydoop.utils.serialize import private_decode
 
 
+# these constants should be exactly what has been defined in
+# PipesMapper.java and BinaryProtocol.java
+START_MESSAGE = 0
+SET_JOB_CONF = 1
+SET_INPUT_TYPES = 2
+RUN_MAP = 3
+MAP_ITEM = 4
+RUN_REDUCE = 5
+REDUCE_KEY = 6
+REDUCE_VALUE = 7
+CLOSE = 8
+ABORT = 9
+AUTHENTICATION_REQ = 10
+OUTPUT = 50
+PARTITIONED_OUTPUT = 51
+STATUS = 52
+PROGRESS = 53
+DONE = 54
+REGISTER_COUNTER = 55
+INCREMENT_COUNTER = 56
+AUTHENTICATION_RESP = 57
+
+
 class ProtocolError(Exception):
     pass
 
@@ -52,7 +75,7 @@ class DownStreamFilter(StreamFilter):
     def next(self):
         """
         Get next command from the DownStream.  The result is in the
-        form (cmd_name, args), where args could be either None or the
+        form (cmd_code, args), where args could be either None or the
         command arguments tuple.
         """
         pass
@@ -101,13 +124,13 @@ class KeyValuesStream(object):
         stream = self.stream
         private_encoding = self.private_encoding
         for cmd, args in stream:
-            if cmd == 'close':
+            if cmd == CLOSE:
                 raise StopIteration
-            elif cmd == 'reduceKey':
+            elif cmd == REDUCE_KEY:
                 values_stream = self.get_value_stream(self.stream)
                 key = private_decode(args[0]) if private_encoding else args[0]
                 yield key, values_stream
-            elif cmd == 'reduceValue':
+            elif cmd == REDUCE_VALUE:
                 continue
             else:
                 raise ProtocolError('out of order command: {}'.format(cmd))
@@ -115,14 +138,14 @@ class KeyValuesStream(object):
 
     def next(self):  # FIXME: only for timing comparison purposes
         for cmd, args in self.stream:
-            if cmd == 'close':
+            if cmd == CLOSE:
                 raise StopIteration
-            elif cmd == 'reduceKey':
+            elif cmd == REDUCE_KEY:
                 values_stream = self.get_value_stream(self.stream)
                 key = private_decode(
                     args[0]) if self.private_encoding else args[0]
                 return key, values_stream
-            elif cmd == 'reduceValue':
+            elif cmd == REDUCE_VALUE:
                 continue
             else:
                 raise ProtocolError('out of order command: {}'.format(cmd))
@@ -131,10 +154,10 @@ class KeyValuesStream(object):
     def get_value_stream(self, stream):
         private_encoding = self.private_encoding
         for cmd, args in stream:
-            if cmd == 'close':
+            if cmd == CLOSE:
                 stream.push_back((cmd, args))
                 raise StopIteration
-            elif cmd == 'reduceValue':
+            elif cmd == REDUCE_VALUE:
                 yield private_decode(args[0]) if private_encoding else args[0]
             else:
                 stream.push_back((cmd, args))
@@ -148,9 +171,9 @@ def get_key_values_stream(stream, private_encoding=True):
 
 def get_key_value_stream(stream):
     for cmd, args in stream:
-        if cmd == 'close':
+        if cmd == CLOSE:
             raise StopIteration
-        elif cmd == 'mapItem':
+        elif cmd == MAP_ITEM:
             yield args
         else:
             raise ProtocolError('out of order command: {}'.format(cmd))
