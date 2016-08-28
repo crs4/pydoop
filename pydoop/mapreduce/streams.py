@@ -102,10 +102,13 @@ class PushBackStream(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.lifo:
             return self.lifo.pop()
-        return self.stream_iterator.next()
+        return next(self.stream_iterator)
+
+    def next(self):
+        return self.__next__()
 
     def push_back(self, v):
         self.lifo.append(v)
