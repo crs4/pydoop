@@ -392,23 +392,28 @@ class StreamRunner(object):
 
     def run(self):
         self.logger.debug('start running')
+        AUTHENTICATION_REQ = self.AUTHENTICATION_REQ
+        SET_JOB_CONF = self.SET_JOB_CONF
+        RUN_MAP = self.RUN_MAP
+        RUN_REDUCE = self.RUN_REDUCE
+
         for cmd, args in self.cmd_stream:
             self.logger.debug('dispatching cmd: %s, args: %s', cmd, args)
-            if cmd == 'authenticationReq':
+            if cmd == AUTHENTICATION_REQ:
                 digest, challenge = args
                 self.logger.debug(
                     'authenticationReq: %r, %r', digest, challenge)
                 if self.fails_to_authenticate(digest, challenge):
                     self.logger.critical('Server failed to authenticate')
                     break  # bailing out
-            elif cmd == 'setJobConf':
+            elif cmd == SET_JOB_CONF:
                 self.ctx.set_job_conf(args[0])
-            elif cmd == 'runMap':
+            elif cmd == RUN_MAP:
                 self.ctx.set_is_mapper()
                 input_split, n_reduces, piped_input = args
                 self.run_map(input_split, n_reduces, piped_input)
                 break  # we can bail out, there is nothing more to do.
-            elif cmd == 'runReduce':
+            elif cmd == RUN_REDUCE:
                 self.ctx.set_is_reducer()
                 part, piped_output = args
                 self.run_reduce(part, piped_output)
@@ -431,6 +436,7 @@ class StreamRunner(object):
         return False
 
     def run_map(self, input_split, n_reduces, piped_input):
+        SET_INPUT_TYPES = self.SET_INPUT_TYPES
         self.logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
         if n_reduces > 0:
@@ -439,7 +445,7 @@ class StreamRunner(object):
         LOGGER.debug("Input split: %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
-            if cmd == "setInputTypes":
+            if cmd == SET_INPUT_TYPES:
                 ctx._input_key_class, ctx._input_value_class = args
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
                              ctx._input_key_class, ctx._input_value_class)
