@@ -37,6 +37,7 @@ def __iteritems_3(x):
 
 
 if _is_py3:
+    from io import BytesIO as StringIO
     clong = int
     #  something that should be interpreted as a string
     basestring = str
@@ -54,3 +55,4 @@ else:
     from itertools import izip as czip
     from itertools import imap as cmap
     from itertools import ifilter as cfilter
+    from cStringIO import StringIO
