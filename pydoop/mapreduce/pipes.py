@@ -21,7 +21,7 @@ import os
 import logging
 import time
 import numbers
-from cStringIO import StringIO
+
 from copy import deepcopy
 
 from pydoop import hadoop_version_info
@@ -40,6 +40,11 @@ from pydoop.utils.misc import Timer
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
 from .string_utils import create_digest
+
+from pydoop.utils.py3compat import (
+    unicode, StringIO, iteritems
+)
+
 
 logging.basicConfig()
 LOGGER = logging.getLogger('pipes')
@@ -194,7 +199,7 @@ class CombineRunner(api.RecordWriter):
         writer = ctx.writer
         ctx.writer = None
         with ctx.timer.time_block('spill reduction'):
-            for key, values in self.data.iteritems():
+            for key, values in iteritems(self.data):
                 ctx._key, ctx._values = key, iter(values)
                 self.reducer.reduce(ctx)
         ctx.writer = writer
@@ -436,7 +441,6 @@ class StreamRunner(object):
         return False
 
     def run_map(self, input_split, n_reduces, piped_input):
-        SET_INPUT_TYPES = self.SET_INPUT_TYPES
         self.logger.debug('start run_map')
         factory, ctx = self.factory, self.ctx
         if n_reduces > 0:
@@ -445,7 +449,7 @@ class StreamRunner(object):
         LOGGER.debug("Input split: %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
-            if cmd == SET_INPUT_TYPES:
+            if cmd == self.SET_INPUT_TYPES:
                 ctx._input_key_class, ctx._input_value_class = args
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
                              ctx._input_key_class, ctx._input_value_class)
