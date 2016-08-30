@@ -52,7 +52,7 @@ class ProtocolAbort(ProtocolError):
     pass
 
 
-class StreamFilter(object):
+class StreamAdapter(object):
 
     __metaclass__ = ABCMeta
 
@@ -62,14 +62,40 @@ class StreamFilter(object):
     def __iter__(self):
         return self
 
-    def flush(self):
-        self.stream.flush()
-
     def close(self):
         self.stream.close()
 
 
-class DownStreamFilter(StreamFilter):
+class StreamWriter(StreamAdapter):
+    START_MESSAGE = START_MESSAGE
+    SET_JOB_CONF = SET_JOB_CONF
+    SET_INPUT_TYPES = SET_INPUT_TYPES
+    RUN_MAP = RUN_MAP
+    MAP_ITEM = MAP_ITEM
+    RUN_REDUCE = RUN_REDUCE
+    REDUCE_KEY = REDUCE_KEY
+    REDUCE_VALUE = REDUCE_VALUE
+    CLOSE = CLOSE
+    ABORT = ABORT
+    AUTHENTICATION_REQ = AUTHENTICATION_REQ
+    OUTPUT = OUTPUT
+    PARTITIONED_OUTPUT = PARTITIONED_OUTPUT
+    STATUS = STATUS
+    PROGRESS = PROGRESS
+    DONE = DONE
+    REGISTER_COUNTER = REGISTER_COUNTER
+    INCREMENT_COUNTER = INCREMENT_COUNTER
+    AUTHENTICATION_RESP = AUTHENTICATION_RESP
+
+    def flush(self):
+        self.stream.flush()
+
+    @abstractmethod
+    def send(self):
+        pass
+
+
+class DownStreamAdapter(StreamAdapter):
     START_MESSAGE = START_MESSAGE
     SET_JOB_CONF = SET_JOB_CONF
     SET_INPUT_TYPES = SET_INPUT_TYPES
@@ -92,7 +118,7 @@ class DownStreamFilter(StreamFilter):
         pass
 
 
-class UpStreamFilter(StreamFilter):
+class UpStreamAdapter(StreamWriter):
     OUTPUT = OUTPUT
     PARTITIONED_OUTPUT = PARTITIONED_OUTPUT
     STATUS = STATUS
@@ -105,10 +131,6 @@ class UpStreamFilter(StreamFilter):
     CMD_TABLE = {}
 
     def convert_message(self, cmd, args):
-        pass
-
-    @abstractmethod
-    def send(self):
         pass
 
 

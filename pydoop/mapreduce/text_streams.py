@@ -17,7 +17,8 @@
 # END_COPYRIGHT
 
 from .streams import (
-    DownStreamFilter, UpStreamFilter, ProtocolAbort, ProtocolError
+    StreamWriter, DownStreamAdapter, UpStreamAdapter,
+    ProtocolAbort, ProtocolError
 )
 from .string_utils import quote_string
 
@@ -26,7 +27,54 @@ def toBool(s):
     return s.lower().find('true') > -1
 
 
-class TextDownStreamFilter(DownStreamFilter):
+class TextWriter(StreamWriter):
+    SEP = '\t'
+    EOL = '\n'
+    CMD_TABLE = {
+        StreamWriter.START_MESSAGE: 'start',
+        StreamWriter.SET_JOB_CONF: 'setJobConf',
+        StreamWriter.SET_INPUT_TYPES: 'setInputTypes',
+        StreamWriter.RUN_MAP: 'runMap',
+        StreamWriter.MAP_ITEM: 'mapItem',
+        StreamWriter.RUN_REDUCE: 'runReduce',
+        StreamWriter.REDUCE_KEY: 'reduceKey',
+        StreamWriter.REDUCE_VALUE: 'reduceValue',
+        StreamWriter.CLOSE: 'close',
+        StreamWriter.ABORT: 'abort',
+        StreamWriter.AUTHENTICATION_REQ: 'authenticationReq',
+        StreamWriter.OUTPUT: 'output',
+        StreamWriter.PARTITIONED_OUTPUT: 'partitionedOutput',
+        StreamWriter.STATUS: 'status',
+        StreamWriter.PROGRESS: 'progress',
+        StreamWriter.DONE: 'done',
+        StreamWriter.REGISTER_COUNTER: 'registerCounter',
+        StreamWriter.INCREMENT_COUNTER: 'incrementCounter',
+        StreamWriter.AUTHENTICATION_RESP: 'authenticationResp',
+    }
+
+    @classmethod
+    def convert_cmd(cls, cmd):
+        try:
+            return cls.CMD_TABLE[cmd]
+        except KeyError as e:
+            raise ProtocolError('Unrecognized command %r' % cmd)
+
+    def __init__(self, stream):
+        super(TextWriter, self).__init__(stream)
+
+    def send(self, cmd, *args):
+        self.stream.write(self.convert_cmd(cmd))
+        for a in args:
+            self.stream.write(self.SEP)
+            self.stream.write(quote_string(str(a)))
+        self.stream.write(self.EOL)
+
+
+class TextUpStreamAdapter(TextWriter, UpStreamAdapter):
+    pass
+
+
+class TextDownStreamAdapter(DownStreamAdapter):
     """
     Naive textual stream filter implementation.
 
@@ -37,16 +85,18 @@ class TextDownStreamFilter(DownStreamFilter):
     """
     SEP = '\t'
     CMD_TABLE = {
-        'mapItem': ('mapItem', 2, None),
-        'reduceValue': ('reduceValue', 1, None),
-        'reduceKey': ('reduceKey', 1, None),
-        'start': ('start', 1, lambda p: [int(p[0])]),
-        'setJobConf': ('setJobConf', None, None),
-        'setInputTypes': ('setInputTypes', 2, None),
-        'runMap': ('runMap', 3, lambda p: [p[0], int(p[1]), toBool(p[2])]),
-        'runReduce': ('runReduce', 2, lambda p: [int(p[0]), toBool(p[1])]),
-        'abort': ('abort', 0, None),
-        'close': ('close', 0, None),
+        'mapItem': (DownStreamAdapter.MAP_ITEM, 2, None),
+        'reduceValue': (DownStreamAdapter.REDUCE_VALUE, 1, None),
+        'reduceKey': (DownStreamAdapter.REDUCE_KEY, 1, None),
+        'start': (DownStreamAdapter.START_MESSAGE, 1, lambda p: [int(p[0])]),
+        'setJobConf': (DownStreamAdapter.SET_JOB_CONF, None, None),
+        'setInputTypes': (DownStreamAdapter.SET_INPUT_TYPES, 2, None),
+        'runMap': (DownStreamAdapter.RUN_MAP, 3,
+                   lambda p: [p[0], int(p[1]), toBool(p[2])]),
+        'runReduce': (DownStreamAdapter.RUN_REDUCE, 2,
+                      lambda p: [int(p[0]), toBool(p[1])]),
+        'abort': (DownStreamAdapter.ABORT, 0, None),
+        'close': (DownStreamAdapter.CLOSE, 0, None),
     }
 
     @classmethod
@@ -54,7 +104,7 @@ class TextDownStreamFilter(DownStreamFilter):
         if cmd in cls.CMD_TABLE:
             cmd, nargs, converter = cls.CMD_TABLE[cmd]
             assert nargs is None or len(args) == nargs
-            if cmd == 'abort':
+            if cmd == cls.ABORT:
                 raise ProtocolAbort('received an abort request')
             args = args if converter is None else converter(args)
             return cmd, tuple(args) if args else None
@@ -62,27 +112,14 @@ class TextDownStreamFilter(DownStreamFilter):
             raise ProtocolError('Unrecognized command %r' % cmd)
 
     def __init__(self, stream):
-        super(TextDownStreamFilter, self).__init__(stream)
+        super(TextDownStreamAdapter, self).__init__(stream)
 
-    def next(self):
+    def __next__(self):
         line = self.stream.readline()[:-1]
         if len(line) == 0:
             raise StopIteration
         parts = line.split(self.SEP)
         return self.convert_message(parts[0], parts[1:])
 
-
-class TextUpStreamFilter(UpStreamFilter):
-
-    SEP = '\t'
-    EOL = '\n'
-
-    def __init__(self, stream):
-        super(TextUpStreamFilter, self).__init__(stream)
-
-    def send(self, cmd, *args):
-        self.stream.write(cmd)
-        for a in args:
-            self.stream.write(self.SEP)
-            self.stream.write(quote_string(str(a)))
-        self.stream.write(self.EOL)
+    def next(self):
+        return self.__next__()
