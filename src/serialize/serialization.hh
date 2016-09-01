@@ -25,6 +25,9 @@
 
 namespace hu = HadoopUtils;
 
+PyObject* serialize_int(hu::OutStream* stream, PyObject* code);
+PyObject* deserialize_int(hu::InStream* stream);
+
 PyObject* serialize(hu::OutStream* stream, const std::string& srule,
                     const PyObject* data);
 

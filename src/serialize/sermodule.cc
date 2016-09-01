@@ -25,14 +25,13 @@
 #define Py_TPFLAGS_HAVE_ITER 0
 #endif
 
-#include "serialization_rules.hh"
-#include "writable.hh"
-
+#include "command.hh"
 
 
 static char* module__name__ = "sercore";
 static char* module__doc__ =  "serialization low level implementation";
 
+#if 0
 /* WritableRules */
 static PyMemberDef WritableRules_members[] = {
   {NULL}  /* Sentinel */
@@ -87,7 +86,6 @@ static PyTypeObject WritableRulesType = {
   0,                                        /* tp_alloc */
   WritableRules_new,                        /* tp_new */
 };
-
 
 /* WritableWriter */
 static PyMemberDef WritableWriter_members[] = {
@@ -202,6 +200,121 @@ static PyTypeObject WritableReaderType = {
   WritableReader_new,                        /* tp_new */
 };
 
+#endif
+
+/* CommandWriter */
+static PyMemberDef CommandWriter_members[] = {
+  {NULL}  /* Sentinel */
+};
+
+static PyMethodDef CommandWriter_methods[] = {
+  {"write", (PyCFunction) CommandWriter_write, METH_O,
+   "Write (cmd_code, args) as a command."},
+  {"flush", (PyCFunction) CommandWriter_flush, METH_NOARGS,
+   "flush the attached output stream."},
+  {"close", (PyCFunction) CommandWriter_close, METH_NOARGS,
+   "close the attached output stream."},
+  {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+
+static PyTypeObject CommandWriterType = {
+  PyVarObject_HEAD_INIT(NULL, 0)  
+  "sercore.CommandWriter",                  /* tp_name */
+  sizeof(CommandWriterInfo),                /* tp_basicsize */
+  0,                                        /* tp_itemsize */
+  (destructor) CommandWriter_dealloc,       /* tp_dealloc */
+  0,                                        /* tp_print */
+  0,                                        /* tp_getattr */
+  0,                                        /* tp_setattr */
+  0,                                        /* tp_compare */
+  0,                                        /* tp_repr */
+  0,                                        /* tp_as_number */
+  0,                                        /* tp_as_sequence */
+  0,                                        /* tp_as_mapping */
+  0,                                        /* tp_hash */
+  0,                                        /* tp_call */
+  0,                                        /* tp_str */
+  0,                                        /* tp_getattro */
+  0,                                        /* tp_setattro */
+  0,                                        /* tp_as_buffer */
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+  "CommandWriter objects",                 /* tp_doc */
+  0,                                        /* tp_traverse */
+  0,                                        /* tp_clear */
+  0,                                        /* tp_richcompare */
+  0,                                        /* tp_weaklistoffset */
+  0,                                        /* tp_iter */
+  0,                                        /* tp_iternext */
+  CommandWriter_methods,                   /* tp_methods */
+  CommandWriter_members,                   /* tp_members */
+  0,                                        /* tp_getset */
+  0,                                        /* tp_base */
+  0,                                        /* tp_dict */
+  0,                                        /* tp_descr_get */
+  0,                                        /* tp_descr_set */
+  0,                                        /* tp_dictoffset */
+  (initproc) CommandWriter_init,           /* tp_init */
+  0,                                        /* tp_alloc */
+  CommandWriter_new,                       /* tp_new */
+};
+
+
+/* CommandReader */
+static PyMemberDef CommandReader_members[] = {
+  {NULL}  /* Sentinel */
+};
+
+static PyMethodDef CommandReader_methods[] = {
+  {"read", (PyCFunction) CommandReader_read, METH_NOARGS,
+   "Read a command."},
+  {"close", (PyCFunction) CommandReader_close, METH_NOARGS,
+   "close the attached input stream."},
+  {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+
+static PyTypeObject CommandReaderType = {
+  PyVarObject_HEAD_INIT(NULL, 0)  
+  "sercore.CommandReader",                  /* tp_name */
+  sizeof(CommandReaderInfo),                /* tp_basicsize */
+  0,                                        /* tp_itemsize */
+  (destructor) CommandReader_dealloc,       /* tp_dealloc */
+  0,                                        /* tp_print */
+  0,                                        /* tp_getattr */
+  0,                                        /* tp_setattr */
+  0,                                        /* tp_compare */
+  0,                                        /* tp_repr */
+  0,                                        /* tp_as_number */
+  0,                                        /* tp_as_sequence */
+  0,                                        /* tp_as_mapping */
+  0,                                        /* tp_hash */
+  0,                                        /* tp_call */
+  0,                                        /* tp_str */
+  0,                                        /* tp_getattro */
+  0,                                        /* tp_setattro */
+  0,                                        /* tp_as_buffer */
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_ITER, /* tp_flags */
+  "CommandReader objects",                 /* tp_doc */
+  0,                                        /* tp_traverse */
+  0,                                        /* tp_clear */
+  0,                                        /* tp_richcompare */
+  0,                                        /* tp_weaklistoffset */
+  CommandReader_iter,                       /* tp_iter */
+  CommandReader_iternext,                   /* tp_iternext */
+  CommandReader_methods,                    /* tp_methods */
+  CommandReader_members,                    /* tp_members */
+  0,                                        /* tp_getset */
+  0,                                        /* tp_base */
+  0,                                        /* tp_dict */
+  0,                                        /* tp_descr_get */
+  0,                                        /* tp_descr_set */
+  0,                                        /* tp_dictoffset */
+  (initproc) CommandReader_init,            /* tp_init */
+  0,                                        /* tp_alloc */
+  CommandReader_new,                        /* tp_new */
+};
+
 
 static PyMethodDef module_methods[] = {
         {NULL}  /* Sentinel */
@@ -232,7 +345,7 @@ PyMODINIT_FUNC
 PyInit_sercore(void)
 {
   PyObject* m;
-
+#if 0
   if (PyType_Ready(&WritableRulesType) < 0) {
     return NULL;
   }
@@ -242,18 +355,28 @@ PyInit_sercore(void)
   if (PyType_Ready(&WritableReaderType) < 0) {
     return NULL;
   }
+#endif
+  if (PyType_Ready(&CommandReaderType) < 0) {
+    return NULL;
+  }
+  if (PyType_Ready(&CommandWriterType) < 0) {
+    return NULL;
+  }
+  
   m = PyModule_Create(&module_def);
   if (m == NULL)
     return NULL;
+#if 0
   Py_INCREF(&WritableRulesType);
   Py_INCREF(&WritableWriterType);
   Py_INCREF(&WritableReaderType);
-  PyModule_AddObject(m, "WritableRules",
-                     (PyObject *)&WritableRulesType);
-  PyModule_AddObject(m, "WritableWriter",
-                     (PyObject *)&WritableWriterType);
-  PyModule_AddObject(m, "WritableReader",
-                     (PyObject *)&WritableReaderType);
+#endif
+  Py_INCREF(&CommandWriterType);
+  Py_INCREF(&CommandReaderType);
+  PyModule_AddObject(m, "CommandWriter",
+                     (PyObject *)&CommandWriterType);
+  PyModule_AddObject(m, "CommandReader",
+                     (PyObject *)&CommandReaderType);
   return m;
 }
 
@@ -264,11 +387,9 @@ initsercore(void)
 {
   PyObject* m;
 
-  if (PyType_Ready(&WritableRulesType) < 0)
+  if (PyType_Ready(&CommandWriterType) < 0)
     return;
-  if (PyType_Ready(&WritableWriterType) < 0)
-    return;
-  if (PyType_Ready(&WritableReaderType) < 0)
+  if (PyType_Ready(&CommandReaderType) < 0)
     return;
   m = Py_InitModule3(module__name__, module_methods,
                      module__doc__);

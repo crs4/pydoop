@@ -150,10 +150,18 @@ PyObject* deserialize_item(hu::InStream& stream, char code) {
 }
 
 
+PyObject* serialize_int(hu::OutStream* stream, PyObject* code) {
+  return serialize_item(*stream, 'i', code);
+}
+
+PyObject* deserialize_int(hu::InStream* stream) {
+  return deserialize_item(*stream, 'i');
+}  
+
 PyObject* serialize(hu::OutStream* stream,  const std::string& srule,
                     const PyObject* data) {
   assert(PyTuple_Check(data));
-  assert(PyTuple_GET_SIZE(data) == srule.size());
+  assert(PyTuple_GET_SIZE(data) == (int)srule.size());
   for(std::size_t i = 0; i < srule.size(); ++i) {
     PyObject* res = serialize_item(*stream, srule[i], PyTuple_GET_ITEM(data, i));
     if (res == NULL) {

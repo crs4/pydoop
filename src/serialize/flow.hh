@@ -27,7 +27,6 @@
 #include "../py3k_compat.h"
 
 #include "serialization.hh"
-#include "SerialUtils.hh"
 
 namespace hu = HadoopUtils;
 
@@ -39,8 +38,12 @@ public:
 public:
   FlowReader(hu::InStream* stream) : _stream(stream) {}
 
-  inline PyObject* read(std::string& rule) {
+  inline PyObject* read(const std::string& rule) {
     return deserialize(_stream, rule);
+  }
+
+  inline PyObject* read_int(void) {
+    return deserialize_int(_stream);
   }
   
   inline PyObject* close(void) {
@@ -65,8 +68,12 @@ public:
 public:
   FlowWriter(hu::OutStream* stream) : _stream(stream) {}
 
-  inline PyObject* write(PyObject* data, std::string& rule) {
+  inline PyObject* write(PyObject* data, const std::string& rule) {
     return serialize(_stream, rule, data);
+  }
+  
+  inline PyObject* write_int(PyObject* v) {
+    return serialize_int(_stream, v);
   }
 
   inline PyObject* flush(void) {
