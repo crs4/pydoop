@@ -38,6 +38,7 @@ def __iteritems_3(x):
 
 if _is_py3:
     from io import BytesIO as StringIO
+    import pickle
     clong = int
     #  something that should be interpreted as a string
     basestring = str
@@ -48,11 +49,13 @@ if _is_py3:
     cfilter = filter
     iteritems = __iteritems_3
 else:
-    #  something that should be interpreted as bytes
-    clong = long
-    xchr = __chr
-    iteritems = __iteritems_2
     from itertools import izip as czip
     from itertools import imap as cmap
     from itertools import ifilter as cfilter
     from cStringIO import StringIO
+    import cPickle as pickle
+    #  something that should be interpreted as bytes
+    clong = long
+    xchr = __chr
+    iteritems = __iteritems_2
+
