@@ -24,6 +24,9 @@ from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.text_streams import (TextWriter,
                                            TextDownStreamAdapter,
                                            TextUpStreamAdapter)
+from pydoop.mapreduce.binary_streams import (BinaryWriter,
+                                             BinaryDownStreamAdapter,
+                                             BinaryUpStreamAdapter)
 
 from pydoop.test_utils import WDTestCase
 
@@ -55,21 +58,21 @@ STREAM_2 = [
 ]
 
 
-def stream_writer(fname, data):
-    with open(fname, 'w') as f:
-        writer = TextWriter(f)
+def stream_writer(fname, data, mod, Writer):
+    with open(fname, 'w' + mod) as f:
+        writer = Writer(f)
         for vals in data:
             writer.send(vals[0], *vals[1:])
         writer.close()
 
 
-class TestTextStream(WDTestCase):
+class TestCmdStreams(WDTestCase):
 
-    def test_downlink(self):
+    def downlink_helper(self, mod, Writer, DownStreamAdapter):
         fname = self._mkfn('foo.txt')
-        stream_writer(fname, STREAM_1)
-        with open(fname, 'r') as f:
-            stream = TextDownStreamAdapter(f)
+        stream_writer(fname, STREAM_1, mod, Writer)
+        with open(fname, 'r' + mod) as f:
+            stream = DownStreamAdapter(f)
             try:
                 for (cmd, args), vals in czip(stream, STREAM_1):
                     self.assertEqual(cmd, vals[0])
@@ -78,21 +81,31 @@ class TestTextStream(WDTestCase):
             except ProtocolError as e:
                 print('error -- %s' % e)
 
-    def test_uplink(self):
+    def test_text_downlink(self):
+        self.downlink_helper('', TextWriter, TextDownStreamAdapter)
+
+    def test_binary_downlink(self):
+        self.downlink_helper('b', BinaryWriter, BinaryDownStreamAdapter)
+
+    def uplink_helper(self, mod, UpStreamAdapter):
         fname = self._mkfn('foo.txt')
-        with open(fname, 'w') as f:
-            stream = TextUpStreamAdapter(f)
+        with open(fname, 'w' + mod) as f:
+            stream = UpStreamAdapter(f)
             try:
                 for vals in STREAM_2:
                     stream.send(vals[0], *vals[1:])
             except ProtocolError as e:
                 print('error -- %s' % e)
 
+    def test_text_uplink(self):
+        self.uplink_helper('', TextUpStreamAdapter)
+
 
 def suite():
     suite_ = unittest.TestSuite()
-    suite_.addTest(TestTextStream('test_downlink'))
-    suite_.addTest(TestTextStream('test_uplink'))
+    suite_.addTest(TestCmdStreams('test_text_downlink'))
+    suite_.addTest(TestCmdStreams('test_binary_downlink'))
+    suite_.addTest(TestCmdStreams('test_text_uplink'))
     return suite_
 
 
