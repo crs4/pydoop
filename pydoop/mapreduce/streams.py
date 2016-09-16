@@ -94,6 +94,37 @@ class StreamWriter(StreamAdapter):
     def send(self):
         pass
 
+class StreamReader(StreamAdapter):
+    "A class for debugging purposes"
+    START_MESSAGE = START_MESSAGE
+    SET_JOB_CONF = SET_JOB_CONF
+    SET_INPUT_TYPES = SET_INPUT_TYPES
+    RUN_MAP = RUN_MAP
+    MAP_ITEM = MAP_ITEM
+    RUN_REDUCE = RUN_REDUCE
+    REDUCE_KEY = REDUCE_KEY
+    REDUCE_VALUE = REDUCE_VALUE
+    CLOSE = CLOSE
+    ABORT = ABORT
+    AUTHENTICATION_REQ = AUTHENTICATION_REQ
+    OUTPUT = OUTPUT
+    PARTITIONED_OUTPUT = PARTITIONED_OUTPUT
+    STATUS = STATUS
+    PROGRESS = PROGRESS
+    DONE = DONE
+    REGISTER_COUNTER = REGISTER_COUNTER
+    INCREMENT_COUNTER = INCREMENT_COUNTER
+    AUTHENTICATION_RESP = AUTHENTICATION_RESP
+
+    @abstractmethod
+    def next(self):
+        """
+        Get next command from the DownStream.  The result is in the
+        form (cmd_code, args), where args could be either None or the
+        command arguments tuple.
+        """
+        pass
+    
 
 class DownStreamAdapter(StreamAdapter):
     START_MESSAGE = START_MESSAGE
