@@ -199,7 +199,7 @@ namespace HadoopUtils {
   }
 
   void serializeInt(int32_t t, OutStream& stream) {
-    serializeLong(t,stream);
+    serializeLong(t, stream);
   }
 
   void serializeLong(int64_t t, OutStream& stream)
