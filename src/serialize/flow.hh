@@ -59,7 +59,6 @@ private:
   hu::InStream* _stream;
 };
 
-
 class FlowWriter {
 
 public:

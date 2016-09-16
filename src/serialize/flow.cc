@@ -62,12 +62,7 @@ hu::InStream* get_in_stream(PyObject *o) {
     }
     fd = fileno(PyFile_AsFILE(o)); // FIXME, this is ugly.
 #endif
-    int fddup = dup(fd);
-    if (fddup < 0) {
-      PyErr_SetString(PyExc_ValueError, "Cannot dup fd.");
-      return NULL;
-    }
-    FILE* fin = fdopen(fddup, "r");    
+    FILE* fin = fdopen(fd, "rb");
     if (fin == NULL) {
       PyErr_SetString(PyExc_ValueError, "Cannot open file for reading.");
       return NULL;
@@ -79,6 +74,7 @@ hu::InStream* get_in_stream(PyObject *o) {
   return stream;
 }
 
+
 static inline
 hu::OutStream* get_out_stream(PyObject *o) {
   hu::OutStream *stream;
@@ -89,7 +85,17 @@ hu::OutStream* get_out_stream(PyObject *o) {
     PyErr_SetString(PyExc_ValueError, "First argument should be a file.");
     return NULL;
   }
-  fout = fdopen(fd, "w");
+#if 0
+  int fddup = dup(fd);
+  if (fddup < 0) {
+    PyErr_SetString(PyExc_ValueError, "Cannot dup fd.");
+    return NULL;
+  }
+  // FIXME!
+  fout = fdopen(fddup, "wb");
+#else
+  fout = fdopen(fd, "wb");  
+#endif
 #else
   if (!PyFile_Check(po)) {
     PyErr_SetString(PyExc_ValueError, "First argument should be a file.");
