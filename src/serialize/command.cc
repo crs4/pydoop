@@ -159,7 +159,6 @@ PyObject* CommandReader_close(CommandReaderInfo *self) {
   return self->reader->close();
 }
 
-
 PyObject* CommandReader_iternext(PyObject *self) {
   PyObject* res = ((CommandReaderInfo *)self)->reader->read();
   if (res == NULL && PyErr_ExceptionMatches(PyExc_EOFError)) {
