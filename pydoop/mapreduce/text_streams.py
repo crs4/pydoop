@@ -17,7 +17,8 @@
 # END_COPYRIGHT
 
 from .streams import (
-    StreamWriter, DownStreamAdapter, UpStreamAdapter,
+    StreamWriter, StreamReader,
+    DownStreamAdapter, UpStreamAdapter,
     ProtocolAbort, ProtocolError
 )
 from .string_utils import quote_string
@@ -70,11 +71,7 @@ class TextWriter(StreamWriter):
         self.stream.write(self.EOL)
 
 
-class TextUpStreamAdapter(TextWriter, UpStreamAdapter):
-    pass
-
-
-class TextDownStreamAdapter(DownStreamAdapter):
+class TextReader(StreamReader):
     """
     Naive textual stream filter implementation.
 
@@ -85,18 +82,31 @@ class TextDownStreamAdapter(DownStreamAdapter):
     """
     SEP = '\t'
     CMD_TABLE = {
-        'mapItem': (DownStreamAdapter.MAP_ITEM, 2, None),
-        'reduceValue': (DownStreamAdapter.REDUCE_VALUE, 1, None),
-        'reduceKey': (DownStreamAdapter.REDUCE_KEY, 1, None),
-        'start': (DownStreamAdapter.START_MESSAGE, 1, lambda p: [int(p[0])]),
-        'setJobConf': (DownStreamAdapter.SET_JOB_CONF, None, None),
-        'setInputTypes': (DownStreamAdapter.SET_INPUT_TYPES, 2, None),
-        'runMap': (DownStreamAdapter.RUN_MAP, 3,
+        'mapItem': (StreamReader.MAP_ITEM, 2, None),
+        'reduceValue': (StreamReader.REDUCE_VALUE, 1, None),
+        'reduceKey': (StreamReader.REDUCE_KEY, 1, None),
+        'start': (StreamReader.START_MESSAGE, 1, lambda p: [int(p[0])]),
+        'setJobConf': (StreamReader.SET_JOB_CONF, None, lambda p: [tuple(p)]),
+        'setInputTypes': (StreamReader.SET_INPUT_TYPES, 2, None),
+        'runMap': (StreamReader.RUN_MAP, 3,
                    lambda p: [p[0], int(p[1]), toBool(p[2])]),
-        'runReduce': (DownStreamAdapter.RUN_REDUCE, 2,
+        'runReduce': (StreamReader.RUN_REDUCE, 2,
                       lambda p: [int(p[0]), toBool(p[1])]),
-        'abort': (DownStreamAdapter.ABORT, 0, None),
-        'close': (DownStreamAdapter.CLOSE, 0, None),
+        'abort': (StreamReader.ABORT, 0, None),
+        'close': (StreamReader.CLOSE, 0, None),
+        'output': (StreamReader.OUTPUT, 2, None),
+        'partitionedOutput': (StreamReader.PARTITIONED_OUTPUT, 3,
+                              lambda p: [int(p[0]), p[1], p[2]]),
+        'status': (StreamReader.STATUS, 1, None),
+        'progress': (StreamReader.PROGRESS, 1,
+                     lambda p: [float(p[0])]),
+        'done': (StreamReader.DONE, 0, None),
+        'registerCounter': (StreamReader.REGISTER_COUNTER, 3,
+                            lambda p: [int(p[0]), p[1], p[2]]),
+        'incrementCounter': (StreamReader.INCREMENT_COUNTER, 2,
+                             lambda p: [int(p[0]), int(p[1])]),
+        'authenticationReq': (StreamReader.AUTHENTICATION_REQ, 2, None),
+        'authenticationResp': (StreamReader.AUTHENTICATION_RESP, 1, None),
     }
 
     @classmethod
@@ -112,7 +122,7 @@ class TextDownStreamAdapter(DownStreamAdapter):
             raise ProtocolError('Unrecognized command %r' % cmd)
 
     def __init__(self, stream):
-        super(TextDownStreamAdapter, self).__init__(stream)
+        super(TextReader, self).__init__(stream)
 
     def __next__(self):
         line = self.stream.readline()[:-1]
@@ -123,3 +133,11 @@ class TextDownStreamAdapter(DownStreamAdapter):
 
     def next(self):
         return self.__next__()
+
+
+class TextUpStreamAdapter(TextWriter, UpStreamAdapter):
+    pass
+
+
+class TextDownStreamAdapter(TextReader, DownStreamAdapter):
+    pass

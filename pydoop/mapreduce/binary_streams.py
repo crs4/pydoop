@@ -17,8 +17,7 @@
 # END_COPYRIGHT
 
 from .streams import (
-    StreamWriter, DownStreamAdapter, UpStreamAdapter,
-    ProtocolAbort, ProtocolError
+    StreamWriter, StreamReader, DownStreamAdapter, UpStreamAdapter,
 )
 from pydoop.utils.serialize import CommandWriter
 from pydoop.utils.serialize import CommandReader
@@ -27,7 +26,8 @@ from pydoop.utils.py3compat import unicode
 import logging
 logging.basicConfig()
 LOGGER = logging.getLogger('binary_streams')
-LOGGER.setLevel(logging.CRITICAL)
+# LOGGER.setLevel(logging.CRITICAL)
+LOGGER.setLevel(logging.DEBUG)
 
 
 class BinaryWriter(StreamWriter):
@@ -46,14 +46,24 @@ class BinaryWriter(StreamWriter):
         self.stream.write((cmd, args))
 
 
-class BinaryDownStreamAdapter(DownStreamAdapter):
+class BinaryReader(StreamReader):
 
     def __init__(self, stream):
-        super(BinaryDownStreamAdapter, self).__init__(CommandReader(stream))
-        self.logger = LOGGER.getChild('BinaryDownStreamAdapter')
+        super(BinaryReader, self).__init__(CommandReader(stream))
+        self.logger = LOGGER.getChild('BinaryReader')
+        self.logger.debug('initialize on stream: %s', stream)
 
     def __iter__(self):
-        return self.stream
+        self.logger.debug('requested iterator: %s', self)        
+        return self.stream.__iter__()
+
+
+class BinaryDownStreamAdapter(BinaryReader, DownStreamAdapter):
+
+    def __init__(self, stream):
+        super(BinaryDownStreamAdapter, self).__init__(stream)
+        self.logger = LOGGER.getChild('BinaryDownStreamAdapter')
+        self.logger.debug('initialize on stream: %s', stream)
 
 
 class BinaryUpStreamAdapter(BinaryWriter, UpStreamAdapter):
