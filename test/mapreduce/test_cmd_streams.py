@@ -30,32 +30,8 @@ from pydoop.mapreduce.binary_streams import (BinaryWriter,
 
 from pydoop.test_utils import WDTestCase
 
-STREAM_1 = [
-    (streams.START_MESSAGE, 0),
-    (streams.SET_JOB_CONF, 'key1', 'value1', 'key2', 'value2'),
-    (streams.SET_INPUT_TYPES, 'key_type', 'value_type'),
-    (streams.RUN_MAP, 'input_split', 3, 0),
-    (streams.MAP_ITEM, 'key1', 'val1'),
-    (streams.MAP_ITEM, 'key1', 'val2'),
-    (streams.MAP_ITEM, 'key2', 'val3'),
-    (streams.RUN_REDUCE, 0, 0),
-    (streams.REDUCE_KEY, 'key1'),
-    (streams.REDUCE_VALUE, 'val1'),
-    (streams.REDUCE_VALUE, 'val2'),
-    (streams.REDUCE_KEY, 'key2'),
-    (streams.REDUCE_VALUE, 'val3'),
-    (streams.CLOSE,),
-]
-
-STREAM_2 = [
-    (streams.OUTPUT, 'key1', 'val1'),
-    (streams.PARTITIONED_OUTPUT, 22, 'key2', 'val2'),
-    (streams.STATUS, 'jolly good'),
-    (streams.PROGRESS, 0.99),
-    (streams.DONE,),
-    (streams.REGISTER_COUNTER, 22, 'cgroup', 'cname'),
-    (streams.INCREMENT_COUNTER, 22, 123),
-]
+from data.stream_data import STREAM_3_DATA as STREAM_1
+from data.stream_data import STREAM_4_DATA as STREAM_2
 
 
 def stream_writer(fname, data, mod, Writer):
@@ -69,18 +45,18 @@ def stream_writer(fname, data, mod, Writer):
 class TestCmdStreams(WDTestCase):
 
     def downlink_helper(self, mod, Writer, DownStreamAdapter):
-        fname = "foo.bin" # self._mkfn('foo.' + ('bin' if mod == 'b' else ''))
+        fname = self._mkfn('foo.' + ('bin' if mod == 'b' else ''))
         stream_writer(fname, STREAM_1, mod, Writer)
         with open(fname, 'r' + mod) as f:
             stream = DownStreamAdapter(f)
             try:
                 for (cmd, args), vals in czip(stream, STREAM_1):
                     self.assertEqual(cmd, vals[0])
-                    vals = vals[1:]                    
+                    vals = vals[1:]
                     if mod == 'b':
                         vals = [x.encode('utf-8')
                                 if isinstance(x, unicode) else x
-                                for x in vals ]
+                                for x in vals]
                     vals = tuple(vals)
                     if cmd == streams.SET_JOB_CONF:
                         self.assertEqual(len(args), 1)
@@ -123,7 +99,7 @@ def suite():
     suite_.addTest(TestCmdStreams('test_text_downlink'))
     suite_.addTest(TestCmdStreams('test_binary_downlink'))
     suite_.addTest(TestCmdStreams('test_text_uplink'))
-    suite_.addTest(TestCmdStreams('test_binary_uplink'))    
+    suite_.addTest(TestCmdStreams('test_binary_uplink'))
     return suite_
 
 

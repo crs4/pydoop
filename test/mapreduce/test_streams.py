@@ -24,28 +24,7 @@ from pydoop.mapreduce.streams import get_key_value_stream
 from pydoop.mapreduce.streams import get_key_values_stream
 from pydoop.utils.py3compat import czip, cmap, cfilter
 
-
-STREAM_1_DATA = [
-    (streams.MAP_ITEM, 'key1', 'val1'),
-    (streams.MAP_ITEM, 'key2', 'val2'),
-    (streams.MAP_ITEM, 'key3', 'val3'),
-    (streams.CLOSE,),
-    (streams.MAP_ITEM, 'key3', 'val3'),  # should not get here
-]
-
-STREAM_2_DATA = [
-    (streams.REDUCE_KEY, 'key1'),
-    (streams.REDUCE_VALUE, 'val11'),
-    (streams.REDUCE_VALUE, 'val12'),
-    (streams.REDUCE_VALUE, 'val13'),
-    (streams.REDUCE_KEY, 'key2'),
-    (streams.REDUCE_VALUE, 'val21'),
-    (streams.REDUCE_VALUE, 'val22'),
-    (streams.REDUCE_VALUE, 'val23'),
-    (streams.CLOSE,),
-    (streams.REDUCE_VALUE, 'val24'),  # should not get here
-]
-
+from data.stream_data import STREAM_1_DATA, STREAM_2_DATA
 
 key = None
 
