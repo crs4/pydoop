@@ -21,11 +21,7 @@ from .streams import (
     DownStreamAdapter, UpStreamAdapter,
     ProtocolAbort, ProtocolError
 )
-from .string_utils import quote_string
-
-
-def toBool(s):
-    return s.lower().find('true') > -1
+from .string_utils import quote_string, unquote_string
 
 
 class TextWriter(StreamWriter):
@@ -89,9 +85,9 @@ class TextReader(StreamReader):
         'setJobConf': (StreamReader.SET_JOB_CONF, None, lambda p: [tuple(p)]),
         'setInputTypes': (StreamReader.SET_INPUT_TYPES, 2, None),
         'runMap': (StreamReader.RUN_MAP, 3,
-                   lambda p: [p[0], int(p[1]), toBool(p[2])]),
+                   lambda p: [p[0], int(p[1]), int(p[2])]),
         'runReduce': (StreamReader.RUN_REDUCE, 2,
-                      lambda p: [int(p[0]), toBool(p[1])]),
+                      lambda p: [int(p[0]), int(p[1])]),
         'abort': (StreamReader.ABORT, 0, None),
         'close': (StreamReader.CLOSE, 0, None),
         'output': (StreamReader.OUTPUT, 2, None),
@@ -117,7 +113,9 @@ class TextReader(StreamReader):
             if cmd == cls.ABORT:
                 raise ProtocolAbort('received an abort request')
             args = args if converter is None else converter(args)
-            return cmd, tuple(args) if args else None
+            return cmd, tuple((unquote_string(a)
+                               if isinstance(a, str) else a
+                               for a in args)) if args else None
         else:
             raise ProtocolError('Unrecognized command %r' % cmd)
 

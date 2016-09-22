@@ -44,13 +44,15 @@ def stream_writer(fname, data, mod, Writer):
 
 class TestCmdStreams(WDTestCase):
 
-    def downlink_helper(self, mod, Writer, DownStreamAdapter):
-        fname = self._mkfn('foo.' + ('bin' if mod == 'b' else ''))
+    def link_helper(self, mod, Writer, DownStreamAdapter):
+        fname = self._mkfn('foo.' + ('bin' if mod == 'b' else 'txt'))
         stream_writer(fname, STREAM_1, mod, Writer)
         with open(fname, 'r' + mod) as f:
             stream = DownStreamAdapter(f)
             try:
+                at_least_once_in_loop = False
                 for (cmd, args), vals in czip(stream, STREAM_1):
+                    at_least_once_in_loop = True
                     self.assertEqual(cmd, vals[0])
                     vals = vals[1:]
                     if mod == 'b':
@@ -64,34 +66,21 @@ class TestCmdStreams(WDTestCase):
                     else:
                         self.assertTrue((len(vals) == 0 and not args) or
                                         (vals == args))
+                self.assertTrue(at_least_once_in_loop)
             except ProtocolError as e:
                 print('error -- %s' % e)
 
     def test_text_downlink(self):
-        self.downlink_helper('', TextWriter, TextDownStreamAdapter)
+        self.link_helper('', TextWriter, TextDownStreamAdapter)
 
     def test_binary_downlink(self):
-        self.downlink_helper('b', BinaryWriter, BinaryDownStreamAdapter)
-
-    def uplink_helper(self, mod, UpStreamAdapter, DownStreamAdapter):
-        fname = self._mkfn('foo.txt')
-        with open(fname, 'w' + mod) as f:
-            stream = UpStreamAdapter(f)
-            try:
-                for vals in STREAM_2:
-                    stream.send(vals[0], *vals[1:])
-            except ProtocolError as e:
-                print('error -- %s' % e)
-        with open(fname, 'r' + mod) as f:
-            stream = DownStreamAdapter(f)
-            for cmd, vals in stream:
-                print(cmd, vals)
+        self.link_helper('b', BinaryWriter, BinaryDownStreamAdapter)
 
     def test_text_uplink(self):
-        self.uplink_helper('', TextUpStreamAdapter, TextDownStreamAdapter)
+        self.link_helper('', TextUpStreamAdapter, TextDownStreamAdapter)
 
     def test_binary_uplink(self):
-        self.uplink_helper('b', BinaryUpStreamAdapter, BinaryDownStreamAdapter)
+        self.link_helper('b', BinaryUpStreamAdapter, BinaryDownStreamAdapter)
 
 
 def suite():
