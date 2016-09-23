@@ -252,7 +252,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
     def close(self):
         if self.writer:
             self.writer.close()
-        self.up_link.send('done')
+        self.up_link.send(self.up_link.DONE)
 
     def set_combiner(self, factory, input_split, n_reduces):
         self.n_reduces = n_reduces
@@ -278,15 +278,16 @@ class TaskContext(api.MapContext, api.ReduceContext):
                 key = private_encode(key)
                 value = private_encode(value)
             else:
-                key = (key if type(key) in [str, unicode]
+                key = (key if type(key) in [str, bytes, unicode]
                        else unicode(key))
-                value = (value if type(value) in [str, unicode]
+                value = (value if type(value) in [str, bytes, unicode]
                          else unicode(value))
             if self.partitioner:
                 part = self.partitioner.partition(key, self.n_reduces)
-                self.up_link.send('partitionedOutput', part, key, value)
+                self.up_link.send(self.up_link.PARTITIONED_OUTPUT,
+                                  part, key, value)
             else:
-                self.up_link.send('output', key, value)
+                self.up_link.send(self.up_link.OUTPUT, key, value)
 
     def set_job_conf(self, vals):
         self._job_conf = api.JobConf(vals)
@@ -310,10 +311,10 @@ class TaskContext(api.MapContext, api.ReduceContext):
         if now - self._last_progress > 1:
             self._last_progress = now
             if self._status_set:
-                self.up_link.send("status", self._status)
+                self.up_link.send(self.up_link.STATUS, self._status)
                 LOGGER.debug("Sending status: %r", self._status)
                 self._status_set = False
-            self.up_link.send("progress", self._progress_float)
+            self.up_link.send(self.up_link.PROGRESS, self._progress_float)
             self.up_link.flush()
             LOGGER.debug("Sending progress: %r", self._progress_float)
 
@@ -325,11 +326,13 @@ class TaskContext(api.MapContext, api.ReduceContext):
     def get_counter(self, group, name):
         counter_id = len(self._registered_counters)
         self._registered_counters.append(counter_id)
-        self.up_link.send("registerCounter", counter_id, group, name)
+        self.up_link.send(self.up_link.REGISTER_COUNTER,
+                          counter_id, group, name)
         return api.Counter(counter_id)
 
     def increment_counter(self, counter, amount):
-        self.up_link.send("incrementCounter", counter.get_id(), amount)
+        self.up_link.send(self.up_link.INCREMENT_COUNTER,
+                          counter.get_id(), amount)
 
     def get_input_split(self):
         return InputSplit(self._input_split)
@@ -397,10 +400,10 @@ class StreamRunner(object):
 
     def run(self):
         self.logger.debug('start running')
-        AUTHENTICATION_REQ = self.AUTHENTICATION_REQ
-        SET_JOB_CONF = self.SET_JOB_CONF
-        RUN_MAP = self.RUN_MAP
-        RUN_REDUCE = self.RUN_REDUCE
+        AUTHENTICATION_REQ = self.cmd_stream.AUTHENTICATION_REQ
+        SET_JOB_CONF = self.cmd_stream.SET_JOB_CONF
+        RUN_MAP = self.cmd_stream.RUN_MAP
+        RUN_REDUCE = self.cmd_stream.RUN_REDUCE
 
         for cmd, args in self.cmd_stream:
             self.logger.debug('dispatching cmd: %s, args: %s', cmd, args)
@@ -436,7 +439,8 @@ class StreamRunner(object):
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
         self.logger.debug('authenticationResp: %r', response_digest)
-        self.ctx.up_link.send('authenticationResp', response_digest)
+        self.ctx.up_link.send(self.ctx.up_link.AUTHENTICATION_RESP,
+                              response_digest)
         self.ctx.up_link.flush()
         return False
 
@@ -449,7 +453,7 @@ class StreamRunner(object):
         LOGGER.debug("Input split: %r", input_split)
         if piped_input:
             cmd, args = self.cmd_stream.next()
-            if cmd == self.SET_INPUT_TYPES:
+            if cmd == self.cmd_stream.SET_INPUT_TYPES:
                 ctx._input_key_class, ctx._input_value_class = args
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
                              ctx._input_key_class, ctx._input_value_class)
