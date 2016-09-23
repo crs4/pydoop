@@ -26,8 +26,8 @@ from pydoop.utils.py3compat import unicode
 import logging
 logging.basicConfig()
 LOGGER = logging.getLogger('binary_streams')
-# LOGGER.setLevel(logging.CRITICAL)
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.CRITICAL)
+
 
 
 class BinaryWriter(StreamWriter):
@@ -36,6 +36,8 @@ class BinaryWriter(StreamWriter):
         super(BinaryWriter, self).__init__(CommandWriter(stream))
         self.logger = LOGGER.getChild('BinaryWriter')
         self.logger.debug('initialize on stream: %s', stream)
+        # we need to be sure that stream will not be gc
+        self.original_stream = stream
 
     def send(self, cmd, *args):
         self.logger.debug('writing %r, %r', cmd, args)
@@ -52,9 +54,11 @@ class BinaryReader(StreamReader):
         super(BinaryReader, self).__init__(CommandReader(stream))
         self.logger = LOGGER.getChild('BinaryReader')
         self.logger.debug('initialize on stream: %s', stream)
+        # we need to be sure that stream will not be gc
+        self.original_stream = stream
 
     def __iter__(self):
-        self.logger.debug('requested iterator: %s', self)        
+        self.logger.debug('requested iterator: %s', self)
         return self.stream.__iter__()
 
 
