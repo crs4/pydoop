@@ -22,9 +22,8 @@ import socket
 from threading import Thread, Event
 import logging
 
-from pydoop.sercore import fdopen as ph_fdopen
-from .text_streams import TextDownStreamFilter, TextUpStreamFilter
-from .binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
+from .text_streams import TextDownStreamAdapter, TextUpStreamAdapter
+from .binary_streams import BinaryDownStreamAdapter, BinaryUpStreamAdapter
 
 
 logging.basicConfig(level=logging.CRITICAL)
@@ -47,15 +46,15 @@ class Connections(object):
 
 
 def open_playback_connections(cmd_file, out_file):
-    in_stream = open(cmd_file, 'r')
-    out_stream = open(out_file, 'w')
-    return Connections(BinaryDownStreamFilter(in_stream),
-                       BinaryUpStreamFilter(out_stream))
+    in_stream = open(cmd_file, 'rb')
+    out_stream = open(out_file, 'wb')
+    return Connections(BinaryDownStreamAdapter(in_stream),
+                       BinaryUpStreamAdapter(out_stream))
 
 
 def open_file_connections(istream=sys.stdin, ostream=sys.stdout):
-    return Connections(TextDownStreamFilter(istream),
-                       TextUpStreamFilter(ostream))
+    return Connections(TextDownStreamAdapter(istream),
+                       TextUpStreamAdapter(ostream))
 
 
 class LifeThread(object):
@@ -104,7 +103,7 @@ class NetworkConnections(Connections):
 def open_network_connections(port):
     s = socket.socket()
     s.connect(('localhost', port))
-    in_stream = ph_fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
-    out_stream = ph_fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
-    return NetworkConnections(BinaryDownStreamFilter(in_stream),
-                              BinaryUpStreamFilter(out_stream), s, port)
+    in_stream = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
+    out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
+    return NetworkConnections(BinaryDownStreamAdapter(in_stream),
+                              BinaryUpStreamAdapter(out_stream), s, port)
