@@ -22,52 +22,38 @@ import time
 
 from pydoop.mapreduce.api import Mapper, Reducer, Factory
 from pydoop.mapreduce.pipes import run_task, TaskContext
-from pydoop.mapreduce.string_utils import unquote_string
+
 from pydoop.test_utils import WDTestCase
 from pydoop.utils.misc import Timer
+from pydoop.utils.py3compat import iteritems
 
-from test_text_stream import stream_writer
-from test_binary_streams import stream_writer as binary_stream_writer
-from pydoop.mapreduce.binary_streams import BinaryDownStreamFilter
+
+from test_cmd_streams import stream_writer
+from pydoop.mapreduce.streams import StreamWriter
+from pydoop.mapreduce.text_streams import TextWriter
+from pydoop.mapreduce.binary_streams import BinaryWriter
+from pydoop.mapreduce.binary_streams import BinaryDownStreamAdapter
 from pydoop.mapreduce.binary_streams import BinaryUpStreamDecoder
 
+from data.stream_data import STREAM_5_DATA as STREAM_1
+from data.stream_data import STREAM_6_DATA as STREAM_2
 
-STREAM_1 = [
-    ('start', 0),
-    ('setJobConf', 'key1', 'value1', 'key2', 'value2'),
-    ('setInputTypes', 'key_type', 'value_type'),
-    ('runMap', 'input_split', 0, False),
-    ('mapItem', 'key1', 'the blue fox jumps on the table'),
-    ('mapItem', 'key1', 'a yellow fox turns around'),
-    ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
-    ('close',),
-]
 
-STREAM_2 = [
-    ('start', 0),
-    ('setJobConf', 'key1', 'value1', 'key2', 'value2'),
-    ('setInputTypes', 'key_type', 'value_type'),
-    ('runMap', 'input_split', 1, False),
-    ('mapItem', 'key1', 'the blue fox jumps on the table'),
-    ('mapItem', 'key1', 'a yellow fox turns around'),
-    ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
-    ('close',),
-]
+def binary_stream_writer(fname, data):
+    stream_writer(fname, data, 'b', BinaryWriter)
 
-STREAM_3 = [
-    ('start', 0),
-    ('setJobConf', ('key1', 'value1', 'key2', 'value2')),
-    ('setInputTypes', 'key_type', 'value_type'),
-    ('runMap', 'input_split', 1, False),
-    ('mapItem', 'key1', 'the blue fox jumps on the table'),
-    ('mapItem', 'key1', 'a yellow fox turns around'),
-    ('mapItem', 'key2', 'a blue yellow fox sits on the table'),
-    ('close',),
-]
+
+def text_stream_writer(fname, data):
+    stream_writer(fname, data, '', TextWriter)
+
+
+def count_outputs(fname):
+    with open(fname) as f:
+        count = Counter([_.strip().split('\t', 1)[0] for _ in f])
+    return count
 
 
 class TContext(TaskContext):
-
     @property
     def value(self):
         return ' '.join([self.get_input_value()] * 2)
@@ -91,7 +77,7 @@ class TReducer(Reducer):
 
     def reduce(self, ctx):
         s = sum(map(int, ctx.values))
-        ctx.emit(ctx.key, str(s))
+        ctx.emit(ctx.key, s)
 
 
 class SleepingMapper(TMapper):
@@ -102,7 +88,7 @@ class SleepingMapper(TMapper):
 
     def map(self, ctx):
         with self.timer.time_block("sleep"):
-            time.sleep(.001)
+            time.sleep(0.001)
         super(SleepingMapper, self).map(ctx)
 
 
@@ -112,7 +98,7 @@ class SleepingMapperNoTimer(TMapper):
         super(SleepingMapperNoTimer, self).__init__(ctx)
 
     def map(self, ctx):
-        time.sleep(.001)
+        time.sleep(0.001)
         super(SleepingMapperNoTimer, self).map(ctx)
 
 
@@ -212,6 +198,10 @@ class TFactory(Factory):
 
 
 class SortAndShuffle(object):
+    """
+    This class simulates hadoop sort and shuffle. It uses the
+    TextStream protocol.
+    """
 
     def __init__(self):
         self.data = {}
@@ -219,15 +209,15 @@ class SortAndShuffle(object):
         self.out_stream = None
 
     def process(self, msg):
-        p = msg.split('\t')
-        if p[0] == 'output':
-            key = unquote_string(p[1])
-            val = unquote_string(p[2])
+        p = msg.split(TextWriter.SEP)
+        if p[0] == TextWriter.CMD_TABLE[StreamWriter.OUTPUT]:
+            key = p[1]
+            val = p[2]
             self.data.setdefault(key, []).append(val)
 
     def write(self, s):
         self.buffer.append(s)
-        if s.endswith('\n'):
+        if s.endswith(TextWriter.EOL):
             msg = ''.join(self.buffer)
             self.buffer = []
             self.process(msg)
@@ -240,16 +230,16 @@ class SortAndShuffle(object):
 
     def readline(self):
         try:
-            return self.out_stream.next()
+            return next(self.out_stream)
         except StopIteration:
             return ''
 
     def get_reduce_stream(self):
         yield 'runReduce\t0\t0\n'
         for k in self.data:
-            yield 'reduceKey\t%s\n' % k
+            yield 'reduceKey\t{}\n'.format(k)
             for v in self.data[k]:
-                yield 'reduceValue\t%s\n' % v
+                yield 'reduceValue\t{}\n'.format(v)
         yield 'close\n'
 
 
@@ -258,24 +248,35 @@ class TestFramework(WDTestCase):
     def setUp(self):
         super(TestFramework, self).setUp()
         fname = self._mkfn('foo.txt')
-        stream_writer(fname, STREAM_1)
+        text_stream_writer(fname, STREAM_1)
         self.stream1 = open(fname, 'r')
         fname = self._mkfn('foo2.txt')
-        stream_writer(fname, STREAM_2)
+        text_stream_writer(fname, STREAM_2)
         self.stream2 = open(fname, 'r')
         fname = self._mkfn('foo3.bin')
-        binary_stream_writer(fname, STREAM_3)
-        self.stream3 = open(fname, 'r')
+        binary_stream_writer(fname, STREAM_2)
+        self.stream3 = open(fname, 'rb')
 
     def tearDown(self):
         self.stream1.close()
         self.stream2.close()
+        self.stream3.close()
         super(TestFramework, self).tearDown()
 
     def test_map_only(self):
         factory = TFactory()
-        with self._mkf('foo_map_only.out') as o:
+        fname = self._mkfn('foo_map_only.out')
+        with open(fname, 'w') as o:
             run_task(factory, istream=self.stream1, ostream=o)
+        exp_count = {
+            'registerCounter': 1,
+            'done': 1,
+            'progress': 1,
+            'incrementCounter': 3,
+            'output': sum(len(_[2].split())
+                          for _ in STREAM_1 if _[0] is TextWriter.MAP_ITEM)
+        }
+        self.check_counts(fname, exp_count)
 
     def test_map_reduce(self):
         factory = TFactory()
@@ -323,32 +324,35 @@ class TestFramework(WDTestCase):
         run_task(factory, cmd_file=cmd_file, private_encoding=True,
                  fast_combiner=fast_combiner)
         data = {}
-        with open(out_file) as f:
-            bf = BinaryDownStreamFilter(f)
+        bw = BinaryWriter
+        with open(out_file, 'rb') as f:
+            bf = BinaryDownStreamAdapter(f)
             for cmd, args in bf:
-                if cmd == 'output':
+                if cmd == bw.OUTPUT:
                     data.setdefault(args[0], []).append(args[1])
         stream = []
-        stream.append(('start', 0))
-        stream.append(('setJobConf', ('key1', 'value1', 'key2', 'value2')))
-        stream.append(('runReduce', 0, False))
+        stream.append((bw.START_MESSAGE, 0))
+        stream.append((bw.SET_JOB_CONF, 'key1', 'value1', 'key2', 'value2'))
+        stream.append((bw.RUN_REDUCE, 0, 0))
         for k in data:
-            stream.append(('reduceKey', k))
+            stream.append((bw.REDUCE_KEY, k))
             for v in data[k]:
-                stream.append(('reduceValue', v))
-        stream.append(('close',))
+                stream.append((bw.REDUCE_VALUE, v))
+        stream.append((bw.CLOSE,))
         binary_stream_writer(reduce_infile, stream)
         run_task(factory, cmd_file=reduce_infile, private_encoding=True)
-        with open(reduce_outfile) as f, self._mkf('foo.out', mode='w') as o:
-            bf = BinaryUpStreamDecoder(f)
-            for cmd, args in bf:
-                if cmd == 'progress':
-                    o.write('progress\t%s\n' % args[0])
-                elif cmd == 'output':
-                    o.write('output\t%s\n' % '\t'.join(args))
-                elif cmd == 'done':
-                    o.write('done\n')
-        self.check_result('foo.out', STREAM_3)
+        with open(reduce_outfile, 'rb') as f:
+            with self._mkf('foo.out', mode='w') as o:
+                bf = BinaryUpStreamDecoder(f)
+                for cmd, args in bf:
+                    if cmd == bw.PROGRESS:
+                        o.write('progress\t%s\n' % args[0])
+                    elif cmd == bw.OUTPUT:
+                        o.write('output\t%s\n' %
+                                '\t'.join([x.decode('utf-8') for x in args]))
+                    elif cmd == bw.DONE:
+                        o.write('done\n')
+        self.check_result('foo.out', STREAM_2)
 
     def test_map_combiner_reduce_with_context(self):
         factory = TFactory(combiner=TReducer)
@@ -364,35 +368,30 @@ class TestFramework(WDTestCase):
 
     def test_instrumentation(self):
         factory = TFactory(mapper=SleepingMapperNoTimer)
-        with self._mkf('foo_map_only.out') as o:
-            run_task(factory, istream=self.stream1, ostream=o)
-        count = Counter()
-        with open(o.name) as f:
-            for line in f:
-                count[line.strip().split('\t', 1)[0]] += 1
         exp_count = {
             'registerCounter': 1,
-            'incrementCounter': Counter([_[0] for _ in STREAM_1])['mapItem']
+            'incrementCounter':
+            Counter([_[0] for _ in STREAM_1])[TextWriter.MAP_ITEM]
         }
-        for k, v in exp_count.iteritems():
-            self.assertTrue(k in count)
-            self.assertEqual(count[k], v)
+        with self._mkf('foo_map_only.out') as o:
+            run_task(factory, istream=self.stream1, ostream=o)
+            self.check_counts(o.name, exp_count)
 
     def test_timer(self):
         factory = TFactory(mapper=SleepingMapper)
-        with self._mkf('foo_map_only.out') as o:
-            run_task(factory, istream=self.stream1, ostream=o)
-        count = Counter()
-        with open(o.name) as f:
-            for line in f:
-                count[line.strip().split('\t', 1)[0]] += 1
         exp_count = {
             'registerCounter': 2,
             'incrementCounter': 2 * Counter(
                 [_[0] for _ in STREAM_1]
-            )['mapItem']
+            )[TextWriter.MAP_ITEM]
         }
-        for k, v in exp_count.iteritems():
+        with self._mkf('foo_map_only.out') as o:
+            run_task(factory, istream=self.stream1, ostream=o)
+            self.check_counts(o.name, exp_count)
+
+    def check_counts(self, fname, exp_count):
+        count = count_outputs(fname)
+        for k, v in iteritems(exp_count):
             self.assertTrue(k in count)
             self.assertEqual(count[k], v)
 
@@ -406,9 +405,10 @@ class TestFramework(WDTestCase):
                                   (l.split('\t')[1:] for l in lines[1:-1]
                                    if l.startswith('output')
                                    ))))
-        ref_counts = Counter(sum(
-            [x[2].split() for x in ref_data if x[0] == 'mapItem'], []
-        ))
+        ref_counts = Counter(
+            sum([x[2].split()
+                 for x in ref_data if x[0] == StreamWriter.MAP_ITEM], []
+                ))
         self.assertEqual(sorted(counts.keys()), sorted(ref_counts.keys()))
         for k in counts.keys():
             self.assertEqual(ref_counts[k] * factor, counts[k])
