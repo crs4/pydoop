@@ -29,7 +29,6 @@ LOGGER = logging.getLogger('binary_streams')
 LOGGER.setLevel(logging.CRITICAL)
 
 
-
 class BinaryWriter(StreamWriter):
 
     def __init__(self, stream):
@@ -40,11 +39,12 @@ class BinaryWriter(StreamWriter):
         self.original_stream = stream
 
     def send(self, cmd, *args):
-        self.logger.debug('writing %r, %r', cmd, args)
+        self.logger.debug('request to write %r, %r', cmd, args)
         args = tuple(x.encode('utf-8') if isinstance(x, unicode) else x
                      for x in args)
         if cmd == self.SET_JOB_CONF:
             args = (args,)
+        self.logger.debug('writing (%r, %r)', cmd, args)
         self.stream.write((cmd, args))
 
 
