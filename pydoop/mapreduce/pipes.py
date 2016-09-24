@@ -348,7 +348,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
 
     def next_value(self):
         try:
-            self._value = self._values.next()
+            self._value = next(self._values)
             return True
         except StopIteration:
             return False
@@ -452,7 +452,7 @@ class StreamRunner(object):
         ctx._input_split = input_split
         LOGGER.debug("Input split: %r", input_split)
         if piped_input:
-            cmd, args = self.cmd_stream.next()
+            cmd, args = next(iter(self.cmd_stream))
             if cmd == self.cmd_stream.SET_INPUT_TYPES:
                 ctx._input_key_class, ctx._input_value_class = args
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
