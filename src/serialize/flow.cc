@@ -128,3 +128,115 @@ FlowWriter* FlowWriter::make(PyObject* o) {
   }
   return new FlowWriter(stream);
 }
+
+//   
+#define CHECK_RESULT(o,m) \
+if (o == NULL) {\
+  return NULL;\
+}
+
+/*
+  FIXME: no protection on data allocation. Do we need it?
+ */
+PyObject* FlowReader_new(PyTypeObject *type,
+                            PyObject *args, PyObject *kwds) {
+  static char *msg =
+    "argument should be <instream>.";
+  FlowReaderInfo *self;
+  if (PyTuple_GET_SIZE(args) != 1) {
+    PyErr_SetString(PyExc_ValueError, msg);
+    return NULL;
+  }
+  FlowReader *flow_reader = FlowReader::make(PyTuple_GET_ITEM(args, 0));
+  CHECK_RESULT(flow_reader, msg);
+  self = (FlowReaderInfo *)type->tp_alloc(type, 0);
+  self->reader = flow_reader;
+  return (PyObject *)self;
+}
+
+
+void FlowReader_dealloc(FlowReaderInfo *self) {
+  delete self->reader;
+  Py_TYPE(self)->tp_free((PyObject*)self);
+}
+
+int FlowReader_init(FlowReaderInfo *self,
+                    PyObject *args, PyObject *kwds) {
+  return 0;
+}
+
+
+PyObject* FlowReader_skip(FlowReaderInfo *self, PyObject *arg) { // single arg
+  long v = PyInt_AsLong(arg);
+  if (v == -1 && PyErr_Occurred()) {
+    return NULL;
+  } else {
+    assert(v >= 0);
+    return self->reader->skip((std::size_t) v);
+  }
+}
+
+
+PyObject* FlowReader_read(FlowReaderInfo *self, PyObject *arg) { // single arg
+  Py_buffer buffer;
+  if (PyObject_GetBuffer(arg, &buffer, PyBUF_SIMPLE) < 0) {
+    PyErr_SetString(PyExc_TypeError,
+                    "Argument is not accessible as a Python buffer");
+    return NULL;        
+  } else {
+    std::string s((char *) buffer.buf, buffer.len);
+    return self->reader->read(s);
+  }
+}
+
+PyObject* FlowReader_close(FlowReaderInfo *self) {
+  return self->reader->close();
+}
+
+
+PyObject* FlowWriter_new(PyTypeObject *type,
+                         PyObject *args, PyObject *kwds) {
+  static char *msg =
+    "argument should be <outstream>.";
+  if (PyTuple_GET_SIZE(args) != 1) {
+    PyErr_SetString(PyExc_ValueError, msg);
+    return NULL;
+  }
+  FlowWriterInfo *self;
+  FlowWriter *flow_writer = FlowWriter::make(PyTuple_GET_ITEM(args, 0));
+  CHECK_RESULT(flow_writer, msg);
+  self = (FlowWriterInfo *)type->tp_alloc(type, 0);
+  self->writer = flow_writer;
+  return (PyObject *)self;
+}
+
+void FlowWriter_dealloc(FlowWriterInfo *self) {
+  delete self->writer;
+  Py_TYPE(self)->tp_free((PyObject*)self);
+}
+
+int FlowWriter_init(FlowWriterInfo *self,
+                    PyObject *args, PyObject *kwds) {
+    return 0;
+}
+
+PyObject* FlowWriter_write(FlowWriterInfo *self, PyObject* args) {
+  assert(PyTuple_GET_SIZE(args) == 2);
+  Py_buffer buffer;
+  if (PyObject_GetBuffer(PyTuple_GET_ITEM(args, 0), &buffer, PyBUF_SIMPLE) < 0) {
+    PyErr_SetString(PyExc_TypeError,
+                    "First argument is not accessible as a Python buffer");
+    return NULL;
+  } else {
+    std::string rule((char *) buffer.buf, buffer.len);
+    return self->writer->write(PyTuple_GET_ITEM(args, 1), rule);
+  }
+}
+
+PyObject* FlowWriter_flush(FlowWriterInfo *self) {
+  return self->writer->flush();
+}
+
+PyObject* FlowWriter_close(FlowWriterInfo *self) {
+  return self->writer->close();
+}

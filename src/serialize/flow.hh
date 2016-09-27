@@ -38,6 +38,15 @@ public:
 public:
   FlowReader(hu::InStream* stream) : _stream(stream) {}
 
+  inline PyObject* skip(std::size_t nbytes) {
+    if (!_stream->skip(nbytes)) {
+      PyErr_SetString(PyExc_TypeError,
+                      "Failed skip");
+      return NULL;
+    }
+    Py_RETURN_NONE;
+  }
+
   inline PyObject* read(const std::string& rule) {
     return deserialize(_stream, rule);
   }
@@ -93,6 +102,36 @@ public:
 private:
   hu::OutStream* _stream;
 };
+
+typedef struct {
+  PyObject_HEAD
+  FlowReader* reader;
+} FlowReaderInfo;
+
+
+typedef struct {
+  PyObject_HEAD
+  FlowWriter* writer;
+} FlowWriterInfo;
+
+
+PyObject* FlowWriter_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+int FlowWriter_init(FlowWriterInfo *self, PyObject *args, PyObject *kwds);
+void FlowWriter_dealloc(FlowWriterInfo *self);
+PyObject* FlowWriter_write(FlowWriterInfo *self, PyObject* args);
+PyObject* FlowWriter_flush(FlowWriterInfo *self);
+PyObject* FlowWriter_close(FlowWriterInfo *self);
+
+
+PyObject* FlowReader_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+int FlowReader_init(FlowReaderInfo *self, PyObject *args, PyObject *kwds);
+void FlowReader_dealloc(FlowReaderInfo *self);
+PyObject* FlowReader_read(FlowReaderInfo *self, PyObject *arg);
+PyObject* FlowReader_skip(FlowReaderInfo *self, PyObject *arg);
+PyObject* FlowReader_close(FlowReaderInfo *self);
+PyObject* FlowReader_iter(PyObject* self);
+PyObject* FlowReader_iternext(PyObject* self);
+
 
 
 #endif // PYDOOP_FLOW_HH

@@ -74,6 +74,7 @@ namespace HadoopUtils {
      * @throws Error if there are problems reading
      */
     virtual void read(void *buf, size_t len) = 0;
+    virtual bool skip(size_t n_bytes) { return true; }    
     virtual bool close() {return true;};
     virtual ~InStream() {}
   };
