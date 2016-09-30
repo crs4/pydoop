@@ -80,6 +80,8 @@ from .py3compat import pickle, unicode
 import pydoop.sercore as sc
 CommandWriter = sc.CommandWriter
 CommandReader = sc.CommandReader
+FlowReader = sc.FlowReader
+FlowWriter = sc.FlowWriter
 
 
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
@@ -222,3 +224,4 @@ def serialize_old_style_filename(s, stream):
 def deserialize_old_style_filename(stream):
     l = struct.unpack('>H', read_buffer(2, stream))[0]
     return unicode(read_buffer(l, stream), 'UTF-8')
+
