@@ -768,7 +768,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         self.sleep_delta = sleep_delta
         tfile = tempfile.NamedTemporaryFile(delete=False)
         self.tmp_file = tfile.name
-        self.password = uuid.uuid4().hex
+        self.password = uuid.uuid4().hex.encode('utf-8')
         tfile.write(self.password)
         tfile.close()
 
@@ -805,7 +805,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         assert file_in or input_split
         assert file_out or num_reducers > 0  # FIXME pipes should support this
         self.logger.debug('run start')
-        challenge = 'what? me worry?'
+        challenge = 'what? me worry?'.encode('utf-8')
         digest = create_digest(self.password, challenge)
         auth = (digest, challenge)
         jc_avro_input = self._get_jc_for_avro_input(file_in, job_conf)

@@ -392,7 +392,7 @@ class StreamRunner(object):
             self.password = None
             return
         try:
-            with open(pfile_name) as f:
+            with open(pfile_name, 'rb') as f:
                 self.password = f.read()
                 self.logger.debug('password: %r', self.password)
         except IOError:
