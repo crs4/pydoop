@@ -99,9 +99,8 @@ test_support.TMapper = TMapper
 
 test_support.TReducerWithCounters = TReducerWithCounters
 
-def suite():
-    test_support.suite()
+suite = test_support.suite
 
 if __name__ == '__main__':
     _RUNNER = unittest.TextTestRunner(verbosity=2)
-    _RUNNER.run((suite()))
+    _RUNNER.run(suite())
