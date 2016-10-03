@@ -92,7 +92,7 @@ class TestHadoopUtils(unittest.TestCase):
                        stdout=sp.PIPE, stderr=sp.PIPE)
         out, _ = cmd.communicate()
         self.assertTrue(
-            out.splitlines()[0].strip().lower().startswith("hadoop")
+            out.splitlines()[0].strip().lower().startswith(b"hadoop")
         )
 
     def test_get_hadoop_version(self):
