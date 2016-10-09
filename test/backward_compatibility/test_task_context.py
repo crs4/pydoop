@@ -22,14 +22,14 @@ from pydoop.pipes import InputSplit
 
 
 example_input_splits = [
-    ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00'
-     '\x08h(\x00\x00\x00\x00\x00\x08h\x05',
+    (b'/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00'
+     b'\x08h(\x00\x00\x00\x00\x00\x08h\x05',
      'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps', 550952, 550917),
-    ('/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00'
-     '\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
+    (b'/hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps\x00\x00\x00\x00\x00'
+     b'\x00\x00\x00\x00\x00\x00\x00\x00\x08h(',
      'hdfs://localhost:9000/user/zag/in-dir/FGCS-1.ps', 0, 550952),
-    ('1hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00'
-     '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
+    (b'1hdfs://localhost:9000/user/zag/in-dir/images_list\x00\x00\x00\x00\x00'
+     b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00$',
      'hdfs://localhost:9000/user/zag/in-dir/images_list', 0, 36)
 ]
 if not pydoop.hadoop_version_info().has_variable_isplit_encoding():
