@@ -211,10 +211,10 @@ def build_sercore_extension():
         'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
             'sermodule.cc',
-            'serialization_rules.cc', 'flow.cc', 'command.cc',
+            'flow.cc', 'command.cc',
             'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
-        undef_macros = [ "NDEBUG" ],
+        undef_macros = [ "NDEBUG" ], # FIXME
         extra_compile_args=extra_compile_args
     )
     EXTENSION_MODULES.append(binary_encoder)
