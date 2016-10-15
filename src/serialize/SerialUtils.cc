@@ -138,6 +138,7 @@ namespace HadoopUtils {
   bool FileOutStream::close()
   {
     int ret = 0;
+    flush();
     if (mFile != NULL && isOwned) {
       ret = fclose(mFile);
     }
