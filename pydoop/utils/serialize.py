@@ -84,6 +84,42 @@ FlowReader = sc.FlowReader
 FlowWriter = sc.FlowWriter
 
 
+class FlowReader(sc.FlowReader):
+
+    def __init__(self, stream, is_owned=True):
+        super(FlowReader, self).__init__(stream)
+        # just to avoid gc if one uses the idiom FlowReader(open(...))
+        self.stream = stream
+        self.is_owned = is_owned
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_val, exception_tb):
+        self.close()
+        if self.is_owned:
+            self.stream.close()
+        return False
+
+
+class FlowWriter(sc.FlowWriter):
+
+    def __init__(self, stream, is_owned=True):
+        super(FlowWriter, self).__init__(stream)
+        # just to avoid gc if one uses the idiom FlowWriter(open(...))
+        self.stream = stream
+        self.is_owned = is_owned
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_val, exception_tb):
+        self.close()
+        if self.is_owned:
+            self.stream.close()
+        return False
+
+
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
 
