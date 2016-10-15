@@ -111,7 +111,7 @@ PyObject* CommandWriter::write(PyObject* targs) {
   if (_flow_writer->write_int(pcode) == NULL) {
     return NULL;
   }
-  return _flow_writer->write(PyTuple_GET_ITEM(targs, 1), rules[code]);
+  return _flow_writer->write(rules[code], PyTuple_GET_ITEM(targs, 1));
 }
 
 //   

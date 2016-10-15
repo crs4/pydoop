@@ -76,7 +76,7 @@ public:
 public:
   FlowWriter(hu::OutStream* stream) : _stream(stream) {}
 
-  inline PyObject* write(PyObject* data, const std::string& rule) {
+  inline PyObject* write(const std::string& rule, PyObject* data) {
     return serialize(_stream, rule, data);
   }
   

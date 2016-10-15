@@ -229,7 +229,7 @@ PyObject* FlowWriter_write(FlowWriterInfo *self, PyObject* args) {
     return NULL;
   } else {
     std::string rule((char *) buffer.buf, buffer.len);
-    return self->writer->write(PyTuple_GET_ITEM(args, 1), rule);
+    return self->writer->write(rule, PyTuple_GET_ITEM(args, 1));
   }
 }
 
