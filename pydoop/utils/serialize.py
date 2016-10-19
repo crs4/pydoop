@@ -101,6 +101,9 @@ class FlowReader(sc.FlowReader):
             self.stream.close()
         return False
 
+    def read(self, rule):
+        rule = rule.encode('UTF-8') if isinstance(rule, unicode) else rule
+        return super(FlowReader, self).read(rule)
 
 class FlowWriter(sc.FlowWriter):
 
@@ -119,6 +122,15 @@ class FlowWriter(sc.FlowWriter):
             self.stream.close()
         return False
 
+    def write(self, rule, data):
+        def sanitize(data):
+            return tuple(x.encode('utf-8')
+                         if isinstance(x, unicode)
+                         else sanitize(x) if isinstance(x, tuple) else x
+                         for x in data)
+        rule = rule.encode('UTF-8') if isinstance(rule, unicode) else rule
+        super(FlowWriter, self).write((rule, sanitize(data)))
+
 
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 
@@ -133,6 +145,7 @@ def private_decode(s):
 
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions.
 # Do not use these functions in time-critical regions.
+
 
 
 def read_buffer(n, stream):
