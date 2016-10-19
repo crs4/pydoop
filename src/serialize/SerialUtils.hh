@@ -185,6 +185,8 @@ namespace HadoopUtils {
   void deserializeFloat(float& t, InStream& stream);
   void serializeString(const std::string& t, OutStream& stream);
   void deserializeString(std::string& t, InStream& stream);
+  void serializeWUString(const std::string& t, bool is_empty, OutStream& stream);
+  void deserializeWUString(std::string& t, bool& is_empty, InStream& stream);
 }
 
 #endif

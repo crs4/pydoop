@@ -59,6 +59,23 @@ PyObject* serialize_item(hu::OutStream& stream,
       return o; // everything is ok.
     }
   }
+  case 'S': { // Special case, Hadoop WritableUtils
+    if (o == Py_None) {
+      std::string s;
+      SERIALIZE_IN_THREADS(serializeWUString(s, true, stream));
+      return o;
+    }
+    Py_buffer buffer;
+    if (PyObject_GetBuffer(o, &buffer, PyBUF_SIMPLE) < 0) {
+      PyErr_SetString(PyExc_TypeError,
+                      "Argument is not accessible as a Python buffer");
+      return NULL;        
+    } else {
+      std::string s((char *) buffer.buf, buffer.len);
+      SERIALIZE_IN_THREADS(serializeWUString(s, false, stream));
+      return o; // everything is ok.
+    }
+  }
   case 'i': {
     long v = PyInt_AsLong(o);
     if (v == -1 && PyErr_Occurred()) {
@@ -113,6 +130,15 @@ PyObject* deserialize_item(hu::InStream& stream, char code) {
   case 's': {
     std::string buffer;
     DESERIALIZE_IN_THREADS(deserializeString(buffer, stream));
+    return _PyBuf_FromStringAndSize(buffer.c_str(), buffer.size());
+  }
+  case 'S': { // Special case, Hadoop WritableUtils
+    std::string buffer;
+    bool is_empty;
+    DESERIALIZE_IN_THREADS(deserializeWUString(buffer, is_empty, stream));
+    if (is_empty) {
+      Py_RETURN_NONE;
+    }
     return _PyBuf_FromStringAndSize(buffer.c_str(), buffer.size());
   }
   case 'i': {

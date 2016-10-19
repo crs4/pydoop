@@ -293,11 +293,45 @@ namespace HadoopUtils {
     }
   }
 
+  void serializeWUString(const std::string& t, bool is_empty,
+                         OutStream& stream)
+  {
+    char buf[sizeof(int)];
+    XDR xdrs;
+    xdrmem_create(&xdrs, buf, sizeof(int), XDR_ENCODE);
+    if (is_empty) {
+      int l = -1;
+      xdr_int(&xdrs, &l);
+      stream.write(buf, sizeof(int));
+    } else {
+      int l = t.length();
+      xdr_int(&xdrs, &l);
+      stream.write(buf, sizeof(int));
+      stream.write(t.c_str(), t.length());
+    }
+  }
+
   void serializeBuffer(const char *buf, std::size_t len, OutStream& stream)
   {
     serializeInt(len, stream);
     if (len > 0) {
       stream.write(buf, len);
+    }
+  }
+
+  void deserializeWUString(std::string& t, bool& is_empty,
+                           InStream& stream)
+  {
+    char buf[sizeof(int)];
+    stream.read(buf, sizeof(int));
+    XDR xdrs;
+    int l;
+    xdrmem_create(&xdrs, buf, sizeof(int), XDR_DECODE);
+    xdr_int(&xdrs, &l);
+    is_empty = l < 0;
+    if (!is_empty) {
+      t.resize(l);
+      stream.read(&t[0], l);
     }
   }
 
