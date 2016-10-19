@@ -8,7 +8,7 @@ class TestFlow(WDTestCase):
         fname = 'foo.dat'  # self._mkfn('foo.dat')
         with FlowWriter(open(fname, 'wb')) as stream:
             for _ in range(N):
-                stream.write((rule, data))
+                stream.write(rule, data)
         with FlowReader(open(fname, 'rb')) as stream:
             for _ in range(N):
                 xdata = stream.read(rule)
@@ -32,9 +32,9 @@ class TestFlow(WDTestCase):
         self.write_read_helper(N, rule, data)
 
     def test_write_read_mixed(self):
-        rule = b'fAsiis'
+        rule = b'fAsiisS'
         data = (0.54, (b'aaa', b'bbb', b'ccc', b'ddd'),
-                b'ssed', 4343, 35555, b'weweew')
+                b'ssed', 4343, 35555, b'weweew', b'ooioioi')
         N = 10
         self.write_read_helper(N, rule, data)
 
