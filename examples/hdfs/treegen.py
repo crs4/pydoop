@@ -34,7 +34,7 @@ BS_RANGE = [_ * MB for _ in range(50, 101, 10)]
 
 def treegen(fs, root, depth, span):
     if isdir(fs, root) and depth > 0:
-        for i in xrange(span):
+        for i in range(span):
             path = "%s/%d_%d" % (root, depth, i)
             kind = 'file' if i else 'directory'
             if kind == 'file':
@@ -61,7 +61,7 @@ def main(argv):
         depth = int(argv[1])
         span = int(argv[2])
     except IndexError:
-        print "Usage: python %s DEPTH SPAN" % argv[0]
+        print("Usage: python %s DEPTH SPAN" % argv[0])
         sys.exit(2)
 
     fs = hdfs.hdfs()

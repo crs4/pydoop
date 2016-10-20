@@ -23,6 +23,7 @@ Traverse an HDFS tree and output disk space usage by block size.
 import sys
 import pydoop.hdfs as hdfs
 from common import isdir, MB, TEST_ROOT
+from pydoop.utils.py3compat import iteritems
 
 
 def usage_by_bs(fs, root):
@@ -42,9 +43,9 @@ def main():
         root = "%s/%s" % (fs.working_directory(), TEST_ROOT)
         if not isdir(fs, root):
             sys.exit("%r does not exist" % root)
-        print "BS(MB)\tBYTES"
-        for k, v in usage_by_bs(fs, root).iteritems():
-            print "%.1f\t%d" % (k / float(MB), v)
+        print("BS(MB)\tBYTES")
+        for k, v in iteritems(usage_by_bs(fs, root)):
+            print("%.1f\t%d" % (k / float(MB), v))
     finally:
         fs.close()
 
