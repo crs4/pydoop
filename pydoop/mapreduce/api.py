@@ -142,7 +142,7 @@ class JobConf(dict):
             try:
                 return self[args[0]]
             except KeyError as ex:
-                raise RuntimeError(ex.message)
+                raise RuntimeError(ex.args[0])
 
     def __mirror_conf_across_versions(self):
         ext = {}
