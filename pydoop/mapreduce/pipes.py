@@ -42,7 +42,7 @@ from .streams import get_key_value_stream, get_key_values_stream
 from .string_utils import create_digest
 
 from pydoop.utils.py3compat import (
-    unicode, StringIO, iteritems
+    unicode, StringIO, iteritems, _is_py3
 )
 
 
@@ -209,10 +209,12 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
-    def __init__(self, up_link, private_encoding=True, fast_combiner=False):
+    def __init__(self, up_link, private_encoding=True, fast_combiner=False,
+                 py3_payload_are_bytes=False):
         self._fast_combiner = fast_combiner
         self.private_encoding = private_encoding
         self._private_encoding = False
+        self.py3_payload_are_bytes = py3_payload_are_bytes
         self.up_link = up_link
         self.writer = None
         self.partitioner = None
@@ -278,6 +280,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
                 key = private_encode(key)
                 value = private_encode(value)
             else:
+                # this makes transparent emitting things that can be unicoded
                 key = (key if type(key) in [str, bytes, unicode]
                        else unicode(key))
                 value = (value if type(value) in [str, bytes, unicode]
@@ -352,6 +355,27 @@ class TaskContext(api.MapContext, api.ReduceContext):
             return True
         except StopIteration:
             return False
+
+
+if _is_py3:
+    def py3_get_input_key(self):
+        key = self._key
+        return (key if self.py3_payload_are_bytes else
+                key.decode('UTF-8') if isinstance(key, bytes) else key)
+
+    def py3_get_input_value(self):
+        value = self._value
+        return (value if self.py3_payload_are_bytes else
+                value.decode('UTF-8') if isinstance(value, bytes) else value)
+
+    def py3_get_input_values(self):
+        return (self._values if self.py3_payload_are_bytes else
+                map(lambda _: _.decode('UTF-8') if isinstance(_, bytes) else _,
+                    self._values))
+
+    TaskContext.get_input_key = py3_get_input_key
+    TaskContext.get_input_value = py3_get_input_value
+    TaskContext.get_input_values = py3_get_input_values
 
 
 def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
@@ -496,7 +520,7 @@ class StreamRunner(object):
 
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=True, context_class=TaskContext,
-             cmd_file=None, fast_combiner=False):
+             cmd_file=None, fast_combiner=False, py3_payload_are_bytes=False):
     """
     Run the assigned task in the framework.
 
@@ -508,7 +532,8 @@ def run_task(factory, port=None, istream=None, ostream=None,
     )
     context = context_class(connections.up_link,
                             private_encoding=private_encoding,
-                            fast_combiner=fast_combiner)
+                            fast_combiner=fast_combiner,
+                            py3_payload_are_bytes=py3_payload_are_bytes)
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
     stream_runner.run()
     context.close()
