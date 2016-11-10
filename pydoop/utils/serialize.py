@@ -22,29 +22,10 @@
 Object serialization/deserialization will instead be implemented as follows.
 
 .. code-block:: python
-   
-   from pydoop.utils.serialize 
 
-   from pydoop.utils.serialize import codec, Writable
+   # documentation needs to be rewritten
+   pass
 
-   class Foo(Writable):
-       def __init__(self, x, y, z):
-           assert (isinstance(x, int) and isinstance(y, float)
-                   and isinstance(z, str))
-           self.x, self.y, self.z = x, y, z
-       def write(self, sink):
-           codec.serialize(('ifs', (self.x, self.y, self.z)), sink)
-       def read_fields(self, source):
-           self.x, self.y, self.z = ProtocolCodec.deserialize(
-               source, enc_format='ifs'
-           )
-       @classmethod
-       def read(cls, source):
-           x, y, z = codec.deserialize(source, enc_format='ifs')
-           return Foo(x, y, z)
-
-   codec.register_object('org.foo.FooObject', Foo)
-   codec.register_object('org.apache.hadoop.io.VIntWritable', enc_format='i')
 
 The idea is to mimick Hadoop writable interface, so that we can then write:
 
@@ -74,7 +55,7 @@ The idea is to mimick Hadoop writable interface, so that we can then write:
 import struct
 import xdrlib
 
-from .py3compat import pickle, unicode
+from .py3compat import pickle, unicode, StringIO
 
 # FIXME ignore [F401]
 import pydoop.sercore as sc
@@ -145,7 +126,6 @@ def private_decode(s):
 
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions.
 # Do not use these functions in time-critical regions.
-
 
 
 def read_buffer(n, stream):
@@ -274,3 +254,23 @@ def deserialize_old_style_filename(stream):
     l = struct.unpack('>H', read_buffer(2, stream))[0]
     return unicode(read_buffer(l, stream), 'UTF-8')
 
+
+SERIALIZE_MAP = {
+    int: serialize_int,
+    float: serialize_float,
+    bool: serialize_bool,
+    str: serialize_text,
+    bytes: serialize_text,
+    unicode: serialize_text
+}
+
+
+def serialize(v, stream, type_id=None):
+    t = type(v) if type_id is None else type_id
+    SERIALIZE_MAP[t](v, stream)
+
+
+def serialize_to_string(v, type_id=None):
+    f = StringIO()
+    serialize(v, f, type_id)
+    return f.getvalue()
