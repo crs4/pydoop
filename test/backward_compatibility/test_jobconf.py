@@ -22,7 +22,7 @@ from pydoop.mapreduce.api import JobConf
 
 class jobconf_tc(unittest.TestCase):
     def test_missing_key(self):
-        jc = JobConf(((1, 2), (3, 4)))
+        jc = JobConf(('a', 'b', 'c', 'd'))
         self.assertRaises(RuntimeError, jc.get, 'no_key')
 
 
