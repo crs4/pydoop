@@ -83,7 +83,11 @@ class JobConf(dict):
     def __init__(self, values):
         if 1 & len(values):
             raise PydoopError('JobConf.__init__: len(values) should be even')
-        super(JobConf, self).__init__(zip(values[::2], values[1::2]))
+        # FIXME -- this is a kludge but otherwise we would break backward
+        # compatibility
+        nvalues = [_.decode('UTF-8') if isinstance(_, bytes) else _
+                   for _ in values]
+        super(JobConf, self).__init__(zip(nvalues[::2], nvalues[1::2]))
         self.__mirror_conf_across_versions()
 
     def hasKey(self, key):
