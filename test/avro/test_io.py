@@ -27,6 +27,7 @@ from avro.io import DatumReader, DatumWriter
 from pydoop.mapreduce.pipes import InputSplit
 from pydoop.avrolib import SeekableDataFileReader, AvroReader, AvroWriter
 from pydoop.test_utils import WDTestCase
+from pydoop.utils.py3compat import czip, cmap
 import pydoop.hdfs as hdfs
 
 from common import avro_user_record
@@ -40,14 +41,14 @@ class TestAvroIO(WDTestCase):
     def setUp(self):
         super(TestAvroIO, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
-            self.schema = avro.schema.parse(f.read())
+            self.schema = avro.schema.Parse(f.read())
 
     def write_avro_file(self, rec_creator, n_samples, sync_interval):
         avdf.SYNC_INTERVAL = sync_interval
         self.assertEqual(avdf.SYNC_INTERVAL, sync_interval)
-        fo = self._mkf('data.avro')
+        fo = self._mkf('data.avro', mode='bw')
         with avdf.DataFileWriter(fo, DatumWriter(), self.schema) as writer:
-            for i in xrange(n_samples):
+            for i in range(n_samples):
                 writer.append(rec_creator(i))
         return fo.name
 
@@ -55,7 +56,7 @@ class TestAvroIO(WDTestCase):
         fn = self.write_avro_file(avro_user_record, 500, 1024)
         with open(fn, 'rb') as f:
             sreader = SeekableDataFileReader(f, DatumReader())
-            res = [t for t in it.izip(it.imap(
+            res = [t for t in czip(cmap(
                 lambda _: f.tell(), it.repeat(1)
             ), sreader)]
             sreader.align_after(res[-1][0])
@@ -105,8 +106,8 @@ class TestAvroIO(WDTestCase):
         with self.assertRaises(StopIteration):
             areader.next()
         areader = get_areader(0, file_length)
-        with SeekableDataFileReader(open(fn), DatumReader()) as sreader:
-            for (o, a), s in it.izip(areader, sreader):
+        with SeekableDataFileReader(open(fn, 'rb'), DatumReader()) as sreader:
+            for (o, a), s in czip(areader, sreader):
                 self.assertEqual(a, s)
         mid_len = int(file_length / 2)
         lows = [x for x in get_areader(0, mid_len)]

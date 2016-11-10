@@ -1,4 +1,4 @@
-from cStringIO import StringIO
+from pydoop.utils.py3compat import StringIO
 
 from avro.io import DatumWriter, BinaryEncoder
 

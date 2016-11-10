@@ -27,10 +27,12 @@ import pydoop.mapreduce.pipes as pp
 import pydoop.avrolib as avrolib
 from pydoop.test_utils import WDTestCase
 from pydoop.mapreduce.binary_streams import (
-    BinaryWriter, BinaryDownStreamFilter
+    BinaryWriter, BinaryDownStreamAdapter
 )
+from pydoop.utils.py3compat import iteritems
 
 from common import AvroSerializer, avro_user_record
+
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -98,8 +100,8 @@ class TestContext(WDTestCase):
     def setUp(self):
         super(TestContext, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
-            self.schema = avro.schema.parse(f.read())
-        self.records = [avro_user_record(_) for _ in xrange(3)]
+            self.schema = avro.schema.Parse(f.read())
+        self.records = [avro_user_record(_) for _ in range(3)]
 
     def __write_cmd_file(self, mode):
         if mode != 'K' and mode != 'V':
@@ -110,21 +112,22 @@ class TestContext(WDTestCase):
         ]
         cmd_fn = self._mkfn('map_in')
         serializer = AvroSerializer(self.schema)
-        with open(cmd_fn, 'w') as f:
-            bwriter = BinaryWriter(f)
-            bwriter.send('start', 0)
-            bwriter.send('setJobConf', (
-                pydoop.PROPERTIES['AVRO_INPUT'], mode,
-                schema_prop, str(self.schema)
-            )),
-            bwriter.send('setInputTypes', 'key_type', 'value_type')
-            bwriter.send('runMap', 'input_split', 0, False)
+        
+        with open(cmd_fn, 'wb') as f:
+            bw = BinaryWriter(f)
+            bw.send(bw.START_MESSAGE, 0)
+            bw.send(bw.SET_JOB_CONF, 
+                    pydoop.PROPERTIES['AVRO_INPUT'], mode,
+                    schema_prop, str(self.schema))
+            bw.send(bw.SET_INPUT_TYPES, 'key_type', 'value_type')
+            bw.send(bw.RUN_MAP, 'input_split', 0, False)
             for r in self.records:
                 if mode == 'K':
-                    bwriter.send('mapItem', serializer.serialize(r), 'v')
+                    bw.send(bw.MAP_ITEM, serializer.serialize(r), 'v')
                 else:
-                    bwriter.send('mapItem', 'k', serializer.serialize(r))
-            bwriter.send('close')
+                    bw.send(bw.MAP_ITEM, 'k', serializer.serialize(r))
+            bw.send(bw.CLOSE)
+            bw.close()
         return cmd_fn
 
     def tearDown(self):
@@ -134,19 +137,21 @@ class TestContext(WDTestCase):
         cmd_file = self.__write_cmd_file(mode)
         pp.run_task(
             pp.Factory(mapper_class=mapper_class), private_encoding=False,
-            context_class=context_class, cmd_file=cmd_file
+            context_class=context_class, cmd_file=cmd_file,
+            py3_payload_are_bytes=True
         )
         out_fn = cmd_file + '.out'
         out_records = []
-        with open(out_fn) as ostream:
-            for cmd, args in BinaryDownStreamFilter(ostream):
-                if cmd == 'output':
+        with open(out_fn, 'rb') as f:
+            bf = BinaryDownStreamAdapter(f)
+            for cmd, args in bf:
+                if cmd == bf.OUTPUT:
                     name, color = args
                     out_records.append({'name': name, 'favorite_color': color})
         self.assertEqual(len(out_records), len(self.records))
         for out_r, r in zip(out_records, self.records):
-            for k, v in out_r.iteritems():
-                self.assertEqual(v, r[k])
+            for k, v in iteritems(out_r):
+                self.assertEqual(v.decode('UTF-8'), r[k])
 
     def test_key(self):
         self.__run_test('K', KeyMapper, avrolib.AvroContext)

@@ -23,7 +23,8 @@ Avro tools.
 # module anywhere in the main code (importing it in the Avro examples
 # is OK, ofc).
 
-from cStringIO import StringIO
+from pydoop.utils.py3compat import StringIO
+
 
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
@@ -38,7 +39,7 @@ from pydoop.app.submit import AVRO_IO_CHOICES
 
 class Deserializer(object):
     def __init__(self, schema_str):
-        schema = avro.schema.parse(schema_str)
+        schema = avro.schema.Parse(schema_str)
         self.reader = DatumReader(schema)
 
     def deserialize(self, rec_bytes):
@@ -48,7 +49,7 @@ class Deserializer(object):
 class Serializer(object):
 
     def __init__(self, schema_str):
-        schema = avro.schema.parse(schema_str)
+        schema = avro.schema.Parse(schema_str)
         self.writer = DatumWriter(schema)
 
     def serialize(self, record):
