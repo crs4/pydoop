@@ -96,7 +96,7 @@ class TrivialRecordWriter(UpStreamAdapter):
         self.simulator = simulator
 
     def output(self, key, value):
-        self.stream.write('{}\t{}\n'.format(key, value))
+        self.stream.write(b'%s\t%s\n' % (key, value))
 
     def send(self, cmd, *vals):
         if cmd == self.OUTPUT:
