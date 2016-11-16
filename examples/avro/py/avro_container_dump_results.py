@@ -13,7 +13,7 @@ def main(fn, out_fn, avro_mode=''):
                     r = r['key']
 
                 fo.write('%s\t%r\n' % (r['office'], r['counts']))
-    print 'wrote', out_fn
+    print('wrote', out_fn)
 
 
 if __name__ == '__main__':

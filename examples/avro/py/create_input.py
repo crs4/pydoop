@@ -19,7 +19,7 @@
 import random
 import sys
 
-offices = ['office-%s' % i for i in xrange(3)]
+offices = ['office-%s' % i for i in range(3)]
 colors = ['red', 'blue', 'yellow', 'orange', 'maroon', 'green']
 names = ['Alyssa', 'John', 'Kathy', 'Ben', 'Karla', 'Ross', 'Violetta']
 

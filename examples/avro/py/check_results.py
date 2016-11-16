@@ -40,7 +40,7 @@ def main(efname, rfname):
     for k, v in expected.iteritems():
         if computed[k] != v:
             sys.exit("ERROR: %r: %r != %r" % (k, computed[k], dict(v)))
-    print 'All is ok!'
+    print('All is ok!')
 
 
 if __name__ == '__main__':
