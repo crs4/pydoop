@@ -154,7 +154,7 @@ class Partitioner(pp.Partitioner):
         self.logger = logging.getLogger("Partitioner")
 
     def partition(self, key, numOfReduces):
-        reducer_id = (hash(key) & sys.maxint) % numOfReduces
+        reducer_id = (hash(key) & sys.maxsize) % numOfReduces
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 

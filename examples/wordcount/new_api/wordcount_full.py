@@ -95,7 +95,7 @@ class Reader(api.RecordReader):
         self.file.close()
         self.file.fs.close()
 
-    def next(self):
+    def __next__(self):
         if self.bytes_read > self.isplit.length:
             raise StopIteration
         key = serialize_to_string(self.isplit.offset + self.bytes_read)
@@ -104,6 +104,9 @@ class Reader(api.RecordReader):
             raise StopIteration
         self.bytes_read += len(record)
         return (key, record)
+
+    def next(self):
+        return self.__next__()
 
     def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
@@ -121,6 +124,7 @@ class Writer(api.RecordWriter):
         hdfs_user = jc.get("pydoop.hdfs.user", None)
         self.file = hdfs.open(outfn, "w", user=hdfs_user)
         self.sep = jc.get("mapred.textoutputformat.separator", "\t")
+        self.eol = jc.get("mapred.textoutputformat.eol", "\n")
 
     def close(self):
         self.logger.debug("closing open handles")
@@ -128,7 +132,9 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write("%s%s%s\n" % (key, self.sep, value))
+        key = (key if isinstance(key, str) else str(key))
+        value = (value if isinstance(value, bytes) else str(value))
+        self.file.write(key + self.sep + value + self.eol)
 
 
 class Partitioner(api.Partitioner):
@@ -138,7 +144,7 @@ class Partitioner(api.Partitioner):
         self.logger = LOGGER.getChild("Partitioner")
 
     def partition(self, key, num_reduces):
-        reducer_id = (hash(key) & sys.maxint) % num_reduces
+        reducer_id = (hash(key) & sys.maxsize) % num_reduces
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 
