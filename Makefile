@@ -6,7 +6,6 @@ PY_V := $(shell python -c 'import sys; print("%d.%d" % sys.version_info[:2])')
 TARGETS=all build wheel install install_user install_wheel install_wheel_user\
         docs docs_py docs_view \
         clean distclean uninstall_user logo favicon
-
 .PHONY: $(TARGETS)
 
 all:
