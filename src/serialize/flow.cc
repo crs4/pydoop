@@ -60,7 +60,7 @@ hu::InStream* get_in_stream(PyObject *o) {
       PyErr_SetString(PyExc_ValueError, msg);
       return NULL;
     }
-    fd = fileno(PyFile_AsFILE(o)); // FIXME, this is ugly.
+    fd = fileno(PyFile_AsFile(o)); // FIXME, this is ugly.
 #endif
     FILE* fin = fdopen(fd, "rb");
     if (fin == NULL) {
@@ -97,11 +97,11 @@ hu::OutStream* get_out_stream(PyObject *o) {
   fout = fdopen(fd, "wb");  
 #endif
 #else
-  if (!PyFile_Check(po)) {
+  if (!PyFile_Check(o)) {
     PyErr_SetString(PyExc_ValueError, "First argument should be a file.");
     return NULL;
   }
-  fout = PyFile_AsFILE(o);
+  fout = PyFile_AsFile(o);
 #endif
   if (fout == NULL) {
     PyErr_SetString(PyExc_ValueError, "Cannot open file for writing.");
