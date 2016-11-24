@@ -1,7 +1,8 @@
+PYTHON := python
 TEMPDIR := $(shell mktemp -u)
 GIT_COMMIT_FN = .git_commit
 WHEEL_DIR=./dist
-PY_V := $(shell python -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+PY_V := $(shell ${PYTHON} -c 'import sys; print("%d.%d" % sys.version_info[:2])')
 
 TARGETS=all build wheel install install_user install_wheel install_wheel_user\
         docs docs_py docs_view \
@@ -12,16 +13,16 @@ all:
 	@echo "Try one of: ${TARGETS}"
 
 install_user: build
-	python setup.py install --user
+	${PYTHON} setup.py install --user
 
 install: build
-	python setup.py install
+	${PYTHON} setup.py install
 
 build:
-	python setup.py build
+	${PYTHON} setup.py build
 
 wheel:
-	python setup.py bdist_wheel --dist-dir=${WHEEL_DIR}
+	${PYTHON} setup.py bdist_wheel --dist-dir=${WHEEL_DIR}
 
 install_wheel: wheel
 	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop
@@ -62,12 +63,12 @@ dist: docs
 	git rev-parse HEAD >$(TEMPDIR)/$(GIT_COMMIT_FN)
 	rm -rf $(TEMPDIR)/docs/*
 	mv docs/_build/html $(TEMPDIR)/docs/
-	cd $(TEMPDIR) && python setup.py sdist
+	cd $(TEMPDIR) && ${PYTHON} setup.py sdist
 	mv -i $(TEMPDIR)/dist/pydoop-*.tar.gz .
 	rm -rf $(TEMPDIR)
 
 clean:
-	python setup.py clean --all
+	${PYTHON} setup.py clean --all
 	rm -rf pydoop.egg-
 	rm -f docs/_static/logo.png docs/_static/favicon.ico
 	make -C docs clean
