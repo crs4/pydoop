@@ -341,6 +341,19 @@ initsercore(void)
                      module__doc__);
   if (m == NULL)
     return;
+  
+  Py_INCREF(&CommandWriterType);
+  Py_INCREF(&CommandReaderType);
+  PyModule_AddObject(m, "CommandWriter",
+                     (PyObject *)&CommandWriterType);
+  PyModule_AddObject(m, "CommandReader",
+                     (PyObject *)&CommandReaderType);
+  Py_INCREF(&FlowWriterType);
+  Py_INCREF(&FlowReaderType);
+  PyModule_AddObject(m, "FlowWriter",
+                     (PyObject *)&FlowWriterType);
+  PyModule_AddObject(m, "FlowReader",
+                     (PyObject *)&FlowReaderType);
 }
 
 #endif
