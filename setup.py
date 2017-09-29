@@ -157,7 +157,7 @@ def get_git_commit():
         return subprocess.check_output(
             ['git', 'rev-parse', 'HEAD']
         ).rstrip('\n')
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.CalledProcessError):
         return None
 
 
