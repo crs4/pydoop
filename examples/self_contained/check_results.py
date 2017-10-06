@@ -76,5 +76,6 @@ def main(argv):
     expected_res = compute_vc(input_dir)
     logger.info(check(measured_res, expected_res))
 
+
 if __name__ == "__main__":
     main(sys.argv)

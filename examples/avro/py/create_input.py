@@ -37,5 +37,6 @@ def main(n, filename):
     with open(filename, 'w') as f:
         create_input(n, f)
 
+
 if __name__ == '__main__':
     main(int(sys.argv[1]), sys.argv[2])

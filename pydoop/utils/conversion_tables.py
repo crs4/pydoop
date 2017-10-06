@@ -764,8 +764,8 @@ mrv1_to_mrv2 = {
     'dfs.metrics.session-id',
 
     # duplicate key :-o
-    'slave.host.name':
-    'dfs.datanode.hostname',
+    # 'slave.host.name':
+    # 'dfs.datanode.hostname',
 
     'slave.host.name':
     'mapreduce.tasktracker.host.name',
