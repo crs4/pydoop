@@ -159,7 +159,7 @@ def get_git_commit():
             ['git', 'rev-parse', 'HEAD'],
             universal_newlines=True
         ).rstrip('\n')
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.CalledProcessError):
         return None
 
 

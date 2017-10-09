@@ -36,7 +36,7 @@ import pydoop
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32
-_DEFAULT_HDFS_HOST = "localhost"
+_DEFAULT_HDFS_HOST = os.getenv("HOSTNAME", "localhost")
 _DEFAULT_HDFS_PORT = 8020 if pydoop.is_cloudera() else 9000
 _DEFAULT_BYTES_PER_CHECKSUM = 512
 HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
