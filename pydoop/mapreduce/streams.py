@@ -94,6 +94,7 @@ class StreamWriter(StreamAdapter):
     def send(self):
         pass
 
+
 class StreamReader(StreamAdapter):
     "A class for debugging purposes"
     START_MESSAGE = START_MESSAGE
@@ -124,7 +125,7 @@ class StreamReader(StreamAdapter):
         command arguments tuple.
         """
         pass
-    
+
 
 class DownStreamAdapter(StreamAdapter):
     START_MESSAGE = START_MESSAGE

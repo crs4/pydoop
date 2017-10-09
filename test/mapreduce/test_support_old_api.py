@@ -93,6 +93,7 @@ class TFactory(Factory):
     def create_record_writer(self, context):
         return None if not self.rwclass else self.rwclass(context)
 
+
 test_support.TFactory = TFactory
 test_support.TReducer = TReducer
 test_support.TMapper = TMapper

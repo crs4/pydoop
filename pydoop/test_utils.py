@@ -33,7 +33,6 @@ import warnings
 import pydoop
 
 
-
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32

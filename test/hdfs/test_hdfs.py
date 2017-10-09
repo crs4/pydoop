@@ -16,7 +16,7 @@
 #
 # END_COPYRIGHT
 
-from __future__ import division 
+from __future__ import division
 
 import unittest
 import tempfile

@@ -86,6 +86,7 @@ class FlowReader(sc.FlowReader):
         rule = rule.encode('UTF-8') if isinstance(rule, unicode) else rule
         return super(FlowReader, self).read(rule)
 
+
 class FlowWriter(sc.FlowWriter):
 
     def __init__(self, stream, is_owned=True):

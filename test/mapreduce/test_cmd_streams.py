@@ -31,7 +31,6 @@ from pydoop.mapreduce.binary_streams import (BinaryWriter,
 from pydoop.test_utils import WDTestCase
 
 from data.stream_data import STREAM_3_DATA as STREAM_1
-from data.stream_data import STREAM_4_DATA as STREAM_2
 
 
 def stream_writer(fname, data, mod, Writer):

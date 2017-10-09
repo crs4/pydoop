@@ -53,7 +53,7 @@ class TextWriter(StreamWriter):
     def convert_cmd(cls, cmd):
         try:
             return cls.CMD_TABLE[cmd]
-        except KeyError as e:
+        except KeyError:
             raise ProtocolError('Unrecognized command %r' % cmd)
 
     def __init__(self, stream):

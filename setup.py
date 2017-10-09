@@ -214,7 +214,7 @@ def build_sercore_extension():
             'flow.cc', 'command.cc',
             'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
-        undef_macros = [ "NDEBUG" ], # FIXME
+        undef_macros=["NDEBUG"],  # FIXME
         extra_compile_args=extra_compile_args
     )
     EXTENSION_MODULES.append(binary_encoder)

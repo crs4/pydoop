@@ -56,5 +56,6 @@ def main(argv):
     expected_res = lwc.expected_output
     logger.info(check(measured_res, expected_res))
 
+
 if __name__ == "__main__":
     main(sys.argv)

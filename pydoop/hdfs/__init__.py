@@ -96,6 +96,7 @@ def init():
         "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
     ) + " -Djava.library.path=%s" % pydoop.hadoop_native()
 
+
 init()
 
 
