@@ -30,6 +30,7 @@ __all__ = [
     "iteritems",
     "parser_read",
     "pickle",
+    "socketserver",
     "StringIO",
     "unicode",
     "xchr",
@@ -64,6 +65,7 @@ if _is_py3:
     from io import BytesIO as StringIO
     import configparser
     import pickle
+    import socketserver
     clong = int
     #  something that should be interpreted as a string
     basestring = str
@@ -81,6 +83,7 @@ else:
     from cStringIO import StringIO
     import cPickle as pickle
     import ConfigParser as configparser
+    import SocketServer as socketserver
     parser_read = __parser_read_2
     #  something that should be interpreted as a string
     basestring = unicode

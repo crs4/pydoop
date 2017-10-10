@@ -21,13 +21,12 @@ This module provides basic, stand-alone Hadoop simulators for
 debugging support.
 """
 
-import socketserver
 import threading
 import os
 import tempfile
 import uuid
 import logging
-from pydoop.utils.py3compat import StringIO, iteritems
+from pydoop.utils.py3compat import StringIO, iteritems, socketserver
 
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
