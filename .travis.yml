@@ -1,5 +1,9 @@
 language: python
 
+python:
+ - "2.7"
+ - "3.6"
+
 sudo: required
 
 services: docker
@@ -12,8 +16,6 @@ script:
  - docker build -t crs4/pydoop .
  - docker run --name pydoop -p 8020:8020 -p 8042:8042 -p 8088:8088 -p 9000:9000 -p 10020:10020 -p 19888:19888 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 50090:50090 -d crs4/pydoop -f
  - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
- - "docker exec pydoop bash -c 'source /etc/profile && cd test && python all_tests.py'"
- - "docker exec pydoop bash -c 'source /etc/profile && cd test/avro && python all_tests.py'"
- - "docker exec pydoop bash -c 'source /etc/profile && cd examples && ./run_all'"
+ - ./.travis/run_checks
  - docker stop pydoop
  - docker rm pydoop
