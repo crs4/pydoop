@@ -88,6 +88,6 @@ else:
     #  something that should be interpreted as a string
     basestring = unicode
     unicode = unicode
-    clong = long
+    clong = long  # noqa: F821
     xchr = __chr
     iteritems = __iteritems_2

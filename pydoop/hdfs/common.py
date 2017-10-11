@@ -54,7 +54,7 @@ if __is_py3:
         return host
 else:
     def encode_path(path):
-        if isinstance(path, unicode):
+        if isinstance(path, unicode):  # noqa: F821
             path = path.encode('utf-8')
         return path
 
@@ -64,7 +64,7 @@ else:
         return path
 
     def encode_host(host):
-        if isinstance(host, unicode):
+        if isinstance(host, unicode):  # noqa: F821
             host = host.encode('idna')
         return host
 

@@ -24,7 +24,7 @@ wordcount. See wordcount-full.py for an example that uses counters,
 RecordReader, etc.
 """
 
-
+from __future__ import print_function
 import pydoop.pipes as pp
 import re
 
@@ -32,7 +32,7 @@ import re
 class Mapper(pp.Mapper):
 
     def __init__(self, context):
-        print context
+        print(context)
 
     def map(self, context):
         words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
@@ -43,7 +43,7 @@ class Mapper(pp.Mapper):
 class Reducer(pp.Reducer):
 
     def __init__(self, context):
-        print "Map"
+        print("Map")
 
     def reduce(self, context):
         s = 0

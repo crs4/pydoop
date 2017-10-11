@@ -16,6 +16,7 @@
 #
 # END_COPYRIGHT
 
+from __future__ import print_function
 from timer import Timer
 
 import jpyutil
@@ -29,4 +30,4 @@ with Timer() as t:
     bz = bytearray(z)  # view string as bytearray
     a = jpy.array('byte', bz)  # project this to a java array
     ba = bytearray(a)  # bring it back to a python bytearray
-print "=> round trip for size %sKB: %ss [%s KB/sec]" % (N, t.secs, N / t.secs)
+print("=> round trip for size %sKB: %ss [%s KB/sec]" % (N, t.secs, N / t.secs))

@@ -5,6 +5,9 @@ import avro.schema
 from avro.datafile import DataFileWriter
 from avro.io import DatumWriter
 
+if sys.version_info[0] == 3:
+    xrange = range
+
 NAME_POOL = ['george', 'john', 'paul', 'ringo']
 OFFICE_POOL = ['office-%d' % _ for _ in xrange(4)]
 COLOR_POOL = ['black', 'cyan', 'magenta', 'yellow']
