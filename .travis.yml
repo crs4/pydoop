@@ -10,6 +10,9 @@ services: docker
 
 before_install: pip install flake8
 
+# skip installation, requirements are handled in the Docker image
+install: true
+
 before_script: flake8 -v .
 
 script:

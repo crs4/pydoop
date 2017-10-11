@@ -431,7 +431,10 @@ setup(
     download_url="https://pypi.python.org/pypi/pydoop",
     install_requires=['setuptools>=%s' % SETUPTOOLS_MIN_VER],
     extras_require={
-        'avro': ["avro>=1.7.4"],
+        'avro': [
+            'avro>=1.7.4;python_version<"3"',
+            'avro-python3>=1.7.4;python_version>="3"',
+        ],
     },
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={"pydoop": [PROP_FN]},
