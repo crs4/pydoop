@@ -184,7 +184,7 @@ class SeekableDataFileReader(DataFileReader):
         f = self.reader
         if offset <= 0:  # FIXME what is a negative offset??
             f.seek(0)
-            self.block_count = 0
+            self._block_count = 0
             self._read_header()  # FIXME we can't extimate how big it is...
             return
         sm = self.sync_marker
@@ -196,7 +196,7 @@ class SeekableDataFileReader(DataFileReader):
             sync_offset = data.find(sm)
             if sync_offset > -1:
                 f.seek(pos + sync_offset)
-                self.block_count = 0
+                self._block_count = 0
                 return
             pos += len(data)
 
@@ -217,12 +217,14 @@ class AvroReader(RecordReader):
                                              DatumReader())
         self.reader.align_after(isplit.offset)
 
-    def next(self):
+    def __next__(self):
         pos = self.reader.reader.tell()
-        if pos > self.region_end and self.reader.block_count == 0:
+        if pos > self.region_end and self.reader._block_count == 0:
             raise StopIteration
-        record = self.reader.next()
+        record = next(self.reader)
         return pos, record
+
+    next == __next__
 
     def get_progress(self):
         """
