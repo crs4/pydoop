@@ -65,7 +65,7 @@ def main(argv):
     logger.setLevel(logging.INFO)
     runner = hadut.PipesRunner(prefix=PREFIX, logger=logger)
     with open(args.pipes_exe) as f:
-        pipes_code = pts.add_sys_path(f.read())
+        pipes_code = pts.adapt_script(f.read())
     runner.set_input(args.local_input, put=True)
     runner.set_exe(pipes_code)
     runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)

@@ -85,7 +85,7 @@ def run_wc(opt):
         MR_OUT_COMPRESS_TYPE: "NONE",
     })
     with open(LOCAL_WC_SCRIPT) as f:
-        pipes_code = pts.add_sys_path(f.read())
+        pipes_code = pts.adapt_script(f.read())
     runner.set_input(opt.input, put=True)
     runner.set_exe(pipes_code)
     runner.run(properties=options, hadoop_conf_dir=HADOOP_CONF_DIR)
@@ -102,7 +102,7 @@ def run_filter(opt, input_):
         "filter.occurrence.threshold": opt.threshold,
     })
     with open(LOCAL_FILTER_SCRIPT) as f:
-        pipes_code = pts.add_sys_path(f.read())
+        pipes_code = pts.adapt_script(f.read())
     runner.set_input(input_)
     runner.set_exe(pipes_code)
     runner.run(properties=options, hadoop_conf_dir=HADOOP_CONF_DIR)

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # BEGIN_COPYRIGHT
 # 
@@ -18,24 +18,24 @@
 # 
 # END_COPYRIGHT
 
-#export HADOOP_CONF_DIR=/my/hadoop/conf
-export TEST_ROOT=pydoop_test_tree
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
 
+export TEST_ROOT="${TEST_ROOT:-pydoop_test_tree}"
 DEPTH=${1:-3}
 SPAN=${2:-4}
 
 echo "Waiting for HDFS to exit safe mode..."
-hadoop dfsadmin -safemode wait
+"${HADOOP}" dfsadmin -safemode wait
 
 echo "Generating tree (depth=${DEPTH}, span=${SPAN})..."
-python treegen.py ${DEPTH} ${SPAN} || exit 1
+"${PYTHON}" treegen.py ${DEPTH} ${SPAN}
 
 echo "Computing usage by block size..."
-python treewalk.py || exit 1
+"${PYTHON}" treewalk.py
 
 echo "Cleaning up..."
-if  [[ "$HADOOP_HOME" ]];
-	then $HADOOP_HOME/bin/hadoop fs -rmr ${TEST_ROOT}
-	else hadoop fs -rmr ${TEST_ROOT}
-
-fi
+"${HADOOP}" fs -rmr ${TEST_ROOT}
