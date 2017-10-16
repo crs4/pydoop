@@ -141,7 +141,7 @@ def main(argv):
             raise IOError("script {0} not found !!!".format(piped_code_file))
 
         with open(piped_code_file) as f:
-            pipes_code = pts.add_sys_path(f.read())
+            pipes_code = pts.adapt_script(f.read())
 
         dataset = [d for d in os.listdir("dataset") if d.endswith("MB")]
         dataset.sort(key=lambda x: int(x.replace("MB", "")))
