@@ -22,6 +22,7 @@ import sys
 _is_py3 = sys.version_info[0] == 3
 __all__ = [
     "basestring",
+    "bintype",
     "cfilter",
     "clong",
     "cmap",
@@ -76,6 +77,7 @@ if _is_py3:
     cmap = map
     cfilter = filter
     iteritems = __iteritems_3
+    bintype = bytes
 else:
     from itertools import izip as czip
     from itertools import imap as cmap
@@ -91,3 +93,4 @@ else:
     clong = long  # noqa: F821
     xchr = __chr
     iteritems = __iteritems_2
+    bintype = str

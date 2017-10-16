@@ -29,7 +29,7 @@ import pydoop
 import pydoop.utils.misc as utils
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
-from .utils.py3compat import basestring
+from .utils.py3compat import basestring, bintype
 
 
 GLOB_CHARS = frozenset('*,?[]{}')
@@ -412,7 +412,8 @@ def collect_output(mr_out_dir, out_file=None):
         for fn in iter_mr_out_files(mr_out_dir):
             with hdfs.open(fn) as f:
                 output.append(f.read())
-        return "".join(output)
+        # TODO: add unicode I/O to hdfs
+        return bintype().join(output).decode("utf8")
     else:
         block_size = 16777216
         with open(out_file, 'a') as o:
