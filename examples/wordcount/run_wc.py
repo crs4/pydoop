@@ -70,7 +70,8 @@ def main(argv):
     runner.set_exe(pipes_code)
     runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR, logger=logger)
     res = runner.collect_output()
-    runner.clean()
+    if not os.getenv("DEBUG"):
+        runner.clean()
     local_wc = pts.LocalWordCount(args.local_input)
     logging.info(local_wc.check(res))
 

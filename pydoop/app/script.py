@@ -59,7 +59,7 @@ class PydoopScript(object):
             'module': mr_module,
             'map_fn': args.map_fn,
             'reduce_fn': args.reduce_fn,
-            'combine_fn': args.combine_fn,
+            'combine_fn': args.combine_fn or args.reduce_fn,
             'combiner_wp': ('PydoopScriptCombiner' if args.combine_fn
                             else 'None')
         }

@@ -360,8 +360,9 @@ class TaskContext(api.MapContext, api.ReduceContext):
 if _is_py3:
     def py3_get_input_key(self):
         key = self._key
-        return (key if self.py3_payload_are_bytes else
-                key.decode('UTF-8') if isinstance(key, bytes) else key)
+        # return (key if self.py3_payload_are_bytes else
+        #         key.decode('UTF-8') if isinstance(key, bytes) else key)
+        return key
 
     def py3_get_input_value(self):
         value = self._value
@@ -568,3 +569,6 @@ class RecordReaderWrapper(object):
             return (key, value)
         else:
             raise StopIteration
+
+    def __next__(self):
+        return self.next()

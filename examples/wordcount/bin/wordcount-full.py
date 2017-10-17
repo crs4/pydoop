@@ -30,13 +30,13 @@ components and use the hdfs module. The RecordReader, RecordWriter and
 Partitioner classes shown here mimic the behavior of the default ones.
 """
 
-import sys
 import logging
-import struct
 
 logging.basicConfig(level=logging.ERROR)
 
+import struct
 import re
+from hashlib import md5
 import pydoop.pipes as pp
 from pydoop.utils import jc_configure, jc_configure_int
 import pydoop.hdfs as hdfs
@@ -153,9 +153,9 @@ class Partitioner(pp.Partitioner):
         super(Partitioner, self).__init__(context)
         self.logger = logging.getLogger("Partitioner")
 
-    def partition(self, key, numOfReduces):
-        reducer_id = (hash(key) & sys.maxsize) % numOfReduces
-        self.logger.debug("reducer_id: %r" % reducer_id)
+    def partition(self, key, n_reduces):
+        reducer_id = int(md5(key.encode("utf8")).hexdigest(), 16) % n_reduces
+        self.logger.debug("%r -> %r" % (key, reducer_id))
         return reducer_id
 
 

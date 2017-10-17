@@ -23,9 +23,6 @@ Avro tools.
 # module anywhere in the main code (importing it in the Avro examples
 # is OK, ofc).
 
-from pydoop.utils.py3compat import StringIO
-
-
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter, BinaryDecoder, BinaryEncoder
@@ -35,6 +32,7 @@ import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
 from pydoop.app.submit import AVRO_IO_CHOICES
+from pydoop.utils.py3compat import StringIO
 
 
 class Deserializer(object):
@@ -217,14 +215,12 @@ class AvroReader(RecordReader):
                                              DatumReader())
         self.reader.align_after(isplit.offset)
 
-    def __next__(self):
+    def next(self):
         pos = self.reader.reader.tell()
         if pos > self.region_end and self.reader._block_count == 0:
             raise StopIteration
         record = next(self.reader)
         return pos, record
-
-    next == __next__
 
     def get_progress(self):
         """

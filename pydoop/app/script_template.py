@@ -15,11 +15,8 @@ class ContextWriter(object):
     self.context.emit(str(k), str(v))
 
   def count(self, what, howmany):
-    if self.counters.has_key(what):
-      counter = self.counters[what]
-    else:
-      counter = self.context.getCounter('%(module)s', what)
-      self.counters[what] = counter
+    counter = self.counters.setdefault(
+      what, self.context.getCounter('%(module)s', what))
     self.context.incrementCounter(counter, howmany)
 
   def status(self, msg):

@@ -33,6 +33,7 @@ Other relevant environment variables include::
 """
 from __future__ import print_function
 
+import sys
 import time
 import os
 import glob
@@ -79,6 +80,12 @@ EXTRA_COMPILE_ARGS = ["-Wno-write-strings"]  # http://bugs.python.org/issue6952
 
 # properties file.  Since the source is in the root dir, filename = basename
 PROP_FN = PROP_BN = pydoop.__propfile_basename__
+
+CONSOLE_SCRIPTS = ['pydoop = pydoop.app.main:main']
+if sys.version_info[0] == 3:
+    CONSOLE_SCRIPTS.append('pydoop3 = pydoop.app.main:main')
+else:
+    CONSOLE_SCRIPTS.append('pydoop2 = pydoop.app.main:main')
 
 
 # ---------
@@ -442,7 +449,7 @@ setup(
         "build": BuildPydoop,
         "clean": Clean
     },
-    entry_points={'console_scripts': ['pydoop = pydoop.app.main:main']},
+    entry_points={'console_scripts': CONSOLE_SCRIPTS},
     platforms=["Linux"],
     ext_modules=EXTENSION_MODULES,
     license="Apache-2.0",

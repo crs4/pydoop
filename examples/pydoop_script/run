@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-cd "$(dirname $0)"
-for s in base_histogram lowercase transpose grep caseswitch; do
+# for s in base_histogram caseswitch grep grep_compiled lowercase transpose; do
+for s in base_histogram caseswitch grep grep_compiled lowercase; do
     echo "running ${s}"
     ./run_${s}
 done

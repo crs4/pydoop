@@ -16,8 +16,9 @@
 #
 # END_COPYRIGHT
 
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
+from pydoop.utils.py3compat import ABC
 from pydoop.utils.serialize import private_decode
 
 
@@ -52,9 +53,7 @@ class ProtocolAbort(ProtocolError):
     pass
 
 
-class StreamAdapter(object):
-
-    __metaclass__ = ABCMeta
+class StreamAdapter(ABC):
 
     def __init__(self, stream):
         self.stream = stream
@@ -226,6 +225,9 @@ class KeyValuesStream(object):
             else:
                 raise ProtocolError('out of order command: {}'.format(cmd))
         raise StopIteration
+
+    def __next__(self):
+        return self.next()
 
     def get_value_stream(self, stream):
         private_encoding = self.private_encoding

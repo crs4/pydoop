@@ -61,6 +61,12 @@ class BinaryReader(StreamReader):
         self.logger.debug('requested iterator: %s', self)
         return self.stream.__iter__()
 
+    def next(self):
+        return next(self.stream)
+
+    def __next__(self):
+        return self.next()
+
 
 class BinaryDownStreamAdapter(BinaryReader, DownStreamAdapter):
 

@@ -32,10 +32,10 @@ echo "Waiting for HDFS to exit safe mode..."
 "${HADOOP}" dfsadmin -safemode wait
 
 echo "Generating tree (depth=${DEPTH}, span=${SPAN})..."
-"${PYTHON}" treegen.py ${DEPTH} ${SPAN}
+"${PYTHON}" "${this_dir}"/treegen.py ${DEPTH} ${SPAN}
 
 echo "Computing usage by block size..."
-"${PYTHON}" treewalk.py
+"${PYTHON}" "${this_dir}"/treewalk.py
 
 echo "Cleaning up..."
-"${HADOOP}" fs -rmr ${TEST_ROOT}
+"${HADOOP}" fs -rmr "${TEST_ROOT}"

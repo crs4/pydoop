@@ -18,9 +18,11 @@
 
 
 import sys
+from abc import ABCMeta
 
 _is_py3 = sys.version_info[0] == 3
 __all__ = [
+    "ABC",
     "basestring",
     "bintype",
     "cfilter",
@@ -36,6 +38,10 @@ __all__ = [
     "unicode",
     "xchr",
 ]
+
+
+class Py2ABC(object):
+    __metaclass__ = ABCMeta
 
 
 def __identity(x):
@@ -64,6 +70,7 @@ def __parser_read_3(parser, f):
 
 if _is_py3:
     from io import BytesIO as StringIO
+    from abc import ABC
     import configparser
     import pickle
     import socketserver
@@ -94,3 +101,4 @@ else:
     xchr = __chr
     iteritems = __iteritems_2
     bintype = str
+    ABC = Py2ABC

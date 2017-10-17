@@ -18,33 +18,23 @@
 #
 # END_COPYRIGHT
 
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
 
+cd "${this_dir}"
 
 DATA="matrix.txt"
 SCRIPT="transpose.py"
+INPUT="${SCRIPT}"_input
+OUTPUT="${SCRIPT}"_output
 
-INPUT=${SCRIPT}_input
-OUTPUT=${SCRIPT}_output
-RESULT=${SCRIPT}_res
-REFERENCE=${SCRIPT}_ref
+${HADOOP} fs -rmr "/user/${USER}/${INPUT}" || :
+${HADOOP} fs -mkdir -p "/user/${USER}/${INPUT}"
+${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
+${HADOOP} fs -put "${DATA}" "${INPUT}"
 
-SCRIPT_CMD="pydoop script"
-
-PYTHONBIN=${PYTHONBIN:-python}
-
-if type -P hdfs >/dev/null; then
-	hdfs="$(type -P hdfs) dfs "
-elif type -P hadoop >/dev/null; then
-	hdfs="$(type -P hadoop) fs "
-else
-	echo "Cannot find hdfs or hadoop executables" >&2
-	exit 1
-fi
-
-${hdfs} -rmr /user/${USER}/${INPUT}
-${hdfs} -mkdir /user/${USER}/${INPUT}
-${hdfs} -rmr /user/${USER}/${OUTPUT}
-${hdfs} -put ${DATA} ${INPUT}
-
-cd "$(dirname $0)"
-${SCRIPT_CMD} --log-level DEBUG --num-reducers 4 -D mapred.map.tasks=2 ${SCRIPT} ${INPUT} ${OUTPUT}
+${PYDOOP} script --log-level DEBUG --num-reducers 4 -D mapred.map.tasks=2 \
+  "${SCRIPT}" "${INPUT}" "${OUTPUT}"

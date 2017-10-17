@@ -485,7 +485,7 @@ def add_parser_common_arguments(parser):
         '--job-name', metavar='NAME', type=str, help="name of the job"
     )
     parser.add_argument(
-        '--python-program', metavar='PYTHON', type=str, default='python',
+        '--python-program', metavar='PYTHON', type=str, default=sys.executable,
         help="python executable that should be used by the wrapper"
     )
     parser.add_argument(

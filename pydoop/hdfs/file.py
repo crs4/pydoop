@@ -373,9 +373,6 @@ class local_file(FileIO):
     def mode(self):
         return (super(local_file, self).mode).replace('b', '')
 
-    def next(self):
-        return self.__next__()
-
     def write(self, data):
         _complain_ifclosed(self.closed)
         if isinstance(data, unicode):

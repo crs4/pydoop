@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 for s in wordcount_minimal wordcount_full nosep; do
     echo

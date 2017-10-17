@@ -88,6 +88,8 @@ def parse_mr_output(output, vtype=str):
             v = vtype(v)
         except (ValueError, TypeError):
             raise ValueError("bad output format")
+        if k in d:
+            raise ValueError("duplicate key: %r" % (k,))
         d[k] = v
     return d
 

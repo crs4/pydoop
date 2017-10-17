@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
-python run_wc.py new_api/wordcount_full.py ../input \
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
+"${PYTHON}" \
+    "${this_dir}"/run_wc.py \
+    "${this_dir}"/new_api/wordcount_full.py \
+    "${this_dir}"/../input \
     -D hadoop.pipes.java.recordreader=false \
     -D hadoop.pipes.java.recordwriter=false \
-    -D pydoop.hdfs.user=${USER}
+    -D pydoop.hdfs.user="${USER}"

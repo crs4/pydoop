@@ -213,12 +213,9 @@ class TrivialRecordReader(RecordReader):
     def get_progress(self):
         return 0 if not self.current else float(self.current[0]) / self.max
 
-    def __next__(self):
+    def next(self):
         self.current = next(self.iter)
         return self.current
-
-    def next(self):
-        return self.__next__()
 
 
 class SortAndShuffle(dict, UpStreamAdapter):

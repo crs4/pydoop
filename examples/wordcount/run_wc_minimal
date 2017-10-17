@@ -6,4 +6,7 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
-"${PYTHON}" run_wc.py bin/wordcount-minimal.py ../input
+"${PYTHON}" \
+    "${this_dir}"/run_wc.py \
+    "${this_dir}"/bin/wordcount-minimal.py \
+    "${this_dir}"/../input

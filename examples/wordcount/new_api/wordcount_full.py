@@ -24,14 +24,14 @@ export PYTHON_EGG_CACHE=/tmp/python_cache
 exec /usr/bin/python -u $0 $@
 ":"""
 
-import sys
-import re
 import logging
 
 logging.basicConfig()
 LOGGER = logging.getLogger("WordCount")
 LOGGER.setLevel(logging.CRITICAL)
 
+import re
+from hashlib import md5
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.utils.serialize import serialize_to_string
@@ -95,7 +95,7 @@ class Reader(api.RecordReader):
         self.file.close()
         self.file.fs.close()
 
-    def __next__(self):
+    def next(self):
         if self.bytes_read > self.isplit.length:
             raise StopIteration
         key = serialize_to_string(self.isplit.offset + self.bytes_read)
@@ -104,9 +104,6 @@ class Reader(api.RecordReader):
             raise StopIteration
         self.bytes_read += len(record)
         return (key, record)
-
-    def next(self):
-        return self.__next__()
 
     def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
@@ -143,8 +140,8 @@ class Partitioner(api.Partitioner):
         super(Partitioner, self).__init__(context)
         self.logger = LOGGER.getChild("Partitioner")
 
-    def partition(self, key, num_reduces):
-        reducer_id = (hash(key) & sys.maxsize) % num_reduces
+    def partition(self, key, n_reduces):
+        reducer_id = int(md5(key.encode("utf8")).hexdigest(), 16) % n_reduces
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 

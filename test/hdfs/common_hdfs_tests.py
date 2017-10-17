@@ -431,7 +431,7 @@ class TestCommon(unittest.TestCase):
             lines = []
             while 1:
                 try:
-                    lines.append(f.next())
+                    lines.append(next(f))
                 except StopIteration:
                     break
             return lines

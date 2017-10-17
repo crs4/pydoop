@@ -26,8 +26,9 @@ methods called by the framework.
 """
 
 import json
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
+from pydoop.utils.py3compat import ABC
 from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
 
 
@@ -158,7 +159,7 @@ class JobConf(dict):
         self.update(ext)
 
 
-class Context(object):
+class Context(ABC):
     """
     Context objects are used for communication between the framework
     and the Mapreduce application.  These objects are instantiated by the
@@ -171,7 +172,6 @@ class Context(object):
               ...
               context.emit(new_key, new_value)
     """
-    __metaclass__ = ABCMeta
 
     @property
     def job_conf(self):
@@ -344,7 +344,7 @@ class ReduceContext(Context):
         return self.next_value()
 
 
-class Closable(object):
+class Closable(ABC):
 
     def close(self):
         """
@@ -359,7 +359,6 @@ class Mapper(Closable):
     """
     Maps input key/value pairs to a set of intermediate key/value pairs.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context):
         self.context = context
@@ -384,7 +383,6 @@ class Reducer(Closable):
     Reduces a set of intermediate values which share a key to a
     (possibly) smaller set of values.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         self.context = context
@@ -403,7 +401,7 @@ class Reducer(Closable):
         assert isinstance(context, ReduceContext)
 
 
-class Partitioner(object):
+class Partitioner(ABC):
     r"""
     Controls the partitioning of intermediate keys output by the
     :class:`Mapper`\ . The key (or a subset of it) is used to derive the
@@ -412,7 +410,6 @@ class Partitioner(object):
     job. Hence this controls which of the *m* reduce tasks the
     intermediate key (and hence the record) is sent to for reduction.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context):
         self.context = context
@@ -439,7 +436,6 @@ class RecordReader(Closable):
     r"""
     Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         self.context = context
@@ -461,6 +457,9 @@ class RecordReader(Closable):
         """
         raise StopIteration
 
+    def __next__(self):
+        return self.next()
+
     @abstractmethod
     def get_progress(self):
         """
@@ -480,7 +479,6 @@ class RecordWriter(Closable):
     """
     Writes the output key/value pairs to an output file.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         self.context = context
@@ -498,14 +496,13 @@ class RecordWriter(Closable):
         pass
 
 
-class Factory(object):
+class Factory(ABC):
     """
     Creates MapReduce application components.
 
     The classes to use for each component must be specified as arguments
     to the constructor.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def create_mapper(self, context):
