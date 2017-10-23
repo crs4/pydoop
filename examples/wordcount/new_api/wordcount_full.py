@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
 #
@@ -17,12 +17,6 @@
 # under the License.
 #
 # END_COPYRIGHT
-
-""":"
-export HADOOP_HOME=$HADOOP_PREFIX
-export PYTHON_EGG_CACHE=/tmp/python_cache
-exec /usr/bin/python -u $0 $@
-":"""
 
 import logging
 
@@ -51,7 +45,7 @@ class Mapper(api.Mapper):
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
+        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
         for w in words:
             context.emit(w, 1)
         context.increment_counter(self.input_words, len(words))
@@ -87,7 +81,7 @@ class Reader(api.RecordReader):
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
-            discarded = self.file.readline()
+            discarded = self.file.readline(encoding=None)
             self.bytes_read += len(discarded)
 
     def close(self):
@@ -99,8 +93,8 @@ class Reader(api.RecordReader):
         if self.bytes_read > self.isplit.length:
             raise StopIteration
         key = serialize_to_string(self.isplit.offset + self.bytes_read)
-        record = self.file.readline()
-        if record == "":  # end of file
+        record = self.file.readline(encoding=None)
+        if not record:  # end of file
             raise StopIteration
         self.bytes_read += len(record)
         return (key, record)
@@ -129,8 +123,8 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        key = (key if isinstance(key, str) else str(key))
-        value = (value if isinstance(value, bytes) else str(value))
+        key = key.decode("utf8")
+        value = str(value)
         self.file.write(key + self.sep + value + self.eol)
 
 
@@ -141,7 +135,7 @@ class Partitioner(api.Partitioner):
         self.logger = LOGGER.getChild("Partitioner")
 
     def partition(self, key, n_reduces):
-        reducer_id = int(md5(key.encode("utf8")).hexdigest(), 16) % n_reduces
+        reducer_id = int(md5(key).hexdigest(), 16) % n_reduces
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 

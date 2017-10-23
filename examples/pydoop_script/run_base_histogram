@@ -38,3 +38,5 @@ ${HADOOP} fs -put "${DATA}" "${INPUT}"
 
 ${PYDOOP} script --log-level DEBUG -D mapred.map.tasks=2 \
   "${SCRIPT}" "${INPUT}" "${OUTPUT}"
+
+${PYTHON} "${this_dir}"/check.py base_histogram "${OUTPUT}"

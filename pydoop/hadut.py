@@ -203,11 +203,11 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
             keep_streams=True
         )
         task_trackers = []
-        for l in stdout.splitlines():
-            if not l:
+        for line in stdout.splitlines():
+            if not line:
                 continue
-            l = l.split(":")
-            task_trackers.append((l[0].split("_")[1], int(l[-1])))
+            line = line.split(":")
+            task_trackers.append((line[0].split("_")[1], int(line[-1])))
     return task_trackers
 
 

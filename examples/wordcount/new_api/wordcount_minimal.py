@@ -42,7 +42,7 @@ class TMapper(Mapper):
         LOGGER.info("Mapper instantiated")
 
     def map(self, ctx):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', ctx.value).split()
+        words = re.sub(b'[^0-9a-zA-Z]+', b' ', ctx.value).split()
         for w in words:
             ctx.emit(w, 1)
 
@@ -56,8 +56,7 @@ class TReducer(Reducer):
 
     def reduce(self, ctx):
         s = sum(ctx.values)
-        # Note: we explicitly write the value as a str.
-        ctx.emit(ctx.key, str(s))
+        ctx.emit(ctx.key, str(s).encode("utf8"))
 
 
 FACTORY = Factory(mapper_class=TMapper, reducer_class=TReducer)

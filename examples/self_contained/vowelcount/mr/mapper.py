@@ -23,6 +23,6 @@ from vowelcount.lib import is_vowel
 class Mapper(api.Mapper):
 
     def map(self, context):
-        for c in context.value:
+        for c in context.value.decode("utf8"):
             if is_vowel(c):
                 context.emit(c.upper(), 1)

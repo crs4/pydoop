@@ -408,10 +408,10 @@ class TestCommon(unittest.TestCase):
         def get_lines(f):
             lines = []
             while 1:
-                l = f.readline()
-                if l == "":
+                line = f.readline()
+                if not line:
                     break
-                lines.append(l)
+                lines.append(line)
             return lines
         self.__check_readline(get_lines)
 
@@ -420,9 +420,9 @@ class TestCommon(unittest.TestCase):
             x = '*' * (2**i) + "\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
-                l = f.readline()
+                line = f.readline()
             self.assertEqual(
-                l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x))
+                line, x, "len(a) = %d, len(x) = %d" % (len(line), len(x))
             )
 
     def iter_lines(self):

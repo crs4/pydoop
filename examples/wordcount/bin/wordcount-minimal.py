@@ -35,9 +35,9 @@ class Mapper(pp.Mapper):
         print(context)
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
+        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.getInputValue()).split()
         for w in words:
-            context.emit(w, "1")
+            context.emit(w, b'1')
 
 
 class Reducer(pp.Reducer):
@@ -49,7 +49,7 @@ class Reducer(pp.Reducer):
         s = 0
         while context.nextValue():
             s += int(context.getInputValue())
-        context.emit(context.getInputKey(), str(s))
+        context.emit(context.getInputKey(), str(s).encode("utf8"))
 
 
 if __name__ == "__main__":

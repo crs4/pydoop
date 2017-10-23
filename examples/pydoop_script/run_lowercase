@@ -39,3 +39,5 @@ ${HADOOP} fs -put "${DATA}" "${INPUT}"
 
 ${PYDOOP} script --log-level DEBUG --num-reducers 0 -t '' \
   -D mapred.map.tasks=2 "${SCRIPT}" "${INPUT}" "${OUTPUT}"
+
+${PYTHON} "${this_dir}"/check.py lowercase "${OUTPUT}"

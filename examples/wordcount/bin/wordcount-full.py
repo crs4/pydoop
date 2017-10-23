@@ -144,7 +144,7 @@ class Writer(pp.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write("%s%s%s\n" % (key, self.sep, value))
+        self.file.write("%s%s%s\n" % (key.decode("utf8"), self.sep, value))
 
 
 class Partitioner(pp.Partitioner):

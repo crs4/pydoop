@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# for s in base_histogram caseswitch grep grep_compiled lowercase transpose; do
-for s in base_histogram caseswitch grep grep_compiled lowercase; do
+for s in base_histogram caseswitch grep grep_compiled lowercase transpose; do
     echo "running ${s}"
     ./run_${s}
 done

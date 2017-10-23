@@ -166,10 +166,10 @@ class AddSectionWrapper(object):
         return self
 
     def __next__(self):
-        l = self.readline()
-        if not l:
+        line = self.readline()
+        if not line:
             raise StopIteration
-        return l
+        return line
 
     def readline(self):
         if self.sechead:

@@ -174,13 +174,13 @@ class TestHDFS(TestCommon):
             f.seek(offset)
             lines = []
             while 1:
-                l = f.readline()
-                if l == "":
+                L = f.readline()
+                if not L:
                     break
-                lines.append(l)
+                lines.append(L)
         self.assertEqual(len(lines), lines_written)
-        for i, l in enumerate(lines):
-            self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
+        for i, L in enumerate(lines):
+            self.assertEqual(L, line, "line %d: %r != %r" % (i, L, line))
 
     def get_hosts(self):
         hd_info = pydoop.hadoop_version_info()

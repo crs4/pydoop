@@ -135,9 +135,7 @@ class TestContext(WDTestCase):
         cmd_file = self.__write_cmd_file(mode)
         pp.run_task(
             pp.Factory(mapper_class=mapper_class), private_encoding=False,
-            context_class=context_class, cmd_file=cmd_file,
-            py3_payload_are_bytes=True
-        )
+            context_class=context_class, cmd_file=cmd_file)
         out_fn = cmd_file + '.out'
         out_records = []
         with open(out_fn, 'rb') as f:

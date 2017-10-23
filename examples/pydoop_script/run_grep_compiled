@@ -41,3 +41,5 @@ ${PYTHON} -c "from py_compile import compile; compile('${SCRIPT}', cfile='${SCRI
 ${PYDOOP} script --log-level DEBUG --num-reducers 0 -t '' \
   -D mapred.map.tasks=2 -D grep-expression=March \
  "${SCRIPT}c" "${INPUT}" "${OUTPUT}"
+
+${PYTHON} "${this_dir}"/check.py grep_compiled "${OUTPUT}"

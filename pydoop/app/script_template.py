@@ -12,7 +12,7 @@ class ContextWriter(object):
     self.counters = {}
 
   def emit(self, k, v):
-    self.context.emit(str(k), str(v))
+    self.context.emit(k, v)
 
   def count(self, what, howmany):
     counter = self.counters.setdefault(

@@ -32,10 +32,11 @@ import struct
 def mapper(key, value, writer):
     value = value.split()
     for i, a in enumerate(value):
-        writer.emit(struct.pack(">q", i), "%s%s" % (key, a))
+        writer.emit(struct.pack(">q", i), key + a)
 
 
 def reducer(key, ivalue, writer):
     vector = [(struct.unpack(">q", v[:8])[0], v[8:]) for v in ivalue]
     vector.sort()
-    writer.emit(struct.unpack(">q", key)[0], "\t".join(v[1] for v in vector))
+    writer.emit(b"%d" % struct.unpack(">q", key)[0],
+                b"\t".join(v[1] for v in vector))

@@ -163,12 +163,12 @@ def serialize_vint(t, stream):
     if -112 <= t <= 127:
         stream.write(struct.pack('b', t))
     else:
-        l = -112
+        L = -112
         if t < 0:
             t ^= -1  # remove sign
-            l = -120  # encode negativeness in l
+            L = -120  # encode negativeness in L
         size = (t.bit_length() + 7) // 8
-        stream.write(struct.pack('b', l - size))
+        stream.write(struct.pack('b', L - size))
         # we assume that integers are at most long long
         stream.write(struct.pack('>Q', t)[-size:])
     return
@@ -222,8 +222,8 @@ def deserialize_bytes(stream):
     (so use deserialize_text) and complex objects can implement their own
     serialization -- within the (data length, data) stream structure.
     """
-    l = deserialize_vint(stream)
-    return read_buffer(l, stream)
+    length = deserialize_vint(stream)
+    return read_buffer(length, stream)
 
 
 def serialize_text(s, stream):
@@ -237,8 +237,8 @@ def serialize_text(s, stream):
 
 
 def deserialize_text(stream):
-    l = deserialize_vint(stream)
-    return unicode(read_buffer(l, stream), 'UTF-8')
+    length = deserialize_vint(stream)
+    return unicode(read_buffer(length, stream), 'UTF-8')
 
 
 def serialize_old_style_filename(s, stream):
@@ -252,8 +252,8 @@ def serialize_old_style_filename(s, stream):
 
 
 def deserialize_old_style_filename(stream):
-    l = struct.unpack('>H', read_buffer(2, stream))[0]
-    return unicode(read_buffer(l, stream), 'UTF-8')
+    length = struct.unpack('>H', read_buffer(2, stream))[0]
+    return unicode(read_buffer(length, stream), 'UTF-8')
 
 
 SERIALIZE_MAP = {

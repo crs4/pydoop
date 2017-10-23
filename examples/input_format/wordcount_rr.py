@@ -25,7 +25,7 @@ import pydoop.mapreduce.pipes as pp
 class Mapper(api.Mapper):
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
+        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
         for w in words:
             context.emit(w, 1)
 
