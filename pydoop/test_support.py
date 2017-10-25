@@ -28,6 +28,7 @@ import os
 import tempfile
 
 from pydoop.hdfs import default_is_local
+from pydoop.utils.py3compat import iteritems
 
 
 def __inject_pos(code, start=0):
@@ -133,7 +134,7 @@ class LocalWordCount(object):
             self._wordcount_file(wc, self.input_path)
 
         if self.min_occurrence:
-            wc = dict(t for t in wc.iteritems() if t[1] >= self.min_occurrence)
+            wc = dict(t for t in iteritems(wc) if t[1] >= self.min_occurrence)
         return wc
 
     def _wordcount_file(self, wc, fn, path=None):

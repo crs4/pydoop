@@ -116,15 +116,23 @@ class TestHDFS(unittest.TestCase):
             rdata = hdfs.load(test_path)
             self.assertEqual(rdata, self.data)
 
-    def __make_tree(self, wd):
-        d1 = "%s/d1" % wd
+    def __make_tree(self, wd, root="d1", create=True):
+        """
+        d1
+        |-- d2
+        |   `-- f2
+        `-- f1
+        """
+        d1 = "%s/%s" % (wd, root)
         t1 = FSTree(d1)
         d2 = "%s/d2" % d1
         t2 = t1.add(d2)
-        hdfs.mkdir(d2)
+        if create:
+            hdfs.mkdir(d2)
         for t, d, bn in ((t1, d1, "f1"), (t2, d2, "f2")):
             f = "%s/%s" % (d, bn)
-            hdfs.dump(self.data, f)
+            if create:
+                hdfs.dump(self.data, f)
             t.add(f, 0)
         return t1
 
@@ -161,19 +169,20 @@ class TestHDFS(unittest.TestCase):
             hdfs.path.basename(d) for d in (src, copy_on_wd)
         ]
         hdfs.cp(src, copy_on_wd)
-        for t in src_t.walk():
-            copy_name = t.name.replace(src_bn, copy_on_wd_bn)
-            self.assertTrue(hdfs.path.exists(copy_name))
+        exp_t = self.__make_tree(wd, root=copy_on_wd_bn, create=False)
+        for t, exp_t in czip(src_t.walk(), exp_t.walk()):
+            self.assertTrue(hdfs.path.exists(exp_t.name))
             if t.kind == 0:
-                self.assertEqual(hdfs.load(copy_name), self.data)
+                self.assertEqual(hdfs.load(exp_t.name), self.data)
+        # check semantics when target dir already exists
+        hdfs.rmr(copy_on_wd)
+        hdfs.mkdir(copy_on_wd)
         hdfs.cp(src, copy_on_wd)
-        for t in src_t.walk():
-            copy_name = t.name.replace(
-                src_bn, "%s/%s" % (copy_on_wd_bn, src_bn)
-            )
-            self.assertTrue(hdfs.path.exists(copy_name))
+        exp_t = self.__make_tree(copy_on_wd, root=src_bn, create=False)
+        for t, exp_t in czip(src_t.walk(), exp_t.walk()):
+            self.assertTrue(hdfs.path.exists(exp_t.name))
             if t.kind == 0:
-                self.assertEqual(hdfs.load(copy_name), self.data)
+                self.assertEqual(hdfs.load(exp_t.name), self.data)
 
     def cp(self):
         for wd in self.local_wd, self.hdfs_wd:

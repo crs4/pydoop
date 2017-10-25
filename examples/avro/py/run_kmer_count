@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../../config.sh"
+
+PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
+[ -f ${PARQUET_JAR} ] || build_parquet_jar "${this_dir}"/../java
+MODULE=kmer_count
+MPY="${MODULE}".py
+JOBNAME="${MODULE}"-job
+LOGLEVEL="DEBUG"
+INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
+PROJECTION=$(cat "${this_dir}"/../schemas/alignment_record_proj.avsc)
+INPUT=mini_aligned_seqs.gz.parquet
+OUTPUT=kmer_count
+
+${HADOOP} fs -mkdir -p /user/"${USER}"
+${HADOOP} fs -rmr /user/"${USER}"/"${INPUT}" || :
+${HADOOP} fs -put -f "${INPUT}"
+${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+
+${PYDOOP} submit \
+     -D parquet.avro.projection="${PROJECTION}" \
+    --upload-file-to-cache "${MPY}" \
+    --num-reducers 1 \
+    --input-format "${INPUT_FORMAT}" \
+    --avro-input v \
+    --libjars "${PARQUET_JAR}" \
+    --log-level "${LOGLEVEL}" \
+    --job-name "${JOBNAME}" \
+    "${MODULE}" "${INPUT}" "${OUTPUT}"
+
+rm -rf "${OUTPUT}"
+${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
+${PYTHON} show_kmer_count.py "${OUTPUT}"/part-r-00000

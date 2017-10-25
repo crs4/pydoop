@@ -32,7 +32,7 @@ import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
 from pydoop.app.submit import AVRO_IO_CHOICES
-from pydoop.utils.py3compat import StringIO
+from pydoop.utils.py3compat import StringIO, iteritems
 
 
 class Deserializer(object):
@@ -156,7 +156,7 @@ class AvroContext(pp.TaskContext):
         out_kv = {'K': key, 'V': value}
         jc = self.job_conf
         if AVRO_OUTPUT in jc and (self.is_reducer() or self.__is_map_only()):
-            for mode, record in out_kv.iteritems():
+            for mode, record in iteritems(out_kv):
                 serializer = self.__serializers.get(mode)
                 if serializer is not None:
                     with self.timer.time_block('avro serialization'):

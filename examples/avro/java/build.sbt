@@ -8,9 +8,7 @@ crossPaths := false
 
 autoScalaLibrary := false
 
-seq( sbtavro.SbtAvro.avroSettings : _*)
-
-(version in avroConfig) := "1.7.6"
+(version in AvroConfig) := "1.7.6"
 
 val parquetRoot = "org.apache.parquet"
 
@@ -18,7 +16,7 @@ val parquetRoot = "org.apache.parquet"
 //   https://issues.apache.org/jira/browse/PARQUET-62
 val parquetVersion = "1.8.1"
 
-val hadoopVersion = "2.6.4"
+val hadoopVersion = "2.7.4"
 
 val avroVersion = "1.7.6"
 

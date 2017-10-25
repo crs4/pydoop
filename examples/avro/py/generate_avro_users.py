@@ -21,7 +21,7 @@ def main(argv):
     except IndexError:
         sys.exit('Usage: %s SCHEMA_FILE N_USERS AVRO_FILE' % argv[0])
     with open(schema_fn) as f_in:
-        schema = avro.schema.parse(f_in.read())
+        schema = avro.schema.Parse(f_in.read())
     with open(avro_fn, 'wb') as f_out:
         writer = DataFileWriter(f_out, DatumWriter(), schema)
         for i in xrange(n_users):

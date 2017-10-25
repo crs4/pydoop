@@ -37,7 +37,7 @@ class UserReader(AvroReader):
 
 class ColorWriter(AvroWriter):
 
-    schema = avro.schema.parse(open("stats.avsc").read())
+    schema = avro.schema.Parse(open("stats.avsc").read())
 
     def emit(self, key, value):
         self.writer.append({'office': key, 'counts': value})

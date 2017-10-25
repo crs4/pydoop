@@ -26,7 +26,6 @@ from pydoop.avrolib import AvroContext
 if sys.version_info[0] == 3:
     xrange = range
 
-
 WIDTH = 5
 
 

@@ -446,5 +446,7 @@ class local_file(FileIO):
         :return: the next line of text in the file, including the
         newline character
         """
-        return super(local_file, self).readline().decode(encoding=encoding,
-                                                         errors=errors)
+        line = super(local_file, self).readline()
+        if encoding is None:  # FIXME: add support for "rb" mode to hdfs_file
+            return line
+        return line.decode(encoding=encoding, errors=errors)

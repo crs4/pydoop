@@ -17,7 +17,6 @@
 # END_COPYRIGHT
 
 import sys
-import os
 import re
 import logging
 from collections import Counter

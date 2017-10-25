@@ -506,7 +506,7 @@ class HadoopSimulator(object):
         piped_input = file_in is not None
         self.tempf = tempfile.NamedTemporaryFile('rb+', prefix='pydoop-tmp')
         f = self.tempf.file
-        self.logger.debug('writing map input data to %s', f.name)
+        self.logger.debug('writing map input data to %s', self.tempf.name)
         down_stream = BinaryWriter(f)
         self.write_header_down_stream(down_stream, authorization, job_conf)
         down_stream.send(down_stream.RUN_MAP,
