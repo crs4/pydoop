@@ -308,7 +308,7 @@ class hdfs_file(object):
         _complain_ifclosed(self.closed)
         return self.f.tell()
 
-    def write(self, data):
+    def write(self, data, encoding='utf-8', errors='strict'):
         """
         Write ``data`` to the file.
 
@@ -318,6 +318,12 @@ class hdfs_file(object):
         :return: the number of bytes written
         """
         _complain_ifclosed(self.closed)
+        # FIXME: add support for "wb" mode
+        if encoding:
+            try:
+                data = data.encode(encoding, errors)
+            except AttributeError:
+                pass
         return self.f.write(data)
 
     def write_chunk(self, chunk):
@@ -377,11 +383,15 @@ class local_file(FileIO):
     def write(self, data, encoding='utf-8', errors='strict'):
         _complain_ifclosed(self.closed)
         # FIXME: add support for "wb" mode
+        if encoding:
+            try:
+                data = data.encode(encoding, errors)
+            except AttributeError:
+                pass
         try:
-            data = data.encode(encoding, errors)
-        except AttributeError:
-            pass
-        super(local_file, self).write(data)
+            super(local_file, self).write(data)
+        except ValueError as e:
+            raise IOError(e)
         return len(data)
 
     def available(self):

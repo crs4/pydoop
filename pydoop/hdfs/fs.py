@@ -56,20 +56,6 @@ class _FSStatus(object):
         return "_FSStatus(%s, %s)" % (self.fs, self.refcount)
 
 
-class _walker_wrapper(object):
-    def __init__(self, walker):
-        self.walker = walker
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):
-        return self.walker.__next__()
-
-
 def _complain_ifclosed(closed):
     if closed:
         raise ValueError("I/O operation on closed HDFS instance")
@@ -604,11 +590,11 @@ class hdfs(object):
         :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
-        if isinstance(mode, basestring):
-            mode_ = self.__compute_mode_from_string(path, mode)
-        else:
-            mode_ = mode
-        return self.fs.chmod(path, mode_)
+        try:
+            return self.fs.chmod(path, mode)
+        except TypeError:
+            mode = self.__compute_mode_from_string(path, mode)
+            return self.fs.chmod(path, mode)
 
     def utime(self, path, mtime, atime):
         """
@@ -624,16 +610,6 @@ class hdfs(object):
         """
         _complain_ifclosed(self.closed)
         return self.fs.utime(path, int(mtime), int(atime))
-
-    def _walk(self, top):
-        ""
-        if isinstance(top, basestring):
-            top = self.get_path_info(top)
-        yield top
-        if top['kind'] == 'directory':
-            for info in self.list_directory(top['name']):
-                for item in self._walk(info):
-                    yield item
 
     def walk(self, top):
         """
@@ -652,4 +628,10 @@ class hdfs(object):
         """
         if not top:
             raise ValueError("Empty path")
-        return _walker_wrapper(self._walk(top))
+        if isinstance(top, basestring):
+            top = self.get_path_info(top)
+        yield top
+        if top['kind'] == 'directory':
+            for info in self.list_directory(top['name']):
+                for item in self.walk(info):
+                    yield item

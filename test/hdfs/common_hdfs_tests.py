@@ -135,7 +135,7 @@ class TestCommon(unittest.TestCase):
         shutil.rmtree(local_wd)
 
     def move(self):
-        content = uuid.uuid4().bytes
+        content = utils.make_random_data(printable=True)
         from_path = self._make_random_file(content=content)
         to_path = self._make_random_path()
         self.fs.move(from_path, self.fs, to_path)
@@ -261,20 +261,17 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(bytes_written, len(content))
         with self.fs.open_file(path) as fo:
             self.assertEqual(content, fo.read())
-
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(bytearray(content))
             self.assertEqual(bytes_written, len(content))
         with self.fs.open_file(path) as fo:
             self.assertEqual(content, fo.read())
-        chunk = create_string_buffer(len(content))
-        chunk[:] = content
+        chunk = create_string_buffer(content, len(content))
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(chunk)
             self.assertEqual(bytes_written, len(content))
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(u'some unicode data')
-
         # try to write a unicode object
         with self.fs.open_file(path, "w") as fo:
             u = u'a string' + utils.UNI_CHR
@@ -284,8 +281,7 @@ class TestCommon(unittest.TestCase):
 
     def write_chunk(self):
         content = utils.make_random_data()
-        chunk = create_string_buffer(len(content))
-        chunk[:] = content
+        chunk = create_string_buffer(content, len(content))
         path = self._make_random_path()
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write_chunk(chunk)
