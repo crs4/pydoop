@@ -69,24 +69,26 @@ PyObject* CommandReader::read(void) {
     return NULL;
   }
   int code = PyInt_AsLong(pcode);
-  Py_DECREF(pcode); // in case of failures along the way
   if (code == -1 && PyErr_Occurred()) {
+    Py_DECREF(pcode);
     return NULL;
   }
   if (rules.find(code) == rules.end()) {
     PyErr_SetString(PyExc_TypeError, "unexpected rule code.");
+    Py_DECREF(pcode);
     return NULL;
   }
   const std::string& rule = rules[code];
   PyObject* args = _flow_reader->read(rule);
   if (args  == NULL) {
+    Py_DECREF(pcode);
     return NULL; 
   }
   PyObject* result = PyTuple_New(2);
-  if (result == NULL){
+  if (result == NULL) {
+    Py_DECREF(pcode);
     return NULL; 
   }
-  Py_INCREF(pcode);
   PyTuple_SET_ITEM(result, 0, pcode);
   PyTuple_SET_ITEM(result, 1, args);  
   return result;
