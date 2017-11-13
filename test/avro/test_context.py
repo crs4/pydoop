@@ -34,7 +34,6 @@ from pydoop.utils.py3compat import iteritems
 from common import AvroSerializer, avro_user_record
 
 
-
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -112,11 +111,10 @@ class TestContext(WDTestCase):
         ]
         cmd_fn = self._mkfn('map_in')
         serializer = AvroSerializer(self.schema)
-        
         with open(cmd_fn, 'wb') as f:
             bw = BinaryWriter(f)
             bw.send(bw.START_MESSAGE, 0)
-            bw.send(bw.SET_JOB_CONF, 
+            bw.send(bw.SET_JOB_CONF,
                     pydoop.PROPERTIES['AVRO_INPUT'], mode,
                     schema_prop, str(self.schema))
             bw.send(bw.SET_INPUT_TYPES, 'key_type', 'value_type')
@@ -137,9 +135,7 @@ class TestContext(WDTestCase):
         cmd_file = self.__write_cmd_file(mode)
         pp.run_task(
             pp.Factory(mapper_class=mapper_class), private_encoding=False,
-            context_class=context_class, cmd_file=cmd_file,
-            py3_payload_are_bytes=True
-        )
+            context_class=context_class, cmd_file=cmd_file)
         out_fn = cmd_file + '.out'
         out_records = []
         with open(out_fn, 'rb') as f:

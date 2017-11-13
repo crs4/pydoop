@@ -23,9 +23,6 @@ Avro tools.
 # module anywhere in the main code (importing it in the Avro examples
 # is OK, ofc).
 
-from pydoop.utils.py3compat import StringIO
-
-
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter, BinaryDecoder, BinaryEncoder
@@ -35,6 +32,7 @@ import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
 from pydoop.app.submit import AVRO_IO_CHOICES
+from pydoop.utils.py3compat import StringIO, iteritems
 
 
 class Deserializer(object):
@@ -158,7 +156,7 @@ class AvroContext(pp.TaskContext):
         out_kv = {'K': key, 'V': value}
         jc = self.job_conf
         if AVRO_OUTPUT in jc and (self.is_reducer() or self.__is_map_only()):
-            for mode, record in out_kv.iteritems():
+            for mode, record in iteritems(out_kv):
                 serializer = self.__serializers.get(mode)
                 if serializer is not None:
                     with self.timer.time_block('avro serialization'):
@@ -184,7 +182,7 @@ class SeekableDataFileReader(DataFileReader):
         f = self.reader
         if offset <= 0:  # FIXME what is a negative offset??
             f.seek(0)
-            self.block_count = 0
+            self._block_count = 0
             self._read_header()  # FIXME we can't extimate how big it is...
             return
         sm = self.sync_marker
@@ -196,7 +194,7 @@ class SeekableDataFileReader(DataFileReader):
             sync_offset = data.find(sm)
             if sync_offset > -1:
                 f.seek(pos + sync_offset)
-                self.block_count = 0
+                self._block_count = 0
                 return
             pos += len(data)
 
@@ -219,9 +217,9 @@ class AvroReader(RecordReader):
 
     def next(self):
         pos = self.reader.reader.tell()
-        if pos > self.region_end and self.reader.block_count == 0:
+        if pos > self.region_end and self.reader._block_count == 0:
             raise StopIteration
-        record = self.reader.next()
+        record = next(self.reader)
         return pos, record
 
     def get_progress(self):

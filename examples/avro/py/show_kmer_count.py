@@ -2,7 +2,6 @@ import sys
 import csv
 from operator import itemgetter
 
-
 LIMIT = 10
 
 
@@ -12,7 +11,7 @@ def main(argv):
         data = [(k, int(v)) for (k, v) in reader]
         data.sort(key=itemgetter(1), reverse=True)
         for i, t in enumerate(data):
-            print '%s\t%d' % t
+            sys.stdout.write('%s\t%d\n' % t)
             if i + 1 >= LIMIT:
                 break
 

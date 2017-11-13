@@ -28,6 +28,9 @@ import tempfile
 
 import pydoop
 
+if sys.version_info[0] == 3:
+    xrange = range
+
 
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()

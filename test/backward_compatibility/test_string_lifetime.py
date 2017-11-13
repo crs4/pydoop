@@ -16,11 +16,15 @@
 #
 # END_COPYRIGHT
 
+import sys
 import unittest
 import pydoop
 pp = pydoop.import_version_specific_module('_pipes')
 
 import gc
+
+if sys.version_info[0] == 3:
+    xrange = range
 
 
 class str_lifetime_tc(unittest.TestCase):

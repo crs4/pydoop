@@ -33,6 +33,7 @@ Other relevant environment variables include::
 """
 from __future__ import print_function
 
+import sys
 import time
 import os
 import glob
@@ -79,6 +80,12 @@ EXTRA_COMPILE_ARGS = ["-Wno-write-strings"]  # http://bugs.python.org/issue6952
 
 # properties file.  Since the source is in the root dir, filename = basename
 PROP_FN = PROP_BN = pydoop.__propfile_basename__
+
+CONSOLE_SCRIPTS = ['pydoop = pydoop.app.main:main']
+if sys.version_info[0] == 3:
+    CONSOLE_SCRIPTS.append('pydoop3 = pydoop.app.main:main')
+else:
+    CONSOLE_SCRIPTS.append('pydoop2 = pydoop.app.main:main')
 
 
 # ---------
@@ -159,7 +166,7 @@ def get_git_commit():
             ['git', 'rev-parse', 'HEAD'],
             universal_newlines=True
         ).rstrip('\n')
-    except subprocess.CalledProcessError:
+    except (OSError, subprocess.CalledProcessError):
         return None
 
 
@@ -214,7 +221,7 @@ def build_sercore_extension():
             'flow.cc', 'command.cc',
             'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
-        undef_macros = [ "NDEBUG" ], # FIXME
+        undef_macros=["NDEBUG"],  # FIXME
         extra_compile_args=extra_compile_args
     )
     EXTENSION_MODULES.append(binary_encoder)
@@ -431,7 +438,10 @@ setup(
     download_url="https://pypi.python.org/pypi/pydoop",
     install_requires=['setuptools>=%s' % SETUPTOOLS_MIN_VER],
     extras_require={
-        'avro': ["avro>=1.7.4"],
+        'avro': [
+            'avro>=1.7.4;python_version<"3"',
+            'avro-python3>=1.7.4;python_version>="3"',
+        ],
     },
     packages=find_packages(exclude=['test', 'test.*']),
     package_data={"pydoop": [PROP_FN]},
@@ -439,7 +449,7 @@ setup(
         "build": BuildPydoop,
         "clean": Clean
     },
-    entry_points={'console_scripts': ['pydoop = pydoop.app.main:main']},
+    entry_points={'console_scripts': CONSOLE_SCRIPTS},
     platforms=["Linux"],
     ext_modules=EXTENSION_MODULES,
     license="Apache-2.0",

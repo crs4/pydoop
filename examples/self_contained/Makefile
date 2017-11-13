@@ -16,10 +16,14 @@
 # 
 # END_COPYRIGHT
 
+PYTHON ?= python
+PY_VER = $(shell $(PYTHON) -c 'import sys; print(sys.version_info[0])')
+PIP = pip$(PY_VER)
+SUBMIT_CMD = pydoop$(PY_VER) submit
+
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 
 WHEEL_DIR=../../dist
-SUBMIT_CMD=pydoop submit
 SETUPTOOLS_VERSION := 3.3
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
@@ -39,7 +43,7 @@ OUTPUT=${PROGNAME}_output
 run: check_result
 
 check_result: submit
-	python check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT} 
+	$(PYTHON) check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT}
 
 setup_io:
 	-${HDFS} -rmr /user/${USER}/${INPUT}
@@ -51,18 +55,18 @@ setup_io:
 
 submit: vowelcount.zip pydoop.tgz setup_io
 	${SUBMIT_CMD} --python-zip vowelcount.zip \
-                --upload-archive-to-cache pydoop.tgz\
-                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
-                --no-override-home --no-override-env\
+                --upload-archive-to-cache pydoop.tgz \
+                --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
+                --no-override-home --no-override-env \
                 vowelcount.mr.main --entry-point main \
 	              ${INPUT} ${OUTPUT}
 
 submit2: vowelcount.tgz pydoop.tgz setup_io
-	${SUBMIT_CMD} --upload-archive-to-cache vowelcount.tgz\
-                --upload-archive-to-cache pydoop.tgz\
-                --module vowelcount.mr.main --entry-point main\
-                --log-level ${LOGLEVEL} --job-name ${JOBNAME}\
-                --no-override-home --no-override-env\
+	${SUBMIT_CMD} --upload-archive-to-cache vowelcount.tgz \
+                --upload-archive-to-cache pydoop.tgz \
+                --module vowelcount.mr.main --entry-point main \
+                --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
+                --no-override-home --no-override-env \
 	              ${PROGNAME} ${INPUT} ${OUTPUT}
 
 vowelcount.zip: vowelcount
@@ -73,9 +77,9 @@ vowelcount.tgz:
 
 # don't use $(MAKE) -C ../.. wheel, top Makefile is only present in git repo
 pydoop.tgz:
-	cd ../..; python setup.py bdist_wheel --dist-dir=./dist; cd -
-	pip wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
-	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} -t .  pydoop
+	cd ../..; $(PYTHON) setup.py bdist_wheel --dist-dir=./dist; cd -
+	$(PIP) wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
+	$(PIP) install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} -t .  pydoop
 	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*
 

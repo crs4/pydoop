@@ -18,7 +18,9 @@
 
 import os
 import importlib
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod
+
+from pydoop.utils.py3compat import ABC
 
 
 class JavaWrapperFactory(object):
@@ -76,9 +78,7 @@ class JavaWrapperFactory(object):
         )(array_items)
 
 
-class ClassLoader(object):
-
-    __metaclass__ = ABCMeta
+class ClassLoader(ABC):
 
     @abstractmethod
     def init(self, classpath, opts):

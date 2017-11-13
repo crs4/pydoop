@@ -34,7 +34,7 @@ _TEST_DIRS = (
 def suite():
     suites = []
     for dir_ in _TEST_DIRS:
-        module = importlib.import_module("%s.%s" % (dir_, "all_tests"), dir_)
+        module = importlib.import_module("%s.%s" % (dir_, "all_tests"))
         sys.path.insert(0, dir_)
         path = [os.path.abspath("./%s" % dir_)]
         suites.append(getattr(module, "suite")(path))

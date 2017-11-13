@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../../config.sh"
+
+PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
+[ -f ${PARQUET_JAR} ] || build_parquet_jar "${this_dir}"/../java
+SCHEMA_FILE_LOCAL="${this_dir}"/../schemas/user.avsc
+SCHEMA_FILE_HDFS=user.avsc
+
+# ----- part 1 -----
+INPUT=users.csv
+CSV_FN=/tmp/"${INPUT}"
+PARQUETS_DIR=parquets
+N=20
+${PYTHON} create_input.py ${N} "${CSV_FN}"
+
+${HADOOP} fs -mkdir -p /user/"${USER}"
+${HADOOP} fs -rmr /user/"${USER}"/"${PARQUETS_DIR}" || :
+${HADOOP} fs -put -f "${CSV_FN}" "${INPUT}"
+${HADOOP} fs -put -f "${SCHEMA_FILE_LOCAL}" "${SCHEMA_FILE_HDFS}"
+hadoop jar "${PARQUET_JAR}" it.crs4.pydoop.WriteParquet \
+    "${INPUT}" "${PARQUETS_DIR}" "${SCHEMA_FILE_HDFS}"
+
+# ----- part 3 -----
+MODULE=avro_value_in
+MPY="${MODULE}".py
+JOBNAME="${MODULE}"-job
+LOGLEVEL="DEBUG"
+USER_SCHEMA=$(cat "${SCHEMA_FILE_LOCAL}")
+INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
+
+INPUT="${PARQUETS_DIR}"
+OUTPUT=results
+
+${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+
+${PYDOOP} submit --upload-file-to-cache "${MPY}" \
+  --upload-file-to-cache avro_base.py \
+  --num-reducers 1 \
+  --input-format "${INPUT_FORMAT}" \
+  --avro-input v \
+  --libjars "${PARQUET_JAR}" \
+  --log-level "${LOGLEVEL}" \
+  --job-name "${JOBNAME}" \
+  "${MODULE}" "${PARQUETS_DIR}" "${OUTPUT}"
+
+# ----- part 4 -----
+rm -rf "${OUTPUT}"
+${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
+# this is intentionally hardwired.
+${PYTHON} check_results.py "${CSV_FN}" "${OUTPUT}"/part-r-00000

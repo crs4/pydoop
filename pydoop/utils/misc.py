@@ -133,8 +133,7 @@ def make_input_split(filename, offset, length):
     :type length: int
     :param length: length of the split in bytes
     """
-    l = len(filename)
-    s = pack(">h", l)
+    s = pack(">h", len(filename))
     s += filename
     s += pack(">q", offset)
     s += pack(">q", length)

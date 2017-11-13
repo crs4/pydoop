@@ -70,4 +70,3 @@ STREAM_6_DATA = [
     (streams.MAP_ITEM, 'key2', 'a blue yellow fox sits on the table'),
     (streams.CLOSE,),
 ]
-    

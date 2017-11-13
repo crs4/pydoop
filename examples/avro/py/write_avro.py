@@ -12,7 +12,7 @@ FIELDS = ['name', 'office', 'favorite_color']
 def main(schema_fn, csv_fn, avro_fn):
 
     with open(schema_fn) as f_in:
-        schema = avro.schema.parse(f_in.read())
+        schema = avro.schema.Parse(f_in.read())
 
     with open(csv_fn) as f_in:
         reader = csv.reader(f_in, delimiter=';')

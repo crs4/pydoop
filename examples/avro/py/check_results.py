@@ -18,6 +18,7 @@
 
 import sys
 from collections import Counter
+from pydoop.utils.py3compat import iteritems
 
 
 def main(efname, rfname):
@@ -37,7 +38,7 @@ def main(efname, rfname):
     if set(computed) != set(expected):
         sys.exit("ERROR: computed keys != expected keys: %r != %r" % (
             sorted(computed), sorted(expected)))
-    for k, v in expected.iteritems():
+    for k, v in iteritems(expected):
         if computed[k] != v:
             sys.exit("ERROR: %r: %r != %r" % (k, computed[k], dict(v)))
     print('All is ok!')

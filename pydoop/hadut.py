@@ -29,7 +29,7 @@ import pydoop
 import pydoop.utils.misc as utils
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
-from .utils.py3compat import basestring
+from .utils.py3compat import basestring, bintype
 
 
 GLOB_CHARS = frozenset('*,?[]{}')
@@ -203,11 +203,11 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
             keep_streams=True
         )
         task_trackers = []
-        for l in stdout.splitlines():
-            if not l:
+        for line in stdout.splitlines():
+            if not line:
                 continue
-            l = l.split(":")
-            task_trackers.append((l[0].split("_")[1], int(l[-1])))
+            line = line.split(":")
+            task_trackers.append((line[0].split("_")[1], int(line[-1])))
     return task_trackers
 
 
@@ -412,7 +412,8 @@ def collect_output(mr_out_dir, out_file=None):
         for fn in iter_mr_out_files(mr_out_dir):
             with hdfs.open(fn) as f:
                 output.append(f.read())
-        return "".join(output)
+        # TODO: add unicode I/O to hdfs
+        return bintype().join(output).decode("utf8")
     else:
         block_size = 16777216
         with open(out_file, 'a') as o:

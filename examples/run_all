@@ -8,10 +8,9 @@ examples=(
     pydoop_submit
     self_contained
     sequence_file
-    wordcount
     simulator
+    wordcount
 )
-
 some_failed=0
 
 for e in ${examples[@]}; do

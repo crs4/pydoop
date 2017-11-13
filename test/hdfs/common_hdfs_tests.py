@@ -408,10 +408,10 @@ class TestCommon(unittest.TestCase):
         def get_lines(f):
             lines = []
             while 1:
-                l = f.readline()
-                if l == "":
+                line = f.readline()
+                if not line:
                     break
-                lines.append(l)
+                lines.append(line)
             return lines
         self.__check_readline(get_lines)
 
@@ -420,9 +420,9 @@ class TestCommon(unittest.TestCase):
             x = '*' * (2**i) + "\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
-                l = f.readline()
+                line = f.readline()
             self.assertEqual(
-                l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x))
+                line, x, "len(a) = %d, len(x) = %d" % (len(line), len(x))
             )
 
     def iter_lines(self):
@@ -431,7 +431,7 @@ class TestCommon(unittest.TestCase):
             lines = []
             while 1:
                 try:
-                    lines.append(f.next())
+                    lines.append(next(f))
                 except StopIteration:
                     break
             return lines
@@ -524,11 +524,11 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(infos, expected_infos)
         nonexistent_walk = self.fs.walk(self._make_random_path())
         if _is_py3:
-            self.assertRaises(OSError, lambda : next(nonexistent_walk))
+            self.assertRaises(OSError, lambda: next(nonexistent_walk))
         else:
-            self.assertRaises(IOError, lambda : next(nonexistent_walk))
+            self.assertRaises(IOError, lambda: next(nonexistent_walk))
         for top in '', None:
-            self.assertRaises(ValueError, lambda : next(self.fs.walk(top)))
+            self.assertRaises(ValueError, lambda: next(self.fs.walk(top)))
 
     def exists(self):
         self.assertFalse(self.fs.exists('some_file'))

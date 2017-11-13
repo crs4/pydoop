@@ -61,9 +61,9 @@ class TestAvroIO(WDTestCase):
             ), sreader)]
             sreader.align_after(res[-1][0])
             with self.assertRaises(StopIteration):
-                r = sreader.next()
+                r = next(sreader)
             sreader.align_after(0)
-            r = sreader.next()
+            r = next(sreader)
             self.assertEqual(r, res[0][1])
 
             def offset_iterator():
@@ -74,7 +74,7 @@ class TestAvroIO(WDTestCase):
                     if t == s:
                         continue
                     s = t
-                    x = sreader.next()
+                    x = next(sreader)
                     yield (t, x)
 
             i = 0
@@ -104,7 +104,7 @@ class TestAvroIO(WDTestCase):
         areader = get_areader(0, 14)
         file_length = areader.reader.file_length
         with self.assertRaises(StopIteration):
-            areader.next()
+            next(areader)
         areader = get_areader(0, file_length)
         with SeekableDataFileReader(open(fn, 'rb'), DatumReader()) as sreader:
             for (o, a), s in czip(areader, sreader):

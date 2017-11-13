@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env python
 
 # BEGIN_COPYRIGHT
 #
@@ -18,20 +18,14 @@
 #
 # END_COPYRIGHT
 
-""":"
-export HADOOP_HOME=$HADOOP_PREFIX
-export PYTHON_EGG_CACHE=/tmp/python_cache
-exec /usr/bin/python -u $0 $@
-":"""
-
-import sys
-import re
 import logging
 
 logging.basicConfig()
 LOGGER = logging.getLogger("WordCount")
 LOGGER.setLevel(logging.CRITICAL)
 
+import re
+from hashlib import md5
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.utils.serialize import serialize_to_string
@@ -51,7 +45,7 @@ class Mapper(api.Mapper):
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
+        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
         for w in words:
             context.emit(w, 1)
         context.increment_counter(self.input_words, len(words))
@@ -87,7 +81,7 @@ class Reader(api.RecordReader):
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
-            discarded = self.file.readline()
+            discarded = self.file.readline(encoding=None)
             self.bytes_read += len(discarded)
 
     def close(self):
@@ -95,18 +89,15 @@ class Reader(api.RecordReader):
         self.file.close()
         self.file.fs.close()
 
-    def __next__(self):
+    def next(self):
         if self.bytes_read > self.isplit.length:
             raise StopIteration
         key = serialize_to_string(self.isplit.offset + self.bytes_read)
-        record = self.file.readline()
-        if record == "":  # end of file
+        record = self.file.readline(encoding=None)
+        if not record:  # end of file
             raise StopIteration
         self.bytes_read += len(record)
         return (key, record)
-
-    def next(self):
-        return self.__next__()
 
     def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
@@ -132,8 +123,8 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        key = (key if isinstance(key, str) else str(key))
-        value = (value if isinstance(value, bytes) else str(value))
+        key = key.decode("utf8")
+        value = str(value)
         self.file.write(key + self.sep + value + self.eol)
 
 
@@ -143,8 +134,8 @@ class Partitioner(api.Partitioner):
         super(Partitioner, self).__init__(context)
         self.logger = LOGGER.getChild("Partitioner")
 
-    def partition(self, key, num_reduces):
-        reducer_id = (hash(key) & sys.maxsize) % num_reduces
+    def partition(self, key, n_reduces):
+        reducer_id = int(md5(key).hexdigest(), 16) % n_reduces
         self.logger.debug("reducer_id: %r" % reducer_id)
         return reducer_id
 
@@ -161,6 +152,7 @@ FACTORY = pp.Factory(
 
 def main():
     pp.run_task(FACTORY)
+
 
 if __name__ == "__main__":
     main()

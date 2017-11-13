@@ -17,14 +17,27 @@
 # END_COPYRIGHT
 
 import os
+import shutil
+import tempfile
 
 from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 from pydoop.mapreduce.pipes import InputSplit
+import pydoop.test_support as pts
+
+WD = tempfile.mkdtemp(prefix="pydoop_")
 
 
-# needs "stats.avsc" in the cwd
+def cp_script(script):
+    dest = os.path.join(WD, os.path.basename(script))
+    with open(script) as f, open(dest, "w") as fo:
+        fo.write(pts.set_python_cmd(f.read()))
+    os.chmod(dest, 0o755)
+    return dest
+
+
 def main():
-    program_name = './avro_pyrw.py'
+    shutil.copy('../schemas/stats.avsc', 'stats.avsc')
+    program_name = cp_script('./avro_pyrw.py')
     data_in = './users.avro'
     path = os.path.realpath(data_in)
     length = os.stat(path).st_size

@@ -21,13 +21,12 @@ This module provides basic, stand-alone Hadoop simulators for
 debugging support.
 """
 
-import socketserver
 import threading
 import os
 import tempfile
 import uuid
 import logging
-from pydoop.utils.py3compat import StringIO, iteritems
+from pydoop.utils.py3compat import StringIO, iteritems, socketserver
 
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
@@ -214,12 +213,9 @@ class TrivialRecordReader(RecordReader):
     def get_progress(self):
         return 0 if not self.current else float(self.current[0]) / self.max
 
-    def __next__(self):
+    def next(self):
         self.current = next(self.iter)
         return self.current
-
-    def next(self):
-        return self.__next__()
 
 
 class SortAndShuffle(dict, UpStreamAdapter):
@@ -510,7 +506,7 @@ class HadoopSimulator(object):
         piped_input = file_in is not None
         self.tempf = tempfile.NamedTemporaryFile('rb+', prefix='pydoop-tmp')
         f = self.tempf.file
-        self.logger.debug('writing map input data to %s', f.name)
+        self.logger.debug('writing map input data to %s', self.tempf.name)
         down_stream = BinaryWriter(f)
         self.write_header_down_stream(down_stream, authorization, job_conf)
         down_stream.send(down_stream.RUN_MAP,

@@ -16,6 +16,8 @@
 # 
 # END_COPYRIGHT
 
+PYTHON ?= python
+PY_VER = $(shell $(PYTHON) -c 'import sys; print(sys.version_info[0])')
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
 INPUT_FORMAT_MRV1=it.crs4.pydoop.mapred.TextInputFormat
 INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
@@ -28,7 +30,7 @@ INPUT=${JOBNAME}_input
 OUTPUT=${JOBNAME}_output
 
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
-SUBMIT_CMD=pydoop submit
+SUBMIT_CMD = pydoop$(PY_VER) submit
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
@@ -75,13 +77,13 @@ data:
 submit_mrv1: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1} --mrv1 \
 		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV1
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
+	$(PYTHON) check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
 
 
 submit_mrv2: data ${PYINPUTFORMAT_JAR}
 	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} \
 		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV2
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
+	$(PYTHON) check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
 
 
 clean:

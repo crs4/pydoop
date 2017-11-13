@@ -17,23 +17,15 @@
 # END_COPYRIGHT
 
 import sys
-import os
 import re
 import logging
+from collections import Counter
 
 logging.basicConfig(level=logging.INFO)
 
 from pydoop.hdfs import hdfs
 import pydoop.test_support as pts
-
-try:
-    from collections import Counter  # new in Python 2.7
-except ImportError:
-    class Counter(dict):
-        def __init__(self, seq):
-            super(Counter, self).__init__()
-            for x in seq:
-                self[x] = self.get(x, 0) + 1
+import pydoop.hadut as hadut
 
 
 def compute_vc(input_dir):
@@ -41,21 +33,14 @@ def compute_vc(input_dir):
     data = []
     for x in fs.list_directory(input_dir):
         with fs.open_file(x['path']) as f:
-            data.append(f.read())
+            data.append(f.read().decode("utf8"))
     all_data = ''.join(data)
     vowels = re.findall('[AEIOUY]', all_data.upper())
     return Counter(vowels)
 
 
 def get_res(output_dir):
-    fs = hdfs()
-    data = []
-    for x in fs.list_directory(output_dir):
-        if os.path.split(x['path'])[-1].startswith('part-'):
-            with fs.open_file(x['path']) as f:
-                data.append(f.read())
-    all_data = ''.join(data)
-    return pts.parse_mr_output(all_data, vtype=int)
+    return pts.parse_mr_output(hadut.collect_output(output_dir), vtype=int)
 
 
 def check(measured_res, expected_res):
@@ -75,6 +60,7 @@ def main(argv):
     measured_res = get_res(output_dir)
     expected_res = compute_vc(input_dir)
     logger.info(check(measured_res, expected_res))
+
 
 if __name__ == "__main__":
     main(sys.argv)

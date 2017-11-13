@@ -96,6 +96,7 @@ def init():
         "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
     ) + " -Djava.library.path=%s" % pydoop.hadoop_native()
 
+
 init()
 
 
@@ -293,7 +294,7 @@ def lsl(hdfs_path, user=None, recursive=False):
         dir_list = fs.list_directory(path_)
     else:
         treewalk = fs.walk(path_)
-        top = treewalk.next()
+        top = next(treewalk)
         if top['kind'] == 'directory':
             dir_list = list(treewalk)
         else:

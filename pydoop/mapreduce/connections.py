@@ -19,7 +19,6 @@
 import sys
 import os
 import socket
-from threading import Thread, Event
 import logging
 
 from .text_streams import TextDownStreamAdapter, TextUpStreamAdapter
@@ -57,45 +56,15 @@ def open_file_connections(istream=sys.stdin, ostream=sys.stdout):
                        TextUpStreamAdapter(ostream))
 
 
-class LifeThread(object):
-
-    def __init__(self, all_done, port, max_tries=3):
-        self.all_done = all_done
-        self.port = port
-        self.max_tries = max_tries
-        self.logger = LOGGER.getChild('LifeThread')
-
-    def __call__(self):
-        while True:
-            if self.all_done.wait(5):
-                break
-            else:
-                for _ in range(self.max_tries):
-                    s = socket.socket()
-                    s.connect(('localhost', self.port))
-                    break
-                else:
-                    self.logger.critical('server appears to be dead')
-                    os._exit(1)
-                # FIXME protect with a try the next two
-                s.shutdown(socket.SHUT_RDWR)
-                s.close()
-
-
 class NetworkConnections(Connections):
 
     def __init__(self, cmd_stream, up_link, sock, port):
         self.logger = LOGGER.getChild('NetworkConnections')
         super(NetworkConnections, self).__init__(cmd_stream, up_link)
-        self.all_done = Event()
         self.socket = sock
-        self.life_thread = Thread(target=LifeThread(self.all_done, port))
-        self.life_thread.start()
 
     def close(self):
         super(NetworkConnections, self).close()
-        self.all_done.set()
-        self.life_thread.join()
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
 

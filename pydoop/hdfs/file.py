@@ -25,7 +25,6 @@ import os
 from io import FileIO
 
 from pydoop.hdfs import common
-from pydoop.utils.py3compat import unicode, basestring
 
 
 def _complain_ifclosed(closed):
@@ -155,6 +154,8 @@ class hdfs_file(object):
         line = b"".join(self.buffer_list) + self.chunk[self.p: eol + 1]
         self.buffer_list = []
         self.p = eol + 1
+        if encoding is None:  # FIXME: add support for "rb" mode
+            return line
         return line.decode(encoding=encoding, errors=errors)
 
     def next(self):
@@ -171,7 +172,7 @@ class hdfs_file(object):
         """
         _complain_ifclosed(self.closed)
         line = self.readline()
-        if line == "":
+        if not line:
             raise StopIteration
         return line
 
@@ -373,23 +374,14 @@ class local_file(FileIO):
     def mode(self):
         return (super(local_file, self).mode).replace('b', '')
 
-    def next(self):
-        return self.__next__()
-
-    def write(self, data):
+    def write(self, data, encoding='utf-8', errors='strict'):
         _complain_ifclosed(self.closed)
-        if isinstance(data, unicode):
-            # this will capture str in python3
-            data = data.encode(common.TEXT_ENCODING)
-        # in py3 we map basestring to str so all 'basestring's will be filtered
-        # by the check above
-        elif not isinstance(data, (basestring, bytearray, bytes)):
-            # access non string data through a buffer
-            data = bytearray(data)
-        try:  # For some mysterious reason, it will raise a ValueError in py2.7
-            super(local_file, self).write(data)
-        except ValueError as e:
-            raise IOError(*e.args)
+        # FIXME: add support for "wb" mode
+        try:
+            data = data.encode(encoding, errors)
+        except AttributeError:
+            pass
+        super(local_file, self).write(data)
         return len(data)
 
     def available(self):
@@ -454,5 +446,7 @@ class local_file(FileIO):
         :return: the next line of text in the file, including the
         newline character
         """
-        return super(local_file, self).readline().decode(encoding=encoding,
-                                                         errors=errors)
+        line = super(local_file, self).readline()
+        if encoding is None:  # FIXME: add support for "rb" mode to hdfs_file
+            return line
+        return line.decode(encoding=encoding, errors=errors)

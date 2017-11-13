@@ -5,6 +5,9 @@ import avro.schema
 from avro.datafile import DataFileWriter
 from avro.io import DatumWriter
 
+if sys.version_info[0] == 3:
+    xrange = range
+
 NAME_POOL = ['george', 'john', 'paul', 'ringo']
 OFFICE_POOL = ['office-%d' % _ for _ in xrange(4)]
 COLOR_POOL = ['black', 'cyan', 'magenta', 'yellow']
@@ -18,7 +21,7 @@ def main(argv):
     except IndexError:
         sys.exit('Usage: %s SCHEMA_FILE N_USERS AVRO_FILE' % argv[0])
     with open(schema_fn) as f_in:
-        schema = avro.schema.parse(f_in.read())
+        schema = avro.schema.Parse(f_in.read())
     with open(avro_fn, 'wb') as f_out:
         writer = DataFileWriter(f_out, DatumWriter(), schema)
         for i in xrange(n_users):

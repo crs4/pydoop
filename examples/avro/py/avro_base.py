@@ -29,8 +29,6 @@ from pydoop.avrolib import AvroContext
 
 class ColorPickBase(api.Mapper):
 
-    __metaclass__ = abc.ABCMeta
-
     @abc.abstractmethod
     def get_user(self, ctx):
         """
@@ -70,8 +68,6 @@ class AvroKeyValueColorPick(ColorPickBase):
 
 
 class ColorCountBase(api.Reducer):
-
-    __metaclass__ = abc.ABCMeta
 
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())

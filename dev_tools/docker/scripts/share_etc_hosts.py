@@ -38,7 +38,7 @@ class App(object):
         cmd = '/bin/bash -c "echo -e %r >> /etc/hosts"' % host_table
         for k in hosts:
             logger.debug('Updating %s', k)
-            print self.client.execute(k, cmd)
+            print(self.client.execute(k, cmd))
 
 
 def docker_client():

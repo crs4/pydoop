@@ -1,48 +1,40 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-MODULE=wordcount_minimal
-MZIP=${MODULE}.zip
-MPY=${MODULE}.py
-DATA=../input/alice.txt
-RESULTS=results.txt
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
 
-JOBNAME=${MODULE}-job
+MODULE="wordcount_minimal"
+MZIP="${MODULE}".zip
+MPY="${MODULE}".py
+JOBNAME="${MODULE}"-job
+INPUT="${MODULE}"_input
+OUTPUT="${MODULE}"_output
+DATA="${this_dir}"/../input/alice.txt
+RESULTS="results.txt"
+LOGLEVEL="DEBUG"
 
-LOGLEVEL=DEBUG
+zip -j "${MZIP}" "${this_dir}/../wordcount/new_api/${MPY}"
 
-INPUT=${MODULE}_input
-OUTPUT=${MODULE}_output
+"${HADOOP}" fs -rmr "/user/${USER}/${INPUT}" || :
+"${HADOOP}" fs -mkdir -p "/user/${USER}/${INPUT}"
+"${HADOOP}" fs -rmr "/user/${USER}/${OUTPUT}" || :
+"${HADOOP}" fs -put "${DATA}" "${INPUT}"
 
-SUBMIT_CMD="pydoop submit"
+${PYDOOP} submit \
+  --python-zip "${MZIP}" \
+  --python-program "${PYTHON}" \
+ -D mapreduce.pipes.isjavarecordreader=true \
+ -D mapreduce.pipes.isjavarecordwriter=true \
+ -D pydoop.hdfs.user="${USER}" \
+ --entry-point main \
+ --log-level "${LOGLEVEL}" \
+ --job-name "${JOBNAME}" \
+ "${MODULE}" "${INPUT}" "${OUTPUT}"
 
-PYTHONBIN=${PYTHONBIN:-python}
-
-
-if type -P hdfs >/dev/null; then
-  hdfs="$(type -P hdfs) dfs "
-elif type -P hadoop >/dev/null; then
-  hdfs="$(type -P hadoop) fs "
-else
-  echo "Cannot find hdfs or hadoop executables" >&2
-  exit 1
-fi
-
-zip -j ${MZIP} ../wordcount/new_api/${MPY}
-
-${hdfs} -rmr /user/${USER}/${INPUT}
-${hdfs} -mkdir /user/${USER}/${INPUT}
-${hdfs} -rmr /user/${USER}/${OUTPUT}
-${hdfs} -put ${DATA} ${INPUT}
-
-${SUBMIT_CMD} --python-zip ${MZIP} --python-program ${PYTHONBIN}\
-              -D mapreduce.pipes.isjavarecordreader=true \
-              -D mapreduce.pipes.isjavarecordwriter=true \
-              -D pydoop.hdfs.user=${USER} \
-               --entry-point main \
-              --log-level ${LOGLEVEL} --job-name ${JOBNAME} \
-              ${MODULE} ${INPUT} ${OUTPUT}
-
-${hdfs} -cat ${OUTPUT}/part'*' > ${RESULTS}
+${HADOOP} fs -cat "${OUTPUT}"/part'*' > "${RESULTS}"
 
 python <<EOF
 import pydoop.test_support as pts
@@ -54,4 +46,3 @@ def check_results(data_in, data_out):
 print "Checking results"
 check_results("${DATA}", "${RESULTS}")
 EOF
-
