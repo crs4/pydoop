@@ -24,11 +24,9 @@ Avro color count with Python record reader/writer.
 
 from collections import Counter
 
-import avro.schema
-
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from pydoop.avrolib import AvroReader, AvroWriter
+from pydoop.avrolib import AvroReader, AvroWriter, parse
 
 
 class UserReader(AvroReader):
@@ -37,7 +35,7 @@ class UserReader(AvroReader):
 
 class ColorWriter(AvroWriter):
 
-    schema = avro.schema.Parse(open("stats.avsc").read())
+    schema = parse(open("stats.avsc").read())
 
     def emit(self, key, value):
         self.writer.append({'office': key, 'counts': value})

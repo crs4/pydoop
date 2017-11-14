@@ -20,12 +20,13 @@ import os
 import unittest
 import itertools as it
 
-import avro.schema
 import avro.datafile as avdf
 from avro.io import DatumReader, DatumWriter
 
 from pydoop.mapreduce.pipes import InputSplit
-from pydoop.avrolib import SeekableDataFileReader, AvroReader, AvroWriter
+from pydoop.avrolib import (
+    SeekableDataFileReader, AvroReader, AvroWriter, parse
+)
 from pydoop.test_utils import WDTestCase
 from pydoop.utils.py3compat import czip, cmap
 import pydoop.hdfs as hdfs
@@ -41,12 +42,12 @@ class TestAvroIO(WDTestCase):
     def setUp(self):
         super(TestAvroIO, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
-            self.schema = avro.schema.Parse(f.read())
+            self.schema = parse(f.read())
 
     def write_avro_file(self, rec_creator, n_samples, sync_interval):
         avdf.SYNC_INTERVAL = sync_interval
         self.assertEqual(avdf.SYNC_INTERVAL, sync_interval)
-        fo = self._mkf('data.avro', mode='bw')
+        fo = self._mkf('data.avro', mode='wb')
         with avdf.DataFileWriter(fo, DatumWriter(), self.schema) as writer:
             for i in range(n_samples):
                 writer.append(rec_creator(i))

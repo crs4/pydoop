@@ -31,7 +31,7 @@ import tempfile
 import shutil
 
 import pydoop
-from pydoop.utils.py3compat import StringIO
+from pydoop.utils.py3compat import StringIO, basestring
 import pydoop.mapreduce.jwritable_utils as wu
 import pydoop.utils.serialize as srl
 
@@ -184,7 +184,7 @@ class TestSerialize(unittest.TestCase):
         for x in data:
             if isinstance(x, int):
                 srl.serialize_vint(x, out_stream)
-            elif isinstance(x, str):
+            elif isinstance(x, basestring):
                 wu.writeString(out_stream, x)
         return out_stream.getvalue()
 

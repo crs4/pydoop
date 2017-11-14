@@ -130,12 +130,14 @@ def dump(data, hdfs_path, **kwargs):
 
     Additional keyword arguments, if any, are handled like in :func:`open`.
     """
+    # FIXME: add support for "wb" mode to open
+    write_kwargs = {"encoding": None} if kwargs.get("mode") == "wb" else {}
     kwargs["mode"] = "w"
     with open(hdfs_path, **kwargs) as fo:
         i = 0
         bufsize = common.BUFSIZE
         while i < len(data):
-            fo.write(data[i: i + bufsize])
+            fo.write(data[i: i + bufsize], **write_kwargs)
             i += bufsize
     fo.fs.close()
 
@@ -161,6 +163,8 @@ def load(hdfs_path, **kwargs):
 
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
+    # FIXME: add support for "wb" mode to open
+    write_kwargs = {"encoding": None} if kwargs.get("mode") == "wb" else {}
     try:
         kwargs.pop("mode")
     except KeyError:
@@ -173,7 +177,7 @@ def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
             while 1:
                 chunk = fi.read(bufsize)
                 if chunk:
-                    fo.write(chunk)
+                    fo.write(chunk, **write_kwargs)
                 else:
                     break
 

@@ -129,10 +129,8 @@ def make_wd(fs, prefix="pydoop_test_"):
 
 def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
     randint = random.randint
-    if printable:
-        return bytearray([randint(32, 126) for _ in range(size)])
-    else:
-        return bytearray([randint(0, 255) for _ in range(size)])
+    start, stop = (32, 126) if printable else (0, 255)
+    return bytes(bytearray([randint(start, stop) for _ in range(size)]))
 
 
 def get_bytes_per_checksum():
