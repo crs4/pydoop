@@ -19,8 +19,6 @@
 import os
 import unittest
 
-import avro.schema
-
 import pydoop
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
@@ -99,7 +97,7 @@ class TestContext(WDTestCase):
     def setUp(self):
         super(TestContext, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
-            self.schema = avro.schema.Parse(f.read())
+            self.schema = avrolib.parse(f.read())
         self.records = [avro_user_record(_) for _ in range(3)]
 
     def __write_cmd_file(self, mode):

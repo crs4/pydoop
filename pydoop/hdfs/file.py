@@ -322,7 +322,7 @@ class hdfs_file(object):
         if encoding:
             try:
                 data = data.encode(encoding, errors)
-            except AttributeError:
+            except (AttributeError, UnicodeDecodeError):
                 pass
         return self.f.write(data)
 
@@ -386,7 +386,7 @@ class local_file(FileIO):
         if encoding:
             try:
                 data = data.encode(encoding, errors)
-            except AttributeError:
+            except (AttributeError, UnicodeDecodeError):
                 pass
         try:
             super(local_file, self).write(data)
