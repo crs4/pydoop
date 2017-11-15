@@ -24,6 +24,7 @@ import getpass
 import pwd
 import grp
 import sys
+import os
 
 __is_py3 = sys.version_info >= (3, 0)
 
@@ -38,6 +39,62 @@ TEXT_ENCODING = 'utf-8'
 # We use UTF-8 since this is what the Hadoop TextFileFormat uses
 # NOTE:  If you change this, you'll also need to fix the encoding
 # used by the native extension.
+
+
+class Mode(object):
+
+    VALUE = {
+        "r": os.O_RDONLY,
+        "w": os.O_WRONLY,
+        "a": os.O_WRONLY | os.O_APPEND,
+    }
+
+    FLAGS = {
+        os.O_RDONLY: "r",
+        os.O_WRONLY: "w",
+        os.O_WRONLY | os.O_APPEND: "a",
+    }
+
+    @property
+    def value(self):
+        return self.__value
+
+    @property
+    def flags(self):
+        return self.__flags
+
+    @property
+    def binary(self):
+        return self.__binary
+
+    def __init__(self, m=None):
+        self.__value = "r"
+        self.__flags = os.O_RDONLY
+        self.__binary = False
+        if not m:
+            return
+        try:
+            self.__value = m[0]
+        except TypeError:
+            try:
+                self.__value = Mode.FLAGS[m]
+            except KeyError:
+                self.__error(m)
+            else:
+                self.__flags = m
+        else:
+            try:
+                self.__flags = Mode.VALUE[self.__value]
+            except KeyError:
+                self.__error(m)
+            else:
+                try:
+                    self.__binary = m[1] == "b"
+                except IndexError:
+                    pass
+
+    def __error(self, m):
+        raise ValueError("invalid mode: %r" % (m,))
 
 
 if __is_py3:
