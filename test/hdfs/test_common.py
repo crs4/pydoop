@@ -18,46 +18,73 @@
 
 import unittest
 import os
+import itertools
 
 from pydoop.hdfs.common import Mode
 
 
-class TestHDFSCommon(unittest.TestCase):
+class TestMode(unittest.TestCase):
 
-    def test_mode(self):
-        keys = ("arg", "value", "flags", "binary")
+    def test_args(self):
+        keys = ("arg", "value", "flags", "binary", "writable")
         for t in [
-            ("r", "r", os.O_RDONLY, False),
-            ("rt", "r", os.O_RDONLY, False),
-            ("rb", "r", os.O_RDONLY, True),
-            (os.O_RDONLY, "r", os.O_RDONLY, False),
-            ("w", "w", os.O_WRONLY, False),
-            ("wt", "w", os.O_WRONLY, False),
-            ("wb", "w", os.O_WRONLY, True),
-            (os.O_WRONLY, "w", os.O_WRONLY, False),
-            ("a", "a", os.O_WRONLY | os.O_APPEND, False),
-            ("at", "a", os.O_WRONLY | os.O_APPEND, False),
-            ("ab", "a", os.O_WRONLY | os.O_APPEND, True),
-            (os.O_WRONLY | os.O_APPEND, "a", os.O_WRONLY | os.O_APPEND, False),
+            ("r", "rb", os.O_RDONLY, True, False),
+            ("rt", "rt", os.O_RDONLY, False, False),
+            ("rb", "rb", os.O_RDONLY, True, False),
+            (os.O_RDONLY, "rb", os.O_RDONLY, True, False),
+            ("w", "wb", os.O_WRONLY, True, True),
+            ("wt", "wt", os.O_WRONLY, False, True),
+            ("wb", "wb", os.O_WRONLY, True, True),
+            (os.O_WRONLY, "wb", os.O_WRONLY, True, True),
+            ("a", "ab", os.O_WRONLY | os.O_APPEND, True, True),
+            ("at", "at", os.O_WRONLY | os.O_APPEND, False, True),
+            ("ab", "ab", os.O_WRONLY | os.O_APPEND, True, True),
+            (os.O_WRONLY | os.O_APPEND, "ab", os.O_WRONLY | os.O_APPEND,
+             True, True),
         ]:
             d = dict(zip(keys, t))
             m = Mode(d.pop('arg'))
             for k, v in d.items():
                 self.assertEqual(getattr(m, k), v)
-        # default
+            self.assertEqual(str(m), d["value"])
+
+    def test_default(self):
         m = Mode()
-        self.assertEqual(m.value, "r")
+        self.assertEqual(m.value, "rb")
         self.assertEqual(m.flags, os.O_RDONLY)
-        self.assertFalse(m.binary)
-        # exceptions
+        self.assertTrue(m.binary)
+
+    def test_exceptions(self):
         for arg in (-1, "k", [0]):
             self.assertRaises(ValueError, Mode, arg)
 
+    def test_eq(self):
+        m1, m2 = Mode(), Mode()
+        self.assertEqual(m1, m2)
+        values = "r", "w", "a", "rb", "wb", "ab", "rt", "wt", "at"
+        equiv = set([("r", "rb"), ("w", "wb"), ("a", "ab")])
+        for v in values:
+            self.assertEqual(Mode(v), Mode(v))
+            self.assertEqual(Mode(v), v)
+        for v1, v2 in itertools.combinations(values, 2):
+            if (v1, v2) in equiv:
+                self.assertEqual(Mode(v1), Mode(v2))
+                self.assertEqual(Mode(v1), v2)
+                self.assertEqual(Mode(v2), v1)
+            else:
+                self.assertNotEqual(Mode(v1), Mode(v2))
+                self.assertNotEqual(Mode(v1), v2)
+                self.assertNotEqual(Mode(v2), v1)
+
+    def test_copy(self):
+        m = Mode()
+        for cp in Mode(m), Mode.copy(m):
+            self.assertFalse(cp is m)
+            self.assertEqual(cp, m)
+
 
 def suite():
-    suite_ = unittest.TestSuite()
-    suite_.addTest(TestHDFSCommon("test_mode"))
-    return suite_
+    return unittest.TestLoader().loadTestsFromTestCase(TestMode)
 
 
 if __name__ == '__main__':

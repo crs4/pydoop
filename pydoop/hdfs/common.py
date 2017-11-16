@@ -45,11 +45,15 @@ class Mode(object):
     """\
     File opening mode.
 
-    Can be initialized either with a string or an integer. In the
-    former case, semantics are the same as in ``io.open``, but only
-    ``'r', 'w', 'a', 'rb', 'wb'`` and ``'ab'`` are supported. In the
-    latter, supported modes are :data:`os.O_RDONLY`, :data:`os.O_WRONLY`
-    and :data:`os.O_WRONLY` | :data:`os.O_APPEND`.
+    Supported mode strings are limited to ``'rb', 'wb', 'ab'`` (or simply
+    ``'r', 'w', 'a'``) for binary mode and ``'rt', 'wt', 'at'`` for text
+    mode. Semantics are similar to :func:`io.open`, but note that the default
+    mode is binary.
+
+    For backwards compatibility, the constructor also accepts
+    :data:`os.O_RDONLY`, :data:`os.O_WRONLY` and :data:`os.O_WRONLY` |
+    :data:`os.O_APPEND`, respectively equivalent to ``'rb', 'wb'`` and
+    ``'ab'``.
     """
 
     VALUE = {
@@ -73,13 +77,27 @@ class Mode(object):
         return self.__flags
 
     @property
+    def text(self):
+        return self.__text
+
+    @property
     def binary(self):
-        return self.__binary
+        return not self.__text
+
+    @property
+    def writable(self):
+        return self.flags & os.O_WRONLY
 
     def __init__(self, m=None):
-        self.__value = "r"
-        self.__flags = os.O_RDONLY
-        self.__binary = False
+        if isinstance(m, self.__class__):
+            self.__value = m.value
+            self.__flags = m.flags
+            self.__text = m.text
+            return
+        else:
+            self.__value = "rb"
+            self.__flags = os.O_RDONLY
+            self.__text = False
         if not m:
             return
         try:
@@ -98,12 +116,29 @@ class Mode(object):
                 self.__error(m)
             else:
                 try:
-                    self.__binary = m[1] == "b"
+                    self.__text = m[1] == "t"
                 except IndexError:
                     pass
+        self.__value += 't' if self.__text else 'b'
 
     def __error(self, m):
         raise ValueError("invalid mode: %r" % (m,))
+
+    def __eq__(self, m):
+        try:
+            return self.__class__(m).value == self.value
+        except ValueError:
+            return False
+
+    def __ne__(self, m):
+        return not self.__eq__(m)
+
+    def __str__(self):
+        return self.__value
+
+    @classmethod
+    def copy(cls, m):
+        return cls(m)
 
 
 if __is_py3:
