@@ -42,6 +42,15 @@ TEXT_ENCODING = 'utf-8'
 
 
 class Mode(object):
+    """\
+    File opening mode.
+
+    Can be initialized either with a string or an integer. In the
+    former case, semantics are the same as in ``io.open``, but only
+    ``'r', 'w', 'a', 'rb', 'wb'`` and ``'ab'`` are supported. In the
+    latter, supported modes are :data:`os.O_RDONLY`, :data:`os.O_WRONLY`
+    and :data:`os.O_WRONLY` | :data:`os.O_APPEND`.
+    """
 
     VALUE = {
         "r": os.O_RDONLY,
