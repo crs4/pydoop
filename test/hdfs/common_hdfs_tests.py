@@ -269,10 +269,6 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(chunk)
             self.assertEqual(bytes_written, len(content))
-        with self.fs.open_file(path, "wt") as fo:
-            text = u'a string' + utils.UNI_CHR
-            chars_written = fo.write(text)
-            self.assertEqual(chars_written, len(text))
 
     def write_chunk(self):
         content = utils.make_random_data()
@@ -530,6 +526,21 @@ class TestCommon(unittest.TestCase):
         self.assertTrue(self.fs.exists(fname))
         self.assertRaises(ValueError, self.fs.exists, "")
 
+    def text_io(self):
+        t_path, b_path = self._make_random_path(), self._make_random_path()
+        text = u'a string' + utils.UNI_CHR
+        data = text.encode("utf-8")
+        with self.fs.open_file(t_path, "wt") as fo:
+            chars_written = fo.write(text)
+        with self.fs.open_file(b_path, "w") as fo:
+            bytes_written = fo.write(data)
+        self.assertEqual(chars_written, len(text))
+        self.assertEqual(bytes_written, len(data))
+        with self.fs.open_file(t_path, "rt") as f:
+            self.assertEqual(f.read(), text)
+        with self.fs.open_file(b_path, "r") as f:
+            self.assertEqual(f.read(), data)
+
     def __check_path_info(self, info, **expected_values):
         keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
                 'permissions', 'block_size', 'last_access', 'size')
@@ -571,4 +582,5 @@ def common_tests():
         'block_boundary',
         'walk',
         'exists',
+        'text_io',
     ]
