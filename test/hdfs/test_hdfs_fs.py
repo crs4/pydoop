@@ -147,7 +147,7 @@ class TestHDFS(TestCommon):
             chunk_size = min(bs, 12 * 1048576)
             written = 0
             while written < size:
-                data = 'X' * min(chunk_size, size - written)
+                data = b'X' * min(chunk_size, size - written)
                 written += f.write(data)
 
         hd_info = pydoop.hadoop_version_info()
@@ -159,7 +159,7 @@ class TestHDFS(TestCommon):
             bs = 1048576
             kwargs['blocksize'] = bs
 
-        line = "012345678\n"
+        line = b"012345678\n"
         offset = bs - (10 * len(line) + 5)
         path = self._make_random_path()
         with self.fs.open_file(path, flags="w", **kwargs) as f:

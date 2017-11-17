@@ -61,7 +61,7 @@ def _get_special_chr():
         msg = ("local file system doesn't support unicode characters"
                "in filenames, falling back to ASCII-only")
         warnings.warn(msg, UnicodeWarning)
-        the_chr = 's'
+        the_chr = u's'
     finally:
         if fd:
             os.close(fd)

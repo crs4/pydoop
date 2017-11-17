@@ -23,10 +23,10 @@ pydoop.hdfs.fs -- File System Handles
 
 import os
 import socket
-
 import getpass
 import re
 import operator as ops
+import io
 
 import pydoop
 from . import common
@@ -119,9 +119,6 @@ class hdfs(object):
     **Note:** when connecting to the local file system, ``user`` is
     ignored (i.e., it will always be the current UNIX user).
     """
-    SUPPORTED_OPEN_MODES = frozenset([
-        os.O_RDONLY, os.O_WRONLY, os.O_WRONLY | os.O_APPEND, "r", "w", "a"
-    ])
     _CACHE = {}
     _ALIASES = {"host": {}, "port": {}, "user": {}}
 
@@ -233,7 +230,9 @@ class hdfs(object):
                   buff_size=0,
                   replication=0,
                   blocksize=0,
-                  readline_chunk_size=common.BUFSIZE):
+                  readline_chunk_size=common.BUFSIZE,
+                  encoding=None,
+                  errors=None):
         """
         Open an HDFS file.
 
@@ -243,9 +242,8 @@ class hdfs(object):
 
         :type path: str
         :param path: the full path to the file
-        :type flags: str
-        :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for
-          reading, ``'w'`` or :data:`os.O_WRONLY` for writing
+        :type flags: str or int
+        :param flags: opening mode (see :class:`~.common.Mode`).
         :type buff_size: int
         :param buff_size: read/write buffer size in bytes
         :type replication: int
@@ -261,25 +259,16 @@ class hdfs(object):
         _complain_ifclosed(self.closed)
         if not path:
             raise ValueError("Empty path")
-        if flags not in self.SUPPORTED_OPEN_MODES:
-            raise ValueError("opening mode %r not supported" % flags)
+        m = common.Mode(flags)
         if not self.host:
-            if flags == os.O_RDONLY:
-                flags = "r"
-            elif flags == os.O_WRONLY:
-                flags = "w"
-            elif flags == os.O_WRONLY | os.O_APPEND:
-                flags = "a"
-            return local_file(self, path, flags)
-        if flags == "r":
-            flags = os.O_RDONLY
-        elif flags == "w":
-            flags = os.O_WRONLY
-        elif flags == "a":
-            flags = os.O_WRONLY | os.O_APPEND
-        f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
-        fret = hdfs_file(f, self, path, flags, readline_chunk_size)
-        if flags == os.O_RDONLY:
+            fret = local_file(self, path, common.Mode(m.value[0]))
+            if m.text:
+                cls = io.BufferedWriter if m.writable else io.BufferedReader
+                fret = io.TextIOWrapper(cls(fret), encoding, errors)
+            return fret
+        f = self.fs.open_file(path, m.flags, buff_size, replication, blocksize)
+        fret = hdfs_file(f, self, path, m, readline_chunk_size)
+        if m.flags == os.O_RDONLY:
             fret.seek(0)
         return fret
 

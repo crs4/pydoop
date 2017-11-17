@@ -22,7 +22,8 @@ pydoop.hdfs.file -- HDFS File Objects
 """
 
 import os
-from io import FileIO
+from io import FileIO, UnsupportedOperation
+import codecs
 
 from pydoop.hdfs import common
 
@@ -40,7 +41,7 @@ def _seek_with_boundary_checks(f, position, whence):
         position = max(0, position)
     if position > f.size:
         raise IOError('cannot seek past end of file')
-    if f.mode != 'r':
+    if f.writable():
         raise IOError('can seek only in read-only')
     return position
 
@@ -53,17 +54,35 @@ class hdfs_file(object):
     open an HDFS file, use :meth:`~.fs.hdfs.open_file`, or the
     top-level ``open`` function in the hdfs package.
     """
-    ENDL = os.linesep.encode()
+    ENCODING = "utf-8"
+    ERRORS = "strict"
+    ENDL = os.linesep
 
-    def __init__(self, raw_hdfs_file, fs, name, flags,
-                 chunk_size=common.BUFSIZE):
+    def __init__(self, raw_hdfs_file, fs, name, mode,
+                 chunk_size=common.BUFSIZE, encoding=None, errors=None):
         if not chunk_size > 0:
             raise ValueError("chunk size must be positive")
+        mode_obj = common.Mode(mode)
+        if mode_obj.text:
+            self.__encoding = encoding or self.__class__.ENCODING
+            self.__errors = errors or self.__class__.ERRORS
+            try:
+                codecs.lookup(self.__encoding)
+                codecs.lookup_error(self.__errors)
+            except LookupError as e:
+                raise ValueError(e)
+        else:
+            if encoding:
+                raise ValueError(
+                    "binary mode doesn't take an encoding argument")
+            if errors:
+                raise ValueError("binary mode doesn't take an errors argument")
+            self.__encoding = self.__errors = None
         self.f = raw_hdfs_file
         self.__fs = fs
         self.__name = fs.get_path_info(name)["name"]
         self.__size = fs.get_path_info(name)["size"]
-        self.__mode = "r" if flags == os.O_RDONLY else "w"
+        self.__mode_obj = mode_obj
         self.chunk_size = chunk_size
         self.closed = False
         self.__reset()
@@ -107,7 +126,10 @@ class hdfs_file(object):
         """
         The I/O mode for the file.
         """
-        return self.__mode
+        return self.__mode_obj.value
+
+    def writable(self):
+        return self.__mode_obj.writable
 
     def __read_chunk(self):
         self.chunk = self.f.read(self.chunk_size)
@@ -116,36 +138,25 @@ class hdfs_file(object):
             self.EOF = True
 
     def __read_chunks_until_nl(self):
+        endl = self.ENDL.encode()
         if self.EOF:
-            eol = self.chunk.find(self.ENDL, self.p)
+            eol = self.chunk.find(endl, self.p)
             return eol if eol > -1 else len(self.chunk)
         if not self.chunk:
             self.__read_chunk()
-        eol = self.chunk.find(self.ENDL, self.p)
+        eol = self.chunk.find(endl, self.p)
         while eol < 0 and not self.EOF:
             if self.p < len(self.chunk):
                 self.buffer_list.append(self.chunk[self.p:])
             self.__read_chunk()
-            eol = self.chunk.find(self.ENDL, self.p)
+            eol = self.chunk.find(endl, self.p)
         return eol if eol > -1 else len(self.chunk)
 
-    def readline(self, encoding='utf-8', errors='strict'):
+    def readline(self):
         """
         Read and return a line of text.
 
-        :type encoding: str
-        :param encoding: the encoding with which to decode the bytes.
-
-        :type errors: str
-
-        :param errors: The error handling scheme to use for the handling of
-          decoding errors. The default is 'strict' meaning that decoding errors
-          raise a UnicodeDecodeError. Other possible values are 'ignore' and
-          'replace' as well as any other name registered  with
-          codecs.register_error that can handle UnicodeDecodeErrors.
-
         :rtype: str
-
         :return: the next line of text in the file, including the
           newline character
         """
@@ -154,9 +165,10 @@ class hdfs_file(object):
         line = b"".join(self.buffer_list) + self.chunk[self.p: eol + 1]
         self.buffer_list = []
         self.p = eol + 1
-        if encoding is None:  # FIXME: add support for "rb" mode
+        if self.__encoding:
+            return line.decode(self.__encoding, self.__errors)
+        else:
             return line
-        return line.decode(encoding=encoding, errors=errors)
 
     def next(self):
         """
@@ -197,7 +209,7 @@ class hdfs_file(object):
         if not self.closed:
             self.closed = True
             retval = self.f.close()
-            if self.mode == "w":
+            if self.writable():
                 self.__size = self.fs.get_path_info(self.name)["size"]
             return retval
 
@@ -265,7 +277,11 @@ class hdfs_file(object):
                 break
             chunks.append(c)
             length -= len(c)
-        return b"".join(chunks)
+        data = b"".join(chunks)
+        if self.__encoding:
+            return data.decode(self.__encoding, self.__errors)
+        else:
+            return data
 
     def read_chunk(self, chunk):
         r"""
@@ -308,7 +324,7 @@ class hdfs_file(object):
         _complain_ifclosed(self.closed)
         return self.f.tell()
 
-    def write(self, data, encoding='utf-8', errors='strict'):
+    def write(self, data):
         """
         Write ``data`` to the file.
 
@@ -318,13 +334,13 @@ class hdfs_file(object):
         :return: the number of bytes written
         """
         _complain_ifclosed(self.closed)
-        # FIXME: add support for "wb" mode
-        if encoding:
-            try:
-                data = data.encode(encoding, errors)
-            except (AttributeError, UnicodeDecodeError):
-                pass
-        return self.f.write(data)
+        if not self.writable():
+            raise UnsupportedOperation("write")
+        if self.__encoding:
+            self.f.write(data.encode(self.__encoding, self.__errors))
+            return len(data)
+        else:
+            return self.f.write(data)
 
     def write_chunk(self, chunk):
         """
@@ -347,12 +363,19 @@ class hdfs_file(object):
 
 
 class local_file(FileIO):
-    "Support class to handle local_file(s)"
-    def __init__(self, fs, name, flags):
-        if not flags.startswith("r"):
+    """\
+    Support class to handle local files.
+
+    Objects from this class should not be instantiated directly, but
+    rather obtained through the top-level ``open`` function in the
+    hdfs package.
+    """
+    def __init__(self, fs, name, mode):
+        mode_obj = common.Mode(mode)
+        if mode_obj.writable:
             local_file.__make_parents(fs, name)
         name = os.path.abspath(name)
-        super(local_file, self).__init__(name, flags)
+        super(local_file, self).__init__(name, mode_obj.value)
         self.__fs = fs
         self.__name = name
         self.__size = os.fstat(super(local_file, self).fileno()).st_size
@@ -376,30 +399,12 @@ class local_file(FileIO):
     def size(self):
         return self.__size
 
-    @property
-    def mode(self):
-        return (super(local_file, self).mode).replace('b', '')
-
-    def write(self, data, encoding='utf-8', errors='strict'):
-        _complain_ifclosed(self.closed)
-        # FIXME: add support for "wb" mode
-        if encoding:
-            try:
-                data = data.encode(encoding, errors)
-            except (AttributeError, UnicodeDecodeError):
-                pass
-        try:
-            super(local_file, self).write(data)
-        except ValueError as e:
-            raise IOError(e)
-        return len(data)
-
     def available(self):
         _complain_ifclosed(self.closed)
         return self.size
 
     def close(self):
-        if self.mode == "w":
+        if self.writable():
             self.flush()
             os.fsync(self.fileno())
             self.__size = os.fstat(self.fileno()).st_size
@@ -435,28 +440,3 @@ class local_file(FileIO):
 
     def write_chunk(self, chunk):
         return self.write(chunk)
-
-    def readline(self, encoding='utf-8', errors='strict'):
-        """
-        Read and return a line of text.
-
-        :type encoding: str
-        :param encoding: the encoding with which to decode the bytes.
-
-        :type errors: str
-
-        :param errors: The error handling scheme to use for the handling of
-          decoding errors. The default is 'strict' meaning that decoding errors
-          raise a UnicodeDecodeError. Other possible values are 'ignore' and
-          'replace' as well as any other name registered
-          with codecs.register_error that can handle UnicodeDecodeErrors.
-
-        :rtype: str
-
-        :return: the next line of text in the file, including the
-          newline character
-        """
-        line = super(local_file, self).readline()
-        if encoding is None:  # FIXME: add support for "rb" mode to hdfs_file
-            return line
-        return line.decode(encoding=encoding, errors=errors)

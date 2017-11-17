@@ -26,6 +26,7 @@ LOGGER.setLevel(logging.CRITICAL)
 
 import re
 from hashlib import md5
+
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.utils.serialize import serialize_to_string
@@ -52,6 +53,7 @@ class Mapper(api.Mapper):
 
 
 class Reducer(api.Reducer):
+
     def __init__(self, context):
         super(Reducer, self).__init__(context)
         context.set_status("initializing reducer")
@@ -81,7 +83,7 @@ class Reader(api.RecordReader):
         self.file.seek(self.isplit.offset)
         self.bytes_read = 0
         if self.isplit.offset > 0:
-            discarded = self.file.readline(encoding=None)
+            discarded = self.file.readline()
             self.bytes_read += len(discarded)
 
     def close(self):
@@ -93,7 +95,7 @@ class Reader(api.RecordReader):
         if self.bytes_read > self.isplit.length:
             raise StopIteration
         key = serialize_to_string(self.isplit.offset + self.bytes_read)
-        record = self.file.readline(encoding=None)
+        record = self.file.readline()
         if not record:  # end of file
             raise StopIteration
         self.bytes_read += len(record)
@@ -113,7 +115,7 @@ class Writer(api.RecordWriter):
         out_dir = jc["mapred.work.output.dir"]
         outfn = "%s/part-%05d" % (out_dir, part)
         hdfs_user = jc.get("pydoop.hdfs.user", None)
-        self.file = hdfs.open(outfn, "w", user=hdfs_user)
+        self.file = hdfs.open(outfn, "wt", user=hdfs_user)
         self.sep = jc.get("mapred.textoutputformat.separator", "\t")
         self.eol = jc.get("mapred.textoutputformat.eol", "\n")
 
@@ -123,9 +125,7 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        key = key.decode("utf8")
-        value = str(value)
-        self.file.write(key + self.sep + value + self.eol)
+        self.file.write(key.decode("utf-8") + self.sep + str(value) + self.eol)
 
 
 class Partitioner(api.Partitioner):
@@ -156,8 +156,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# Local Variables:
-# mode: python
-# End:
