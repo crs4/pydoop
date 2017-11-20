@@ -31,9 +31,8 @@ def get_res(output_dir):
     data = []
     for x in fs.list_directory(output_dir):
         if os.path.split(x['path'])[-1].startswith('part-'):
-            with fs.open_file(x['path']) as f:
-                # TODO: add unicode I/O to hdfs
-                data.append(f.read().decode('utf8'))
+            with fs.open_file(x['path'], 'rt') as f:
+                data.append(f.read())
     all_data = ''.join(data)
     return pts.parse_mr_output(all_data, vtype=int)
 

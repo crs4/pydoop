@@ -56,7 +56,8 @@ class Mapper(pp.Mapper):
         self.input_words = context.getCounter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
+        value = context.getInputValue().decode("utf-8")
+        words = re.sub('[^0-9a-zA-Z]+', ' ', value).split()
         for w in words:
             context.emit(w, "1")
         context.incrementCounter(self.input_words, len(words))
@@ -115,7 +116,7 @@ class Reader(pp.RecordReader):
             return (False, "", "")
         key = struct.pack(">q", self.isplit.offset + self.bytes_read)
         record = self.file.readline()
-        if record == "":  # end of file
+        if not record:  # end of file
             return (False, "", "")
         self.bytes_read += len(record)
         return (True, key, record)

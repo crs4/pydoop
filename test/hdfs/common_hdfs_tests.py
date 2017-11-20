@@ -96,9 +96,8 @@ class TestCommon(unittest.TestCase):
             path = self._make_random_path()
             self.fs.open_file(path, flags).close()
             for flags in "r", os.O_RDONLY:
-                f = self.fs.open_file(path, flags)
-                self.assertFalse(f.closed)
-                f.close()
+                with self.fs.open_file(path, flags) as f:
+                    self.assertFalse(f.closed)
                 self.assertTrue(f.closed)
                 self.assertRaises(ValueError, f.read)
         path = self._make_random_path()
@@ -190,14 +189,14 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, os.O_WRONLY) as f:
             self.assertTrue(f.name.endswith(path))
             self.assertEqual(f.size, 0)
-            self.assertEqual(f.mode, "w")
+            self.assertEqual(f.mode, "wb")
             content = utils.make_random_data()
             f.write(content)
         self.assertEqual(f.size, len(content))
         with self.fs.open_file(path) as f:
             self.assertTrue(f.name.endswith(path))
             self.assertEqual(f.size, len(content))
-            self.assertEqual(f.mode, "r")
+            self.assertEqual(f.mode, "rb")
 
     def flush(self):
         path = self._make_random_path()
@@ -236,7 +235,7 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             self.assertEqual(f.read(3), content[:3])
             self.assertEqual(f.read(3), content[3:6])
-            self.assertRaisesExternal(IOError, f.write, content)
+            self.assertRaisesExternal(ValueError, f.write, content)
 
     def __read_chunk(self, chunk_factory):
         content = utils.make_random_data()
@@ -270,14 +269,6 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(chunk)
             self.assertEqual(bytes_written, len(content))
-        with self.fs.open_file(path, "w") as fo:
-            bytes_written = fo.write(u'some unicode data')
-        # try to write a unicode object
-        with self.fs.open_file(path, "w") as fo:
-            u = u'a string' + utils.UNI_CHR
-            data = u.encode('utf-8')
-            bytes_written = fo.write(u)
-            self.assertEqual(bytes_written, len(data))
 
     def write_chunk(self):
         content = utils.make_random_data()
@@ -383,11 +374,11 @@ class TestCommon(unittest.TestCase):
 
     def __check_readline(self, get_lines):
         samples = [
-            "foo\nbar\n\ntar",
-            "\nfoo\nbar\n\ntar",
-            "foo\nbar\n\ntar\n",
-            "\n\n\n", "\n", "",
-            "foobartar",
+            b"foo\nbar\n\ntar",
+            b"\nfoo\nbar\n\ntar",
+            b"foo\nbar\n\ntar\n",
+            b"\n\n\n", b"\n", b"",
+            b"foobartar",
         ]
         path = self._make_random_path()
         for text in samples:
@@ -413,7 +404,7 @@ class TestCommon(unittest.TestCase):
 
     def readline_big(self):
         for i in range(10, 23):
-            x = '*' * (2**i) + "\n"
+            x = b"*" * (2**i) + b"\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
                 line = f.readline()
@@ -439,12 +430,12 @@ class TestCommon(unittest.TestCase):
             self.__check_readline(fun)
 
     def seek(self):
-        lines = ["1\n", "2\n", "3\n"]
-        text = "".join(lines)
+        lines = [b"1\n", b"2\n", b"3\n"]
+        data = b"".join(lines)
         path = self._make_random_path()
-        for chunk_size in range(1, 2 + len(text)):
+        for chunk_size in range(1, 2 + len(data)):
             with self.fs.open_file(path, "w") as f:
-                f.write(text)
+                f.write(data)
             with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
                 for i, l in enumerate(lines):
                     f.seek(sum(map(len, lines[:i])))
@@ -458,9 +449,9 @@ class TestCommon(unittest.TestCase):
                 f.seek(1, os.SEEK_CUR)
                 self.assertEqual(f.tell(), 2)
                 f.seek(-1, os.SEEK_END)
-                self.assertEqual(f.tell(), len(text) - 1)
+                self.assertEqual(f.tell(), len(data) - 1)
                 # seek past end of file
-                self.assertRaises(IOError, f.seek, len(text) + 10)
+                self.assertRaises(IOError, f.seek, len(data) + 10)
 
     def block_boundary(self):
         hd_info = pydoop.hadoop_version_info()
@@ -479,7 +470,7 @@ class TestCommon(unittest.TestCase):
             i = 0
             bufsize = 12 * 1024 * 1024
             while i < total_data_size:
-                data = 'X' * min(bufsize, total_data_size - i)
+                data = b'X' * min(bufsize, total_data_size - i)
                 f.write(data)
                 i += bufsize
 
@@ -535,6 +526,21 @@ class TestCommon(unittest.TestCase):
         self.assertTrue(self.fs.exists(fname))
         self.assertRaises(ValueError, self.fs.exists, "")
 
+    def text_io(self):
+        t_path, b_path = self._make_random_path(), self._make_random_path()
+        text = u'a string' + utils.UNI_CHR
+        data = text.encode("utf-8")
+        with self.fs.open_file(t_path, "wt") as fo:
+            chars_written = fo.write(text)
+        with self.fs.open_file(b_path, "w") as fo:
+            bytes_written = fo.write(data)
+        self.assertEqual(chars_written, len(text))
+        self.assertEqual(bytes_written, len(data))
+        with self.fs.open_file(t_path, "rt") as f:
+            self.assertEqual(f.read(), text)
+        with self.fs.open_file(b_path, "r") as f:
+            self.assertEqual(f.read(), data)
+
     def __check_path_info(self, info, **expected_values):
         keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
                 'permissions', 'block_size', 'last_access', 'size')
@@ -576,4 +582,5 @@ def common_tests():
         'block_boundary',
         'walk',
         'exists',
+        'text_io',
     ]

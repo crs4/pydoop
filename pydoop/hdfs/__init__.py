@@ -77,9 +77,12 @@ __all__ = [
 
 
 import os
+import operator
+from functools import reduce
 
 import pydoop
 from . import common, path
+from pydoop.utils.py3compat import bintype
 
 try:
     _ORIG_CLASSPATH
@@ -110,7 +113,8 @@ from .fs import hdfs, default_is_local
 
 
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
-         readline_chunk_size=common.BUFSIZE, user=None):
+         readline_chunk_size=common.BUFSIZE, user=None,
+         encoding=None, errors=None):
     """
     Open a file, returning an :class:`~.file.hdfs_file` object.
 
@@ -121,34 +125,36 @@ def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
     host, port, path_ = path.split(hdfs_path, user)
     fs = hdfs(host, port, user)
     return fs.open_file(path_, mode, buff_size, replication, blocksize,
-                        readline_chunk_size)
+                        readline_chunk_size, encoding, errors)
 
 
 def dump(data, hdfs_path, **kwargs):
-    """
+    """\
     Write ``data`` to ``hdfs_path``.
 
-    Additional keyword arguments, if any, are handled like in :func:`open`.
+    Keyword arguments are passed to :func:`open`, except for ``mode``,
+    which is forced to ``"w"`` (or ``"wt"`` for text data).
     """
-    # FIXME: add support for "wb" mode to open
-    write_kwargs = {"encoding": None} if kwargs.get("mode") == "wb" else {}
-    kwargs["mode"] = "w"
+    kwargs["mode"] = "w" if isinstance(data, bintype) else "wt"
     with open(hdfs_path, **kwargs) as fo:
         i = 0
         bufsize = common.BUFSIZE
         while i < len(data):
-            fo.write(data[i: i + bufsize], **write_kwargs)
+            fo.write(data[i: i + bufsize])
             i += bufsize
     fo.fs.close()
 
 
 def load(hdfs_path, **kwargs):
-    """
+    """\
     Read the content of ``hdfs_path`` and return it.
 
-    Additional keyword arguments, if any, are handled like in :func:`open`.
+    Keyword arguments are passed to :func:`open`. The `"mode"` kwarg
+    must be readonly.
     """
-    kwargs["mode"] = "r"
+    m = common.Mode(kwargs.get("mode", "r"))
+    if m.writable:
+        raise ValueError("opening mode must be readonly")
     data = []
     with open(hdfs_path, **kwargs) as fi:
         bufsize = common.BUFSIZE
@@ -159,16 +165,11 @@ def load(hdfs_path, **kwargs):
             else:
                 break
     fi.fs.close()
-    return b"".join(data)
+    return reduce(operator.add, data)
 
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
-    # FIXME: add support for "wb" mode to open
-    write_kwargs = {"encoding": None} if kwargs.get("mode") == "wb" else {}
-    try:
-        kwargs.pop("mode")
-    except KeyError:
-        pass
+    kwargs.pop("mode", None)
     kwargs["flags"] = "r"
     with src_fs.open_file(src_path, **kwargs) as fi:
         kwargs["flags"] = "w"
@@ -177,18 +178,19 @@ def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
             while 1:
                 chunk = fi.read(bufsize)
                 if chunk:
-                    fo.write(chunk, **write_kwargs)
+                    fo.write(chunk)
                 else:
                     break
 
 
 def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
-    """
+    """\
     Copy the contents of ``src_hdfs_path`` to ``dest_hdfs_path``.
 
-    Additional keyword arguments, if any, are handled like in
-    :func:`open`.  If ``src_hdfs_path`` is a directory, its contents
-    will be copied recursively.
+    If ``src_hdfs_path`` is a directory, its contents will be copied
+    recursively. Source file(s) are opened for reading and copies are
+    opened for writing. Additional keyword arguments, if any, are
+    handled like in :func:`open`.
     """
     src, dest = {}, {}
     try:
@@ -238,23 +240,25 @@ def cp(src_hdfs_path, dest_hdfs_path, **kwargs):
 
 
 def put(src_path, dest_hdfs_path, **kwargs):
-    """
+    """\
     Copy the contents of ``src_path`` to ``dest_hdfs_path``.
 
     ``src_path`` is forced to be interpreted as an ordinary local path
-    (see :func:`~path.abspath`). Additional keyword arguments, if any,
-    are handled like in :func:`open`.
+    (see :func:`~path.abspath`). The source file is opened for reading
+    and the copy is opened for writing. Additional keyword arguments,
+    if any, are handled like in :func:`open`.
     """
     cp(path.abspath(src_path, local=True), dest_hdfs_path, **kwargs)
 
 
 def get(src_hdfs_path, dest_path, **kwargs):
-    """
+    """\
     Copy the contents of ``src_hdfs_path`` to ``dest_path``.
 
-    ``dest_path`` is forced to be interpreted as an ordinary local path
-    (see :func:`~path.abspath`).  Additional keyword arguments, if any,
-    are handled like in :func:`open`.
+    ``dest_path`` is forced to be interpreted as an ordinary local
+    path (see :func:`~path.abspath`). The source file is opened for
+    reading and the copy is opened for writing. Additional keyword
+    arguments, if any, are handled like in :func:`open`.
     """
     cp(src_hdfs_path, path.abspath(dest_path, local=True), **kwargs)
 

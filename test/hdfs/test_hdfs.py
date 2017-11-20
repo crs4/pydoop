@@ -63,7 +63,7 @@ class TestHDFS(unittest.TestCase):
     def open(self):
         for test_path in self.hdfs_paths[0], self.local_paths[0]:
             with hdfs.open(test_path, "w") as f:
-                f.write(self.data, encoding=None)
+                f.write(self.data)
             f.fs.close()
             with hdfs.open(test_path) as f:
                 self.assertEqual(f.read(), self.data)

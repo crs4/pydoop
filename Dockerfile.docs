@@ -1,0 +1,14 @@
+FROM crs4/pydoop
+MAINTAINER simone.leo@crs4.it
+
+RUN yum install inkscape  # installs ImageMagick as a dep
+RUN pip3 install sphinx
+
+RUN inkscape -z -D -f logo/logo.svg -e /tmp/logo.png -w 800 && \
+    convert -resize 200x /tmp/logo.png docs/_static/logo.png
+RUN inkscape -z -D -f logo/favicon.svg -e /tmp/256.png -w 256 -h 256 && \
+    for i in 16 32 64 128; do \
+        convert /tmp/256.png -resize ${i}x${i} /tmp/${i}.png; \
+    done && \
+    convert /tmp/{16,32,64,128}.png docs/_static/favicon.ico
+RUN source /etc/profile && make -C docs html

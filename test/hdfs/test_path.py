@@ -365,7 +365,7 @@ class TestStat(unittest.TestCase):
             host = ""
         fs = hdfs.hdfs(host, 0)
         with fs.open_file(p_, 'w') as fo:
-            fo.write(make_random_str())
+            fo.write(b"foobar\n")
         info = fs.get_path_info(p_)
         fs.close()
         s = hdfs.path.stat(p)

@@ -24,6 +24,7 @@ import getpass
 import pwd
 import grp
 import sys
+import os
 
 __is_py3 = sys.version_info >= (3, 0)
 
@@ -38,6 +39,106 @@ TEXT_ENCODING = 'utf-8'
 # We use UTF-8 since this is what the Hadoop TextFileFormat uses
 # NOTE:  If you change this, you'll also need to fix the encoding
 # used by the native extension.
+
+
+class Mode(object):
+    """\
+    File opening mode.
+
+    Supported mode strings are limited to ``'rb', 'wb', 'ab'`` (or simply
+    ``'r', 'w', 'a'``) for binary mode and ``'rt', 'wt', 'at'`` for text
+    mode. Semantics are similar to :func:`io.open`, but note that the default
+    mode is binary.
+
+    For backwards compatibility, the constructor also accepts
+    :data:`os.O_RDONLY`, :data:`os.O_WRONLY` and :data:`os.O_WRONLY` |
+    :data:`os.O_APPEND`, respectively equivalent to ``'rb', 'wb'`` and
+    ``'ab'``.
+    """
+
+    VALUE = {
+        "r": os.O_RDONLY,
+        "w": os.O_WRONLY,
+        "a": os.O_WRONLY | os.O_APPEND,
+    }
+
+    FLAGS = {
+        os.O_RDONLY: "r",
+        os.O_WRONLY: "w",
+        os.O_WRONLY | os.O_APPEND: "a",
+    }
+
+    @property
+    def value(self):
+        return self.__value
+
+    @property
+    def flags(self):
+        return self.__flags
+
+    @property
+    def text(self):
+        return self.__text
+
+    @property
+    def binary(self):
+        return not self.__text
+
+    @property
+    def writable(self):
+        return self.flags & os.O_WRONLY
+
+    def __init__(self, m=None):
+        if isinstance(m, self.__class__):
+            self.__value = m.value
+            self.__flags = m.flags
+            self.__text = m.text
+            return
+        else:
+            self.__value = "rb"
+            self.__flags = os.O_RDONLY
+            self.__text = False
+        if not m:
+            return
+        try:
+            self.__value = m[0]
+        except TypeError:
+            try:
+                self.__value = Mode.FLAGS[m]
+            except KeyError:
+                self.__error(m)
+            else:
+                self.__flags = m
+        else:
+            try:
+                self.__flags = Mode.VALUE[self.__value]
+            except KeyError:
+                self.__error(m)
+            else:
+                try:
+                    self.__text = m[1] == "t"
+                except IndexError:
+                    pass
+        self.__value += 't' if self.__text else 'b'
+
+    def __error(self, m):
+        raise ValueError("invalid mode: %r" % (m,))
+
+    def __eq__(self, m):
+        try:
+            return self.__class__(m).value == self.value
+        except ValueError:
+            return False
+
+    def __ne__(self, m):
+        return not self.__eq__(m)
+
+    def __str__(self):
+        return self.__value
+
+    @classmethod
+    def copy(cls, m):
+        return cls(m)
 
 
 if __is_py3:

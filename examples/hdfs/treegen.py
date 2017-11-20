@@ -35,7 +35,7 @@ BS_RANGE = [_ * MB for _ in range(50, 101, 10)]
 def treegen(fs, root, depth, span):
     if isdir(fs, root) and depth > 0:
         for i in range(span):
-            path = "%s/%d_%d" % (root, depth, i)
+            path = u"%s/%d_%d" % (root, depth, i)
             kind = 'file' if i else 'directory'
             if kind == 'file':
                 kwargs = {}
@@ -47,7 +47,7 @@ def treegen(fs, root, depth, span):
                 sys.stderr.write(
                     "%s %s %d\n" % (kind[0].upper(), path, (bs / MB))
                 )
-                with fs.open_file(path, "w", **kwargs) as f:
+                with fs.open_file(path, "wt", **kwargs) as f:
                     f.write(path)
             else:
                 sys.stderr.write("%s %s 0\n" % (kind[0].upper(), path))

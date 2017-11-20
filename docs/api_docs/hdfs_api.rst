@@ -14,3 +14,6 @@
 
 .. automodule:: pydoop.hdfs.file
    :members:
+
+.. automodule:: pydoop.hdfs.common
+   :members:

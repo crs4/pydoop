@@ -32,8 +32,8 @@ def compute_vc(input_dir):
     fs = hdfs()
     data = []
     for x in fs.list_directory(input_dir):
-        with fs.open_file(x['path']) as f:
-            data.append(f.read().decode("utf8"))
+        with fs.open_file(x['path'], 'rt') as f:
+            data.append(f.read())
     all_data = ''.join(data)
     vowels = re.findall('[AEIOUY]', all_data.upper())
     return Counter(vowels)
