@@ -13,23 +13,12 @@ basically have two options:
 To write sequence files with Pydoop, set the ouput format and the
 compression type as follows::
 
-  [MapReduce V1]
-  pydoop submit \
-  --output-format=org.apache.hadoop.mapred.SequenceFileOutputFormat \
-  -D mapred.output.compression.type=NONE|RECORD|BLOCK [...]
-
-  [MapReduce V2]
   pydoop submit \
   --output-format=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat \
   -D mapreduce.output.fileoutputformat.compress.type=NONE|RECORD|BLOCK [...]
 
 To read sequence files, set the input format as follows::
 
-  [MapReduce V1]
-  pydoop submit \
-  --input-format=org.apache.hadoop.mapred.SequenceFileInputFormat
-
-  [MapReduce V2]
   pydoop submit \
   --input-format=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat
 

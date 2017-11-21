@@ -191,7 +191,6 @@ def build_hdfscore_native_impl():
         glob.iglob('src/libhdfsV2/os/posix/*.c'),
         glob.iglob('src/native_core_hdfs/*.cc')
     ))
-    libhdfs_macros = [("HADOOP_LIBHDFS_V2", 1)]
     inc_dirs = jvm.get_include_dirs() + [
         'src/libhdfsV2', 'src/libhdfsV2/os/posix'
     ]
@@ -201,7 +200,7 @@ def build_hdfscore_native_impl():
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=hdfs_ext_sources,
-        define_macros=jvm.get_macros() + libhdfs_macros,
+        define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
         extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
     )
@@ -236,9 +235,8 @@ def have_better_tls():
 
 class JavaLib(object):
 
-    def __init__(self, hadoop_vinfo):
-        self.hadoop_vinfo = hadoop_vinfo
-        self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
+    def __init__(self):
+        self.jar_name = pydoop.jar_name()
         self.classpath = pydoop.hadoop_classpath()
         self.java_files = glob.glob(
             "src/v2/it/crs4/pydoop/mapreduce/pipes/*.java"
@@ -255,7 +253,7 @@ class JavaBuilder(object):
     def __init__(self, build_temp, build_lib):
         self.build_temp = build_temp
         self.build_lib = build_lib
-        self.java_libs = [JavaLib(HADOOP_VERSION_INFO)]
+        self.java_libs = [JavaLib()]
 
     def run(self):
         log.info("hadoop_home: %r" % (HADOOP_HOME,))
@@ -265,7 +263,6 @@ class JavaBuilder(object):
             self.__build_java_lib(jlib)
 
     def __build_java_lib(self, jlib):
-        log.info("Building java code for hadoop-%s" % jlib.hadoop_vinfo)
         package_path = os.path.join(self.build_lib, "pydoop")
         compile_cmd = "javac"
         if jlib.classpath:
@@ -343,6 +340,8 @@ class BuildPydoop(build):
         shutil.rmtree(self.build_temp)
 
     def run(self):
+        if HADOOP_VERSION_INFO.tuple < (2,):
+            raise RuntimeError('Hadoop v1 is not supported')
         # `is_local` requires running the local hadoop executable.
         # Don't move this call into other methods of the class that
         # may be called while executing other commands (e.g., clean)
