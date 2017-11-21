@@ -93,10 +93,6 @@ def _hadoop_jars():
     pass
 
 
-def _apache_hadoop_jars_v1(hadoop_home):
-    return _jars_from_dirs([hadoop_home, os.path.join(hadoop_home, 'lib')])
-
-
 def _apache_hadoop_jars_v2(hadoop_home):
     jar_root = os.path.join(hadoop_home, 'share', 'hadoop')
     return _jars_from_dirs([os.path.join(jar_root, d) for d in (
@@ -106,16 +102,6 @@ def _apache_hadoop_jars_v2(hadoop_home):
         'mapreduce',
         'yarn',  # hadoop >= 2.2.0
     )])
-
-
-def _cdh_hadoop_jars_v1(hadoop_home):
-    hadoop_hdfs = hadoop_home + "-hdfs"
-    hadoop_mapred_v1 = hadoop_home + "-0.20-mapreduce"
-    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
-            hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
-            hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
-    jars = _jars_from_dirs(dirs)
-    return jars
 
 
 def _cdh_hadoop_jars_v2(hadoop_home):
@@ -598,22 +584,15 @@ class PathFinder(object):
             hadoop_home = self.hadoop_home()
         if not self.__hadoop_classpath:
             v = self.hadoop_version_info(hadoop_home)
+            if v.main < (2, 0, 0):
+                raise RuntimeError('Hadoop v1 is not supported')
             if v.distribution == 'apache':
-                if v.main < (2, 0, 0):
-                    jars = _apache_hadoop_jars_v1(hadoop_home)
-                else:
-                    jars = _apache_hadoop_jars_v2(hadoop_home)
+                jars = _apache_hadoop_jars_v2(hadoop_home)
             elif v.distribution == 'cdh':
                 hadoop_home = _cdh_hadoop_home()
-                if v.main < (2, 0, 0) or not v.is_yarn():
-                    jars = _cdh_hadoop_jars_v1(hadoop_home)
-                else:
-                    jars = _cdh_hadoop_jars_v2(hadoop_home)
+                jars = _cdh_hadoop_jars_v2(hadoop_home)
             elif v.distribution == 'hdp':
-                if v.main < (2, 0, 0):
-                    raise RuntimeError('%s is not supported' % v)
-                else:
-                    jars = _hdp_hadoop_jars_v2(hadoop_home)
+                jars = _hdp_hadoop_jars_v2(hadoop_home)
             jars.extend([self.hadoop_native(), self.hadoop_conf()])
             self.__hadoop_classpath = ':'.join(jars)
         return self.__hadoop_classpath

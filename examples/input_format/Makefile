@@ -19,8 +19,7 @@
 PYTHON ?= python
 PY_VER = $(shell $(PYTHON) -c 'import sys; print(sys.version_info[0])')
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
-INPUT_FORMAT_MRV1=it.crs4.pydoop.mapred.TextInputFormat
-INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
+INPUT_FORMAT=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
 JOBNAME=input_format_test_job
 DATA := ../input
@@ -61,7 +60,7 @@ SUBMIT_ARGS = --upload-file-to-cache ${WC_MODULE_FILE} \
 
 .PHONY: run clean distclean dfsclean
 
-run: submit_mrv1 submit_mrv2
+run: submit
 
 ${PYINPUTFORMAT_JAR}: $(CLASSES)
 	jar -cvf $@ $(CLASSES)
@@ -74,16 +73,10 @@ data:
 	${HDFS_PUT} ${DATA} ${INPUT}
 
 
-submit_mrv1: data ${PYINPUTFORMAT_JAR}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1} --mrv1 \
-		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV1
-	$(PYTHON) check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
-
-
-submit_mrv2: data ${PYINPUTFORMAT_JAR}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} \
-		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV2
-	$(PYTHON) check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
+submit: data ${PYINPUTFORMAT_JAR}
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT} \
+		             ${WC_MODULE} ${INPUT} ${OUTPUT}
+	$(PYTHON) check_results.py ${DATA} /user/${USER}/${OUTPUT}
 
 
 clean:

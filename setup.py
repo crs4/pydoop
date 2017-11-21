@@ -29,7 +29,7 @@ alternative path by exporting the environment variables below::
 
 Other relevant environment variables include::
 
-  HADOOP_VERSION, e.g., 0.20.2-cdh3u4 (override Hadoop's version string).
+  HADOOP_VERSION, e.g., 2.7.4 (override Hadoop's version string).
 """
 from __future__ import print_function
 
@@ -39,6 +39,7 @@ import os
 import glob
 import shutil
 import subprocess
+import itertools
 
 SETUPTOOLS_MIN_VER = '3.3'
 
@@ -147,9 +148,7 @@ def generate_hdfs_config():
 
     This is only relevant for recent Hadoop versions.
     """
-    config_fn = os.path.join(
-        'src', 'libhdfsV2', "config.h"
-    )
+    config_fn = os.path.join("src", "libhdfs", "config.h")
     with open(config_fn, "w") as f:
         f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
         if have_better_tls():
@@ -184,28 +183,20 @@ def write_version(filename="pydoop/version.py"):
 
 def build_hdfscore_native_impl():
     generate_hdfs_config()
-    hdfs_ext_sources = []
-    hadoop_t = HADOOP_VERSION_INFO.tuple
-    if hadoop_t >= (2, 0, 0):
-        hdfs_ext_sources += glob.glob('src/libhdfsV2/*.c')
-        hdfs_ext_sources += glob.glob('src/libhdfsV2/common/*.c')
-        hdfs_ext_sources += glob.glob('src/libhdfsV2/os/posix/*.c')
-        libhdfs_macros = [("HADOOP_LIBHDFS_V2", 1)]
-        inc_dirs = (jvm.get_include_dirs() +
-                    ['src/libhdfsV2', 'src/libhdfsV2/os/posix'])
-    else:
-        src_dir = 'src/libhdfs/%d.%d.%d' % hadoop_t[0:3]
-        hdfs_ext_sources += glob.glob(os.path.join(src_dir, '*.c'))
-        inc_dirs = jvm.get_include_dirs() + [src_dir]
-        libhdfs_macros = [("HADOOP_LIBHDFS_V1", 1)]
-    hdfs_ext_sources += glob.glob('src/native_core_hdfs/*.cc')
+    hdfs_ext_sources = list(itertools.chain(
+        glob.iglob('src/libhdfs/*.c'),
+        glob.iglob('src/libhdfs/common/*.c'),
+        glob.iglob('src/libhdfs/os/posix/*.c'),
+        glob.iglob('src/native_core_hdfs/*.cc')
+    ))
+    inc_dirs = jvm.get_include_dirs() + ['src/libhdfs', 'src/libhdfs/os/posix']
     native_hdfs_core = Extension(
         'pydoop.native_core_hdfs',
         include_dirs=inc_dirs,
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=hdfs_ext_sources,
-        define_macros=jvm.get_macros() + libhdfs_macros,
+        define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
         extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
     )
@@ -240,46 +231,17 @@ def have_better_tls():
 
 class JavaLib(object):
 
-    def __init__(self, hadoop_vinfo):
-        self.hadoop_vinfo = hadoop_vinfo
-        self.jar_name = pydoop.jar_name(self.hadoop_vinfo)
+    def __init__(self):
+        self.jar_name = pydoop.jar_name()
         self.classpath = pydoop.hadoop_classpath()
-        self.java_files = []
-        self.dependencies = []
-        self.properties = []
-        if hadoop_vinfo.main >= (2, 0, 0) and \
-           (not hadoop_vinfo.is_cloudera() or hadoop_vinfo.is_yarn()):
-            # This version of Hadoop has the v2 pipes API
-            # FIXME: kinda hardwired to avro for now
-            self.properties.append((os.path.join(
-                "it/crs4/pydoop/mapreduce/pipes", PROP_BN),
-                PROP_FN))
-            self.java_files.extend(glob.glob(
-                'src/v2/it/crs4/pydoop/pipes/*.java'
-            ))
-            self.java_files.extend(glob.glob(
-                'src/v2/it/crs4/pydoop/mapreduce/pipes/*.java'
-            ))
-            # for things such as avro-mapreduce
-            self.dependencies.extend(glob.glob('lib/*.jar'))
-        else:
-            # Else we should be dealing with v1 pipes
-            self.java_files.extend(glob.glob(
-                'src/v1/org/apache/hadoop/mapred/pipes/*.java'
-            ))
-
-        if hadoop_vinfo.has_mrv2():
-            # If the installation has MRv2 we need to use v2 I/O classes
-            self.java_files.extend(glob.glob(
-                'src/v2/it/crs4/pydoop/mapreduce/lib/output/*.java'
-            ))
-            self.java_files.extend([
-                "src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
-            ])
-        else:
-            self.java_files.extend([
-                "src/v1/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"
-            ])
+        self.java_files = glob.glob(
+            "src/it/crs4/pydoop/mapreduce/pipes/*.java"
+        ) + ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
+        self.dependencies = glob.glob('lib/*.jar')
+        self.properties = [(
+            os.path.join("it/crs4/pydoop/mapreduce/pipes", PROP_BN),
+            PROP_FN
+        )]
 
 
 class JavaBuilder(object):
@@ -287,7 +249,7 @@ class JavaBuilder(object):
     def __init__(self, build_temp, build_lib):
         self.build_temp = build_temp
         self.build_lib = build_lib
-        self.java_libs = [JavaLib(HADOOP_VERSION_INFO)]
+        self.java_libs = [JavaLib()]
 
     def run(self):
         log.info("hadoop_home: %r" % (HADOOP_HOME,))
@@ -297,7 +259,6 @@ class JavaBuilder(object):
             self.__build_java_lib(jlib)
 
     def __build_java_lib(self, jlib):
-        log.info("Building java code for hadoop-%s" % jlib.hadoop_vinfo)
         package_path = os.path.join(self.build_lib, "pydoop")
         compile_cmd = "javac"
         if jlib.classpath:
@@ -375,6 +336,8 @@ class BuildPydoop(build):
         shutil.rmtree(self.build_temp)
 
     def run(self):
+        if HADOOP_VERSION_INFO.tuple < (2,):
+            raise RuntimeError('Hadoop v1 is not supported')
         # `is_local` requires running the local hadoop executable.
         # Don't move this call into other methods of the class that
         # may be called while executing other commands (e.g., clean)

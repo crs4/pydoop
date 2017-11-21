@@ -100,7 +100,6 @@ class TestAppSubmit(unittest.TestCase):
         wd = tempfile.mkdtemp(prefix='pydoop_')
         conf_file = os.path.join(wd, 'pydoop.conf')
         args_kv = (("--pretend", None),
-                   ("--mrv1", None),
                    ("--input-format", 'mapreduce.lib.input.TextInputFormat'),
                    ("--output-format", 'mapreduce.lib.input.TextOutputFormat'),
                    ("--num-reducers", 10),

@@ -3,6 +3,12 @@
 Installation
 ============
 
+.. warning::
+
+   Most of the info that follows is **outdated**. Pydoop currently works
+   on both Python 2 and Python 3 and supports Apache Hadoop 2 only. Check
+   ``.travis.yml`` and ``Dockerfile`` for installation / usage directions.
+
 Supported Platforms
 -------------------
 
