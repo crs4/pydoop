@@ -148,9 +148,7 @@ def generate_hdfs_config():
 
     This is only relevant for recent Hadoop versions.
     """
-    config_fn = os.path.join(
-        'src', 'libhdfsV2', "config.h"
-    )
+    config_fn = os.path.join("src", "libhdfs", "config.h")
     with open(config_fn, "w") as f:
         f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
         if have_better_tls():
@@ -186,14 +184,12 @@ def write_version(filename="pydoop/version.py"):
 def build_hdfscore_native_impl():
     generate_hdfs_config()
     hdfs_ext_sources = list(itertools.chain(
-        glob.iglob('src/libhdfsV2/*.c'),
-        glob.iglob('src/libhdfsV2/common/*.c'),
-        glob.iglob('src/libhdfsV2/os/posix/*.c'),
+        glob.iglob('src/libhdfs/*.c'),
+        glob.iglob('src/libhdfs/common/*.c'),
+        glob.iglob('src/libhdfs/os/posix/*.c'),
         glob.iglob('src/native_core_hdfs/*.cc')
     ))
-    inc_dirs = jvm.get_include_dirs() + [
-        'src/libhdfsV2', 'src/libhdfsV2/os/posix'
-    ]
+    inc_dirs = jvm.get_include_dirs() + ['src/libhdfs', 'src/libhdfs/os/posix']
     native_hdfs_core = Extension(
         'pydoop.native_core_hdfs',
         include_dirs=inc_dirs,
@@ -239,8 +235,8 @@ class JavaLib(object):
         self.jar_name = pydoop.jar_name()
         self.classpath = pydoop.hadoop_classpath()
         self.java_files = glob.glob(
-            "src/v2/it/crs4/pydoop/mapreduce/pipes/*.java"
-        ) + ["src/v2/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
+            "src/it/crs4/pydoop/mapreduce/pipes/*.java"
+        ) + ["src/it/crs4/pydoop/NoSeparatorTextOutputFormat.java"]
         self.dependencies = glob.glob('lib/*.jar')
         self.properties = [(
             os.path.join("it/crs4/pydoop/mapreduce/pipes", PROP_BN),

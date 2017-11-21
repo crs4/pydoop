@@ -87,7 +87,7 @@ class AvroContext(pp.TaskContext):
     work with Avro records.
 
     For now, this works only with the Hadoop 2 mapreduce pipes code
-    (``src/v2/it/crs4/pydoop/mapreduce/pipes``).  Avro I/O mode must
+    (``src/it/crs4/pydoop/mapreduce/pipes``).  Avro I/O mode must
     be explicitly requested when launching the application with pydoop
     submit (``--avro-input``, ``--avro-output``).
     """
