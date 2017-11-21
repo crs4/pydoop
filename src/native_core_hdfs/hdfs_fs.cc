@@ -329,10 +329,6 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
         fileInfo->blocksize = blocksize;
         fileInfo->replication = replication;
         fileInfo->readline_chunk_size = readline_chunk_size;
-
-        #ifdef HADOOP_LIBHDFS_V1
-            fileInfo->stream_type = (((flags & O_WRONLY) == 0) ? INPUT : OUTPUT);
-        #endif
     }
 done:
     PyMem_Free((void*)path);
@@ -677,11 +673,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     Py_BEGIN_ALLOW_THREADS;
-        #ifdef HADOOP_LIBHDFS_V1
-        result = hdfsDelete(self->_fs, path);
-        #else
         result = hdfsDelete(self->_fs, path, recursive);
-        #endif
     Py_END_ALLOW_THREADS;
 
     if (result < 0)

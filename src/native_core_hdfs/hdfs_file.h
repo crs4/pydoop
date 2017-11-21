@@ -48,11 +48,6 @@ typedef struct {
     short replication;
     int blocksize;
     int readline_chunk_size;
-
-#ifdef HADOOP_LIBHDFS_V1
-    hdfsStreamType stream_type;
-#endif
-
 } FileInfo;
 
 
