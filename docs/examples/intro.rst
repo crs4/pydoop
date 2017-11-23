@@ -5,22 +5,18 @@ Pydoop includes several usage examples: you can find them in the
 "examples" subdirectory of the distribution root. 
 
 
-Home Directory
---------------
+Python Dependencies
+-------------------
 
-If you've installed Pydoop or other modules locally, i.e., into
-``~/.local/lib/python2.7/site-packages``, the Python code that runs
-within Hadoop tasks might not be able to find them. This is due to the
-fact that, according to your Hadoop version or configuration, those
-tasks might run as a different user.  In Hadoop 1, you can work
-around this problem by setting the ``mapreduce.admin.user.home.dir``
-configuration parameter (see automatic run/check scripts in the
-aforementioned ``examples`` directory).
-
-**NOTE**: In any event, to allow another user to execute your locally
-installed code, you must set permissions accordingly, e.g.::
-
-    chmod -R 755 ~/.local
+If you've installed Pydoop or other Python packages needed by your
+application in a non-standard location (e.g.,
+``/opt/lib/python3.6/site-packages``), the Python code that runs within
+Hadoop tasks might not be able to find them. Note that, according to your
+Hadoop version or configuration, map and reduce tasks might run as a
+different user than the one who launched the job. If you can't install
+globally, Pydoop offers the option of shipping packages automatically
+upon job submission, see the section on :ref:`installation-free
+usage<self_contained>`.
 
 
 Input Data

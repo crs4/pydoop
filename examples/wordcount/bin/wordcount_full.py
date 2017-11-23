@@ -28,7 +28,7 @@ import re
 from hashlib import md5
 
 import pydoop.mapreduce.api as api
-import pydoop.mapreduce.pipes as pp
+import pydoop.mapreduce.pipes as pipes
 from pydoop.utils.serialize import serialize_to_string
 import pydoop.hdfs as hdfs
 
@@ -140,7 +140,7 @@ class Partitioner(api.Partitioner):
         return reducer_id
 
 
-FACTORY = pp.Factory(
+FACTORY = pipes.Factory(
     mapper_class=Mapper,
     reducer_class=Reducer,
     record_reader_class=Reader,
@@ -151,7 +151,7 @@ FACTORY = pp.Factory(
 
 
 def main():
-    pp.run_task(FACTORY)
+    pipes.run_task(FACTORY)
 
 
 if __name__ == "__main__":

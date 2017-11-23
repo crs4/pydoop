@@ -34,7 +34,7 @@ DATA="${this_dir}"/../input/alice.txt
 RESULTS="results.txt"
 LOGLEVEL="DEBUG"
 
-zip -j "${MZIP}" "${this_dir}/../wordcount/new_api/${MPY}"
+zip -j "${MZIP}" "${this_dir}/../wordcount/bin/${MPY}"
 
 ${HADOOP} fs -rmr "/user/${USER}/${INPUT}" || :
 ${HADOOP} fs -mkdir -p "/user/${USER}/${INPUT}"

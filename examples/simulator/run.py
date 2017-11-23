@@ -37,7 +37,7 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 EXAMPLES_DIR = os.path.dirname(THIS_DIR)
 WD = tempfile.mkdtemp(prefix="pydoop_")
 
-WC_DIR = os.path.join(EXAMPLES_DIR, 'wordcount', 'new_api')
+WC_DIR = os.path.join(EXAMPLES_DIR, 'wordcount', 'bin')
 if WC_DIR not in sys.path:
     sys.path.insert(0, WC_DIR)
 AVRO_DIR = os.path.join(EXAMPLES_DIR, 'avro')
