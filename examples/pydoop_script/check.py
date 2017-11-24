@@ -51,8 +51,8 @@ def check_base_histogram(mr_out_dir):
 def check_caseswitch(mr_out_dir, switch="upper"):
     output = hadut.collect_output(mr_out_dir)
     with open(DEFAULT_INPUT) as f:
-        exp_output = getattr(f.read(), "upper")()
-    return output == exp_output
+        exp_output = getattr(f.read(), switch)()
+    return output.splitlines() == exp_output.splitlines()
 
 
 def check_grep(mr_out_dir):

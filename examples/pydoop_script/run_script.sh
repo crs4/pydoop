@@ -24,19 +24,47 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
-DATA="${this_dir}/../input/alice.txt"
-SCRIPT="caseswitch.py"
+nargs=1
+if [ $# -ne ${nargs} ]; then
+    die "Usage: $0 prog"
+fi
+prog=$1
 
-INPUT=${SCRIPT}_input
-OUTPUT=${SCRIPT}_output
+OPTS=( "--log-level" "DEBUG" "-D" "mapred.map.tasks=2" )
+case ${prog} in
+    base_histogram )
+	DATA="${this_dir}/example.sam"
+	;;
+    transpose )
+	DATA="${this_dir}/matrix.txt"
+	OPTS+=( "--num-reducers" "4" )
+	;;
+    *)
+	DATA="${this_dir}/../input/alice.txt"
+	OPTS+=( "--num-reducers" "0" "-t" "" )
+	case ${prog} in
+	    caseswitch )
+		OPTS+=( "-D" "caseswitch.case=upper" )
+		;;
+	    grep | grep_compiled )
+		OPTS+=( "-D" "grep-expression=March" )
+		;;
+	esac
+esac
+INPUT=${prog}_input
+OUTPUT=${prog}_output
+
+if [ ${prog} == grep_compiled ]; then
+    prog=grep
+    ${PYTHON} -c "from py_compile import compile; compile('${prog}.py', cfile='${prog}.pyc')"
+    script=${prog}.pyc
+else
+    script=${prog}.py
+fi
 
 ${HADOOP} fs -rmr "/user/${USER}/${INPUT}" || :
 ${HADOOP} fs -mkdir -p "/user/${USER}/${INPUT}"
 ${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
 ${HADOOP} fs -put "${DATA}" "${INPUT}"
-
-${PYDOOP} script \
-  --log-level DEBUG --num-reducers 0 -t '' -D mapred.map.tasks=4 \
-  -D caseswitch.case=upper "${SCRIPT}" "${INPUT}" "${OUTPUT}"
-
-${PYTHON} "${this_dir}"/check.py caseswitch "${OUTPUT}"
+${PYDOOP} script "${OPTS[@]}" "${prog}.py" "${INPUT}" "${OUTPUT}"
+${PYTHON} "${this_dir}"/check.py ${prog} "${OUTPUT}"
