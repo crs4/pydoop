@@ -33,10 +33,10 @@ prog=$1
 OPTS=( "--log-level" "DEBUG" "-D" "mapred.map.tasks=2" )
 case ${prog} in
     base_histogram )
-	DATA="${this_dir}/example.sam"
+	DATA="${this_dir}/data/example.sam"
 	;;
     transpose )
-	DATA="${this_dir}/matrix.txt"
+	DATA="${this_dir}/data/matrix.txt"
 	OPTS+=( "--num-reducers" "4" )
 	;;
     *)
@@ -54,17 +54,22 @@ esac
 INPUT=${prog}_input
 OUTPUT=${prog}_output
 
+
+WD=""
 if [ ${prog} == grep_compiled ]; then
-    prog=grep
-    ${PYTHON} -c "from py_compile import compile; compile('${prog}.py', cfile='${prog}.pyc')"
-    script=${prog}.pyc
+    WD=$(mktemp -d)
+    src="${this_dir}"/scripts/grep.py
+    script="${WD}"/grep.pyc
+    ${PYTHON} -c "from py_compile import compile; compile('${src}', cfile='${script}')"
 else
-    script=${prog}.py
+    script="${this_dir}"/scripts/${prog}.py
 fi
 
 ${HADOOP} fs -rmr "/user/${USER}/${INPUT}" || :
 ${HADOOP} fs -mkdir -p "/user/${USER}/${INPUT}"
 ${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
 ${HADOOP} fs -put "${DATA}" "${INPUT}"
-${PYDOOP} script "${OPTS[@]}" "${prog}.py" "${INPUT}" "${OUTPUT}"
+${PYDOOP} script "${OPTS[@]}" "${script}" "${INPUT}" "${OUTPUT}"
 ${PYTHON} "${this_dir}"/check.py ${prog} "${OUTPUT}"
+
+rm -rf "${WD}"

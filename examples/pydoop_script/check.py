@@ -41,7 +41,7 @@ def check_base_histogram(mr_out_dir):
         k, v = line.split("\t")
         output[k] = int(v)
     exp_output = Counter()
-    with open(os.path.join(THIS_DIR, "example.sam")) as f:
+    with open(os.path.join(THIS_DIR, "data", "example.sam")) as f:
         for line in f:
             for base in line.rstrip().split("\t", 10)[9]:
                 exp_output[base] += 1
@@ -74,7 +74,7 @@ def check_transpose(mr_out_dir):
     for line in hadut.collect_output(mr_out_dir).splitlines():
         output.append(line.split("\t")[1:])  # skip initial row index
     exp_output = []
-    with open(os.path.join(THIS_DIR, "matrix.txt")) as f:
+    with open(os.path.join(THIS_DIR, "data", "matrix.txt")) as f:
         for line in f:
             for i, item in enumerate(line.split()):
                 try:
