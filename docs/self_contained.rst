@@ -10,8 +10,7 @@ installing to each node is not feasible (e.g., lack of a shared mount
 point). Of course, Hadoop itself must be already installed and
 properly configured in all cluster nodes before you can run this.
 
-Source code for this example is available under
-``examples/self_contained``\ .
+Source code for this example is available under ``examples/self_contained``\ .
 
 
 Example Application: Count Vowels
