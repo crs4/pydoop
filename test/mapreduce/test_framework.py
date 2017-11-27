@@ -120,7 +120,7 @@ class TReducerPE(Reducer):
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())
         for k in s:
-            ctx.emit(k, s[k])
+            ctx.emit(k, str(s[k]))
 
 
 class TCombinerPE(Reducer):
@@ -153,7 +153,7 @@ class TReducerSE(Reducer):
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())
         for k in s:
-            ctx.emit(k, s[k])
+            ctx.emit(k, str(s[k]))
 
 
 class TCombinerSE(Reducer):

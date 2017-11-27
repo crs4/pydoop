@@ -37,4 +37,4 @@ def mapper(_, samrecord, writer):
 
 
 def reducer(key, ivalue, writer):
-    writer.emit(key, sum(map(int, ivalue)))
+    writer.emit(key, str(sum(ivalue)))

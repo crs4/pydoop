@@ -231,3 +231,16 @@ PyObject* CommandWriter_flush(CommandWriterInfo *self) {
 PyObject* CommandWriter_close(CommandWriterInfo *self) {
   return self->writer->close();
 }
+
+
+PyObject* get_rules(void) {
+  load_rules_if_empty();
+  PyObject* py_rules = PyDict_New();
+  for (rules_map_t::iterator it = rules.begin(); it != rules.end(); it++) {
+    PyDict_SetItem(
+      py_rules,
+      PyLong_FromLong(it->first),
+      PyUnicode_FromString((it->second).c_str()));
+  }
+  return py_rules;
+}

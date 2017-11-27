@@ -272,15 +272,9 @@ class TaskContext(api.MapContext, api.ReduceContext):
         if self.writer:
             self.writer.emit(key, value)
         else:
-            if self._private_encoding:
+            if self._is_mapper and self._private_encoding:
                 key = private_encode(key)
                 value = private_encode(value)
-            else:
-                # this makes transparent emitting things that can be unicoded
-                key = (key if type(key) in [str, bytes, unicode]
-                       else unicode(key))
-                value = (value if type(value) in [str, bytes, unicode]
-                         else unicode(value))
             if self.partitioner:
                 part = self.partitioner.partition(key, self.n_reduces)
                 self.up_link.send(self.up_link.PARTITIONED_OUTPUT,

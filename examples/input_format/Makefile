@@ -69,7 +69,7 @@ data:
 	-${HDFS_MKDIR}  /user
 	-${HDFS_MKDIR} /user/${USER}
 	-${HDFS_RMR} /user/${USER}/${INPUT}
-	-${HDFS_RMR} /user/${USER}/${OUTPUT}_*
+	-${HDFS_RMR} /user/${USER}/${OUTPUT}
 	${HDFS_PUT} ${DATA} ${INPUT}
 
 

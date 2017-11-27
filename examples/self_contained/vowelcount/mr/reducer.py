@@ -22,5 +22,5 @@ import pydoop.mapreduce.api as api
 class Reducer(api.Reducer):
 
     def reduce(self, context):
-        s = sum(map(int, context.values))
-        context.emit(context.key, str(s))
+        s = sum(context.values)
+        context.emit(context.key, s)
