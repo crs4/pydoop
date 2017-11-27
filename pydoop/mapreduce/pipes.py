@@ -526,6 +526,9 @@ class StreamRunner(object):
         ctx.set_combiner(factory, input_split, n_reduces)
         mapper_map = mapper.map
         progress_function = ctx.progress
+        #
+        if n_reduces == 0:
+            ctx.writer = factory.create_record_writer(ctx)
         for ctx._key, ctx._value in reader:
             if send_progress:
                 ctx._progress_float = reader.get_progress()
