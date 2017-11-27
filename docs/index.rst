@@ -20,7 +20,7 @@ applications in pure Python:
   class Reducer(api.Reducer):
       def reduce(self, context):
           s = sum(context.values)
-          context.emit(context.key, s)
+          context.emit(context.key, b"%d" % s)
 
 Pydoop offers several features not commonly found in other Python
 libraries for Hadoop:

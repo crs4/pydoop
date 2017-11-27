@@ -719,7 +719,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
 
     .. code-block:: python
 
-      program_name = '../wordcount/new_api/wordcount_full.py'
+      program_name = '../wordcount/bin/wordcount_full.py'
       data_in = '../input/alice.txt'
       output_dir = './output'
       data_in_path = os.path.realpath(data_in)

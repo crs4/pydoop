@@ -33,14 +33,3 @@ implementation in Python.
 **Knowledge prerequisites:** Python, Java
 
 **Skill level:** medium
-
-
-Python 3 porting
-----------------
-
-Pydoop currently runs on Python 2.7. It
-would be nice to make it available to Python 3 users.
-
-**Knowledge prerequisites:** Python 2, Python 3
-
-**Skill level:** basic

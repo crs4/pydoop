@@ -15,6 +15,7 @@ The rest of this section serves as an introduction to MapReduce
 programming with Pydoop; the :ref:`API reference <mr_api>` has
 all the details.
 
+
 Mappers and Reducers
 --------------------
 
@@ -42,18 +43,18 @@ following snippet shows how to write the mapper and reducer for the
 
       def reduce(self, context):
           s = sum(context.values)
-          context.emit(context.key, s)
+          context.emit(context.key, b"%d" % s)
 
   def __main__():
       pp.run_task(pp.Factory(Mapper, Reducer))
 
-The mapper is instantiated by the Hadoop framework that, for each
-input record, calls the map method passing a ``context`` object to it.
+The mapper is instantiated by the MapReduce framework that, for each
+input record, calls the ``map`` method passing a ``context`` object to it.
 The context serves as a communication interface between the framework
 and the application: in the map method, it is used to get the current
 key (not used in the above example) and value, and to emit (send back
 to the framework) intermediate key-value pairs.  The reducer works in
-a similar way, the main difference being the fact that the reduce
+a similar way, the main difference being the fact that the ``reduce``
 method gets a set of values for each key.  The context has several
 other functions that we will explore later.
 
@@ -66,6 +67,7 @@ Where ``input`` is the HDFS input directory.
 See the section on :ref:`running Pydoop programs<running_apps>` for
 more details.  Source code for the word count example is located under
 ``examples/wordcount`` in the Pydoop distribution.
+
 
 Counters and Status Updates
 ---------------------------
@@ -113,6 +115,7 @@ In addition, the final values of all counters are listed in the
 command line output of the job (note that the list also includes Hadoop's
 default counters).
 
+
 Record Readers and Writers
 --------------------------
 
@@ -155,7 +158,7 @@ text lines:
               raise StopIteration
           key = serialize_to_string(self.isplit.offset + self.bytes_read)
           record = self.file.readline()
-          if record == "":  # end of file
+          if not record:  # end of file
               raise StopIteration
           self.bytes_read += len(record)
           return key, record
@@ -208,17 +211,19 @@ want to do something different, you have to write a custom
           out_dir = jc["mapred.work.output.dir"]
           outfn = "%s/part-%05d" % (out_dir, part)
           hdfs_user = jc.get("pydoop.hdfs.user", None)
-          self.file = hdfs.open(outfn, "w", user=hdfs_user)
+          self.file = hdfs.open(outfn, "wt", user=hdfs_user)
           self.sep = jc.get("mapred.textoutputformat.separator", "\t")
+          self.eol = jc.get("mapred.textoutputformat.eol", "\n")
 
       def close(self):
           self.file.close()
           self.file.fs.close()
 
       def emit(self, key, value):
+          self.file.write(key.decode("utf-8") + self.sep + str(value) + self.eol)
           self.file.write("%s%s%s\n" % (key, self.sep, value))
 
-Since we want to use our own record reader, we have to pass the class
+Since we want to use our own record writer, we have to pass the class
 object to the factory:
 
 .. code-block:: python
@@ -235,26 +240,26 @@ Configuration properties are passed as ``-D <key>=<value>`` (e.g.,
 declare that we are using our own record writer, we also have to set
 the ``--do-not-use-java-record-writer`` flag.
 
+
 Partitioners and Combiners
 --------------------------
 
 The :class:`~pydoop.mapreduce.api.Partitioner` assigns intermediate keys to
 reducers: the default is to select the reducer on the basis of a hash
-function of the key.  The following example reproduces the default
-behavior:
+function of the key:
 
 .. code-block:: python
 
+  from hashlib import md5
+
   class Partitioner(api.Partitioner):
 
-      def partition(self, key, n_red):
-          reducer_id = (hash(key) & sys.maxint) % n_red
-          return reducer_id
+      def partition(self, key, n_reduces):
+          return int(md5(key).hexdigest(), 16) % n_reduces
 
-The framework calls the partition
-method passing it the total number of reducers ``n_red``, and expects
-the chosen reducer ID --- in the ``[0, ..., n_red-1]`` range --- as
-the return value.
+The framework calls the partition method passing it the total number
+of reducers ``n_reduces``, and expects the chosen reducer ID --- in
+the ``[0, ..., n_reduces-1]`` range --- as the return value.
 
 The combiner is functionally identical to a reducer, but it is run
 locally, on the key-value stream output by a single mapper.  Although
@@ -272,13 +277,13 @@ The following snippet shows how to set the partitioner and combiner
   pp.runTask(pp.Factory(Mapper, Reducer, partitioner_class=Partitioner,
       combiner_class=Reducer))
 
+
 .. _timers:
 
 Timers
 ------
 
-``Timer`` objects can help debug performance issues in mapreduce
-applications:
+``Timer`` objects can help debug performance issues in mapreduce applications:
 
 .. code-block:: python
 

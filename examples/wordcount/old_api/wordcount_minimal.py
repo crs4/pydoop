@@ -31,9 +31,6 @@ import re
 
 class Mapper(pp.Mapper):
 
-    def __init__(self, context):
-        print(context)
-
     def map(self, context):
         words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.getInputValue()).split()
         for w in words:
@@ -41,9 +38,6 @@ class Mapper(pp.Mapper):
 
 
 class Reducer(pp.Reducer):
-
-    def __init__(self, context):
-        print("Map")
 
     def reduce(self, context):
         s = 0

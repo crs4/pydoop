@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
 for s in base_histogram caseswitch grep grep_compiled lowercase transpose; do
-    echo "running ${s}"
-    ./run_${s}
+    bash "${this_dir}"/run_script.sh ${s}
 done

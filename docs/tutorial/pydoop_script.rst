@@ -39,6 +39,7 @@ distribution root.  The :ref:`Pydoop Script Guide
 <pydoop_script_guide>` contains more detailed information on writing
 and running programs.
 
+
 .. _word_count:
 
 Word Count
@@ -104,6 +105,7 @@ this last "global" count we can use Hadoop counters:
 The counter value will show on the JobTracker's job page and will be
 present in the job logs.
 
+
 Lower Case
 ++++++++++
 
@@ -119,6 +121,7 @@ avoid leading tabs in our results, we also want an empty separator for
 output key-value pairs: this is done via the ``-t`` option::
 
   pydoop script --num-reducers 0 -t '' lowercase.py hdfs_input hdfs_output
+
 
 Job Parameters
 ++++++++++++++
