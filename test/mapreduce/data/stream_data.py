@@ -42,7 +42,7 @@ STREAM_2_DATA = [
 
 STREAM_3_DATA = [
     (streams.START_MESSAGE, 0),
-    (streams.SET_JOB_CONF, 'key1', 'value1', 'key2', 'value2'),
+    (streams.SET_JOB_CONF, 'k', 'v', 'mapreduce.job.inputformat.class', 'foo'),
     (streams.SET_INPUT_TYPES, 'key_type', 'value_type'),
     (streams.RUN_MAP, 'input_split', 0, 0),
     (streams.MAP_ITEM, 'key1', 'the blue fox jumps on the table'),
@@ -69,7 +69,7 @@ STREAM_4_DATA = [
 
 STREAM_5_DATA = [
     (streams.START_MESSAGE, 0),
-    (streams.SET_JOB_CONF, 'key1', 'value1', 'key2', 'value2'),
+    (streams.SET_JOB_CONF, 'k', 'v', 'mapreduce.job.inputformat.class', 'foo'),
     (streams.SET_INPUT_TYPES, 'key_type', 'value_type'),
     (streams.RUN_MAP, 'input_split', 0, 0),
     (streams.MAP_ITEM, 'key1', 'the blue fox jumps on the table'),
@@ -80,7 +80,7 @@ STREAM_5_DATA = [
 
 STREAM_6_DATA = [
     (streams.START_MESSAGE, 0),
-    (streams.SET_JOB_CONF, 'key1', 'value1', 'key2', 'value2'),
+    (streams.SET_JOB_CONF, 'k', 'v', 'mapreduce.job.inputformat.class', 'foo'),
     (streams.SET_INPUT_TYPES, 'key_type', 'value_type'),
     (streams.RUN_MAP, 'input_split', 1, 0),
     (streams.MAP_ITEM, 'key1', 'the blue fox jumps on the table'),

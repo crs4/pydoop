@@ -21,6 +21,7 @@ import os
 import logging
 import time
 import numbers
+import struct
 
 from copy import deepcopy
 
@@ -39,6 +40,7 @@ from pydoop.utils.misc import Timer
 
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
+from .binary_streams import BinaryUpStreamAdapter
 from .string_utils import create_digest
 
 from pydoop.utils.py3compat import unicode, StringIO, iteritems
@@ -49,17 +51,40 @@ LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
 
 DEFAULT_IO_SORT_MB = 100
-_PORT_KEYS = [
+_PORT_KEYS = frozenset([
     "hadoop.pipes.command.port",  # Hadoop 1
     "mapreduce.pipes.command.port",  # Hadoop 2
-]
-_FILE_KEYS = [
+])
+_FILE_KEYS = frozenset([
     "hadoop.pipes.command.file",  # Hadoop 1
     "mapreduce.pipes.commandfile"  # Hadoop 2.  No dot.
-]
-_SECRET_LOCATION_KEYS = [
+])
+_SECRET_LOCATION_KEYS = frozenset([
     "hadoop.pipes.shared.secret.location"  # All versions
-]
+])
+_INPUT_FORMAT_KEYS = frozenset([
+    "mapred.input.format.class",
+    "mapreduce.inputformat.class",
+    "mapreduce.job.inputformat.class",
+])
+
+
+class LongWritableDeserializer(object):
+
+    def __init__(self):
+        self.struct = struct.Struct(">q")
+
+    def deserialize(self, record):
+        return self.struct.unpack(record)
+
+
+class TextDeserializer(object):
+
+    def __init__(self):
+        self.decoder = "utf-8"
+
+    def deserialize(self, record):
+        return record.decode(self.decoder)
 
 
 def _get_from_env(candidate_keys):
@@ -207,6 +232,16 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
+    def deserializing(self, meth, deserializer):
+        """
+        Decorate a key/value getter to make it auto-deserialize records.
+        """
+        def deserialize(*args, **kwargs):
+            ret = meth(*args, **kwargs)
+            with self.timer.time_block('avro deserialization'):
+                return deserializer.deserialize(ret)
+        return deserialize
+
     def __init__(self, up_link, private_encoding=True, fast_combiner=False):
         self._fast_combiner = fast_combiner
         self.private_encoding = private_encoding
@@ -284,6 +319,28 @@ class TaskContext(api.MapContext, api.ReduceContext):
 
     def set_job_conf(self, vals):
         self._job_conf = api.JobConf(vals)
+
+    # FIXME: currently works only with the default TextInputFormat;
+    # TODO: generalize to support Hadoop Writable types
+    def setup_deserialization(self):
+        """\
+        Set up auto-deserialization of input key/values
+        """
+        # NOTE: assuming up link is binary => down link is binary
+        if isinstance(self.up_link, BinaryUpStreamAdapter):
+            if not _INPUT_FORMAT_KEYS.intersection(self._job_conf):
+                self.get_input_key = self.deserializing(
+                    self.get_input_key, LongWritableDeserializer()
+                )
+                self.get_input_value = self.deserializing(
+                    self.get_input_value, TextDeserializer()
+                )
+
+    def setup_serialization(self):
+        """\
+        Set up auto-serialization of output key/values
+        """
+        pass
 
     def get_job_conf(self):
         return self._job_conf
@@ -412,11 +469,15 @@ class StreamRunner(object):
             elif cmd == RUN_MAP:
                 self.ctx.set_is_mapper()
                 input_split, n_reduces, piped_input = args
+                if piped_input:
+                    self.ctx.setup_deserialization()
                 self.run_map(input_split, n_reduces, piped_input)
                 break  # we can bail out, there is nothing more to do.
             elif cmd == RUN_REDUCE:
                 self.ctx.set_is_reducer()
                 part, piped_output = args
+                if piped_output:
+                    self.ctx.setup_serialization()
                 self.run_reduce(part, piped_output)
                 break  # we can bail out, there is nothing more to do.
         self.logger.debug('done')
