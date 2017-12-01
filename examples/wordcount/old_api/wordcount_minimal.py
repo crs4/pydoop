@@ -32,7 +32,7 @@ import re
 class Mapper(pp.Mapper):
 
     def map(self, context):
-        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.getInputValue()).split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.getInputValue()).split()
         for w in words:
             context.emit(w, str(1))
 

@@ -28,5 +28,5 @@ When running this example, set --kv-separator to the empty string and
 
 
 def mapper(_, text, writer, conf):
-    if text.decode("utf8").find(conf['grep-expression']) >= 0:
+    if text.find(conf['grep-expression']) >= 0:
         writer.emit("", text)

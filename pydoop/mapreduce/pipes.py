@@ -22,6 +22,7 @@ import logging
 import time
 import numbers
 import struct
+import types
 
 from copy import deepcopy
 
@@ -221,11 +222,16 @@ class CombineRunner(api.RecordWriter):
         ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
+        # disable auto-deserialize (ctx.key will be called by reduce)
+        # FIXME: this might break custom Context implementations
+        get_input_key = ctx.get_input_key
+        ctx.get_input_key = types.MethodType(lambda self: self._key, ctx)
         with ctx.timer.time_block('spill reduction'):
             for key, values in iteritems(self.data):
                 ctx._key, ctx._values = key, iter(values)
                 self.reducer.reduce(ctx)
         ctx.writer = writer
+        ctx.get_input_key = get_input_key
         self.data.clear()
         self.used_bytes = 0
 
@@ -238,7 +244,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
         """
         def deserialize(*args, **kwargs):
             ret = meth(*args, **kwargs)
-            with self.timer.time_block('avro deserialization'):
+            with self.timer.time_block('deserialization'):
                 return deserializer.deserialize(ret)
         return deserialize
 

@@ -55,11 +55,9 @@ And reducers will get:
 Writing out the key (i.e., the output row index) together with the
 value allows to put the output rows in the correct order.
 """
-import struct
 
 
 def mapper(key, value, writer):
-    key, value = struct.unpack(">q", key)[0], value.decode("utf-8")
     for i, a in enumerate(value.split()):
         writer.emit(i, (key, a))
 
