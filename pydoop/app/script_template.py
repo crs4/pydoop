@@ -2,6 +2,7 @@ DRIVER_TEMPLATE = """
 import sys, os, inspect
 sys.path.insert(0, os.getcwd())
 
+from pydoop.mapreduce.pipes import run_task
 import pydoop.pipes
 import %(module)s
 
@@ -129,7 +130,7 @@ class PydoopScriptCombiner(pydoop.pipes.Combiner):
     pass
 
 def main():
-    result = pydoop.pipes.runTask(
+    result = run_task(
     pydoop.pipes.Factory(
         PydoopScriptMapper, PydoopScriptReducer,
         record_reader_class=None,

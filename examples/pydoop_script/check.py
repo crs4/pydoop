@@ -22,6 +22,7 @@ import argparse
 from collections import Counter
 
 import pydoop.hadut as hadut
+import pydoop.hdfs as hdfs
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT = os.path.join(THIS_DIR, os.pardir, "input", "alice.txt")
@@ -71,8 +72,13 @@ def check_lowercase(mr_out_dir):
 
 def check_transpose(mr_out_dir):
     output = []
-    for line in hadut.collect_output(mr_out_dir).splitlines():
-        output.append(line.split("\t")[1:])  # skip initial row index
+    for fn in hadut.iter_mr_out_files(mr_out_dir):
+        with hdfs.open(fn, "rt") as f:
+            for line in f:
+                row = line.rstrip().split("\t")
+                index = int(row.pop(0))
+                output.append((index, row))
+    output = [_[1] for _ in sorted(output)]
     exp_output = []
     with open(os.path.join(THIS_DIR, "data", "matrix.txt")) as f:
         for line in f:

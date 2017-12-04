@@ -43,7 +43,7 @@ following snippet shows how to write the mapper and reducer for the
 
       def reduce(self, context):
           s = sum(context.values)
-          context.emit(context.key, b"%d" % s)
+          context.emit(context.key, s)
 
   def __main__():
       pp.run_task(pp.Factory(Mapper, Reducer))
@@ -156,12 +156,12 @@ text lines:
       def next(self):
           if self.bytes_read > self.isplit.length:  # end of input split
               raise StopIteration
-          key = serialize_to_string(self.isplit.offset + self.bytes_read)
+          key = self.isplit.offset + self.bytes_read
           record = self.file.readline()
           if not record:  # end of file
               raise StopIteration
           self.bytes_read += len(record)
-          return key, record
+          return key, record.decode("utf-8")
 
       def get_progress(self):
           return min(float(self.bytes_read)/self.isplit.length, 1.0)
@@ -220,8 +220,7 @@ want to do something different, you have to write a custom
           self.file.fs.close()
 
       def emit(self, key, value):
-          self.file.write(key.decode("utf-8") + self.sep + str(value) + self.eol)
-          self.file.write("%s%s%s\n" % (key, self.sep, value))
+          self.file.write(key + self.sep + str(value) + self.eol)
 
 Since we want to use our own record writer, we have to pass the class
 object to the factory:

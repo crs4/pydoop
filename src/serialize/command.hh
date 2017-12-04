@@ -28,6 +28,8 @@
 #include "flow.hh"
 
 
+PyObject* get_rules(void);
+
 
 class CommandReader {
 public:

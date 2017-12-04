@@ -19,8 +19,7 @@
 from .streams import (
     StreamWriter, StreamReader, DownStreamAdapter, UpStreamAdapter,
 )
-from pydoop.utils.serialize import CommandWriter
-from pydoop.utils.serialize import CommandReader
+from pydoop.utils.serialize import CommandReader, CommandWriter, RULES
 from pydoop.utils.py3compat import unicode
 
 import logging
@@ -40,12 +39,23 @@ class BinaryWriter(StreamWriter):
 
     def send(self, cmd, *args):
         self.logger.debug('request to write %r, %r', cmd, args)
-        args = tuple(x.encode('utf-8') if isinstance(x, unicode) else x
-                     for x in args)
+        typecodes = RULES[cmd] if cmd != self.SET_JOB_CONF else 's' * len(args)
+        args = self.__to_bytes(args, typecodes)
         if cmd == self.SET_JOB_CONF:
             args = (args,)
         self.logger.debug('writing (%r, %r)', cmd, args)
         self.stream.write((cmd, args))
+
+    def __to_bytes(self, args, typecodes):
+        assert len(args) == len(typecodes)
+        out_args = []
+        for a, t in zip(args, typecodes):
+            if t == "s" and not isinstance(a, (bytes, bytearray)):
+                if not isinstance(a, unicode):
+                    a = unicode(a)
+                a = a.encode('utf-8')
+            out_args.append(a)
+        return tuple(out_args)
 
 
 class BinaryReader(StreamReader):

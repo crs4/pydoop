@@ -91,26 +91,11 @@ class AvroContext(pp.TaskContext):
     be explicitly requested when launching the application with pydoop
     submit (``--avro-input``, ``--avro-output``).
     """
-    def deserializing(self, meth, deserializer):
-        """
-        Decorate a key/value getter to make it auto-deserialize Avro
-        records.
-        """
-        def deserialize(*args, **kwargs):
-            ret = meth(*args, **kwargs)
-            with self.timer.time_block('avro deserialization'):
-                return deserializer.deserialize(ret)
-        return deserialize
-
     def __init__(self, *args, **kwargs):
         super(AvroContext, self).__init__(*args, **kwargs)
         self.__serializers = {'K': None, 'V': None}
 
-    def set_job_conf(self, vals):
-        """
-        Set job conf and Avro datum reader/writer.
-        """
-        super(AvroContext, self).set_job_conf(vals)
+    def setup_deserialization(self):
         jc = self.get_job_conf()
         if AVRO_INPUT in jc:
             avro_input = jc.get(AVRO_INPUT).upper()
@@ -130,6 +115,9 @@ class AvroContext(pp.TaskContext):
                 self.get_input_value = self.deserializing(
                     self.get_input_value, deserializer
                 )
+
+    def setup_serialization(self):
+        jc = self.get_job_conf()
         if AVRO_OUTPUT in jc:
             avro_output = jc.get(AVRO_OUTPUT).upper()
             if avro_output not in AVRO_IO_CHOICES:

@@ -32,7 +32,7 @@ import pydoop.mapreduce.api as api
 class Mapper(api.Mapper):
 
     def map(self, context):
-        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
         for w in words:
             context.emit(w, 1)
 
@@ -41,7 +41,7 @@ class Reducer(api.Reducer):
 
     def reduce(self, context):
         s = sum(context.values)
-        context.emit(context.key, b"%d" % s)
+        context.emit(context.key, s)
 
 
 FACTORY = pipes.Factory(mapper_class=Mapper, reducer_class=Reducer)

@@ -23,18 +23,13 @@ Count the base frequency in sequencing data (in SAM format).
   output: tab-separated (base, count) pairs
 """
 
-import sys
-PY3 = sys.version_info[0] == 3
-
 
 def mapper(_, samrecord, writer):
-    seq = samrecord.split(b"\t", 10)[9]
+    seq = samrecord.split("\t", 10)[9]
     for c in seq:
-        if PY3:
-            c = chr(c)
         writer.emit(c, 1)
     writer.count("bases", len(seq))
 
 
 def reducer(key, ivalue, writer):
-    writer.emit(key, sum(map(int, ivalue)))
+    writer.emit(key, sum(ivalue))

@@ -34,7 +34,7 @@ class Reducer(api.Reducer):
 
     def reduce(self, context):
         s = sum(context.values)
-        context.emit(context.key, s)
+        context.emit(context.key, str(s))
 
 
 factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer)
