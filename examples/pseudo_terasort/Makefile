@@ -22,8 +22,8 @@ PYINPUTFORMAT_JAR=pydoop-input-formats.jar
 LOGLEVEL=DEBUG
 GENRECORDS_INPUT=genrecords_input
 GENRECORDS_OUTPUT=genrecords_output
-SORTRECORDS_INPUT=sortrecords_input
 SORTRECORDS_OUTPUT=sortrecords_output
+CHECKRECORDS_OUTPUT=checkrecords_output
 
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 SUBMIT_CMD = pydoop$(PY_VER) submit
@@ -50,7 +50,7 @@ CLASSES = $(subst .java,.class,$(SRC))
 .PHONY: clean distclean dfsclean
 
 
-${PYINPUTFORMAT_JAR}: $(CLASSES)
+${PYINPUTFORMAT_JAR}:
 	${JC} ${SRC}
 	jar -cvf $@ $(CLASSES)
 
@@ -60,6 +60,7 @@ data:
 	-${HDFS_MKDIR} /user/${USER}/${GENRECORDS_INPUT} || :
 	-${HDFS_RMR} /user/${USER}/${GENRECORDS_OUTPUT} || :
 	-${HDFS_RMR} /user/${USER}/${SORTRECORDS_OUTPUT} || :
+	-${HDFS_RMR} /user/${USER}/${CHECKRECORDS_OUTPUT} || :
 
 
 genrecords: data ${PYINPUTFORMAT_JAR}
@@ -74,6 +75,12 @@ sortrecords:
                            --num-reducers 8\
 		                       /user/${USER}/${GENRECORDS_OUTPUT}\
                            /user/${USER}/${SORTRECORDS_OUTPUT}
+
+
+checkrecords:
+	${PYTHON} checkrecords.py --log-level ${LOGLEVEL}\
+                           /user/${USER}/${SORTRECORDS_OUTPUT}\
+		                       /user/${USER}/${CHECKRECORDS_OUTPUT}
 
 
 
