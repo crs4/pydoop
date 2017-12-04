@@ -76,6 +76,7 @@ class Reader(api.RecordReader):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
 
 
+
 class CheckReader(Reader):
     """
     """

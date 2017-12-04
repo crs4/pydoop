@@ -50,6 +50,7 @@ CLASSES = $(subst .java,.class,$(SRC))
 .PHONY: clean distclean dfsclean
 
 
+
 ${PYINPUTFORMAT_JAR}:
 	${JC} ${SRC}
 	jar -cvf $@ $(CLASSES)
