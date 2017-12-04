@@ -67,7 +67,7 @@ class TMapper(Mapper):
     def map(self, ctx):
         words = ctx.value.split()
         for w in words:
-            ctx.emit(w, '1')
+            ctx.emit(w, 1)
 
 
 class TReducer(Reducer):
@@ -120,7 +120,7 @@ class TReducerPE(Reducer):
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())
         for k in s:
-            ctx.emit(k, str(s[k]))
+            ctx.emit(k, s[k])
 
 
 class TCombinerPE(Reducer):
@@ -153,7 +153,7 @@ class TReducerSE(Reducer):
     def reduce(self, ctx):
         s = sum(ctx.values, Counter())
         for k in s:
-            ctx.emit(k, str(s[k]))
+            ctx.emit(k, s[k])
 
 
 class TCombinerSE(Reducer):

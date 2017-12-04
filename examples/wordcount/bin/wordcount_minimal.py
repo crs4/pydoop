@@ -41,7 +41,7 @@ class Reducer(api.Reducer):
 
     def reduce(self, context):
         s = sum(context.values)
-        context.emit(context.key, str(s))
+        context.emit(context.key, s)
 
 
 FACTORY = pipes.Factory(mapper_class=Mapper, reducer_class=Reducer)
