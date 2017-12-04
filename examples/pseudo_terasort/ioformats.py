@@ -4,7 +4,7 @@ import logging
 
 logging.basicConfig()
 LOGGER = logging.getLogger("ioformats")
-LOGGER.setLevel(logging.CRITICAL)
+LOGGER.setLevel(logging.WARNING)
 
 KEY_LENGTH = 10
 # key + value + \n
@@ -64,7 +64,7 @@ class Reader(api.RecordReader):
             self.logger.debug("StopIteration on eof")
             raise StopIteration
         if len(record) < RECORD_LENGTH:  # possibly broken file?
-            self.logger.debug("StopIteration on bad rec len %d", len(record))
+            self.logger.warn("StopIteration on bad rec len %d", len(record))
             raise StopIteration
         self.bytes_read += RECORD_LENGTH
         # drop the final '\n'
@@ -74,3 +74,22 @@ class Reader(api.RecordReader):
 
     def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
+
+
+class CheckReader(Reader):
+    """
+    """
+    def __init__(self, context):
+        super(CheckReader, self).__init__(context)
+        self.current_key = None
+
+    def next(self):
+        start_key, _ = super(CheckReader, self).next()
+        okey = start_key
+        try:
+            while True:
+                key, _ = super(CheckReader, self).next()
+                assert key >= okey
+                okey = key
+        except StopIteration as e:
+            return (self.isplit, [start_key, okey])
