@@ -67,7 +67,7 @@ class TMapper(Mapper):
     def map(self, ctx):
         words = ctx.value.split()
         for w in words:
-            ctx.emit(w, '1')
+            ctx.emit(w, 1)
 
 
 class TReducer(Reducer):

@@ -29,7 +29,6 @@ from hashlib import md5
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
-from pydoop.utils.serialize import serialize_to_string
 import pydoop.hdfs as hdfs
 
 WORDCOUNT = "WORDCOUNT"
@@ -46,7 +45,7 @@ class Mapper(api.Mapper):
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
+        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
         for w in words:
             context.emit(w, 1)
         context.increment_counter(self.input_words, len(words))
@@ -94,12 +93,12 @@ class Reader(api.RecordReader):
     def next(self):
         if self.bytes_read > self.isplit.length:
             raise StopIteration
-        key = serialize_to_string(self.isplit.offset + self.bytes_read)
+        key = self.isplit.offset + self.bytes_read
         record = self.file.readline()
         if not record:  # end of file
             raise StopIteration
         self.bytes_read += len(record)
-        return (key, record)
+        return (key, record.decode("utf-8"))
 
     def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)
@@ -125,7 +124,7 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write(key.decode("utf-8") + self.sep + str(value) + self.eol)
+        self.file.write(key + self.sep + str(value) + self.eol)
 
 
 class Partitioner(api.Partitioner):

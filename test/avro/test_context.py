@@ -115,8 +115,8 @@ class TestContext(WDTestCase):
             bw.send(bw.SET_JOB_CONF,
                     pydoop.PROPERTIES['AVRO_INPUT'], mode,
                     schema_prop, str(self.schema))
+            bw.send(bw.RUN_MAP, 'input_split', 0, True)
             bw.send(bw.SET_INPUT_TYPES, 'key_type', 'value_type')
-            bw.send(bw.RUN_MAP, 'input_split', 0, False)
             for r in self.records:
                 if mode == 'K':
                     bw.send(bw.MAP_ITEM, serializer.serialize(r), 'v')

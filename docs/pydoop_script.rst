@@ -47,7 +47,7 @@ cache:
             writer.emit(word, 1)
 
   def reducer(word, icounts, writer):
-      writer.emit(word, sum(map(int, icounts)))
+      writer.emit(word, sum(icounts))
 
 To execute the above script, save it to a ``wc.py`` file and run::
 

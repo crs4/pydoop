@@ -63,6 +63,7 @@ CommandWriter = sc.CommandWriter
 CommandReader = sc.CommandReader
 FlowReader = sc.FlowReader
 FlowWriter = sc.FlowWriter
+RULES = sc.RULES
 
 
 class FlowReader(sc.FlowReader):

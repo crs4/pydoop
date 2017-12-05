@@ -56,10 +56,10 @@ five lines of code:
 
   def mapper(_, text, writer):
       for word in text.split():
-          writer.emit(word, "1")
+          writer.emit(word, 1)
 
   def reducer(word, icounts, writer):
-      writer.emit(word, sum(map(int, icounts)))
+      writer.emit(word, sum(icounts))
 
 A few more lines allow to set a combiner for local aggregation:
 
@@ -96,11 +96,11 @@ this last "global" count we can use Hadoop counters:
   def mapper(_, text, writer):
       wordlist = text.split()
       for word in wordlist:
-          writer.emit(word, "1")
+          writer.emit(word, 1)
       writer.count("num words", len(wordlist))
 
   def reducer(word, count, writer):
-      writer.emit(word, sum(map(int, count)))
+      writer.emit(word, sum(count))
 
 The counter value will show on the JobTracker's job page and will be
 present in the job logs.

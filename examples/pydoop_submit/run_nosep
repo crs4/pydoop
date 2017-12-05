@@ -39,7 +39,7 @@ import pydoop.mapreduce.pipes as pp
 
 class Mapper(api.Mapper):
     def map(self, ctx):
-        p = ctx.value.strip().split(b'\t')
+        p = ctx.value.strip().split('\t')
         ctx.emit(p[0], p[1])
 
 def __main__():

@@ -319,6 +319,7 @@ PyInit_sercore(void)
                      (PyObject *)&FlowWriterType);
   PyModule_AddObject(m, "FlowReader",
                      (PyObject *)&FlowReaderType);
+  PyModule_AddObject(m, "RULES", get_rules());
   return m;
 }
 
@@ -354,6 +355,7 @@ initsercore(void)
                      (PyObject *)&FlowWriterType);
   PyModule_AddObject(m, "FlowReader",
                      (PyObject *)&FlowReaderType);
+  PyModule_AddObject(m, "RULES", get_rules());
 }
 
 #endif
