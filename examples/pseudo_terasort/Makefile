@@ -19,7 +19,7 @@
 PYTHON ?= python
 PY_VER = $(shell $(PYTHON) -c 'import sys; print(sys.version_info[0])')
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
-LOGLEVEL=DEBUG
+LOGLEVEL=INFO
 GENRECORDS_INPUT=genrecords_input
 GENRECORDS_OUTPUT=genrecords_output
 SORTRECORDS_OUTPUT=sortrecords_output
