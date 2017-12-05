@@ -61,6 +61,17 @@ case ${MODULE} in
 	OPTS+=( "--num-reducers" "0" )
 	OPTS+=( "--output-format" "it.crs4.pydoop.NoSeparatorTextOutputFormat" )
 	;;
+    map_only_java_writer )
+	DATA="${this_dir}"/../input/alice.txt
+	APP_DIR="${this_dir}/mr"
+	OPTS+=( "--num-reducers" "0" )
+	;;
+    map_only_python_writer )
+	DATA="${this_dir}"/../input/alice.txt
+	APP_DIR="${this_dir}/mr"
+	OPTS+=( "--num-reducers" "0" )
+	OPTS+=( "--do-not-use-java-record-writer" )
+	;;
 esac
 OPTS+=( "--upload-file-to-cache" "${APP_DIR}/${MODULE}.py" )
 [ -n "${DEBUG:-}" ] && OPTS+=( "--log-level" "DEBUG" )

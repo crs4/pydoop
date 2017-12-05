@@ -32,6 +32,8 @@ CHECKS = [
     "nosep",
     "wordcount_minimal",
     "wordcount_full",
+    "map_only_java_writer",
+    "map_only_python_writer",
 ]
 
 
@@ -54,6 +56,26 @@ def check_nosep(mr_out_dir):
     with open(os.path.join(THIS_DIR, "data", "cols.txt")) as f:
         exp_output = ["".join(_.rstrip().split()) for _ in f]
     return sorted(exp_output) == sorted(output)
+
+
+def check_map_only_python_writer(mr_out_dir):
+    output = []
+    for fn in hadut.iter_mr_out_files(mr_out_dir):
+        with hdfs.open(fn, "rt") as f:
+            for line in f:
+                try:
+                    n, rec = line.rstrip().split("\t", 1)
+                except ValueError:
+                    n, rec = line.rstrip(), ""
+                n = int(n)
+                output.append((n, rec))
+    output = [_[1] for _ in sorted(output)]
+    with open(DEFAULT_INPUT) as f:
+        exp_output = [_.rstrip().upper() for _ in f]
+    return exp_output == output
+
+
+check_map_only_java_writer = check_map_only_python_writer
 
 
 if __name__ == "__main__":
