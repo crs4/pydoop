@@ -1,3 +1,21 @@
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2017 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
 import pydoop.mapreduce.api as api
 import pydoop.hdfs as hdfs
 import logging
@@ -7,8 +25,7 @@ LOGGER = logging.getLogger("ioformats")
 LOGGER.setLevel(logging.WARNING)
 
 KEY_LENGTH = 10
-# key + value + \n
-RECORD_LENGTH = 91
+RECORD_LENGTH = 91  # key + value + \n
 
 
 class Writer(api.RecordWriter):
@@ -35,8 +52,7 @@ class Writer(api.RecordWriter):
 
 
 class Reader(api.RecordReader):
-    """
-    """
+
     def __init__(self, context):
         super(Reader, self).__init__(context)
         self.logger = LOGGER.getChild("Reader")
@@ -77,8 +93,7 @@ class Reader(api.RecordReader):
 
 
 class CheckReader(Reader):
-    """
-    """
+
     def __init__(self, context):
         super(CheckReader, self).__init__(context)
         self.current_key = None
@@ -91,5 +106,5 @@ class CheckReader(Reader):
                 key, _ = super(CheckReader, self).next()
                 assert key >= okey
                 okey = key
-        except StopIteration as e:
+        except StopIteration:
             return (self.isplit, [start_key, okey])
