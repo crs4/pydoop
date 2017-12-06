@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
-for s in wordcount_minimal wordcount_full nosep; do
-    echo
-    echo "*** running ${s} ***"
-    echo
-    ./run_${s}
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
+for s in map_only_java_writer map_only_python_writer nosep wordcount_full wordcount_minimal; do
+    bash "${this_dir}"/run_submit.sh ${s}
 done

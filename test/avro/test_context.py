@@ -114,7 +114,9 @@ class TestContext(WDTestCase):
             bw.send(bw.START_MESSAGE, 0)
             bw.send(bw.SET_JOB_CONF,
                     pydoop.PROPERTIES['AVRO_INPUT'], mode,
-                    schema_prop, str(self.schema))
+                    schema_prop, str(self.schema),
+                    'mapreduce.pipes.isjavarecordreader', 'true',
+                    'mapreduce.pipes.isjavarecordwriter', 'true')
             bw.send(bw.RUN_MAP, 'input_split', 0, True)
             bw.send(bw.SET_INPUT_TYPES, 'key_type', 'value_type')
             for r in self.records:
