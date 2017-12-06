@@ -25,7 +25,7 @@ LOGGER = logging.getLogger("ioformats")
 LOGGER.setLevel(logging.WARNING)
 
 KEY_LENGTH = 10
-RECORD_LENGTH = 91  # key + value + \n
+RECORD_LENGTH = 100  # key + value
 
 
 class Writer(api.RecordWriter):
@@ -48,7 +48,7 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write(key + value + b'\n')
+        self.file.write(key + value)
 
 
 class Reader(api.RecordReader):
@@ -83,10 +83,9 @@ class Reader(api.RecordReader):
             self.logger.warn("StopIteration on bad rec len %d", len(record))
             raise StopIteration
         self.bytes_read += RECORD_LENGTH
-        # drop the final '\n'
         self.logger.debug('key: %s, val: %s',
-                          record[:KEY_LENGTH], record[KEY_LENGTH:-1])
-        return (record[:KEY_LENGTH], record[KEY_LENGTH:-1])
+                          record[:KEY_LENGTH], record[KEY_LENGTH:])
+        return (record[:KEY_LENGTH], record[KEY_LENGTH:])
 
     def get_progress(self):
         return min(float(self.bytes_read) / self.isplit.length, 1.0)

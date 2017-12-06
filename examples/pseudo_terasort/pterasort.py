@@ -26,16 +26,13 @@ import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 import pydoop.hdfs as hdfs
 import pydoop.utils.serialize as srl
-from ioformats import Reader, Writer
+from ioformats import Reader, Writer, KEY_LENGTH, RECORD_LENGTH
 
 import logging
 
 logging.basicConfig()
 LOGGER = logging.getLogger("pterasort")
 LOGGER.setLevel(logging.CRITICAL)
-
-RECORD_LENGTH = 91
-KEY_LENGTH = 10
 
 
 class Selector(AVLTree):

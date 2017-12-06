@@ -26,9 +26,6 @@ logging.basicConfig()
 LOGGER = logging.getLogger("pteracheck")
 LOGGER.setLevel(logging.CRITICAL)
 
-RECORD_LENGTH = 91
-KEY_LENGTH = 10
-
 
 class StupidMapper(api.Mapper):
 

@@ -32,7 +32,7 @@ import struct
 import numpy.random as random
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from ioformats import Writer
+from ioformats import Writer, KEY_LENGTH
 
 
 TERAGEN = "TERAGEN"
@@ -40,7 +40,6 @@ CHECKSUM = "CHECKSUM"
 
 SEED = 423849
 CACHE_SIZE = 16 * 1024
-KEY_LENGTH = 10
 
 
 class GenSort(object):
@@ -80,6 +79,7 @@ class GenSort(object):
 
     def generate_record(self):
         # 10 bytes of random
+        # 2 constant bytes
         # 32 bytes of the record number
         # 4 bytes of break data
         # 48 bytes of filler based on low 48 bits of random
