@@ -69,6 +69,9 @@ _INPUT_FORMAT_KEYS = frozenset([
     "mapreduce.job.inputformat.class",
 ])
 
+# FIXME: duplicate with app.submit, move to a common module
+IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
+
 
 class LongWritableDeserializer(object):
 
@@ -76,7 +79,7 @@ class LongWritableDeserializer(object):
         self.struct = struct.Struct(">q")
 
     def deserialize(self, record):
-        return self.struct.unpack(record)
+        return self.struct.unpack(record)[0]
 
 
 class TextDeserializer(object):
@@ -526,6 +529,10 @@ class StreamRunner(object):
         ctx.set_combiner(factory, input_split, n_reduces)
         mapper_map = mapper.map
         progress_function = ctx.progress
+        if n_reduces == 0:
+            ctx.writer = factory.create_record_writer(ctx)
+            if ctx.writer is None and not ctx.job_conf.get_bool(IS_JAVA_RW):
+                raise api.PydoopError('RecordWriter not defined')
         for ctx._key, ctx._value in reader:
             if send_progress:
                 ctx._progress_float = reader.get_progress()
