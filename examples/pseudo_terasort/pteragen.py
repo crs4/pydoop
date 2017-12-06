@@ -32,7 +32,7 @@ import struct
 import numpy.random as random
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from ioformats import Writer, KEY_LENGTH
+from ioformats import Writer
 
 
 TERAGEN = "TERAGEN"
