@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2017 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -15,10 +15,10 @@
 # under the License.
 #
 # END_COPYRIGHT
+
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from ioformats import CheckReader as Reader
-
 
 import logging
 
@@ -31,6 +31,7 @@ KEY_LENGTH = 10
 
 
 class StupidMapper(api.Mapper):
+
     def __init__(self, context):
         super(StupidMapper, self).__init__(context)
         self.logger = LOGGER.getChild("Mapper")
@@ -43,6 +44,7 @@ class StupidMapper(api.Mapper):
 
 
 class StupidReducer(api.Reducer):
+
     def reduce(self, context):
         fname = context.key
         recs = sorted(context.values, key=lambda _: _[0].offset)

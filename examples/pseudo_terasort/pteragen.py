@@ -1,18 +1,37 @@
-"""
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2017 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
+"""\
 Generate a GraySort input data set.
 The user specifies the number of rows and the output directory and this
 class runs a map/reduce program to generate the data.
 The format of the data is:
 
- * (10 bytes key) (constant 2 bytes) (32 bytes rowid) 
+ * (10 bytes key) (constant 2 bytes) (32 bytes rowid)
    (constant 4 bytes) (48 bytes filler) (constant 4 bytes)
  * The rowid is the right justified row id as a hex number.
 """
 
+import struct
+
+import numpy.random as random
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-import numpy.random as random
-import struct
 from ioformats import Writer
 
 
@@ -25,7 +44,9 @@ KEY_LENGTH = 10
 
 
 class GenSort(object):
-    "Some sort of gensort look-alike. No idea on its statistical properties"
+    """\
+    Some sort of gensort look-alike. No idea on its statistical properties
+    """
     BREAK_BYTES = struct.pack("2B", 0x00, 0x11)
     DATA_HEAD = struct.pack("4B", 0x88, 0x99, 0xAA, 0xBB)
     DATA_TAIL = struct.pack("4B", 0xCC, 0xDD, 0xEE, 0xFF)
@@ -40,7 +61,9 @@ class GenSort(object):
         random.seed(seed)
 
     def skip_ahead(self, skip):
-        "Skip ahead skip random bytes"
+        """\
+        Skip ahead skip random bytes
+        """
         cache_size = self.cache_size
         chunks = skip // cache_size       #
         for _ in range(chunks):

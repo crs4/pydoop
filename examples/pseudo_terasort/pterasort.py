@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2017 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -15,17 +15,18 @@
 # under the License.
 #
 # END_COPYRIGHT
+
+import os
+import io
+import itertools as it
+from concurrent.futures import ThreadPoolExecutor
+from bintrees.avltree import AVLTree
+
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 import pydoop.hdfs as hdfs
 import pydoop.utils.serialize as srl
 from ioformats import Reader, Writer
-
-from concurrent.futures import ThreadPoolExecutor
-from bintrees.avltree import AVLTree
-import itertools as it
-import os
-import io
 
 import logging
 
@@ -53,6 +54,7 @@ class Selector(AVLTree):
 
 
 class Partitioner(api.Partitioner):
+
     BREAK_POINTS_CACHE_FILE = '__break_point_cache_file'
     TMP_DIR = '/tmp'
 
@@ -75,8 +77,8 @@ class Partitioner(api.Partitioner):
         with ThreadPoolExecutor(n_threads) as p:
             return map(find_center,
                        zip(*[bk for bk in p.map(cls._choose_break_points,
-                                                [(n_records, n_reducers, p)
-                                                 for p in paths])]))
+                                                [(n_records, n_reducers, _)
+                                                 for _ in paths])]))
 
     @classmethod
     def initialize_break_points(cls, n_reducers, sampled_records,
@@ -127,7 +129,6 @@ class StupidReducer(api.Reducer):
         key = context.key
         for v in context.values:
             context.emit(key, v)
-
 
 
 factory = pp.Factory(
