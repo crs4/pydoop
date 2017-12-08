@@ -25,11 +25,18 @@ import sys
 import argparse
 
 DEFAULT_NUM_RECORDS = 100000
+DEFAULT_NUM_MAPS = 2
 NUM_ROWS_KEY = 'mapreduce.pterasort.num-rows'
+NUM_MAPS_KEY = 'mapreduce.job.maps'
 
 
 def make_parser():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--num-maps', metavar='INT', type=int,
+        default=DEFAULT_NUM_MAPS,
+        help=''
+    )
     parser.add_argument(
         '--num-records', metavar='INT', type=int,
         default=DEFAULT_NUM_RECORDS,
@@ -38,6 +45,15 @@ def make_parser():
     add_parser_common_arguments(parser)
     add_parser_arguments(parser)
     return parser
+
+
+def add_D_arg(args, arg_name, arg_key):
+    val = str(getattr(args, arg_name))
+    if args.D is None:
+        args.D = [[arg_key, val]]
+    elif not any(map(lambda _: _[0] == arg_key,
+                 args.D)):
+        args.D.append([arg_key, val])
 
 
 def main(argv=None):
@@ -49,11 +65,8 @@ def main(argv=None):
     args.input_format = 'it.crs4.pydoop.examples.pterasort.RangeInputFormat'
     args.do_not_use_java_record_writer = True
     # args.libjars = ['pydoop-input-formats.jar']
-    if args.D is None:
-        args.D = {NUM_ROWS_KEY: str(args.num_records)}
-    elif any(map(lambda _: _.startswith(NUM_ROWS_KEY),
-             args.D)):
-        args.D.append(NUM_ROWS_KEY, str(args.num_records))
+    add_D_arg(args, 'num_records', NUM_ROWS_KEY)
+    add_D_arg(args, 'num_maps', NUM_MAPS_KEY)
     args.num_reducers = 0
     submitter = PydoopSubmitter()
     submitter.set_args(args, [] if unknown_args is None else unknown_args)
