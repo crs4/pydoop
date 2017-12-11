@@ -1,10 +1,14 @@
-DRIVER_TEMPLATE = """
-import sys, os, inspect
+DRIVER_TEMPLATE = """\
+import sys
+import os
+import inspect
+
 sys.path.insert(0, os.getcwd())
 
 from pydoop.mapreduce.pipes import run_task
 import pydoop.pipes
 import %(module)s
+
 
 class ContextWriter(object):
 
@@ -25,6 +29,7 @@ class ContextWriter(object):
 
   def progress(self):
     self.context.progress()
+
 
 def setup_script_object(obj, fn_attr_name, user_fn, ctx):
   # Generic constructor for both map and reduce objects.
@@ -62,6 +67,7 @@ def setup_script_object(obj, fn_attr_name, user_fn, ctx):
     raise RuntimeError(
         'Unexpected number of %(map_fn)s arguments ' + len(spec.args))
 
+
 class PydoopScriptMapper(pydoop.pipes.Mapper):
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
@@ -81,7 +87,9 @@ class PydoopScriptMapper(pydoop.pipes.Mapper):
   def map(self, ctx):
     pass
 
+
 class PydoopScriptReducer(pydoop.pipes.Reducer):
+
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
     setup_script_object(self, 'reduce', %(module)s.%(reduce_fn)s, ctx)
@@ -105,7 +113,9 @@ class PydoopScriptReducer(pydoop.pipes.Reducer):
   def reduce(self, ctx):
     pass
 
+
 class PydoopScriptCombiner(pydoop.pipes.Combiner):
+
   def __init__(self, ctx):
     super(type(self), self).__init__(ctx)
     setup_script_object(self, 'reduce', %(module)s.%(combine_fn)s, ctx)
@@ -129,11 +139,12 @@ class PydoopScriptCombiner(pydoop.pipes.Combiner):
   def reduce(self, ctx):
     pass
 
+
 def main():
-    result = run_task(
-    pydoop.pipes.Factory(
+    run_task(pydoop.pipes.Factory(
         PydoopScriptMapper, PydoopScriptReducer,
         record_reader_class=None,
-        record_writer_class=None, combiner_class=%(combiner_wp)s,
+        record_writer_class=None,
+        combiner_class=%(combiner_wp)s,
         partitioner_class=None))
 """
