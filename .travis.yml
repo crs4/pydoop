@@ -13,7 +13,9 @@ before_install: pip install flake8
 # skip installation, requirements are handled in the Docker image
 install: true
 
-before_script: flake8 -v .
+before_script:
+  - flake8 -v .
+  - DEBUG=true ./.travis/check_script_template -v
 
 script:
  - docker build -t crs4/pydoop .
