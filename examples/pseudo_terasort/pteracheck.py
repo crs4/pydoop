@@ -42,6 +42,10 @@ class StupidMapper(api.Mapper):
 
 class StupidReducer(api.Reducer):
 
+    def __init__(self, context):
+        super(StupidReducer, self).__init__(context)
+        self.logger = LOGGER.getChild("Reducer")
+
     def reduce(self, context):
         fname = context.key
         recs = sorted(context.values, key=lambda _: _[0].offset)
@@ -50,7 +54,7 @@ class StupidReducer(api.Reducer):
         for r in recs[1:]:
             assert r[0].offset == offset + length
             assert rbndry <= r[1][0]
-            offset, length = r[0].offset, r[0].offset
+            offset, length = r[0].offset, r[0].length
             rbndry = r[1][1]
         context.emit(fname, [lbndry, rbndry])
 
