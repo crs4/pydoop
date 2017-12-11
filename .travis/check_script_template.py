@@ -18,17 +18,14 @@ sys.path.append(os.path.join(THIS_DIR, os.pardir, "pydoop", "app"))
 from script_template import DRIVER_TEMPLATE
 
 
-SUBST = {
-    "module": "module",
-    "map_fn": "map_fn",
-    "reduce_fn": "reduce_fn",
-    "combine_fn": "combine_fn",
-    "combiner_wp": "None",
-}
-
-
 def main(argv):
-    code = DRIVER_TEMPLATE % SUBST
+    code = DRIVER_TEMPLATE.substitute(
+        module="module",
+        map_fn="map_fn",
+        reduce_fn="reduce_fn",
+        combine_fn="combine_fn",
+        combiner_wp="None",
+    )
     fd = None
     try:
         fd, fn = tempfile.mkstemp(suffix=".py", text=True)

@@ -1,4 +1,6 @@
-DRIVER_TEMPLATE = """\
+import string
+
+DRIVER_TEMPLATE = string.Template("""\
 import sys
 import os
 import inspect
@@ -7,7 +9,7 @@ sys.path.insert(0, os.getcwd())
 
 import pydoop.mapreduce.api as api  # noqa: E402
 import pydoop.mapreduce.pipes as pipes  # noqa: E402
-import %(module)s  # noqa: E402
+import ${module}  # noqa: E402
 
 
 class ContextWriter(object):
@@ -21,7 +23,7 @@ class ContextWriter(object):
 
     def count(self, what, howmany):
         counter = self.counters.setdefault(
-            what, self.context.get_counter('%(module)s', what)
+            what, self.context.get_counter('${module}', what)
         )
         self.context.increment_counter(counter, howmany)
 
@@ -68,7 +70,7 @@ def setup_script_object(obj, fn_attr_name, user_fn, ctx):
         setattr(obj, fn_attr_name, obj.with_conf)
     else:
         raise RuntimeError(
-            'Unexpected number of %(map_fn)s arguments ' + len(spec.args)
+            'Unexpected number of ${map_fn} arguments ' + len(spec.args)
         )
 
 
@@ -76,17 +78,17 @@ class PydoopScriptMapper(api.Mapper):
 
     def __init__(self, ctx):
         super(PydoopScriptMapper, self).__init__(ctx)
-        setup_script_object(self, 'map', %(module)s.%(map_fn)s, ctx)
+        setup_script_object(self, 'map', ${module}.${map_fn}, ctx)
 
     def without_conf(self, ctx):
         # old style map function, without the conf parameter
         writer = ContextWriter(ctx)
-        %(module)s.%(map_fn)s(ctx.key, ctx.value, writer)
+        ${module}.${map_fn}(ctx.key, ctx.value, writer)
 
     def with_conf(self, ctx):
         # new style map function, without the conf parameter
         writer = ContextWriter(ctx)
-        %(module)s.%(map_fn)s(ctx.key, ctx.value, writer, self.conf)
+        ${module}.${map_fn}(ctx.key, ctx.value, writer, self.conf)
 
     def map(self, ctx):
         pass
@@ -96,15 +98,15 @@ class PydoopScriptReducer(api.Reducer):
 
     def __init__(self, ctx):
         super(PydoopScriptReducer, self).__init__(ctx)
-        setup_script_object(self, 'reduce', %(module)s.%(reduce_fn)s, ctx)
+        setup_script_object(self, 'reduce', ${module}.${reduce_fn}, ctx)
 
     def without_conf(self, ctx):
         writer = ContextWriter(ctx)
-        %(module)s.%(reduce_fn)s(ctx.key, ctx.values, writer)
+        ${module}.${reduce_fn}(ctx.key, ctx.values, writer)
 
     def with_conf(self, ctx):
         writer = ContextWriter(ctx)
-        %(module)s.%(reduce_fn)s(ctx.key, ctx.values, writer, self.conf)
+        ${module}.${reduce_fn}(ctx.key, ctx.values, writer, self.conf)
 
     def reduce(self, ctx):
         pass
@@ -114,15 +116,15 @@ class PydoopScriptCombiner(api.Reducer):
 
     def __init__(self, ctx):
         super(PydoopScriptCombiner, self).__init__(ctx)
-        setup_script_object(self, 'reduce', %(module)s.%(combine_fn)s, ctx)
+        setup_script_object(self, 'reduce', ${module}.${combine_fn}, ctx)
 
     def without_conf(self, ctx):
         writer = ContextWriter(ctx)
-        %(module)s.%(combine_fn)s(ctx.key, ctx.values, writer)
+        ${module}.${combine_fn}(ctx.key, ctx.values, writer)
 
     def with_conf(self, ctx):
         writer = ContextWriter(ctx)
-        %(module)s.%(combine_fn)s(ctx.key, ctx.values, writer, self.conf)
+        ${module}.${combine_fn}(ctx.key, ctx.values, writer, self.conf)
 
     def reduce(self, ctx):
         pass
@@ -133,6 +135,6 @@ def main():
         PydoopScriptMapper, PydoopScriptReducer,
         record_reader_class=None,
         record_writer_class=None,
-        combiner_class=%(combiner_wp)s,
+        combiner_class=${combiner_wp},
         partitioner_class=None))
-"""
+""")
