@@ -47,6 +47,7 @@ DESCRIPTION = "Simplified interface for running simple MapReduce jobs"
 
 
 class PydoopScript(object):
+
     def __init__(self, args, unknown_args):
         self.script_archive = None
         self.args = None
@@ -54,17 +55,15 @@ class PydoopScript(object):
 
     @staticmethod
     def generate_driver(mr_module, args):
-        lines = []
-        template_args = {
-            'module': mr_module,
-            'map_fn': args.map_fn,
-            'reduce_fn': args.reduce_fn,
-            'combine_fn': args.combine_fn or args.reduce_fn,
-            'combiner_wp': ('PydoopScriptCombiner' if args.combine_fn
-                            else 'None')
-        }
-        lines.append(DRIVER_TEMPLATE % template_args)
-        return os.linesep.join(lines) + os.linesep
+        combine_fn = args.combine_fn or args.reduce_fn
+        combiner_wp = 'PydoopScriptCombiner' if args.combine_fn else 'None'
+        return DRIVER_TEMPLATE.substitute(
+            module=mr_module,
+            map_fn=args.map_fn,
+            reduce_fn=args.reduce_fn,
+            combine_fn=combine_fn,
+            combiner_wp=combiner_wp,
+        )
 
     def convert_args(self, args, unknown_args):
         # Create a zip archive containing all we need to run the
