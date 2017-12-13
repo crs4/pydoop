@@ -6,8 +6,6 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
-for bindir in bin old_api; do
-    for mode in minimal full; do
-	bash "${this_dir}"/run_wc.sh ${bindir} ${mode}
-    done
+for mode in minimal full; do
+    ${BASH} "${this_dir}"/run_wc.sh ${mode}
 done
