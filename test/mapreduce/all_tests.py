@@ -27,7 +27,6 @@ TEST_MODULE_NAMES = [
     'test_jobconf',
     'test_streams',
     'test_support',
-    'test_support_old_api',
     'test_utils',
 ]
 
