@@ -18,7 +18,7 @@
 
 import unittest
 import pydoop
-from pydoop.pipes import InputSplit
+from pydoop.mapreduce.pipes import InputSplit
 
 
 example_input_splits = [

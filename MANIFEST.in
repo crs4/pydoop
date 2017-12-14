@@ -10,7 +10,6 @@ recursive-include test/hdfs *.py
 recursive-include test/mapreduce *.py
 recursive-include test/mapreduce/data *.data jobToken
 recursive-include test/avro *.py
-recursive-include test/backward_compatibility *.py
 
 recursive-include examples run_all README
 recursive-include examples/input *.txt

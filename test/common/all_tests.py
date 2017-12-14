@@ -23,6 +23,7 @@ from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
+    'test_hadoop_utils',
     'test_hadut',
     'test_pydoop',
 ]

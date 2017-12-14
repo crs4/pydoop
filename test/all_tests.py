@@ -23,7 +23,6 @@ import importlib
 
 _TEST_DIRS = (
     "app",
-    "backward_compatibility",
     "hdfs",
     "mapreduce",
     "serialize",
