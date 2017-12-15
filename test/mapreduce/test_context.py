@@ -18,7 +18,11 @@
 
 import unittest
 import pydoop
-from pydoop.mapreduce.pipes import InputSplit
+from pydoop.mapreduce.pipes import InputSplit, TaskContext
+
+
+class DummyUpLink(object):
+    pass
 
 
 example_input_splits = [
@@ -38,6 +42,7 @@ if not pydoop.hadoop_version_info().has_variable_isplit_encoding():
 
 
 class taskcontext_tc(unittest.TestCase):
+
     def test_input_split(self):
         for s in example_input_splits:
             i = InputSplit(s[0])
@@ -45,10 +50,24 @@ class taskcontext_tc(unittest.TestCase):
             self.assertEqual(i.offset, s[2])
             self.assertEqual(i.length, s[3])
 
+    def test_get_input_split(self):
+        ctx = TaskContext(DummyUpLink())
+        for raw_split, filename, offset, length in example_input_splits:
+            ctx._input_split = raw_split
+            self.assertEqual(ctx.get_input_split(raw=True), raw_split)
+            split = ctx.get_input_split(raw=False)
+            self.assertEqual(split.filename, filename)
+            self.assertEqual(split.offset, offset)
+            self.assertEqual(split.length, length)
+            self.assertEqual(ctx.input_split.filename, filename)
+            self.assertEqual(ctx.input_split.offset, offset)
+            self.assertEqual(ctx.input_split.length, length)
+
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(taskcontext_tc('test_input_split'))
+    suite.addTest(taskcontext_tc('test_get_input_split'))
     return suite
 
 

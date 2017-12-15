@@ -393,11 +393,8 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self.up_link.send(self.up_link.INCREMENT_COUNTER,
                           counter.get_id(), amount)
 
-    def get_input_split(self):
-        return InputSplit(self._input_split)
-
-    def getInputSplit(self):
-        return self._input_split
+    def get_input_split(self, raw=False):
+        return self._input_split if raw else InputSplit(self._input_split)
 
     def get_input_key_class(self):
         return self._input_key_class
@@ -581,35 +578,3 @@ def run_task(factory, port=None, istream=None, ostream=None,
     context.close()
     connections.close()
     return True
-
-
-def runTask(factory):
-    run_task(factory, private_encoding=False, fast_combiner=False)
-
-
-class RecordReaderWrapper(object):
-
-    def __init__(self, obj):
-        self._obj = obj
-
-    def __iter__(self):
-        return self.fast_iterator()
-
-    def fast_iterator(self):
-        obj = self._obj
-        next_op = obj.next
-        flag, key, value = next_op()
-        if flag:
-            yield (key, value)
-        else:
-            raise StopIteration
-
-    def next(self):
-        flag, key, value = self._obj.next()
-        if flag:
-            return (key, value)
-        else:
-            raise StopIteration
-
-    def __next__(self):
-        return self.next()

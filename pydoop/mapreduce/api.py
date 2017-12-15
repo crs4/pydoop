@@ -51,9 +51,6 @@ class Counter(object):
     def get_id(self):
         return self.id
 
-    def getId(self):
-        return self.get_id()
-
 
 class JobConf(dict):
     """
@@ -91,26 +88,17 @@ class JobConf(dict):
         super(JobConf, self).__init__(zip(nvalues[::2], nvalues[1::2]))
         self.__mirror_conf_across_versions()
 
-    def hasKey(self, key):
-        return key in self
-
     def get_int(self, key, default=None):
         """
         Same as :meth:`dict.get`, but the value is converted to an int.
         """
         return int(self.get(key, default))
 
-    def getInt(self, key, default=None):
-        return self.get_int(key, default)
-
     def get_float(self, key, default=None):
         """
         Same as :meth:`dict.get`, but the value is converted to an float.
         """
         return float(self.get(key, default))
-
-    def getFloat(self, key, default=None):
-        return self.get_float(key, default)
 
     def get_bool(self, key, default=None):
         """
@@ -132,9 +120,6 @@ class JobConf(dict):
             else:
                 v = default
         return v
-
-    def getBoolean(self, key, default=None):
-        return self.get_bool(key, default)
 
     def get_json(self, key, default=None):
         return json.loads(self.get(key, default))
@@ -184,9 +169,6 @@ class Context(ABC):
     def get_job_conf(self):
         pass
 
-    def getJobConf(self):
-        return self.get_job_conf()
-
     @property
     def key(self):
         """
@@ -198,9 +180,6 @@ class Context(ABC):
     def get_input_key(self):
         pass
 
-    def getInputKey(self):
-        return self.get_input_key()
-
     @property
     def value(self):
         """
@@ -211,9 +190,6 @@ class Context(ABC):
     @abstractmethod
     def get_input_value(self):
         pass
-
-    def getInputValue(self):
-        return self.get_input_value()
 
     @abstractmethod
     def emit(self, key, value):
@@ -236,9 +212,6 @@ class Context(ABC):
         """
         pass
 
-    def setStatus(self, status):
-        return self.set_status(status)
-
     @abstractmethod
     def get_counter(self, group, name):
         """
@@ -253,18 +226,12 @@ class Context(ABC):
         """
         pass
 
-    def getCounter(self, group, name):
-        return self.get_counter(group, name)
-
     @abstractmethod
     def increment_counter(self, counter, amount):
         """
         Update a :class:`Counter` by the specified amount.
         """
         pass
-
-    def incrementCounter(self, counter, amount):
-        return self.increment_counter(counter, amount)
 
 
 class MapContext(Context):
@@ -273,19 +240,19 @@ class MapContext(Context):
     """
     @property
     def input_split(self):
-        """
-        Get the current input split as an :class:`~.pipes.InputSplit` object.
+        """\
+        The current input split as an :class:`~.pipes.InputSplit` object.
         """
         return self.get_input_split()
 
     @abstractmethod
-    def get_input_split(self):
-        pass
+    def get_input_split(self, raw=False):
+        """\
+        Get the current input split.
 
-    @abstractmethod
-    def getInputSplit(self):
-        """
-        Get the raw input split as a byte string (backward compatibility).
+        If ``raw`` is :obj:`False` (the default), return an
+        :class:`~.pipes.InputSplit` object; if it's :obj:`True`, return
+        a byte string (the unserialized split as sent via the downlink).
         """
         pass
 
@@ -300,9 +267,6 @@ class MapContext(Context):
     def get_input_key_class(self):
         pass
 
-    def getInputKeyClass(self):
-        return self.get_input_key_class()
-
     @property
     def input_value_class(self):
         return self.get_input_value_class()
@@ -310,12 +274,9 @@ class MapContext(Context):
     @abstractmethod
     def get_input_value_class(self):
         """
-        Return the type of the input key.
+        Return the type of the input value.
         """
         pass
-
-    def getInputValueClass(self):
-        return self.get_input_value_class()
 
 
 class ReduceContext(Context):
@@ -330,18 +291,12 @@ class ReduceContext(Context):
     def get_input_values(self):
         pass
 
-    def getInputValues(self):
-        return self.get_input_values()
-
     @abstractmethod
     def next_value(self):
         """
         Return :obj:`True` if there is another value that can be processed.
         """
         pass
-
-    def nextValue(self):
-        return self.next_value()
 
 
 class Closable(ABC):
@@ -470,9 +425,6 @@ class RecordReader(Closable):
           and 1.
         """
         pass
-
-    def getProgress(self):
-        return self.get_progress()
 
 
 class RecordWriter(Closable):

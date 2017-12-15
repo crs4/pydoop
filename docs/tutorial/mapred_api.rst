@@ -89,7 +89,7 @@ counters and status updates:
 
       def __init__(self, context):
           super(Mapper, self).__init__(context)
-          context.setStatus("initializing mapper")
+          context.set_status("initializing mapper")
           self.input_words = context.get_counter("WC", "INPUT_WORDS")
 
       def map(self, context):
@@ -273,7 +273,7 @@ The following snippet shows how to set the partitioner and combiner
 
 .. code-block:: python
 
-  pp.runTask(pp.Factory(Mapper, Reducer, partitioner_class=Partitioner,
+  pp.run_task(pp.Factory(Mapper, Reducer, partitioner_class=Partitioner,
       combiner_class=Reducer))
 
 
