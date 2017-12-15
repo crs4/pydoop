@@ -16,34 +16,14 @@
 #
 # END_COPYRIGHT
 
-"""
+"""\
 General purpose utilities.
 """
 
 __all__ = [
-    'raise_pydoop_exception',
-    'jc_configure',
-    'jc_configure_int',
-    'jc_configure_bool',
-    'jc_configure_float',
-    'jc_configure_log_level',
-    'make_input_split',
     'NullHandler',
     'NullLogger',
     'make_random_str',
-    'split_hdfs_path',
 ]
 
-from .misc import (  # backward compatibility
-    raise_pydoop_exception,
-    jc_configure,
-    jc_configure_int,
-    jc_configure_bool,
-    jc_configure_float,
-    jc_configure_log_level,
-    make_input_split,
-    NullHandler,
-    NullLogger,
-    make_random_str,
-    split_hdfs_path,
-)
+from .misc import NullHandler, NullLogger, make_random_str

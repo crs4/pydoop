@@ -22,10 +22,11 @@ from pydoop.test_utils import get_module
 
 TEST_MODULE_NAMES = [
     'test_cmd_streams',
+    'test_context',
     'test_framework',
+    'test_jobconf',
     'test_streams',
     'test_support',
-    'test_support_old_api',
     'test_utils',
 ]
 

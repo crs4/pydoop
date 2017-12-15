@@ -11,14 +11,14 @@ FULL_OPTS="\
 -D hadoop.pipes.java.recordwriter=false
 -D pydoop.hdfs.user=${USER}"
 
-nargs=2
+nargs=1
 if [ $# -ne ${nargs} ]; then
-    die "Usage: $0 bin|old_api full|minimal"
+    die "Usage: $0 full|minimal"
 fi
-BIN="${this_dir}"/$1/wordcount_$2.py
+BIN="${this_dir}"/bin/wordcount_$1.py
 
 [ ! -f "${BIN}" ] && die "${BIN} not found"
-if [ $2 == "full" ]; then
+if [ $1 == "full" ]; then
     OPTS="${FULL_OPTS}"
 else
     OPTS=""
