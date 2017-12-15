@@ -22,7 +22,7 @@ pydoop.hdfs.file -- HDFS File Objects
 """
 
 import os
-from io import FileIO, UnsupportedOperation
+import io
 import codecs
 
 from pydoop.hdfs import common
@@ -335,7 +335,7 @@ class hdfs_file(object):
         """
         _complain_ifclosed(self.closed)
         if not self.writable():
-            raise UnsupportedOperation("write")
+            raise io.UnsupportedOperation("write")
         if self.__encoding:
             self.f.write(data.encode(self.__encoding, self.__errors))
             return len(data)
@@ -362,7 +362,7 @@ class hdfs_file(object):
         return self.f.flush()
 
 
-class local_file(FileIO):
+class local_file(io.FileIO):
     """\
     Support class to handle local files.
 
@@ -377,7 +377,6 @@ class local_file(FileIO):
         name = os.path.abspath(name)
         super(local_file, self).__init__(name, mode_obj.value)
         self.__fs = fs
-        self.__name = name
         self.__size = os.fstat(super(local_file, self).fileno()).st_size
         self.f = self
         self.chunk_size = 0
@@ -440,3 +439,12 @@ class local_file(FileIO):
 
     def write_chunk(self, chunk):
         return self.write(chunk)
+
+
+class TextIOWrapper(io.TextIOWrapper):
+
+    def __getattr__(self, name):
+        a = getattr(self.buffer.raw, name)
+        if name == "mode":
+            a = "%st" % common.Mode(a).value[0]
+        return a

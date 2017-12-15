@@ -186,17 +186,21 @@ class TestCommon(unittest.TestCase):
 
     def file_attrs(self):
         path = self._make_random_path()
-        with self.fs.open_file(path, os.O_WRONLY) as f:
-            self.assertTrue(f.name.endswith(path))
-            self.assertEqual(f.size, 0)
-            self.assertEqual(f.mode, "wb")
-            content = utils.make_random_data()
-            f.write(content)
-        self.assertEqual(f.size, len(content))
-        with self.fs.open_file(path) as f:
-            self.assertTrue(f.name.endswith(path))
+        content = utils.make_random_data()
+        for mode in "wb", "wt":
+            with self.fs.open_file(path, mode) as f:
+                self.assertTrue(f.name.endswith(path))
+                self.assertTrue(f.fs is self.fs)
+                self.assertEqual(f.size, 0)
+                self.assertEqual(f.mode, mode)
+                f.write(content if mode == "wb" else content.decode("utf-8"))
             self.assertEqual(f.size, len(content))
-            self.assertEqual(f.mode, "rb")
+        for mode in "rb", "rt":
+            with self.fs.open_file(path, mode) as f:
+                self.assertTrue(f.name.endswith(path))
+                self.assertTrue(f.fs is self.fs)
+                self.assertEqual(f.size, len(content))
+                self.assertEqual(f.mode, mode)
 
     def flush(self):
         path = self._make_random_path()

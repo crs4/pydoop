@@ -30,7 +30,7 @@ import io
 
 import pydoop
 from . import common
-from .file import hdfs_file, local_file
+from .file import hdfs_file, local_file, TextIOWrapper
 from .core import core_hdfs_fs
 
 # py3 compatibility
@@ -264,7 +264,7 @@ class hdfs(object):
             fret = local_file(self, path, common.Mode(m.value[0]))
             if m.text:
                 cls = io.BufferedWriter if m.writable else io.BufferedReader
-                fret = io.TextIOWrapper(cls(fret), encoding, errors)
+                fret = TextIOWrapper(cls(fret), encoding, errors)
             return fret
         f = self.fs.open_file(path, m.flags, buff_size, replication, blocksize)
         fret = hdfs_file(f, self, path, m, readline_chunk_size)
