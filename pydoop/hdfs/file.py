@@ -46,7 +46,7 @@ def _seek_with_boundary_checks(f, position, whence):
     return position
 
 
-class hdfs_file(object):
+class FileIO(object):
     """
     Instances of this class represent HDFS file objects.
 
@@ -232,26 +232,11 @@ class hdfs_file(object):
             raise IOError("position cannot be past EOF")
         if length < 0:
             length = self.size - position
-        return self.f.pread(position, length)
-
-    def pread_chunk(self, position, chunk):
-        r"""
-        Works like :meth:`pread`\ , but data is stored in the writable
-        buffer ``chunk`` rather than returned. Reads at most a number of
-        bytes equal to the size of ``chunk``\ .
-
-        :type position: int
-        :param position: position from which to read
-        :type chunk: writable string buffer
-        :param chunk: a c-like string buffer, such as the one returned by the
-          ``create_string_buffer`` function in the :mod:`ctypes` module
-        :rtype: int
-        :return: the number of bytes read
-        """
-        _complain_ifclosed(self.closed)
-        if position > self.size:
-            raise IOError("position cannot be past EOF")
-        return self.f.pread_chunk(position, chunk)
+        data = self.f.pread(position, length)
+        if self.__encoding:
+            return data.decode(self.__encoding, self.__errors)
+        else:
+            return data
 
     def read(self, length=-1):
         """
@@ -282,21 +267,6 @@ class hdfs_file(object):
             return data.decode(self.__encoding, self.__errors)
         else:
             return data
-
-    def read_chunk(self, chunk):
-        r"""
-        Works like :meth:`read`\ , but data is stored in the writable
-        buffer ``chunk`` rather than returned. Reads at most a number of
-        bytes equal to the size of ``chunk``\ .
-
-        :type chunk: writable string buffer
-        :param chunk: a c-like string buffer, such as the one returned by the
-          ``create_string_buffer`` function in the :mod:`ctypes` module
-        :rtype: int
-        :return: the number of bytes read
-        """
-        _complain_ifclosed(self.closed)
-        return self.f.read_chunk(chunk)
 
     def seek(self, position, whence=os.SEEK_SET):
         """
@@ -342,24 +312,59 @@ class hdfs_file(object):
         else:
             return self.f.write(data)
 
-    def write_chunk(self, chunk):
-        """
-        Write data from buffer ``chunk`` to the file.
-
-        :type chunk: writable string buffer
-        :param chunk: a c-like string buffer, such as the one returned by the
-          ``create_string_buffer`` function in the :mod:`ctypes` module
-        :rtype: int
-        :return: the number of bytes written
-        """
-        return self.write(chunk)
-
     def flush(self):
         """
         Force any buffered output to be written.
         """
         _complain_ifclosed(self.closed)
         return self.f.flush()
+
+
+class hdfs_file(FileIO):
+
+    def pread_chunk(self, position, chunk):
+        r"""
+        Works like :meth:`pread`\ , but data is stored in the writable
+        buffer ``chunk`` rather than returned. Reads at most a number of
+        bytes equal to the size of ``chunk``\ .
+
+        :type position: int
+        :param position: position from which to read
+        :type chunk: buffer
+        :param chunk: a writable object that supports the buffer protocol
+        :rtype: int
+        :return: the number of bytes read
+        """
+        _complain_ifclosed(self.closed)
+        if position > self.size:
+            raise IOError("position cannot be past EOF")
+        return self.f.pread_chunk(position, chunk)
+
+    def read_chunk(self, chunk):
+        r"""
+        Works like :meth:`read`\ , but data is stored in the writable
+        buffer ``chunk`` rather than returned. Reads at most a number of
+        bytes equal to the size of ``chunk``\ .
+
+        :type chunk: buffer
+        :param chunk: a writable object that supports the buffer protocol
+        :rtype: int
+        :return: the number of bytes read
+        """
+        _complain_ifclosed(self.closed)
+        return self.f.read_chunk(chunk)
+
+    def write_chunk(self, chunk):
+        """
+        Write data from buffer ``chunk`` to the file.
+
+        :type chunk: buffer
+        :param chunk: an object that supports the buffer protocol
+        :rtype: int
+        :return: the number of bytes written
+        """
+        _complain_ifclosed(self.closed)
+        return self.write(chunk)
 
 
 class local_file(io.FileIO):

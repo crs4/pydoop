@@ -22,25 +22,12 @@ import unittest
 import uuid
 import shutil
 import operator
-
-try:
-    from itertools import izip as zip
-except ImportError as e:
-    pass
-
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
 import pydoop.test_utils as utils
 from pydoop.utils.py3compat import _is_py3
-
-
-def _get_value(buf):
-    try:
-        return buf.value  # e.g., ctypes string buffer
-    except AttributeError:
-        return create_string_buffer(bytes(buf)).value  # e.g., bytearray
 
 
 class TestCommon(unittest.TestCase):
@@ -250,7 +237,8 @@ class TestCommon(unittest.TestCase):
                 chunk = chunk_factory(chunk_size)
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
-                self.assertEqual(_get_value(chunk), content[:bytes_read])
+                self.assertEqual(bytes(bytearray(chunk))[:bytes_read],
+                                 content[:bytes_read])
 
     def read_chunk(self):
         for factory in bytearray, create_string_buffer:
@@ -361,7 +349,6 @@ class TestCommon(unittest.TestCase):
 
     def list_directory(self):
         new_d = self._make_random_dir()
-
         self.assertEqual(self.fs.list_directory(new_d), [])
         paths = [self._make_random_file(where=new_d) for _ in range(3)]
         paths.sort(key=os.path.basename)
