@@ -536,12 +536,20 @@ class TestCommon(unittest.TestCase):
         data = text.encode("utf-8")
         with self.fs.open_file(t_path, "wt") as fo:
             chars_written = fo.write(text)
+            with self.assertRaises(AttributeError):
+                fo.write_chunk(u"foo")
         with self.fs.open_file(b_path, "w") as fo:
             bytes_written = fo.write(data)
         self.assertEqual(chars_written, len(text))
         self.assertEqual(bytes_written, len(data))
         with self.fs.open_file(t_path, "rt") as f:
             self.assertEqual(f.read(), text)
+            f.seek(2)
+            self.assertEqual(f.read(), text[2:])
+            self.assertEqual(f.pread(3, 4), text[3:7])
+            with self.assertRaises(AttributeError):
+                f.read_chunk("")
+                f.pread_chunk(1, "")
         with self.fs.open_file(b_path, "r") as f:
             self.assertEqual(f.read(), data)
 

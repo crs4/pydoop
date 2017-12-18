@@ -444,7 +444,16 @@ class local_file(io.FileIO):
 class TextIOWrapper(io.TextIOWrapper):
 
     def __getattr__(self, name):
+        # there is no readinto method in text mode (strings are immutable)
+        if name.endswith("_chunk"):
+            raise AttributeError("%r object has no attribute %r" % (
+                self.__class__.__name__, name
+            ))
         a = getattr(self.buffer.raw, name)
         if name == "mode":
             a = "%st" % common.Mode(a).value[0]
         return a
+
+    def pread(self, position, length):
+        data = self.buffer.raw.pread(position, length)
+        return data.decode(self.encoding, self.errors)
