@@ -418,29 +418,31 @@ class local_file(io.FileIO):
         position = _seek_with_boundary_checks(self, position, whence)
         return super(local_file, self).seek(position)
 
-    def pread(self, position, length):
+    def __seek_and_read(self, position, length=None, buf=None):
+        assert (length is None) != (buf is None)
         _complain_ifclosed(self.closed)
         if position < 0:
             raise ValueError("Position must be >= 0")
         old_pos = self.tell()
         self.seek(position)
-        if length < 0:
-            length = self.size - position
-        data = self.read(length)
+        if buf is not None:
+            ret = self.readinto(buf)
+        else:
+            if length < 0:
+                length = self.size - position
+            ret = self.read(length)
         self.seek(old_pos)
-        return data
+        return ret
+
+    def pread(self, position, length):
+        return self.__seek_and_read(position, length=length)
 
     def pread_chunk(self, position, chunk):
-        _complain_ifclosed(self.closed)
-        data = self.pread(position, len(chunk))
-        chunk[:len(data)] = data
-        return len(data)
+        return self.__seek_and_read(position, buf=chunk)
 
     def read_chunk(self, chunk):
         _complain_ifclosed(self.closed)
-        data = self.read(len(chunk))
-        chunk[:len(data)] = data
-        return len(data)
+        return self.readinto(chunk)
 
     def write_chunk(self, chunk):
         return self.write(chunk)
