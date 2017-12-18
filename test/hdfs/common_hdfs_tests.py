@@ -22,6 +22,7 @@ import unittest
 import uuid
 import shutil
 import operator
+import array
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
@@ -241,7 +242,9 @@ class TestCommon(unittest.TestCase):
                                  content[:bytes_read])
 
     def read_chunk(self):
-        for factory in bytearray, create_string_buffer:
+        def array_by_len(length):
+            return array.array("b", b"\x00" * length)
+        for factory in bytearray, create_string_buffer, array_by_len:
             self.__read_chunk(factory)
 
     def write(self):
