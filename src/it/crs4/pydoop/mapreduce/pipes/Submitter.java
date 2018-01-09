@@ -49,7 +49,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.mapreduce.lib.partition.HashPartitioner;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.MRJobConfig;
@@ -347,7 +346,7 @@ public class Submitter extends Configured implements Tool {
     if (!getIsJavaReducer(conf)) {
       job.setReducerClass(PipesReducer.class);
       if (!getIsJavaRecordWriter(conf)) {
-        job.setOutputFormatClass(NullOutputFormat.class);
+        job.setOutputFormatClass(PipesNonJavaOutputFormat.class);
       }
     }
     String textClassname = Text.class.getName();

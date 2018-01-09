@@ -518,7 +518,7 @@ class StreamRunner(object):
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
                              ctx._input_key_class, ctx._input_value_class)
         reader = factory.create_record_reader(ctx)
-        if reader is None and piped_input is None:
+        if reader is None and not piped_input:
             raise api.PydoopError('RecordReader not defined')
         send_progress = reader is not None
         mapper = factory.create_mapper(ctx)
