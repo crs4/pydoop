@@ -18,7 +18,11 @@
 #
 # END_COPYRIGHT
 
-import os
+import logging
+
+logging.basicConfig()
+LOGGER = logging.getLogger("MapOnly")
+LOGGER.setLevel(logging.INFO)
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
@@ -35,10 +39,10 @@ class Writer(api.RecordWriter):
 
     def __init__(self, context):
         super(Writer, self).__init__(context)
+        self.logger = LOGGER.getChild("Writer")
         jc = context.job_conf
-        part = jc.get_int("mapreduce.task.partition")
-        out_dir = jc["mapreduce.task.output.dir"]
-        outfn = os.path.join(out_dir, "part-m-%05d" % part)
+        outfn = context.get_default_work_file()
+        self.logger.info("writing to %s", outfn)
         hdfs_user = jc.get("pydoop.hdfs.user", None)
         self.sep = jc.get("mapreduce.output.textoutputformat.separator", "\t")
         self.file = hdfs.open(outfn, "wt", user=hdfs_user)
@@ -48,7 +52,7 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write("%d%s%s%s" % (key, self.sep, value, os.linesep))
+        self.file.write("%d%s%s%s" % (key, self.sep, value, "\n"))
 
 
 def __main__():
@@ -56,3 +60,7 @@ def __main__():
         mapper_class=Mapper,
         record_writer_class=Writer,
     ))
+
+
+if __name__ == "__main__":
+    __main__()

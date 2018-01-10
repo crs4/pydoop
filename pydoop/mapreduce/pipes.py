@@ -241,6 +241,9 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
+    TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
+    TASK_PARTITION = "mapreduce.task.partition"
+
     def deserializing(self, meth, deserializer):
         """
         Decorate a key/value getter to make it auto-deserialize records.
@@ -408,6 +411,22 @@ class TaskContext(api.MapContext, api.ReduceContext):
             return True
         except StopIteration:
             return False
+
+    def get_work_path(self):
+        try:
+            return self._job_conf[self.TASK_OUTPUT_DIR]
+        except KeyError:
+            raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
+
+    def get_default_work_file(self, extension=""):
+        partition = self._job_conf.get_int(self.TASK_PARTITION)
+        if partition is None:
+            raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
+        base = self._job_conf.get("mapreduce.output.basename", "part")
+        task_type = "r" if self.is_reducer() else "m"
+        return "%s/%s-%s-%05d%s" % (
+            self.get_work_path(), base, task_type, partition, extension
+        )
 
 
 def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
