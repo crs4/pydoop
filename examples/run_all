@@ -27,7 +27,7 @@ examples=(
     pydoop_submit
     self_contained
     sequence_file
-    simulator
+    # simulator  # excluded until issue #246 is fixed
     wordcount
 )
 some_failed=0
