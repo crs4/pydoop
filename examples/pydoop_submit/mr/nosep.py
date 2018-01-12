@@ -31,3 +31,7 @@ class Mapper(api.Mapper):
 
 def __main__():
     pp.run_task(pp.Factory(Mapper, None))
+
+
+if __name__ == "__main__":
+    __main__()

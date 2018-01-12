@@ -241,6 +241,9 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
+    TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
+    TASK_PARTITION = "mapreduce.task.partition"
+
     def deserializing(self, meth, deserializer):
         """
         Decorate a key/value getter to make it auto-deserialize records.
@@ -409,6 +412,22 @@ class TaskContext(api.MapContext, api.ReduceContext):
         except StopIteration:
             return False
 
+    def get_work_path(self):
+        try:
+            return self._job_conf[self.TASK_OUTPUT_DIR]
+        except KeyError:
+            raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
+
+    def get_default_work_file(self, extension=""):
+        partition = self._job_conf.get_int(self.TASK_PARTITION)
+        if partition is None:
+            raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
+        base = self._job_conf.get("mapreduce.output.basename", "part")
+        task_type = "r" if self.is_reducer() else "m"
+        return "%s/%s-%s-%05d%s" % (
+            self.get_work_path(), base, task_type, partition, extension
+        )
+
 
 def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
     """
@@ -518,7 +537,7 @@ class StreamRunner(object):
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
                              ctx._input_key_class, ctx._input_value_class)
         reader = factory.create_record_reader(ctx)
-        if reader is None and piped_input is None:
+        if reader is None and not piped_input:
             raise api.PydoopError('RecordReader not defined')
         send_progress = reader is not None
         mapper = factory.create_mapper(ctx)

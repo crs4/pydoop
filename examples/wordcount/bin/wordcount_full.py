@@ -22,7 +22,7 @@ import logging
 
 logging.basicConfig()
 LOGGER = logging.getLogger("WordCount")
-LOGGER.setLevel(logging.CRITICAL)
+LOGGER.setLevel(logging.INFO)
 
 import re
 from hashlib import md5
@@ -110,13 +110,11 @@ class Writer(api.RecordWriter):
         super(Writer, self).__init__(context)
         self.logger = LOGGER.getChild("Writer")
         jc = context.job_conf
-        part = jc.get_int("mapred.task.partition")
-        out_dir = jc["mapred.work.output.dir"]
-        outfn = "%s/part-%05d" % (out_dir, part)
+        outfn = context.get_default_work_file()
+        self.logger.info("writing to %s", outfn)
         hdfs_user = jc.get("pydoop.hdfs.user", None)
         self.file = hdfs.open(outfn, "wt", user=hdfs_user)
-        self.sep = jc.get("mapred.textoutputformat.separator", "\t")
-        self.eol = jc.get("mapred.textoutputformat.eol", "\n")
+        self.sep = jc.get("mapreduce.output.textoutputformat.separator", "\t")
 
     def close(self):
         self.logger.debug("closing open handles")
@@ -124,7 +122,7 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write(key + self.sep + str(value) + self.eol)
+        self.file.write(key + self.sep + str(value) + "\n")
 
 
 class Partitioner(api.Partitioner):

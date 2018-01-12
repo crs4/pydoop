@@ -56,11 +56,13 @@ import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.security.SecureShuffleUtils;
 import org.apache.hadoop.mapreduce.security.TokenCache;
 import org.apache.hadoop.mapreduce.security.token.JobTokenIdentifier;
 import org.apache.hadoop.mapreduce.security.token.JobTokenSecretManager;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
@@ -90,6 +92,11 @@ class Application<K1 extends Writable, V1 extends Writable,
         throws IOException, InterruptedException {
 
         Configuration conf = context.getConfiguration();
+        OutputCommitter committer = context.getOutputCommitter();
+        if (committer instanceof FileOutputCommitter) {
+          conf.set(MRJobConfig.TASK_OUTPUT_DIR,
+                   ((FileOutputCommitter)committer).getWorkPath().toString());
+        }
         serverSocket = new ServerSocket(0);
         Map<String, String> env = new HashMap<String,String>();
         // add TMPDIR environment variable with the value of java.io.tmpdir
