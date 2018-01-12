@@ -22,25 +22,13 @@ import unittest
 import uuid
 import shutil
 import operator
-
-try:
-    from itertools import izip as zip
-except ImportError as e:
-    pass
-
+import array
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
 import pydoop.test_utils as utils
 from pydoop.utils.py3compat import _is_py3
-
-
-def _get_value(buf):
-    try:
-        return buf.value  # e.g., ctypes string buffer
-    except AttributeError:
-        return create_string_buffer(bytes(buf)).value  # e.g., bytearray
 
 
 class TestCommon(unittest.TestCase):
@@ -186,17 +174,21 @@ class TestCommon(unittest.TestCase):
 
     def file_attrs(self):
         path = self._make_random_path()
-        with self.fs.open_file(path, os.O_WRONLY) as f:
-            self.assertTrue(f.name.endswith(path))
-            self.assertEqual(f.size, 0)
-            self.assertEqual(f.mode, "wb")
-            content = utils.make_random_data()
-            f.write(content)
-        self.assertEqual(f.size, len(content))
-        with self.fs.open_file(path) as f:
-            self.assertTrue(f.name.endswith(path))
+        content = utils.make_random_data()
+        for mode in "wb", "wt":
+            with self.fs.open_file(path, mode) as f:
+                self.assertTrue(f.name.endswith(path))
+                self.assertTrue(f.fs is self.fs)
+                self.assertEqual(f.size, 0)
+                self.assertEqual(f.mode, mode)
+                f.write(content if mode == "wb" else content.decode("utf-8"))
             self.assertEqual(f.size, len(content))
-            self.assertEqual(f.mode, "rb")
+        for mode in "rb", "rt":
+            with self.fs.open_file(path, mode) as f:
+                self.assertTrue(f.name.endswith(path))
+                self.assertTrue(f.fs is self.fs)
+                self.assertEqual(f.size, len(content))
+                self.assertEqual(f.mode, mode)
 
     def flush(self):
         path = self._make_random_path()
@@ -246,10 +238,13 @@ class TestCommon(unittest.TestCase):
                 chunk = chunk_factory(chunk_size)
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
-                self.assertEqual(_get_value(chunk), content[:bytes_read])
+                self.assertEqual(bytes(bytearray(chunk))[:bytes_read],
+                                 content[:bytes_read])
 
     def read_chunk(self):
-        for factory in bytearray, create_string_buffer:
+        def array_by_len(length):
+            return array.array("b", b"\x00" * length)
+        for factory in bytearray, create_string_buffer, array_by_len:
             self.__read_chunk(factory)
 
     def write(self):
@@ -357,7 +352,6 @@ class TestCommon(unittest.TestCase):
 
     def list_directory(self):
         new_d = self._make_random_dir()
-
         self.assertEqual(self.fs.list_directory(new_d), [])
         paths = [self._make_random_file(where=new_d) for _ in range(3)]
         paths.sort(key=os.path.basename)
@@ -532,12 +526,20 @@ class TestCommon(unittest.TestCase):
         data = text.encode("utf-8")
         with self.fs.open_file(t_path, "wt") as fo:
             chars_written = fo.write(text)
+            with self.assertRaises(AttributeError):
+                fo.write_chunk(u"foo")
         with self.fs.open_file(b_path, "w") as fo:
             bytes_written = fo.write(data)
         self.assertEqual(chars_written, len(text))
         self.assertEqual(bytes_written, len(data))
         with self.fs.open_file(t_path, "rt") as f:
             self.assertEqual(f.read(), text)
+            f.seek(2)
+            self.assertEqual(f.read(), text[2:])
+            self.assertEqual(f.pread(3, 4), text[3:7])
+            with self.assertRaises(AttributeError):
+                f.read_chunk("")
+                f.pread_chunk(1, "")
         with self.fs.open_file(b_path, "r") as f:
             self.assertEqual(f.read(), data)
 
