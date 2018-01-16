@@ -80,14 +80,14 @@ class GenSort(object):
     def generate_record(self):
         # 10 bytes of random
         # 2 constant bytes
-        # 32 bytes of the record number
+        # 32 bytes record number as an ASCII-encoded 32-digit hexadecimal
         # 4 bytes of break data
         # 48 bytes of filler based on low 48 bits of random
         # 4 bytes of break data
         rnd = self.next_random_block()
         key = rnd[:10]
         low = rnd[-12:]
-        row_id = struct.pack("!Q", self.row)
+        row_id = format(self.row, '032x').encode('ascii')
         filler = bytes(sum(map(list, zip(low, low, low, low)), []))
         value = (self.BREAK_BYTES + row_id +
                  self.DATA_HEAD + filler + self.DATA_TAIL)

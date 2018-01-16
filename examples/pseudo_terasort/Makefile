@@ -17,7 +17,8 @@
 # END_COPYRIGHT
 
 PYTHON ?= python
-PY_VER = $(shell $(PYTHON) -c 'import sys; print(sys.version_info[0])')
+NUM_RECORDS ?= 1000000
+NUM_MAPS ?= 2
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
 LOGLEVEL=INFO
 GENRECORDS_INPUT=genrecords_input
@@ -26,7 +27,6 @@ SORTRECORDS_OUTPUT=sortrecords_output
 CHECKRECORDS_OUTPUT=checkrecords_output
 
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
-SUBMIT_CMD = pydoop$(PY_VER) submit
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
@@ -62,11 +62,10 @@ data:
 	-${HDFS_RMR} /user/${USER}/${SORTRECORDS_OUTPUT} || :
 	-${HDFS_RMR} /user/${USER}/${CHECKRECORDS_OUTPUT} || :
 
-
 genrecords: data ${PYINPUTFORMAT_JAR}
-	${PYTHON} genrecords.py  --log-level ${LOGLEVEL}\
-       --libjars pydoop-input-formats.jar\
-       --num-records 1000000\
+	${PYTHON} genrecords.py --log-level ${LOGLEVEL}\
+       --libjars ${PYINPUTFORMAT_JAR}\
+       --num-records ${NUM_RECORDS} --num-maps ${NUM_MAPS}\
        /user/${USER}/${GENRECORDS_INPUT} /user/${USER}/${GENRECORDS_OUTPUT}
 
 sortrecords:
@@ -76,13 +75,10 @@ sortrecords:
 		                       /user/${USER}/${GENRECORDS_OUTPUT}\
                            /user/${USER}/${SORTRECORDS_OUTPUT}
 
-
 checkrecords:
 	${PYTHON} checkrecords.py --log-level ${LOGLEVEL}\
                            /user/${USER}/${SORTRECORDS_OUTPUT}\
 		                       /user/${USER}/${CHECKRECORDS_OUTPUT}
-
-
 
 clean:
 	rm -f ${PYINPUTFORMAT_JAR}
