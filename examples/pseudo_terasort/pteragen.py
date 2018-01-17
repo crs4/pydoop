@@ -29,17 +29,18 @@ The format of the data is:
 
 import struct
 
-import numpy.random as random
+import random
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from ioformats import Writer
-
 
 TERAGEN = "TERAGEN"
 CHECKSUM = "CHECKSUM"
 
 SEED = 423849
 CACHE_SIZE = 16 * 1024
+
+getrandbits = random.getrandbits
 
 
 class GenSort(object):
@@ -52,6 +53,7 @@ class GenSort(object):
 
     def __init__(self, seed, row, cache_size):
         self.cache_size = cache_size
+        self.fmt = '0%dx' % (2 * self.cache_size)
         self.row = row
         self.cache = None
         self.index = 0
@@ -59,20 +61,24 @@ class GenSort(object):
         self.skip_ahead(16 * row)
         random.seed(seed)
 
+    def update_cache(self):
+        r = getrandbits(8 * self.cache_size)
+        self.cache = format(r, self.fmt).encode('ascii')
+
     def skip_ahead(self, skip):
         """\
         Skip ahead skip random bytes
         """
-        cache_size = self.cache_size
-        chunks = skip // cache_size       #
+        chunks = skip // self.cache_size
+        cache_size_bits = 8 * self.cache_size
         for _ in range(chunks):
-            random.bytes(cache_size)
-        self.cache = random.bytes(cache_size).hex().encode()
-        self.index = 2 * (skip - chunks * cache_size)
+            getrandbits(cache_size_bits)
+        self.update_cache()
+        self.index = 2 * (skip - chunks * self.cache_size)
 
     def next_random_block(self):
         if self.index == 2 * self.cache_size:
-            self.cache = random.bytes(self.cache_size).hex().encode()
+            self.update_cache()
             self.index = 0
         s, self.index = self.index, self.index + 32
         return self.cache[s:self.index]
@@ -80,14 +86,14 @@ class GenSort(object):
     def generate_record(self):
         # 10 bytes of random
         # 2 constant bytes
-        # 32 bytes of the record number
+        # 32 bytes record number as an ASCII-encoded 32-digit hexadecimal
         # 4 bytes of break data
         # 48 bytes of filler based on low 48 bits of random
         # 4 bytes of break data
         rnd = self.next_random_block()
         key = rnd[:10]
         low = rnd[-12:]
-        row_id = struct.pack("!Q", self.row)
+        row_id = format(self.row, '032x').encode('ascii')
         filler = bytes(sum(map(list, zip(low, low, low, low)), []))
         value = (self.BREAK_BYTES + row_id +
                  self.DATA_HEAD + filler + self.DATA_TAIL)
