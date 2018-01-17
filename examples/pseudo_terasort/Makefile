@@ -16,6 +16,7 @@
 # 
 # END_COPYRIGHT
 
+USER ?= $(shell whoami)
 PYTHON ?= python
 NUM_RECORDS ?= 1000000
 NUM_MAPS ?= 2
