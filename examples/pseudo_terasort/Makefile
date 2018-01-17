@@ -19,7 +19,9 @@
 USER ?= $(shell whoami)
 PYTHON ?= python
 NUM_RECORDS ?= 1000000
+SAMPLED_RECORDS ?= 10000
 NUM_MAPS ?= 2
+NUM_REDUCERS ?= 2
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
 LOGLEVEL=INFO
 GENRECORDS_INPUT=genrecords_input
@@ -71,14 +73,15 @@ genrecords: data ${PYINPUTFORMAT_JAR}
 
 sortrecords:
 	${PYTHON} sortrecords.py --log-level ${LOGLEVEL}\
-                           --sampled-records 10000\
-                           --num-reducers 8\
+                           --sampled-records ${SAMPLED_RECORDS}\
+                           --num-reducers ${NUM_REDUCERS}\
 		                       /user/${USER}/${GENRECORDS_OUTPUT}\
                            /user/${USER}/${SORTRECORDS_OUTPUT}
 
 checkrecords:
 	${PYTHON} checkrecords.py --log-level ${LOGLEVEL}\
                            /user/${USER}/${SORTRECORDS_OUTPUT}\
+                           --num-reducers ${NUM_REDUCERS}\
 		                       /user/${USER}/${CHECKRECORDS_OUTPUT}
 
 clean:
