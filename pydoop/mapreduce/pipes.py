@@ -23,9 +23,12 @@ import time
 import numbers
 import struct
 import types
+import tempfile
+import cProfile
 
 from copy import deepcopy
 
+import pydoop.hdfs as hdfs
 from pydoop import hadoop_version_info
 from pydoop.utils.serialize import (
     deserialize_text,
@@ -51,7 +54,9 @@ logging.basicConfig()
 LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
 
+PSTATS_DIR = "PYDOOP_PSTATS_DIR"
 DEFAULT_IO_SORT_MB = 100
+
 _PORT_KEYS = frozenset([
     "hadoop.pipes.command.port",  # Hadoop 1
     "mapreduce.pipes.command.port",  # Hadoop 2
@@ -241,6 +246,7 @@ class CombineRunner(api.RecordWriter):
 
 class TaskContext(api.MapContext, api.ReduceContext):
 
+    JOB_OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir"
     TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
     TASK_PARTITION = "mapreduce.task.partition"
 
@@ -412,14 +418,20 @@ class TaskContext(api.MapContext, api.ReduceContext):
         except StopIteration:
             return False
 
+    def get_output_dir(self):
+        return self._job_conf[self.JOB_OUTPUT_DIR]
+
     def get_work_path(self):
         try:
             return self._job_conf[self.TASK_OUTPUT_DIR]
         except KeyError:
             raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
 
+    def get_task_partition(self):
+        return self._job_conf.get_int(self.TASK_PARTITION)
+
     def get_default_work_file(self, extension=""):
-        partition = self._job_conf.get_int(self.TASK_PARTITION)
+        partition = self.get_task_partition()
         if partition is None:
             raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
         base = self._job_conf.get("mapreduce.output.basename", "part")
@@ -593,7 +605,21 @@ def run_task(factory, port=None, istream=None, ostream=None,
                             private_encoding=private_encoding,
                             fast_combiner=fast_combiner)
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
-    stream_runner.run()
+    pstats_dir = os.getenv(PSTATS_DIR)
+    if pstats_dir:
+        hdfs.mkdir(pstats_dir)
+        fd, pstats_fn = tempfile.mkstemp(suffix=".pstats")
+        os.close(fd)
+        cProfile.runctx("stream_runner.run()",
+                        {"stream_runner": stream_runner}, globals(),
+                        filename=pstats_fn)
+        name = '_%s_%05d_%s' % (
+            "r" if context.is_reducer() else "m",
+            context.get_task_partition(), os.path.basename(pstats_fn)
+        )
+        hdfs.put(pstats_fn, hdfs.path.join(pstats_dir, name))
+    else:
+        stream_runner.run()
     context.close()
     connections.close()
     return True
