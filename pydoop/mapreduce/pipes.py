@@ -23,12 +23,9 @@ import time
 import numbers
 import struct
 import types
-import tempfile
-import cProfile
 
 from copy import deepcopy
 
-import pydoop.hdfs as hdfs
 from pydoop import hadoop_version_info
 from pydoop.utils.serialize import (
     deserialize_text,
@@ -55,6 +52,10 @@ LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
 
 PSTATS_DIR = "PYDOOP_PSTATS_DIR"
+if os.getenv(PSTATS_DIR):
+    import tempfile
+    import cProfile
+    import pydoop.hdfs as hdfs
 DEFAULT_IO_SORT_MB = 100
 
 _PORT_KEYS = frozenset([

@@ -110,6 +110,8 @@ class PydoopScript(object):
                           args.kv_separator)]
         args.avro_input = None
         args.avro_output = None
+        args.keep_wd = False
+        args.pstats_dir = None
 
         # despicable hack...
         properties = dict(args.D or [])
