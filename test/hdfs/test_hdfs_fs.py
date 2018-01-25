@@ -192,7 +192,7 @@ class TestHDFS(TestCommon):
             blocksize = 1048576
             kwargs['blocksize'] = blocksize
         N = 4
-        content = "x" * blocksize * N
+        content = b"x" * blocksize * N
         path = self._make_random_file(content=content, **kwargs)
         start = 0
         for i in range(N):

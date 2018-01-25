@@ -321,7 +321,7 @@ class TestHDFS(unittest.TestCase):
             def count(self):
                 return self.counter.count
 
-        some_data = "a" * (5 * 1024 * 1024)  # 5 MB
+        some_data = b"a" * (5 * 1024 * 1024)  # 5 MB
         counter = BusyContext()
 
         ###########################

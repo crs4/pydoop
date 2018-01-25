@@ -341,7 +341,7 @@ class TestStat(unittest.TestCase):
         fn = '/user/%s/%s' % (DEFAULT_USER, bn)
         fs = hdfs.hdfs("default", 0)
         p = "hdfs://%s:%s%s" % (fs.host, fs.port, fn)
-        with fs.open_file(fn, 'w') as fo:
+        with fs.open_file(fn, 'wt') as fo:
             fo.write(make_random_str())
         info = fs.get_path_info(fn)
         fs.close()

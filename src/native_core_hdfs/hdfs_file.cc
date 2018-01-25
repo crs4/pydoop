@@ -93,15 +93,6 @@ static int _ensure_open_for_reading(FileInfo* self) {
     return 1; // True
 }
 
-static int _ensure_open_for_writing(FileInfo* self) {
-    if (!hdfsFileIsOpenForWrite(self->file)) {
-        PyErr_SetString(PyExc_IOError, "File is not opened in WRITE ('w') mode");
-        return 0; // False
-    }
-
-    return 1; // True
-}
-
 static Py_ssize_t _read_into_pybuf(FileInfo *self, char* buf, Py_ssize_t nbytes) {
 
     if (nbytes < 0) {
@@ -352,51 +343,34 @@ PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
 
 
-PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds)
-{
-    PyObject *input, *encoded = NULL, *retval = NULL;
+PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds) {
+    PyObject *input;
     Py_buffer buffer;
 
-    if (!_ensure_open_for_writing(self))
+    if (!hdfsFileIsOpenForWrite(self->file)) {
+        PyErr_SetString(PyExc_IOError, "not writable");
         return NULL;
-
-    if (! PyArg_ParseTuple(args, "O",  &input))
-        return NULL;
-
-    /* If we get a unicode object we serialized it using the
-     * system's default codec.  Any other object we try to access
-     * it directly through a Python buffer.
-     */
-    if (PyUnicode_Check(input)) {
-       encoded = PyUnicode_AsEncodedString(input, PYDOOP_TEXT_ENCODING, NULL);
-       if (!encoded) // error
-           return NULL;
-       input = encoded; // override original input with encoded string
     }
-
+    if (!PyArg_ParseTuple(args, "O",  &input)) {
+        return NULL;
+    }
     if (PyObject_GetBuffer(input, &buffer, PyBUF_SIMPLE) < 0) {
-        PyErr_SetString(PyExc_TypeError,
-                        "Argument is not accessible as a Python buffer");
-    }
-    else {
-        Py_ssize_t written;
-        Py_BEGIN_ALLOW_THREADS;
-            written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
-        Py_END_ALLOW_THREADS;
-        PyBuffer_Release(&buffer);
-        
-
-        if (written >= 0)
-            retval = Py_BuildValue("n", written);
-        else {
-            PyErr_SetFromErrno(PyExc_IOError);
-            retval = NULL;
-        }
+        PyErr_SetString(PyExc_TypeError, "Argument not accessible as a buffer");
+        return NULL;
     }
 
-    Py_XDECREF(encoded);
-    return retval;
+    Py_ssize_t written;
+    Py_BEGIN_ALLOW_THREADS;
+    written = hdfsWrite(self->fs, self->file, buffer.buf, buffer.len);
+    Py_END_ALLOW_THREADS;
+    PyBuffer_Release(&buffer);
+    if (written < 0) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        return NULL;
+    }
+    return Py_BuildValue("n", written);
 }
+
 
 PyObject* FileClass_flush(FileInfo *self){
     int result = hdfsFlush(self->fs, self->file);
