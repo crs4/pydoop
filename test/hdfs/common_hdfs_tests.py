@@ -227,7 +227,10 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             self.assertEqual(f.read(3), content[:3])
             self.assertEqual(f.read(3), content[3:6])
-            self.assertRaises(IOError, f.write, content)
+            if not _is_py3 and not self.fs.host:
+                self.assertRaises(ValueError, f.write, content)
+            else:
+                self.assertRaises(IOError, f.write, content)
 
     def __read_chunk(self, chunk_factory):
         content = utils.make_random_data()
