@@ -17,6 +17,8 @@
 # END_COPYRIGHT
 
 from abc import abstractmethod
+from itertools import groupby
+from operator import itemgetter
 
 from pydoop.utils.py3compat import ABC
 from pydoop.utils.serialize import private_decode
@@ -165,86 +167,27 @@ class UpStreamAdapter(StreamWriter):
         pass
 
 
-class PushBackStream(object):
-
-    def __init__(self, stream):
-        self.stream_iterator = stream.__iter__()
-        self.lifo = []
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.lifo:
-            return self.lifo.pop()
-        return next(self.stream_iterator)
-
-    def next(self):
-        return self.__next__()
-
-    def push_back(self, v):
-        self.lifo.append(v)
+def raw_key_values_stream(stream):
+    key = None
+    for cmd, group in groupby(stream, itemgetter(0)):
+        if cmd == CLOSE:
+            raise StopIteration
+        elif cmd == REDUCE_KEY:
+            key = next(group)[1][0]
+        else:
+            yield key, (_[1][0] for _ in group)
 
 
-class KeyValuesStream(object):
-
-    def __init__(self, stream, private_encoding=True):
-        self.stream = PushBackStream(stream)
-        self.private_encoding = private_encoding
-
-    def __iter__(self):
-        return self.fast_iterator()
-
-    def fast_iterator(self):
-        stream = self.stream
-        private_encoding = self.private_encoding
-        for cmd, args in stream:
-            if cmd == CLOSE:
-                raise StopIteration
-            elif cmd == REDUCE_KEY:
-                values_stream = self.get_value_stream(self.stream)
-                key = private_decode(args[0]) if private_encoding else args[0]
-                yield key, values_stream
-            elif cmd == REDUCE_VALUE:
-                continue
-            else:
-                raise ProtocolError('out of order command: {}'.format(cmd))
-        raise StopIteration
-
-    def next(self):  # FIXME: only for timing comparison purposes
-        for cmd, args in self.stream:
-            if cmd == CLOSE:
-                raise StopIteration
-            elif cmd == REDUCE_KEY:
-                values_stream = self.get_value_stream(self.stream)
-                key = private_decode(
-                    args[0]) if self.private_encoding else args[0]
-                return key, values_stream
-            elif cmd == REDUCE_VALUE:
-                continue
-            else:
-                raise ProtocolError('out of order command: {}'.format(cmd))
-        raise StopIteration
-
-    def __next__(self):
-        return self.next()
-
-    def get_value_stream(self, stream):
-        private_encoding = self.private_encoding
-        for cmd, args in stream:
-            if cmd == CLOSE:
-                stream.push_back((cmd, args))
-                raise StopIteration
-            elif cmd == REDUCE_VALUE:
-                yield private_decode(args[0]) if private_encoding else args[0]
-            else:
-                stream.push_back((cmd, args))
-                raise StopIteration
-        raise StopIteration
+def decoded_key_values_stream(stream):
+    for k, vstream in raw_key_values_stream(stream):
+        yield private_decode(k), (private_decode(_) for _ in vstream)
 
 
 def get_key_values_stream(stream, private_encoding=True):
-    return KeyValuesStream(stream, private_encoding)
+    if private_encoding:
+        return decoded_key_values_stream(stream)
+    else:
+        return raw_key_values_stream(stream)
 
 
 def get_key_value_stream(stream):
