@@ -429,7 +429,8 @@ class TaskContext(api.MapContext, api.ReduceContext):
         )
 
 
-def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
+def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None,
+                        auto_serialize=True):
     """
     Select appropriate connection streams and protocol.
     """
@@ -437,11 +438,14 @@ def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
     cmd_file = cmd_file or get_command_file()
     if port is not None:
         port = int(port)
-        conn = connections.open_network_connections(port)
+        conn = connections.open_network_connections(port, auto_serialize)
     elif cmd_file is not None:
         out_file = cmd_file + '.out'
-        conn = connections.open_playback_connections(cmd_file, out_file)
+        conn = connections.open_playback_connections(
+            cmd_file, out_file, auto_serialize
+        )
     else:
+        # auto_serialize has no effect here. Should we warn the user?
         istream = sys.stdin if istream is None else istream
         ostream = sys.stdout if ostream is None else ostream
         conn = connections.open_file_connections(istream=istream,
@@ -579,7 +583,7 @@ class StreamRunner(object):
 
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=True, context_class=TaskContext,
-             cmd_file=None, fast_combiner=False):
+             cmd_file=None, fast_combiner=False, auto_serialize=True):
     """
     Run the assigned task in the framework.
 
@@ -587,7 +591,8 @@ def run_task(factory, port=None, istream=None, ostream=None,
     :return: :obj:`True` if the task succeeded.
     """
     connections = resolve_connections(
-        port, istream=istream, ostream=ostream, cmd_file=cmd_file
+        port, istream=istream, ostream=ostream, cmd_file=cmd_file,
+        auto_serialize=auto_serialize
     )
     context = context_class(connections.up_link,
                             private_encoding=private_encoding,
