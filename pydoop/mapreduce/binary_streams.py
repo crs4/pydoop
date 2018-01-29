@@ -38,16 +38,13 @@ class BinaryWriter(StreamWriter):
         self.original_stream = stream
 
     def send(self, cmd, *args):
-        self.logger.debug('request to write %r, %r', cmd, args)
         typecodes = RULES[cmd] if cmd != self.SET_JOB_CONF else 's' * len(args)
         args = self.__to_bytes(args, typecodes)
         if cmd == self.SET_JOB_CONF:
             args = (args,)
-        self.logger.debug('writing (%r, %r)', cmd, args)
         self.stream.write((cmd, args))
 
     def __to_bytes(self, args, typecodes):
-        assert len(args) == len(typecodes)
         out_args = []
         for a, t in zip(args, typecodes):
             if t == "s" and not isinstance(a, (bytes, bytearray)):
