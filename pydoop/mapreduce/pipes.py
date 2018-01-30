@@ -37,8 +37,6 @@ from pydoop.utils.serialize import (
     private_encode,
 )
 
-from pydoop.utils.misc import Timer
-
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
 from .binary_streams import BinaryUpStreamAdapter
@@ -229,10 +227,9 @@ class CombineRunner(api.RecordWriter):
         # FIXME: this might break custom Context implementations
         get_input_key = ctx.get_input_key
         ctx.get_input_key = types.MethodType(lambda self: self._key, ctx)
-        with ctx.timer.time_block('spill reduction'):
-            for key, values in iteritems(self.data):
-                ctx._key, ctx._values = key, iter(values)
-                self.reducer.reduce(ctx)
+        for key, values in iteritems(self.data):
+            ctx._key, ctx._values = key, iter(values)
+            self.reducer.reduce(ctx)
         ctx.writer = writer
         ctx.get_input_key = get_input_key
         self.data.clear()
@@ -250,8 +247,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
         """
         def deserialize(*args, **kwargs):
             ret = meth(*args, **kwargs)
-            with self.timer.time_block('deserialization'):
-                return deserializer.deserialize(ret)
+            return deserializer.deserialize(ret)
         return deserialize
 
     def __init__(self, up_link, private_encoding=True, fast_combiner=False):
@@ -274,7 +270,6 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self._progress_float = 0.0
         self._last_progress = 0
         self._registered_counters = []
-        self.timer = Timer(self, 'Pydoop TaskContext')
         # None = unknown (yet), e.g., while setting conf.  In this
         # case, *both* is_mapper() and is_reducer() must return False
         self._is_mapper = None
@@ -558,8 +553,7 @@ class StreamRunner(object):
                 ctx._progress_float = reader.get_progress()
                 LOGGER.debug("Progress updated to %r ", ctx._progress_float)
                 progress_function()
-            with ctx.timer.time_block('map calls'):
-                mapper_map(ctx)
+            mapper_map(ctx)
         mapper.close()
         self.logger.debug('done with run_map')
 
@@ -575,8 +569,7 @@ class StreamRunner(object):
                                            ctx.private_encoding)
         reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
-            with ctx.timer.time_block('reduce calls'):
-                reducer_reduce(ctx)
+            reducer_reduce(ctx)
         reducer.close()
         self.logger.debug('done with run_reduce')
 

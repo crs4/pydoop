@@ -92,16 +92,6 @@ class SleepingMapper(TMapper):
         super(SleepingMapper, self).map(ctx)
 
 
-class SleepingMapperNoTimer(TMapper):
-
-    def __init__(self, ctx):
-        super(SleepingMapperNoTimer, self).__init__(ctx)
-
-    def map(self, ctx):
-        time.sleep(0.001)
-        super(SleepingMapperNoTimer, self).map(ctx)
-
-
 class TMapperPE(Mapper):
 
     def __init__(self, ctx):
@@ -269,10 +259,8 @@ class TestFramework(WDTestCase):
         with open(fname, 'w') as o:
             run_task(factory, istream=self.stream1, ostream=o)
         exp_count = {
-            'registerCounter': 1,
             'done': 1,
             'progress': 1,
-            'incrementCounter': 3,
             'output': sum(len(_[2].split())
                           for _ in STREAM_1 if _[0] is TextWriter.MAP_ITEM)
         }
@@ -366,22 +354,11 @@ class TestFramework(WDTestCase):
                      private_encoding=False)
         self.check_result('foo_map_combiner_reduce.out', STREAM_2, 2)
 
-    def test_instrumentation(self):
-        factory = TFactory(mapper=SleepingMapperNoTimer)
-        exp_count = {
-            'registerCounter': 1,
-            'incrementCounter':
-            Counter([_[0] for _ in STREAM_1])[TextWriter.MAP_ITEM]
-        }
-        with self._mkf('foo_map_only.out') as o:
-            run_task(factory, istream=self.stream1, ostream=o)
-            self.check_counts(o.name, exp_count)
-
     def test_timer(self):
         factory = TFactory(mapper=SleepingMapper)
         exp_count = {
-            'registerCounter': 2,
-            'incrementCounter': 2 * Counter(
+            'registerCounter': 1,
+            'incrementCounter': Counter(
                 [_[0] for _ in STREAM_1]
             )[TextWriter.MAP_ITEM]
         }
@@ -391,9 +368,13 @@ class TestFramework(WDTestCase):
 
     def check_counts(self, fname, exp_count):
         count = count_outputs(fname)
-        for k, v in iteritems(exp_count):
-            self.assertTrue(k in count)
-            self.assertEqual(count[k], v)
+        try:
+            for k, v in iteritems(exp_count):
+                self.assertTrue(k in count)
+                self.assertEqual(count[k], v)
+        except AssertionError:
+            print(count)
+            raise
 
     def check_result(self, fname, ref_data, factor=1):
         with self._mkf(fname, mode='r') as i:
@@ -424,7 +405,6 @@ def suite():
     suite_.addTest(TestFramework('test_map_reduce_comb_with_private_encoding'))
     suite_.addTest(TestFramework('test_map_reduce_comb_with_side_effect'))
     suite_.addTest(TestFramework('test_timer'))
-    suite_.addTest(TestFramework('test_instrumentation'))
     return suite_
 
 
