@@ -24,9 +24,33 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
+OPTS=(
+    "-D" "mapreduce.task.timeout=10000"
+    "-D" "mapred.map.tasks=2"
+    "--python-program" "${PYTHON}"
+)
+
+while getopts ":p:" opt; do
+    case ${opt} in
+    p )
+	OPTS+=( "--pstats-dir" "${OPTARG}" )
+	OPTS+=( "--pstats-fmt" "_test_%s_%05d_%s" )
+	;;
+    \? )
+	echo "Invalid option: -${OPTARG}" >&2
+	exit 1
+	;;
+    : )
+	echo "Option -${OPTARG} requires an argument" >&2
+	exit 1
+	;;
+    esac
+done
+shift $((${OPTIND} - 1))
+
 nargs=1
 if [ $# -ne ${nargs} ]; then
-    die "Usage: $0 module_name"
+    die "Usage: $0 [-p PSTATS_DIR] MODULE_NAME"
 fi
 MODULE=$1
 
@@ -35,12 +59,7 @@ INPUT=${MODULE}_input
 OUTPUT=${MODULE}_output
 RESULTS=results.txt
 
-OPTS=(
-    "-D" "mapreduce.task.timeout=10000"
-    "-D" "mapred.map.tasks=2"
-    "--python-program" "${PYTHON}"
-    "--job-name" "${JOBNAME}"
-)
+OPTS+=( "--job-name" "${JOBNAME}" )
 case ${MODULE} in
     wordcount_minimal )
 	DATA="${this_dir}"/../input/alice.txt

@@ -33,6 +33,7 @@ import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
 import pydoop.utils as utils
 import pydoop.utils.conversion_tables as conv_tables
+from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT
 
 from .argparse_types import kv_pair, a_file_that_can_be_read
 from .argparse_types import a_comma_separated_list, a_hdfs_file
@@ -219,6 +220,11 @@ class PydoopSubmitter(object):
         for var, value in self.requested_env.items():
             env[var] = value
 
+        if self.args.pstats_dir:
+            env[PSTATS_DIR] = self.args.pstats_dir
+            if self.args.pstats_fmt:
+                env[PSTATS_FMT] = self.args.pstats_fmt
+
         executable = self.args.python_program
         if self.args.python_zip:
             env['PYTHONPATH'] = ':'.join([
@@ -374,7 +380,8 @@ class PydoopSubmitter(object):
                      logger=self.logger, keep_streams=False)
             self.logger.info("Done")
         finally:
-            self.__clean_wd()
+            if not self.args.keep_wd:
+                self.__clean_wd()
 
     def fake_run_class(self, *args, **kwargs):
         kwargs['logger'].info("Fake run class")
@@ -534,6 +541,17 @@ def add_parser_arguments(parser):
     parser.add_argument(
         '--avro-output', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
         help="Avro output mode (key, value or both)",
+    )
+    parser.add_argument(
+        '--pstats-dir', metavar="HDFS_DIR", type=str,
+        help="Profile each task and store stats in this dir"
+    )
+    parser.add_argument(
+        '--pstats-fmt', metavar="STRING", type=str,
+        help="pstats filename pattern (expert use only)"
+    )
+    parser.add_argument(
+        '--keep-wd', action='store_true', help="Don't remove the work dir"
     )
 
 
