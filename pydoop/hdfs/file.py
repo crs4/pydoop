@@ -304,8 +304,6 @@ class FileIO(object):
         :return: the number of bytes written
         """
         _complain_ifclosed(self.closed)
-        if not self.writable():
-            raise io.UnsupportedOperation("write")
         if self.__encoding:
             self.f.write(data.encode(self.__encoding, self.__errors))
             return len(data)
