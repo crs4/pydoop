@@ -44,11 +44,12 @@ class Connections(object):
         self.up_link.close()
 
 
-def open_playback_connections(cmd_file, out_file):
+def open_playback_connections(cmd_file, out_file, auto_serialize=True):
     in_stream = open(cmd_file, 'rb')
     out_stream = open(out_file, 'wb')
-    return Connections(BinaryDownStreamAdapter(in_stream),
-                       BinaryUpStreamAdapter(out_stream))
+    cmd_stream = BinaryDownStreamAdapter(in_stream)
+    up_link = BinaryUpStreamAdapter(out_stream, auto_serialize=auto_serialize)
+    return Connections(cmd_stream, up_link)
 
 
 def open_file_connections(istream=sys.stdin, ostream=sys.stdout):
@@ -69,10 +70,11 @@ class NetworkConnections(Connections):
         self.socket.close()
 
 
-def open_network_connections(port):
+def open_network_connections(port, auto_serialize=True):
     s = socket.socket()
     s.connect(('localhost', port))
     in_stream = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
     out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
-    return NetworkConnections(BinaryDownStreamAdapter(in_stream),
-                              BinaryUpStreamAdapter(out_stream), s, port)
+    cmd_stream = BinaryDownStreamAdapter(in_stream)
+    up_link = BinaryUpStreamAdapter(out_stream, auto_serialize=auto_serialize)
+    return NetworkConnections(cmd_stream, up_link, s, port)

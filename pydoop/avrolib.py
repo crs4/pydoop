@@ -150,8 +150,7 @@ class AvroContext(pp.TaskContext):
             for mode, record in iteritems(out_kv):
                 serializer = self.__serializers.get(mode)
                 if serializer is not None:
-                    with self.timer.time_block('avro serialization'):
-                        out_kv[mode] = serializer.serialize(record)
+                    out_kv[mode] = serializer.serialize(record)
         return out_kv['K'], out_kv['V']
 
     # move to super?

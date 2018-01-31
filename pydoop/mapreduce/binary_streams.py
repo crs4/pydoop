@@ -30,24 +30,23 @@ LOGGER.setLevel(logging.CRITICAL)
 
 class BinaryWriter(StreamWriter):
 
-    def __init__(self, stream):
+    def __init__(self, stream, auto_serialize=True):
         super(BinaryWriter, self).__init__(CommandWriter(stream))
+        self.auto_serialize = auto_serialize
         self.logger = LOGGER.getChild('BinaryWriter')
         self.logger.debug('initialize on stream: %s', stream)
         # we need to be sure that stream will not be gc
         self.original_stream = stream
 
     def send(self, cmd, *args):
-        self.logger.debug('request to write %r, %r', cmd, args)
         typecodes = RULES[cmd] if cmd != self.SET_JOB_CONF else 's' * len(args)
-        args = self.__to_bytes(args, typecodes)
+        if self.auto_serialize:
+            args = self.__to_bytes(args, typecodes)
         if cmd == self.SET_JOB_CONF:
             args = (args,)
-        self.logger.debug('writing (%r, %r)', cmd, args)
         self.stream.write((cmd, args))
 
     def __to_bytes(self, args, typecodes):
-        assert len(args) == len(typecodes)
         out_args = []
         for a, t in zip(args, typecodes):
             if t == "s" and not isinstance(a, (bytes, bytearray)):
@@ -88,8 +87,10 @@ class BinaryDownStreamAdapter(BinaryReader, DownStreamAdapter):
 
 class BinaryUpStreamAdapter(BinaryWriter, UpStreamAdapter):
 
-    def __init__(self, stream):
-        super(BinaryUpStreamAdapter, self).__init__(stream)
+    def __init__(self, stream, auto_serialize=True):
+        super(BinaryUpStreamAdapter, self).__init__(
+            stream, auto_serialize=auto_serialize
+        )
         self.logger = LOGGER.getChild('BinaryUpStreamAdapter')
         self.logger.debug('initialize on stream: %s', stream)
 
