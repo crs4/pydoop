@@ -34,6 +34,7 @@ while getopts ":p:" opt; do
     case ${opt} in
     p )
 	OPTS+=( "--pstats-dir" "${OPTARG}" )
+	OPTS+=( "--pstats-fmt" "_test_%s_%05d_%s" )
 	;;
     \? )
 	echo "Invalid option: -${OPTARG}" >&2

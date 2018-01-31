@@ -52,6 +52,8 @@ LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
 
 PSTATS_DIR = "PYDOOP_PSTATS_DIR"
+PSTATS_FMT = "PYDOOP_PSTATS_FMT"
+DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
 if os.getenv(PSTATS_DIR):
     import tempfile
     import cProfile
@@ -608,13 +610,14 @@ def run_task(factory, port=None, istream=None, ostream=None,
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
     pstats_dir = os.getenv(PSTATS_DIR)
     if pstats_dir:
+        pstats_fmt = os.getenv(PSTATS_FMT, DEFAULT_PSTATS_FMT)
         hdfs.mkdir(pstats_dir)
         fd, pstats_fn = tempfile.mkstemp(suffix=".pstats")
         os.close(fd)
         cProfile.runctx("stream_runner.run()",
                         {"stream_runner": stream_runner}, globals(),
                         filename=pstats_fn)
-        name = '_%s_%05d_%s' % (
+        name = pstats_fmt % (
             "r" if context.is_reducer() else "m",
             context.get_task_partition(), os.path.basename(pstats_fn)
         )

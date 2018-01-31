@@ -112,6 +112,7 @@ class PydoopScript(object):
         args.avro_output = None
         args.keep_wd = False
         args.pstats_dir = None
+        args.pstats_fmt = None
 
         # despicable hack...
         properties = dict(args.D or [])
