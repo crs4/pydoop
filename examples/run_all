@@ -18,6 +18,10 @@
 #
 # END_COPYRIGHT
 
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/config.sh"
+
 trap exit ERR
 
 examples=(
