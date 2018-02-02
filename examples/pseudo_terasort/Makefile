@@ -23,11 +23,11 @@ SAMPLED_RECORDS ?= 10000
 NUM_MAPS ?= 2
 NUM_REDUCERS ?= 2
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
-LOGLEVEL=INFO
-GENRECORDS_INPUT=genrecords_input
-GENRECORDS_OUTPUT=genrecords_output
-SORTRECORDS_OUTPUT=sortrecords_output
-CHECKRECORDS_OUTPUT=checkrecords_output
+LOGLEVEL ?= INFO
+GENRECORDS_INPUT ?= genrecords_input
+GENRECORDS_OUTPUT ?= genrecords_output
+SORTRECORDS_OUTPUT ?= sortrecords_output
+CHECKRECORDS_OUTPUT ?= checkrecords_output
 
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
 

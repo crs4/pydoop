@@ -119,4 +119,4 @@ factory = pp.Factory(mapper_class=Mapper, record_writer_class=Writer)
 
 
 def __main__():
-    pp.run_task(factory)
+    pp.run_task(factory, auto_serialize=False)

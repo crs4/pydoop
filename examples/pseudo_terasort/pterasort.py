@@ -138,4 +138,4 @@ factory = pp.Factory(
 
 
 def __main__():
-    pp.run_task(factory, private_encoding=False)
+    pp.run_task(factory, private_encoding=False, auto_serialize=False)
