@@ -23,6 +23,7 @@ trap exit ERR
 examples=(
     hdfs
     input_format
+    pseudo_terasort
     pydoop_script
     pydoop_submit
     self_contained
@@ -33,6 +34,7 @@ examples=(
 some_failed=0
 
 for e in ${examples[@]}; do
+    [ ${e} == pseudo_terasort ] && (( ${PY_VER} != 3 )) && continue
     pushd ${e}
     echo -ne "\n\n *** RUNNING ${e} EXAMPLE(S) ***\n\n"
     ./run
