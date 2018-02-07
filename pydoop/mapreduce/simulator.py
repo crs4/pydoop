@@ -21,12 +21,13 @@ This module provides basic, stand-alone Hadoop simulators for
 debugging support.
 """
 
+import sys
 import threading
 import os
 import tempfile
 import uuid
 import logging
-from pydoop.utils.py3compat import StringIO, iteritems, socketserver
+from pydoop.utils.py3compat import StringIO, iteritems, socketserver, unicode
 
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
@@ -34,6 +35,7 @@ LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
 import pydoop
 from pydoop.utils.serialize import serialize_long
+from pydoop.app.submit import AVRO_IO_CHOICES
 
 from .pipes import TaskContext, StreamRunner
 from .api import RecordReader, PydoopError
@@ -64,10 +66,9 @@ AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 import json
 
 try:
-    from avro.datafile import DataFileReader, DataFileWriter
+    from avro.datafile import DataFileReader, DataFileWriter, SCHEMA_KEY
     from avro.io import DatumReader, DatumWriter
-    from pydoop.avrolib import AvroSerializer, AvroDeserializer, AvroContext
-    import avro.schema
+    import pydoop.avrolib as avrolib
 
     def get_avro_reader(fp):
         try:
@@ -95,7 +96,14 @@ class TrivialRecordWriter(UpStreamAdapter):
         self.simulator = simulator
 
     def output(self, key, value):
-        self.stream.write(b'%s\t%s\n' % (key, value))
+        out_args = []
+        for a in key, value:
+            if not isinstance(a, (bytes, bytearray)):
+                if not isinstance(a, unicode):
+                    a = unicode(a)
+                a = a.encode('utf-8')
+            out_args.append(a)
+        self.stream.write(b'%s\t%s\n' % tuple(out_args))
 
     def send(self, cmd, *vals):
         if cmd == self.OUTPUT:
@@ -127,28 +135,29 @@ def reader_iterator(max=10):
 
 
 class AvroRecordWriter(TrivialRecordWriter):
+
     def __init__(self, simulator, stream):
         super(AvroRecordWriter, self).__init__(simulator, stream)
 
         self.deserializers = {}
         schema = None
         if self.simulator.avro_output_key_schema:
-            self.deserializers['k'] = AvroDeserializer(
+            self.deserializers['K'] = avrolib.AvroDeserializer(
                 self.simulator.avro_output_key_schema
             )
-            schema = avro.schema.parse(self.simulator.avro_output_key_schema)
+            schema = avrolib.parse(self.simulator.avro_output_key_schema)
 
         if self.simulator.avro_output_value_schema:
-            self.deserializers['v'] = AvroDeserializer(
+            self.deserializers['V'] = avrolib.AvroDeserializer(
                 self.simulator.avro_output_value_schema
             )
-            schema = avro.schema.parse(self.simulator.avro_output_value_schema)
+            schema = avrolib.parse(self.simulator.avro_output_value_schema)
 
-        if self.simulator.avro_output == 'kv':
-            schema_k_parsed = avro.schema.parse(
+        if self.simulator.avro_output == 'KV':
+            schema_k_parsed = avrolib.parse(
                 self.simulator.avro_output_key_schema
             )
-            schema_v_parsed = avro.schema.parse(
+            schema_v_parsed = avrolib.parse(
                 self.simulator.avro_output_value_schema
             )
             schema_k = json.loads(self.simulator.avro_output_key_schema)
@@ -167,7 +176,7 @@ class AvroRecordWriter(TrivialRecordWriter):
                     {'name': 'value', 'type': vtype}
                 ]
             }
-            schema = avro.schema.parse(json.dumps(schema))
+            schema = avrolib.parse(json.dumps(schema))
 
         self.writer = DataFileWriter(self.stream, DatumWriter(), schema)
 
@@ -177,14 +186,14 @@ class AvroRecordWriter(TrivialRecordWriter):
         super(AvroRecordWriter, self).send(cmd, *vals)
 
     def output(self, key, value):
-        if self.simulator.avro_output == 'k':
-            obj_to_append = self.deserializers['k'].deserialize(key)
-        elif self.simulator.avro_output == 'v':
-            obj_to_append = self.deserializers['v'].deserialize(value)
+        if self.simulator.avro_output == 'K':
+            obj_to_append = self.deserializers['K'].deserialize(key)
+        elif self.simulator.avro_output == 'V':
+            obj_to_append = self.deserializers['V'].deserialize(value)
         else:
             obj_to_append = {
-                'key': self.deserializers['k'].deserialize(key),
-                'value': self.deserializers['v'].deserialize(value)
+                'key': self.deserializers['K'].deserialize(key),
+                'value': self.deserializers['V'].deserialize(value)
             }
         self.writer.append(obj_to_append)
 
@@ -409,25 +418,24 @@ class HadoopSimulator(object):
         self.status = 'Undefined'
         self.phase = 'Undefined'
         self.logger.debug('initialized')
-        if avro_input or avro_output:
-            avail_value = {'k', 'v', 'kv', None}
-            if {avro_input, avro_output} | avail_value > avail_value:
-                raise ValueError(
-                    'Invalid values for avro_input and/or avro_output. '
-                    'Valid ones: %s, found %s %s' %
-                    (avail_value, avro_input, avro_output)
-                )
-
+        avro_io = avro_input or avro_output
+        if avro_input:
+            if avro_input not in AVRO_IO_CHOICES:
+                raise ValueError('invalid avro input mode: %s' % avro_input)
+            avro_input = avro_input.upper()
+        if avro_output:
+            if avro_output not in AVRO_IO_CHOICES:
+                raise ValueError('invalid avro output mode: %s' % avro_output)
+            avro_output = avro_output.upper()
+            if avro_output in {'K', 'KV'} and not avro_output_key_schema:
+                raise ValueError('Missing avro output key schema')
+            if avro_output in {'V', 'KV'} and not avro_output_value_schema:
+                raise ValueError('Missing avro output value schema')
+        if avro_io:
             if not AVRO_INSTALLED:
                 raise RuntimeError('avro is not installed')
-            if not avro_output_key_schema and avro_output in ['k', 'kv']:
-                raise ValueError('Missing avro output key schema')
-            if not avro_output_value_schema and avro_output in ['v', 'kv']:
-                raise ValueError('Missing avro output value schema')
-
             if context_cls is None:
-                context_cls = AvroContext
-
+                context_cls = avrolib.AvroContext
         self.context_cls = context_cls or TaskContext
         self.avro_input = avro_input
         self.avro_output = avro_output
@@ -485,11 +493,10 @@ class HadoopSimulator(object):
             stream.send(stream.AUTHENTICATION_REQ, digest, challenge)
 
     def write_header_down_stream(self, down_stream, authorization, job_conf):
+        out_jc = sum([[k, v] for k, v in iteritems(job_conf)], [])
         self.write_authorization(down_stream, authorization)
         down_stream.send(down_stream.START_MESSAGE, 0)
-        down_stream.send(down_stream.SET_JOB_CONF,
-                         *sum([[k, v] for k, v in iteritems(job_conf)],
-                              []))
+        down_stream.send(down_stream.SET_JOB_CONF, *out_jc)
 
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               authorization=None, input_split=''):
@@ -514,36 +521,30 @@ class HadoopSimulator(object):
         if piped_input:
             down_stream.send(down_stream.SET_INPUT_TYPES,
                              input_key_type, input_value_type)
-            if AVRO_INPUT in job_conf:
+            if self.avro_input:
                 serializers = defaultdict(lambda: lambda r: '')
-                avro_input = job_conf[AVRO_INPUT].upper()
                 reader = get_avro_reader(file_in)
-
-                if avro_input == 'K' or avro_input == 'KV':
-                    serializer = AvroSerializer(
+                if self.avro_input == 'K' or self.avro_input == 'KV':
+                    serializer = avrolib.AvroSerializer(
                         job_conf.get(AVRO_KEY_INPUT_SCHEMA)
                     )
                     serializers['K'] = serializer.serialize
-
-                if avro_input == 'V' or avro_input == 'KV':
-                    serializer = AvroSerializer(
+                if self.avro_input == 'V' or self.avro_input == 'KV':
+                    serializer = avrolib.AvroSerializer(
                         job_conf.get(AVRO_VALUE_INPUT_SCHEMA)
                     )
                     serializers['V'] = serializer.serialize
-
                 for record in reader:
-                    if avro_input == 'KV':
+                    if self.avro_input == 'KV':
                         record_k = record['key']
                         record_v = record['value']
                     else:
                         record_v = record_k = record
-
                     down_stream.send(
                         down_stream.MAP_ITEM,
                         serializers['K'](record_k),
                         serializers['V'](record_v),
                     )
-
             else:
                 pos = 0
                 for l in file_in:
@@ -582,16 +583,18 @@ class HadoopSimulator(object):
         return f
 
     def _get_jc_for_avro_input(self, file_in, job_conf):
-
         jc = dict(job_conf)
         if self.avro_input:
             jc[AVRO_INPUT] = self.avro_input
             reader = DataFileReader(file_in, DatumReader())
-            schema = reader.get_meta('avro.schema')
+            if sys.version_info[0] == 3:
+                schema = reader.GetMeta(SCHEMA_KEY)
+            else:
+                schema = reader.get_meta(SCHEMA_KEY)
             file_in.seek(0)
-            if self.avro_input == 'v':
+            if self.avro_input == 'V':
                 jc[AVRO_VALUE_INPUT_SCHEMA] = schema
-            elif self.avro_input == 'k':
+            elif self.avro_input == 'K':
                 jc[AVRO_KEY_INPUT_SCHEMA] = schema
             else:
                 schema_obj = json.loads(schema)
@@ -602,22 +605,20 @@ class HadoopSimulator(object):
                         value_schema = field['type']
                 jc[AVRO_KEY_INPUT_SCHEMA] = json.dumps(key_schema)
                 jc[AVRO_VALUE_INPUT_SCHEMA] = json.dumps(value_schema)
-
         return jc
 
     def _get_jc_for_avro_output(self, job_conf):
         jc = dict(job_conf)
         if self.avro_output:
-            jc[AVRO_OUTPUT] = self.avro_input
-            if self.avro_output == 'v':
+            jc[AVRO_OUTPUT] = self.avro_output
+            if self.avro_output == 'V':
                 jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_value_schema
-            elif self.avro_output == 'k':
+            elif self.avro_output == 'K':
                 jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_key_schema
 
             else:
                 jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_key_schema
                 jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_value_schema
-
         return jc
 
 

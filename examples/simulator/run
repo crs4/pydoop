@@ -7,10 +7,26 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
 if [ -n "${DEBUG:-}" ]; then
-    # OPTS="--log-level=DEBUG"
-    OPTS=""  # simulator code is currently too verbose for Travis
+    # log_level=DEBUG
+    LOG_LEVEL=INFO  # simulator code is currently too verbose for Travis
 else
-    OPTS=""
+    LOG_LEVEL=INFO
 fi
 
-${PYTHON} run.py ${OPTS}
+for wc in full minimal; do
+    for sim in local network; do
+	${PYTHON} run.py --log-level ${LOG_LEVEL} --wc=${wc} --sim=${sim}
+    done
+done
+
+for avro_in in k v kv; do
+    ${PYTHON} run.py --log-level ${LOG_LEVEL} --sim=local --avro-in ${avro_in}
+    for avro_out in k v kv; do
+	${PYTHON} run.py --log-level ${LOG_LEVEL} --sim=local --avro-in ${avro_in} --avro-out ${avro_out}
+    done
+done
+
+for avro_in in k v kv; do
+    ${PYTHON} run.py --log-level ${LOG_LEVEL} --sim=network --avro-in ${avro_in}
+    ${PYTHON} run.py --log-level ${LOG_LEVEL} --sim=network --avro-in ${avro_in} --avro-out ${avro_in}
+done

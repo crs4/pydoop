@@ -343,7 +343,8 @@ class TaskContext(api.MapContext, api.ReduceContext):
         Set up auto-deserialization of input key/values
         """
         # NOTE: assuming up link is binary => down link is binary
-        if isinstance(self.up_link, BinaryUpStreamAdapter):
+        # the dict check is for the simulator
+        if isinstance(self.up_link, (BinaryUpStreamAdapter, dict)):
             if not _INPUT_FORMAT_KEYS.intersection(self._job_conf):
                 self.get_input_key = self.deserializing(
                     self.get_input_key, LongWritableDeserializer()

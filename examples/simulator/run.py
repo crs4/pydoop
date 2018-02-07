@@ -32,15 +32,23 @@ import shutil
 import tempfile
 import argparse
 import sys
+import stat
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(THIS_DIR, "data")
 EXAMPLES_DIR = os.path.dirname(THIS_DIR)
 WD = tempfile.mkdtemp(prefix="pydoop_")
+
+USERS_CSV_FN = os.path.join(DATA_DIR, "users.csv")
+AVRO_FN = os.path.join(DATA_DIR, "users.avro")
+USERS_PETS_FN = os.path.join(DATA_DIR, "users_pets.avro")
 
 WC_DIR = os.path.join(EXAMPLES_DIR, 'wordcount', 'bin')
 if WC_DIR not in sys.path:
     sys.path.insert(0, WC_DIR)
 AVRO_DIR = os.path.join(EXAMPLES_DIR, 'avro')
+with open(os.path.join(AVRO_DIR, 'schemas', 'stats.avsc')) as f:
+    STATS_SCHEMA_STR = f.read()
 AVRO_PY_DIR = os.path.join(AVRO_DIR, 'py')
 if AVRO_PY_DIR not in sys.path:
     sys.path.insert(0, AVRO_PY_DIR)
@@ -57,13 +65,36 @@ from wordcount_minimal import FACTORY as factory_minimal
 from wordcount_full import FACTORY as factory_full
 import avro_base
 import check_results as avro_check_results
-import create_input
-import write_avro
 import avro_container_dump_results
 
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "FATAL"]
+WC_TYPES = 'full', 'minimal'
+SIMS = 'local', 'network'
+AVRO_MODES = 'k', 'v', 'kv'
 DATA_OUT = '/tmp/pydoop-test-avro_out'
-STATS_SCHEMA = os.path.join(AVRO_DIR, 'schemas', 'stats.avsc')
+
+
+AVRO_MAPPERS = {
+    'k': avro_base.AvroKeyColorPick,
+    'v': avro_base.AvroValueColorPick,
+    'kv': avro_base.AvroKeyValueColorPick,
+}
+
+AVRO_REDUCERS = {
+    'k': avro_base.AvroKeyColorCount,
+    'v': avro_base.AvroValueColorCount,
+    'kv': avro_base.AvroKeyValueColorCount,
+    None: avro_base.NoAvroColorCount,
+}
+
+AVRO_APPS = {
+    ('k', None): 'avro_key_in.py',
+    ('v', None): 'avro_value_in.py',
+    ('kv', None): 'avro_key_value_in.py',
+    ('k', 'k'): 'avro_key_in_out.py',
+    ('v', 'v'): 'avro_value_in_out.py',
+    ('kv', 'kv'): 'avro_key_value_in_out.py',
+}
 
 
 def cp_script(script):
@@ -133,7 +164,7 @@ def run_local_minimal(logger):
     hs = HadoopSimulatorLocal(factory=factory_minimal, logger=logger,
                               loglevel=logger.level)
     data_in, data_out, conf, input_split, output_dir = create_configuration()
-    hs.run(open(data_in), open(data_out, 'w'), conf)
+    hs.run(open(data_in), open(data_out, 'wb'), conf)
     dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
@@ -145,7 +176,7 @@ def run_local_full(logger):
                                loglevel=logger.level)
     hsl.run(None, None, conf, input_split=input_split, num_reducers=1)
     data_out = os.path.join(output_dir,
-                            'part-%05d' % int(conf["mapred.task.partition"]))
+                            'part-r-%05d' % int(conf["mapred.task.partition"]))
     dump_counters(hsl, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
@@ -158,77 +189,63 @@ def run_network_full(logger):
                                 loglevel=logger.level)
     hs.run(None, None, conf, input_split=input_split)
     data_out = os.path.join(output_dir,
-                            'part-%05d' % int(conf["mapred.task.partition"]))
+                            'part-r-%05d' % int(conf["mapred.task.partition"]))
     dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
 
 
-def prepare_avro_data(csv_fn, avro_fn, schema_fn):
-    create_input.main(20, csv_fn)
-    write_avro.main(schema_fn, csv_fn, avro_fn)
-
-
-def run_local_avro(
-        mapper,
-        reducer,
-        logger,
-        file_in,
-        data_in,
-        avro_input=None,
-        avro_output=None,
-        schema_k_out=None,
-        schema_v_out=None
-):
+def run_local_avro(logger, avro_in='v', avro_out=None):
+    mapper, reducer = AVRO_MAPPERS[avro_in], AVRO_REDUCERS[avro_out]
+    schema_k_out = STATS_SCHEMA_STR if avro_out in {'k', 'kv'} else None
+    schema_v_out = STATS_SCHEMA_STR if avro_out in {'v', 'kv'} else None
+    file_in = USERS_PETS_FN if avro_in == 'kv' else AVRO_FN
     factory = pp.Factory(mapper_class=mapper, reducer_class=reducer)
-    hsl = HadoopSimulatorLocal(
-        factory,
-        logger,
-        logging.INFO,
-        AvroContext,
-        avro_input,
-        avro_output,
-        schema_k_out,
-        schema_v_out
+    simulator = HadoopSimulatorLocal(
+        factory, logger, logging.INFO, AvroContext,
+        avro_in, avro_out, schema_k_out, schema_v_out
     )
-    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
-    dump_counters(hsl, logger)
-    if avro_output:
+    with open(file_in, 'rb') as fin, open(DATA_OUT, 'wb') as fout:
+        simulator.run(fin, fout, {}, num_reducers=1)
+    dump_counters(simulator, logger)
+    if avro_out:
         data_out_des = DATA_OUT + '-des'
-        avro_container_dump_results.main(DATA_OUT, data_out_des, avro_output)
-        avro_check_results.main(data_in, data_out_des)
+        avro_container_dump_results.main(DATA_OUT, data_out_des, avro_out)
+        avro_check_results.main(USERS_CSV_FN, data_out_des)
     else:
-        avro_check_results.main(data_in, DATA_OUT)
+        avro_check_results.main(USERS_CSV_FN, DATA_OUT)
 
 
-def run_network_avro(
-        program_name,
-        logger,
-        file_in,
-        data_in,
-        avro_input=None,
-        avro_output=None,
-        schema_k_out=None,
-        schema_v_out=None
-):
-    hsl = HadoopSimulatorNetwork(
-        program_name,
-        logger,
-        logging.INFO,
-        context_cls=AvroContext,
-        avro_input=avro_input,
-        avro_output=avro_output,
+def run_network_avro(logger, avro_in='v', avro_out=None):
+    try:
+        program_name = AVRO_APPS[(avro_in, avro_out)]
+    except KeyError:
+        raise ValueError(
+            "not supported: avro_in=%s, avro_out=%s" % (avro_in, avro_out)
+        )
+    else:
+        program = os.path.join(WD, program_name)
+        for name in program_name, "avro_base.py":
+            shutil.copy(os.path.join(AVRO_PY_DIR, name), WD)
+        os.chmod(program, os.stat(program).st_mode | stat.S_IEXEC)
+    file_in = USERS_PETS_FN if avro_in == 'kv' else AVRO_FN
+    schema_k_out = STATS_SCHEMA_STR if avro_out in {'k', 'kv'} else None
+    schema_v_out = STATS_SCHEMA_STR if avro_out in {'v', 'kv'} else None
+    simulator = HadoopSimulatorNetwork(
+        program, logger, logging.INFO, context_cls=AvroContext,
+        avro_input=avro_in, avro_output=avro_out,
         avro_output_key_schema=schema_k_out,
         avro_output_value_schema=schema_v_out
     )
-    hsl.run(open(file_in), open(DATA_OUT, 'w'), {}, num_reducers=1)
-    dump_counters(hsl, logger)
-    if avro_output:
+    with open(file_in, 'rb') as fin, open(DATA_OUT, 'wb') as fout:
+        simulator.run(fin, fout, {}, num_reducers=1)
+    dump_counters(simulator, logger)
+    if avro_out:
         data_out_des = DATA_OUT + '-des'
-        avro_container_dump_results.main(DATA_OUT, data_out_des, avro_output)
-        avro_check_results.main(data_in, data_out_des)
+        avro_container_dump_results.main(DATA_OUT, data_out_des, avro_out)
+        avro_check_results.main(USERS_CSV_FN, data_out_des)
     else:
-        avro_check_results.main(data_in, DATA_OUT)
+        avro_check_results.main(USERS_CSV_FN, DATA_OUT)
 
 
 def make_parser():
@@ -237,88 +254,33 @@ def make_parser():
         '--log-level', metavar="LEVEL", default="INFO", choices=LOG_LEVELS,
         help="one of: %s" % "; ".join(LOG_LEVELS)
     )
+    parser.add_argument('--wc', metavar='|'.join(WC_TYPES), choices=WC_TYPES)
+    parser.add_argument('--sim', metavar='|'.join(SIMS), choices=SIMS)
+    parser.add_argument('--avro-in', metavar='|'.join(AVRO_MODES),
+                        choices=AVRO_MODES)
+    parser.add_argument('--avro-out', metavar='|'.join(AVRO_MODES),
+                        choices=AVRO_MODES)
     return parser
 
 
 def main(argv):
     parser = make_parser()
     args = parser.parse_args(argv)
+    if args.avro_out and not args.avro_in:
+        parser.error("avro_in must be set if avro_out is")
+    if args.wc and args.avro_in:
+        parser.error("specify either wc or an avro mode")
     logger = logging.getLogger("main")
     logger.setLevel(getattr(logging, args.log_level))
-    logger.info("*** word count full using HadoopSimulatorNetwork ***")
-    run_network_full(logger)
-    logger.info("*** word count minimal using HadoopSimulatorNetwork ***")
-    run_network_minimal(logger)
-    return
-    logger.info("*** word count minimal using HadoopSimulatorLocal ***")
-    run_local_minimal(logger)
-    logger.info("*** word count full using HadoopSimulatorLocal ***")
-    run_local_full(logger)
-
-    csv_fn = os.path.realpath(os.path.abspath('data/users.csv'))
-    avro_fn = os.path.realpath(os.path.abspath('data/users.avro'))
-
-    with open(STATS_SCHEMA) as schema_f:
-        stats_schema_str = schema_f.read()
-
-    users_pets_fn = os.path.realpath(os.path.abspath('data/users_pets.avro'))
-
-    logger.info("*** avro_input v using HadoopSimulatorLocal ***")
-    run_local_avro(avro_base.AvroValueColorPick, avro_base.NoAvroColorCount,
-                   logger, avro_fn, csv_fn, avro_input='v')
-
-    logger.info("*** avro_input/ouput v using HadoopSimulatorLocal ***")
-    run_local_avro(
-        avro_base.AvroValueColorPick, avro_base.AvroValueColorCount,
-        logger, avro_fn, csv_fn, 'v', 'v', None, stats_schema_str
-    )
-
-    logger.info("*** avro_input k using HadoopSimulatorLocal ***")
-    run_local_avro(avro_base.AvroKeyColorPick, avro_base.NoAvroColorCount,
-                   logger, avro_fn, csv_fn, 'k')
-
-    logger.info("*** avro_input/output k using HadoopSimulatorLocal ***")
-    run_local_avro(
-        avro_base.AvroKeyColorPick, avro_base.AvroKeyColorCount,
-        logger, avro_fn, csv_fn, 'k', 'k', stats_schema_str
-    )
-
-    logger.info("*** avro_input kv using HadoopSimulatorLocal ***")
-    run_local_avro(avro_base.AvroKeyValueColorPick, avro_base.NoAvroColorCount,
-                   logger, users_pets_fn, csv_fn, 'kv')
-
-    logger.info("*** avro_input/output kv using HadoopSimulatorLocal ***")
-    run_local_avro(
-        avro_base.AvroKeyValueColorPick, avro_base.AvroKeyValueColorCount,
-        logger, users_pets_fn, csv_fn, 'kv', 'kv', stats_schema_str,
-        stats_schema_str
-    )
-
-    logger.info("*** avro_input v using HadoopSimulatorNetwork ***")
-    run_network_avro(os.path.join(AVRO_PY_DIR, 'avro_value_in.py'), logger,
-                     avro_fn, csv_fn, 'v', None)
-
-    logger.info("*** avro_input k using HadoopSimulatorNetwork ***")
-    run_network_avro(os.path.join(AVRO_PY_DIR, 'avro_key_in.py'), logger,
-                     avro_fn, csv_fn, 'k', None)
-
-    logger.info("*** avro_input kv using HadoopSimulatorNetwork ***")
-    run_network_avro(os.path.join(AVRO_PY_DIR, 'avro_key_value_in.py'), logger,
-                     users_pets_fn, csv_fn, 'kv', None)
-
-    logger.info("*** avro_input/output v using HadoopSimulatorNetwork ***")
-    run_network_avro(os.path.join(AVRO_PY_DIR, 'avro_value_in_out.py'), logger,
-                     avro_fn, csv_fn, 'v', 'v', None, stats_schema_str)
-
-    logger.info("*** avro_input/output k using HadoopSimulatorNetwork ***")
-    run_network_avro(os.path.join(AVRO_PY_DIR, 'avro_key_in_out.py'), logger,
-                     avro_fn, csv_fn, 'k', 'k', stats_schema_str)
-
-    logger.info("*** avro_input/output kv using HadoopSimulatorNetwork ***")
-    run_network_avro(
-        os.path.join(AVRO_PY_DIR, 'avro_key_value_in_out.py'), logger,
-        users_pets_fn, csv_fn, 'kv', 'kv', stats_schema_str, stats_schema_str
-    )
+    if args.avro_in:
+        logger.info("running avro input=%s, output=%s with %s simulator" %
+                    (args.avro_in, args.avro_out, args.sim))
+        runf = globals()["run_%s_avro" % args.sim]
+        runf(logger, avro_in=args.avro_in, avro_out=args.avro_out)
+    else:
+        logger.info("running %s wc with %s simulator", args.wc, args.sim)
+        runf = globals()["run_%s_%s" % (args.sim, args.wc)]
+        runf(logger)
 
 
 if __name__ == "__main__":
