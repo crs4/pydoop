@@ -32,15 +32,20 @@ OUT_SCHEMA_FILE_LOCAL="${this_dir}"/../schemas/stats.avsc
 OUT_SCHEMA_FILE_HDFS=stats.avsc
 
 # --- create input ---
-INPUT=users.csv
-CSV_FN=/tmp/"${INPUT}"
+CSV_INPUT=$(mktemp -d)
+INPUT=$(basename ${CSV_INPUT})
 PARQUETS_DIR=parquets
 N=20
-${PYTHON} create_input.py ${N} "${INPUT}"
+for i in 1 2; do
+    ${PYTHON} create_input.py ${N} "${CSV_INPUT}/users_${i}.csv"
+done
 
+# --- convert to avro-parquet ---
 ${HADOOP} fs -mkdir -p /user/"${USER}"
 ${HADOOP} fs -rmr /user/"${USER}"/"${PARQUETS_DIR}" || :
-${HADOOP} fs -put -f "${CSV_FN}" "${INPUT}"
+${HADOOP} fs -rmr "${INPUT}" || :
+${HADOOP} fs -put "${CSV_INPUT}" "${INPUT}"
+
 ${HADOOP} fs -put -f "${IN_SCHEMA_FILE_LOCAL}" "${IN_SCHEMA_FILE_HDFS}"
 hadoop jar "${PARQUET_JAR}" it.crs4.pydoop.WriteParquet \
     "${INPUT}" "${PARQUETS_DIR}" "${IN_SCHEMA_FILE_HDFS}"
@@ -95,5 +100,6 @@ ${PYDOOP} submit \
 # --- check results ---
 rm -rf "${OUTPUT}"
 ${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
-# this is intentionally hardwired.
-${PYTHON} check_results.py "${CSV_FN}" "${OUTPUT}"/part-m-00000
+${PYTHON} check_results.py "${CSV_INPUT}" "${OUTPUT}"
+
+rm -rf "${CSV_INPUT}" "${OUTPUT}"

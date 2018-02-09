@@ -26,41 +26,48 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 
 USER_SCHEMA_FILE="${this_dir}"/../schemas/user.avsc
 STATS_SCHEMA_FILE="${this_dir}"/../schemas/stats.avsc
-CSV_FN=users.csv
-AVRO_FN=users.avro
+CSV_INPUT=$(mktemp -d)
+LOCAL_INPUT=$(mktemp -d)
+INPUT=$(basename ${LOCAL_INPUT})
 OUTPUT=results
 
 # --- generate avro input ---
 N=20
-${PYTHON} create_input.py ${N} "${CSV_FN}"
-${PYTHON} write_avro.py "${USER_SCHEMA_FILE}" "${CSV_FN}" "${AVRO_FN}"
-${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rm "${AVRO_FN}" || :
-${HADOOP} fs -put "${AVRO_FN}"
+for i in 1 2; do
+    ${PYTHON} create_input.py ${N} "${CSV_INPUT}/users_${i}.csv"
+    ${PYTHON} write_avro.py "${USER_SCHEMA_FILE}" \
+      "${CSV_INPUT}/users_${i}.csv" "${LOCAL_INPUT}/users_${i}.avro"
+done
 
 # --- run cc ---
 MODULE=avro_pyrw
 MPY="${MODULE}".py
 JOBNAME="${MODULE}"-job
 LOGLEVEL="DEBUG"
-INPUT="${AVRO_FN}"
 
+${HADOOP} fs -mkdir -p /user/"${USER}"
+${HADOOP} fs -rm "${INPUT}" || :
+${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
 ${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
 ${PYDOOP} submit \
     --upload-file-to-cache "${MPY}" \
     --upload-file-to-cache "${USER_SCHEMA_FILE}" \
     --upload-file-to-cache "${STATS_SCHEMA_FILE}" \
     --num-reducers 1 \
-    -D mapreduce.pipes.isjavarecordreader=false \
-    -D mapreduce.pipes.isjavarecordwriter=false \
+    --do-not-use-java-record-reader \
+    --do-not-use-java-record-writer \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${INPUT}" "${OUTPUT}"
 
 # --- dump & check results ---
-DUMP_FN=stats.tsv
+DUMP_DIR=$(mktemp -d)
 rm -rf "${OUTPUT}"
 ${HADOOP} fs -get "${OUTPUT}"
-${PYTHON} avro_container_dump_results.py \
-    "${OUTPUT}"/part-r-00000.avro "${DUMP_FN}"
-${PYTHON} check_results.py "${CSV_FN}" "${DUMP_FN}"
+for f in "${OUTPUT}"/part*; do
+    ${PYTHON} avro_container_dump_results.py \
+      "${f}" "${DUMP_DIR}"/$(basename ${f}).tsv
+done
+${PYTHON} check_results.py "${CSV_INPUT}" "${DUMP_DIR}"
+
+rm -rf "${CSV_INPUT}" "${LOCAL_INPUT}" "${OUTPUT}" "${DUMP_DIR}"

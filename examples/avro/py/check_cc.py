@@ -17,6 +17,8 @@
 # END_COPYRIGHT
 
 import sys
+import os
+import errno
 from collections import Counter
 
 from avro.io import DatumReader
@@ -24,21 +26,34 @@ from avro.datafile import DataFileReader
 from pydoop.utils.py3compat import iteritems
 
 
-def main(in_fn, out_fn):
+def iter_fnames(path):
+    try:
+        contents = os.listdir(path)
+    except OSError as e:
+        if e.errno == errno.ENOTDIR:
+            yield path
+    else:
+        for name in contents:
+            yield os.path.join(path, name)
+
+
+def main(in_, out_):
 
     expected = {}
-    with open(in_fn, 'rb') as f:
-        reader = DataFileReader(f, DatumReader())
-        for r in reader:
-            expected.setdefault(
-                r["office"], Counter()
-            )[r["favorite_color"]] += 1
+    for in_fn in iter_fnames(in_):
+        with open(in_fn, 'rb') as f:
+            reader = DataFileReader(f, DatumReader())
+            for r in reader:
+                expected.setdefault(
+                    r["office"], Counter()
+                )[r["favorite_color"]] += 1
 
     computed = {}
-    with open(out_fn) as f:
-        for l in f:
-            p = l.strip().split('\t')
-            computed[p[0]] = eval(p[1])
+    for out_fn in iter_fnames(out_):
+        with open(out_fn) as f:
+            for l in f:
+                p = l.strip().split('\t')
+                computed[p[0]] = eval(p[1])
 
     if set(computed) != set(expected):
         sys.exit("ERROR: computed keys != expected keys: %r != %r" % (

@@ -41,25 +41,32 @@ fi
 
 USER_SCHEMA_FILE="${this_dir}"/../schemas/user.avsc
 PET_SCHEMA_FILE="${this_dir}"/../schemas/pet.avsc
-CSV_FN=/tmp/users.csv
-INPUT=users.avro
-AVRO_FN=/tmp/"${INPUT}"  # used also for KV
+CSV_INPUT=$(mktemp -d)
+LOCAL_INPUT=$(mktemp -d)
+INPUT=$(basename ${LOCAL_INPUT})
 OUTPUT=results
 
 # --- generate avro input ---
 N=20
-${PYTHON} create_input.py ${N} "${CSV_FN}"
+for i in 1 2; do
+    ${PYTHON} create_input.py ${N} "${CSV_INPUT}/users_${i}.csv"
+done
 if [ "${mode}" == "kv" ]; then
     pushd "${this_dir}"/../java >/dev/null
-    ./write_avro_kv \
-        "${USER_SCHEMA_FILE}" "${PET_SCHEMA_FILE}" "${CSV_FN}" "${AVRO_FN}"
+    for i in 1 2; do
+	./write_avro_kv "${USER_SCHEMA_FILE}" "${PET_SCHEMA_FILE}" \
+          "${CSV_INPUT}/users_${i}.csv" "${LOCAL_INPUT}/users_${i}.avro"
+    done
     popd >/dev/null
 else
-    ${PYTHON} write_avro.py "${USER_SCHEMA_FILE}" "${CSV_FN}" "${AVRO_FN}"
+    for i in 1 2; do
+	${PYTHON} write_avro.py "${USER_SCHEMA_FILE}" \
+          "${CSV_INPUT}/users_${i}.csv" "${LOCAL_INPUT}/users_${i}.avro"
+    done
 fi
 ${HADOOP} fs -mkdir -p /user/"${USER}"
 ${HADOOP} fs -rm "${INPUT}" || :
-${HADOOP} fs -put "${AVRO_FN}" "${INPUT}"
+${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
 
 # --- run cc ---
 MPY="${MODULE}".py
@@ -79,5 +86,6 @@ ${PYDOOP} submit \
 # --- check results ---
 rm -rf "${OUTPUT}"
 ${HADOOP} fs -get "${OUTPUT}"
-# this is intentionally hardwired.
-${PYTHON} check_results.py "${CSV_FN}" "${OUTPUT}"/part-r-00000
+${PYTHON} check_results.py "${CSV_INPUT}" "${OUTPUT}"
+
+rm -rf "${CSV_INPUT}" "${LOCAL_INPUT}" "${OUTPUT}"
