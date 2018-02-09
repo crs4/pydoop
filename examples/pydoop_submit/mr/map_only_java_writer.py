@@ -18,14 +18,19 @@
 #
 # END_COPYRIGHT
 
+import os
+
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
 
 
 class Mapper(api.Mapper):
 
+    def __init__(self, context):
+        self.name = os.path.basename(context.input_split.filename)
+
     def map(self, context):
-        context.emit(context.key, context.value.upper())
+        context.emit((self.name, context.key), context.value.upper())
 
 
 def __main__():

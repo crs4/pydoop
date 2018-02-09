@@ -66,6 +66,8 @@ class PydoopScript(object):
         )
 
     def convert_args(self, args, unknown_args):
+        print("args: %r" % (args,))
+        print("unknown_args: %r" % (unknown_args,))
         # Create a zip archive containing all we need to run the
         # script (including the script itself.  We use
         # NamedTemporaryFile which will take care of deleting the temp
@@ -98,7 +100,6 @@ class PydoopScript(object):
         args.program = mr_driver
         args.do_not_use_java_record_reader = False
         args.do_not_use_java_record_writer = False
-        args.input_format = None
         args.output_format = None
         args.cache_file = None
         args.cache_archive = None

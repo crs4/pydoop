@@ -24,23 +24,26 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
+# Use NLineInputFormat to force multiple mappers with a single input file
+NL_INPUT_FORMAT="org.apache.hadoop.mapreduce.lib.input.NLineInputFormat"
+
 nargs=1
 if [ $# -ne ${nargs} ]; then
     die "Usage: $0 prog"
 fi
 prog=$1
 
-OPTS=( "--log-level" "DEBUG" "-D" "mapred.map.tasks=2" )
+OPTS=( "--log-level" "DEBUG" )
 case ${prog} in
     base_histogram )
-	DATA="${this_dir}/data/example.sam"
+	DATA="${this_dir}/data/base_histogram_input"
 	;;
     transpose )
-	DATA="${this_dir}/data/matrix.txt"
-	OPTS+=( "--num-reducers" "4" )
+	DATA="${this_dir}/data/transpose_input"
+	OPTS+=( "--num-reducers" "4" "--input-format" "${NL_INPUT_FORMAT}")
 	;;
     *)
-	DATA="${this_dir}/../input/alice.txt"
+	DATA="${this_dir}/../input"
 	OPTS+=( "--num-reducers" "0" "-t" "" )
 	case ${prog} in
 	    caseswitch )
@@ -51,9 +54,8 @@ case ${prog} in
 		;;
 	esac
 esac
-INPUT=${prog}_input
-OUTPUT=${prog}_output
-
+INPUT="/user/${USER}/$(basename ${DATA})"
+OUTPUT="/user/${USER}/${prog}_output"
 
 WD=""
 if [ ${prog} == grep_compiled ]; then
@@ -65,9 +67,8 @@ else
     script="${this_dir}"/scripts/${prog}.py
 fi
 
-${HADOOP} fs -rmr "/user/${USER}/${INPUT}" || :
-${HADOOP} fs -mkdir -p "/user/${USER}/${INPUT}"
-${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
+${HADOOP} fs -mkdir -p "/user/${USER}"
+${HADOOP} fs -rmr "${INPUT}" "${OUTPUT}" || :
 ${HADOOP} fs -put "${DATA}" "${INPUT}"
 ${PYDOOP} script "${OPTS[@]}" "${script}" "${INPUT}" "${OUTPUT}"
 ${PYTHON} "${this_dir}"/check.py ${prog} "${OUTPUT}"

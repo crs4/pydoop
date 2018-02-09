@@ -106,7 +106,7 @@ def cp_script(script):
 
 
 def create_configuration():
-    data_in = os.path.join(EXAMPLES_DIR, 'input', 'alice.txt')
+    data_in = os.path.join(EXAMPLES_DIR, 'input', 'alice_1.txt')
     data_out = 'results.txt'
     data_in_uri = 'file://%s' % data_in
     data_in_size = os.stat(data_in).st_size

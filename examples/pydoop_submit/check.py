@@ -21,13 +21,14 @@
 import sys
 import os
 import argparse
+from ast import literal_eval
 
 import pydoop.test_support as pts
 import pydoop.hadut as hadut
 import pydoop.hdfs as hdfs
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_INPUT = os.path.join(THIS_DIR, os.pardir, "input", "alice.txt")
+DEFAULT_INPUT_DIR = os.path.join(THIS_DIR, os.pardir, "input")
 CHECKS = [
     "nosep",
     "wordcount_minimal",
@@ -39,7 +40,7 @@ CHECKS = [
 
 def check_wordcount_minimal(mr_out_dir):
     output = hadut.collect_output(mr_out_dir)
-    local_wc = pts.LocalWordCount(DEFAULT_INPUT)
+    local_wc = pts.LocalWordCount(DEFAULT_INPUT_DIR)
     res = local_wc.check(output)
     return res.startswith("OK")  # FIXME: change local_wc to raise an exception
 
@@ -53,8 +54,11 @@ def check_nosep(mr_out_dir):
         with hdfs.open(fn, "rt") as f:
             for line in f:
                 output.append(line.rstrip())
-    with open(os.path.join(THIS_DIR, "data", "cols.txt")) as f:
-        exp_output = ["".join(_.rstrip().split()) for _ in f]
+    exp_output = []
+    in_dir = os.path.join(THIS_DIR, "data")
+    for name in os.listdir(in_dir):
+        with open(os.path.join(in_dir, name)) as f:
+            exp_output.extend(["".join(_.rstrip().split()) for _ in f])
     return sorted(exp_output) == sorted(output)
 
 
@@ -64,14 +68,15 @@ def check_map_only_python_writer(mr_out_dir):
         with hdfs.open(fn, "rt") as f:
             for line in f:
                 try:
-                    n, rec = line.rstrip().split("\t", 1)
+                    t, rec = line.rstrip().split("\t", 1)
                 except ValueError:
-                    n, rec = line.rstrip(), ""
-                n = int(n)
-                output.append((n, rec))
+                    t, rec = line.rstrip(), ""
+                output.append((literal_eval(t), rec))
     output = [_[1] for _ in sorted(output)]
-    with open(DEFAULT_INPUT) as f:
-        exp_output = [_.rstrip().upper() for _ in f]
+    exp_output = []
+    for name in sorted(os.listdir(DEFAULT_INPUT_DIR)):
+        with open(os.path.join(DEFAULT_INPUT_DIR, name)) as f:
+            exp_output.extend([_.rstrip().upper() for _ in f])
     return exp_output == output
 
 
