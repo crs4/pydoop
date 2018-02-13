@@ -48,7 +48,7 @@ LOGLEVEL="DEBUG"
 ${HADOOP} fs -mkdir -p /user/"${USER}"
 ${HADOOP} fs -rm "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
-${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
+${HADOOP} fs -rm -r "/user/${USER}/${OUTPUT}" || :
 ${PYDOOP} submit \
     --upload-file-to-cache "${MPY}" \
     --upload-file-to-cache "${USER_SCHEMA_FILE}" \

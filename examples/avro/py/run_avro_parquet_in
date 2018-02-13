@@ -40,8 +40,8 @@ done
 
 # --- convert to avro-parquet ---
 ${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr /user/"${USER}"/"${PARQUETS_DIR}" || :
-${HADOOP} fs -rmr "${INPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${PARQUETS_DIR}" || :
+${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${CSV_INPUT}" "${INPUT}"
 
 ${HADOOP} fs -put -f "${SCHEMA_FILE_LOCAL}" "${SCHEMA_FILE_HDFS}"
@@ -59,7 +59,7 @@ INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
 INPUT="${PARQUETS_DIR}"
 OUTPUT=results
 
-${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
 
 ${PYDOOP} submit --upload-file-to-cache "${MPY}" \
   --upload-file-to-cache avro_base.py \

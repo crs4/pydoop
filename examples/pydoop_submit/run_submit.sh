@@ -96,7 +96,7 @@ OPTS+=( "--upload-file-to-cache" "${APP_DIR}/${MODULE}.py" )
 [ -n "${DEBUG:-}" ] && OPTS+=( "--log-level" "DEBUG" )
 
 ${HADOOP} fs -mkdir -p "/user/${USER}"
-${HADOOP} fs -rmr "${INPUT}" "${OUTPUT}" || :
+${HADOOP} fs -rm -r "${INPUT}" "${OUTPUT}" || :
 ${HADOOP} fs -put "${DATA}" "${INPUT}"
 ${PYDOOP} submit "${OPTS[@]}" ${MODULE} "${INPUT}" "${OUTPUT}"
 ${PYTHON} "${this_dir}"/check.py ${MODULE} "${OUTPUT}"

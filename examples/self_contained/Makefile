@@ -46,8 +46,8 @@ check_result: submit
 	$(PYTHON) check_results.py /user/${USER}/${INPUT} /user/${USER}/${OUTPUT}
 
 setup_io:
-	-${HDFS} -rmr /user/${USER}/${INPUT}
-	-${HDFS} -rmr /user/${USER}/${OUTPUT}
+	-${HDFS} -rm -r /user/${USER}/${INPUT}
+	-${HDFS} -rm -r /user/${USER}/${OUTPUT}
 	-${HDFS} -mkdir /user
 	-${HDFS} -mkdir /user/${USER}
 	${HDFS} -put ${DATA} ${INPUT}

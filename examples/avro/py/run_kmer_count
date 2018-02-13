@@ -41,9 +41,9 @@ for i in 1 2; do
 done
 
 ${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr "${INPUT}" || :
+${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
-${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
 ${PYDOOP} submit \
      -D parquet.avro.projection="${PROJECTION}" \
     --upload-file-to-cache "${MPY}" \

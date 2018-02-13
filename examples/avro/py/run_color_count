@@ -39,7 +39,7 @@ for i in 1 2; do
       "${LOCAL_INPUT}/users_${i}.avro"
 done
 ${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr "${INPUT}" || :
+${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
 
 # --- run cc ---
@@ -47,7 +47,7 @@ MPY="${MODULE}".py
 JOBNAME="${MODULE}"-job
 LOGLEVEL="DEBUG"
 
-${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
+${HADOOP} fs -rm -r "/user/${USER}/${OUTPUT}" || :
 ${PYDOOP} submit \
     -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
     --upload-file-to-cache "${MPY}" \

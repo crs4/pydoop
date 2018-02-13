@@ -67,7 +67,7 @@ else
     done
 fi
 ${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr "${INPUT}" || :
+${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
 
 # --- run cc ---
@@ -88,7 +88,7 @@ else
     V_SCHEMA_OPT="-D pydoop.mapreduce.avro.value.output.schema=${STATS_SCHEMA}"
 fi
 
-${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
+${HADOOP} fs -rm -r "/user/${USER}/${OUTPUT}" || :
 
 ${PYDOOP} submit \
     --upload-file-to-cache avro_base.py \

@@ -42,8 +42,8 @@ done
 
 # --- convert to avro-parquet ---
 ${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr /user/"${USER}"/"${PARQUETS_DIR}" || :
-${HADOOP} fs -rmr "${INPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${PARQUETS_DIR}" || :
+${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${CSV_INPUT}" "${INPUT}"
 
 ${HADOOP} fs -put -f "${IN_SCHEMA_FILE_LOCAL}" "${IN_SCHEMA_FILE_HDFS}"
@@ -60,7 +60,7 @@ INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
 OUTPUT_FORMAT=org.apache.parquet.avro.AvroParquetOutputFormat
 CC_OUTPUT=cc_output
 
-${HADOOP} fs -rmr /user/"${USER}"/"${CC_OUTPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${CC_OUTPUT}" || :
 
 ${PYDOOP} submit \
     -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
@@ -86,7 +86,7 @@ STATS_SCHEMA=$(cat "${OUT_SCHEMA_FILE_LOCAL}")
 INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
 OUTPUT=results
 
-${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
 ${PYDOOP} submit \
     --upload-file-to-cache "${MPY}" \
     --num-reducers 0 \

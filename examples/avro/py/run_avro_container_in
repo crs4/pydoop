@@ -73,7 +73,7 @@ MPY="${MODULE}".py
 JOBNAME="${MODULE}"-job
 LOGLEVEL="DEBUG"
 
-${HADOOP} fs -rmr "/user/${USER}/${OUTPUT}" || :
+${HADOOP} fs -rm -r "/user/${USER}/${OUTPUT}" || :
 ${PYDOOP} submit \
     --upload-file-to-cache avro_base.py \
     --upload-file-to-cache "${MPY}" \

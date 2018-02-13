@@ -35,7 +35,7 @@ HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
 HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rm -r,\
-	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rmr,\
+	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rm -r,\
 	       HDFS_IS_MISSING))
 HDFS_PUT=${HDFS} -put
 HDFS_MKDIR=${HDFS} -mkdir
