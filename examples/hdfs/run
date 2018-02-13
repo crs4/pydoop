@@ -29,7 +29,7 @@ DEPTH=${1:-3}
 SPAN=${2:-4}
 
 echo "Waiting for HDFS to exit safe mode..."
-"${HADOOP}" dfsadmin -safemode wait
+"${HDFS}" dfsadmin -safemode wait
 
 echo "Generating tree (depth=${DEPTH}, span=${SPAN})..."
 "${PYTHON}" "${this_dir}"/treegen.py ${DEPTH} ${SPAN}

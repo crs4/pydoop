@@ -115,8 +115,8 @@ class RunCmdError(RuntimeError):
 
 
 # keep_streams must default to True for backwards compatibility
-def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
-            hadoop_conf_dir=None, logger=None, keep_streams=True):
+def run_tool_cmd(tool, cmd, args=None, properties=None, hadoop_conf_dir=None,
+                 logger=None, keep_streams=True):
     """
     Run a Hadoop command.
 
@@ -140,8 +140,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     """
     if logger is None:
         logger = utils.NullLogger()
-    hadoop = pydoop.hadoop_exec(hadoop_home=hadoop_home)
-    _args = [hadoop]
+    _args = [tool]
     if hadoop_conf_dir:
         _args.extend(["--config", hadoop_conf_dir])
     _args.append(cmd)
@@ -174,6 +173,22 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     if p.returncode:
         raise RunCmdError(p.returncode, ' '.join(_args), error)
     return output
+
+
+def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
+            hadoop_conf_dir=None, logger=None, keep_streams=True):
+    tool = pydoop.hadoop_exec(hadoop_home=hadoop_home)
+    run_tool_cmd(tool, cmd, args=args, properties=properties,
+                 hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                 keep_streams=keep_streams)
+
+
+def run_mapred_cmd(cmd, args=None, properties=None, hadoop_home=None,
+                   hadoop_conf_dir=None, logger=None, keep_streams=True):
+    tool = pydoop.mapred_exec(hadoop_home=hadoop_home)
+    run_tool_cmd(tool, cmd, args=args, properties=properties,
+                 hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                 keep_streams=keep_streams)
 
 
 def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
@@ -375,9 +390,9 @@ def run_pipes(executable, input_path, output_path, more_args=None,
                          classpath=pydoop_jar, logger=logger,
                          keep_streams=keep_streams)
     else:
-        return run_cmd("pipes", args, properties,
-                       hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                       keep_streams=keep_streams)
+        return run_mapred_cmd("pipes", args=args, properties=properties,
+                              hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                              keep_streams=keep_streams)
 
 
 def find_jar(jar_name, root_path=None):
