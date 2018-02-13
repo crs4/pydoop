@@ -38,4 +38,4 @@ echo "Computing usage by block size..."
 "${PYTHON}" "${this_dir}"/treewalk.py
 
 echo "Cleaning up..."
-"${HADOOP}" fs -rmr "${TEST_ROOT}"
+"${HADOOP}" fs -rm -r "${TEST_ROOT}"

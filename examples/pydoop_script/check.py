@@ -25,7 +25,7 @@ import pydoop.hadut as hadut
 import pydoop.hdfs as hdfs
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_INPUT = os.path.join(THIS_DIR, os.pardir, "input", "alice.txt")
+DEFAULT_INPUT_DIR = os.path.join(THIS_DIR, os.pardir, "input")
 CHECKS = [
     "base_histogram",
     "caseswitch",
@@ -42,24 +42,31 @@ def check_base_histogram(mr_out_dir):
         k, v = line.split("\t")
         output[k] = int(v)
     exp_output = Counter()
-    with open(os.path.join(THIS_DIR, "data", "example.sam")) as f:
-        for line in f:
-            for base in line.rstrip().split("\t", 10)[9]:
-                exp_output[base] += 1
+    in_dir = os.path.join(THIS_DIR, "data", "base_histogram_input")
+    for name in os.listdir(in_dir):
+        with open(os.path.join(in_dir, name)) as f:
+            for line in f:
+                for base in line.rstrip().split("\t", 10)[9]:
+                    exp_output[base] += 1
     return output == exp_output
 
 
 def check_caseswitch(mr_out_dir, switch="upper"):
     output = hadut.collect_output(mr_out_dir)
-    with open(DEFAULT_INPUT) as f:
-        exp_output = getattr(f.read(), switch)()
+    exp_output = []
+    for name in sorted(os.listdir(DEFAULT_INPUT_DIR)):
+        with open(os.path.join(DEFAULT_INPUT_DIR, name)) as f:
+            exp_output.append(getattr(f.read(), switch)())
+    exp_output = "".join(exp_output)
     return output.splitlines() == exp_output.splitlines()
 
 
 def check_grep(mr_out_dir):
     output = hadut.collect_output(mr_out_dir).splitlines()
-    with open(DEFAULT_INPUT) as f:
-        exp_output = [_.strip() for _ in f if "March" in _]
+    exp_output = []
+    for name in sorted(os.listdir(DEFAULT_INPUT_DIR)):
+        with open(os.path.join(DEFAULT_INPUT_DIR, name)) as f:
+            exp_output.extend([_.strip() for _ in f if "March" in _])
     return output == exp_output
 
 
@@ -80,7 +87,8 @@ def check_transpose(mr_out_dir):
                 output.append((index, row))
     output = [_[1] for _ in sorted(output)]
     exp_output = []
-    with open(os.path.join(THIS_DIR, "data", "matrix.txt")) as f:
+    in_fn = os.path.join(THIS_DIR, "data", "transpose_input", "matrix.txt")
+    with open(in_fn) as f:
         for line in f:
             for i, item in enumerate(line.split()):
                 try:

@@ -31,8 +31,11 @@ import pydoop.hdfs as hdfs
 
 class Mapper(api.Mapper):
 
+    def __init__(self, context):
+        self.name = hdfs.path.basename(context.input_split.filename)
+
     def map(self, context):
-        context.emit(context.key, context.value.upper())
+        context.emit((self.name, context.key), context.value.upper())
 
 
 class Writer(api.RecordWriter):
@@ -52,7 +55,7 @@ class Writer(api.RecordWriter):
         self.file.fs.close()
 
     def emit(self, key, value):
-        self.file.write("%d%s%s%s" % (key, self.sep, value, "\n"))
+        self.file.write("%r%s%s%s" % (key, self.sep, value, "\n"))
 
 
 def __main__():

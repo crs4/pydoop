@@ -16,6 +16,7 @@
 #
 # END_COPYRIGHT
 
+import sys
 import os
 import shutil
 import tempfile
@@ -35,10 +36,13 @@ def cp_script(script):
     return dest
 
 
-def main():
+def main(argv):
+    try:
+        data_in = argv[1]
+    except IndexError:
+        sys.exit("Usage: python %s AVRO_FILE" % argv[0])
     shutil.copy('../schemas/stats.avsc', 'stats.avsc')
     program_name = cp_script('./avro_pyrw.py')
-    data_in = './users.avro'
     path = os.path.realpath(data_in)
     length = os.stat(path).st_size
     input_split = InputSplit.to_string('file://' + path, 0, length)
@@ -52,4 +56,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)

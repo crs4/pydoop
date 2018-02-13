@@ -29,21 +29,26 @@ PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
 SCHEMA_FILE_LOCAL="${this_dir}"/../schemas/user.avsc
 SCHEMA_FILE_HDFS=user.avsc
 
-# ----- part 1 -----
-INPUT=users.csv
-CSV_FN=/tmp/"${INPUT}"
+# --- create input ---
+CSV_INPUT=$(mktemp -d)
+INPUT=$(basename ${CSV_INPUT})
 PARQUETS_DIR=parquets
 N=20
-${PYTHON} create_input.py ${N} "${CSV_FN}"
+for i in 1 2; do
+    ${PYTHON} create_input.py ${N} "${CSV_INPUT}/users_${i}.csv"
+done
 
+# --- convert to avro-parquet ---
 ${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr /user/"${USER}"/"${PARQUETS_DIR}" || :
-${HADOOP} fs -put -f "${CSV_FN}" "${INPUT}"
+${HADOOP} fs -rm -r /user/"${USER}"/"${PARQUETS_DIR}" || :
+${HADOOP} fs -rm -r "${INPUT}" || :
+${HADOOP} fs -put "${CSV_INPUT}" "${INPUT}"
+
 ${HADOOP} fs -put -f "${SCHEMA_FILE_LOCAL}" "${SCHEMA_FILE_HDFS}"
 hadoop jar "${PARQUET_JAR}" it.crs4.pydoop.WriteParquet \
     "${INPUT}" "${PARQUETS_DIR}" "${SCHEMA_FILE_HDFS}"
 
-# ----- part 3 -----
+# --- run color count ---
 MODULE=avro_value_in
 MPY="${MODULE}".py
 JOBNAME="${MODULE}"-job
@@ -54,7 +59,7 @@ INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
 INPUT="${PARQUETS_DIR}"
 OUTPUT=results
 
-${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
 
 ${PYDOOP} submit --upload-file-to-cache "${MPY}" \
   --upload-file-to-cache avro_base.py \
@@ -66,8 +71,9 @@ ${PYDOOP} submit --upload-file-to-cache "${MPY}" \
   --job-name "${JOBNAME}" \
   "${MODULE}" "${PARQUETS_DIR}" "${OUTPUT}"
 
-# ----- part 4 -----
+# --- check results ---
 rm -rf "${OUTPUT}"
 ${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
-# this is intentionally hardwired.
-${PYTHON} check_results.py "${CSV_FN}" "${OUTPUT}"/part-r-00000
+${PYTHON} check_results.py "${CSV_INPUT}" "${OUTPUT}"
+
+rm -rf "${CSV_INPUT}" "${OUTPUT}"

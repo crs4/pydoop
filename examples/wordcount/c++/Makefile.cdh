@@ -15,7 +15,7 @@ run: build
 	hadoop fs -put ../../input WordCountInput
 	hadoop pipes -conf WordCount.xml -input WordCountInput -output WordCountOutput
 	hadoop fs -get WordCountOutput WordCountOutput
-	hadoop fs -rmr 'WordCount*'
+	hadoop fs -rm -r 'WordCount*'
 
 clean:
 	rm -rf WordCount WordCountOutput

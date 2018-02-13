@@ -32,14 +32,18 @@ JOBNAME="${MODULE}"-job
 LOGLEVEL="DEBUG"
 INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
 PROJECTION=$(cat "${this_dir}"/../schemas/alignment_record_proj.avsc)
-INPUT=mini_aligned_seqs.gz.parquet
+LOCAL_INPUT=$(mktemp -d)
+INPUT=$(basename ${LOCAL_INPUT})
 OUTPUT=kmer_count
 
-${HADOOP} fs -mkdir -p /user/"${USER}"
-${HADOOP} fs -rmr /user/"${USER}"/"${INPUT}" || :
-${HADOOP} fs -put -f "${INPUT}"
-${HADOOP} fs -rmr /user/"${USER}"/"${OUTPUT}" || :
+for i in 1 2; do
+    cp mini_aligned_seqs.gz.parquet ${LOCAL_INPUT}/seqs_${i}.gz.parquet
+done
 
+${HADOOP} fs -mkdir -p /user/"${USER}"
+${HADOOP} fs -rm -r "${INPUT}" || :
+${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
 ${PYDOOP} submit \
      -D parquet.avro.projection="${PROJECTION}" \
     --upload-file-to-cache "${MPY}" \

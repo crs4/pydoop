@@ -83,6 +83,7 @@ def run_wc(opt):
         MR_JOB_NAME: "wordcount",
         MR_OUT_CLASS: "%s.SequenceFileOutputFormat" % MRLIB,
         MR_OUT_COMPRESS_TYPE: "NONE",
+        MR_REDUCE_TASKS: "2",
     })
     with open(LOCAL_WC_SCRIPT) as f:
         pipes_code = pts.adapt_script(f.read())

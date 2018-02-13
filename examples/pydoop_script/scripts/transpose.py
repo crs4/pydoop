@@ -58,6 +58,11 @@ value allows to put the output rows in the correct order.
 
 
 def mapper(key, value, writer):
+    # work around pipes' current limitation with explicit input formats
+    try:
+        value = value.decode("ascii")
+    except AttributeError:
+        pass
     for i, a in enumerate(value.split()):
         writer.emit(i, (key, a))
 

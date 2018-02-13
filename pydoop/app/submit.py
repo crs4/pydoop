@@ -475,6 +475,10 @@ def add_parser_common_arguments(parser):
         type=a_file_that_can_be_read,
         help="Hadoop configuration file"
     )
+    parser.add_argument(
+        '--input-format', metavar='CLASS', type=str,
+        help="java classname of InputFormat"
+    )
 
 
 def add_parser_arguments(parser):
@@ -499,10 +503,6 @@ def add_parser_arguments(parser):
     parser.add_argument(
         '--do-not-use-java-record-writer', action='store_true',
         help="Disable java RecordWriter"
-    )
-    parser.add_argument(
-        '--input-format', metavar='CLASS', type=str,
-        help="java classname of InputFormat"
     )
     parser.add_argument(
         '--output-format', metavar='CLASS', type=str,
