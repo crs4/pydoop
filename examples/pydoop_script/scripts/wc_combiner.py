@@ -16,13 +16,21 @@
 #
 # END_COPYRIGHT
 
+"""\
+Word count with combiner.
 """
-Convert text to lowercase.
 
-Set --kv-separator to the empty string when running this example.
-"""
+
+def mapper(_, text, writer):
+    for word in text.split():
+        writer.emit(word, 1)
+
+
+def reducer(word, icounts, writer):
+    writer.emit(word, sum(icounts))
 
 
 # DOCS_INCLUDE_START
-def mapper(_, record, writer):
-    writer.emit("", record.lower())
+def combiner(word, icounts, writer):
+    writer.count('combiner calls', 1)
+    reducer(word, icounts, writer)

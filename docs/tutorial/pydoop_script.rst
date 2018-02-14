@@ -52,22 +52,15 @@ MapReduce paper [#]_ and in the Hadoop documentation as a MapReduce
 programming tutorial.  The Pydoop Script implementation requires only
 five lines of code:
 
-.. code-block:: python
-
-  def mapper(_, text, writer):
-      for word in text.split():
-          writer.emit(word, 1)
-
-  def reducer(word, icounts, writer):
-      writer.emit(word, sum(icounts))
+.. literalinclude:: ../../examples/pydoop_script/scripts/wordcount.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
 A few more lines allow to set a combiner for local aggregation:
 
-.. code-block:: python
-
-  def combiner(word, icounts, writer):
-      writer.count('combiner calls', 1)
-      reducer(word, icounts, writer)
+.. literalinclude:: ../../examples/pydoop_script/scripts/wc_combiner.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
 Run the example with::
 
@@ -78,67 +71,38 @@ combiner.  By default, no combiner is called.
 
 One thing to remember is that the current Hadoop Pipes architecture
 runs the combiner under the hood of the executable run by ``pipes``,
-so it does not update the "combiner" counters of the general Hadoop
+so it does not update the combiner counters of the general Hadoop
 framework.  Thus, if you run the above script, you'll get a value of 0
 for "Combine input/output records" in the "Map-Reduce Framework"
 group, but the "combiner calls" counter should be updated correctly.
 
 
-Word Count with Total Number of Words
-+++++++++++++++++++++++++++++++++++++
+Map-only Jobs and Output Separators
++++++++++++++++++++++++++++++++++++
 
-Suppose that we want to count the occurrence of specific words, like
-in the example above, but we also want the total number of words.  For
-this last "global" count we can use Hadoop counters:
+Suppose we want to convert all input text to lower case. All we need to do is read each input line, convert it to lower case and emit it (for instance, as the output value). Since there is no aggregation involved, we don't need a reducer:
 
-.. code-block:: python
+.. literalinclude:: ../../examples/pydoop_script/scripts/lowercase.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
-  def mapper(_, text, writer):
-      wordlist = text.split()
-      for word in wordlist:
-          writer.emit(word, 1)
-      writer.count("num words", len(wordlist))
-
-  def reducer(word, count, writer):
-      writer.emit(word, sum(count))
-
-The counter value will show on the JobTracker's job page and will be
-present in the job logs.
-
-
-Lower Case
-++++++++++
-
-To convert some text to lower case, create a module ``lowercase.py``:
-
-.. code-block:: python
-
-  def mapper(_, text, writer):
-      writer.emit("", text.lower())
-
-This is a map-only job, so we set the number of reducers to 0.  To
-avoid leading tabs in our results, we also want an empty separator for
-output key-value pairs: this is done via the ``-t`` option::
+The only problem with the above code is that, by default, each output key-value pair is written as tab-separated, which would lead to each output line having a leading tab character that's not found in the original input (note that we'd get a *trailing* tab if we emitted each record as the output key instead). We can turn off the reduce phase and get an empty separator for output key-value pairs by submitting the job with the following options::
 
   pydoop script --num-reducers 0 -t '' lowercase.py hdfs_input hdfs_output
 
 
-Job Parameters
-++++++++++++++
+Custom Parameters
++++++++++++++++++
 
-Suppose you want to select all lines containing a substring to be
-given at run time.  Create a module ``grep.py``:
+Suppose we want to select all lines containing a substring to be given at run time (distributed grep). As in the previous example, we can do this with a map-only job (read each input line and emit it if it contains the substring), but we need a way for the user of our application to specify the substring to be matched. This can be done by adding a fourth argument to the mapper function:
 
-.. code-block:: python
+.. literalinclude:: ../../examples/pydoop_script/scripts/grep.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
-  def mapper(_, text, writer, conf):  # notice the fourth 'conf' argument
-      if text.find(conf['grep-expression']) >= 0:
-          writer.emit("", text)
+In this case, Pydoop Script passes the Hadoop job configuration to the ``mapper`` function as a dictionary via the fourth argument. Moreover, just like Hadoop tools (e.g., ``hadoop pipes``), Pydoop Script allows to set additional configuration parameters via ``-D key=value``. To search for "hello", for instance, we can run the application as::
 
-Job parameters, like in ``hadoop pipes``, are passed via the -D
-option::
-
-  pydoop script --num-reducers 0 -t '' -D grep-expression=my_substring \
+  pydoop script --num-reducers 0 -t '' -D grep-expression=hello \
     grep.py hdfs_input hdfs_output
 
 

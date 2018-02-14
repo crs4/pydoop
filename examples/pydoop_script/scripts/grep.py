@@ -27,6 +27,7 @@ When running this example, set --kv-separator to the empty string and
 """
 
 
+# DOCS_INCLUDE_START
 def mapper(_, text, writer, conf):
     if text.find(conf['grep-expression']) >= 0:
         writer.emit("", text)

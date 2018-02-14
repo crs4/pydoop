@@ -7,20 +7,10 @@
 <http://hadoop.apache.org>`_ that allows you to write MapReduce
 applications in pure Python:
 
-.. code-block:: python
-
-  import pydoop.mapreduce.api as api
-
-  class Mapper(api.Mapper):
-      def map(self, context):
-          words = context.value.split()
-          for w in words:
-              context.emit(w, 1)
-
-  class Reducer(api.Reducer):
-      def reduce(self, context):
-          s = sum(context.values)
-          context.emit(context.key, s)
+.. literalinclude:: ../examples/wordcount/bin/wordcount_minimal.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
+   :end-before: DOCS_INCLUDE_END
 
 Pydoop offers several features not commonly found in other Python
 libraries for Hadoop:

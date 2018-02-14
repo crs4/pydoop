@@ -23,6 +23,7 @@ from collections import Counter
 
 import pydoop.hadut as hadut
 import pydoop.hdfs as hdfs
+import pydoop.test_support as pts
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT_DIR = os.path.join(THIS_DIR, os.pardir, "input")
@@ -33,6 +34,8 @@ CHECKS = [
     "grep_compiled",
     "lowercase",
     "transpose",
+    "wc_combiner",
+    "wordcount",
 ]
 
 
@@ -96,6 +99,16 @@ def check_transpose(mr_out_dir):
                 except IndexError:
                     exp_output.append([item])
     return output == exp_output
+
+
+def check_wordcount(mr_out_dir):
+    output = hadut.collect_output(mr_out_dir)
+    local_wc = pts.LocalWordCount(DEFAULT_INPUT_DIR)
+    res = local_wc.check(output)
+    return res.startswith("OK")  # FIXME: change local_wc to raise an exception
+
+
+check_wc_combiner = check_wordcount
 
 
 def make_parser():

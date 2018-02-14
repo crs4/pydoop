@@ -42,6 +42,14 @@ case ${prog} in
 	DATA="${this_dir}/data/transpose_input"
 	OPTS+=( "--num-reducers" "4" "--input-format" "${NL_INPUT_FORMAT}")
 	;;
+    wordcount )
+	DATA="${this_dir}/../input"
+	OPTS+=( "--num-reducers" "2" )
+	;;
+    wc_combiner )
+	DATA="${this_dir}/../input"
+	OPTS+=( "--num-reducers" "2" "-c" "combiner" )
+	;;
     *)
 	DATA="${this_dir}/../input"
 	OPTS+=( "--num-reducers" "0" "-t" "" )

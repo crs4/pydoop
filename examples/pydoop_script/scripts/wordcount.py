@@ -16,13 +16,16 @@
 #
 # END_COPYRIGHT
 
-"""
-Convert text to lowercase.
-
-Set --kv-separator to the empty string when running this example.
+"""\
+Pydoop script version of the word count example.
 """
 
 
 # DOCS_INCLUDE_START
-def mapper(_, record, writer):
-    writer.emit("", record.lower())
+def mapper(_, text, writer):
+    for word in text.split():
+        writer.emit(word, 1)
+
+
+def reducer(word, icounts, writer):
+    writer.emit(word, sum(icounts))
