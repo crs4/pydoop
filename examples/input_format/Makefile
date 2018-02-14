@@ -23,8 +23,8 @@ INPUT_FORMAT=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
 JOBNAME=input_format_test_job
 DATA := ../input
-WC_MODULE=wordcount_rr
-WC_MODULE_FILE=${WC_MODULE}.py
+WC_MODULE=wordcount_minimal
+WC_MODULE_FILE=../wordcount/bin/${WC_MODULE}.py
 INPUT=${JOBNAME}_input
 OUTPUT=${JOBNAME}_output
 
@@ -50,7 +50,7 @@ CLASSES = $(subst .java,.class,$(SRC))
 SUBMIT_ARGS = --upload-file-to-cache ${WC_MODULE_FILE} \
 --libjars ${PYINPUTFORMAT_JAR}\
 -D pydoop.input.issplitable=true\
---log-level ${LOGLEVEL} --job-name ${JOBNAME}
+--log-level ${LOGLEVEL} --job-name ${JOBNAME} --entry-point main
 
 
 .SUFFIXES: .java .class
