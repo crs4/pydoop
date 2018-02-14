@@ -22,7 +22,6 @@ Miscellaneous utilities for testing.
 
 from __future__ import print_function
 
-import re
 import sys
 import os
 import tempfile
@@ -140,8 +139,7 @@ class LocalWordCount(object):
     def _wordcount_file(self, wc, fn, path=None):
         with open(os.path.join(path, fn) if path else fn) as f:
             for line in f:
-                words = re.sub('[^0-9a-zA-Z]+', ' ', line).split()
-                for w in words:
+                for w in line.split():
                     wc[w] = wc.get(w, 0) + 1
 
     def check(self, output):

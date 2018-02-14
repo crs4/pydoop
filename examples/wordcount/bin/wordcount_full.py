@@ -24,7 +24,6 @@ logging.basicConfig()
 LOGGER = logging.getLogger("WordCount")
 LOGGER.setLevel(logging.INFO)
 
-import re
 from hashlib import md5
 
 import pydoop.mapreduce.api as api
@@ -45,7 +44,7 @@ class Mapper(api.Mapper):
         self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
+        words = context.value.split()
         for w in words:
             context.emit(w, 1)
         context.increment_counter(self.input_words, len(words))
@@ -59,8 +58,7 @@ class Reducer(api.Reducer):
         self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
 
     def reduce(self, context):
-        s = sum(context.values)
-        context.emit(context.key, s)
+        context.emit(context.key, sum(context.values))
         context.increment_counter(self.output_words, 1)
 
 

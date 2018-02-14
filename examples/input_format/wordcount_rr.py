@@ -16,8 +16,6 @@
 #
 # END_COPYRIGHT
 
-import re
-
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 
@@ -25,8 +23,7 @@ import pydoop.mapreduce.pipes as pp
 class Mapper(api.Mapper):
 
     def map(self, context):
-        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
-        for w in words:
+        for w in context.value.split():
             context.emit(w, 1)
 
 
