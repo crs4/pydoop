@@ -39,3 +39,8 @@ echo "Computing usage by block size..."
 
 echo "Cleaning up..."
 "${HADOOP}" fs -rm -r "${TEST_ROOT}"
+
+(( ${PY_VER} != 3 )) && exit 0
+
+echo "Checking REPL example..."
+${PYTHON} "${this_dir}"/repl_session.py
