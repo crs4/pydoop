@@ -48,7 +48,10 @@ if __name__ == "__main__":
     import doctest
     import os
     import pydoop.hdfs as hdfs
-    hdfs.rmr("test")
-    hdfs.rmr("test.copy")
-    os.remove("/tmp/hello.txt")
+    try:
+        hdfs.rmr("test")
+        hdfs.rmr("test.copy")
+        os.remove("/tmp/hello.txt")
+    except OSError:
+        pass
     doctest.testmod(verbose=True)
