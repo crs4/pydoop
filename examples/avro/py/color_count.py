@@ -18,6 +18,7 @@
 #
 # END_COPYRIGHT
 
+# DOCS_INCLUDE_START
 from collections import Counter
 
 import pydoop.mapreduce.api as api

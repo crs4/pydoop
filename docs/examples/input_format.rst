@@ -10,34 +10,9 @@ supplied by the ``InputFormat`` will be overridden by the Python one.
 Consider the following simple modification of Hadoop's built-in
 ``TextInputFormat``:
 
-.. code-block:: java
-
-  package it.crs4.pydoop.mapreduce;
-
-  import org.apache.hadoop.fs.Path;
-  import org.apache.hadoop.io.LongWritable;
-  import org.apache.hadoop.io.Text;
-  import org.apache.hadoop.mapreduce.InputSplit;
-  import org.apache.hadoop.mapreduce.JobContext;
-  import org.apache.hadoop.mapreduce.RecordReader;
-  import org.apache.hadoop.mapreduce.TaskAttemptContext;
-  import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-  import org.apache.hadoop.mapreduce.lib.input.LineRecordReader;
-
-  public class TextInputFormat extends FileInputFormat<LongWritable, Text> {
-
-      @Override
-      public RecordReader<LongWritable, Text> createRecordReader(
-        InputSplit split, TaskAttemptContext context) {
-          return new LineRecordReader();
-      }
-
-      @Override
-      protected boolean isSplitable(JobContext context, Path file) {
-        return context.getConfiguration().getBoolean(
-          "pydoop.input.issplitable", true);
-      }
-  }
+.. literalinclude:: ../../examples/input_format/it/crs4/pydoop/mapreduce/TextInputFormat.java
+   :language: java
+   :start-after: DOCS_INCLUDE_START
 
 With respect to the default one, this InputFormat adds a configurable
 boolean parameter (``pydoop.input.issplitable``) that, if set to
