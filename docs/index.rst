@@ -9,8 +9,11 @@ applications in pure Python:
 
 .. literalinclude:: ../examples/wordcount/bin/wordcount_minimal.py
    :language: python
-   :start-after: DOCS_INCLUDE_START
-   :end-before: DOCS_INCLUDE_END
+   :pyobject: Mapper
+
+.. literalinclude:: ../examples/wordcount/bin/wordcount_minimal.py
+   :language: python
+   :pyobject: Reducer
 
 Pydoop offers several features not commonly found in other Python
 libraries for Hadoop:

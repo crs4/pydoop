@@ -30,18 +30,13 @@ import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
 import pydoop.hdfs as hdfs
 
-WORDCOUNT = "WORDCOUNT"
-INPUT_WORDS = "INPUT_WORDS"
-OUTPUT_WORDS = "OUTPUT_WORDS"
-
 
 class Mapper(api.Mapper):
 
     def __init__(self, context):
         super(Mapper, self).__init__(context)
-        self.logger = LOGGER.getChild("Mapper")
         context.set_status("initializing mapper")
-        self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
+        self.input_words = context.get_counter("WORDCOUNT", "INPUT_WORDS")
 
     def map(self, context):
         words = context.value.split()
@@ -55,7 +50,7 @@ class Reducer(api.Reducer):
     def __init__(self, context):
         super(Reducer, self).__init__(context)
         context.set_status("initializing reducer")
-        self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
+        self.output_words = context.get_counter("WORDCOUNT", "OUTPUT_WORDS")
 
     def reduce(self, context):
         context.emit(context.key, sum(context.values))
@@ -135,6 +130,7 @@ class Partitioner(api.Partitioner):
         return reducer_id
 
 
+# DOCS_INCLUDE_START
 FACTORY = pipes.Factory(
     mapper_class=Mapper,
     reducer_class=Reducer,
@@ -143,6 +139,7 @@ FACTORY = pipes.Factory(
     partitioner_class=Partitioner,
     combiner_class=Reducer
 )
+# DOCS_INCLUDE_END
 
 
 def main():
