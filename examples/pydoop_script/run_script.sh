@@ -46,6 +46,11 @@ case ${prog} in
 	DATA="${this_dir}/../input"
 	OPTS+=( "--num-reducers" "2" )
 	;;
+    wordcount_sw )
+	DATA="${this_dir}/../input"
+	OPTS+=( "--num-reducers" "2" )
+	OPTS+=( "--upload-file-to-cache" "${this_dir}/data/stop_words.txt" )
+	;;
     wc_combiner )
 	DATA="${this_dir}/../input"
 	OPTS+=( "--num-reducers" "2" "-c" "combiner" )

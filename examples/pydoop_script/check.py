@@ -36,6 +36,7 @@ CHECKS = [
     "transpose",
     "wc_combiner",
     "wordcount",
+    "wordcount_sw",
 ]
 
 
@@ -101,11 +102,17 @@ def check_transpose(mr_out_dir):
     return output == exp_output
 
 
-def check_wordcount(mr_out_dir):
+def check_wordcount(mr_out_dir, stop_words=None):
     output = hadut.collect_output(mr_out_dir)
-    local_wc = pts.LocalWordCount(DEFAULT_INPUT_DIR)
+    local_wc = pts.LocalWordCount(DEFAULT_INPUT_DIR, stop_words=stop_words)
     res = local_wc.check(output)
     return res.startswith("OK")  # FIXME: change local_wc to raise an exception
+
+
+def check_wordcount_sw(mr_out_dir):
+    with open(os.path.join(THIS_DIR, "data", "stop_words.txt"), "rt") as f:
+        stop_words = frozenset(_.strip() for _ in f if not _.isspace())
+    return check_wordcount(mr_out_dir, stop_words=stop_words)
 
 
 check_wc_combiner = check_wordcount

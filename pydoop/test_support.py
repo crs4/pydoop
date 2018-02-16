@@ -110,9 +110,10 @@ def compare_counts(c1, c2):
 
 class LocalWordCount(object):
 
-    def __init__(self, input_path, min_occurrence=0):
+    def __init__(self, input_path, min_occurrence=0, stop_words=None):
         self.input_path = input_path
         self.min_occurrence = min_occurrence
+        self.stop_words = frozenset(stop_words or [])
         self.__expected_output = None
 
     @property
@@ -127,11 +128,9 @@ class LocalWordCount(object):
             for fn in os.listdir(self.input_path):
                 if fn[0] == ".":
                     continue
-
                 self._wordcount_file(wc, fn, self.input_path)
         else:
             self._wordcount_file(wc, self.input_path)
-
         if self.min_occurrence:
             wc = dict(t for t in iteritems(wc) if t[1] >= self.min_occurrence)
         return wc
@@ -140,7 +139,8 @@ class LocalWordCount(object):
         with open(os.path.join(path, fn) if path else fn) as f:
             for line in f:
                 for w in line.split():
-                    wc[w] = wc.get(w, 0) + 1
+                    if w not in self.stop_words:
+                        wc[w] = wc.get(w, 0) + 1
 
     def check(self, output):
         res = compare_counts(
