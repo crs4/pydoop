@@ -16,6 +16,7 @@
 #
 # END_COPYRIGHT
 
+# DOCS_INCLUDE_START
 _VOWELS = set("AEIOUYaeiouy")
 
 
