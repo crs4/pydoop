@@ -34,7 +34,6 @@ the implementation is exceedingly verbose.
    :pyobject: Reducer
 
 
-
 How it Works
 ------------
 
