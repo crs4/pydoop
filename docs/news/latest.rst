@@ -1,4 +1,4 @@
-New in 3.0.0-alpha1
+New in 2.0.0-alpha1
 -------------------
 
  * Added support for Python 3
