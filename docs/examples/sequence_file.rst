@@ -44,13 +44,9 @@ representation could require as much as 10 bytes, you decide to save
 space by having the wordcount reducer emit the raw four bytes of the
 integer instead:
 
-.. code-block:: python
-
-  class WordCountReducer(Reducer):
-
-      def reduce(self, context):
-          s = sum(context.values)
-          context.emit(context.key, struct.pack(">i", s))
+.. literalinclude:: ../../examples/sequence_file/bin/wordcount.py
+   :language: python
+   :pyobject: WordCountReducer
 
 Since newline characters can appear in the serialized values, you
 cannot use the standard text format where each line contains a

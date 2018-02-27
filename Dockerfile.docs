@@ -14,4 +14,6 @@ RUN inkscape -z -D -f logo/favicon.svg -e /tmp/256.png -w 256 -h 256 && \
 RUN source /etc/profile && for a in script submit; do \
         dev_tools/dump_app_params --app ${a} -o docs/pydoop_${a}_options.rst; \
     done
-RUN source /etc/profile && make -C docs html
+RUN source /etc/profile && make SPHINXOPTS="-W" -C docs html
+
+ENTRYPOINT []

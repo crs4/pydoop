@@ -4,68 +4,29 @@ Avro I/O
 ========
 
 Pydoop transparently supports reading and writing `Avro
-<http://avro.apache.org>`_ records in MapReduce applications (for now,
-**only with Hadoop 2**).  The following program implements a (slightly
+<http://avro.apache.org>`_ records in MapReduce applications. This is
+only available when applications are run via ``pydoop submit`` (rather
+than via ``hadoop pipes``).
+
+The following program implements a (slightly
 modified) version of the color count example from the Avro docs:
 
-.. code-block:: python
-
-  from collections import Counter
-
-  import pydoop.mapreduce.api as api
-  import pydoop.mapreduce.pipes as pp
-  from pydoop.avrolib import AvroContext
-
-  class Mapper(api.Mapper):
-
-      def map(self, ctx):
-          user = ctx.value
-          color = user['favorite_color']
-          if color is not None:
-              ctx.emit(user['office'], Counter({color: 1}))
-
-  class Reducer(api.Reducer):
-
-      def reduce(self, ctx):
-          s = sum(ctx.values, Counter())
-          ctx.emit('', {'office': ctx.key, 'counts': s})
-
-  def __main__():
-      factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer)
-      pp.run_task(factory, private_encoding=True, context_class=AvroContext)
+.. literalinclude:: ../../examples/avro/py/color_count.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
 The application counts the per-office occurrence of favorite colors in
 a dataset of user records with the following structure:
 
-.. code-block:: javascript
-
-  {
-      "namespace": "example.avro",
-      "type": "record",
-      "name": "User",
-      "fields": [
-          {"name": "office", "type": "string"},
-          {"name": "name", "type": "string"},
-          {"name": "favorite_number",  "type": ["int", "null"]},
-          {"name": "favorite_color", "type": ["string", "null"]}
-      ]
-  }
+.. literalinclude:: ../../examples/avro/schemas/user.avsc
+   :language: javascript
 
 User records are read from an Avro container stored on HDFS, and
 results are written to another Avro container with the following
 schema:
 
-.. code-block:: javascript
-
-  {
-      "namespace": "example.avro",
-      "type": "record",
-      "name": "Stats",
-      "fields": [
-          {"name": "office", "type": "string"},
-          {"name": "counts", "type": {"type": "map", "values": "long"}}
-      ]
-  }
+.. literalinclude:: ../../examples/avro/schemas/stats.avsc
+   :language: javascript
 
 Pydoop transparently serializes and/or deserializes Avro data as
 needed, allowing you to work directly with Python dictionaries.  To
@@ -120,35 +81,9 @@ model.
 The following application reproduces the k-mer count example from the
 `ADAM <https://github.com/bigdatagenomics/adam>`_ docs:
 
-.. code-block:: python
-
-  import pydoop.mapreduce.api as api
-  import pydoop.mapreduce.pipes as pp
-  from pydoop.avrolib import AvroContext
-
-  WIDTH = 21
-
-  def window(s, width):
-      for i in xrange(len(s) - width + 1):
-          yield s[i:i+width]
-
-  class Mapper(api.Mapper):
-
-      def map(self, ctx):
-          seq = ctx.value['sequence']
-          for kmer in window(seq, WIDTH):
-              ctx.emit(kmer, 1)
-
-  class Reducer(api.Reducer):
-
-      def reduce(self, ctx):
-          ctx.emit(ctx.key, sum(ctx.values))
-
-  def __main__():
-      pp.run_task(
-          pp.Factory(mapper_class=Mapper, reducer_class=Reducer),
-          context_class=AvroContext
-      )
+.. literalinclude:: ../../examples/avro/py/kmer_count.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
 To run the above program, execute pydoop submit as follows:
 
@@ -178,7 +113,7 @@ Running the examples
 
 To run the Avro examples you have to install the Python Avro package
 (you can get it from the Avro web site), while the ``avro`` jar is
-included in Hadoop 2 and the ``avro-mapred`` one is included in
+included in Hadoop and the ``avro-mapred`` one is included in
 Pydoop.  Part of the examples code (e.g., input generation) is written
 in Java.  To compile it, you need `sbt <http://www.scala-sbt.org>`_.
 

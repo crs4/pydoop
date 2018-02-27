@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -41,6 +41,19 @@ case ${prog} in
     transpose )
 	DATA="${this_dir}/data/transpose_input"
 	OPTS+=( "--num-reducers" "4" "--input-format" "${NL_INPUT_FORMAT}")
+	;;
+    wordcount )
+	DATA="${this_dir}/../input"
+	OPTS+=( "--num-reducers" "2" )
+	;;
+    wordcount_sw )
+	DATA="${this_dir}/../input"
+	OPTS+=( "--num-reducers" "2" )
+	OPTS+=( "--upload-file-to-cache" "${this_dir}/data/stop_words.txt" )
+	;;
+    wc_combiner )
+	DATA="${this_dir}/../input"
+	OPTS+=( "--num-reducers" "2" "-c" "combiner" )
 	;;
     *)
 	DATA="${this_dir}/../input"

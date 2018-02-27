@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -23,5 +23,6 @@ Set --kv-separator to the empty string when running this example.
 """
 
 
+# DOCS_INCLUDE_START
 def mapper(_, record, writer):
     writer.emit("", record.lower())

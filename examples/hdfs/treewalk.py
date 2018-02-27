@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -19,11 +19,9 @@
 """
 Traverse an HDFS tree and output disk space usage by block size.
 """
-
-import sys
+# DOCS_INCLUDE_START
 import pydoop.hdfs as hdfs
-from common import isdir, MB, TEST_ROOT
-from pydoop.utils.py3compat import iteritems
+from common import MB, TEST_ROOT
 
 
 def usage_by_bs(fs, root):
@@ -37,18 +35,9 @@ def usage_by_bs(fs, root):
     return stats
 
 
-def main():
-    fs = hdfs.hdfs()
-    try:
-        root = "%s/%s" % (fs.working_directory(), TEST_ROOT)
-        if not isdir(fs, root):
-            sys.exit("%r does not exist" % root)
-        print("BS(MB)\tBYTES")
-        for k, v in iteritems(usage_by_bs(fs, root)):
-            print("%.1f\t%d" % (k / float(MB), v))
-    finally:
-        fs.close()
-
-
 if __name__ == "__main__":
-    main()
+    with hdfs.hdfs() as fs:
+        root = "%s/%s" % (fs.working_directory(), TEST_ROOT)
+        print("BS(MB)\tBYTES")
+        for k, v in usage_by_bs(fs, root).items():
+            print("%.1f\t%d" % (k / float(MB), v))

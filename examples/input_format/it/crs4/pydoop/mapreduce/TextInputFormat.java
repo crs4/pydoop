@@ -1,6 +1,6 @@
 // BEGIN_COPYRIGHT
 // 
-// Copyright 2009-2017 CRS4.
+// Copyright 2009-2018 CRS4.
 // 
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -16,6 +16,7 @@
 // 
 // END_COPYRIGHT
 
+// DOCS_INCLUDE_START
 package it.crs4.pydoop.mapreduce;
 
 import org.apache.hadoop.fs.Path;
@@ -33,14 +34,13 @@ public class TextInputFormat extends FileInputFormat<LongWritable, Text> {
 
     @Override
     public RecordReader<LongWritable, Text> createRecordReader(
-						InputSplit split,
-						TaskAttemptContext context) {
-        return new LineRecordReader();
+        InputSplit split, TaskAttemptContext context) {
+      return new LineRecordReader();
     }
 
     @Override
     protected boolean isSplitable(JobContext context, Path file) {
-        return context.getConfiguration().getBoolean("pydoop.input.issplitable",
-                                                     true);
+      return context.getConfiguration().getBoolean(
+          "pydoop.input.issplitable", true);
     }
 }

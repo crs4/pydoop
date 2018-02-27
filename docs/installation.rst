@@ -3,199 +3,112 @@
 Installation
 ============
 
-.. warning::
+The fastest way to try Pydoop is via the `Docker <https://www.docker.com/>`_
+image::
 
-   Most of the info that follows is **outdated**. Pydoop currently works
-   on both Python 2 and Python 3 and supports Apache Hadoop 2 only. Check
-   ``.travis.yml`` and ``Dockerfile`` for installation / usage directions.
+  docker pull crs4/pydoop
+  docker run -p 8020:8020 [-p ...] --name pydoop -d crs4/pydoop
+
+Check out ``.travis.yml`` for more port bindings you probably want. This spins
+up a single-node, `pseudo-distributed
+<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation>`_
+Hadoop cluster with `HDFS
+<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html#Introduction>`_,
+`YARN
+<https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html>`_
+and a Job History server. To check that all daemons are up and running, you
+can run ``jps`` on the container. If everything is OK, you should get something
+like this::
+
+  $ docker exec -it pydoop bash -c 'jps | grep -v Jps'
+  161 DataNode
+  356 NodeManager
+  523 JobHistoryServer
+  75 NameNode
+  301 ResourceManager
+
+If you want to build Pydoop yourself, read on.
+
 
 Supported Platforms
 -------------------
 
-Linux
-.....
-
-Pydoop has been tested on `Gentoo <http://www.gentoo.org>`_, `Ubuntu
-<http://www.ubuntu.com>`_ and `CentOS
-<http://www.centos.org>`_. Although we currently have no information
-regarding other Linux distributions, we expect Pydoop to work
-(possibly with some tweaking) on them as well.
-
-Apple OS X
-..........
-
-Pydoop has been tested on OS X 10.9 (Maverick) and OS X 10.10
-(Yosemite).  Install the `Homebrew <http://brew.sh/>`_ version of
-Python, then follow the instructions below.
-
-
-FreeBSD
-.......
-
-We have included a patch by `trtrmitya <https://github.com/trtrmitya>`_
-that adds FreeBSD support, but we have not tested it.
-
-
-.. _get_pydoop:
-
-Get Pydoop
-----------
-
-Source Distribution
-...................
-
-We recommend installing Pydoop via `pip <http://www.pip-installer.org>`_::
-
-  pip install pydoop
-
-To get the source code, clone our `Git <http://git-scm.com/>`_ repository::
-
-  git clone https://github.com/crs4/pydoop.git
-
-Where the ``master`` branch corresponds to the latest release, while
-the ``develop`` branch contains code under active development.
+At the moment, Pydoop is being tested on `CentOS <http://www.centos.org>`_ 7
+only, although it should also work on other Linux distros and (possibly with
+some tweaking) on macOS. Windows is **not** supported.
 
 
 Prerequisites
 -------------
 
-In order to build and install Pydoop, you need the following software:
+* `Python <http://www.python.org>`_ 2 or 3 (tested with 2.7 and 3.6),
+  including header files (e.g., ``python-devel`` on CentOS, ``python-dev`` on
+  Debian);
 
-* `Python <http://www.python.org>`_ version 2.7
+* `setuptools <https://pypi.python.org/pypi/setuptools>`_ >= 3.3;
 
-* `setuptools <https://pypi.python.org/pypi/setuptools>`_ version 3.3
-  or higher
+* `Apache Hadoop <http://hadoop.apache.org>`_ 2 (currently tested with 2.7,
+  support for more distributions and/or versions is planned). Hadoop 1 is not
+  supported anymore.
 
-* either of the following:
-
-  * `Apache Hadoop <http://hadoop.apache.org>`_ version 1.0.4, 1.1.2,
-    1.2.1, 2.2.0, 2.4.1, 2.5.2 or 2.6.0
-
-  * `CDH <https://ccp.cloudera.com/display/SUPPORT/Downloads>`_
-    version 4 or 5 installed from dist-specific packages or
-    Cloudera Manager parcels (no tarball)
-
-  * `HDP <http://hortonworks.com/hdp/>`_ 2.2
-
-* `OpenSSL <http://www.openssl.org>`_
+These are both build time and run time requirements. At build time only, you
+will also need a C++ compiler (e.g., ``yum install gcc gcc-c++``) and a JDK
+(i.e., a JRE alone is not sufficient) for Pydoop's extension modules.
 
 **Optional:**
 
-* `JPype <http://jpype.sourceforge.net/>`_ to build the alternate HDFS backend
-
 * `Avro <https://avro.apache.org/>`_ Python implementation to enable
-  :ref:`avro_io`
+  :ref:`avro_io` (run time only). Note that the pip packages for Python 2 and 3
+  are named differently (respectively ``avro`` and ``avro-python3``).
 
-These are also runtime requirements for all cluster nodes. Note that
-installing Pydoop and your MapReduce application to all cluster nodes
-(or to an NFS share) is *not* required: see :doc:`self_contained` for
-additional info.
-Moreover, being based on Pipes, Pydoop cannot be used with Hadoop standalone installations.
-
-Other versions of Hadoop may or may not work depending on how
-different they are from the ones listed above.
+* Some examples have additional requirements. Check out the Dockerfile and
+  ``requirements.txt`` for details.
 
 
-Installation
-------------
+Environment Setup
+-----------------
 
-Before compiling and installing Pydoop, install all missing dependencies.
+Pydoop needs to know where the JDK and Hadoop are installed on your
+system. This is done by exporting, respectively, the ``JAVA_HOME`` and
+``HADOOP_HOME`` environment variables. For instance::
 
-In addition, if your distribution does not include them by default,
-install basic development tools (such as a C/C++ compiler) and Python
-header files.  On Ubuntu, for instance, you can do that as follows::
+  export HADOOP_HOME="/opt/hadoop-2.7.4"
+  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
-  sudo apt-get install build-essential python-dev
+If you don't know where your JDK is, find the path of the ``java`` executable::
 
-Set the ``JAVA_HOME`` environment variable to your JDK installation
-directory, e.g.::
+  $ readlink -f $(which java)
+  /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
-  export JAVA_HOME=/usr/local/java/jdk
+Then strip the trailing ``/jre/bin/java`` to get the ``JAVA_HOME``.
 
-.. note::
 
-  If you don't know where your Java home is, try finding the actual
-  path of the ``java`` executable and stripping the trailing
-  ``/jre/bin/java``::
+Building and Installing
+-----------------------
 
-    $ readlink -f $(which java)
-    /usr/lib/jvm/java-6-oracle/jre/bin/java
-    $ export JAVA_HOME=/usr/lib/jvm/java-6-oracle
+Install prerequisites::
 
-If you have installed Hadoop from a tarball, set the ``HADOOP_HOME``
-environment variable so that it points to where the tarball was
-extracted, e.g.::
+  pip install --upgrade pip
+  pip install --upgrade -r requirements.txt
 
-  export HADOOP_HOME=/opt/hadoop-1.0.4
+Install Pydoop via pip::
 
-The above step is not necessary if you installed CDH from
-dist-specific packages.  Build Pydoop with::
+  pip install pydoop
 
+Or get the source code and build it locally::
+
+  git clone -b master https://github.com/crs4/pydoop.git
+  cd pydoop
   python setup.py build
+  python setup.py install --skip-build
 
-This builds Pydoop with the "native" HDFS backend.  To build the
-(experimental) JPype backend instead, run::
+In the git repository, the ``master`` branch corresponds to the latest
+release, while the ``develop`` branch contains code under active development.
 
-  python setup.py build --hdfs-core-impl=jpype-bridged
+Note that installing Pydoop and your MapReduce applications to all cluster
+nodes (or to an NFS share) is *not* required: see :doc:`self_contained` for
+additional info.
 
-For a system-wide installation, run the following::
-
-  sudo python setup.py install --skip-build
-
-For a user-local installation::
-
-  python setup.py install --skip-build --user
-
-The latter installs Pydoop in ``~/.local/lib/python2.X/site-packages``.
-This may be a particularly handy solution if your home directory is
-accessible on the entire cluster.
-
-To install to an arbitrary path::
-
-  python setup.py install --skip-build --home <PATH>
-
-
-.. _multiple_hadoop_versions:
-
-..
-   Multiple Hadoop Versions
-   ------------------------
-
-   .. note::
-
-     The following instructions apply to installations from
-     tarballs. Running a package-based Hadoop installation together with
-     a "from-tarball" one is neither advised not supported.
-
-   If you'd like to use your Pydoop installation with multiple versions of Hadoop,
-   you will need to rebuild the modules for each version of Hadoop.
-
-   After building Pydoop for the first time following the instructions above, 
-   modify your HADOOP-related environment variables to point to the other version 
-   of Hadoop to be supported.  Then repeat the build and installation commands
-   again.
-
-   Example::
-
-     export HADOOP_HOME=/opt/hadoop-1.0.4
-     python setup.py install --user
-
-     python setup.py clean --all
-
-     export HADOOP_HOME=/opt/hadoop-1.2.1
-     python setup.py install --user
-
-   At run time, the appropriate version of the Pydoop modules will be
-   loaded for the version of Hadoop selected by your ``HADOOP_HOME``
-   variable.  If Pydoop is not able to retrieve your Hadoop home
-   directory from the environment or by looking into standard paths, it
-   falls back to a default location that is hardwired at compile time:
-   the setup script looks for a file named ``DEFAULT_HADOOP_HOME`` in the
-   current working directory; if the file does not exist, it is created
-   and filled with the path to the current Hadoop home.
-
-
-.. _troubleshooting:
 
 Troubleshooting
 ---------------
@@ -240,80 +153,35 @@ Troubleshooting
    If this fails for any reason, you can provide the correct version string
    through the ``HADOOP_VERSION`` environment variable, e.g.::
 
-     export HADOOP_VERSION="1.0.4"
+     export HADOOP_VERSION="2.7.4"
 
 
 Testing your Installation
 -------------------------
 
-After Pydoop has been successfully installed, you might want to run
-unit tests to verify that everything works fine.
-
-**IMPORTANT NOTICE:** in order to run HDFS tests you must:
+After Pydoop has been successfully installed, you might want to run unit
+tests and/or examples to verify that everything works fine. Here is a short
+list of things that can go wrong and how to fix them. For full details on
+running tests and examples, see ``.travis.yml``.
 
 #. make sure that Pydoop is able to detect your Hadoop home and
    configuration directories.  If auto-detection fails, try setting
    the ``HADOOP_HOME`` and ``HADOOP_CONF_DIR`` environment variables
    to the appropriate locations;
 
-#. since one of the test cases tests the connection to an HDFS
-   instance with *explicitly set* host and port, if in your case these
-   are different from, respectively, "localhost" and 9000 (8020 for
-   package-based CDH), you must set the ``HDFS_HOST`` and
-   ``HDFS_PORT`` environment variables accordingly;
+#. Make sure all HDFS and YARN daemons are up (see above);
 
-#. start HDFS::
-
-     ${HADOOP_HOME}/bin/start-dfs.sh
-
-#. wait until HDFS exits from safe mode::
+#. Wait until HDFS exits from safe mode::
 
      ${HADOOP_HOME}/bin/hadoop dfsadmin -safemode wait
 
-To run the unit tests, move to the ``test`` subdirectory and run *as
-the cluster superuser* (see below)::
+#. HDFS tests may fail if your NameNode's hostname and port are
+   non-standard. In this case, set the ``HDFS_HOST`` and ``HDFS_PORT``
+   environment variables accordingly;
 
-  python all_tests.py
-
-
-Superuser Privileges
-....................
-
-The following HDFS tests may fail if not run by the cluster superuser:
-``capacity``, ``chown`` and ``used``.  To get superuser privileges,
-you can either:
-
-* start the cluster with your own user account;
-
-* edit ``hdfs-site.xml`` in your configuration and set the
-  ``dfs.permissions.supergroup`` (``dfs.permissions.superusergroup``
-  in Hadoop 2) property to one of your unix groups (type ``groups`` at
-  the command prompt to see to which groups your account belongs),
-  then restart the Hadoop daemons:
-
-.. code-block:: xml
-
-  <property>
-    <name>dfs.permissions.supergroup</name>
-    <value>admin</value>
-  </property>
-
-If you can't acquire superuser privileges to run the tests, just keep in mind
-that the failures reported may be due to this reason.
-
-
-Hadoop2 / CDH4
-..............
-
-With Apache Hadoop 2 / CDH 4, before running the unit tests, edit
-``hdfs-site.xml`` and set ``dfs.namenode.fs-limits.min-block-size`` to
-a low value:
-
-.. code-block:: xml
-
-  <property>
-    <name>dfs.namenode.fs-limits.min-block-size</name>
-    <value>512</value>
-  </property>
-
-then restart Hadoop daemons.
+#. Some HDFS tests may fail if not run by the cluster superuser, in
+   particular ``capacity``, ``chown`` and ``used``.  To get superuser
+   privileges, you can either start the cluster with your own user account or
+   set the ``dfs.permissions.superusergroup`` Hadoop property to one of your
+   unix groups (type ``groups`` at the command prompt to get the list of
+   groups for your current user), then restart the HDFS daemons.

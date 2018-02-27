@@ -16,9 +16,27 @@
 #
 # END_COPYRIGHT
 
+"""\
+Word count with stop words (i.e., words that should be ignored).
+"""
+
 # DOCS_INCLUDE_START
-_VOWELS = set("AEIOUYaeiouy")
+STOP_WORDS_FN = 'stop_words.txt'
+
+try:
+    with open(STOP_WORDS_FN) as f:
+        STOP_WORDS = frozenset(l.strip() for l in f if not l.isspace())
+except OSError as e:
+    STOP_WORDS = frozenset()
 
 
-def is_vowel(c):
-    return c in _VOWELS
+def mapper(_, value, writer):
+    for word in value.split():
+        if word in STOP_WORDS:
+            writer.count("STOP_WORDS", 1)
+        else:
+            writer.emit(word, 1)
+
+
+def reducer(word, icounts, writer):
+    writer.emit(word, sum(icounts))

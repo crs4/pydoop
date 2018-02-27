@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -66,8 +66,6 @@ class PydoopScript(object):
         )
 
     def convert_args(self, args, unknown_args):
-        print("args: %r" % (args,))
-        print("unknown_args: %r" % (unknown_args,))
         # Create a zip archive containing all we need to run the
         # script (including the script itself.  We use
         # NamedTemporaryFile which will take care of deleting the temp

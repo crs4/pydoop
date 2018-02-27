@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -24,28 +24,22 @@ logging.basicConfig()
 LOGGER = logging.getLogger("WordCount")
 LOGGER.setLevel(logging.INFO)
 
-import re
 from hashlib import md5
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
 import pydoop.hdfs as hdfs
 
-WORDCOUNT = "WORDCOUNT"
-INPUT_WORDS = "INPUT_WORDS"
-OUTPUT_WORDS = "OUTPUT_WORDS"
-
 
 class Mapper(api.Mapper):
 
     def __init__(self, context):
         super(Mapper, self).__init__(context)
-        self.logger = LOGGER.getChild("Mapper")
         context.set_status("initializing mapper")
-        self.input_words = context.get_counter(WORDCOUNT, INPUT_WORDS)
+        self.input_words = context.get_counter("WORDCOUNT", "INPUT_WORDS")
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
+        words = context.value.split()
         for w in words:
             context.emit(w, 1)
         context.increment_counter(self.input_words, len(words))
@@ -56,11 +50,10 @@ class Reducer(api.Reducer):
     def __init__(self, context):
         super(Reducer, self).__init__(context)
         context.set_status("initializing reducer")
-        self.output_words = context.get_counter(WORDCOUNT, OUTPUT_WORDS)
+        self.output_words = context.get_counter("WORDCOUNT", "OUTPUT_WORDS")
 
     def reduce(self, context):
-        s = sum(context.values)
-        context.emit(context.key, s)
+        context.emit(context.key, sum(context.values))
         context.increment_counter(self.output_words, 1)
 
 
@@ -137,6 +130,7 @@ class Partitioner(api.Partitioner):
         return reducer_id
 
 
+# DOCS_INCLUDE_START
 FACTORY = pipes.Factory(
     mapper_class=Mapper,
     reducer_class=Reducer,
@@ -145,6 +139,7 @@ FACTORY = pipes.Factory(
     partitioner_class=Partitioner,
     combiner_class=Reducer
 )
+# DOCS_INCLUDE_END
 
 
 def main():

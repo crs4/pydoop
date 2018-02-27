@@ -16,9 +16,21 @@
 #
 # END_COPYRIGHT
 
+"""\
+Word count with combiner.
+"""
+
+
+def mapper(_, text, writer):
+    for word in text.split():
+        writer.emit(word, 1)
+
+
+def reducer(word, icounts, writer):
+    writer.emit(word, sum(icounts))
+
+
 # DOCS_INCLUDE_START
-_VOWELS = set("AEIOUYaeiouy")
-
-
-def is_vowel(c):
-    return c in _VOWELS
+def combiner(word, icounts, writer):
+    writer.count('combiner calls', 1)
+    reducer(word, icounts, writer)

@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 # 
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -39,3 +39,8 @@ echo "Computing usage by block size..."
 
 echo "Cleaning up..."
 "${HADOOP}" fs -rm -r "${TEST_ROOT}"
+
+(( ${PY_VER} != 3 )) && exit 0
+
+echo "Checking REPL example..."
+${PYTHON} "${this_dir}"/repl_session.py

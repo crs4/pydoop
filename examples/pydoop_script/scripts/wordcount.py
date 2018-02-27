@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -16,29 +16,16 @@
 #
 # END_COPYRIGHT
 
-import re
-
-import pydoop.mapreduce.api as api
-import pydoop.mapreduce.pipes as pp
-
-
-class Mapper(api.Mapper):
-
-    def map(self, context):
-        words = re.sub(b'[^0-9a-zA-Z]+', b' ', context.value).split()
-        for w in words:
-            context.emit(w, 1)
+"""\
+Pydoop script version of the word count example.
+"""
 
 
-class Reducer(api.Reducer):
-
-    def reduce(self, context):
-        s = sum(context.values)
-        context.emit(context.key, str(s))
-
-
-factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer)
+# DOCS_INCLUDE_START
+def mapper(_, text, writer):
+    for word in text.split():
+        writer.emit(word, 1)
 
 
-def __main__():
-    pp.run_task(factory)
+def reducer(word, icounts, writer):
+    writer.emit(word, sum(icounts))

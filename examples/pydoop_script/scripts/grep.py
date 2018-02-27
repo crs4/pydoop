@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -27,6 +27,7 @@ When running this example, set --kv-separator to the empty string and
 """
 
 
+# DOCS_INCLUDE_START
 def mapper(_, text, writer, conf):
     if text.find(conf['grep-expression']) >= 0:
         writer.emit("", text)

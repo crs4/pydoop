@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2017 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -23,6 +23,7 @@ from collections import Counter
 
 import pydoop.hadut as hadut
 import pydoop.hdfs as hdfs
+import pydoop.test_support as pts
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT_DIR = os.path.join(THIS_DIR, os.pardir, "input")
@@ -33,6 +34,9 @@ CHECKS = [
     "grep_compiled",
     "lowercase",
     "transpose",
+    "wc_combiner",
+    "wordcount",
+    "wordcount_sw",
 ]
 
 
@@ -96,6 +100,22 @@ def check_transpose(mr_out_dir):
                 except IndexError:
                     exp_output.append([item])
     return output == exp_output
+
+
+def check_wordcount(mr_out_dir, stop_words=None):
+    output = hadut.collect_output(mr_out_dir)
+    local_wc = pts.LocalWordCount(DEFAULT_INPUT_DIR, stop_words=stop_words)
+    res = local_wc.check(output)
+    return res.startswith("OK")  # FIXME: change local_wc to raise an exception
+
+
+def check_wordcount_sw(mr_out_dir):
+    with open(os.path.join(THIS_DIR, "data", "stop_words.txt"), "rt") as f:
+        stop_words = frozenset(_.strip() for _ in f if not _.isspace())
+    return check_wordcount(mr_out_dir, stop_words=stop_words)
+
+
+check_wc_combiner = check_wordcount
 
 
 def make_parser():
