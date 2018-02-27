@@ -407,4 +407,5 @@ setup(
     data_files=[
         ('config', ['README.md']),
     ],
+    zip_safe=False,
 )
