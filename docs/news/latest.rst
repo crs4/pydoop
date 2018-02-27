@@ -1,10 +1,9 @@
-New in 1.2.0
-------------
+New in 3.0.0-alpha1
+-------------------
 
- * Added support for Hadoop 2.7.2.
- * Dropped support for Python 2.6. Maintaining 2.6 compatibility would
-   require adding another dimension to the Travis matrix, vastly
-   increasing the build time and ultimately slowing down the
-   development. Since the default Python version in all major
-   distributions is 2.7, the added effort would gain us little.
- * Bug fixes.
+ * Added support for Python 3
+ * `Dropped support for Hadoop 1 <https://github.com/crs4/pydoop/pull/237>`_
+ * `Dropped old MapReduce API <https://github.com/crs4/pydoop/pull/255>`_
+ * `Dropped JPype HDFS backend <https://github.com/crs4/pydoop/pull/238>`_
+ * `Added Terasort example <https://github.com/crs4/pydoop/pull/250>`_
+ * Bug fixes and performance improvements
