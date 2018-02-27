@@ -212,9 +212,7 @@ New in 0.5.0
 
 * Pydoop now works with Hadoop 1.0
 * Multiple versions of Hadoop can now be supported by the same
-  installation of Pydoop.  See the section on building for
-  :ref:`multiple Hadoop versions <multiple_hadoop_versions>`) for the
-  details
+  installation of Pydoop.
 * We have added a :ref:`command line tool <pydoop_script_tutorial>` to
   make it trivially simple to write shorts scripts for simple
   problems.
