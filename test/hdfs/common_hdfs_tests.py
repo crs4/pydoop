@@ -268,14 +268,6 @@ class TestCommon(unittest.TestCase):
             bytes_written = fo.write(chunk)
             self.assertEqual(bytes_written, len(content))
 
-    def write_chunk(self):
-        content = utils.make_random_data()
-        chunk = create_string_buffer(content, len(content))
-        path = self._make_random_path()
-        with self.fs.open_file(path, "w") as fo:
-            bytes_written = fo.write_chunk(chunk)
-            self.assertEqual(bytes_written, len(content))
-
     def append(self):
         replication = 1  # see https://issues.apache.org/jira/browse/HDFS-3091
         content, update = utils.make_random_data(), utils.make_random_data()
@@ -409,6 +401,16 @@ class TestCommon(unittest.TestCase):
                 line, x, "len(a) = %d, len(x) = %d" % (len(line), len(x))
             )
 
+    def readline_and_read(self):
+        content = b"first line\nsecond line\n"
+        path = self._make_random_file(content=content)
+        chunks = []
+        with self.fs.open_file(path) as f:
+            chunks.append(f.read(1))
+            chunks.append(f.readline())
+            chunks.append(f.read(4))
+        self.assertEqual(chunks, [b'f', b'irst line\n', b'seco'])
+
     def iter_lines(self):
 
         def get_lines_explicit(f):
@@ -529,8 +531,6 @@ class TestCommon(unittest.TestCase):
         data = text.encode("utf-8")
         with self.fs.open_file(t_path, "wt") as fo:
             chars_written = fo.write(text)
-            with self.assertRaises(AttributeError):
-                fo.write_chunk(u"foo")
         with self.fs.open_file(b_path, "w") as fo:
             bytes_written = fo.write(data)
         self.assertEqual(chars_written, len(text))
@@ -569,7 +569,6 @@ def common_tests():
         'read',
         'read_chunk',
         'write',
-        'write_chunk',
         'append',
         'tell',
         'pread',
@@ -582,6 +581,7 @@ def common_tests():
         'list_directory',
         'readline',
         'readline_big',
+        'readline_and_read',
         'iter_lines',
         'seek',
         'block_boundary',

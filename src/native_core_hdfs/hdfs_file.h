@@ -48,6 +48,7 @@ typedef struct {
     short replication;
     int blocksize;
     int readline_chunk_size;
+    int closed;
 } FileInfo;
 
 
@@ -61,6 +62,14 @@ int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds);
 int FileClass_init_internal(FileInfo *self, hdfsFS fs, hdfsFile file);
 
 PyObject* FileClass_close(FileInfo* self);
+
+PyObject* FileClass_is_closed(FileInfo* self);
+
+PyObject* FileClass_readable(FileInfo* self);
+
+PyObject* FileClass_writable(FileInfo* self);
+
+PyObject* FileClass_seekable(FileInfo* self);
 
 PyObject* FileClass_mode(FileInfo* self);
 

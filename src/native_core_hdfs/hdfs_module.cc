@@ -124,6 +124,14 @@ static PyMemberDef FileClass_members[] = {
 
 static PyMethodDef FileClass_methods[] = {
   {"close", (PyCFunction)FileClass_close, METH_NOARGS, "Close the file"},
+  {"is_closed", (PyCFunction)FileClass_is_closed, METH_NOARGS,
+   "True if the file is closed"},
+  {"readable", (PyCFunction)FileClass_readable, METH_NOARGS,
+   "True if the file can be read from"},
+  {"writable", (PyCFunction)FileClass_writable, METH_NOARGS,
+   "True if the file can be written to"},
+  {"seekable", (PyCFunction)FileClass_seekable, METH_NOARGS,
+   "True if the file support random access (it does if it's readable)"},
   {"available", (PyCFunction) FileClass_available, METH_NOARGS,
    "Number of bytes that can be read without blocking"},
   {"write", (PyCFunction)FileClass_write, METH_VARARGS, "Write to the file"},

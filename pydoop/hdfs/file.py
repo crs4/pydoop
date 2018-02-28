@@ -46,6 +46,55 @@ def _seek_with_boundary_checks(f, position, whence):
     return position
 
 
+class RawFileWrapper(object):
+
+    def __init__(self, raw_hdfs_file, name, mode):
+        self.f = raw_hdfs_file
+        self.name = name
+        self.mode = common.Mode(mode).value
+
+    @property
+    def closed(self):
+        return self.f.is_closed()
+
+    def readable(self):
+        return self.f.readable()
+
+    def writable(self):
+        return self.f.writable()
+
+    def seekable(self):
+        return self.f.seekable()
+
+    def available(self):
+        return self.f.available()
+
+    def seek(self, position, whence=os.SEEK_SET):
+        assert whence == os.SEEK_SET
+        return self.f.seek(position)
+
+    def tell(self):
+        return self.f.tell()
+
+    def readinto(self, b):
+        return self.f.read_chunk(b)
+
+    def pread(self, position, length):
+        return self.f.pread(position, length)
+
+    def pread_chunk(self, position, chunk):
+        return self.f.pread_chunk(position, chunk)
+
+    def write(self, b):
+        return self.f.write(b)
+
+    def flush(self):
+        return self.f.flush()
+
+    def close(self):
+        return self.f.close()
+
+
 class FileIO(object):
     """
     Instances of this class represent HDFS file objects.
@@ -56,7 +105,6 @@ class FileIO(object):
     """
     ENCODING = "utf-8"
     ERRORS = "strict"
-    ENDL = os.linesep
 
     def __init__(self, raw_hdfs_file, fs, name, mode,
                  chunk_size=common.BUFSIZE, encoding=None, errors=None):
@@ -78,20 +126,15 @@ class FileIO(object):
             if errors:
                 raise ValueError("binary mode doesn't take an errors argument")
             self.__encoding = self.__errors = None
-        self.f = raw_hdfs_file
+        cls = io.BufferedWriter if mode_obj.writable else io.BufferedReader
+        self.f = cls(RawFileWrapper(raw_hdfs_file, name, mode_obj.value),
+                     buffer_size=chunk_size)
         self.__fs = fs
         self.__name = fs.get_path_info(name)["name"]
         self.__size = fs.get_path_info(name)["size"]
         self.__mode_obj = mode_obj
         self.chunk_size = chunk_size
         self.closed = False
-        self.__reset()
-
-    def __reset(self):
-        self.buffer_list = []
-        self.chunk = b""
-        self.EOF = False
-        self.p = 0
 
     def __enter__(self):
         return self
@@ -131,27 +174,6 @@ class FileIO(object):
     def writable(self):
         return self.__mode_obj.writable
 
-    def __read_chunk(self):
-        self.chunk = self.f.read(self.chunk_size)
-        self.p = 0
-        if not self.chunk:
-            self.EOF = True
-
-    def __read_chunks_until_nl(self):
-        endl = self.ENDL.encode()
-        if self.EOF:
-            eol = self.chunk.find(endl, self.p)
-            return eol if eol > -1 else len(self.chunk)
-        if not self.chunk:
-            self.__read_chunk()
-        eol = self.chunk.find(endl, self.p)
-        while eol < 0 and not self.EOF:
-            if self.p < len(self.chunk):
-                self.buffer_list.append(self.chunk[self.p:])
-            self.__read_chunk()
-            eol = self.chunk.find(endl, self.p)
-        return eol if eol > -1 else len(self.chunk)
-
     def readline(self):
         """
         Read and return a line of text.
@@ -161,10 +183,7 @@ class FileIO(object):
           newline character
         """
         _complain_ifclosed(self.closed)
-        eol = self.__read_chunks_until_nl()
-        line = b"".join(self.buffer_list) + self.chunk[self.p: eol + 1]
-        self.buffer_list = []
-        self.p = eol + 1
+        line = self.f.readline()
         if self.__encoding:
             return line.decode(self.__encoding, self.__errors)
         else:
@@ -200,7 +219,7 @@ class FileIO(object):
         :return: available bytes
         """
         _complain_ifclosed(self.closed)
-        return self.f.available()
+        return self.f.raw.available()
 
     def close(self):
         """
@@ -232,7 +251,7 @@ class FileIO(object):
             raise IOError("position cannot be past EOF")
         if length < 0:
             length = self.size - position
-        data = self.f.pread(position, length)
+        data = self.f.raw.pread(position, length)
         if self.__encoding:
             return data.decode(self.__encoding, self.__errors)
         else:
@@ -281,7 +300,6 @@ class FileIO(object):
         """
         _complain_ifclosed(self.closed)
         position = _seek_with_boundary_checks(self, position, whence)
-        self.__reset()
         return self.f.seek(position)
 
     def tell(self):
@@ -336,7 +354,7 @@ class hdfs_file(FileIO):
         _complain_ifclosed(self.closed)
         if position > self.size:
             raise IOError("position cannot be past EOF")
-        return self.f.pread_chunk(position, chunk)
+        return self.f.raw.pread_chunk(position, chunk)
 
     def read_chunk(self, chunk):
         r"""
@@ -350,19 +368,7 @@ class hdfs_file(FileIO):
         :return: the number of bytes read
         """
         _complain_ifclosed(self.closed)
-        return self.f.read_chunk(chunk)
-
-    def write_chunk(self, chunk):
-        """
-        Write data from buffer ``chunk`` to the file.
-
-        :type chunk: buffer
-        :param chunk: an object that supports the buffer protocol
-        :rtype: int
-        :return: the number of bytes written
-        """
-        _complain_ifclosed(self.closed)
-        return self.write(chunk)
+        return self.f.readinto(chunk)
 
 
 class local_file(io.FileIO):
@@ -441,9 +447,6 @@ class local_file(io.FileIO):
     def read_chunk(self, chunk):
         _complain_ifclosed(self.closed)
         return self.readinto(chunk)
-
-    def write_chunk(self, chunk):
-        return self.write(chunk)
 
 
 class TextIOWrapper(io.TextIOWrapper):

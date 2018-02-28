@@ -35,6 +35,7 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->replication = 1;
         self->blocksize = 0;
         self->readline_chunk_size = 16 * 1024; // 16 KB
+        self->closed = 0;
     }
     return (PyObject *)self;
 }
@@ -70,9 +71,30 @@ PyObject* FileClass_close(FileInfo* self){
     int result = hdfsCloseFile(self->fs, self->file);
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
-    }
-    else
+    } else {
+        self->closed = 1;
         return PyBool_FromLong(1);
+    }
+}
+
+
+PyObject* FileClass_is_closed(FileInfo* self) {
+  return PyBool_FromLong(self->closed);
+}
+
+
+PyObject* FileClass_readable(FileInfo* self) {
+  return PyBool_FromLong(hdfsFileIsOpenForRead(self->file));
+}
+
+
+PyObject* FileClass_writable(FileInfo* self) {
+  return PyBool_FromLong(hdfsFileIsOpenForWrite(self->file));
+}
+
+
+PyObject* FileClass_seekable(FileInfo* self) {
+  return PyBool_FromLong(hdfsFileIsOpenForRead(self->file));
 }
 
 
@@ -322,7 +344,7 @@ PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
 
     int result = hdfsSeek(self->fs, self->file, position);
     if (result >= 0)
-        Py_RETURN_NONE;
+        return PyLong_FromLong(position);
     else {
         PyErr_SetFromErrno(PyExc_IOError);
         return NULL;
@@ -373,6 +395,9 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds) {
 
 
 PyObject* FileClass_flush(FileInfo *self){
+    if (!hdfsFileIsOpenForWrite(self->file)) {
+      Py_RETURN_NONE;
+    }
     int result = hdfsFlush(self->fs, self->file);
 
     if (result >= 0) {
