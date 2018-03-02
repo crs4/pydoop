@@ -30,6 +30,10 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if (self != NULL) {
         self->fs = NULL;
         self->file = NULL;
+        if (NULL == (self->name = PyUnicode_FromString(""))) {
+            Py_DECREF(self);
+            return NULL;
+        }
         self->flags = 0;
         self->buff_size = 0;
         self->replication = 1;
@@ -49,8 +53,17 @@ void FileClass_dealloc(FileInfo* self)
 
 int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds)
 {
-    if (! PyArg_ParseTuple(args, "OO", &(self->fs), &(self->file))) {
+    PyObject *name = NULL, *tmp;
+
+    if (! PyArg_ParseTuple(args, "OOO", &(self->fs), &(self->file), &name)) {
         return -1;
+    }
+
+    if (name) {
+	tmp = self->name;
+	Py_INCREF(name);
+	self->name = name;
+	Py_XDECREF(tmp);
     }
 
     return 0;
@@ -84,6 +97,12 @@ PyObject* FileClass_getclosed(FileInfo* self, void* closure) {
 
 PyObject* FileClass_getbuff_size(FileInfo* self, void* closure) {
   return PyLong_FromLong(self->buff_size);
+}
+
+
+PyObject* FileClass_getname(FileInfo* self, void* closure) {
+    Py_INCREF(self->name);
+    return self->name;
 }
 
 

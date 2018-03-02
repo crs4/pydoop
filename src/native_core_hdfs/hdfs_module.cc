@@ -125,6 +125,7 @@ static PyMemberDef FileClass_members[] = {
 static PyGetSetDef FileClass_getseters[] = {
   {"closed", (getter)FileClass_getclosed, NULL, NULL},
   {"buff_size", (getter)FileClass_getbuff_size, NULL, NULL},
+  {"name", (getter)FileClass_getname, NULL, NULL},
   {NULL}  /* Sentinel */
 };
 

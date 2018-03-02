@@ -310,14 +310,16 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 	free(file);
 	return NULL;
     }
-    retval = PyObject_CallMethod(module, "CoreHdfsFile", "OO", self->_fs, file);
+    PyObject *name = PyUnicode_FromString(path);
+    retval = PyObject_CallMethod(module, "CoreHdfsFile", "OOO",
+				 self->_fs, file, name);
+    Py_XDECREF(name);
+    Py_XDECREF(module);
     if (NULL == retval) {
-	Py_XDECREF(module);
 	free(file);
 	return NULL;
     }
     FileInfo *fileInfo = ((FileInfo*) retval);
-    // LP: see hdfs_file.h: fileInfo->path = path;
     fileInfo->flags = flags;
     fileInfo->buff_size = buff_size;
     fileInfo->blocksize = blocksize;

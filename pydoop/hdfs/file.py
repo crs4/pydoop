@@ -48,14 +48,17 @@ def _seek_with_boundary_checks(f, position, whence):
 
 class RawFileWrapper(object):
 
-    def __init__(self, raw_hdfs_file, name, mode):
+    def __init__(self, raw_hdfs_file, mode):
         self.f = raw_hdfs_file
-        self.name = name
         self.mode = common.Mode(mode).value
 
     @property
     def closed(self):
         return self.f.closed
+
+    @property
+    def name(self):
+        return self.f.name
 
     def readable(self):
         return self.f.readable()
@@ -106,7 +109,7 @@ class FileIO(object):
     ENCODING = "utf-8"
     ERRORS = "strict"
 
-    def __init__(self, raw_hdfs_file, fs, name, mode,
+    def __init__(self, raw_hdfs_file, fs, mode,
                  encoding=None, errors=None):
         self.buff_size = raw_hdfs_file.buff_size
         if self.buff_size <= 0:
@@ -128,11 +131,12 @@ class FileIO(object):
                 raise ValueError("binary mode doesn't take an errors argument")
             self.__encoding = self.__errors = None
         cls = io.BufferedWriter if mode_obj.writable else io.BufferedReader
-        self.f = cls(RawFileWrapper(raw_hdfs_file, name, mode_obj.value),
+        self.f = cls(RawFileWrapper(raw_hdfs_file, mode_obj.value),
                      buffer_size=self.buff_size)
         self.__fs = fs
-        self.__name = fs.get_path_info(name)["name"]
-        self.__size = fs.get_path_info(name)["size"]
+        info = fs.get_path_info(self.f.raw.name)
+        self.__name = info["name"]
+        self.__size = info["size"]
         self.__mode_obj = mode_obj
         self.closed = False
 

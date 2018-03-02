@@ -264,7 +264,7 @@ class hdfs(object):
             return fret
         f = self.fs.open_file(path, m.flags, buff_size, replication, blocksize)
         cls = FileIO if m.text else hdfs_file
-        fret = cls(f, self, path, m)
+        fret = cls(f, self, m)
         if m.flags == os.O_RDONLY:
             fret.seek(0)
         return fret
