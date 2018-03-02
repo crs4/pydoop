@@ -34,7 +34,6 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
         self->buff_size = 0;
         self->replication = 1;
         self->blocksize = 0;
-        self->readline_chunk_size = 16 * 1024; // 16 KB
         self->closed = 0;
     }
     return (PyObject *)self;
@@ -80,6 +79,11 @@ PyObject* FileClass_close(FileInfo* self){
 
 PyObject* FileClass_getclosed(FileInfo* self, void* closure) {
   return PyBool_FromLong(self->closed);
+}
+
+
+PyObject* FileClass_getbuff_size(FileInfo* self, void* closure) {
+  return PyLong_FromLong(self->buff_size);
 }
 
 

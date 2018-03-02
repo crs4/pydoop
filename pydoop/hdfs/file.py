@@ -107,9 +107,10 @@ class FileIO(object):
     ERRORS = "strict"
 
     def __init__(self, raw_hdfs_file, fs, name, mode,
-                 chunk_size=common.BUFSIZE, encoding=None, errors=None):
-        if not chunk_size > 0:
-            raise ValueError("chunk size must be positive")
+                 encoding=None, errors=None):
+        self.buff_size = raw_hdfs_file.buff_size
+        if self.buff_size <= 0:
+            self.buff_size = common.BUFSIZE
         mode_obj = common.Mode(mode)
         if mode_obj.text:
             self.__encoding = encoding or self.__class__.ENCODING
@@ -128,12 +129,11 @@ class FileIO(object):
             self.__encoding = self.__errors = None
         cls = io.BufferedWriter if mode_obj.writable else io.BufferedReader
         self.f = cls(RawFileWrapper(raw_hdfs_file, name, mode_obj.value),
-                     buffer_size=chunk_size)
+                     buffer_size=self.buff_size)
         self.__fs = fs
         self.__name = fs.get_path_info(name)["name"]
         self.__size = fs.get_path_info(name)["size"]
         self.__mode_obj = mode_obj
-        self.chunk_size = chunk_size
         self.closed = False
 
     def __enter__(self):
@@ -276,7 +276,7 @@ class FileIO(object):
         while 1:
             if length <= 0:
                 break
-            c = self.f.read(min(self.chunk_size, length))
+            c = self.f.read(min(self.buff_size, length))
             if c == b"":
                 break
             chunks.append(c)
@@ -388,7 +388,7 @@ class local_file(io.FileIO):
         self.__fs = fs
         self.__size = os.fstat(super(local_file, self).fileno()).st_size
         self.f = self
-        self.chunk_size = 0
+        self.buff_size = io.DEFAULT_BUFFER_SIZE
 
     @staticmethod
     def __make_parents(fs, name):

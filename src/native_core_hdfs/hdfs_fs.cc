@@ -293,13 +293,13 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     PyObject* retval = NULL;
     const char* path = NULL;
-    int flags, buff_size, blocksize, readline_chunk_size;
+    int flags, buff_size, blocksize;
     short replication;
     hdfsFile file;
 
-    if (!PyArg_ParseTuple(args, "es|iihii",
+    if (!PyArg_ParseTuple(args, "es|iihi",
                           "utf-8", &path, &flags, &buff_size, &replication,
-                          &blocksize, &readline_chunk_size)) {
+                          &blocksize)) {
         return NULL;
     }
 
@@ -328,7 +328,6 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
         fileInfo->buff_size = buff_size;
         fileInfo->blocksize = blocksize;
         fileInfo->replication = replication;
-        fileInfo->readline_chunk_size = readline_chunk_size;
     }
 done:
     PyMem_Free((void*)path);

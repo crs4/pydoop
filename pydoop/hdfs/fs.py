@@ -230,7 +230,6 @@ class hdfs(object):
                   buff_size=0,
                   replication=0,
                   blocksize=0,
-                  readline_chunk_size=common.BUFSIZE,
                   encoding=None,
                   errors=None):
         """
@@ -250,9 +249,6 @@ class hdfs(object):
         :param replication: HDFS block replication
         :type blocksize: int
         :param blocksize: HDFS block size
-        :type readline_chunk_size: int
-        :param readline_chunk_size: the amount of bytes that
-          :meth:`~.file.hdfs_file.readline` will use for buffering
         :rtpye: :class:`~.file.hdfs_file`
         :return: handle to the open file
         """
@@ -268,7 +264,7 @@ class hdfs(object):
             return fret
         f = self.fs.open_file(path, m.flags, buff_size, replication, blocksize)
         cls = FileIO if m.text else hdfs_file
-        fret = cls(f, self, path, m, readline_chunk_size)
+        fret = cls(f, self, path, m)
         if m.flags == os.O_RDONLY:
             fret.seek(0)
         return fret

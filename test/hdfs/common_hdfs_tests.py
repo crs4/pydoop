@@ -372,13 +372,11 @@ class TestCommon(unittest.TestCase):
         path = self._make_random_path()
         for text in samples:
             expected_lines = text.splitlines(True)
-            for chunk_size in 2, max(1, len(text)), 2 + len(text):
-                with self.fs.open_file(path, "w") as f:
-                    f.write(text)
-                with self.fs.open_file(
-                        path, readline_chunk_size=chunk_size) as f:
-                    lines = get_lines(f)
-                self.assertEqual(lines, expected_lines)
+            with self.fs.open_file(path, "w") as f:
+                f.write(text)
+            with self.fs.open_file(path) as f:
+                lines = get_lines(f)
+            self.assertEqual(lines, expected_lines)
 
     def readline(self):
         def get_lines(f):
@@ -432,25 +430,24 @@ class TestCommon(unittest.TestCase):
         lines = [b"1\n", b"2\n", b"3\n"]
         data = b"".join(lines)
         path = self._make_random_path()
-        for chunk_size in range(1, 2 + len(data)):
-            with self.fs.open_file(path, "w") as f:
-                f.write(data)
-            with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
-                for i, l in enumerate(lines):
-                    f.seek(sum(map(len, lines[:i])))
-                    self.assertEqual(f.readline(), l)
-                    f.seek(0)
-                    self.assertEqual(f.readline(), lines[0])
-                    f.seek(sum(map(len, lines[:i])))
-                    self.assertEqual(f.readline(), l)
-            with self.fs.open_file(path) as f:
-                f.seek(1)
-                f.seek(1, os.SEEK_CUR)
-                self.assertEqual(f.tell(), 2)
-                f.seek(-1, os.SEEK_END)
-                self.assertEqual(f.tell(), len(data) - 1)
-                # seek past end of file
-                self.assertRaises(IOError, f.seek, len(data) + 10)
+        with self.fs.open_file(path, "w") as f:
+            f.write(data)
+        with self.fs.open_file(path) as f:
+            for i, l in enumerate(lines):
+                f.seek(sum(map(len, lines[:i])))
+                self.assertEqual(f.readline(), l)
+                f.seek(0)
+                self.assertEqual(f.readline(), lines[0])
+                f.seek(sum(map(len, lines[:i])))
+                self.assertEqual(f.readline(), l)
+        with self.fs.open_file(path) as f:
+            f.seek(1)
+            f.seek(1, os.SEEK_CUR)
+            self.assertEqual(f.tell(), 2)
+            f.seek(-1, os.SEEK_END)
+            self.assertEqual(f.tell(), len(data) - 1)
+            # seek past end of file
+            self.assertRaises(IOError, f.seek, len(data) + 10)
 
     def block_boundary(self):
         hd_info = pydoop.hadoop_version_info()

@@ -113,8 +113,7 @@ from .fs import hdfs, default_is_local
 
 
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
-         readline_chunk_size=common.BUFSIZE, user=None,
-         encoding=None, errors=None):
+         user=None, encoding=None, errors=None):
     """
     Open a file, returning an :class:`~.file.hdfs_file` object.
 
@@ -125,7 +124,7 @@ def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
     host, port, path_ = path.split(hdfs_path, user)
     fs = hdfs(host, port, user)
     return fs.open_file(path_, mode, buff_size, replication, blocksize,
-                        readline_chunk_size, encoding, errors)
+                        encoding, errors)
 
 
 def dump(data, hdfs_path, **kwargs):
