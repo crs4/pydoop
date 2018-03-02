@@ -63,7 +63,7 @@ int FileClass_init_internal(FileInfo *self, hdfsFS fs, hdfsFile file);
 
 PyObject* FileClass_close(FileInfo* self);
 
-PyObject* FileClass_is_closed(FileInfo* self);
+PyObject* FileClass_getclosed(FileInfo* self, void* closure);
 
 PyObject* FileClass_readable(FileInfo* self);
 

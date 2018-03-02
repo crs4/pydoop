@@ -122,10 +122,13 @@ static PyMemberDef FileClass_members[] = {
   {NULL}  /* Sentinel */
 };
 
+static PyGetSetDef FileClass_getseters[] = {
+  {"closed", (getter)FileClass_getclosed, NULL, NULL},
+  {NULL}  /* Sentinel */
+};
+
 static PyMethodDef FileClass_methods[] = {
   {"close", (PyCFunction)FileClass_close, METH_NOARGS, "Close the file"},
-  {"is_closed", (PyCFunction)FileClass_is_closed, METH_NOARGS,
-   "True if the file is closed"},
   {"readable", (PyCFunction)FileClass_readable, METH_NOARGS,
    "True if the file can be read from"},
   {"writable", (PyCFunction)FileClass_writable, METH_NOARGS,
@@ -181,7 +184,7 @@ static PyTypeObject FileType = {
   0,                                        /* tp_iternext */
   FileClass_methods,                        /* tp_methods */
   FileClass_members,                        /* tp_members */
-  0,                                        /* tp_getset */
+  FileClass_getseters,                      /* tp_getset */
   0,                                        /* tp_base */
   0,                                        /* tp_dict */
   0,                                        /* tp_descr_get */

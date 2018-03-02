@@ -55,7 +55,7 @@ class RawFileWrapper(object):
 
     @property
     def closed(self):
-        return self.f.is_closed()
+        return self.f.closed
 
     def readable(self):
         return self.f.readable()

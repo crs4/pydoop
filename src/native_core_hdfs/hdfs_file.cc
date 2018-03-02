@@ -78,7 +78,7 @@ PyObject* FileClass_close(FileInfo* self){
 }
 
 
-PyObject* FileClass_is_closed(FileInfo* self) {
+PyObject* FileClass_getclosed(FileInfo* self, void* closure) {
   return PyBool_FromLong(self->closed);
 }
 
