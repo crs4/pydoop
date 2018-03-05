@@ -126,6 +126,7 @@ static PyGetSetDef FileClass_getseters[] = {
   {"closed", (getter)FileClass_getclosed, NULL, NULL},
   {"buff_size", (getter)FileClass_getbuff_size, NULL, NULL},
   {"name", (getter)FileClass_getname, NULL, NULL},
+  {"mode", (getter)FileClass_getmode, NULL, NULL},
   {NULL}  /* Sentinel */
 };
 
@@ -266,6 +267,10 @@ initnative_core_hdfs(void)
   Py_INCREF(&FileType);
   PyModule_AddObject(m, "CoreHdfsFs", (PyObject *)&FsType);
   PyModule_AddObject(m, "CoreHdfsFile", (PyObject *)&FileType);
+
+  PyModule_AddStringConstant(m, "MODE_READ", MODE_READ);
+  PyModule_AddStringConstant(m, "MODE_WRITE", MODE_WRITE);
+  PyModule_AddStringConstant(m, "MODE_APPEND", MODE_APPEND);
 }
 #endif
 

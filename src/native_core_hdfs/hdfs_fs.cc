@@ -24,6 +24,7 @@
 #include <hdfs.h>
 #include <unicodeobject.h>
 #include <errno.h>
+#include <string.h>
 
 #define MAX_WD_BUFFSIZE 2048
 
@@ -282,18 +283,30 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     PyObject* retval = NULL;
     const char* path = NULL;
+    const char* mode = NULL;
     int flags, buff_size, blocksize;
     short replication;
     hdfsFile file;
 
-    if (!PyArg_ParseTuple(args, "es|iihi",
-                          "utf-8", &path, &flags, &buff_size, &replication,
+    if (!PyArg_ParseTuple(args, "es|sihi",
+                          "utf-8", &path, &mode, &buff_size, &replication,
                           &blocksize)) {
         return NULL;
     }
 
     if (str_empty(path)) {
         PyErr_SetString(PyExc_ValueError, "Empty path");
+        return NULL;
+    }
+
+    if (strcmp(mode, MODE_READ) == 0) {
+        flags = O_RDONLY;
+    } else if (strcmp(mode, MODE_WRITE) == 0) {
+        flags = O_WRONLY;
+    } else if (strcmp(mode, MODE_APPEND) == 0) {
+        flags = O_WRONLY | O_APPEND;
+    } else {
+        PyErr_SetString(PyExc_ValueError, "Invalid mode");
         return NULL;
     }
 
@@ -311,8 +324,10 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 	return NULL;
     }
     PyObject *name = PyUnicode_FromString(path);
-    retval = PyObject_CallMethod(module, "CoreHdfsFile", "OOO",
-				 self->_fs, file, name);
+    PyObject *pymode = PyUnicode_FromString(mode);
+    retval = PyObject_CallMethod(module, "CoreHdfsFile", "OOOO",
+				 self->_fs, file, name, pymode);
+    Py_XDECREF(pymode);
     Py_XDECREF(name);
     Py_XDECREF(module);
     if (NULL == retval) {
@@ -320,7 +335,6 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 	return NULL;
     }
     FileInfo *fileInfo = ((FileInfo*) retval);
-    fileInfo->flags = flags;
     fileInfo->buff_size = buff_size;
     fileInfo->blocksize = blocksize;
     fileInfo->replication = replication;

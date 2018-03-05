@@ -34,7 +34,10 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             Py_DECREF(self);
             return NULL;
         }
-        self->flags = 0;
+        if (NULL == (self->mode = PyUnicode_FromString(""))) {
+            Py_DECREF(self);
+            return NULL;
+        }
         self->buff_size = 0;
         self->replication = 1;
         self->blocksize = 0;
@@ -53,9 +56,10 @@ void FileClass_dealloc(FileInfo* self)
 
 int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *name = NULL, *tmp;
+    PyObject *name = NULL, *mode = NULL, *tmp;
 
-    if (! PyArg_ParseTuple(args, "OOO", &(self->fs), &(self->file), &name)) {
+    if (!PyArg_ParseTuple(args, "OOOO",
+                          &(self->fs), &(self->file), &name, &mode)) {
         return -1;
     }
 
@@ -63,6 +67,12 @@ int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds)
 	tmp = self->name;
 	Py_INCREF(name);
 	self->name = name;
+	Py_XDECREF(tmp);
+    }
+    if (mode) {
+	tmp = self->mode;
+	Py_INCREF(mode);
+	self->mode = mode;
 	Py_XDECREF(tmp);
     }
 
@@ -103,6 +113,12 @@ PyObject* FileClass_getbuff_size(FileInfo* self, void* closure) {
 PyObject* FileClass_getname(FileInfo* self, void* closure) {
     Py_INCREF(self->name);
     return self->name;
+}
+
+
+PyObject* FileClass_getmode(FileInfo* self, void* closure) {
+    Py_INCREF(self->mode);
+    return self->mode;
 }
 
 

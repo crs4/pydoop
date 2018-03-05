@@ -58,7 +58,7 @@ class TestCommon(unittest.TestCase):
 
     # also an implicit test for the write method
     def _make_random_file(self, where=None, content=None, **kwargs):
-        kwargs["flags"] = "w"
+        kwargs["mode"] = "w"
         content = content or utils.make_random_data(printable=True)
         path = self._make_random_path(where=where)
         with self.fs.open_file(path, **kwargs) as fo:
@@ -80,14 +80,12 @@ class TestCommon(unittest.TestCase):
     assertRaisesExternal = failUnlessRaisesExternal
 
     def open_close(self):
-        for flags in "w", os.O_WRONLY:
-            path = self._make_random_path()
-            self.fs.open_file(path, flags).close()
-            for flags in "r", os.O_RDONLY:
-                with self.fs.open_file(path, flags) as f:
-                    self.assertFalse(f.closed)
-                self.assertTrue(f.closed)
-                self.assertRaises(ValueError, f.read)
+        path = self._make_random_path()
+        self.fs.open_file(path, "w").close()
+        with self.fs.open_file(path, "r") as f:
+            self.assertFalse(f.closed)
+        self.assertTrue(f.closed)
+        self.assertRaises(ValueError, f.read)
         path = self._make_random_path()
         self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
         self.assertRaises(ValueError, self.fs.open_file, "")
@@ -181,6 +179,7 @@ class TestCommon(unittest.TestCase):
                 self.assertTrue(f.fs is self.fs)
                 self.assertEqual(f.size, 0)
                 self.assertEqual(f.mode, mode)
+                self.assertTrue(f.writable())
                 f.write(content if mode == "wb" else content.decode("utf-8"))
             self.assertEqual(f.size, len(content))
         for mode in "rb", "rt":
@@ -189,6 +188,7 @@ class TestCommon(unittest.TestCase):
                 self.assertTrue(f.fs is self.fs)
                 self.assertEqual(f.size, len(content))
                 self.assertEqual(f.mode, mode)
+                self.assertFalse(f.writable())
 
     def flush(self):
         path = self._make_random_path()

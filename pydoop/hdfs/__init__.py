@@ -151,8 +151,8 @@ def load(hdfs_path, **kwargs):
     Keyword arguments are passed to :func:`open`. The `"mode"` kwarg
     must be readonly.
     """
-    m = common.Mode(kwargs.get("mode", "r"))
-    if m.writable:
+    m, _ = common.parse_mode(kwargs.get("mode", "r"))
+    if m != "r":
         raise ValueError("opening mode must be readonly")
     data = []
     with open(hdfs_path, **kwargs) as fi:
@@ -169,9 +169,9 @@ def load(hdfs_path, **kwargs):
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
     kwargs.pop("mode", None)
-    kwargs["flags"] = "r"
+    kwargs["mode"] = "r"
     with src_fs.open_file(src_path, **kwargs) as fi:
-        kwargs["flags"] = "w"
+        kwargs["mode"] = "w"
         with dest_fs.open_file(dest_path, **kwargs) as fo:
             bufsize = common.BUFSIZE
             while 1:

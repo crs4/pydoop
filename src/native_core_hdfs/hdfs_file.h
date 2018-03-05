@@ -22,7 +22,6 @@
 
 #include <Python.h>
 
-
 #include <string>
 #include <map>
 #include <utility>  // std::pair support
@@ -36,19 +35,17 @@
 #include "../py3k_compat.h"
 
 
-
 typedef struct {
     PyObject_HEAD
     hdfsFS fs;
     hdfsFile file;
     PyObject *name;
-    int flags;
+    PyObject *mode;
     int buff_size;
     short replication;
     int blocksize;
     int closed;
 } FileInfo;
-
 
 
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
@@ -66,6 +63,8 @@ PyObject* FileClass_getclosed(FileInfo* self, void* closure);
 PyObject* FileClass_getbuff_size(FileInfo* self, void* closure);
 
 PyObject* FileClass_getname(FileInfo* self, void* closure);
+
+PyObject* FileClass_getmode(FileInfo* self, void* closure);
 
 PyObject* FileClass_readable(FileInfo* self);
 

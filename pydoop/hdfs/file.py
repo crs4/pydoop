@@ -48,9 +48,8 @@ def _seek_with_boundary_checks(f, position, whence):
 
 class RawFileWrapper(object):
 
-    def __init__(self, raw_hdfs_file, mode):
+    def __init__(self, raw_hdfs_file):
         self.f = raw_hdfs_file
-        self.mode = common.Mode(mode).value
 
     @property
     def closed(self):
@@ -59,6 +58,10 @@ class RawFileWrapper(object):
     @property
     def name(self):
         return self.f.name
+
+    @property
+    def mode(self):
+        return self.f.mode
 
     def readable(self):
         return self.f.readable()
@@ -109,13 +112,13 @@ class FileIO(object):
     ENCODING = "utf-8"
     ERRORS = "strict"
 
-    def __init__(self, raw_hdfs_file, fs, mode,
-                 encoding=None, errors=None):
+    def __init__(self, raw_hdfs_file, fs, mode, encoding=None, errors=None):
+        self.mode = mode
+        self.base_mode, is_text = common.parse_mode(self.mode)
         self.buff_size = raw_hdfs_file.buff_size
         if self.buff_size <= 0:
             self.buff_size = common.BUFSIZE
-        mode_obj = common.Mode(mode)
-        if mode_obj.text:
+        if is_text:
             self.__encoding = encoding or self.__class__.ENCODING
             self.__errors = errors or self.__class__.ERRORS
             try:
@@ -130,14 +133,13 @@ class FileIO(object):
             if errors:
                 raise ValueError("binary mode doesn't take an errors argument")
             self.__encoding = self.__errors = None
-        cls = io.BufferedWriter if mode_obj.writable else io.BufferedReader
-        self.f = cls(RawFileWrapper(raw_hdfs_file, mode_obj.value),
+        cls = io.BufferedReader if self.base_mode == "r" else io.BufferedWriter
+        self.f = cls(RawFileWrapper(raw_hdfs_file),
                      buffer_size=self.buff_size)
         self.__fs = fs
         info = fs.get_path_info(self.f.raw.name)
         self.__name = info["name"]
         self.__size = info["size"]
-        self.__mode_obj = mode_obj
         self.closed = False
 
     def __enter__(self):
@@ -168,15 +170,8 @@ class FileIO(object):
         """
         return self.__size
 
-    @property
-    def mode(self):
-        """
-        The I/O mode for the file.
-        """
-        return self.__mode_obj.value
-
     def writable(self):
-        return self.__mode_obj.writable
+        return self.f.raw.writable()
 
     def readline(self):
         """
@@ -232,7 +227,7 @@ class FileIO(object):
         if not self.closed:
             self.closed = True
             retval = self.f.close()
-            if self.writable():
+            if self.base_mode != "r":
                 self.__size = self.fs.get_path_info(self.name)["size"]
             return retval
 
@@ -384,11 +379,10 @@ class local_file(io.FileIO):
     hdfs package.
     """
     def __init__(self, fs, name, mode):
-        mode_obj = common.Mode(mode)
-        if mode_obj.writable:
+        if not mode.startswith("r"):
             local_file.__make_parents(fs, name)
+        super(local_file, self).__init__(name, mode)
         name = os.path.abspath(name)
-        super(local_file, self).__init__(name, mode_obj.value)
         self.__fs = fs
         self.__size = os.fstat(super(local_file, self).fileno()).st_size
         self.f = self
@@ -463,7 +457,7 @@ class TextIOWrapper(io.TextIOWrapper):
             ))
         a = getattr(self.buffer.raw, name)
         if name == "mode":
-            a = "%st" % common.Mode(a).value[0]
+            a = "%st" % self.buffer.raw.mode[0]
         return a
 
     def pread(self, position, length):

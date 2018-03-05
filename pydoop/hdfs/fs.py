@@ -226,7 +226,7 @@ class hdfs(object):
         return self.__status.refcount == 0
 
     def open_file(self, path,
-                  flags=os.O_RDONLY,
+                  mode="r",
                   buff_size=0,
                   replication=0,
                   blocksize=0,
@@ -235,14 +235,18 @@ class hdfs(object):
         """
         Open an HDFS file.
 
+        Supported opening modes are "r", "w", "a". In addition, a
+        trailing "t" can be added to specify text mode (e.g., "rt" =
+        open for reading text).
+
         Pass 0 as ``buff_size``, ``replication`` or ``blocksize`` if you want
         to use the "configured" values, i.e., the ones set in the Hadoop
         configuration files.
 
         :type path: str
         :param path: the full path to the file
-        :type flags: str or int
-        :param flags: opening mode (see :class:`~.common.Mode`).
+        :type mode: str
+        :param mode: opening mode
         :type buff_size: int
         :param buff_size: read/write buffer size in bytes
         :type replication: int
@@ -251,22 +255,21 @@ class hdfs(object):
         :param blocksize: HDFS block size
         :rtpye: :class:`~.file.hdfs_file`
         :return: handle to the open file
+
         """
         _complain_ifclosed(self.closed)
         if not path:
             raise ValueError("Empty path")
-        m = common.Mode(flags)
+        m, is_text = common.parse_mode(mode)
         if not self.host:
-            fret = local_file(self, path, common.Mode(m.value[0]))
-            if m.text:
-                cls = io.BufferedWriter if m.writable else io.BufferedReader
+            fret = local_file(self, path, m)
+            if is_text:
+                cls = io.BufferedReader if m == "r" else io.BufferedWriter
                 fret = TextIOWrapper(cls(fret), encoding, errors)
             return fret
-        f = self.fs.open_file(path, m.flags, buff_size, replication, blocksize)
-        cls = FileIO if m.text else hdfs_file
-        fret = cls(f, self, m)
-        if m.flags == os.O_RDONLY:
-            fret.seek(0)
+        f = self.fs.open_file(path, m, buff_size, replication, blocksize)
+        cls = FileIO if is_text else hdfs_file
+        fret = cls(f, self, mode)
         return fret
 
     def capacity(self):

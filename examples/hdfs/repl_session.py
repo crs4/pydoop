@@ -2,7 +2,6 @@
 # DOCS_INCLUDE_START
 >>> import pydoop.hdfs as hdfs
 >>> hdfs.mkdir('test')
-True
 >>> hdfs.dump('hello, world', 'test/hello.txt')
 >>> hdfs.load('test/hello.txt')
 b'hello, world'
