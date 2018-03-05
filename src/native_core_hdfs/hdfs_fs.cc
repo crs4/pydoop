@@ -125,7 +125,7 @@ PyObject* FsClass_get_working_directory(FsInfo* self) {
 
 PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     PyObject* retval = NULL;
     hdfsFileInfo* info;
 
@@ -134,6 +134,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -142,6 +143,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
         info = hdfsGetPathInfo(self->_fs, path);
     Py_END_ALLOW_THREADS;
     if (info == NULL) {
+        PyMem_Free(path);
         return PyErr_SetFromErrno(PyExc_IOError);
     }
 
@@ -159,6 +161,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
             "path", PyUnicode_FromString(info->mName),
             "size", info->mSize
     );
+    PyMem_Free(path);
     hdfsFreeFileInfo(info, 1);
     return retval;
 }
@@ -168,7 +171,7 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
     Py_ssize_t start, length;
     PyObject* result = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     char*** hosts = NULL;
 
     if (!PyArg_ParseTuple(args, "esnn", "utf-8", &path, &start, &length)) {
@@ -176,18 +179,22 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
 
     if (start < 0 || length < 0) {
-       PyErr_SetString(PyExc_ValueError, "Start position and length must be >= 0");
-       return NULL;
+        PyMem_Free(path);
+        PyErr_SetString(PyExc_ValueError,
+                        "Start position and length must be >= 0");
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         hosts = hdfsGetHosts(self->_fs, path, start, length);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
     if (!hosts) {
         return PyErr_SetFromErrno(PyExc_RuntimeError);
     }
@@ -234,7 +241,7 @@ PyObject* FsClass_get_used(FsInfo* self) {
 
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     short replication;
     int result;
 
@@ -242,6 +249,7 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) 
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -249,6 +257,7 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsSetReplication(self->_fs, path, replication);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
     if (result < 0) {
 	return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -258,13 +267,14 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) 
 
 PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     int result;
 
     if (!PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -272,6 +282,7 @@ PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsSetWorkingDirectory(self->_fs, path);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
     if (result < 0) {
 	return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -282,7 +293,7 @@ PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* 
 PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     const char* mode = NULL;
     int flags, buff_size, blocksize;
     short replication;
@@ -295,6 +306,7 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -306,6 +318,7 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     } else if (strcmp(mode, MODE_APPEND) == 0) {
         flags = O_WRONLY | O_APPEND;
     } else {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Invalid mode");
         return NULL;
     }
@@ -315,15 +328,18 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
                             buff_size, replication, blocksize);
     Py_END_ALLOW_THREADS;
     if (file == NULL) {
+        PyMem_Free(path);
         return PyErr_SetFromErrno(PyExc_IOError);
     }
 
     PyObject* module = PyImport_ImportModule("pydoop.native_core_hdfs");
     if (NULL == module) {
+        PyMem_Free(path);
 	free(file);
 	return NULL;
     }
     PyObject *name = PyUnicode_FromString(path);
+    PyMem_Free(path);
     PyObject *pymode = PyUnicode_FromString(mode);
     retval = PyObject_CallMethod(module, "CoreHdfsFile", "OOOO",
 				 self->_fs, file, name, pymode);
@@ -371,7 +387,7 @@ PyObject *FsClass_get_capacity(FsInfo *self) {
 PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     FsInfo* to_hdfs;
-    const char *from_path = NULL, *to_path = NULL;
+    char *from_path = NULL, *to_path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
@@ -380,6 +396,8 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
     }
 
     if (str_empty(from_path) || str_empty(to_path)) {
+        PyMem_Free(from_path);
+        PyMem_Free(to_path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -387,6 +405,8 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(from_path);
+    PyMem_Free(to_path);
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -396,13 +416,14 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 
 PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -410,6 +431,7 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsExists(self->_fs, path);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
     // LP: hdfsExists (in some cases?) sets errno to ENOENT "[Errno 2] No such
     // file or directory" when the path doesn't exist or EEXIST in other cases.
@@ -425,7 +447,7 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "es", "utf-8", &path)) {
@@ -433,6 +455,7 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -440,7 +463,7 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsCreateDirectory(self->_fs, path);
     Py_END_ALLOW_THREADS;
-
+    PyMem_Free(path);
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -510,7 +533,7 @@ static int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
 
     hdfsFileInfo* pathList = NULL;
     int numEntries = 0;
@@ -520,13 +543,14 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         pathInfo = hdfsGetPathInfo(self->_fs, path);
-
+        PyMem_Free(path);
         if (!pathInfo) {
             Py_BLOCK_THREADS; // later we 'goto' skipping over END_ALLOW_THREADS
             PyErr_SetFromErrno(PyExc_IOError);
@@ -590,7 +614,7 @@ done:
 PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     FsInfo* to_hdfs;
-    const char *from_path = NULL, *to_path = NULL;
+    char *from_path = NULL, *to_path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
@@ -599,6 +623,8 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(from_path) || str_empty(to_path)) {
+        PyMem_Free(from_path);
+        PyMem_Free(to_path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -606,6 +632,8 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(from_path);
+    PyMem_Free(to_path);
 
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -616,13 +644,15 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *from_path = NULL, *to_path = NULL;
+    char *from_path = NULL, *to_path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "eses", "utf-8", &from_path, "utf-8", &to_path))
         return NULL;
 
     if (str_empty(from_path) || str_empty(to_path)) {
+        PyMem_Free(from_path);
+        PyMem_Free(to_path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -630,7 +660,8 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsRename(self->_fs, from_path, to_path);
     Py_END_ALLOW_THREADS;
-
+    PyMem_Free(from_path);
+    PyMem_Free(to_path);
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
     }
@@ -640,7 +671,7 @@ PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     int recursive = 1;
     int result;
 
@@ -649,6 +680,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -656,6 +688,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsDelete(self->_fs, path, recursive);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -666,7 +699,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     short mode = 1;
     int result;
 
@@ -675,6 +708,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -685,6 +719,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
         errno = 0;
         result = hdfsChmod(self->_fs, path, mode);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
     if (result >= 0) {
         Py_RETURN_NONE;
@@ -704,8 +739,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char *path = NULL;
-    const char *input_user = NULL, *input_group = NULL;
+    char *path = NULL, *input_user = NULL, *input_group = NULL;
     int result;
     hdfsFileInfo* fileInfo;
 
@@ -715,19 +749,28 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
+        PyMem_Free(input_user);
+        PyMem_Free(input_group);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
-        if (NULL == (fileInfo = hdfsGetPathInfo(self->_fs, path))) {
+        fileInfo = hdfsGetPathInfo(self->_fs, path);
+        if (NULL == fileInfo) {
+            PyMem_Free(path);
+            PyMem_Free(input_user);
+            PyMem_Free(input_group);
 	    return PyErr_SetFromErrno(PyExc_IOError);
         }
         const char* new_user = str_empty(input_user) ? fileInfo->mOwner : input_user;
         const char* new_group = str_empty(input_group) ? fileInfo->mGroup : input_group;
         result = hdfsChown(self->_fs, path, new_user, new_group);
     Py_END_ALLOW_THREADS;
-
+    PyMem_Free(path);
+    PyMem_Free(input_user);
+    PyMem_Free(input_group);
     hdfsFreeFileInfo(fileInfo, 1);
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
@@ -738,7 +781,7 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
 PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     tTime mtime, atime;
     int result;
 
@@ -747,6 +790,7 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
         return NULL;
     }
@@ -754,6 +798,7 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsUtime(self->_fs, path, mtime, atime);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
