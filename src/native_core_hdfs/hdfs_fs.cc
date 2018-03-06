@@ -298,6 +298,8 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     int flags, buff_size, blocksize;
     short replication;
     hdfsFile file;
+    tOffset size = 0;
+    hdfsFileInfo* info;
 
     if (!PyArg_ParseTuple(args, "es|sihi",
                           "utf-8", &path, &mode, &buff_size, &replication,
@@ -339,7 +341,6 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 	return NULL;
     }
     PyObject *name = PyUnicode_FromString(path);
-    PyMem_Free(path);
     PyObject *pymode = PyUnicode_FromString(mode);
     retval = PyObject_CallMethod(module, "CoreHdfsFile", "OOOO",
 				 self->_fs, file, name, pymode);
@@ -347,10 +348,27 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     Py_XDECREF(name);
     Py_XDECREF(module);
     if (NULL == retval) {
-	free(file);
-	return NULL;
+        PyMem_Free(path);
+        free(file);
+        return NULL;
     }
+
+    /* get file size for the SEEK_END variant of seek */
+    if (flags == O_RDONLY) {
+        Py_BEGIN_ALLOW_THREADS;
+            info = hdfsGetPathInfo(self->_fs, path);
+        Py_END_ALLOW_THREADS;
+        if (info == NULL) {
+            PyMem_Free(path);
+            return PyErr_SetFromErrno(PyExc_IOError);
+        }
+        size = info->mSize;
+        hdfsFreeFileInfo(info, 1);
+    }
+    PyMem_Free(path);
+
     FileInfo *fileInfo = ((FileInfo*) retval);
+    fileInfo->size = size;
     fileInfo->buff_size = buff_size;
     fileInfo->blocksize = blocksize;
     fileInfo->replication = replication;

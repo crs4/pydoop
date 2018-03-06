@@ -33,74 +33,6 @@ def _complain_ifclosed(closed):
         raise ValueError("I/O operation on closed HDFS file object")
 
 
-def _seek_with_boundary_checks(f, position, whence):
-    if whence == os.SEEK_CUR:
-        position += f.tell()
-    elif whence == os.SEEK_END:
-        position += f.size
-        position = max(0, position)
-    if position > f.size:
-        raise IOError('cannot seek past end of file')
-    if f.writable():
-        raise IOError('can seek only in read-only')
-    return position
-
-
-class RawFileWrapper(object):
-
-    def __init__(self, raw_hdfs_file):
-        self.f = raw_hdfs_file
-
-    @property
-    def closed(self):
-        return self.f.closed
-
-    @property
-    def name(self):
-        return self.f.name
-
-    @property
-    def mode(self):
-        return self.f.mode
-
-    def readable(self):
-        return self.f.readable()
-
-    def writable(self):
-        return self.f.writable()
-
-    def seekable(self):
-        return self.f.seekable()
-
-    def available(self):
-        return self.f.available()
-
-    def seek(self, position, whence=os.SEEK_SET):
-        assert whence == os.SEEK_SET
-        return self.f.seek(position)
-
-    def tell(self):
-        return self.f.tell()
-
-    def readinto(self, b):
-        return self.f.read_chunk(b)
-
-    def pread(self, position, length):
-        return self.f.pread(position, length)
-
-    def pread_chunk(self, position, chunk):
-        return self.f.pread_chunk(position, chunk)
-
-    def write(self, b):
-        return self.f.write(b)
-
-    def flush(self):
-        return self.f.flush()
-
-    def close(self):
-        return self.f.close()
-
-
 class FileIO(object):
     """
     Instances of this class represent HDFS file objects.
@@ -134,8 +66,7 @@ class FileIO(object):
                 raise ValueError("binary mode doesn't take an errors argument")
             self.__encoding = self.__errors = None
         cls = io.BufferedReader if self.base_mode == "r" else io.BufferedWriter
-        self.f = cls(RawFileWrapper(raw_hdfs_file),
-                     buffer_size=self.buff_size)
+        self.f = cls(raw_hdfs_file, buffer_size=self.buff_size)
         self.__fs = fs
         info = fs.get_path_info(self.f.raw.name)
         self.__name = info["name"]
@@ -244,8 +175,6 @@ class FileIO(object):
         :return: the chunk of data read from the file
         """
         _complain_ifclosed(self.closed)
-        if position < 0:
-            raise ValueError("position must be >= 0")
         if position > self.size:
             raise IOError("position cannot be past EOF")
         if length < 0:
@@ -298,8 +227,7 @@ class FileIO(object):
           and ``os.SEEK_END`` (relative to the file's end).
         """
         _complain_ifclosed(self.closed)
-        position = _seek_with_boundary_checks(self, position, whence)
-        return self.f.seek(position)
+        return self.f.seek(position, whence)
 
     def tell(self):
         """
@@ -417,14 +345,13 @@ class local_file(io.FileIO):
         super(local_file, self).close()
 
     def seek(self, position, whence=os.SEEK_SET):
-        position = _seek_with_boundary_checks(self, position, whence)
-        return super(local_file, self).seek(position)
+        if position > self.__size:
+            raise IOError("position cannot be past EOF")
+        return super(local_file, self).seek(position, whence)
 
     def __seek_and_read(self, position, length=None, buf=None):
         assert (length is None) != (buf is None)
         _complain_ifclosed(self.closed)
-        if position < 0:
-            raise ValueError("Position must be >= 0")
         old_pos = self.tell()
         self.seek(position)
         if buf is not None:

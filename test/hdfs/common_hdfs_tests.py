@@ -301,7 +301,7 @@ class TestCommon(unittest.TestCase):
             )
             self.assertEqual(f.tell(), 0)
             self.assertEqual(content[1:], f.pread(1, -1))
-            self.assertRaises(ValueError, f.pread, -1, 10)
+            self.assertRaises(IOError, f.pread, -1, 10)
             # read starting past end of file
             self.assertRaises(IOError, f.pread, len(content) + 1, 10)
             # read past end of file

@@ -146,6 +146,9 @@ static PyMethodDef FileClass_methods[] = {
   {"read", (PyCFunction) FileClass_read, METH_VARARGS, "Read from the file"},
   {"read_chunk", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
    "Like read, but store data to the given buffer"},
+  /* Also export read_chunk as readinto for compatibility with Python io */
+  {"readinto", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
+   "Like read, but store data to the given buffer"},
   {"pread", (PyCFunction) FileClass_pread, METH_VARARGS,
    "Read starting from the given position"},
   {"pread_chunk", (PyCFunction) FileClass_pread_chunk, METH_VARARGS,

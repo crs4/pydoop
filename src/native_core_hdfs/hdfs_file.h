@@ -41,6 +41,7 @@ typedef struct {
     hdfsFile file;
     PyObject *name;
     PyObject *mode;
+    tOffset size;
     int buff_size;
     short replication;
     int blocksize;

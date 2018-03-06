@@ -18,6 +18,7 @@
  */
 
 #include "hdfs_file.h"
+#include <stdio.h>
 
 #define PYDOOP_TEXT_ENCODING  "utf-8"
 
@@ -38,6 +39,7 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
             Py_DECREF(self);
             return NULL;
         }
+        self->size = 0;
         self->buff_size = 0;
         self->replication = 1;
         self->blocksize = 0;
@@ -326,7 +328,9 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
 
     if (position < 0) {
-        PyErr_SetString(PyExc_ValueError, "position must be >= 0");
+        errno = EINVAL;
+        PyErr_SetFromErrno(PyExc_IOError);
+        errno = 0;
         return NULL;
     }
 
@@ -351,7 +355,9 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
 
     if (position < 0) {
-        PyErr_SetString(PyExc_ValueError, "position must be >= 0");
+        errno = EINVAL;
+        PyErr_SetFromErrno(PyExc_IOError);
+        errno = 0;
         return NULL;
     }
 
@@ -366,28 +372,44 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
+PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds) {
 
-    tOffset position;
+    tOffset position, curpos;
+    int whence = SEEK_SET;
 
-    if (! PyArg_ParseTuple(args, "n", &position))
+    if (!PyArg_ParseTuple(args, "n|i", &position, &whence))
         return NULL;
 
-    if (position < 0) {
-        // raise an IOError like a regular python file
+    switch (whence) {
+    case SEEK_SET:
+        break;
+    case SEEK_CUR:
+        curpos = hdfsTell(self->fs, self->file);
+        if (curpos < 0) {
+            return PyErr_SetFromErrno(PyExc_IOError);
+        }
+        position += curpos;
+        break;
+    case SEEK_END:
+        position += self->size;
+        break;
+    default:
+        PyErr_SetString(PyExc_ValueError, "unsupported whence value");
+        return NULL;
+    }
+
+    /* HDFS does not support seeking past end of file */
+    if (position < 0 || position > self->size) {
         errno = EINVAL;
         PyErr_SetFromErrno(PyExc_IOError);
         errno = 0;
         return NULL;
     }
 
-    int result = hdfsSeek(self->fs, self->file, position);
-    if (result >= 0)
-        return PyLong_FromLong(position);
-    else {
-        PyErr_SetFromErrno(PyExc_IOError);
-        return NULL;
+    if (hdfsSeek(self->fs, self->file, position) < 0) {
+	return PyErr_SetFromErrno(PyExc_IOError);
     }
+    return PyLong_FromLong(position);
 }
 
 
