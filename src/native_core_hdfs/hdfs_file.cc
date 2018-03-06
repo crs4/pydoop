@@ -18,6 +18,7 @@
  */
 
 #include "hdfs_file.h"
+#include <stdio.h>
 
 #define PYDOOP_TEXT_ENCODING  "utf-8"
 
@@ -30,11 +31,19 @@ PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if (self != NULL) {
         self->fs = NULL;
         self->file = NULL;
-        self->flags = 0;
+        if (NULL == (self->name = PyUnicode_FromString(""))) {
+            Py_DECREF(self);
+            return NULL;
+        }
+        if (NULL == (self->mode = PyUnicode_FromString(""))) {
+            Py_DECREF(self);
+            return NULL;
+        }
+        self->size = 0;
         self->buff_size = 0;
         self->replication = 1;
         self->blocksize = 0;
-        self->readline_chunk_size = 16 * 1024; // 16 KB
+        self->closed = 0;
     }
     return (PyObject *)self;
 }
@@ -49,8 +58,24 @@ void FileClass_dealloc(FileInfo* self)
 
 int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds)
 {
-    if (! PyArg_ParseTuple(args, "OO", &(self->fs), &(self->file))) {
+    PyObject *name = NULL, *mode = NULL, *tmp;
+
+    if (!PyArg_ParseTuple(args, "OOOO",
+                          &(self->fs), &(self->file), &name, &mode)) {
         return -1;
+    }
+
+    if (name) {
+	tmp = self->name;
+	Py_INCREF(name);
+	self->name = name;
+	Py_XDECREF(tmp);
+    }
+    if (mode) {
+	tmp = self->mode;
+	Py_INCREF(mode);
+	self->mode = mode;
+	Py_XDECREF(tmp);
     }
 
     return 0;
@@ -70,9 +95,47 @@ PyObject* FileClass_close(FileInfo* self){
     int result = hdfsCloseFile(self->fs, self->file);
     if (result < 0) {
         return PyErr_SetFromErrno(PyExc_IOError);
-    }
-    else
+    } else {
+        self->closed = 1;
         return PyBool_FromLong(1);
+    }
+}
+
+
+PyObject* FileClass_getclosed(FileInfo* self, void* closure) {
+  return PyBool_FromLong(self->closed);
+}
+
+
+PyObject* FileClass_getbuff_size(FileInfo* self, void* closure) {
+  return PyLong_FromLong(self->buff_size);
+}
+
+
+PyObject* FileClass_getname(FileInfo* self, void* closure) {
+    Py_INCREF(self->name);
+    return self->name;
+}
+
+
+PyObject* FileClass_getmode(FileInfo* self, void* closure) {
+    Py_INCREF(self->mode);
+    return self->mode;
+}
+
+
+PyObject* FileClass_readable(FileInfo* self) {
+  return PyBool_FromLong(hdfsFileIsOpenForRead(self->file));
+}
+
+
+PyObject* FileClass_writable(FileInfo* self) {
+  return PyBool_FromLong(hdfsFileIsOpenForWrite(self->file));
+}
+
+
+PyObject* FileClass_seekable(FileInfo* self) {
+  return PyBool_FromLong(hdfsFileIsOpenForRead(self->file));
 }
 
 
@@ -265,7 +328,9 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
 
     if (position < 0) {
-        PyErr_SetString(PyExc_ValueError, "position must be >= 0");
+        errno = EINVAL;
+        PyErr_SetFromErrno(PyExc_IOError);
+        errno = 0;
         return NULL;
     }
 
@@ -290,7 +355,9 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
         return NULL;
 
     if (position < 0) {
-        PyErr_SetString(PyExc_ValueError, "position must be >= 0");
+        errno = EINVAL;
+        PyErr_SetFromErrno(PyExc_IOError);
+        errno = 0;
         return NULL;
     }
 
@@ -305,28 +372,44 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 }
 
 
-PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds){
+PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds) {
 
-    tOffset position;
+    tOffset position, curpos;
+    int whence = SEEK_SET;
 
-    if (! PyArg_ParseTuple(args, "n", &position))
+    if (!PyArg_ParseTuple(args, "n|i", &position, &whence))
         return NULL;
 
-    if (position < 0) {
-        // raise an IOError like a regular python file
+    switch (whence) {
+    case SEEK_SET:
+        break;
+    case SEEK_CUR:
+        curpos = hdfsTell(self->fs, self->file);
+        if (curpos < 0) {
+            return PyErr_SetFromErrno(PyExc_IOError);
+        }
+        position += curpos;
+        break;
+    case SEEK_END:
+        position += self->size;
+        break;
+    default:
+        PyErr_SetString(PyExc_ValueError, "unsupported whence value");
+        return NULL;
+    }
+
+    /* HDFS does not support seeking past end of file */
+    if (position < 0 || position > self->size) {
         errno = EINVAL;
         PyErr_SetFromErrno(PyExc_IOError);
         errno = 0;
         return NULL;
     }
 
-    int result = hdfsSeek(self->fs, self->file, position);
-    if (result >= 0)
-        Py_RETURN_NONE;
-    else {
-        PyErr_SetFromErrno(PyExc_IOError);
-        return NULL;
+    if (hdfsSeek(self->fs, self->file, position) < 0) {
+	return PyErr_SetFromErrno(PyExc_IOError);
     }
+    return PyLong_FromLong(position);
 }
 
 
@@ -373,6 +456,9 @@ PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds) {
 
 
 PyObject* FileClass_flush(FileInfo *self){
+    if (!hdfsFileIsOpenForWrite(self->file)) {
+      Py_RETURN_NONE;
+    }
     int result = hdfsFlush(self->fs, self->file);
 
     if (result >= 0) {

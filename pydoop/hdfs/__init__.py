@@ -113,8 +113,7 @@ from .fs import hdfs, default_is_local
 
 
 def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
-         readline_chunk_size=common.BUFSIZE, user=None,
-         encoding=None, errors=None):
+         user=None, encoding=None, errors=None):
     """
     Open a file, returning an :class:`~.file.hdfs_file` object.
 
@@ -125,7 +124,7 @@ def open(hdfs_path, mode="r", buff_size=0, replication=0, blocksize=0,
     host, port, path_ = path.split(hdfs_path, user)
     fs = hdfs(host, port, user)
     return fs.open_file(path_, mode, buff_size, replication, blocksize,
-                        readline_chunk_size, encoding, errors)
+                        encoding, errors)
 
 
 def dump(data, hdfs_path, **kwargs):
@@ -152,8 +151,8 @@ def load(hdfs_path, **kwargs):
     Keyword arguments are passed to :func:`open`. The `"mode"` kwarg
     must be readonly.
     """
-    m = common.Mode(kwargs.get("mode", "r"))
-    if m.writable:
+    m, _ = common.parse_mode(kwargs.get("mode", "r"))
+    if m != "r":
         raise ValueError("opening mode must be readonly")
     data = []
     with open(hdfs_path, **kwargs) as fi:
@@ -170,9 +169,9 @@ def load(hdfs_path, **kwargs):
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
     kwargs.pop("mode", None)
-    kwargs["flags"] = "r"
+    kwargs["mode"] = "r"
     with src_fs.open_file(src_path, **kwargs) as fi:
-        kwargs["flags"] = "w"
+        kwargs["mode"] = "w"
         with dest_fs.open_file(dest_path, **kwargs) as fo:
             bufsize = common.BUFSIZE
             while 1:

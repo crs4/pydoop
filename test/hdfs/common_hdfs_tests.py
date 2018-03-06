@@ -58,7 +58,7 @@ class TestCommon(unittest.TestCase):
 
     # also an implicit test for the write method
     def _make_random_file(self, where=None, content=None, **kwargs):
-        kwargs["flags"] = "w"
+        kwargs["mode"] = "w"
         content = content or utils.make_random_data(printable=True)
         path = self._make_random_path(where=where)
         with self.fs.open_file(path, **kwargs) as fo:
@@ -80,14 +80,12 @@ class TestCommon(unittest.TestCase):
     assertRaisesExternal = failUnlessRaisesExternal
 
     def open_close(self):
-        for flags in "w", os.O_WRONLY:
-            path = self._make_random_path()
-            self.fs.open_file(path, flags).close()
-            for flags in "r", os.O_RDONLY:
-                with self.fs.open_file(path, flags) as f:
-                    self.assertFalse(f.closed)
-                self.assertTrue(f.closed)
-                self.assertRaises(ValueError, f.read)
+        path = self._make_random_path()
+        self.fs.open_file(path, "w").close()
+        with self.fs.open_file(path, "r") as f:
+            self.assertFalse(f.closed)
+        self.assertTrue(f.closed)
+        self.assertRaises(ValueError, f.read)
         path = self._make_random_path()
         self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
         self.assertRaises(ValueError, self.fs.open_file, "")
@@ -181,6 +179,7 @@ class TestCommon(unittest.TestCase):
                 self.assertTrue(f.fs is self.fs)
                 self.assertEqual(f.size, 0)
                 self.assertEqual(f.mode, mode)
+                self.assertTrue(f.writable())
                 f.write(content if mode == "wb" else content.decode("utf-8"))
             self.assertEqual(f.size, len(content))
         for mode in "rb", "rt":
@@ -189,6 +188,7 @@ class TestCommon(unittest.TestCase):
                 self.assertTrue(f.fs is self.fs)
                 self.assertEqual(f.size, len(content))
                 self.assertEqual(f.mode, mode)
+                self.assertFalse(f.writable())
 
     def flush(self):
         path = self._make_random_path()
@@ -268,14 +268,6 @@ class TestCommon(unittest.TestCase):
             bytes_written = fo.write(chunk)
             self.assertEqual(bytes_written, len(content))
 
-    def write_chunk(self):
-        content = utils.make_random_data()
-        chunk = create_string_buffer(content, len(content))
-        path = self._make_random_path()
-        with self.fs.open_file(path, "w") as fo:
-            bytes_written = fo.write_chunk(chunk)
-            self.assertEqual(bytes_written, len(content))
-
     def append(self):
         replication = 1  # see https://issues.apache.org/jira/browse/HDFS-3091
         content, update = utils.make_random_data(), utils.make_random_data()
@@ -309,7 +301,7 @@ class TestCommon(unittest.TestCase):
             )
             self.assertEqual(f.tell(), 0)
             self.assertEqual(content[1:], f.pread(1, -1))
-            self.assertRaises(ValueError, f.pread, -1, 10)
+            self.assertRaises(IOError, f.pread, -1, 10)
             # read starting past end of file
             self.assertRaises(IOError, f.pread, len(content) + 1, 10)
             # read past end of file
@@ -380,13 +372,11 @@ class TestCommon(unittest.TestCase):
         path = self._make_random_path()
         for text in samples:
             expected_lines = text.splitlines(True)
-            for chunk_size in 2, max(1, len(text)), 2 + len(text):
-                with self.fs.open_file(path, "w") as f:
-                    f.write(text)
-                with self.fs.open_file(
-                        path, readline_chunk_size=chunk_size) as f:
-                    lines = get_lines(f)
-                self.assertEqual(lines, expected_lines)
+            with self.fs.open_file(path, "w") as f:
+                f.write(text)
+            with self.fs.open_file(path) as f:
+                lines = get_lines(f)
+            self.assertEqual(lines, expected_lines)
 
     def readline(self):
         def get_lines(f):
@@ -409,6 +399,16 @@ class TestCommon(unittest.TestCase):
                 line, x, "len(a) = %d, len(x) = %d" % (len(line), len(x))
             )
 
+    def readline_and_read(self):
+        content = b"first line\nsecond line\n"
+        path = self._make_random_file(content=content)
+        chunks = []
+        with self.fs.open_file(path) as f:
+            chunks.append(f.read(1))
+            chunks.append(f.readline())
+            chunks.append(f.read(4))
+        self.assertEqual(chunks, [b'f', b'irst line\n', b'seco'])
+
     def iter_lines(self):
 
         def get_lines_explicit(f):
@@ -430,25 +430,24 @@ class TestCommon(unittest.TestCase):
         lines = [b"1\n", b"2\n", b"3\n"]
         data = b"".join(lines)
         path = self._make_random_path()
-        for chunk_size in range(1, 2 + len(data)):
-            with self.fs.open_file(path, "w") as f:
-                f.write(data)
-            with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
-                for i, l in enumerate(lines):
-                    f.seek(sum(map(len, lines[:i])))
-                    self.assertEqual(f.readline(), l)
-                    f.seek(0)
-                    self.assertEqual(f.readline(), lines[0])
-                    f.seek(sum(map(len, lines[:i])))
-                    self.assertEqual(f.readline(), l)
-            with self.fs.open_file(path) as f:
-                f.seek(1)
-                f.seek(1, os.SEEK_CUR)
-                self.assertEqual(f.tell(), 2)
-                f.seek(-1, os.SEEK_END)
-                self.assertEqual(f.tell(), len(data) - 1)
-                # seek past end of file
-                self.assertRaises(IOError, f.seek, len(data) + 10)
+        with self.fs.open_file(path, "w") as f:
+            f.write(data)
+        with self.fs.open_file(path) as f:
+            for i, l in enumerate(lines):
+                f.seek(sum(map(len, lines[:i])))
+                self.assertEqual(f.readline(), l)
+                f.seek(0)
+                self.assertEqual(f.readline(), lines[0])
+                f.seek(sum(map(len, lines[:i])))
+                self.assertEqual(f.readline(), l)
+        with self.fs.open_file(path) as f:
+            f.seek(1)
+            f.seek(1, os.SEEK_CUR)
+            self.assertEqual(f.tell(), 2)
+            f.seek(-1, os.SEEK_END)
+            self.assertEqual(f.tell(), len(data) - 1)
+            # seek past end of file
+            self.assertRaises(IOError, f.seek, len(data) + 10)
 
     def block_boundary(self):
         hd_info = pydoop.hadoop_version_info()
@@ -529,8 +528,6 @@ class TestCommon(unittest.TestCase):
         data = text.encode("utf-8")
         with self.fs.open_file(t_path, "wt") as fo:
             chars_written = fo.write(text)
-            with self.assertRaises(AttributeError):
-                fo.write_chunk(u"foo")
         with self.fs.open_file(b_path, "w") as fo:
             bytes_written = fo.write(data)
         self.assertEqual(chars_written, len(text))
@@ -569,7 +566,6 @@ def common_tests():
         'read',
         'read_chunk',
         'write',
-        'write_chunk',
         'append',
         'tell',
         'pread',
@@ -582,6 +578,7 @@ def common_tests():
         'list_directory',
         'readline',
         'readline_big',
+        'readline_and_read',
         'iter_lines',
         'seek',
         'block_boundary',

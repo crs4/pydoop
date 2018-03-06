@@ -122,8 +122,22 @@ static PyMemberDef FileClass_members[] = {
   {NULL}  /* Sentinel */
 };
 
+static PyGetSetDef FileClass_getseters[] = {
+  {"closed", (getter)FileClass_getclosed, NULL, NULL},
+  {"buff_size", (getter)FileClass_getbuff_size, NULL, NULL},
+  {"name", (getter)FileClass_getname, NULL, NULL},
+  {"mode", (getter)FileClass_getmode, NULL, NULL},
+  {NULL}  /* Sentinel */
+};
+
 static PyMethodDef FileClass_methods[] = {
   {"close", (PyCFunction)FileClass_close, METH_NOARGS, "Close the file"},
+  {"readable", (PyCFunction)FileClass_readable, METH_NOARGS,
+   "True if the file can be read from"},
+  {"writable", (PyCFunction)FileClass_writable, METH_NOARGS,
+   "True if the file can be written to"},
+  {"seekable", (PyCFunction)FileClass_seekable, METH_NOARGS,
+   "True if the file support random access (it does if it's readable)"},
   {"available", (PyCFunction) FileClass_available, METH_NOARGS,
    "Number of bytes that can be read without blocking"},
   {"write", (PyCFunction)FileClass_write, METH_VARARGS, "Write to the file"},
@@ -131,6 +145,9 @@ static PyMethodDef FileClass_methods[] = {
    "Force any buffered output to be written"},
   {"read", (PyCFunction) FileClass_read, METH_VARARGS, "Read from the file"},
   {"read_chunk", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
+   "Like read, but store data to the given buffer"},
+  /* Also export read_chunk as readinto for compatibility with Python io */
+  {"readinto", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
    "Like read, but store data to the given buffer"},
   {"pread", (PyCFunction) FileClass_pread, METH_VARARGS,
    "Read starting from the given position"},
@@ -173,7 +190,7 @@ static PyTypeObject FileType = {
   0,                                        /* tp_iternext */
   FileClass_methods,                        /* tp_methods */
   FileClass_members,                        /* tp_members */
-  0,                                        /* tp_getset */
+  FileClass_getseters,                      /* tp_getset */
   0,                                        /* tp_base */
   0,                                        /* tp_dict */
   0,                                        /* tp_descr_get */
@@ -253,6 +270,10 @@ initnative_core_hdfs(void)
   Py_INCREF(&FileType);
   PyModule_AddObject(m, "CoreHdfsFs", (PyObject *)&FsType);
   PyModule_AddObject(m, "CoreHdfsFile", (PyObject *)&FileType);
+
+  PyModule_AddStringConstant(m, "MODE_READ", MODE_READ);
+  PyModule_AddStringConstant(m, "MODE_WRITE", MODE_WRITE);
+  PyModule_AddStringConstant(m, "MODE_APPEND", MODE_APPEND);
 }
 #endif
 

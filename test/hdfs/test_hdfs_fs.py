@@ -162,7 +162,7 @@ class TestHDFS(TestCommon):
         line = b"012345678\n"
         offset = bs - (10 * len(line) + 5)
         path = self._make_random_path()
-        with self.fs.open_file(path, flags="w", **kwargs) as f:
+        with self.fs.open_file(path, mode="w", **kwargs) as f:
             bytes_written = lines_written = 0
             _write_prefix(f, offset, bs)
             bytes_written = offset

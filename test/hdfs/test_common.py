@@ -17,70 +17,24 @@
 # END_COPYRIGHT
 
 import unittest
-import os
-import itertools
 
-from pydoop.hdfs.common import Mode
+from pydoop.hdfs.common import parse_mode
 
 
 class TestMode(unittest.TestCase):
 
-    def test_args(self):
-        keys = ("arg", "value", "flags", "binary", "writable")
-        for t in [
-            ("r", "rb", os.O_RDONLY, True, False),
-            ("rt", "rt", os.O_RDONLY, False, False),
-            ("rb", "rb", os.O_RDONLY, True, False),
-            (os.O_RDONLY, "rb", os.O_RDONLY, True, False),
-            ("w", "wb", os.O_WRONLY, True, True),
-            ("wt", "wt", os.O_WRONLY, False, True),
-            ("wb", "wb", os.O_WRONLY, True, True),
-            (os.O_WRONLY, "wb", os.O_WRONLY, True, True),
-            ("a", "ab", os.O_WRONLY | os.O_APPEND, True, True),
-            ("at", "at", os.O_WRONLY | os.O_APPEND, False, True),
-            ("ab", "ab", os.O_WRONLY | os.O_APPEND, True, True),
-            (os.O_WRONLY | os.O_APPEND, "ab", os.O_WRONLY | os.O_APPEND,
-             True, True),
-        ]:
-            d = dict(zip(keys, t))
-            m = Mode(d.pop('arg'))
-            for k, v in d.items():
-                self.assertEqual(getattr(m, k), v)
-            self.assertEqual(str(m), d["value"])
-
-    def test_default(self):
-        m = Mode()
-        self.assertEqual(m.value, "rb")
-        self.assertEqual(m.flags, os.O_RDONLY)
-        self.assertTrue(m.binary)
-
-    def test_exceptions(self):
-        for arg in (-1, "k", [0]):
-            self.assertRaises(ValueError, Mode, arg)
-
-    def test_eq(self):
-        m1, m2 = Mode(), Mode()
-        self.assertEqual(m1, m2)
-        values = "r", "w", "a", "rb", "wb", "ab", "rt", "wt", "at"
-        equiv = set([("r", "rb"), ("w", "wb"), ("a", "ab")])
-        for v in values:
-            self.assertEqual(Mode(v), Mode(v))
-            self.assertEqual(Mode(v), v)
-        for v1, v2 in itertools.combinations(values, 2):
-            if (v1, v2) in equiv:
-                self.assertEqual(Mode(v1), Mode(v2))
-                self.assertEqual(Mode(v1), v2)
-                self.assertEqual(Mode(v2), v1)
-            else:
-                self.assertNotEqual(Mode(v1), Mode(v2))
-                self.assertNotEqual(Mode(v1), v2)
-                self.assertNotEqual(Mode(v2), v1)
-
-    def test_copy(self):
-        m = Mode()
-        for cp in Mode(m), Mode.copy(m):
-            self.assertFalse(cp is m)
-            self.assertEqual(cp, m)
+    def runTest(self):
+        for mode in "r", "rb":
+            self.assertEqual(parse_mode(mode), ("r", False))
+        for mode in "w", "wb":
+            self.assertEqual(parse_mode(mode), ("w", False))
+        for mode in "a", "ab":
+            self.assertEqual(parse_mode(mode), ("a", False))
+        self.assertEqual(parse_mode("rt"), ("r", True))
+        self.assertEqual(parse_mode("wt"), ("w", True))
+        self.assertEqual(parse_mode("at"), ("a", True))
+        for mode in "", "k", "kb", "kt":
+            self.assertRaises(ValueError, parse_mode, mode)
 
 
 def suite():

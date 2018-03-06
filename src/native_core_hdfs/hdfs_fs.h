@@ -34,6 +34,11 @@
 #include "../py3k_compat.h"
 
 
+#define MODE_READ "r"
+#define MODE_WRITE "w"
+#define MODE_APPEND "a"
+
+
 typedef struct {
     PyObject_HEAD
     char *host;
