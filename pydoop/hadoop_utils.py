@@ -34,10 +34,6 @@ import subprocess as sp
 import xml.dom.minidom as dom
 from xml.parsers.expat import ExpatError
 
-try:
-    from pydoop.config import DEFAULT_HADOOP_HOME
-except ImportError:  # should only happen at compile time
-    DEFAULT_HADOOP_HOME = None
 SYSTEM = platform.system().lower()
 
 
@@ -417,12 +413,11 @@ class PathFinder(object):
     def __error(what, env_var):
         raise ValueError("%s not found, try setting %s" % (what, env_var))
 
-    def hadoop_home(self, fallback=DEFAULT_HADOOP_HOME):
+    def hadoop_home(self):
         if not self.__hadoop_home:
             self.__hadoop_home = (
                 os.getenv("HADOOP_HOME") or
                 os.getenv("HADOOP_PREFIX") or
-                fallback or
                 _hadoop_home_from_version_cmd() or
                 first_dir_in_glob("/usr/lib/hadoop*") or
                 first_dir_in_glob("/usr/share/hadoop*") or

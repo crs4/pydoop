@@ -34,10 +34,9 @@ import pydoop.hadoop_utils as hu
 from pydoop.utils.py3compat import configparser, parser_read
 
 try:
-    from pydoop.config import DEFAULT_HADOOP_HOME
     from pydoop.version import version as __version__
 except ImportError:  # should only happen at compile time
-    DEFAULT_HADOOP_HOME = __version__ = None
+    __version__ = None
 _PATH_FINDER = hu.PathFinder()
 _HADOOP_INFO = _PATH_FINDER.find()  # fill the cache ASAP
 
@@ -65,8 +64,8 @@ def reset():
     _PATH_FINDER.reset()
 
 
-def hadoop_home(fallback=DEFAULT_HADOOP_HOME):
-    return _PATH_FINDER.hadoop_home(fallback)
+def hadoop_home():
+    return _PATH_FINDER.hadoop_home()
 
 
 def hadoop_exec(hadoop_home=None):
@@ -198,6 +197,3 @@ class LocalModeNotSupported(RuntimeError):
     def __init__(self):
         msg = 'ERROR: Hadoop is configured to run in local mode'
         super(LocalModeNotSupported, self).__init__(msg)
-
-
-PROPERTIES = read_properties(PROP_FN)

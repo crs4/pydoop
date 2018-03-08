@@ -33,7 +33,6 @@ logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
-import pydoop
 from pydoop.utils.serialize import serialize_long
 from pydoop.app.submit import AVRO_IO_CHOICES
 
@@ -46,7 +45,10 @@ from .binary_streams import (
 from .string_utils import create_digest
 from .connections import BUF_SIZE
 from collections import defaultdict
-
+from pydoop.config import (
+    AVRO_INPUT, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA,
+    AVRO_OUTPUT, AVRO_KEY_OUTPUT_SCHEMA, AVRO_VALUE_OUTPUT_SCHEMA,
+)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -57,12 +59,6 @@ OUTPUT_DIR_V1 = 'mapred.work.output.dir'
 OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
 DEFAULT_SLEEP_DELTA = 3
 
-AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
-AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
-AVRO_KEY_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_INPUT_SCHEMA']
-AVRO_KEY_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_OUTPUT_SCHEMA']
-AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
-AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 import json
 
 try:

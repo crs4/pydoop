@@ -28,12 +28,16 @@ import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter, BinaryDecoder, BinaryEncoder
 
-import pydoop
 import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
 from pydoop.app.submit import AVRO_IO_CHOICES
 from pydoop.utils.py3compat import StringIO, iteritems
+
+from pydoop.config import (
+    AVRO_INPUT, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA,
+    AVRO_OUTPUT, AVRO_KEY_OUTPUT_SCHEMA, AVRO_VALUE_OUTPUT_SCHEMA,
+)
 
 parse = avro.schema.Parse if sys.version_info[0] == 3 else avro.schema.parse
 
@@ -72,13 +76,6 @@ except ImportError as e:
 
 
 AVRO_IO_CHOICES = set(AVRO_IO_CHOICES)
-
-AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
-AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
-AVRO_KEY_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_INPUT_SCHEMA']
-AVRO_KEY_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_OUTPUT_SCHEMA']
-AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
-AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 
 
 class AvroContext(pp.TaskContext):
