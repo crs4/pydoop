@@ -23,11 +23,15 @@ import java.util.List;
 
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit; // FIXME not used
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -39,22 +43,66 @@ import org.apache.hadoop.util.ReflectionUtils;
  * Dummy input format used when non-Java a {@link RecordReader} is used by
  * the Pipes' application.
  *
- * The only useful thing this does is set up the Map-Reduce job to get the
- * {@link PipesDummyRecordReader}, everything else left for the 'actual'
- * InputFormat specified by the user which is given by 
- * <i>mapreduce.pipes.inputformat</i>.
+ *
+ * Sets up the Map-Reduce job to get the {@link PipesDummyRecordReader},
+ * and provides a getSplits that will recover InputSplits either:
+ * by invoking the getSplits method of 'actual' InputFormat specified by the
+ * user in <i>mapreduce.pipes.inputformat</i>;
+ * or reading the contents of the hdfs file specificed by the uri
+ * <i>mapreduce.pipes.external-splits.path</i> if
+ * <i>mapreduce.pipes.external-splits.enabled</i> has been set to
+ * <i>true</i>.
+ * 
+ * The file specified by <i>mapreduce.pipes.external_splits.path</i> should have
+ * the structure 
+    <WritableInt n><OpaqueObject 1><OpaqueObject 2>..<OpaqueObject n>
+
  */
 class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
+    public static final String EXTERNAL_SPLITS_ENABLED =
+        "mapreduce.pipes.external-splits.enabled";
+    public static final String EXTERNAL_SPLITS_PATH =
+        "mapreduce.pipes.external-splits.path";
 
     public List<InputSplit> getSplits(JobContext context
                                       ) throws IOException, InterruptedException {
         
         Configuration conf = context.getConfiguration();
-        return ReflectionUtils.newInstance(
-                  conf.getClass(Submitter.INPUT_FORMAT, 
+        boolean splits_enabled = conf.getBoolean(EXTERNAL_SPLITS_ENABLED, false);
+        if (splits_enabled) {
+            String splits_path = conf.get(EXTERNAL_SPLITS_PATH);
+            return getSplitsFromPath(conf, splits_path);
+        } else {
+            return ReflectionUtils.newInstance(
+                                conf.getClass(Submitter.INPUT_FORMAT, 
                                 TextInputFormat.class, 
                                 InputFormat.class), conf).getSplits(context);
+        }
     }
+
+    private List<InputSplit> getSplitsFromPath(Configuration conf,
+                                               String splits_uri
+                                               ) throws IOException,
+                                                        InterruptedException {
+        FileSystem fs = FileSystem.get(conf);
+        Path path = new Path(splits_uri);
+        if (!fs.exists(path)) {
+            throw IOException(splits_uri + " does not exists");
+        }
+        FSDataInputStream in = fs.open(path);
+        IntWritable n_records;
+        n_records.readFields(in);
+
+        List<InputSplit> splits = new ArrayList<InputSplit>();
+        for(int i = 0; i < n_records.get(); i++) {
+            OpaqueSplit o = new OpaqueSplit()
+            o.readFields(in);
+            splits.add(o);
+        }
+        in.close();
+        fileSystem.close();
+    }
+        
 
     @Override
     public DummyRecordReader
