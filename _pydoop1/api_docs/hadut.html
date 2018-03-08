@@ -1,0 +1,352 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pydoop.hadut — Hadoop shell interaction &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="up" title="API Docs" href="index.html" />
+    <link rel="next" title="Examples" href="../examples/index.html" />
+    <link rel="prev" title="pydoop.mapreduce.simulator — Hadoop Simulator API" href="simulator.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../examples/index.html" title="Examples"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="simulator.html" title="pydoop.mapreduce.simulator — Hadoop Simulator API"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">API Docs</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="simulator.html"
+                                  title="previous chapter"><tt class="docutils literal"><span class="pre">pydoop.mapreduce.simulator</span></tt> &#8212; Hadoop Simulator API</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="../examples/index.html"
+                                  title="next chapter">Examples</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pydoop.hadut">
+<span id="pydoop-hadut-hadoop-shell-interaction"></span><span id="hadut"></span><h1><a class="reference internal" href="#module-pydoop.hadut" title="pydoop.hadut"><tt class="xref py py-mod docutils literal"><span class="pre">pydoop.hadut</span></tt></a> &#8212; Hadoop shell interaction<a class="headerlink" href="#module-pydoop.hadut" title="Permalink to this headline">¶</a></h1>
+<p>The hadut module provides access to some functionalities available
+via the Hadoop shell.</p>
+<dl class="class">
+<dt id="pydoop.hadut.PipesRunner">
+<em class="property">class </em><tt class="descclassname">pydoop.hadut.</tt><tt class="descname">PipesRunner</tt><big>(</big><em>prefix=None</em>, <em>logger=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows to set up and run pipes jobs, optionally automating a few
+common tasks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>prefix</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; if specified, it must be a writable directory path
+that all nodes can see (the latter could be an issue if the local
+file system is used rather than HDFS)</li>
+<li><strong>logger</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/logging.html#logging.Logger" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">logging.Logger</span></tt></a>) &#8211; optional logger</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>If <tt class="docutils literal"><span class="pre">prefix</span></tt> is set, the runner object will create a working
+directory with that prefix and use it to store the job&#8217;s input and
+output &#8212; the intended use is for quick application testing.  If it
+is not set, you <strong>must</strong> call <a class="reference internal" href="#pydoop.hadut.PipesRunner.set_output" title="pydoop.hadut.PipesRunner.set_output"><tt class="xref py py-meth docutils literal"><span class="pre">set_output()</span></tt></a> with an hdfs path
+as its argument, and <tt class="docutils literal"><span class="pre">put</span></tt> will be ignored in your call to
+<a class="reference internal" href="#pydoop.hadut.PipesRunner.set_input" title="pydoop.hadut.PipesRunner.set_input"><tt class="xref py py-meth docutils literal"><span class="pre">set_input()</span></tt></a>.  In any event, the launcher script will be placed
+in the output directory&#8217;s parent (this has to be writable for the
+job to succeed).</p>
+<dl class="method">
+<dt id="pydoop.hadut.PipesRunner.clean">
+<tt class="descname">clean</tt><big>(</big><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the working directory, if any.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.hadut.PipesRunner.collect_output">
+<tt class="descname">collect_output</tt><big>(</big><em>out_file=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner.collect_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run <a class="reference internal" href="#pydoop.hadut.collect_output" title="pydoop.hadut.collect_output"><tt class="xref py py-func docutils literal"><span class="pre">collect_output()</span></tt></a> on the job&#8217;s output directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.hadut.PipesRunner.run">
+<tt class="descname">run</tt><big>(</big><em>**kwargs</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the pipes job.  Keyword arguments are passed to <a class="reference internal" href="#pydoop.hadut.run_pipes" title="pydoop.hadut.run_pipes"><tt class="xref py py-func docutils literal"><span class="pre">run_pipes()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.hadut.PipesRunner.set_exe">
+<tt class="descname">set_exe</tt><big>(</big><em>pipes_code</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner.set_exe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dump launcher code to the distributed file system.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.hadut.PipesRunner.set_input">
+<tt class="descname">set_input</tt><big>(</big><em>input_</em>, <em>put=False</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner.set_input" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the input path for the job.  If <tt class="docutils literal"><span class="pre">put</span></tt> is <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a>, copy
+(local) <tt class="docutils literal"><span class="pre">input_</span></tt> to the working directory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.hadut.PipesRunner.set_output">
+<tt class="descname">set_output</tt><big>(</big><em>output</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PipesRunner.set_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the output path for the job.  Optional if the runner has been
+instantiated with a prefix.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.hadut.PydoopScriptRunner">
+<em class="property">class </em><tt class="descclassname">pydoop.hadut.</tt><tt class="descname">PydoopScriptRunner</tt><big>(</big><em>prefix=None</em>, <em>logger=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.PydoopScriptRunner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Specialization of <a class="reference internal" href="#pydoop.hadut.PipesRunner" title="pydoop.hadut.PipesRunner"><tt class="xref py py-class docutils literal"><span class="pre">PipesRunner</span></tt></a> to support the set up and running of
+pydoop script jobs.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="pydoop.hadut.RunCmdError">
+<em class="property">exception </em><tt class="descclassname">pydoop.hadut.</tt><tt class="descname">RunCmdError</tt><big>(</big><em>returncode</em>, <em>cmd</em>, <em>output=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.RunCmdError" title="Permalink to this definition">¶</a></dt>
+<dd><p>This exception is raised by run_cmd and all functions that make
+use of it to indicate that the call failed (returned non-zero).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.collect_output">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">collect_output</tt><big>(</big><em>mr_out_dir</em>, <em>out_file=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.collect_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all mapreduce output in <tt class="docutils literal"><span class="pre">mr_out_dir</span></tt>.</p>
+<p>Append the output to <tt class="docutils literal"><span class="pre">out_file</span></tt> if provided.  Otherwise, return
+the result as a single string (it is the caller&#8217;s responsibility to
+ensure that the amount of data retrieved fits into memory).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.dfs">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">dfs</tt><big>(</big><em>args=None</em>, <em>properties=None</em>, <em>hadoop_conf_dir=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.dfs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the Hadoop file system shell.</p>
+<p>All arguments are passed to <a class="reference internal" href="#pydoop.hadut.run_class" title="pydoop.hadut.run_class"><tt class="xref py py-func docutils literal"><span class="pre">run_class()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.find_jar">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">find_jar</tt><big>(</big><em>jar_name</em>, <em>root_path=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.find_jar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Look for the named jar in:</p>
+<ol class="arabic simple">
+<li><tt class="docutils literal"><span class="pre">root_path</span></tt>, if specified</li>
+<li>working directory &#8211; <tt class="docutils literal"><span class="pre">PWD</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">${PWD}/build</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">/usr/share/java</span></tt></li>
+</ol>
+<p>Return the full path of the jar if found; else return <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.get_num_nodes">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">get_num_nodes</tt><big>(</big><em>properties=None</em>, <em>hadoop_conf_dir=None</em>, <em>offline=False</em><big>)</big><a class="headerlink" href="#pydoop.hadut.get_num_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of task trackers in the Hadoop cluster.</p>
+<p>All arguments are passed to <a class="reference internal" href="#pydoop.hadut.get_task_trackers" title="pydoop.hadut.get_task_trackers"><tt class="xref py py-func docutils literal"><span class="pre">get_task_trackers()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.get_task_trackers">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">get_task_trackers</tt><big>(</big><em>properties=None</em>, <em>hadoop_conf_dir=None</em>, <em>offline=False</em><big>)</big><a class="headerlink" href="#pydoop.hadut.get_task_trackers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the list of task trackers in the Hadoop cluster.</p>
+<p>Each element in the returned list is in the <tt class="docutils literal"><span class="pre">(host,</span> <span class="pre">port)</span></tt> format.
+All arguments are passed to <a class="reference internal" href="#pydoop.hadut.run_class" title="pydoop.hadut.run_class"><tt class="xref py py-func docutils literal"><span class="pre">run_class()</span></tt></a>.</p>
+<p>If <tt class="docutils literal"><span class="pre">offline</span></tt> is <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a>, try getting the list of task trackers from
+the <tt class="docutils literal"><span class="pre">slaves</span></tt> file in Hadoop&#8217;s configuration directory (no attempt is
+made to contact the Hadoop daemons).  In this case, ports are set to 0.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.path_exists">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">path_exists</tt><big>(</big><em>path</em>, <em>properties=None</em>, <em>hadoop_conf_dir=None</em><big>)</big><a class="headerlink" href="#pydoop.hadut.path_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a> if <tt class="docutils literal"><span class="pre">path</span></tt> exists in the default HDFS.</p>
+<p>Keyword arguments are passed to <a class="reference internal" href="#pydoop.hadut.dfs" title="pydoop.hadut.dfs"><tt class="xref py py-func docutils literal"><span class="pre">dfs()</span></tt></a>.</p>
+<p>This function does the same thing as <a class="reference internal" href="hdfs_api.html#pydoop.hdfs.path.exists" title="pydoop.hdfs.path.exists"><tt class="xref py py-func docutils literal"><span class="pre">hdfs.path.exists</span></tt></a>, but it uses a wrapper for the Hadoop
+shell rather than the hdfs extension.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.run_class">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">run_class</tt><big>(</big><em>class_name</em>, <em>args=None</em>, <em>properties=None</em>, <em>classpath=None</em>, <em>hadoop_conf_dir=None</em>, <em>logger=None</em>, <em>keep_streams=True</em><big>)</big><a class="headerlink" href="#pydoop.hadut.run_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a Java class with Hadoop (equivalent of running <tt class="docutils literal"><span class="pre">hadoop</span>
+<span class="pre">&lt;class_name&gt;</span></tt> from the command line).</p>
+<p>Additional <tt class="docutils literal"><span class="pre">HADOOP_CLASSPATH</span></tt> elements can be provided via
+<tt class="docutils literal"><span class="pre">classpath</span></tt> (either as a non-string sequence where each element
+is a classpath element or as a <tt class="docutils literal"><span class="pre">':'</span></tt>-separated string).  Other
+arguments are passed to <a class="reference internal" href="#pydoop.hadut.run_cmd" title="pydoop.hadut.run_cmd"><tt class="xref py py-func docutils literal"><span class="pre">run_cmd()</span></tt></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">cls</span> <span class="o">=</span> <span class="s1">&#39;org.apache.hadoop.fs.FsShell&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span> <span class="n">out</span> <span class="o">=</span> <span class="n">run_class</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;-test&#39;</span><span class="p">,</span> <span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="s1">&#39;file:/tmp&#39;</span><span class="p">])</span>
+<span class="gp">... </span><span class="k">except</span> <span class="n">RunCmdError</span><span class="p">:</span> <span class="n">tmp_exists</span> <span class="o">=</span> <span class="bp">False</span>
+<span class="gp">... </span><span class="k">else</span><span class="p">:</span> <span class="n">tmp_exists</span> <span class="o">=</span> <span class="bp">True</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal"><span class="pre">HADOOP_CLASSPATH</span></tt> makes dependencies available <strong>only on the
+client side</strong>.  If you are running a MapReduce application, use
+<tt class="docutils literal"><span class="pre">args=['-libjars',</span> <span class="pre">'jar1,jar2,...']</span></tt> to make them available to
+the server side as well.</p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.run_cmd">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">run_cmd</tt><big>(</big><em>cmd</em>, <em>args=None</em>, <em>properties=None</em>, <em>hadoop_home=None</em>, <em>hadoop_conf_dir=None</em>, <em>logger=None</em>, <em>keep_streams=True</em><big>)</big><a class="headerlink" href="#pydoop.hadut.run_cmd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a Hadoop command.</p>
+<p>If <tt class="docutils literal"><span class="pre">keep_streams</span></tt> is set to <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a> (the default), the
+stdout and stderr of the command will be buffered in memory.  If
+the command succeeds, the former will be returned; if it fails, a
+<tt class="docutils literal"><span class="pre">RunCmdError</span></tt> will be raised with the latter as the message.
+This mode is appropriate for short-running commands whose &#8220;result&#8221;
+is represented by their standard output (e.g., <tt class="docutils literal"><span class="pre">&quot;dfsadmin&quot;,</span>
+<span class="pre">[&quot;-safemode&quot;,</span> <span class="pre">&quot;get&quot;]</span></tt>).</p>
+<p>If <tt class="docutils literal"><span class="pre">keep_streams</span></tt> is set to <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#False" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">False</span></tt></a>, the command will write
+directly to the stdout and stderr of the calling process, and the
+return value will be empty.  This mode is appropriate for long
+running commands that do not write their &#8220;real&#8221; output to stdout
+(such as pipes).</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">hadoop_classpath</span> <span class="o">=</span> <span class="n">run_cmd</span><span class="p">(</span><span class="s1">&#39;classpath&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.run_jar">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">run_jar</tt><big>(</big><em>jar_name</em>, <em>more_args=None</em>, <em>properties=None</em>, <em>hadoop_conf_dir=None</em>, <em>keep_streams=True</em><big>)</big><a class="headerlink" href="#pydoop.hadut.run_jar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a jar on Hadoop (<tt class="docutils literal"><span class="pre">hadoop</span> <span class="pre">jar</span></tt> command).</p>
+<p>All arguments are passed to <a class="reference internal" href="#pydoop.hadut.run_cmd" title="pydoop.hadut.run_cmd"><tt class="xref py py-func docutils literal"><span class="pre">run_cmd()</span></tt></a> (<tt class="docutils literal"><span class="pre">args</span> <span class="pre">=</span> <span class="pre">[jar_name]</span> <span class="pre">+</span>
+<span class="pre">more_args</span></tt>) .</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.hadut.run_pipes">
+<tt class="descclassname">pydoop.hadut.</tt><tt class="descname">run_pipes</tt><big>(</big><em>executable</em>, <em>input_path</em>, <em>output_path</em>, <em>more_args=None</em>, <em>properties=None</em>, <em>force_pydoop_submitter=False</em>, <em>hadoop_conf_dir=None</em>, <em>logger=None</em>, <em>keep_streams=False</em><big>)</big><a class="headerlink" href="#pydoop.hadut.run_pipes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a pipes command.</p>
+<p><tt class="docutils literal"><span class="pre">more_args</span></tt> (after setting input/output path) and <tt class="docutils literal"><span class="pre">properties</span></tt>
+are passed to <a class="reference internal" href="#pydoop.hadut.run_cmd" title="pydoop.hadut.run_cmd"><tt class="xref py py-func docutils literal"><span class="pre">run_cmd()</span></tt></a>.</p>
+<p>If not specified otherwise, this function sets the properties
+<tt class="docutils literal"><span class="pre">hadoop.pipes.java.recordreader</span></tt> and <tt class="docutils literal"><span class="pre">hadoop.pipes.java.recordwriter</span></tt>
+to <tt class="docutils literal"><span class="pre">&quot;true&quot;</span></tt>.</p>
+<p>This function works around a bug in Hadoop pipes that affects
+versions of Hadoop with security when the local file system is
+used as the default FS (no HDFS); see
+<a class="reference external" href="https://issues.apache.org/jira/browse/MAPREDUCE-4000">https://issues.apache.org/jira/browse/MAPREDUCE-4000</a>.  In those
+set-ups, the function uses Pydoop&#8217;s own pipes submitter
+application.  You can force the use of Pydoop&#8217;s submitter by
+passing the argument force_pydoop_submitter=True.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../examples/index.html" title="Examples"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="simulator.html" title="pydoop.mapreduce.simulator — Hadoop Simulator API"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >API Docs</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

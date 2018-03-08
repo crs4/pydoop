@@ -1,0 +1,546 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pydoop.mapreduce.api — MapReduce API &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="up" title="API Docs" href="index.html" />
+    <link rel="next" title="pydoop.hdfs — HDFS API" href="hdfs_api.html" />
+    <link rel="prev" title="API Docs" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hdfs_api.html" title="pydoop.hdfs — HDFS API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="API Docs"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">API Docs</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">API Docs</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="hdfs_api.html"
+                                  title="next chapter"><tt class="docutils literal"><span class="pre">pydoop.hdfs</span></tt> &#8212; HDFS API</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-pydoop.mapreduce.api">
+<span id="pydoop-mapreduce-api-mapreduce-api"></span><span id="mr-api"></span><h1><a class="reference internal" href="#module-pydoop.mapreduce.api" title="pydoop.mapreduce.api"><tt class="xref py py-mod docutils literal"><span class="pre">pydoop.mapreduce.api</span></tt></a> &#8212; MapReduce API<a class="headerlink" href="#module-pydoop.mapreduce.api" title="Permalink to this headline">¶</a></h1>
+<p>The MapReduce API allows to write the components of a MapReduce application.</p>
+<p>The basic MapReduce components (<a class="reference internal" href="#pydoop.mapreduce.api.Mapper" title="pydoop.mapreduce.api.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt></a>, <a class="reference internal" href="#pydoop.mapreduce.api.Reducer" title="pydoop.mapreduce.api.Reducer"><tt class="xref py py-class docutils literal"><span class="pre">Reducer</span></tt></a>,
+<a class="reference internal" href="#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a>, etc.)  are provided as abstract classes that
+must be subclassed by the developer, providing implementations for all
+methods called by the framework.</p>
+<dl class="class">
+<dt id="pydoop.mapreduce.api.Context">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">Context</tt><a class="headerlink" href="#pydoop.mapreduce.api.Context" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context objects are used for communication between the framework
+and the Mapreduce application.  These objects are instantiated by the
+framework and passed to user methods as parameters:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span>
+        <span class="o">...</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">new_key</span><span class="p">,</span> <span class="n">new_value</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Context.emit">
+<tt class="descname">emit</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Context.emit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emit a key, value pair to the framework.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Context.get_counter">
+<tt class="descname">get_counter</tt><big>(</big><em>group</em>, <em>name</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Context.get_counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a <a class="reference internal" href="#pydoop.mapreduce.api.Counter" title="pydoop.mapreduce.api.Counter"><tt class="xref py py-class docutils literal"><span class="pre">Counter</span></tt></a> from the framework.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>group</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; counter group name</li>
+<li><strong>name</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; counter name</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The counter can be updated via <a class="reference internal" href="#pydoop.mapreduce.api.Context.increment_counter" title="pydoop.mapreduce.api.Context.increment_counter"><tt class="xref py py-meth docutils literal"><span class="pre">increment_counter()</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Context.increment_counter">
+<tt class="descname">increment_counter</tt><big>(</big><em>counter</em>, <em>amount</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Context.increment_counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a <a class="reference internal" href="#pydoop.mapreduce.api.Counter" title="pydoop.mapreduce.api.Counter"><tt class="xref py py-class docutils literal"><span class="pre">Counter</span></tt></a> by the specified amount.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydoop.mapreduce.api.Context.job_conf">
+<tt class="descname">job_conf</tt><a class="headerlink" href="#pydoop.mapreduce.api.Context.job_conf" title="Permalink to this definition">¶</a></dt>
+<dd><p>MapReduce job configuration as a <a class="reference internal" href="#pydoop.mapreduce.api.JobConf" title="pydoop.mapreduce.api.JobConf"><tt class="xref py py-class docutils literal"><span class="pre">JobConf</span></tt></a> object.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydoop.mapreduce.api.Context.key">
+<tt class="descname">key</tt><a class="headerlink" href="#pydoop.mapreduce.api.Context.key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input key.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Context.set_status">
+<tt class="descname">set_status</tt><big>(</big><em>status</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Context.set_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the current status.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>status</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; a description of the current status</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydoop.mapreduce.api.Context.value">
+<tt class="descname">value</tt><a class="headerlink" href="#pydoop.mapreduce.api.Context.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Input value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.Counter">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">Counter</tt><big>(</big><em>counter_id</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>An interface to the Hadoop counters infrastructure.</p>
+<p>Counter objects are instantiated and directly manipulated by the
+framework; users get and update them via the <a class="reference internal" href="#pydoop.mapreduce.api.Context" title="pydoop.mapreduce.api.Context"><tt class="xref py py-class docutils literal"><span class="pre">Context</span></tt></a>
+interface.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.Factory">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">Factory</tt><a class="headerlink" href="#pydoop.mapreduce.api.Factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates MapReduce application components.</p>
+<p>The classes to use for each component must be specified as arguments
+to the constructor.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Factory.create_combiner">
+<tt class="descname">create_combiner</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Factory.create_combiner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a combiner object.</p>
+<p>Return the new combiner or <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>, if one is not needed.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Factory.create_partitioner">
+<tt class="descname">create_partitioner</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Factory.create_partitioner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a partitioner object.</p>
+<p>Return the new partitioner or <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>, if the default partitioner
+should be used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Factory.create_record_reader">
+<tt class="descname">create_record_reader</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Factory.create_record_reader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a record reader object.</p>
+<p>Return the new record reader or <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>, if the Java record
+reader should be used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Factory.create_record_writer">
+<tt class="descname">create_record_writer</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Factory.create_record_writer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an application record writer.</p>
+<p>Return the new record writer or <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>, if the Java record
+writer should be used.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.JobConf">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">JobConf</tt><big>(</big><em>values</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.JobConf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration properties assigned to this job.</p>
+<p>JobConf objects are instantiated by the framework and support the
+same interface as dictionaries, plus a few methods that perform
+automatic type conversion:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">jc</span><span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">]</span>
+<span class="go">&#39;1&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">jc</span><span class="o">.</span><span class="n">get_int</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">)</span>
+<span class="go">1</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>For the most part, a JobConf object behaves like a <a class="reference external" href="http://docs.python.org/2.7/library/stdtypes.html#dict" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt></a>.
+For backwards compatibility, however, there are two important exceptions:</p>
+<ol class="last arabic simple">
+<li>objects are constructed from a <tt class="docutils literal"><span class="pre">[key1,</span> <span class="pre">value1,</span> <span class="pre">key2,</span> <span class="pre">value2,</span>
+<span class="pre">...]</span></tt> sequence</li>
+<li>if <tt class="docutils literal"><span class="pre">k</span></tt> is not in <tt class="docutils literal"><span class="pre">jc</span></tt>, <tt class="docutils literal"><span class="pre">jc.get(k)</span></tt> raises <tt class="xref py py-exc docutils literal"><span class="pre">RuntimeError</span></tt>
+instead of returning <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a> (<tt class="docutils literal"><span class="pre">jc.get(k,</span> <span class="pre">None)</span></tt> returns
+<a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a> as in <a class="reference external" href="http://docs.python.org/2.7/library/stdtypes.html#dict" title="(in Python v2.7)"><tt class="xref py py-class docutils literal"><span class="pre">dict</span></tt></a>).</li>
+</ol>
+</div>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.JobConf.get_bool">
+<tt class="descname">get_bool</tt><big>(</big><em>key</em>, <em>default=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.JobConf.get_bool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <a class="reference external" href="http://docs.python.org/2.7/library/stdtypes.html#dict.get" title="(in Python v2.7)"><tt class="xref py py-meth docutils literal"><span class="pre">dict.get()</span></tt></a>, but the value is converted to a bool.</p>
+<p>The boolean value is considered, respectively, <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a> or
+<a class="reference external" href="http://docs.python.org/2.7/library/constants.html#False" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">False</span></tt></a> if the string is equal, ignoring case, to
+<tt class="docutils literal"><span class="pre">'true'</span></tt> or <tt class="docutils literal"><span class="pre">'false'</span></tt>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.JobConf.get_float">
+<tt class="descname">get_float</tt><big>(</big><em>key</em>, <em>default=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.JobConf.get_float" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <a class="reference external" href="http://docs.python.org/2.7/library/stdtypes.html#dict.get" title="(in Python v2.7)"><tt class="xref py py-meth docutils literal"><span class="pre">dict.get()</span></tt></a>, but the value is converted to an float.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.JobConf.get_int">
+<tt class="descname">get_int</tt><big>(</big><em>key</em>, <em>default=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.JobConf.get_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <a class="reference external" href="http://docs.python.org/2.7/library/stdtypes.html#dict.get" title="(in Python v2.7)"><tt class="xref py py-meth docutils literal"><span class="pre">dict.get()</span></tt></a>, but the value is converted to an int.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.MapContext">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">MapContext</tt><a class="headerlink" href="#pydoop.mapreduce.api.MapContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>The context given to the mapper.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.MapContext.getInputSplit">
+<tt class="descname">getInputSplit</tt><big>(</big><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.MapContext.getInputSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the raw input split as a byte string (backward compatibility).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.MapContext.get_input_value_class">
+<tt class="descname">get_input_value_class</tt><big>(</big><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.MapContext.get_input_value_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the type of the input key.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydoop.mapreduce.api.MapContext.input_key_class">
+<tt class="descname">input_key_class</tt><a class="headerlink" href="#pydoop.mapreduce.api.MapContext.input_key_class" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the type of the input key.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pydoop.mapreduce.api.MapContext.input_split">
+<tt class="descname">input_split</tt><a class="headerlink" href="#pydoop.mapreduce.api.MapContext.input_split" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current input split as an <a class="reference internal" href="#pydoop.mapreduce.pipes.InputSplit" title="pydoop.mapreduce.pipes.InputSplit"><tt class="xref py py-class docutils literal"><span class="pre">InputSplit</span></tt></a> object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.Mapper">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">Mapper</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Mapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maps input key/value pairs to a set of intermediate key/value pairs.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Mapper.map">
+<tt class="descname">map</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Mapper.map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called once for each key/value pair in the input
+split. Applications must override this, emitting an output
+key/value pair through the context.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>context</strong> (<a class="reference internal" href="#pydoop.mapreduce.api.MapContext" title="pydoop.mapreduce.api.MapContext"><tt class="xref py py-class docutils literal"><span class="pre">MapContext</span></tt></a>) &#8211; the context object passed by the
+framework, used to get the input key/value pair and emit the
+output key/value pair.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.Partitioner">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">Partitioner</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Partitioner" title="Permalink to this definition">¶</a></dt>
+<dd><p>Controls the partitioning of intermediate keys output by the
+<a class="reference internal" href="#pydoop.mapreduce.api.Mapper" title="pydoop.mapreduce.api.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt></a>. The key (or a subset of it) is used to derive the
+partition, typically by a hash function. The total number of
+partitions is the same as the number of reduce tasks for the
+job. Hence this controls which of the <em>m</em> reduce tasks the
+intermediate key (and hence the record) is sent to for reduction.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Partitioner.partition">
+<tt class="descname">partition</tt><big>(</big><em>key</em>, <em>num_of_reduces</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Partitioner.partition" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the partition number for <tt class="docutils literal"><span class="pre">key</span></tt> given the total number of
+partitions, i.e., the number of reduce tasks for the
+job. Applications must override this.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>key</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; the key of the key/value pair being dispatched.</li>
+<li><strong>numOfReduces</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; the total number of reduces.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">int</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">the partition number for <tt class="docutils literal"><span class="pre">key</span></tt>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.RecordReader">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">RecordReader</tt><big>(</big><em>context=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.RecordReader" title="Permalink to this definition">¶</a></dt>
+<dd><p>Breaks the data into key/value pairs for input to the <a class="reference internal" href="#pydoop.mapreduce.api.Mapper" title="pydoop.mapreduce.api.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt></a>.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.RecordReader.get_progress">
+<tt class="descname">get_progress</tt><big>(</big><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.RecordReader.get_progress" title="Permalink to this definition">¶</a></dt>
+<dd><p>The current progress of the record reader through its data.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">float</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the fraction of data read up to now, as a float between 0
+and 1.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pydoop.mapreduce.api.RecordReader.next">
+<tt class="descname">next</tt><big>(</big><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.RecordReader.next" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called by the framework to provide a key/value pair to the
+<a class="reference internal" href="#pydoop.mapreduce.api.Mapper" title="pydoop.mapreduce.api.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt></a>. Applications must override this, making
+sure it raises <a class="reference external" href="http://docs.python.org/2.7/library/exceptions.html#exceptions.StopIteration" title="(in Python v2.7)"><tt class="xref py py-exc docutils literal"><span class="pre">StopIteration</span></tt></a> when there are no more
+records to process.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">a tuple of two elements. They are, respectively, the
+key and the value (as strings)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.RecordWriter">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">RecordWriter</tt><big>(</big><em>context=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.RecordWriter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes the output key/value pairs to an output file.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.RecordWriter.emit">
+<tt class="descname">emit</tt><big>(</big><em>key</em>, <em>value</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.RecordWriter.emit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes a key/value pair. Applications must override this.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; a final output key</li>
+<li><strong>value</strong> (<a class="reference external" href="http://docs.python.org/2.7/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; a final output value</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.ReduceContext">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">ReduceContext</tt><a class="headerlink" href="#pydoop.mapreduce.api.ReduceContext" title="Permalink to this definition">¶</a></dt>
+<dd><p>The context given to the reducer.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.ReduceContext.next_value">
+<tt class="descname">next_value</tt><big>(</big><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.ReduceContext.next_value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a> if there is another value that can be processed.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.api.Reducer">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.api.</tt><tt class="descname">Reducer</tt><big>(</big><em>context=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Reducer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reduces a set of intermediate values which share a key to a
+(possibly) smaller set of values.</p>
+<dl class="method">
+<dt id="pydoop.mapreduce.api.Reducer.reduce">
+<tt class="descname">reduce</tt><big>(</big><em>context</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.api.Reducer.reduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called once for each key. Applications must override this, emitting
+an output key/value pair through the context.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>context</strong> (<a class="reference internal" href="#pydoop.mapreduce.api.ReduceContext" title="pydoop.mapreduce.api.ReduceContext"><tt class="xref py py-class docutils literal"><span class="pre">ReduceContext</span></tt></a>) &#8211; the context object passed by
+the framework, used to get the input key and corresponding
+set of values and emit the output key/value pair.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pydoop.mapreduce.pipes.InputSplit">
+<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.pipes.</tt><tt class="descname">InputSplit</tt><big>(</big><em>data</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.pipes.InputSplit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Represents the data to be processed by an individual <a class="reference internal" href="#pydoop.mapreduce.api.Mapper" title="pydoop.mapreduce.api.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt></a>.</p>
+<p>Typically, it presents a byte-oriented view on the input and it is
+the responsibility of the <a class="reference internal" href="#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a> to convert this to a
+record-oriented view.</p>
+<p>The <tt class="docutils literal"><span class="pre">InputSplit</span></tt> is a <em>logical</em> representation of the actual
+dataset chunk, expressed through the <tt class="docutils literal"><span class="pre">filename</span></tt>, <tt class="docutils literal"><span class="pre">offset</span></tt> and
+<tt class="docutils literal"><span class="pre">length</span></tt> attributes.</p>
+<p>InputSplit objects are instantiated by the framework and accessed
+via <a class="reference internal" href="#pydoop.mapreduce.api.MapContext.input_split" title="pydoop.mapreduce.api.MapContext.input_split"><tt class="xref py py-attr docutils literal"><span class="pre">MapContext.input_split</span></tt></a>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="pydoop.mapreduce.pipes.run_task">
+<tt class="descclassname">pydoop.mapreduce.pipes.</tt><tt class="descname">run_task</tt><big>(</big><em>factory</em>, <em>port=None</em>, <em>istream=None</em>, <em>ostream=None</em>, <em>private_encoding=True</em>, <em>context_class=&lt;class 'pydoop.mapreduce.pipes.TaskContext'&gt;</em>, <em>cmd_file=None</em>, <em>fast_combiner=False</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.pipes.run_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the assigned task in the framework.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><a class="reference external" href="http://docs.python.org/2.7/library/constants.html#True" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">True</span></tt></a> if the task succeeded.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hdfs_api.html" title="pydoop.hdfs — HDFS API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="API Docs"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >API Docs</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Pydoop Submit User Guide &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
+    <link rel="next" title="API Docs" href="api_docs/index.html" />
+    <link rel="prev" title="Pydoop Script User Guide" href="pydoop_script.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api_docs/index.html" title="API Docs"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Pydoop Script User Guide"
+             accesskey="P">previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Pydoop Submit User Guide</a><ul>
+<li><a class="reference internal" href="#setting-the-environment-for-your-program">Setting the Environment for your Program</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="pydoop_script.html"
+                                  title="previous chapter">Pydoop Script User Guide</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="api_docs/index.html"
+                                  title="next chapter">API Docs</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pydoop-submit-user-guide">
+<span id="running-apps"></span><h1>Pydoop Submit User Guide<a class="headerlink" href="#pydoop-submit-user-guide" title="Permalink to this headline">¶</a></h1>
+<p>Pydoop applications are run via the <tt class="docutils literal"><span class="pre">pydoop</span> <span class="pre">submit</span></tt> command.  To
+start, you will need a working Hadoop cluster.  If you don&#8217;t have one
+available, you can bring up a single-node Hadoop cluster on your
+machine &#8211; see <a class="reference external" href="http://hadoop.apache.org">the Hadoop web site</a> for
+instructions.</p>
+<p>If your applications is contained in a single (local) file named
+<tt class="docutils literal"><span class="pre">wc.py</span></tt>, with an entry point called <tt class="docutils literal"><span class="pre">__main__</span></tt> (see
+<a class="reference internal" href="tutorial/mapred_api.html#api-tutorial"><em>Writing Full-Featured Applications</em></a>) you can run it as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-file-to-cache wc.py wc input output
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">input</span></tt> (file or directory) and <tt class="docutils literal"><span class="pre">output</span></tt> (directory) are
+HDFS paths.  Note that the <tt class="docutils literal"><span class="pre">output</span></tt> directory will not be
+overwritten: instead, an error will be generated if it already exists
+when you launch the program.</p>
+<p>If your entry point has a different name, specify it via <tt class="docutils literal"><span class="pre">--entry-point</span></tt>.</p>
+<p>The following table shows command line options for <tt class="docutils literal"><span class="pre">pydoop</span> <span class="pre">submit</span></tt>:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="4%" />
+<col width="20%" />
+<col width="76%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Short</th>
+<th class="head">Long</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--num-reducers</span></tt></td>
+<td>Number of reduce tasks. Specify 0 to only perform map phase</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-home</span></tt></td>
+<td>Don&#8217;t set the script&#8217;s HOME directory to the $HOME in your environment.  Hadoop will set it to the value of the &#8216;mapreduce.admin.user.home.dir&#8217; property</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-env</span></tt></td>
+<td>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-ld-path</span></tt></td>
+<td>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-pypath</span></tt></td>
+<td>Use the default PYTHONPATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-path</span></tt></td>
+<td>Use the default PATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--set-env</span></tt></td>
+<td>Set environment variables for the tasks. If a variable is set to &#8216;&#8217;, it will not be overridden by Pydoop.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">-D</span></tt></td>
+<td>&nbsp;</td>
+<td>Set a Hadoop property, e.g., -D mapred.compress.map.output=true</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--python-zip</span></tt></td>
+<td>Additional python zip file</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--upload-file-to-cache</span></tt></td>
+<td>Upload and add this file to the distributed cache.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--upload-archive-to-cache</span></tt></td>
+<td>Upload and add this archive file to the distributed cache.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--log-level</span></tt></td>
+<td>Logging level</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--job-name</span></tt></td>
+<td>name of the job</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--python-program</span></tt></td>
+<td>python executable that should be used by the wrapper</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--pretend</span></tt></td>
+<td>Do not actually submit a job, print the generated config settings and the command line that would be invoked</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--hadoop-conf</span></tt></td>
+<td>Hadoop configuration file</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--disable-property-name-conversion</span></tt></td>
+<td>Do not adapt property names to the hadoop version used.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--mrv1</span></tt></td>
+<td>Force Pydoop to use MRv1, even if MRv2 is available. The InputFormat and OutputFormat classes must be MRv1-compliant</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--local-fs</span></tt></td>
+<td>Use a patched pipes submitter to sidestep a Hadoop security bug triggered when using local file systems</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--do-not-use-java-record-reader</span></tt></td>
+<td>Disable java RecordReader</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--do-not-use-java-record-writer</span></tt></td>
+<td>Disable java RecordWriter</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--input-format</span></tt></td>
+<td>java classname of InputFormat.  Default value depends on the mapreduce version used</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--output-format</span></tt></td>
+<td>java classname of OutputFormat.  Default value depends on the mapreduce version used</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--job-conf</span></tt></td>
+<td>Set a Hadoop property, e.g., mapreduce.compress.map.output=true</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--libjars</span></tt></td>
+<td>Additional comma-separated list of jar files</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--cache-file</span></tt></td>
+<td>Add this HDFS file to the distributed cache as a file.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--cache-archive</span></tt></td>
+<td>Add this HDFS archive file to the distributed cacheas an archive.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--entry-point</span></tt></td>
+<td>Explicitly execute MODULE.ENTRY_POINT() in the launcher script.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--avro-input</span></tt></td>
+<td>Avro input mode (key, value or both)</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--avro-output</span></tt></td>
+<td>Avro output mode (key, value or both)</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="setting-the-environment-for-your-program">
+<h2>Setting the Environment for your Program<a class="headerlink" href="#setting-the-environment-for-your-program" title="Permalink to this headline">¶</a></h2>
+<p>When working on a shared cluster where you don&#8217;t have root access, you
+might have a lot of software installed in non-standard locations, such
+as your home directory. Since non-interactive ssh connections do not
+usually preserve your environment, you might lose some essential
+setting like <tt class="docutils literal"><span class="pre">LD_LIBRARY_PATH</span></tt>.</p>
+<p>For this reason, by default <tt class="docutils literal"><span class="pre">pydoop</span> <span class="pre">submit</span></tt> copies some environment
+variables to the driver script that launches the job on Hadoop.  If
+this behavior is not desired, you can disable it via the
+<tt class="docutils literal"><span class="pre">--no-override-env</span></tt> command line option.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="api_docs/index.html" title="API Docs"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Pydoop Script User Guide"
+             >previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

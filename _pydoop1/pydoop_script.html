@@ -1,0 +1,402 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Pydoop Script User Guide &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
+    <link rel="next" title="Pydoop Submit User Guide" href="running_pydoop_applications.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="running_pydoop_applications.html" title="Pydoop Submit User Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Pydoop Script User Guide</a><ul>
+<li><a class="reference internal" href="#command-line-tool">Command Line Tool</a><ul>
+<li><a class="reference internal" href="#example-word-count-with-stop-words">Example: Word Count with Stop Words</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#writing-your-map-and-reduce-functions">Writing your Map and Reduce Functions</a><ul>
+<li><a class="reference internal" href="#mapper">Mapper</a></li>
+<li><a class="reference internal" href="#combiner">Combiner</a></li>
+<li><a class="reference internal" href="#reducer">Reducer</a></li>
+<li><a class="reference internal" href="#writer-object">Writer Object</a></li>
+<li><a class="reference internal" href="#accessing-parameters">Accessing Parameters</a></li>
+<li><a class="reference internal" href="#naming-your-functions">Naming your Functions</a></li>
+<li><a class="reference internal" href="#map-only-jobs">Map-only Jobs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="installation.html"
+                                  title="previous chapter">Installation</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="running_pydoop_applications.html"
+                                  title="next chapter">Pydoop Submit User Guide</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="pydoop-script-user-guide">
+<span id="pydoop-script-guide"></span><h1>Pydoop Script User Guide<a class="headerlink" href="#pydoop-script-user-guide" title="Permalink to this headline">¶</a></h1>
+<p>Pydoop Script is the easiest way to write simple MapReduce programs
+for Hadoop.  With Pydoop Script, you only need to write a map and/or a reduce
+functions and the system will take care of the rest.</p>
+<p>For a full explanation please see the <a class="reference internal" href="tutorial/pydoop_script.html#pydoop-script-tutorial"><em>tutorial</em></a>.</p>
+<div class="section" id="command-line-tool">
+<h2>Command Line Tool<a class="headerlink" href="#command-line-tool" title="Permalink to this headline">¶</a></h2>
+<p>In the simplest case, Pydoop Script is invoked as:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop script MODULE INPUT OUTPUT
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">MODULE</span></tt> is the file (on your local file system) containing
+your map and reduce functions, in Python, while <tt class="docutils literal"><span class="pre">INPUT</span></tt> and
+<tt class="docutils literal"><span class="pre">OUTPUT</span></tt> are, respectively, the HDFS paths of your input data and
+your job&#8217;s output directory.</p>
+<p>Options are shown in the following table.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="4%" />
+<col width="16%" />
+<col width="80%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Short</th>
+<th class="head">Long</th>
+<th class="head">Meaning</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--num-reducers</span></tt></td>
+<td>Number of reduce tasks. Specify 0 to only perform map phase</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-home</span></tt></td>
+<td>Don&#8217;t set the script&#8217;s HOME directory to the $HOME in your environment.  Hadoop will set it to the value of the &#8216;mapreduce.admin.user.home.dir&#8217; property</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-env</span></tt></td>
+<td>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-ld-path</span></tt></td>
+<td>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-pypath</span></tt></td>
+<td>Use the default PYTHONPATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--no-override-path</span></tt></td>
+<td>Use the default PATH instead of copying it from the submitting client node</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--set-env</span></tt></td>
+<td>Set environment variables for the tasks. If a variable is set to &#8216;&#8217;, it will not be overridden by Pydoop.</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">-D</span></tt></td>
+<td>&nbsp;</td>
+<td>Set a Hadoop property, e.g., -D mapred.compress.map.output=true</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--python-zip</span></tt></td>
+<td>Additional python zip file</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--upload-file-to-cache</span></tt></td>
+<td>Upload and add this file to the distributed cache.</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--upload-archive-to-cache</span></tt></td>
+<td>Upload and add this archive file to the distributed cache.</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--log-level</span></tt></td>
+<td>Logging level</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--job-name</span></tt></td>
+<td>name of the job</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--python-program</span></tt></td>
+<td>python executable that should be used by the wrapper</td>
+</tr>
+<tr class="row-even"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--pretend</span></tt></td>
+<td>Do not actually submit a job, print the generated config settings and the command line that would be invoked</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--hadoop-conf</span></tt></td>
+<td>Hadoop configuration file</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">-m</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">--map-fn</span></tt></td>
+<td>name of map function within module</td>
+</tr>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">-r</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">--reduce-fn</span></tt></td>
+<td>name of reduce function within module</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">-c</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">--combine-fn</span></tt></td>
+<td>name of combine function within module</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--combiner-fn</span></tt></td>
+<td>&#8211;combine-fn alias for backwards compatibility</td>
+</tr>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">-t</span></tt></td>
+<td><tt class="docutils literal"><span class="pre">--kv-separator</span></tt></td>
+<td>output key-value separator</td>
+</tr>
+<tr class="row-odd"><td>&nbsp;</td>
+<td><tt class="docutils literal"><span class="pre">--mrv1</span></tt></td>
+<td>Force use of MRv1. InputFormat and OutputFormat classes must be mrv1-compliant</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="example-word-count-with-stop-words">
+<h3>Example: Word Count with Stop Words<a class="headerlink" href="#example-word-count-with-stop-words" title="Permalink to this headline">¶</a></h3>
+<p>Here is the word count example modified to ignore stop words from a
+file that is distributed to all the nodes via the Hadoop distributed
+cache:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;stop.txt&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">STOP_WORDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">l</span><span class="o">.</span><span class="n">isspace</span><span class="p">())</span>
+
+<span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">STOP_WORDS</span><span class="p">:</span>
+            <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;STOP_WORDS&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+          <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">icounts</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>To execute the above script, save it to a <tt class="docutils literal"><span class="pre">wc.py</span></tt> file and run:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop script wc.py hdfs_input hdfs_output --upload-file-to-cache stop.txt
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">stop.txt</span></tt> is a text file that contains the stop words, one per line.</p>
+<p>While this script works, it has the obvious weakness of loading the
+stop words list even when executing the reducer (since it&#8217;s loaded as
+soon as we import the module).  If this inconvenience is a concern, we
+could solve the issue by triggering the loading from the <tt class="docutils literal"><span class="pre">mapper</span></tt>
+function, or by writing a <a class="reference internal" href="api_docs/index.html#api-docs"><em>full Pydoop application</em></a>
+which would give us all the control we need to only load the list when
+required.</p>
+</div>
+</div>
+<div class="section" id="writing-your-map-and-reduce-functions">
+<h2>Writing your Map and Reduce Functions<a class="headerlink" href="#writing-your-map-and-reduce-functions" title="Permalink to this headline">¶</a></h2>
+<p>In this section we assume you&#8217;ll be using the default <tt class="docutils literal"><span class="pre">TextInputFormat</span></tt>
+and <tt class="docutils literal"><span class="pre">TextOutputFormat</span></tt>.</p>
+<div class="section" id="mapper">
+<h3>Mapper<a class="headerlink" href="#mapper" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">mapper</span></tt> function in your module will be called for each record
+in your input data.  It receives 3 parameters:</p>
+<ol class="arabic simple">
+<li>key: the byte offset with respect to the current input file. In most cases,
+you can ignore it;</li>
+<li>value: the line of text to be processed;</li>
+<li>writer object: a Python object to write output and count values (see below);</li>
+<li>optionally, a job conf object from which to fetch configuration
+property values (see <a class="reference internal" href="#accessing-parameters">Accessing Parameters</a> below).</li>
+</ol>
+</div>
+<div class="section" id="combiner">
+<h3>Combiner<a class="headerlink" href="#combiner" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">combiner</span></tt> function will be called for each unique key-value pair
+produced by your map function.  It also receives 3 parameters:</p>
+<ol class="arabic simple">
+<li>key: the key produced by your map function</li>
+<li>values iterable: iterate over this parameter to see all the values emitted
+for the current key</li>
+<li>writer object: a writer object identical to the one given to the
+map function</li>
+<li>optionally, a job conf object, identical to the one given to the
+map function.</li>
+</ol>
+<p>The key-value pair emitted by your combiner will be piped to the reducer.</p>
+</div>
+<div class="section" id="reducer">
+<h3>Reducer<a class="headerlink" href="#reducer" title="Permalink to this headline">¶</a></h3>
+<p>The <tt class="docutils literal"><span class="pre">reducer</span></tt> function will be called for each unique key-value pair
+produced by your map function.  It also receives 3 parameters:</p>
+<ol class="arabic simple">
+<li>key: the key produced by your map function;</li>
+<li>values iterable: iterate over this parameter to traverse all the
+values emitted for the current key;</li>
+<li>writer object: this is identical to the one given to the map function;</li>
+<li>optionally, a job conf object, identical to the one given to the
+map function.</li>
+</ol>
+<p>The key-value pair emitted by your reducer will be joined by the
+key-value separator specified with the <tt class="docutils literal"><span class="pre">--kv-separator</span></tt> option.</p>
+</div>
+<div class="section" id="writer-object">
+<h3>Writer Object<a class="headerlink" href="#writer-object" title="Permalink to this headline">¶</a></h3>
+<p>The writer object given as the third parameter to both the <tt class="docutils literal"><span class="pre">mapper</span></tt>
+and <tt class="docutils literal"><span class="pre">reducer</span></tt> functions has the following methods:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">emit(k,</span> <span class="pre">v)</span></tt>: pass a <tt class="docutils literal"><span class="pre">(k,</span> <span class="pre">v)</span></tt> key-value pair to the framework;</li>
+<li><tt class="docutils literal"><span class="pre">count(what,</span> <span class="pre">how_many)</span></tt>: add <tt class="docutils literal"><span class="pre">how_many</span></tt> to the counter named
+<tt class="docutils literal"><span class="pre">what</span></tt>.  If the counter doesn&#8217;t already exist, it will be created
+dynamically;</li>
+<li><tt class="docutils literal"><span class="pre">status(msg)</span></tt>: update the task status to <tt class="docutils literal"><span class="pre">msg</span></tt>;</li>
+<li><tt class="docutils literal"><span class="pre">progress()</span></tt>: mark your task as having made progress without changing
+the status message.</li>
+</ul>
+<p>The latter two methods are useful for keeping your task alive in cases
+where the amount of computation to be done for a single record might
+exceed Hadoop&#8217;s timeout interval: Hadoop kills a task after a number
+of milliseconds set through the <tt class="docutils literal"><span class="pre">mapred.task.timeout</span></tt> property &#8211;
+which defaults to 600000, i.e., 10 minutes &#8211; if it neither reads an
+input, writes an output, nor updates its status string.</p>
+</div>
+<div class="section" id="accessing-parameters">
+<h3>Accessing Parameters<a class="headerlink" href="#accessing-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Pydoop Script lets you access the values of your job configuration
+properties through a dict-like <a class="reference internal" href="api_docs/mr_api.html#pydoop.mapreduce.api.JobConf" title="pydoop.mapreduce.api.JobConf"><tt class="xref py py-class docutils literal"><span class="pre">JobConf</span></tt></a>
+object, which gets passed as the fourth (optional) parameter to your
+functions.</p>
+</div>
+<div class="section" id="naming-your-functions">
+<h3>Naming your Functions<a class="headerlink" href="#naming-your-functions" title="Permalink to this headline">¶</a></h3>
+<p>If you&#8217;d like to give your map and reduce functions names different
+from <tt class="docutils literal"><span class="pre">mapper</span></tt> and <tt class="docutils literal"><span class="pre">reducer</span></tt>, you may do so, but you must tell the
+script tool.  Use the <tt class="docutils literal"><span class="pre">--map-fn</span></tt> and <tt class="docutils literal"><span class="pre">--reduce-fn</span></tt> command line
+arguments to select your customized names.  Combiner functions can only
+be assigned by explicitly setting the <tt class="docutils literal"><span class="pre">--combine-fn</span></tt> flag.</p>
+</div>
+<div class="section" id="map-only-jobs">
+<h3>Map-only Jobs<a class="headerlink" href="#map-only-jobs" title="Permalink to this headline">¶</a></h3>
+<p>You may have a program that doesn&#8217;t use a reduce function.  Specify
+<tt class="docutils literal"><span class="pre">--num-reducers</span> <span class="pre">0</span></tt> on the command line and your map output will be
+written directly to file.  In this case, your map output will go
+directly to the output formatter and be written to your final output,
+separated by the key-value separator.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="running_pydoop_applications.html" title="Pydoop Submit User Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             >previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

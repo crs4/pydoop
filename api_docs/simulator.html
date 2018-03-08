@@ -1,36 +1,25 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>pydoop.mapreduce.simulator — Hadoop Simulator API &mdash; Pydoop 1.2.0 documentation</title>
-    
+    <title>pydoop.mapreduce.simulator — Hadoop Simulator API &#8212; Pydoop 2.0a1 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../',
-        VERSION:     '1.2.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
-    <link rel="up" title="API Docs" href="index.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="pydoop.hadut — Hadoop shell interaction" href="hadut.html" />
     <link rel="prev" title="pydoop.hdfs — HDFS API" href="hdfs_api.html" /> 
-  </head>
-  <body>
-    <div class="related">
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -48,9 +37,10 @@
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
 	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
 
-          <li><a href="index.html" accesskey="U">API Docs</a> &raquo;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">API Docs</a> &#187;</li> 
       </ul>
     </div>
 
@@ -61,10 +51,10 @@
             </a></p>
             <h4>Previous topic</h4>
             <p class="topless"><a href="hdfs_api.html"
-                                  title="previous chapter"><tt class="docutils literal"><span class="pre">pydoop.hdfs</span></tt> &#8212; HDFS API</a></p>
+                                  title="previous chapter"><code class="docutils literal notranslate"><span class="pre">pydoop.hdfs</span></code> — HDFS API</a></p>
             <h4>Next topic</h4>
             <p class="topless"><a href="hadut.html"
-                                  title="next chapter"><tt class="docutils literal"><span class="pre">pydoop.hadut</span></tt> &#8212; Hadoop shell interaction</a></p>
+                                  title="next chapter"><code class="docutils literal notranslate"><span class="pre">pydoop.hadut</span></code> — Hadoop shell interaction</a></p>
 
 					<h4>Get Pydoop</h4>
 					<ul>
@@ -99,17 +89,17 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="module-pydoop.mapreduce.simulator">
-<span id="pydoop-mapreduce-simulator-hadoop-simulator-api"></span><span id="simulator-api"></span><h1><a class="reference internal" href="#module-pydoop.mapreduce.simulator" title="pydoop.mapreduce.simulator"><tt class="xref py py-mod docutils literal"><span class="pre">pydoop.mapreduce.simulator</span></tt></a> &#8212; Hadoop Simulator API<a class="headerlink" href="#module-pydoop.mapreduce.simulator" title="Permalink to this headline">¶</a></h1>
+<span id="pydoop-mapreduce-simulator-hadoop-simulator-api"></span><span id="simulator-api"></span><h1><a class="reference internal" href="#module-pydoop.mapreduce.simulator" title="pydoop.mapreduce.simulator"><code class="xref py py-mod docutils literal notranslate"><span class="pre">pydoop.mapreduce.simulator</span></code></a> — Hadoop Simulator API<a class="headerlink" href="#module-pydoop.mapreduce.simulator" title="Permalink to this headline">¶</a></h1>
 <p>This module provides basic, stand-alone Hadoop simulators for
 debugging support.</p>
 <dl class="class">
 <dt id="pydoop.mapreduce.simulator.HadoopSimulatorLocal">
-<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.simulator.</tt><tt class="descname">HadoopSimulatorLocal</tt><big>(</big><em>factory</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>context_cls=None</em>, <em>avro_input=None</em>, <em>avro_output=None</em>, <em>avro_output_key_schema=None</em>, <em>avro_output_value_schema=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorLocal" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pydoop.mapreduce.simulator.</code><code class="descname">HadoopSimulatorLocal</code><span class="sig-paren">(</span><em>factory</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>context_cls=None</em>, <em>avro_input=None</em>, <em>avro_output=None</em>, <em>avro_output_key_schema=None</em>, <em>avro_output_value_schema=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorLocal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simulates the invocation of program components in a Hadoop workflow.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">my_mr_app</span> <span class="kn">import</span> <span class="n">Factory</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">my_mr_app</span> <span class="kn">import</span> <span class="n">Factory</span>
 <span class="n">hs</span> <span class="o">=</span> <span class="n">HadoopSimulatorLocal</span><span class="p">(</span><span class="n">Factory</span><span class="p">())</span>
 <span class="n">job_conf</span> <span class="o">=</span> <span class="p">{</span><span class="o">...</span><span class="p">}</span>
 <span class="n">hs</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">fin</span><span class="p">,</span> <span class="n">fout</span><span class="p">,</span> <span class="n">job_conf</span><span class="p">)</span>
@@ -118,28 +108,28 @@ debugging support.</p>
 </div>
 <dl class="method">
 <dt id="pydoop.mapreduce.simulator.HadoopSimulatorLocal.run">
-<tt class="descname">run</tt><big>(</big><em>file_in</em>, <em>file_out</em>, <em>job_conf</em>, <em>num_reducers=1</em>, <em>input_split=''</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorLocal.run" title="Permalink to this definition">¶</a></dt>
-<dd><p>Run the simulator as configured by <tt class="docutils literal"><span class="pre">job_conf</span></tt>, with
-<tt class="docutils literal"><span class="pre">num_reducers</span></tt> reducers.  If <tt class="docutils literal"><span class="pre">file_in</span></tt> is not <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>,
-simulate the behavior of Hadoop&#8217;s <tt class="docutils literal"><span class="pre">TextLineReader</span></tt>, creating
-a record for each line in <tt class="docutils literal"><span class="pre">file_in</span></tt>.  Otherwise, assume that
-the <tt class="docutils literal"><span class="pre">factory</span></tt> argument given to the constructor defines a
-<a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a>, and that <tt class="docutils literal"><span class="pre">job_conf</span></tt> provides a
-suitable <a class="reference internal" href="mr_api.html#pydoop.mapreduce.pipes.InputSplit" title="pydoop.mapreduce.pipes.InputSplit"><tt class="xref py py-class docutils literal"><span class="pre">InputSplit</span></tt></a>.  Similarly, if
-<tt class="docutils literal"><span class="pre">file_out</span></tt> is <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>, assume that <tt class="docutils literal"><span class="pre">factory</span></tt> defines a
-<a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><tt class="xref py py-class docutils literal"><span class="pre">RecordWriter</span></tt></a> with appropriate parameters in
-<tt class="docutils literal"><span class="pre">job_conf</span></tt>.</p>
+<code class="descname">run</code><span class="sig-paren">(</span><em>file_in</em>, <em>file_out</em>, <em>job_conf</em>, <em>num_reducers=1</em>, <em>input_split=''</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorLocal.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the simulator as configured by <code class="docutils literal notranslate"><span class="pre">job_conf</span></code>, with
+<code class="docutils literal notranslate"><span class="pre">num_reducers</span></code> reducers.  If <code class="docutils literal notranslate"><span class="pre">file_in</span></code> is not <a class="reference external" href="https://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>,
+simulate the behavior of Hadoop’s <code class="docutils literal notranslate"><span class="pre">TextLineReader</span></code>, creating
+a record for each line in <code class="docutils literal notranslate"><span class="pre">file_in</span></code>.  Otherwise, assume that
+the <code class="docutils literal notranslate"><span class="pre">factory</span></code> argument given to the constructor defines a
+<a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordReader</span></code></a>, and that <code class="docutils literal notranslate"><span class="pre">job_conf</span></code> provides a
+suitable <a class="reference internal" href="mr_api.html#pydoop.mapreduce.pipes.InputSplit" title="pydoop.mapreduce.pipes.InputSplit"><code class="xref py py-class docutils literal notranslate"><span class="pre">InputSplit</span></code></a>.  Similarly, if
+<code class="docutils literal notranslate"><span class="pre">file_out</span></code> is <a class="reference external" href="https://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>, assume that <code class="docutils literal notranslate"><span class="pre">factory</span></code> defines a
+<a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordWriter</span></code></a> with appropriate parameters in
+<code class="docutils literal notranslate"><span class="pre">job_conf</span></code>.</p>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="class">
 <dt id="pydoop.mapreduce.simulator.HadoopSimulatorNetwork">
-<em class="property">class </em><tt class="descclassname">pydoop.mapreduce.simulator.</tt><tt class="descname">HadoopSimulatorNetwork</tt><big>(</big><em>program=None</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>sleep_delta=3</em>, <em>context_cls=None</em>, <em>avro_input=None</em>, <em>avro_output=None</em>, <em>avro_output_key_schema=None</em>, <em>avro_output_value_schema=None</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorNetwork" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pydoop.mapreduce.simulator.</code><code class="descname">HadoopSimulatorNetwork</code><span class="sig-paren">(</span><em>program=None</em>, <em>logger=None</em>, <em>loglevel=50</em>, <em>sleep_delta=3</em>, <em>context_cls=None</em>, <em>avro_input=None</em>, <em>avro_output=None</em>, <em>avro_output_key_schema=None</em>, <em>avro_output_value_schema=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorNetwork" title="Permalink to this definition">¶</a></dt>
 <dd><p>Simulates the invocation of program components in a Hadoop
 workflow using network connections to communicate with a
 user-provided pipes program.</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">program_name</span> <span class="o">=</span> <span class="s1">&#39;../wordcount/new_api/wordcount_full.py&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">program_name</span> <span class="o">=</span> <span class="s1">&#39;../wordcount/bin/wordcount_full.py&#39;</span>
 <span class="n">data_in</span> <span class="o">=</span> <span class="s1">&#39;../input/alice.txt&#39;</span>
 <span class="n">output_dir</span> <span class="o">=</span> <span class="s1">&#39;./output&#39;</span>
 <span class="n">data_in_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">data_in</span><span class="p">)</span>
@@ -158,20 +148,20 @@ user-provided pipes program.</p>
 <span class="n">hsn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">conf</span><span class="p">,</span> <span class="n">input_split</span><span class="o">=</span><span class="n">input_split</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The Pydoop application <tt class="docutils literal"><span class="pre">program</span></tt> will be launched <tt class="docutils literal"><span class="pre">sleep_delta</span></tt>
+<p>The Pydoop application <code class="docutils literal notranslate"><span class="pre">program</span></code> will be launched <code class="docutils literal notranslate"><span class="pre">sleep_delta</span></code>
 seconds after framework initialization.</p>
 <dl class="method">
 <dt id="pydoop.mapreduce.simulator.HadoopSimulatorNetwork.run">
-<tt class="descname">run</tt><big>(</big><em>file_in</em>, <em>file_out</em>, <em>job_conf</em>, <em>num_reducers=1</em>, <em>input_split=''</em><big>)</big><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorNetwork.run" title="Permalink to this definition">¶</a></dt>
+<code class="descname">run</code><span class="sig-paren">(</span><em>file_in</em>, <em>file_out</em>, <em>job_conf</em>, <em>num_reducers=1</em>, <em>input_split=''</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.mapreduce.simulator.HadoopSimulatorNetwork.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run the program through the simulated Hadoop infrastructure,
-piping the contents of <tt class="docutils literal"><span class="pre">file_in</span></tt> to the program similarly to
-what Hadoop&#8217;s <tt class="docutils literal"><span class="pre">TextInputFormat</span></tt> does.  Setting <tt class="docutils literal"><span class="pre">file_in</span></tt>
-to <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a> implies that the program is expected to get its
-data from its own <a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a>, using the
-provided <tt class="docutils literal"><span class="pre">input_split</span></tt>.  Analogously, the final results will
-be written to <tt class="docutils literal"><span class="pre">file_out</span></tt> unless it is set to <a class="reference external" href="http://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><tt class="xref py py-obj docutils literal"><span class="pre">None</span></tt></a>, in
+piping the contents of <code class="docutils literal notranslate"><span class="pre">file_in</span></code> to the program similarly to
+what Hadoop’s <code class="docutils literal notranslate"><span class="pre">TextInputFormat</span></code> does.  Setting <code class="docutils literal notranslate"><span class="pre">file_in</span></code>
+to <a class="reference external" href="https://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a> implies that the program is expected to get its
+data from its own <a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordReader</span></code></a>, using the
+provided <code class="docutils literal notranslate"><span class="pre">input_split</span></code>.  Analogously, the final results will
+be written to <code class="docutils literal notranslate"><span class="pre">file_out</span></code> unless it is set to <a class="reference external" href="https://docs.python.org/2.7/library/constants.html#None" title="(in Python v2.7)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>, in
 which case the program is expected to have a
-<a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><tt class="xref py py-class docutils literal"><span class="pre">RecordWriter</span></tt></a>.</p>
+<a class="reference internal" href="mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordWriter</span></code></a>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -184,7 +174,7 @@ which case the program is expected to have a
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -202,14 +192,15 @@ which case the program is expected to have a
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
 	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
 
-          <li><a href="index.html" >API Docs</a> &raquo;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" >API Docs</a> &#187;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2009-2016, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2009-2018, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
     </div>
   </body>
 </html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Easy Hadoop Scripting with Pydoop Script &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="index.html" />
+    <link rel="next" title="The HDFS API" href="hdfs_api.html" />
+    <link rel="prev" title="Tutorial" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hdfs_api.html" title="The HDFS API"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Tutorial"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Easy Hadoop Scripting with Pydoop Script</a><ul>
+<li><a class="reference internal" href="#writing-and-running-scripts">Writing and Running Scripts</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#word-count">Word Count</a></li>
+<li><a class="reference internal" href="#word-count-with-total-number-of-words">Word Count with Total Number of Words</a></li>
+<li><a class="reference internal" href="#lower-case">Lower Case</a></li>
+<li><a class="reference internal" href="#job-parameters">Job Parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#applicability">Applicability</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">Tutorial</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="hdfs_api.html"
+                                  title="next chapter">The HDFS API</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="easy-hadoop-scripting-with-pydoop-script">
+<span id="pydoop-script-tutorial"></span><h1>Easy Hadoop Scripting with Pydoop Script<a class="headerlink" href="#easy-hadoop-scripting-with-pydoop-script" title="Permalink to this headline">¶</a></h1>
+<p>Pydoop Script is the easiest way to write simple MapReduce programs
+for Hadoop.  With Pydoop Script, your code focuses on the core of the
+MapReduce model: the mapper and reducer functions.</p>
+<div class="section" id="writing-and-running-scripts">
+<h2>Writing and Running Scripts<a class="headerlink" href="#writing-and-running-scripts" title="Permalink to this headline">¶</a></h2>
+<p>Write a <tt class="docutils literal"><span class="pre">script.py</span></tt> Python module that contains the mapper and
+reducer functions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">input_key</span><span class="p">,</span> <span class="n">input_value</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="c1"># your computation here</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">intermediate_key</span><span class="p">,</span> <span class="n">intermediate_value</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">intermediate_key</span><span class="p">,</span> <span class="n">value_iterator</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="c1"># your computation here</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">output_key</span><span class="p">,</span> <span class="n">output_value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The program can be run as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop script script.py hdfs_input hdfs_output
+</pre></div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>The following examples show how to use Pydoop Script for common
+problems.  More examples can be found in the
+<tt class="docutils literal"><span class="pre">examples/pydoop_script</span></tt> subdirectory of Pydoop&#8217;s source
+distribution root.  The <a class="reference internal" href="../pydoop_script.html#pydoop-script-guide"><em>Pydoop Script Guide</em></a> contains more detailed information on writing
+and running programs.</p>
+<div class="section" id="word-count">
+<span id="id1"></span><h3>Word Count<a class="headerlink" href="#word-count" title="Permalink to this headline">¶</a></h3>
+<p>The word count example can be considered as the &#8220;hello world&#8221; of
+MapReduce.  A simple application that counts the occurrence of each
+word in a set of text files, it is included in both the original
+MapReduce paper <a class="footnote-reference" href="#id3" id="id2">[1]</a> and in the Hadoop documentation as a MapReduce
+programming tutorial.  The Pydoop Script implementation requires only
+five lines of code:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">icounts</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>A few more lines allow to set a combiner for local aggregation:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">combiner</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;combiner calls&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">icounts</span><span class="p">,</span> <span class="n">writer</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Run the example with:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop script -c combiner wordcount.py hdfs_input hdfs_output
+</pre></div>
+</div>
+<p>Note that we need to explicitly set the <tt class="docutils literal"><span class="pre">-c</span></tt> flag to activate the
+combiner.  By default, no combiner is called.</p>
+<p>One thing to remember is that the current Hadoop Pipes architecture
+runs the combiner under the hood of the executable run by <tt class="docutils literal"><span class="pre">pipes</span></tt>,
+so it does not update the &#8220;combiner&#8221; counters of the general Hadoop
+framework.  Thus, if you run the above script, you&#8217;ll get a value of 0
+for &#8220;Combine input/output records&#8221; in the &#8220;Map-Reduce Framework&#8221;
+group, but the &#8220;combiner calls&#8221; counter should be updated correctly.</p>
+</div>
+<div class="section" id="word-count-with-total-number-of-words">
+<h3>Word Count with Total Number of Words<a class="headerlink" href="#word-count-with-total-number-of-words" title="Permalink to this headline">¶</a></h3>
+<p>Suppose that we want to count the occurrence of specific words, like
+in the example above, but we also want the total number of words.  For
+this last &#8220;global&#8221; count we can use Hadoop counters:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="n">wordlist</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">wordlist</span><span class="p">:</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;num words&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">wordlist</span><span class="p">))</span>
+
+<span class="k">def</span> <span class="nf">reducer</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">count</span><span class="p">)))</span>
+</pre></div>
+</div>
+<p>The counter value will show on the JobTracker&#8217;s job page and will be
+present in the job logs.</p>
+</div>
+<div class="section" id="lower-case">
+<h3>Lower Case<a class="headerlink" href="#lower-case" title="Permalink to this headline">¶</a></h3>
+<p>To convert some text to lower case, create a module <tt class="docutils literal"><span class="pre">lowercase.py</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">):</span>
+    <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>This is a map-only job, so we set the number of reducers to 0.  To
+avoid leading tabs in our results, we also want an empty separator for
+output key-value pairs: this is done via the <tt class="docutils literal"><span class="pre">-t</span></tt> option:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop script --num-reducers 0 -t &#39;&#39; lowercase.py hdfs_input hdfs_output
+</pre></div>
+</div>
+</div>
+<div class="section" id="job-parameters">
+<h3>Job Parameters<a class="headerlink" href="#job-parameters" title="Permalink to this headline">¶</a></h3>
+<p>Suppose you want to select all lines containing a substring to be
+given at run time.  Create a module <tt class="docutils literal"><span class="pre">grep.py</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">mapper</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">conf</span><span class="p">):</span>  <span class="c1"># notice the fourth &#39;conf&#39; argument</span>
+    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">conf</span><span class="p">[</span><span class="s1">&#39;grep-expression&#39;</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Job parameters, like in <tt class="docutils literal"><span class="pre">hadoop</span> <span class="pre">pipes</span></tt>, are passed via the -D
+option:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop script --num-reducers 0 -t &#39;&#39; -D grep-expression=my_substring \
+  grep.py hdfs_input hdfs_output
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="applicability">
+<h2>Applicability<a class="headerlink" href="#applicability" title="Permalink to this headline">¶</a></h2>
+<p>Pydoop Script makes it easy to solve simple problems.  It makes it
+feasible to write simple (even throw-away) scripts to perform simple
+manipulations or analyses on your data, especially if it&#8217;s text-based.</p>
+<p>If you can specify your algorithm in two simple functions that have no
+state or have a simple state that can be stored in module variables,
+then you can consider using Pydoop Script.</p>
+<p>If you need something more sophisticated, then consider using the
+<a class="reference internal" href="mapred_api.html#api-tutorial"><em>full Pydoop API</em></a>.</p>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>J. Dean and S. Ghemawat, <em>MapReduce: simplified data processing
+on large clusters</em>, in OSDI &#8216;04: 6th Symposium on Operating
+Systems Design and Implementation, 2004</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="hdfs_api.html" title="The HDFS API"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Tutorial"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

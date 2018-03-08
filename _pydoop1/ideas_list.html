@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Ideas List &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
+    <link rel="next" title="How to Cite" href="how_to_cite.html" />
+    <link rel="prev" title="Installation-free Usage" href="self_contained.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="how_to_cite.html" title="How to Cite"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="self_contained.html" title="Installation-free Usage"
+             accesskey="P">previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Ideas List</a><ul>
+<li><a class="reference internal" href="#customizing-inputsplits-in-python">Customizing InputSplits in Python</a></li>
+<li><a class="reference internal" href="#python-3-porting">Python 3 porting</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="self_contained.html"
+                                  title="previous chapter">Installation-free Usage</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="how_to_cite.html"
+                                  title="next chapter">How to Cite</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="ideas-list">
+<span id="id1"></span><h1>Ideas List<a class="headerlink" href="#ideas-list" title="Permalink to this headline">¶</a></h1>
+<p>This page contains a list of future development ideas which we
+currently can&#8217;t pursue due to lack of resources.  They are accessible
+to developers with a good knowledge of Python and Java, possibly in
+addition to some degree of familiarity with <a class="reference external" href="http://hadoop.apache.org">Hadoop</a>.  If you find anything you&#8217;d like to work
+on, just <a class="reference external" href="https://github.com/crs4/pydoop/fork">fork us on GitHub</a>
+and start coding!</p>
+<div class="section" id="customizing-inputsplits-in-python">
+<h2>Customizing InputSplits in Python<a class="headerlink" href="#customizing-inputsplits-in-python" title="Permalink to this headline">¶</a></h2>
+<p>In the Hadoop workflow, one of the first steps the framework performs
+when running a job is to look over the input data and decide how to
+split it among a number of independent processing tasks. Within Hadoop
+this functionality is implemented in an InputFormat class. Overriding
+this class allows you to customize how input files are split &#8211;
+information which is captured in a list of InputSplit objects.</p>
+<p>At the moment it is not possible to implement your own InputFormat in
+Python and plug it into the framework; Java must be used instead. The
+idea is to add the feature to Pydoop so that developers could
+implement custom input splitting in pure Python, which would
+complement the currently available possibility to write a custom
+record reader in Python &#8211; i.e., a full input data format
+implementation in Python.</p>
+<p><strong>Knowledge prerequisites:</strong> Python, Java</p>
+<p><strong>Skill level:</strong> medium</p>
+</div>
+<div class="section" id="python-3-porting">
+<h2>Python 3 porting<a class="headerlink" href="#python-3-porting" title="Permalink to this headline">¶</a></h2>
+<p>Pydoop currently runs on Python 2.7. It
+would be nice to make it available to Python 3 users.</p>
+<p><strong>Knowledge prerequisites:</strong> Python 2, Python 3</p>
+<p><strong>Skill level:</strong> basic</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="how_to_cite.html" title="How to Cite"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="self_contained.html" title="Installation-free Usage"
+             >previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

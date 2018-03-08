@@ -1,0 +1,224 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The HDFS API &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="index.html" />
+    <link rel="next" title="Writing Full-Featured Applications" href="mapred_api.html" />
+    <link rel="prev" title="Easy Hadoop Scripting with Pydoop Script" href="pydoop_script.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mapred_api.html" title="Writing Full-Featured Applications"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Easy Hadoop Scripting with Pydoop Script"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">The HDFS API</a><ul>
+<li><a class="reference internal" href="#low-level-api">Low-level API</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="pydoop_script.html"
+                                  title="previous chapter">Easy Hadoop Scripting with Pydoop Script</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="mapred_api.html"
+                                  title="next chapter">Writing Full-Featured Applications</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-hdfs-api">
+<span id="hdfs-api-tutorial"></span><h1>The HDFS API<a class="headerlink" href="#the-hdfs-api" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference internal" href="../api_docs/hdfs_api.html#hdfs-api"><em>HDFS API</em></a> allows you to connect to an HDFS
+installation, read and write files and get information on files,
+directories and global file system properties:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pydoop.hdfs</span> <span class="kn">as</span> <span class="nn">hdfs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="s2">&quot;test/hello.txt&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">text</span> <span class="o">=</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;test/hello.txt&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">print</span> <span class="n">text</span>
+<span class="go">hello</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+<span class="go">[&#39;hdfs://localhost:9000/user/simleo/test/hello.txt&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="s2">&quot;test/hello.txt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span>
+<span class="go">5L</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="s2">&quot;test/hello.txt&quot;</span><span class="p">)</span>
+<span class="go">&#39;hello.txt&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">cp</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="s2">&quot;test.copy&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="s2">&quot;test.copy&quot;</span><span class="p">)</span>
+<span class="go">[&#39;hdfs://localhost:9000/user/simleo/test.copy/hello.txt&#39;]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;test/hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;/tmp/hello.txt&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;/tmp/hello.txt&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="go">hello</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;/tmp/hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;test.copy/hello.txt.copy&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="s2">&quot;test.copy&quot;</span><span class="p">):</span> <span class="k">print</span> <span class="n">x</span>
+<span class="gp">...</span>
+<span class="go">hdfs://localhost:9000/user/simleo/test.copy/hello.txt</span>
+<span class="go">hdfs://localhost:9000/user/simleo/test.copy/hello.txt.copy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;test/hello.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">print</span> <span class="n">fi</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="go">hel</span>
+</pre></div>
+</div>
+<div class="section" id="low-level-api">
+<h2>Low-level API<a class="headerlink" href="#low-level-api" title="Permalink to this headline">¶</a></h2>
+<p>The following example
+shows how to build statistics of HDFS usage by block size by directly
+instantiating an <tt class="docutils literal"><span class="pre">hdfs</span></tt> object, which represents an open connection
+to an HDFS instance:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pydoop.hdfs</span> <span class="kn">as</span> <span class="nn">hdfs</span>
+
+<span class="n">ROOT</span> <span class="o">=</span> <span class="s2">&quot;pydoop_test_tree&quot;</span>
+
+<span class="k">def</span> <span class="nf">usage_by_bs</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">root</span><span class="p">):</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">root</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;kind&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;directory&#39;</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">bs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;block_size&#39;</span><span class="p">])</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">info</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span>
+        <span class="n">stats</span><span class="p">[</span><span class="n">bs</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">bs</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span>
+    <span class="k">return</span> <span class="n">stats</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">hdfs</span><span class="p">()</span> <span class="k">as</span> <span class="n">fs</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s2">&quot;BS (MB)</span><span class="se">\t</span><span class="s2">BYTES USED&quot;</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">usage_by_bs</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">ROOT</span><span class="p">)</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()):</span>
+            <span class="k">print</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="se">\t</span><span class="si">%d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="o">/</span><span class="mi">2</span><span class="o">**</span><span class="mi">20</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Full source code for the example is located under <tt class="docutils literal"><span class="pre">examples/hdfs</span></tt> in
+the Pydoop distribution.  You should be able to run the example by
+doing, from the Pydoop root directory:</p>
+<div class="highlight-python"><div class="highlight"><pre>cd examples/hdfs
+./run [TREE_DEPTH] [TREE_SPAN]
+</pre></div>
+</div>
+<p>See the <a class="reference internal" href="../api_docs/hdfs_api.html#hdfs-api"><em>HDFS API reference</em></a> for a complete feature list.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="mapred_api.html" title="Writing Full-Featured Applications"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Easy Hadoop Scripting with Pydoop Script"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

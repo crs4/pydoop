@@ -1,0 +1,405 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
+    <link rel="next" title="Pydoop Script User Guide" href="pydoop_script.html" />
+    <link rel="prev" title="Writing Full-Featured Applications" href="tutorial/mapred_api.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Pydoop Script User Guide"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="tutorial/mapred_api.html" title="Writing Full-Featured Applications"
+             accesskey="P">previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="#">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Installation</a><ul>
+<li><a class="reference internal" href="#supported-platforms">Supported Platforms</a><ul>
+<li><a class="reference internal" href="#linux">Linux</a></li>
+<li><a class="reference internal" href="#apple-os-x">Apple OS X</a></li>
+<li><a class="reference internal" href="#freebsd">FreeBSD</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#get-pydoop">Get Pydoop</a><ul>
+<li><a class="reference internal" href="#source-distribution">Source Distribution</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li><a class="reference internal" href="#id3">Installation</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+<li><a class="reference internal" href="#testing-your-installation">Testing your Installation</a><ul>
+<li><a class="reference internal" href="#superuser-privileges">Superuser Privileges</a></li>
+<li><a class="reference internal" href="#hadoop2-cdh4">Hadoop2 / CDH4</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="tutorial/mapred_api.html"
+                                  title="previous chapter">Writing Full-Featured Applications</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="pydoop_script.html"
+                                  title="next chapter">Pydoop Script User Guide</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="#"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation">
+<span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="supported-platforms">
+<h2>Supported Platforms<a class="headerlink" href="#supported-platforms" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="linux">
+<h3>Linux<a class="headerlink" href="#linux" title="Permalink to this headline">¶</a></h3>
+<p>Pydoop has been tested on <a class="reference external" href="http://www.gentoo.org">Gentoo</a>, <a class="reference external" href="http://www.ubuntu.com">Ubuntu</a> and <a class="reference external" href="http://www.centos.org">CentOS</a>. Although we currently have no information
+regarding other Linux distributions, we expect Pydoop to work
+(possibly with some tweaking) on them as well.</p>
+</div>
+<div class="section" id="apple-os-x">
+<h3>Apple OS X<a class="headerlink" href="#apple-os-x" title="Permalink to this headline">¶</a></h3>
+<p>Pydoop has been tested on OS X 10.9 (Maverick) and OS X 10.10
+(Yosemite).  Install the <a class="reference external" href="http://brew.sh/">Homebrew</a> version of
+Python, then follow the instructions below.</p>
+</div>
+<div class="section" id="freebsd">
+<h3>FreeBSD<a class="headerlink" href="#freebsd" title="Permalink to this headline">¶</a></h3>
+<p>We have included a patch by <a class="reference external" href="https://github.com/trtrmitya">trtrmitya</a>
+that adds FreeBSD support, but we have not tested it.</p>
+</div>
+</div>
+<div class="section" id="get-pydoop">
+<span id="id2"></span><h2>Get Pydoop<a class="headerlink" href="#get-pydoop" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="source-distribution">
+<h3>Source Distribution<a class="headerlink" href="#source-distribution" title="Permalink to this headline">¶</a></h3>
+<p>We recommend installing Pydoop via <a class="reference external" href="http://www.pip-installer.org">pip</a>:</p>
+<div class="highlight-python"><div class="highlight"><pre>pip install pydoop
+</pre></div>
+</div>
+<p>To get the source code, clone our <a class="reference external" href="http://git-scm.com/">Git</a> repository:</p>
+<div class="highlight-python"><div class="highlight"><pre>git clone https://github.com/crs4/pydoop.git
+</pre></div>
+</div>
+<p>Where the <tt class="docutils literal"><span class="pre">master</span></tt> branch corresponds to the latest release, while
+the <tt class="docutils literal"><span class="pre">develop</span></tt> branch contains code under active development.</p>
+</div>
+</div>
+<div class="section" id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>In order to build and install Pydoop, you need the following software:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://www.python.org">Python</a> version 2.7</li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/setuptools">setuptools</a> version 3.3
+or higher</li>
+<li>either of the following:<ul>
+<li><a class="reference external" href="http://hadoop.apache.org">Apache Hadoop</a> version 1.0.4, 1.1.2,
+1.2.1, 2.2.0, 2.4.1, 2.5.2 or 2.6.0</li>
+<li><a class="reference external" href="https://ccp.cloudera.com/display/SUPPORT/Downloads">CDH</a>
+version 4 or 5 installed from dist-specific packages or
+Cloudera Manager parcels (no tarball)</li>
+<li><a class="reference external" href="http://hortonworks.com/hdp/">HDP</a> 2.2</li>
+</ul>
+</li>
+<li><a class="reference external" href="http://www.openssl.org">OpenSSL</a></li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul class="simple">
+<li><a class="reference external" href="http://jpype.sourceforge.net/">JPype</a> to build the alternate HDFS backend</li>
+<li><a class="reference external" href="https://avro.apache.org/">Avro</a> Python implementation to enable
+<a class="reference internal" href="examples/avro.html#avro-io"><em>Avro I/O</em></a></li>
+</ul>
+<p>These are also runtime requirements for all cluster nodes. Note that
+installing Pydoop and your MapReduce application to all cluster nodes
+(or to an NFS share) is <em>not</em> required: see <a class="reference internal" href="self_contained.html"><em>Installation-free Usage</em></a> for
+additional info.
+Moreover, being based on Pipes, Pydoop cannot be used with Hadoop standalone installations.</p>
+<p>Other versions of Hadoop may or may not work depending on how
+different they are from the ones listed above.</p>
+</div>
+<div class="section" id="id3">
+<h2>Installation<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>Before compiling and installing Pydoop, install all missing dependencies.</p>
+<p>In addition, if your distribution does not include them by default,
+install basic development tools (such as a C/C++ compiler) and Python
+header files.  On Ubuntu, for instance, you can do that as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo apt-get install build-essential python-dev
+</pre></div>
+</div>
+<p>Set the <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> environment variable to your JDK installation
+directory, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre>export JAVA_HOME=/usr/local/java/jdk
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If you don&#8217;t know where your Java home is, try finding the actual
+path of the <tt class="docutils literal"><span class="pre">java</span></tt> executable and stripping the trailing
+<tt class="docutils literal"><span class="pre">/jre/bin/java</span></tt>:</p>
+<div class="last highlight-python"><div class="highlight"><pre>$ readlink -f $(which java)
+/usr/lib/jvm/java-6-oracle/jre/bin/java
+$ export JAVA_HOME=/usr/lib/jvm/java-6-oracle
+</pre></div>
+</div>
+</div>
+<p>If you have installed Hadoop from a tarball, set the <tt class="docutils literal"><span class="pre">HADOOP_HOME</span></tt>
+environment variable so that it points to where the tarball was
+extracted, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre>export HADOOP_HOME=/opt/hadoop-1.0.4
+</pre></div>
+</div>
+<p>The above step is not necessary if you installed CDH from
+dist-specific packages.  Build Pydoop with:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py build
+</pre></div>
+</div>
+<p>This builds Pydoop with the &#8220;native&#8221; HDFS backend.  To build the
+(experimental) JPype backend instead, run:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py build --hdfs-core-impl=jpype-bridged
+</pre></div>
+</div>
+<p>For a system-wide installation, run the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>sudo python setup.py install --skip-build
+</pre></div>
+</div>
+<p>For a user-local installation:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py install --skip-build --user
+</pre></div>
+</div>
+<p>The latter installs Pydoop in <tt class="docutils literal"><span class="pre">~/.local/lib/python2.X/site-packages</span></tt>.
+This may be a particularly handy solution if your home directory is
+accessible on the entire cluster.</p>
+<p>To install to an arbitrary path:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py install --skip-build --home &lt;PATH&gt;
+</pre></div>
+</div>
+<span class="target" id="multiple-hadoop-versions"></span></div>
+<div class="section" id="troubleshooting">
+<span id="id4"></span><h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic">
+<li><p class="first">&#8220;java home not found&#8221; error, with <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> properly exported: try
+setting <tt class="docutils literal"><span class="pre">JAVA_HOME</span></tt> in <tt class="docutils literal"><span class="pre">hadoop-env.sh</span></tt></p>
+</li>
+<li><p class="first">&#8220;libjvm.so not found&#8221; error: try the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>export LD_LIBRARY_PATH=&quot;${JAVA_HOME}/jre/lib/amd64/server:${LD_LIBRARY_PATH}&quot;
+</pre></div>
+</div>
+</li>
+<li><p class="first">non-standard include/lib directories: the setup script looks for
+includes and libraries in standard places &#8211; read <tt class="docutils literal"><span class="pre">setup.py</span></tt> for
+details. If some of the requirements are stored in different
+locations, you need to add them to the search path. Example:</p>
+<div class="highlight-python"><div class="highlight"><pre>python setup.py build_ext -L/my/lib/path -I/my/include/path -R/my/lib/path
+python setup.py build
+python setup.py install --skip-build
+</pre></div>
+</div>
+<p>Alternatively, you can write a small <tt class="docutils literal"><span class="pre">setup.cfg</span></tt> file for distutils:</p>
+<div class="highlight-cfg"><div class="highlight"><pre><span class="k">[build_ext]</span>
+<span class="na">include_dirs</span><span class="o">=</span><span class="s">/my/include/path</span>
+<span class="na">library_dirs</span><span class="o">=</span><span class="s">/my/lib/path</span>
+<span class="na">rpath</span><span class="o">=</span><span class="s">%(library_dirs)s</span>
+</pre></div>
+</div>
+<p>and then run <tt class="docutils literal"><span class="pre">python</span> <span class="pre">setup.py</span> <span class="pre">install</span></tt>.</p>
+<p>Finally, you can achieve the same result by manipulating the
+environment.  This is particularly useful in the case of automatic
+download and install with pip:</p>
+<div class="highlight-python"><div class="highlight"><pre>export CPATH=&quot;/my/include/path:${CPATH}&quot;
+export LD_LIBRARY_PATH=&quot;/my/lib/path:${LD_LIBRARY_PATH}&quot;
+pip install pydoop
+</pre></div>
+</div>
+</li>
+<li><p class="first">Hadoop version issues. The Hadoop version selected at compile time is
+automatically detected based on the output of running <tt class="docutils literal"><span class="pre">hadoop</span> <span class="pre">version</span></tt>.
+If this fails for any reason, you can provide the correct version string
+through the <tt class="docutils literal"><span class="pre">HADOOP_VERSION</span></tt> environment variable, e.g.:</p>
+<div class="highlight-python"><div class="highlight"><pre>export HADOOP_VERSION=&quot;1.0.4&quot;
+</pre></div>
+</div>
+</li>
+</ol>
+</div>
+<div class="section" id="testing-your-installation">
+<h2>Testing your Installation<a class="headerlink" href="#testing-your-installation" title="Permalink to this headline">¶</a></h2>
+<p>After Pydoop has been successfully installed, you might want to run
+unit tests to verify that everything works fine.</p>
+<p><strong>IMPORTANT NOTICE:</strong> in order to run HDFS tests you must:</p>
+<ol class="arabic">
+<li><p class="first">make sure that Pydoop is able to detect your Hadoop home and
+configuration directories.  If auto-detection fails, try setting
+the <tt class="docutils literal"><span class="pre">HADOOP_HOME</span></tt> and <tt class="docutils literal"><span class="pre">HADOOP_CONF_DIR</span></tt> environment variables
+to the appropriate locations;</p>
+</li>
+<li><p class="first">since one of the test cases tests the connection to an HDFS
+instance with <em>explicitly set</em> host and port, if in your case these
+are different from, respectively, &#8220;localhost&#8221; and 9000 (8020 for
+package-based CDH), you must set the <tt class="docutils literal"><span class="pre">HDFS_HOST</span></tt> and
+<tt class="docutils literal"><span class="pre">HDFS_PORT</span></tt> environment variables accordingly;</p>
+</li>
+<li><p class="first">start HDFS:</p>
+<div class="highlight-python"><div class="highlight"><pre>${HADOOP_HOME}/bin/start-dfs.sh
+</pre></div>
+</div>
+</li>
+<li><p class="first">wait until HDFS exits from safe mode:</p>
+<div class="highlight-python"><div class="highlight"><pre>${HADOOP_HOME}/bin/hadoop dfsadmin -safemode wait
+</pre></div>
+</div>
+</li>
+</ol>
+<p>To run the unit tests, move to the <tt class="docutils literal"><span class="pre">test</span></tt> subdirectory and run <em>as
+the cluster superuser</em> (see below):</p>
+<div class="highlight-python"><div class="highlight"><pre>python all_tests.py
+</pre></div>
+</div>
+<div class="section" id="superuser-privileges">
+<h3>Superuser Privileges<a class="headerlink" href="#superuser-privileges" title="Permalink to this headline">¶</a></h3>
+<p>The following HDFS tests may fail if not run by the cluster superuser:
+<tt class="docutils literal"><span class="pre">capacity</span></tt>, <tt class="docutils literal"><span class="pre">chown</span></tt> and <tt class="docutils literal"><span class="pre">used</span></tt>.  To get superuser privileges,
+you can either:</p>
+<ul class="simple">
+<li>start the cluster with your own user account;</li>
+<li>edit <tt class="docutils literal"><span class="pre">hdfs-site.xml</span></tt> in your configuration and set the
+<tt class="docutils literal"><span class="pre">dfs.permissions.supergroup</span></tt> (<tt class="docutils literal"><span class="pre">dfs.permissions.superusergroup</span></tt>
+in Hadoop 2) property to one of your unix groups (type <tt class="docutils literal"><span class="pre">groups</span></tt> at
+the command prompt to see to which groups your account belongs),
+then restart the Hadoop daemons:</li>
+</ul>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;property&gt;</span>
+  <span class="nt">&lt;name&gt;</span>dfs.permissions.supergroup<span class="nt">&lt;/name&gt;</span>
+  <span class="nt">&lt;value&gt;</span>admin<span class="nt">&lt;/value&gt;</span>
+<span class="nt">&lt;/property&gt;</span>
+</pre></div>
+</div>
+<p>If you can&#8217;t acquire superuser privileges to run the tests, just keep in mind
+that the failures reported may be due to this reason.</p>
+</div>
+<div class="section" id="hadoop2-cdh4">
+<h3>Hadoop2 / CDH4<a class="headerlink" href="#hadoop2-cdh4" title="Permalink to this headline">¶</a></h3>
+<p>With Apache Hadoop 2 / CDH 4, before running the unit tests, edit
+<tt class="docutils literal"><span class="pre">hdfs-site.xml</span></tt> and set <tt class="docutils literal"><span class="pre">dfs.namenode.fs-limits.min-block-size</span></tt> to
+a low value:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span class="nt">&lt;property&gt;</span>
+  <span class="nt">&lt;name&gt;</span>dfs.namenode.fs-limits.min-block-size<span class="nt">&lt;/name&gt;</span>
+  <span class="nt">&lt;value&gt;</span>512<span class="nt">&lt;/value&gt;</span>
+<span class="nt">&lt;/property&gt;</span>
+</pre></div>
+</div>
+<p>then restart Hadoop daemons.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Pydoop Script User Guide"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="tutorial/mapred_api.html" title="Writing Full-Featured Applications"
+             >previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="#">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

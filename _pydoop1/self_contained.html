@@ -1,0 +1,192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Installation-free Usage &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
+    <link rel="next" title="Ideas List" href="ideas_list.html" />
+    <link rel="prev" title="Avro I/O" href="examples/avro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="ideas_list.html" title="Ideas List"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="examples/avro.html" title="Avro I/O"
+             accesskey="P">previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Installation-free Usage</a><ul>
+<li><a class="reference internal" href="#example-application-count-vowels">Example Application: Count Vowels</a></li>
+<li><a class="reference internal" href="#how-it-works">How it Works</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="examples/avro.html"
+                                  title="previous chapter">Avro I/O</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="ideas_list.html"
+                                  title="next chapter">Ideas List</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="installation-free-usage">
+<span id="self-contained"></span><h1>Installation-free Usage<a class="headerlink" href="#installation-free-usage" title="Permalink to this headline">¶</a></h1>
+<p>This example shows how to use the Hadoop Distributed Cache (DC) to
+distribute Python packages, possibly including Pydoop itself, to all
+cluster nodes at job launch time. This is useful in all cases where
+installing to each node is not feasible (e.g., lack of a shared mount
+point). Of course, Hadoop itself must be already installed and
+properly configured in all cluster nodes before you can run this.</p>
+<p>Source code for this example is available under
+<tt class="docutils literal"><span class="pre">examples/self_contained</span></tt>.</p>
+<div class="section" id="example-application-count-vowels">
+<h2>Example Application: Count Vowels<a class="headerlink" href="#example-application-count-vowels" title="Permalink to this headline">¶</a></h2>
+<p>The example MapReduce application, <tt class="docutils literal"><span class="pre">vowelcount</span></tt>, is rather trivial: it counts
+the occurrence of each vowel in the input text. Since the point here
+is to show how a structured package can be distributed and imported,
+the implementation is exceedingly verbose and inefficient.</p>
+</div>
+<div class="section" id="how-it-works">
+<h2>How it Works<a class="headerlink" href="#how-it-works" title="Permalink to this headline">¶</a></h2>
+<p>The DC supports automatic distribution of files and archives across
+the cluster at job launch time.  This feature can be used to dispatch
+Python packages to all nodes, eliminating the need to install
+dependencies for your application, including Pydoop itself:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-archive-to-cache vowelcount.tgz \
+              --upload-archive-to-cache pydoop.tgz [...]
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">pydoop.tgz</span></tt> and <tt class="docutils literal"><span class="pre">vowelcount.tgz</span></tt> archives will be copied to
+all slave nodes and unpacked; in addition, <tt class="docutils literal"><span class="pre">pydoop</span></tt> and
+<tt class="docutils literal"><span class="pre">vowelcount</span></tt> symlinks will be created in the current working
+directory of each task before it is executed.  If you include in each
+archive the <em>contents</em> of the corresponding package, they will be
+available for import.</p>
+<p>The archive must be in one of the formats supported by Hadoop: zip, tar or tgz.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Pydoop submit automatically builds the name of the symlink that
+points to the unpacked archive by stripping the last extension.
+Thus, <tt class="docutils literal"><span class="pre">foo.tar.gz</span></tt> will not work as expected, since the link will
+be called <tt class="docutils literal"><span class="pre">foo.tar</span></tt>. Always use the <tt class="docutils literal"><span class="pre">.tgz</span></tt> extension in this
+case.</p>
+</div>
+<p>The example is supposed to work with Pydoop and vowelcount <em>not</em>
+installed on the slave nodes (you do need Pydoop on the client machine
+used to run the example, however).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="ideas_list.html" title="Ideas List"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="examples/avro.html" title="Avro I/O"
+             >previous</a> |</li>
+	<li><a href="index.html">Home</a>|&nbsp;</li>
+	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

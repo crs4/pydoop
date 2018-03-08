@@ -1,36 +1,25 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Introduction &mdash; Pydoop 1.2.0 documentation</title>
-    
+    <title>Introduction &#8212; Pydoop 2.0a1 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../',
-        VERSION:     '1.2.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
-    <link rel="up" title="Examples" href="index.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Using the Hadoop SequenceFile Format" href="sequence_file.html" />
     <link rel="prev" title="Examples" href="index.html" /> 
-  </head>
-  <body>
-    <div class="related">
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -48,9 +37,10 @@
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
 	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
 
-          <li><a href="index.html" accesskey="U">Examples</a> &raquo;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Examples</a> &#187;</li> 
       </ul>
     </div>
 
@@ -62,7 +52,7 @@
             <h3><a href="../index.html">Table Of Contents</a></h3>
             <ul>
 <li><a class="reference internal" href="#">Introduction</a><ul>
-<li><a class="reference internal" href="#home-directory">Home Directory</a></li>
+<li><a class="reference internal" href="#python-dependencies">Python Dependencies</a></li>
 <li><a class="reference internal" href="#input-data">Input Data</a></li>
 </ul>
 </li>
@@ -108,34 +98,30 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
 <p>Pydoop includes several usage examples: you can find them in the
-&#8220;examples&#8221; subdirectory of the distribution root.</p>
-<div class="section" id="home-directory">
-<h2>Home Directory<a class="headerlink" href="#home-directory" title="Permalink to this headline">¶</a></h2>
-<p>If you&#8217;ve installed Pydoop or other modules locally, i.e., into
-<tt class="docutils literal"><span class="pre">~/.local/lib/python2.7/site-packages</span></tt>, the Python code that runs
-within Hadoop tasks might not be able to find them. This is due to the
-fact that, according to your Hadoop version or configuration, those
-tasks might run as a different user.  In Hadoop 1, you can work
-around this problem by setting the <tt class="docutils literal"><span class="pre">mapreduce.admin.user.home.dir</span></tt>
-configuration parameter (see automatic run/check scripts in the
-aforementioned <tt class="docutils literal"><span class="pre">examples</span></tt> directory).</p>
-<p><strong>NOTE</strong>: In any event, to allow another user to execute your locally
-installed code, you must set permissions accordingly, e.g.:</p>
-<div class="highlight-python"><div class="highlight"><pre>chmod -R 755 ~/.local
-</pre></div>
-</div>
+“examples” subdirectory of the distribution root.</p>
+<div class="section" id="python-dependencies">
+<h2>Python Dependencies<a class="headerlink" href="#python-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>If you’ve installed Pydoop or other Python packages needed by your
+application in a non-standard location (e.g.,
+<code class="docutils literal notranslate"><span class="pre">/opt/lib/python3.6/site-packages</span></code>), the Python code that runs within
+Hadoop tasks might not be able to find them. Note that, according to your
+Hadoop version or configuration, map and reduce tasks might run as a
+different user than the one who launched the job. If you can’t install
+globally, Pydoop offers the option of shipping packages automatically
+upon job submission, see the section on <a class="reference internal" href="../self_contained.html#self-contained"><span class="std std-ref">installation-free
+usage</span></a>.</p>
 </div>
 <div class="section" id="input-data">
 <h2>Input Data<a class="headerlink" href="#input-data" title="Permalink to this headline">¶</a></h2>
 <p>Most examples, by default, take their input from a free version of
-Lewis Carrol&#8217;s &#8220;Alice&#8217;s Adventures in Wonderland&#8221; available at
+Lewis Carrol’s “Alice’s Adventures in Wonderland” available at
 <a class="reference external" href="http://www.gutenberg.org">Project Gutenberg</a> (see the
-<tt class="docutils literal"><span class="pre">examples/input</span></tt> sub-directory).</p>
+<code class="docutils literal notranslate"><span class="pre">examples/input</span></code> sub-directory).</p>
 </div>
 </div>
 
@@ -145,7 +131,7 @@ Lewis Carrol&#8217;s &#8220;Alice&#8217;s Adventures in Wonderland&#8221; availa
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -163,14 +149,15 @@ Lewis Carrol&#8217;s &#8220;Alice&#8217;s Adventures in Wonderland&#8221; availa
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
 	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
 
-          <li><a href="index.html" >Examples</a> &raquo;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" >Examples</a> &#187;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2009-2016, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2009-2018, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
     </div>
   </body>
 </html>

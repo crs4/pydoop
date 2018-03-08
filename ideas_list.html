@@ -1,35 +1,25 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Ideas List &mdash; Pydoop 1.2.0 documentation</title>
-    
+    <title>Ideas List &#8212; Pydoop 2.0a1 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '1.2.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.2.0 documentation" href="index.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="How to Cite" href="how_to_cite.html" />
     <link rel="prev" title="Installation-free Usage" href="self_contained.html" /> 
-  </head>
-  <body>
-    <div class="related">
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -47,7 +37,8 @@
 	<li><a href="index.html">Home</a>|&nbsp;</li>
 	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
  
       </ul>
     </div>
@@ -61,7 +52,6 @@
             <ul>
 <li><a class="reference internal" href="#">Ideas List</a><ul>
 <li><a class="reference internal" href="#customizing-inputsplits-in-python">Customizing InputSplits in Python</a></li>
-<li><a class="reference internal" href="#python-3-porting">Python 3 porting</a></li>
 </ul>
 </li>
 </ul>
@@ -106,14 +96,14 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="ideas-list">
 <span id="id1"></span><h1>Ideas List<a class="headerlink" href="#ideas-list" title="Permalink to this headline">¶</a></h1>
 <p>This page contains a list of future development ideas which we
-currently can&#8217;t pursue due to lack of resources.  They are accessible
+currently can’t pursue due to lack of resources.  They are accessible
 to developers with a good knowledge of Python and Java, possibly in
-addition to some degree of familiarity with <a class="reference external" href="http://hadoop.apache.org">Hadoop</a>.  If you find anything you&#8217;d like to work
+addition to some degree of familiarity with <a class="reference external" href="http://hadoop.apache.org">Hadoop</a>.  If you find anything you’d like to work
 on, just <a class="reference external" href="https://github.com/crs4/pydoop/fork">fork us on GitHub</a>
 and start coding!</p>
 <div class="section" id="customizing-inputsplits-in-python">
@@ -122,24 +112,17 @@ and start coding!</p>
 when running a job is to look over the input data and decide how to
 split it among a number of independent processing tasks. Within Hadoop
 this functionality is implemented in an InputFormat class. Overriding
-this class allows you to customize how input files are split &#8211;
+this class allows you to customize how input files are split –
 information which is captured in a list of InputSplit objects.</p>
 <p>At the moment it is not possible to implement your own InputFormat in
 Python and plug it into the framework; Java must be used instead. The
 idea is to add the feature to Pydoop so that developers could
 implement custom input splitting in pure Python, which would
 complement the currently available possibility to write a custom
-record reader in Python &#8211; i.e., a full input data format
+record reader in Python – i.e., a full input data format
 implementation in Python.</p>
 <p><strong>Knowledge prerequisites:</strong> Python, Java</p>
 <p><strong>Skill level:</strong> medium</p>
-</div>
-<div class="section" id="python-3-porting">
-<h2>Python 3 porting<a class="headerlink" href="#python-3-porting" title="Permalink to this headline">¶</a></h2>
-<p>Pydoop currently runs on Python 2.7. It
-would be nice to make it available to Python 3 users.</p>
-<p><strong>Knowledge prerequisites:</strong> Python 2, Python 3</p>
-<p><strong>Skill level:</strong> basic</p>
 </div>
 </div>
 
@@ -149,7 +132,7 @@ would be nice to make it available to Python 3 users.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -167,13 +150,14 @@ would be nice to make it available to Python 3 users.</p>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
 	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
  
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2009-2016, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2009-2018, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
     </div>
   </body>
 </html>

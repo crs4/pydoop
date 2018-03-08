@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="next" title="Easy Hadoop Scripting with Pydoop Script" href="pydoop_script.html" />
+    <link rel="prev" title="News Archive" href="../news/archive.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Easy Hadoop Scripting with Pydoop Script"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../news/archive.html" title="News Archive"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="../news/archive.html"
+                                  title="previous chapter">News Archive</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="pydoop_script.html"
+                                  title="next chapter">Easy Hadoop Scripting with Pydoop Script</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<span id="id1"></span><h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>Pydoop is a package that provides a Python API for <a class="reference external" href="http://hadoop.apache.org">Hadoop</a> MapReduce and HDFS.  Pydoop has several
+advantages <a class="footnote-reference" href="#pydoop" id="id2">[1]</a> over Hadoop&#8217;s built-in solutions for Python
+programming, i.e., Hadoop Streaming and Jython: being a CPython
+package, it allows you to access all standard library and third party
+modules, some of which may not be available for other Python
+implementations &#8211; e.g., <a class="reference external" href="http://www.scipy.org">SciPy</a>; in
+addition, Pydoop provides a Python HDFS API which, to the best of our
+knowledge, is not available in other solutions.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pydoop_script.html">Easy Hadoop Scripting with Pydoop Script</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pydoop_script.html#writing-and-running-scripts">Writing and Running Scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pydoop_script.html#examples">Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pydoop_script.html#applicability">Applicability</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="hdfs_api.html">The HDFS API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="hdfs_api.html#low-level-api">Low-level API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mapred_api.html">Writing Full-Featured Applications</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mapred_api.html#mappers-and-reducers">Mappers and Reducers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapred_api.html#counters-and-status-updates">Counters and Status Updates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapred_api.html#record-readers-and-writers">Record Readers and Writers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapred_api.html#partitioners-and-combiners">Partitioners and Combiners</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapred_api.html#timers">Timers</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p class="rubric">Footnotes</p>
+<table class="docutils footnote" frame="void" id="pydoop" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td>Simone Leo, Gianluigi Zanetti. <a class="reference external" href="http://dx.doi.org/10.1145/1851476.1851594">Pydoop: a Python
+MapReduce and HDFS API for Hadoop.</a>, Proceedings Of The
+19th ACM International Symposium On High Performance Distributed
+Computing, page 819&#8211;825, 2010</td></tr>
+</tbody>
+</table>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pydoop_script.html" title="Easy Hadoop Scripting with Pydoop Script"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../news/archive.html" title="News Archive"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+ 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

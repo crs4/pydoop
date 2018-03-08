@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Writing a Custom InputFormat &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="up" title="Examples" href="index.html" />
+    <link rel="next" title="Avro I/O" href="avro.html" />
+    <link rel="prev" title="Using the Hadoop SequenceFile Format" href="sequence_file.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="avro.html" title="Avro I/O"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="sequence_file.html" title="Using the Hadoop SequenceFile Format"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">Examples</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="sequence_file.html"
+                                  title="previous chapter">Using the Hadoop SequenceFile Format</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="avro.html"
+                                  title="next chapter">Avro I/O</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="writing-a-custom-inputformat">
+<span id="input-format-example"></span><h1>Writing a Custom InputFormat<a class="headerlink" href="#writing-a-custom-inputformat" title="Permalink to this headline">¶</a></h1>
+<p>You can use a custom Java <tt class="docutils literal"><span class="pre">InputFormat</span></tt> together with a Python
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a>: the java RecordReader
+supplied by the <tt class="docutils literal"><span class="pre">InputFormat</span></tt> will be overridden by the Python one.</p>
+<p>Consider the following simple modification of Hadoop&#8217;s built-in
+<tt class="docutils literal"><span class="pre">TextInputFormat</span></tt>:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="kn">package</span> <span class="nn">it.crs4.pydoop.mapred</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.io.*</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.fs.*</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapred.*</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.io.LongWritable</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.io.Text</span><span class="o">;</span>
+
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">TextInputFormat</span> <span class="kd">extends</span> <span class="n">FileInputFormat</span><span class="o">&lt;</span><span class="n">LongWritable</span><span class="o">,</span> <span class="n">Text</span><span class="o">&gt;</span>
+    <span class="kd">implements</span> <span class="n">JobConfigurable</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="n">Boolean</span> <span class="n">will_split</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">configure</span><span class="o">(</span><span class="n">JobConf</span> <span class="n">conf</span><span class="o">)</span> <span class="o">{</span>
+      <span class="n">will_split</span> <span class="o">=</span> <span class="n">conf</span><span class="o">.</span><span class="na">getBoolean</span><span class="o">(</span><span class="s">&quot;pydoop.input.issplitable&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isSplitable</span><span class="o">(</span><span class="n">FileSystem</span> <span class="n">fs</span><span class="o">,</span> <span class="n">Path</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">will_split</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">RecordReader</span><span class="o">&lt;</span><span class="n">LongWritable</span><span class="o">,</span> <span class="n">Text</span><span class="o">&gt;</span> <span class="nf">getRecordReader</span><span class="o">(</span>
+        <span class="n">InputSplit</span> <span class="n">genericSplit</span><span class="o">,</span> <span class="n">JobConf</span> <span class="n">job</span><span class="o">,</span> <span class="n">Reporter</span> <span class="n">reporter</span>
+        <span class="o">)</span>
+      <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+      <span class="n">reporter</span><span class="o">.</span><span class="na">setStatus</span><span class="o">(</span><span class="n">genericSplit</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+      <span class="k">return</span> <span class="k">new</span> <span class="n">LineRecordReader</span><span class="o">(</span><span class="n">job</span><span class="o">,</span> <span class="o">(</span><span class="n">FileSplit</span><span class="o">)</span> <span class="n">genericSplit</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>With respect to the default one, this InputFormat adds a configurable
+boolean parameter (<tt class="docutils literal"><span class="pre">pydoop.input.issplitable</span></tt>) that, if set to
+<tt class="docutils literal"><span class="pre">false</span></tt>, makes input files non-splitable (i.e., you can&#8217;t get more
+input splits than the number of input files).</p>
+<p>The following code implements the same input format with MapReduce V2:</p>
+<div class="highlight-java"><div class="highlight"><pre><span class="kn">package</span> <span class="nn">it.crs4.pydoop.mapreduce</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.fs.Path</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.io.LongWritable</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.io.Text</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapreduce.InputSplit</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapreduce.JobContext</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapreduce.RecordReader</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapreduce.TaskAttemptContext</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapreduce.lib.input.FileInputFormat</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.mapreduce.lib.input.LineRecordReader</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">TextInputFormat</span> <span class="kd">extends</span> <span class="n">FileInputFormat</span><span class="o">&lt;</span><span class="n">LongWritable</span><span class="o">,</span> <span class="n">Text</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">RecordReader</span><span class="o">&lt;</span><span class="n">LongWritable</span><span class="o">,</span> <span class="n">Text</span><span class="o">&gt;</span> <span class="nf">createRecordReader</span><span class="o">(</span>
+      <span class="n">InputSplit</span> <span class="n">split</span><span class="o">,</span> <span class="n">TaskAttemptContext</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="n">LineRecordReader</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">boolean</span> <span class="nf">isSplitable</span><span class="o">(</span><span class="n">JobContext</span> <span class="n">context</span><span class="o">,</span> <span class="n">Path</span> <span class="n">file</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="na">getConfiguration</span><span class="o">().</span><span class="na">getBoolean</span><span class="o">(</span>
+        <span class="s">&quot;pydoop.input.issplitable&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>For details on how to compile the above code into a jar and use it
+with Pydoop, see <tt class="docutils literal"><span class="pre">examples/input_format</span></tt>.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="avro.html" title="Avro I/O"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="sequence_file.html" title="Using the Hadoop SequenceFile Format"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >Examples</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

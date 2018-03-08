@@ -1,36 +1,25 @@
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    
-    <title>Using the Hadoop SequenceFile Format &mdash; Pydoop 1.2.0 documentation</title>
-    
+    <title>Using the Hadoop SequenceFile Format &#8212; Pydoop 2.0a1 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../',
-        VERSION:     '1.2.0',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true
-      };
-    </script>
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
-    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
-    <link rel="up" title="Examples" href="index.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Writing a Custom InputFormat" href="input_format.html" />
     <link rel="prev" title="Introduction" href="intro.html" /> 
-  </head>
-  <body>
-    <div class="related">
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -48,9 +37,10 @@
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
 	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
 
-          <li><a href="index.html" accesskey="U">Examples</a> &raquo;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Examples</a> &#187;</li> 
       </ul>
     </div>
 
@@ -107,7 +97,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <div class="section" id="using-the-hadoop-sequencefile-format">
 <h1>Using the Hadoop SequenceFile Format<a class="headerlink" href="#using-the-hadoop-sequencefile-format" title="Permalink to this headline">¶</a></h1>
@@ -115,52 +105,41 @@
 many cases where processing binary data is required. In this case, you
 basically have two options:</p>
 <ol class="arabic simple">
-<li>write appropriate <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a> /
-<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><tt class="xref py py-class docutils literal"><span class="pre">RecordWriter</span></tt></a> classes for the binary format
+<li>write appropriate <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordReader</span></code></a> /
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">RecordWriter</span></code></a> classes for the binary format
 you need to process</li>
-<li>convert your data to Hadoop&#8217;s standard <tt class="docutils literal"><span class="pre">SequenceFile</span></tt> format.</li>
+<li>convert your data to Hadoop’s standard <code class="docutils literal notranslate"><span class="pre">SequenceFile</span></code> format.</li>
 </ol>
 <p>To write sequence files with Pydoop, set the ouput format and the
 compression type as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre>[MapReduce V1]
-pydoop submit \
---output-format=org.apache.hadoop.mapred.SequenceFileOutputFormat \
--D mapred.output.compression.type=NONE|RECORD|BLOCK [...]
-
-[MapReduce V2]
-pydoop submit \
---output-format=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat \
--D mapreduce.output.fileoutputformat.compress.type=NONE|RECORD|BLOCK [...]
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pydoop</span> <span class="n">submit</span> \
+<span class="o">--</span><span class="n">output</span><span class="o">-</span><span class="nb">format</span><span class="o">=</span><span class="n">org</span><span class="o">.</span><span class="n">apache</span><span class="o">.</span><span class="n">hadoop</span><span class="o">.</span><span class="n">mapreduce</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">SequenceFileOutputFormat</span> \
+<span class="o">-</span><span class="n">D</span> <span class="n">mapreduce</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">fileoutputformat</span><span class="o">.</span><span class="n">compress</span><span class="o">.</span><span class="n">type</span><span class="o">=</span><span class="n">NONE</span><span class="o">|</span><span class="n">RECORD</span><span class="o">|</span><span class="n">BLOCK</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>To read sequence files, set the input format as follows:</p>
-<div class="highlight-python"><div class="highlight"><pre>[MapReduce V1]
-pydoop submit \
---input-format=org.apache.hadoop.mapred.SequenceFileInputFormat
-
-[MapReduce V2]
-pydoop submit \
---input-format=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pydoop</span> <span class="n">submit</span> \
+<span class="o">--</span><span class="nb">input</span><span class="o">-</span><span class="nb">format</span><span class="o">=</span><span class="n">org</span><span class="o">.</span><span class="n">apache</span><span class="o">.</span><span class="n">hadoop</span><span class="o">.</span><span class="n">mapreduce</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">SequenceFileInputFormat</span>
 </pre></div>
 </div>
 <div class="section" id="example-application-filter-wordcount-results">
 <h2>Example Application: Filter Wordcount Results<a class="headerlink" href="#example-application-filter-wordcount-results" title="Permalink to this headline">¶</a></h2>
-<p><tt class="docutils literal"><span class="pre">SequenceFile</span></tt> is mostly useful to handle complex objects like
+<p><code class="docutils literal notranslate"><span class="pre">SequenceFile</span></code> is mostly useful to handle complex objects like
 C-style structs or images. To keep our example as simple as possible,
 we considered a situation where a MapReduce task needs to emit the raw
 bytes of an integer value.</p>
 <p>We wrote a trivial application that reads input from a previous
-<a class="reference internal" href="../tutorial/pydoop_script.html#word-count"><em>word count</em></a> run and filters out
+<a class="reference internal" href="../tutorial/pydoop_script.html#word-count"><span class="std std-ref">word count</span></a> run and filters out
 words whose count falls below a
 configurable threshold. Of course, the filter could have been directly
 applied to the wordcount reducer: the job has been artificially split
-into two runs to give a <tt class="docutils literal"><span class="pre">SequenceFile</span></tt> read / write example.</p>
+into two runs to give a <code class="docutils literal notranslate"><span class="pre">SequenceFile</span></code> read / write example.</p>
 <p>Suppose you know in advance that most counts will be large, but not so
 large that they cannot fit in a 32-bit integer: since the decimal
 representation could require as much as 10 bytes, you decide to save
 space by having the wordcount reducer emit the raw four bytes of the
 integer instead:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">WordCountReducer</span><span class="p">(</span><span class="n">Reducer</span><span class="p">):</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">WordCountReducer</span><span class="p">(</span><span class="n">Reducer</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
@@ -170,10 +149,10 @@ integer instead:</p>
 <p>Since newline characters can appear in the serialized values, you
 cannot use the standard text format where each line contains a
 tab-separated key-value pair. The problem can be solved by using
-<tt class="docutils literal"><span class="pre">SequenceFileOutputFormat</span></tt> for wordcount and
-<tt class="docutils literal"><span class="pre">SequenceFileInputFormat</span></tt> for the filtering application.</p>
+<code class="docutils literal notranslate"><span class="pre">SequenceFileOutputFormat</span></code> for wordcount and
+<code class="docutils literal notranslate"><span class="pre">SequenceFileInputFormat</span></code> for the filtering application.</p>
 <p>The full source code for the example is available under
-<tt class="docutils literal"><span class="pre">examples/sequence_file</span></tt>.</p>
+<code class="docutils literal notranslate"><span class="pre">examples/sequence_file</span></code>.</p>
 </div>
 </div>
 
@@ -183,7 +162,7 @@ tab-separated key-value pair. The problem can be solved by using
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -201,14 +180,15 @@ tab-separated key-value pair. The problem can be solved by using
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
 	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
-	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
+	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
 
-          <li><a href="index.html" >Examples</a> &raquo;</li> 
+          <li class="nav-item nav-item-1"><a href="index.html" >Examples</a> &#187;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2009-2016, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2009-2018, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
     </div>
   </body>
 </html>

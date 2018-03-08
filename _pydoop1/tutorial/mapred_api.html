@@ -1,0 +1,417 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Writing Full-Featured Applications &mdash; Pydoop 1.2.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.2.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+    <link rel="top" title="Pydoop 1.2.0 documentation" href="../index.html" />
+    <link rel="up" title="Tutorial" href="index.html" />
+    <link rel="next" title="Installation" href="../installation.html" />
+    <link rel="prev" title="The HDFS API" href="hdfs_api.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../installation.html" title="Installation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="hdfs_api.html" title="The HDFS API"
+             accesskey="P">previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" accesskey="U">Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/logo.png" alt="Logo"/>
+            </a></p>
+            <h3><a href="../index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference internal" href="#">Writing Full-Featured Applications</a><ul>
+<li><a class="reference internal" href="#mappers-and-reducers">Mappers and Reducers</a></li>
+<li><a class="reference internal" href="#counters-and-status-updates">Counters and Status Updates</a></li>
+<li><a class="reference internal" href="#record-readers-and-writers">Record Readers and Writers</a></li>
+<li><a class="reference internal" href="#partitioners-and-combiners">Partitioners and Combiners</a></li>
+<li><a class="reference internal" href="#timers">Timers</a></li>
+</ul>
+</li>
+</ul>
+
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="hdfs_api.html"
+                                  title="previous chapter">The HDFS API</a></p>
+            <h4>Next topic</h4>
+            <p class="topless"><a href="../installation.html"
+                                  title="next chapter">Installation</a></p>
+
+					<h4>Get Pydoop</h4>
+					<ul>
+						<li> <a href="https://pypi.python.org/pypi/pydoop">Download page</a> </li>
+						<li> <a href="../installation.html"> Installation Instructions </a> </li>
+					</ul>
+
+					<h4>Contributors</h4>
+					<p class="topless">
+					Pydoop is developed by:
+					<a href="http://www.crs4.it">
+						<img src="../_static/crs4.png" alt="CRS4" width="200" height="60" />
+					</a>
+					</p>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="writing-full-featured-applications">
+<span id="api-tutorial"></span><h1>Writing Full-Featured Applications<a class="headerlink" href="#writing-full-featured-applications" title="Permalink to this headline">¶</a></h1>
+<p>While <a class="reference internal" href="pydoop_script.html#pydoop-script-tutorial"><em>Pydoop Script</em></a> allows to solve
+many problems with minimal programming effort, some tasks require a
+broader set of features.  If your data is not structured into simple
+text lines, for instance, you may need to write a record reader; if
+you need to change the way intermediate keys are assigned to reducers,
+you have to write your own partitioner.  These components are
+accessible via the Pydoop MapReduce API.</p>
+<p>The rest of this section serves as an introduction to MapReduce
+programming with Pydoop; the <a class="reference internal" href="../api_docs/mr_api.html#mr-api"><em>API reference</em></a> has
+all the details.</p>
+<div class="section" id="mappers-and-reducers">
+<h2>Mappers and Reducers<a class="headerlink" href="#mappers-and-reducers" title="Permalink to this headline">¶</a></h2>
+<p>The Pydoop API is object-oriented: the application developer writes a
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Mapper" title="pydoop.mapreduce.api.Mapper"><tt class="xref py py-class docutils literal"><span class="pre">Mapper</span></tt></a> class, whose core job is
+performed by the <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Mapper.map" title="pydoop.mapreduce.api.Mapper.map"><tt class="xref py py-meth docutils literal"><span class="pre">map()</span></tt></a> method, and
+a <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Reducer" title="pydoop.mapreduce.api.Reducer"><tt class="xref py py-class docutils literal"><span class="pre">Reducer</span></tt></a> class that processes data via
+the <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Reducer.reduce" title="pydoop.mapreduce.api.Reducer.reduce"><tt class="xref py py-meth docutils literal"><span class="pre">reduce()</span></tt></a> method.  The
+following snippet shows how to write the mapper and reducer for the
+<a class="reference internal" href="pydoop_script.html#word-count"><em>word count</em></a> problem:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">pydoop.mapreduce.api</span> <span class="kn">as</span> <span class="nn">api</span>
+<span class="kn">import</span> <span class="nn">pydoop.mapreduce.pipes</span> <span class="kn">as</span> <span class="nn">pp</span>
+
+<span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">Reducer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Reducer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">Reducer</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The mapper is instantiated by the Hadoop framework that, for each
+input record, calls the map method passing a <tt class="docutils literal"><span class="pre">context</span></tt> object to it.
+The context serves as a communication interface between the framework
+and the application: in the map method, it is used to get the current
+key (not used in the above example) and value, and to emit (send back
+to the framework) intermediate key-value pairs.  The reducer works in
+a similar way, the main difference being the fact that the reduce
+method gets a set of values for each key.  The context has several
+other functions that we will explore later.</p>
+<p>To run the above program, save it to a <tt class="docutils literal"><span class="pre">wc.py</span></tt> file and execute:</p>
+<div class="highlight-python"><div class="highlight"><pre>pydoop submit --upload-file-to-cache wc.py wc input output
+</pre></div>
+</div>
+<p>Where <tt class="docutils literal"><span class="pre">input</span></tt> is the HDFS input directory.</p>
+<p>See the section on <a class="reference internal" href="../running_pydoop_applications.html#running-apps"><em>running Pydoop programs</em></a> for
+more details.  Source code for the word count example is located under
+<tt class="docutils literal"><span class="pre">examples/wordcount</span></tt> in the Pydoop distribution.</p>
+</div>
+<div class="section" id="counters-and-status-updates">
+<h2>Counters and Status Updates<a class="headerlink" href="#counters-and-status-updates" title="Permalink to this headline">¶</a></h2>
+<p>Hadoop features application-wide counters that can be set and
+incremented by developers.  Status updates are arbitrary text messages
+sent to the framework: these are especially useful in cases where the
+computation associated with a single input record can take a
+considerable amount of time, since Hadoop kills tasks that read no
+input, write no output and do not update the status within a
+configurable amount of time (ten minutes by default).</p>
+<p>The following snippet shows how to modify the above example to use
+counters and status updates:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">setStatus</span><span class="p">(</span><span class="s2">&quot;initializing mapper&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_counter</span><span class="p">(</span><span class="s2">&quot;WC&quot;</span><span class="p">,</span> <span class="s2">&quot;INPUT_WORDS&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">increment_counter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_words</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">))</span>
+
+<span class="k">class</span> <span class="nc">Reducer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Reducer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Reducer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="s2">&quot;initializing reducer&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_counter</span><span class="p">(</span><span class="s2">&quot;WC&quot;</span><span class="p">,</span> <span class="s2">&quot;OUTPUT_WORDS&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">increment_counter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_words</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Counter values and status updates show up in Hadoop&#8217;s web interface.
+In addition, the final values of all counters are listed in the
+command line output of the job (note that the list also includes Hadoop&#8217;s
+default counters).</p>
+</div>
+<div class="section" id="record-readers-and-writers">
+<h2>Record Readers and Writers<a class="headerlink" href="#record-readers-and-writers" title="Permalink to this headline">¶</a></h2>
+<p>By default, Hadoop assumes you want to process plain text and splits
+input data into text lines.  If you need to process binary data, or
+your text data is structured into records that span multiple lines,
+you need to write your own <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordReader" title="pydoop.mapreduce.api.RecordReader"><tt class="xref py py-class docutils literal"><span class="pre">RecordReader</span></tt></a>.</p>
+<p>The record reader operates at the HDFS file level: its job is to read
+data from the file and feed it as a stream of key-value pairs
+(records) to the Mapper.  The following examples shows how to write a
+record reader that mimics Hadoop&#8217;s default <tt class="docutils literal"><span class="pre">LineRecordReader</span></tt>, where
+keys are byte offsets with respect to the whole file and values are
+text lines:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">pydoop.utils.serialize</span> <span class="kn">import</span> <span class="n">serialize_to_string</span>
+<span class="kn">import</span> <span class="nn">pydoop.hdfs</span> <span class="kn">as</span> <span class="nn">hdfs</span>
+
+<span class="k">class</span> <span class="nc">Reader</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">RecordReader</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Reader</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">isplit</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">input_split</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">filename</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">offset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">offset</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># read by reader of previous split</span>
+            <span class="n">discarded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">discarded</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">length</span><span class="p">:</span>  <span class="c1"># end of input split</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">serialize_to_string</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">offset</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span><span class="p">)</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">record</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>  <span class="c1"># end of file</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">key</span><span class="p">,</span> <span class="n">record</span>
+
+    <span class="k">def</span> <span class="nf">get_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bytes_read</span><span class="p">)</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">isplit</span><span class="o">.</span><span class="n">length</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that when you want to use your own record reader, you need to
+pass the class object to the factory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">Reducer</span><span class="p">,</span> <span class="n">record_reader_class</span><span class="o">=</span><span class="n">Reader</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>From the context, the record reader gets the following information on
+the byte chunk assigned to the current task, or <strong>input split</strong>:</p>
+<ul class="simple">
+<li>the name of the file it belongs to;</li>
+<li>its offset with respect to the beginning of the file;</li>
+<li>its length.</li>
+</ul>
+<p>This allows to open the file, seek to the correct offset and read
+until the end of the split is reached.  The framework gets the record
+stream by means of repeated calls to the
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordReader.next" title="pydoop.mapreduce.api.RecordReader.next"><tt class="xref py py-meth docutils literal"><span class="pre">next()</span></tt></a> method.  The
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordReader.get_progress" title="pydoop.mapreduce.api.RecordReader.get_progress"><tt class="xref py py-meth docutils literal"><span class="pre">get_progress()</span></tt></a> method is
+called by the framework to get the fraction of the input split that&#8217;s
+already been processed.  The <tt class="docutils literal"><span class="pre">close</span></tt> method (present in all
+components except for the partitioner) is called by the framework once
+it has finished retrieving the records: this is the right place to
+perform cleanup tasks such as closing open handles.</p>
+<p>When running the program, pass the <tt class="docutils literal"><span class="pre">--do-not-use-java-record-reader</span></tt>
+option to <tt class="docutils literal"><span class="pre">pydoop</span> <span class="pre">submit</span></tt>.</p>
+<p>The record writer writes key/value pairs to output files.  The default
+behavior is to write one tab-separated key/value pair per line; if you
+want to do something different, you have to write a custom
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.RecordWriter" title="pydoop.mapreduce.api.RecordWriter"><tt class="xref py py-class docutils literal"><span class="pre">RecordWriter</span></tt></a>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Writer</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">RecordWriter</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Writer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">jc</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">job_conf</span>
+        <span class="n">part</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get_int</span><span class="p">(</span><span class="s2">&quot;mapred.task.partition&quot;</span><span class="p">)</span>
+        <span class="n">out_dir</span> <span class="o">=</span> <span class="n">jc</span><span class="p">[</span><span class="s2">&quot;mapred.work.output.dir&quot;</span><span class="p">]</span>
+        <span class="n">outfn</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/part-</span><span class="si">%05d</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">out_dir</span><span class="p">,</span> <span class="n">part</span><span class="p">)</span>
+        <span class="n">hdfs_user</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;pydoop.hdfs.user&quot;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span> <span class="o">=</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">outfn</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">hdfs_user</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sep</span> <span class="o">=</span> <span class="n">jc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;mapred.textoutputformat.separator&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">fs</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s%s%s</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Since we want to use our own record reader, we have to pass the class
+object to the factory:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">Reducer</span><span class="p">,</span> <span class="n">record_writer_class</span><span class="o">=</span><span class="n">Writer</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The above example, which simply reproduces the default behavior, also
+shows how to get job configuration parameters: the ones starting with
+<tt class="docutils literal"><span class="pre">mapred</span></tt> are standard Hadoop parameters, while <tt class="docutils literal"><span class="pre">pydoop.hdfs.user</span></tt>
+is a custom parameter defined by the application developer.
+Configuration properties are passed as <tt class="docutils literal"><span class="pre">-D</span> <span class="pre">&lt;key&gt;=&lt;value&gt;</span></tt> (e.g.,
+<tt class="docutils literal"><span class="pre">-D</span> <span class="pre">mapred.textoutputformat.separator='|'</span></tt>) to the submitter; to
+declare that we are using our own record writer, we also have to set
+the <tt class="docutils literal"><span class="pre">--do-not-use-java-record-writer</span></tt> flag.</p>
+</div>
+<div class="section" id="partitioners-and-combiners">
+<h2>Partitioners and Combiners<a class="headerlink" href="#partitioners-and-combiners" title="Permalink to this headline">¶</a></h2>
+<p>The <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Partitioner" title="pydoop.mapreduce.api.Partitioner"><tt class="xref py py-class docutils literal"><span class="pre">Partitioner</span></tt></a> assigns intermediate keys to
+reducers: the default is to select the reducer on the basis of a hash
+function of the key.  The following example reproduces the default
+behavior:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Partitioner</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Partitioner</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">partition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">n_red</span><span class="p">):</span>
+        <span class="n">reducer_id</span> <span class="o">=</span> <span class="p">(</span><span class="nb">hash</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">sys</span><span class="o">.</span><span class="n">maxint</span><span class="p">)</span> <span class="o">%</span> <span class="n">n_red</span>
+        <span class="k">return</span> <span class="n">reducer_id</span>
+</pre></div>
+</div>
+<p>The framework calls the partition
+method passing it the total number of reducers <tt class="docutils literal"><span class="pre">n_red</span></tt>, and expects
+the chosen reducer ID &#8212; in the <tt class="docutils literal"><span class="pre">[0,</span> <span class="pre">...,</span> <span class="pre">n_red-1]</span></tt> range &#8212; as
+the return value.</p>
+<p>The combiner is functionally identical to a reducer, but it is run
+locally, on the key-value stream output by a single mapper.  Although
+nothing prevents the combiner from processing values differently from
+the reducer, the former, provided that the reduce function is
+associative and idempotent, is typically configured to be the same as
+the latter, in order to perform local aggregation and thus help cut
+down network traffic.</p>
+<p>The following snippet shows how to set the partitioner and combiner
+(here we use the reducer as the combiner) classes:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">pp</span><span class="o">.</span><span class="n">runTask</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">Reducer</span><span class="p">,</span> <span class="n">partitioner_class</span><span class="o">=</span><span class="n">Partitioner</span><span class="p">,</span>
+    <span class="n">combiner_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="timers">
+<span id="id1"></span><h2>Timers<a class="headerlink" href="#timers" title="Permalink to this headline">¶</a></h2>
+<p><tt class="docutils literal"><span class="pre">Timer</span></tt> objects can help debug performance issues in mapreduce
+applications:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">pydoop.utils.misc</span> <span class="kn">import</span> <span class="n">Timer</span>
+
+<span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">timer</span><span class="o">.</span><span class="n">time_block</span><span class="p">(</span><span class="s2">&quot;tokenize&quot;</span><span class="p">):</span>
+            <span class="n">words</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With the above coding, the total time spent to execute
+<tt class="docutils literal"><span class="pre">context.value.split()</span></tt> (in ms) will be automatically accumulated in
+a <tt class="docutils literal"><span class="pre">TIME_TOKENIZE</span></tt> counter under the <tt class="docutils literal"><span class="pre">Timer</span></tt> counter group.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="../installation.html" title="Installation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="hdfs_api.html" title="The HDFS API"
+             >previous</a> |</li>
+	<li><a href="../index.html">Home</a>|&nbsp;</li>
+	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
+	<li><a href="https://github.com/crs4/pydoop">Git Repo</a></li>
+
+          <li><a href="index.html" >Tutorial</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2009-2016, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
