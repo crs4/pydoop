@@ -3,7 +3,7 @@ News Archive
 
 
 New in 1.2.0
-------------
+^^^^^^^^^^^^
 
  * Added support for Hadoop 2.7.2.
  * Dropped support for Python 2.6. Maintaining 2.6 compatibility would
