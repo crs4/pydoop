@@ -87,20 +87,21 @@ class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
         FileSystem fs = FileSystem.get(conf);
         Path path = new Path(splits_uri);
         if (!fs.exists(path)) {
-            throw IOException(splits_uri + " does not exists");
+            throw new IOException(splits_uri + " does not exists");
         }
         FSDataInputStream in = fs.open(path);
-        IntWritable n_records;
+        IntWritable n_records = new IntWritable();
         n_records.readFields(in);
 
         List<InputSplit> splits = new ArrayList<InputSplit>();
         for(int i = 0; i < n_records.get(); i++) {
-            OpaqueSplit o = new OpaqueSplit()
+            OpaqueSplit o = new OpaqueSplit();
             o.readFields(in);
             splits.add(o);
         }
         in.close();
-        fileSystem.close();
+        fs.close();
+        return splits;
     }
         
 
