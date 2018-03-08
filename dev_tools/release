@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+
+die() {
+    echo $1 1>&2
+    exit 1
+}
+
+nargs=1
+if [ $# -ne ${nargs} ]; then
+    die "Usage: $0 DIR"
+fi
+RELEASE_DIR=$1
+
+[ -d "${RELEASE_DIR}" ] || die "${RELEASE_DIR}: no such directory"
+
+# not the most thorough check, but it should help
+git diff-index --quiet HEAD -- || die "ERROR: run from clean git repo"
+
+pushd ${this_dir}/..
+git rev-parse HEAD > .git_commit
+docker build -t crs4/pydoop .
+docker build -t crs4/pydoop-docs -f Dockerfile.docs .
+docker run --rm -v "${RELEASE_DIR}":/release crs4/pydoop-docs bash -c "source /etc/profile && python setup.py sdist && cp -a dist /release"
+popd
