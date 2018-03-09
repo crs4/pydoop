@@ -19,7 +19,6 @@
 import os
 import unittest
 
-import pydoop
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 import pydoop.avrolib as avrolib
@@ -30,7 +29,9 @@ from pydoop.mapreduce.binary_streams import (
 from pydoop.utils.py3compat import iteritems
 
 from common import AvroSerializer, avro_user_record
-
+from pydoop.config import (
+    AVRO_INPUT, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA
+)
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -104,16 +105,15 @@ class TestContext(WDTestCase):
         if mode != 'K' and mode != 'V':
             # FIXME: add support for 'KV'
             raise RuntimeError("Mode %r not supported" % (mode,))
-        schema_prop = pydoop.PROPERTIES[
-            'AVRO_%s_INPUT_SCHEMA' % ('KEY' if mode == 'K' else 'VALUE')
-        ]
+        schema_prop = (AVRO_KEY_INPUT_SCHEMA if mode == 'K'
+                       else AVRO_VALUE_INPUT_SCHEMA)
         cmd_fn = self._mkfn('map_in')
         serializer = AvroSerializer(self.schema)
         with open(cmd_fn, 'wb') as f:
             bw = BinaryWriter(f)
             bw.send(bw.START_MESSAGE, 0)
             bw.send(bw.SET_JOB_CONF,
-                    pydoop.PROPERTIES['AVRO_INPUT'], mode,
+                    AVRO_INPUT, mode,
                     schema_prop, str(self.schema),
                     'mapreduce.pipes.isjavarecordreader', 'true',
                     'mapreduce.pipes.isjavarecordwriter', 'true')
