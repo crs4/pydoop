@@ -28,6 +28,14 @@ class OpaqueSplit extends InputSplit implements Writable {
         this.payload = new BytesWritable(payload);
     }
 
+    public BytesWritable getCode() {
+        return this.code;
+    }
+    
+    public BytesWritable getPayload() {
+        return this.payload;
+    }
+
     /** The number of bytes in the file to process. */
     @Override
     public long getLength() { return 0; } // FIXME
