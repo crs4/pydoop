@@ -8,7 +8,7 @@ PYDRIVER=/home/zag/work/vs/git/pydoop/src/it/crs4/pydoop/pypipes_classes
 SRC="TestPipeApplication.java TestPipesNonJavaInputFormat.java CommonStub.java PipeApplicationStub.java PipeApplicationRunnableStub.java DummyInputFormat.java PipeReducerStub.java"
 javac -cp `hadoop classpath`:${PYDRIVER} ${SRC} -d test_classes
 
-for class in TestPipeApplication TestPipesNonJavaInputFormat
+for class in TestPipeApplication TestPipesNonJavaInputFormat TestPipesExternalSplits
 do 
     echo "Testing ${class}"
     java -cp $PWD/test_classes:`hadoop classpath`:${PYDRIVER} org.junit.runner.JUnitCore it.crs4.pydoop.pipes.${class}
