@@ -61,8 +61,8 @@ import org.apache.hadoop.util.ReflectionUtils;
 class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
     public static final String EXTERNAL_SPLITS_ENABLED =
         "mapreduce.pipes.external-splits.enabled";
-    public static final String EXTERNAL_SPLITS_PATH =
-        "mapreduce.pipes.external-splits.path";
+    public static final String EXTERNAL_SPLITS_URI =
+        "mapreduce.pipes.external-splits.uri";
 
     public List<InputSplit> getSplits(JobContext context
                                       ) throws IOException, InterruptedException {
@@ -70,8 +70,8 @@ class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
         Configuration conf = context.getConfiguration();
         boolean splits_enabled = conf.getBoolean(EXTERNAL_SPLITS_ENABLED, false);
         if (splits_enabled) {
-            String splits_path = conf.get(EXTERNAL_SPLITS_PATH);
-            return getSplitsFromPath(conf, splits_path);
+            String splits_uri = conf.get(EXTERNAL_SPLITS_URI);
+            return getSplitsFromPath(conf, splits_uri);
         } else {
             return ReflectionUtils.newInstance(
                                 conf.getClass(Submitter.INPUT_FORMAT, 
