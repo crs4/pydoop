@@ -40,7 +40,7 @@ def get_col_widths(actions):
         for n in 'short_opt', 'long_opt', 'help':
             attr = getattr(a, n)
             lengths.setdefault(n, []).append(0 if attr is None else len(attr))
-    widths = dict((k, max(v)) for k, v in lengths.iteritems())
+    widths = dict((k, max(v)) for k, v in lengths.items())
     # add 4 for ``backticks``
     for n in 'short_opt', 'long_opt':
         widths[n] += 4

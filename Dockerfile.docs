@@ -1,8 +1,14 @@
-FROM crs4/pydoop
+FROM crs4/pydoop-docs-base
 MAINTAINER simone.leo@crs4.it
 
-RUN yum install inkscape  # installs ImageMagick as a dep
-RUN pip3 install sphinx
+COPY . /build/pydoop
+WORKDIR /build/pydoop
+
+RUN source /etc/profile && \
+    pip3 install --upgrade pip && \
+    pip3 install --upgrade -r requirements.txt && \
+    python3 setup.py build && \
+    python3 setup.py install --skip-build
 
 RUN inkscape -z -D -f logo/logo.svg -e /tmp/logo.png -w 800 && \
     convert -resize 200x /tmp/logo.png docs/_static/logo.png
@@ -12,7 +18,7 @@ RUN inkscape -z -D -f logo/favicon.svg -e /tmp/256.png -w 256 -h 256 && \
     done && \
     convert /tmp/{16,32,64,128}.png docs/_static/favicon.ico
 RUN source /etc/profile && for a in script submit; do \
-        dev_tools/dump_app_params --app ${a} -o docs/pydoop_${a}_options.rst; \
+        python3 dev_tools/dump_app_params --app ${a} -o docs/pydoop_${a}_options.rst; \
     done
 RUN source /etc/profile && make SPHINXOPTS="-W" -C docs html
 
