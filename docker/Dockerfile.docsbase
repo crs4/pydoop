@@ -1,5 +1,7 @@
 FROM crs4/pydoop-base
 MAINTAINER simone.leo@crs4.it
 
-RUN yum install inkscape  # installs ImageMagick as a dep
-RUN pip3 install sphinx
+# Inkscape installs ImageMagick as a dep
+RUN yum install inkscape && \
+    yum clean all && \
+    pip3 install --no-cache-dir sphinx

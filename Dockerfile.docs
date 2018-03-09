@@ -5,10 +5,10 @@ COPY . /build/pydoop
 WORKDIR /build/pydoop
 
 RUN source /etc/profile && \
-    pip3 install --upgrade pip && \
-    pip3 install --upgrade -r requirements.txt && \
+    pip3 install --no-cache-dir --upgrade -r requirements.txt && \
     python3 setup.py build && \
-    python3 setup.py install --skip-build
+    python3 setup.py install --skip-build && \
+    python3 setup.py clean
 
 RUN inkscape -z -D -f logo/logo.svg -e /tmp/logo.png -w 800 && \
     convert -resize 200x /tmp/logo.png docs/_static/logo.png
