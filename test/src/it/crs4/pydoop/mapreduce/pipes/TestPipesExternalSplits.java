@@ -18,7 +18,6 @@
 
 package it.crs4.pydoop.mapreduce.pipes;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,24 +26,19 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.io.IntWritable;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 
 public class TestPipesExternalSplits {
