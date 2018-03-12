@@ -62,7 +62,6 @@ public class TestPipesExternalSplits {
     final String uri = UUID.randomUUID().toString();
     FileSystem fs = FileSystem.get(conf);
     Path path = new Path(uri);
-    conf.setBoolean(PipesNonJavaInputFormat.EXTERNAL_SPLITS_ENABLED, true);
     conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, uri);
 
     TaskAttemptContextImpl tcontext =

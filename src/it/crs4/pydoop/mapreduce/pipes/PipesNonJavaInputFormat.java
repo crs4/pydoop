@@ -42,34 +42,25 @@ import org.apache.hadoop.util.ReflectionUtils;
  * Dummy input format used when non-Java a {@link RecordReader} is used by
  * the Pipes' application.
  *
- *
- * Sets up the Map-Reduce job to get the {@link PipesDummyRecordReader},
- * and provides a getSplits that will recover InputSplits either:
- * by invoking the getSplits method of 'actual' InputFormat specified by the
- * user in <i>mapreduce.pipes.inputformat</i>;
- * or reading the contents of the hdfs file specificed by the uri
- * <i>mapreduce.pipes.external-splits.path</i> if
- * <i>mapreduce.pipes.external-splits.enabled</i> has been set to
- * <i>true</i>.
- * 
- * The file specified by <i>mapreduce.pipes.external_splits.path</i> should have
- * the structure 
-    <WritableInt n><OpaqueObject 1><OpaqueObject 2>..<OpaqueObject n>
-
+ * Sets up the Map-Reduce job to get the {@link PipesDummyRecordReader} and
+ * the input splits. If <i>pydoop.mapreduce.pipes.externalsplits.uri</i> is
+ * defined, input splits are read from the specified HDFS URI as a binary
+ * sequence in the following format: <N><OBJ_1><OBJ_2>...<OBJ_N>, i.e., a
+ * WritableInt N followed by N opaque objects. If it's not defined, input
+ * splits are retrieved by invoking the getSplits method of the 'actual'
+ * InputFormat specified by the user in <i>mapreduce.pipes.inputformat</i>.
  */
 class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
-    public static final String EXTERNAL_SPLITS_ENABLED =
-        "mapreduce.pipes.external-splits.enabled";
+
     public static final String EXTERNAL_SPLITS_URI =
-        "mapreduce.pipes.external-splits.uri";
+        "pydoop.mapreduce.pipes.externalsplits.uri";
 
     public List<InputSplit> getSplits(JobContext context
                                       ) throws IOException, InterruptedException {
         
         Configuration conf = context.getConfiguration();
-        boolean splits_enabled = conf.getBoolean(EXTERNAL_SPLITS_ENABLED, false);
-        if (splits_enabled) {
-            String splits_uri = conf.get(EXTERNAL_SPLITS_URI);
+        String splits_uri = conf.get(EXTERNAL_SPLITS_URI);
+        if (splits_uri != null) {
             return getSplitsFromPath(conf, splits_uri);
         } else {
             return ReflectionUtils.newInstance(
