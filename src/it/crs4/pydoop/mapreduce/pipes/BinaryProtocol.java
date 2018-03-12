@@ -301,8 +301,11 @@ class BinaryProtocol<K1 extends Writable, V1 extends Writable,
 
     public void runMap(InputSplit split, int numReduces, 
                        boolean pipedInput) throws IOException {
+        if (!Writable.class.isInstance(split)) {
+          throw new RuntimeException("split is not Writable");
+        }
         WritableUtils.writeVInt(stream, MessageType.RUN_MAP.code);
-        writeObject((Writable)split); // FIXME should we check?
+        writeObject((Writable)split);
         WritableUtils.writeVInt(stream, numReduces);
         WritableUtils.writeVInt(stream, pipedInput ? 1 : 0);
     }
