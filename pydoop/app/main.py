@@ -79,11 +79,9 @@ def main(argv=None):
             args.combine_fn = args.combiner_fn  # backwards compatibility
     except AttributeError:  # not the script app
         pass
-
-    if not hasattr(args, 'func'):
-        parser.print_usage()
-        sys.exit(0)
     try:
         args.func(args, unknown)
+    except AttributeError:
+        parser.error("too few arguments")
     except RuntimeError as e:
         sys.exit("ERROR - {}:  {}".format(type(e).__name__, e))
