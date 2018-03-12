@@ -21,6 +21,7 @@ package it.crs4.pydoop.mapreduce.pipes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -46,6 +47,8 @@ import static org.junit.Assert.*;
  */
 public class TestPipesExternalSplits {
 
+  public static final int N_SPLITS = 10;
+
   @Test
   public void testExternalSplitsSupport()
       throws IOException, InterruptedException {
@@ -56,8 +59,9 @@ public class TestPipesExternalSplits {
     Job job = new Job(new Configuration());
     job.setJobID(jobId);
     Configuration conf = job.getConfiguration();
-    // FIXME this is hardwired. Use tmpfile or something like that.
-    final String uri = new String("a_binary_file.bin");
+    final String uri = UUID.randomUUID().toString();
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(uri);
     conf.setBoolean(PipesNonJavaInputFormat.EXTERNAL_SPLITS_ENABLED, true);
     conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, uri);
 
@@ -65,11 +69,10 @@ public class TestPipesExternalSplits {
         new TaskAttemptContextImpl(conf, taskAttemptid);
 
     PipesNonJavaInputFormat input_format = new PipesNonJavaInputFormat();
-    int n_splits = 10;
-    List<InputSplit> written = write_input_splits(n_splits, conf, uri);
+    List<InputSplit> written = write_input_splits(fs, path);
     List<InputSplit> read = input_format.getSplits(tcontext);
 
-    assertEquals(written.size(), n_splits);
+    assertEquals(written.size(), N_SPLITS);
     assertEquals(written.size(), read.size());
     for(int i = 0; i < read.size(); i++) {
       OpaqueSplit itwas = (OpaqueSplit) written.get(i);
@@ -77,28 +80,29 @@ public class TestPipesExternalSplits {
       assertEquals(itwas.getCode(), itis.getCode());
       assertEquals(itwas.getPayload(), itis.getPayload());
     }
+    fs.close();
   }
 
-  private List<InputSplit> write_input_splits(
-      int n_splits, Configuration conf, String uri)
+  private List<InputSplit> write_input_splits(FileSystem fs, Path path)
       throws IOException, InterruptedException {
-    FileSystem fs = FileSystem.get(conf);
-    Path path = new Path(uri);
-    FSDataOutputStream out = fs.create(path);
-    IntWritable n_records = new IntWritable(n_splits);
-    n_records.write(out);
+    IntWritable n_records = new IntWritable(N_SPLITS);
     List<InputSplit> splits = new ArrayList<InputSplit>();
-
-    for(int i = 0; i < n_records.get(); i++) {
-      String code = "code-" + i;
-      String payload = "payload-" + i;
-      OpaqueSplit osplit = new OpaqueSplit(code.getBytes(), payload.getBytes());
-      osplit.write(out);
-      splits.add(osplit);
+    FSDataOutputStream out = fs.create(path);
+    fs.deleteOnExit(path);
+    try {
+      n_records.write(out);
+      for(int i = 0; i < n_records.get(); i++) {
+        String code = "code-" + i;
+        String payload = "payload-" + i;
+        OpaqueSplit osplit = new OpaqueSplit(
+            code.getBytes(), payload.getBytes());
+        osplit.write(out);
+        splits.add(osplit);
+      }
+    } finally {
+      out.close();
     }
-
-    out.close();
-    fs.close();
     return splits;
   }
+
 }
