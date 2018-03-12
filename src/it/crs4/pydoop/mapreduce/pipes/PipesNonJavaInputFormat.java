@@ -31,7 +31,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit; // FIXME not used
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -89,21 +88,21 @@ class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
         if (!fs.exists(path)) {
             throw new IOException(splits_uri + " does not exists");
         }
-        FSDataInputStream in = fs.open(path);
-        IntWritable n_records = new IntWritable();
-        n_records.readFields(in);
-
         List<InputSplit> splits = new ArrayList<InputSplit>();
-        for(int i = 0; i < n_records.get(); i++) {
-            OpaqueSplit o = new OpaqueSplit();
-            o.readFields(in);
-            splits.add(o);
+        FSDataInputStream in = fs.open(path);
+        try {
+            IntWritable n_records = new IntWritable();
+            n_records.readFields(in);
+            for(int i = 0; i < n_records.get(); i++) {
+                OpaqueSplit o = new OpaqueSplit();
+                o.readFields(in);
+                splits.add(o);
+            }
+        } finally {
+            in.close();
         }
-        in.close();
-        fs.close();
         return splits;
     }
-        
 
     @Override
     public DummyRecordReader
