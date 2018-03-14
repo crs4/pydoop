@@ -1,0 +1,20 @@
+FROM crs4/pydoop-base
+MAINTAINER simone.leo@crs4.it
+
+COPY pydoop*.tar.gz /
+WORKDIR /build
+
+# 1. Install from tarball, checking it just needs up-to-date setuptools
+# 2. Set up for testing
+RUN source /etc/profile && for v in 2 3; do \
+      pip${v} install --upgrade setuptools && \
+      pip${v} install --pre /pydoop*.tar.gz; \
+    done && \
+    tar xf /pydoop*.tar.gz && \
+    mv pydoop* pydoop && \
+    for v in 2 3; do \
+      pip${v} install --upgrade -r pydoop/requirements.txt; \
+    done && \
+    rm -rf ~/.cache/pip
+
+WORKDIR /build/pydoop

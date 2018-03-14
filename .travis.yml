@@ -25,3 +25,10 @@ script:
  - docker stop pydoop
  - docker rm pydoop
  - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
+
+deploy:
+  provider: script
+  script: .travis/deploy
+  on:
+    python: "3.6"
+    tags: true
