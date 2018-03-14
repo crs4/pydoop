@@ -1,6 +1,6 @@
 PYTHON := python
 TEMPDIR := $(shell mktemp -u)
-GIT_COMMIT_FN = .git_commit
+GIT_REV_FN = GIT_REV
 WHEEL_DIR=./dist
 PY_V := $(shell ${PYTHON} -c 'import sys; print("%d.%d" % sys.version_info[:2])')
 
@@ -60,7 +60,7 @@ docs_view: docs
 
 dist: docs
 	./dev_tools/git_export -o $(TEMPDIR)
-	git rev-parse HEAD >$(TEMPDIR)/$(GIT_COMMIT_FN)
+	git rev-parse HEAD >$(TEMPDIR)/$(GIT_REV_FN)
 	rm -rf $(TEMPDIR)/docs/*
 	mv docs/_build/html $(TEMPDIR)/docs/
 	cd $(TEMPDIR) && ${PYTHON} setup.py sdist
