@@ -31,4 +31,4 @@ deploy:
   script: .travis/deploy
   on:
     python: "3.6"
-    tags: true
+    all_branches: true
