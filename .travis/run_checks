@@ -4,13 +4,11 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 
 export PYTHON="python${TRAVIS_PYTHON_VERSION%.*}"
-# docker exec pydoop bash -c \
-#   "source /etc/profile && cd test && ${PYTHON} all_tests.py"
-# docker exec pydoop bash -c \
-#   "source /etc/profile && cd test/avro && ${PYTHON} all_tests.py"
-# docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
-#   "source /etc/profile && cd examples && ./run_all"
-# docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
-#   "source /etc/profile && cd examples/avro/py && ./run"
-docker exec pydoop bash -c "source /etc/profile && cd test && ${PYTHON} -c 'import pydoop; print(pydoop.__version__)'"
-docker exec pydoop bash -c "source /etc/profile && cd test && ${PYTHON} -c 'from pydoop.version import git_rev; print(git_rev)'"
+docker exec pydoop bash -c \
+  "source /etc/profile && cd test && ${PYTHON} all_tests.py"
+docker exec pydoop bash -c \
+  "source /etc/profile && cd test/avro && ${PYTHON} all_tests.py"
+docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
+  "source /etc/profile && cd examples && ./run_all"
+docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
+  "source /etc/profile && cd examples/avro/py && ./run"
