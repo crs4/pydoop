@@ -32,7 +32,6 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 
 
 /**
@@ -94,8 +93,7 @@ class PipesMapper<K1 extends Writable, V1 extends Writable,
       throw new RuntimeException("interrupted", ie);
     }
     DownwardProtocol<K1, V1> downlink = application.getDownlink();
-        // FIXME: InputSplit is not Writable, but still, this is ugly...
-    downlink.runMap((FileSplit) context.getInputSplit(),
+    downlink.runMap(context.getInputSplit(),
         context.getNumReduceTasks(), isJavaInput);
     boolean skipping = conf.getBoolean(context.SKIP_RECORDS, false);
     boolean sent_input_types = false;

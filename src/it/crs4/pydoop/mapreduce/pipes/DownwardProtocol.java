@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.InputSplit;
 
 
 /**
@@ -67,7 +67,7 @@ interface DownwardProtocol<K extends Writable, V extends Writable> {
    * @param pipedInput Is the input coming from Java?
    * @throws IOException
    */
-  void runMap(FileSplit split, int numReduces, 
+  void runMap(InputSplit split, int numReduces, 
               boolean pipedInput) throws IOException;
   
   /**
