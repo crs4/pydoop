@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+
+die() {
+    echo $1 1>&2
+    exit 1
+}
+
+nargs=1
+if [ $# -ne ${nargs} ]; then
+    die "Usage: $0 DIR"
+fi
+RELEASE_DIR=$1
+
+[ -d "${RELEASE_DIR}" ] || die "${RELEASE_DIR}: no such directory"
+
+# not the most thorough check, but it should help
+git diff-index --quiet HEAD -- || die "ERROR: you have uncommitted changes"
+STATUS=$(git status --ignored --porcelain)
+if [ -n "${STATUS}" ]; then
+    echo "ERROR: you have untracked files:" 1>&2
+    git status --ignored --porcelain 1>&2
+    exit 1
+fi
+
+pushd "${this_dir}/.."
+VERSION=$(<"VERSION")
+git rev-parse HEAD > "GIT_REV"
+docker build -t crs4/pydoop:latest -t crs4/pydoop:${VERSION} .
+docker build -t crs4/pydoop-docs:latest -t crs4/pydoop-docs:${VERSION} -f Dockerfile.docs .
+docker run --rm -v "${RELEASE_DIR}":/release crs4/pydoop-docs:${VERSION} bash -c "source /etc/profile && python3 setup.py sdist && cp -a dist /release"
+popd

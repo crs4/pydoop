@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -21,31 +21,34 @@ This module provides basic, stand-alone Hadoop simulators for
 debugging support.
 """
 
-import SocketServer
+import sys
 import threading
 import os
 import tempfile
 import uuid
-import cStringIO
 import logging
+from pydoop.utils.py3compat import StringIO, iteritems, socketserver, unicode
 
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
-import pydoop
-from pydoop.utils.serialize import serialize_to_string
-from pydoop.sercore import fdopen as ph_fdopen
+from pydoop.utils.serialize import serialize_long
+from pydoop.app.submit import AVRO_IO_CHOICES
 
 from .pipes import TaskContext, StreamRunner
 from .api import RecordReader, PydoopError
+from .streams import UpStreamAdapter
 from .binary_streams import (
-    BinaryWriter, BinaryDownStreamFilter, BinaryUpStreamDecoder
+    BinaryWriter, BinaryDownStreamAdapter, BinaryUpStreamDecoder
 )
 from .string_utils import create_digest
 from .connections import BUF_SIZE
 from collections import defaultdict
-
+from pydoop.config import (
+    AVRO_INPUT, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA,
+    AVRO_OUTPUT, AVRO_KEY_OUTPUT_SCHEMA, AVRO_VALUE_OUTPUT_SCHEMA,
+)
 
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
@@ -56,19 +59,12 @@ OUTPUT_DIR_V1 = 'mapred.work.output.dir'
 OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
 DEFAULT_SLEEP_DELTA = 3
 
-AVRO_INPUT = pydoop.PROPERTIES['AVRO_INPUT']
-AVRO_OUTPUT = pydoop.PROPERTIES['AVRO_OUTPUT']
-AVRO_KEY_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_INPUT_SCHEMA']
-AVRO_KEY_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_KEY_OUTPUT_SCHEMA']
-AVRO_VALUE_INPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_INPUT_SCHEMA']
-AVRO_VALUE_OUTPUT_SCHEMA = pydoop.PROPERTIES['AVRO_VALUE_OUTPUT_SCHEMA']
 import json
 
 try:
-    from avro.datafile import DataFileReader, DataFileWriter
+    from avro.datafile import DataFileReader, DataFileWriter, SCHEMA_KEY
     from avro.io import DatumReader, DatumWriter
-    from pydoop.avrolib import AvroSerializer, AvroDeserializer, AvroContext
-    import avro.schema
+    import pydoop.avrolib as avrolib
 
     def get_avro_reader(fp):
         try:
@@ -82,7 +78,13 @@ except ImportError:
     AVRO_INSTALLED = False
 
 
-class TrivialRecordWriter(object):
+def serialize_long_to_string(v):
+    f = StringIO()
+    serialize_long(v, f)
+    return f.getvalue()
+
+
+class TrivialRecordWriter(UpStreamAdapter):
 
     def __init__(self, simulator, stream):
         self.stream = stream
@@ -90,21 +92,28 @@ class TrivialRecordWriter(object):
         self.simulator = simulator
 
     def output(self, key, value):
-        self.stream.write('{}\t{}\n'.format(key, value))
+        out_args = []
+        for a in key, value:
+            if not isinstance(a, (bytes, bytearray)):
+                if not isinstance(a, unicode):
+                    a = unicode(a)
+                a = a.encode('utf-8')
+            out_args.append(a)
+        self.stream.write(b'%s\t%s\n' % tuple(out_args))
 
     def send(self, cmd, *vals):
-        if cmd == 'output':
+        if cmd == self.OUTPUT:
             key, value = vals
             self.output(key, value)
-        elif cmd == 'progress':
+        elif cmd == self.PROGRESS:
             self.simulator.set_progress(*vals)
-        elif cmd == 'status':
+        elif cmd == self.STATUS:
             self.simulator.set_status(*vals)
-        elif cmd == 'registerCounter':
+        elif cmd == self.REGISTER_COUNTER:
             self.simulator.register_counter(*vals)
-        elif cmd == 'incrementCounter':
+        elif cmd == self.INCREMENT_COUNTER:
             self.simulator.increment_counter(*vals)
-        elif cmd == 'done':
+        elif cmd == self.DONE:
             self.stream.close()
         else:
             raise PydoopError('Cannot manage {}'.format(cmd))
@@ -122,28 +131,29 @@ def reader_iterator(max=10):
 
 
 class AvroRecordWriter(TrivialRecordWriter):
+
     def __init__(self, simulator, stream):
         super(AvroRecordWriter, self).__init__(simulator, stream)
 
         self.deserializers = {}
         schema = None
         if self.simulator.avro_output_key_schema:
-            self.deserializers['k'] = AvroDeserializer(
+            self.deserializers['K'] = avrolib.AvroDeserializer(
                 self.simulator.avro_output_key_schema
             )
-            schema = avro.schema.parse(self.simulator.avro_output_key_schema)
+            schema = avrolib.parse(self.simulator.avro_output_key_schema)
 
         if self.simulator.avro_output_value_schema:
-            self.deserializers['v'] = AvroDeserializer(
+            self.deserializers['V'] = avrolib.AvroDeserializer(
                 self.simulator.avro_output_value_schema
             )
-            schema = avro.schema.parse(self.simulator.avro_output_value_schema)
+            schema = avrolib.parse(self.simulator.avro_output_value_schema)
 
-        if self.simulator.avro_output == 'kv':
-            schema_k_parsed = avro.schema.parse(
+        if self.simulator.avro_output == 'KV':
+            schema_k_parsed = avrolib.parse(
                 self.simulator.avro_output_key_schema
             )
-            schema_v_parsed = avro.schema.parse(
+            schema_v_parsed = avrolib.parse(
                 self.simulator.avro_output_value_schema
             )
             schema_k = json.loads(self.simulator.avro_output_key_schema)
@@ -162,24 +172,24 @@ class AvroRecordWriter(TrivialRecordWriter):
                     {'name': 'value', 'type': vtype}
                 ]
             }
-            schema = avro.schema.parse(json.dumps(schema))
+            schema = avrolib.parse(json.dumps(schema))
 
         self.writer = DataFileWriter(self.stream, DatumWriter(), schema)
 
     def send(self, cmd, *vals):
-        if cmd == 'done':
+        if cmd == self.DONE:
             self.writer.close()
         super(AvroRecordWriter, self).send(cmd, *vals)
 
     def output(self, key, value):
-        if self.simulator.avro_output == 'k':
-            obj_to_append = self.deserializers['k'].deserialize(key)
-        elif self.simulator.avro_output == 'v':
-            obj_to_append = self.deserializers['v'].deserialize(value)
+        if self.simulator.avro_output == 'K':
+            obj_to_append = self.deserializers['K'].deserialize(key)
+        elif self.simulator.avro_output == 'V':
+            obj_to_append = self.deserializers['V'].deserialize(value)
         else:
             obj_to_append = {
-                'key': self.deserializers['k'].deserialize(key),
-                'value': self.deserializers['v'].deserialize(value)
+                'key': self.deserializers['K'].deserialize(key),
+                'value': self.deserializers['V'].deserialize(value)
             }
         self.writer.append(obj_to_append)
 
@@ -209,11 +219,11 @@ class TrivialRecordReader(RecordReader):
         return 0 if not self.current else float(self.current[0]) / self.max
 
     def next(self):
-        self.current = self.iter.next()
+        self.current = next(self.iter)
         return self.current
 
 
-class SortAndShuffle(dict):
+class SortAndShuffle(dict, UpStreamAdapter):
 
     def __init__(self, simulator, enable_local_counters=False):
         super(SortAndShuffle, self).__init__()
@@ -226,17 +236,17 @@ class SortAndShuffle(dict):
 
     def send(self, cmd, *args):
         LOGGER.debug('SAS: send %s %r', cmd, args)
-        if cmd == 'output':
+        if cmd == self.OUTPUT:
             key, value = args
             self.setdefault(key, []).append(value)
-        elif cmd == 'partitionedOutput':
+        elif cmd == self.PARTITIONED_OUTPUT:
             part, key, value = args
             self.setdefault(key, []).append(value)
-        elif cmd == 'registerCounter':
+        elif cmd == self.REGISTER_COUNTER:
             if self.enable_local_counters:
                 cid, group, name = args
                 self.simulator.register_counter(cid, group, name)
-        elif cmd == 'incrementCounter':
+        elif cmd == self.INCREMENT_COUNTER:
             if self.enable_local_counters:
                 cid, increment = args
                 self.simulator.increment_counter(cid, int(increment))
@@ -288,50 +298,59 @@ class ResultThread(threading.Thread):
     def run(self):
         self.logger.debug('started runner.')
         up_cmd_stream = BinaryUpStreamDecoder(self.up_bytes)
+        AUTHENTICATION_RESP = up_cmd_stream.AUTHENTICATION_RESP
+        OUTPUT = up_cmd_stream.OUTPUT
+        PARTITIONED_OUTPUT = up_cmd_stream.PARTITIONED_OUTPUT
+        DONE = up_cmd_stream.DONE
+        PROGRESS = up_cmd_stream.PROGRESS
+        STATUS = up_cmd_stream.STATUS
+        REGISTER_COUNTER = up_cmd_stream.REGISTER_COUNTER
+        INCREMENT_COUNTER = up_cmd_stream.INCREMENT_COUNTER
+
         for cmd, args in up_cmd_stream:
             self.logger.debug('cmd: %r args:%r', cmd, args)
-            if cmd == 'authenticationResp':
+            if cmd == AUTHENTICATION_RESP:
                 self.logger.debug('got authenticationResp: %r', args)
-            elif cmd == 'output':
+            elif cmd == OUTPUT:
                 key, value = args
                 self.ostream.output(key, value)
                 self.logger.debug('output: (%r, %r)', key, value)
-            elif cmd == 'partitionedOutput':
+            elif cmd == PARTITIONED_OUTPUT:
                 part, key, value = args
                 self.ostream.output(key, value)
                 self.logger.debug(
                     'partitionedOutput: (%r, %r, %r)', part, key, value
                 )
-            elif cmd == 'done':
+            elif cmd == DONE:
                 if self.ostream:
                     self.ostream.close()
                     self.logger.debug('closed ostream')
                 break
-            elif cmd == 'progress':
+            elif cmd == PROGRESS:
                 self.simulator.set_progress(*args)
-            elif cmd == 'status':
+            elif cmd == STATUS:
                 self.simulator.set_status(*args)
-            elif cmd == 'registerCounter':
+            elif cmd == REGISTER_COUNTER:
                 self.simulator.register_counter(*args)
-            elif cmd == 'incrementCounter':
+            elif cmd == INCREMENT_COUNTER:
                 self.simulator.increment_counter(*args)
         self.logger.debug('Done')
 
 
-class HadoopThreadHandler(SocketServer.BaseRequestHandler):
+class HadoopThreadHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         self.server.logger.debug('handler started')
         # We have to wait for the cmd flux to start, otherwise it appears that
-        # socket data flux gets confused on what is waiting what.
+        # socket data flux gets confused on what is waiting for what.
         cmd_flux_has_started = threading.Event()
         fd = self.request.fileno()
         cmd_thread = CommandThread(
             cmd_flux_has_started, self.server.down_bytes,
-            ph_fdopen(os.dup(fd), 'w', BUF_SIZE), self.server.logger
+            os.fdopen(os.dup(fd), 'wb', BUF_SIZE), self.server.logger
         )
         res_thread = ResultThread(self.server.simulator,
-                                  ph_fdopen(os.dup(fd), 'r', BUF_SIZE),
+                                  os.fdopen(os.dup(fd), 'rb', BUF_SIZE),
                                   self.server.out_writer,
                                   self.server.logger)
         cmd_thread.start()
@@ -344,7 +363,7 @@ class HadoopThreadHandler(SocketServer.BaseRequestHandler):
         self.server.logger.debug('handler is done')
 
 
-class HadoopServer(SocketServer.TCPServer):
+class HadoopServer(socketserver.TCPServer):
     r"""
     A fake Hadoop server for debugging support.
     """
@@ -364,7 +383,7 @@ class HadoopServer(SocketServer.TCPServer):
         self.down_bytes = down_bytes
         self.out_writer = out_writer
         # old style class
-        SocketServer.TCPServer.__init__(
+        socketserver.TCPServer.__init__(
             self, (host, port), HadoopThreadHandler
         )
         self.logger.debug('initialized on (%r, %r)', host, port)
@@ -395,25 +414,24 @@ class HadoopSimulator(object):
         self.status = 'Undefined'
         self.phase = 'Undefined'
         self.logger.debug('initialized')
-        if avro_input or avro_output:
-            avail_value = {'k', 'v', 'kv', None}
-            if {avro_input, avro_output} | avail_value > avail_value:
-                raise ValueError(
-                    'Invalid values for avro_input and/or avro_output. '
-                    'Valid ones: %s, found %s %s' %
-                    (avail_value, avro_input, avro_output)
-                )
-
+        avro_io = avro_input or avro_output
+        if avro_input:
+            if avro_input not in AVRO_IO_CHOICES:
+                raise ValueError('invalid avro input mode: %s' % avro_input)
+            avro_input = avro_input.upper()
+        if avro_output:
+            if avro_output not in AVRO_IO_CHOICES:
+                raise ValueError('invalid avro output mode: %s' % avro_output)
+            avro_output = avro_output.upper()
+            if avro_output in {'K', 'KV'} and not avro_output_key_schema:
+                raise ValueError('Missing avro output key schema')
+            if avro_output in {'V', 'KV'} and not avro_output_value_schema:
+                raise ValueError('Missing avro output value schema')
+        if avro_io:
             if not AVRO_INSTALLED:
                 raise RuntimeError('avro is not installed')
-            if not avro_output_key_schema and avro_output in ['k', 'kv']:
-                raise ValueError('Missing avro output key schema')
-            if not avro_output_value_schema and avro_output in ['v', 'kv']:
-                raise ValueError('Missing avro output value schema')
-
             if context_cls is None:
-                context_cls = AvroContext
-
+                context_cls = avrolib.AvroContext
         self.context_cls = context_cls or TaskContext
         self.avro_input = avro_input
         self.avro_output = avro_output
@@ -460,7 +478,7 @@ class HadoopSimulator(object):
 
         """
         ctable = {'mapping': {}, 'reducing': {}}
-        for k, v in self.counters.iteritems():
+        for k, v in iteritems(self.counters):
             ctable.setdefault(
                 k[0], {}).setdefault(v[0][0], {}).setdefault(v[0][1], v[1])
         return ctable
@@ -468,14 +486,13 @@ class HadoopSimulator(object):
     def write_authorization(self, stream, authorization):
         if authorization is not None:
             digest, challenge = authorization
-            stream.send('authenticationReq', digest, challenge)
+            stream.send(stream.AUTHENTICATION_REQ, digest, challenge)
 
     def write_header_down_stream(self, down_stream, authorization, job_conf):
+        out_jc = sum([[k, v] for k, v in iteritems(job_conf)], [])
         self.write_authorization(down_stream, authorization)
-        down_stream.send('start', 0)
-        down_stream.send('setJobConf',
-                         tuple(sum([[k, v] for k, v in job_conf.iteritems()],
-                                   [])))
+        down_stream.send(down_stream.START_MESSAGE, 0)
+        down_stream.send(down_stream.SET_JOB_CONF, *out_jc)
 
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               authorization=None, input_split=''):
@@ -490,52 +507,49 @@ class HadoopSimulator(object):
         input_key_type = 'org.apache.hadoop.io.LongWritable'
         input_value_type = 'org.apache.hadoop.io.Text'
         piped_input = file_in is not None
-        self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
+        self.tempf = tempfile.NamedTemporaryFile('rb+', prefix='pydoop-tmp')
         f = self.tempf.file
-        self.logger.debug('writing map input data to %s', f.name)
+        self.logger.debug('writing map input data to %s', self.tempf.name)
         down_stream = BinaryWriter(f)
         self.write_header_down_stream(down_stream, authorization, job_conf)
-        down_stream.send('runMap', input_split, num_reducers, piped_input)
+        down_stream.send(down_stream.RUN_MAP,
+                         input_split, num_reducers, piped_input)
         if piped_input:
-            down_stream.send('setInputTypes', input_key_type, input_value_type)
-            if AVRO_INPUT in job_conf:
+            down_stream.send(down_stream.SET_INPUT_TYPES,
+                             input_key_type, input_value_type)
+            if self.avro_input:
                 serializers = defaultdict(lambda: lambda r: '')
-                avro_input = job_conf[AVRO_INPUT].upper()
                 reader = get_avro_reader(file_in)
-
-                if avro_input == 'K' or avro_input == 'KV':
-                    serializer = AvroSerializer(
+                if self.avro_input == 'K' or self.avro_input == 'KV':
+                    serializer = avrolib.AvroSerializer(
                         job_conf.get(AVRO_KEY_INPUT_SCHEMA)
                     )
                     serializers['K'] = serializer.serialize
-
-                if avro_input == 'V' or avro_input == 'KV':
-                    serializer = AvroSerializer(
+                if self.avro_input == 'V' or self.avro_input == 'KV':
+                    serializer = avrolib.AvroSerializer(
                         job_conf.get(AVRO_VALUE_INPUT_SCHEMA)
                     )
                     serializers['V'] = serializer.serialize
-
                 for record in reader:
-                    if avro_input == 'KV':
+                    if self.avro_input == 'KV':
                         record_k = record['key']
                         record_v = record['value']
                     else:
                         record_v = record_k = record
-
                     down_stream.send(
-                        'mapItem',
+                        down_stream.MAP_ITEM,
                         serializers['K'](record_k),
                         serializers['V'](record_v),
                     )
-
             else:
-                pos = file_in.tell()
+                pos = 0
                 for l in file_in:
                     self.logger.debug("Line: %s", l)
-                    k = serialize_to_string(pos)
-                    down_stream.send('mapItem', k, l)
-                    pos = file_in.tell()
-            down_stream.send('close')
+                    k = serialize_long_to_string(pos)
+                    down_stream.send(down_stream.MAP_ITEM, k, l)
+                    pos += len(l)
+        down_stream.send(down_stream.CLOSE)
+        down_stream.flush()
         self.logger.debug('done writing, rewinding')
         f.seek(0)
         return f
@@ -545,32 +559,38 @@ class HadoopSimulator(object):
         """
         FIXME
         """
-        self.tempf = tempfile.NamedTemporaryFile('r+', prefix='pydoop-tmp')
+        self.tempf = tempfile.NamedTemporaryFile('rb+', prefix='pydoop-tmp')
         f = self.tempf.file
         down_stream = BinaryWriter(f)
 
         self.write_header_down_stream(down_stream, authorization, job_conf)
-        down_stream.send('runReduce', reducer, piped_output)
+        down_stream.send(down_stream.RUN_REDUCE, reducer, piped_output)
+        REDUCE_KEY = down_stream.REDUCE_KEY
+        REDUCE_VALUE = down_stream.REDUCE_VALUE
         for k in sas:
             self.logger.debug("key: %r", k)
-            down_stream.send('reduceKey', k)
+            down_stream.send(REDUCE_KEY, k)
             for v in sas[k]:
-                down_stream.send('reduceValue', v)
-        down_stream.send('close')
+                down_stream.send(REDUCE_VALUE, v)
+        down_stream.send(down_stream.CLOSE)
+        down_stream.flush()
+        self.logger.debug('done writing, rewinding')
         f.seek(0)
         return f
 
     def _get_jc_for_avro_input(self, file_in, job_conf):
-
         jc = dict(job_conf)
         if self.avro_input:
             jc[AVRO_INPUT] = self.avro_input
             reader = DataFileReader(file_in, DatumReader())
-            schema = reader.get_meta('avro.schema')
+            if sys.version_info[0] == 3:
+                schema = reader.GetMeta(SCHEMA_KEY)
+            else:
+                schema = reader.get_meta(SCHEMA_KEY)
             file_in.seek(0)
-            if self.avro_input == 'v':
+            if self.avro_input == 'V':
                 jc[AVRO_VALUE_INPUT_SCHEMA] = schema
-            elif self.avro_input == 'k':
+            elif self.avro_input == 'K':
                 jc[AVRO_KEY_INPUT_SCHEMA] = schema
             else:
                 schema_obj = json.loads(schema)
@@ -581,22 +601,20 @@ class HadoopSimulator(object):
                         value_schema = field['type']
                 jc[AVRO_KEY_INPUT_SCHEMA] = json.dumps(key_schema)
                 jc[AVRO_VALUE_INPUT_SCHEMA] = json.dumps(value_schema)
-
         return jc
 
     def _get_jc_for_avro_output(self, job_conf):
         jc = dict(job_conf)
         if self.avro_output:
-            jc[AVRO_OUTPUT] = self.avro_input
-            if self.avro_output == 'v':
+            jc[AVRO_OUTPUT] = self.avro_output
+            if self.avro_output == 'V':
                 jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_value_schema
-            elif self.avro_output == 'k':
+            elif self.avro_output == 'K':
                 jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_key_schema
 
             else:
                 jc[AVRO_KEY_OUTPUT_SCHEMA] = self.avro_output_key_schema
                 jc[AVRO_VALUE_OUTPUT_SCHEMA] = self.avro_output_value_schema
-
         return jc
 
 
@@ -660,10 +678,10 @@ class HadoopSimulatorLocal(HadoopSimulator):
         bytes_flow = self.write_map_down_stream(
             file_in, jc_avro_input, num_reducers, input_split=input_split
         )
-        dstream = BinaryDownStreamFilter(bytes_flow)
+        dstream = BinaryDownStreamAdapter(bytes_flow)
         # FIXME this is a quick hack to avoid crashes with user defined
         # RecordWriter
-        f = cStringIO.StringIO() if file_out is None else file_out
+        f = StringIO() if file_out is None else file_out
         if self.avro_output:
             rec_writer_stream = AvroRecordWriter(self, f)
         else:
@@ -682,7 +700,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
             jc_avro_output = self._get_jc_for_avro_output(job_conf)
             bytes_flow = self.write_reduce_down_stream(sas, jc_avro_output,
                                                        num_reducers)
-            rstream = BinaryDownStreamFilter(bytes_flow)
+            rstream = BinaryDownStreamAdapter(bytes_flow)
             self.logger.info('running reduce phase')
             self.set_phase('reducing')
             self.run_task(rstream, rec_writer_stream)
@@ -698,7 +716,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
 
     .. code-block:: python
 
-      program_name = '../wordcount/new_api/wordcount_full.py'
+      program_name = '../wordcount/bin/wordcount_full.py'
       data_in = '../input/alice.txt'
       output_dir = './output'
       data_in_path = os.path.realpath(data_in)
@@ -743,7 +761,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         self.sleep_delta = sleep_delta
         tfile = tempfile.NamedTemporaryFile(delete=False)
         self.tmp_file = tfile.name
-        self.password = uuid.uuid4().hex
+        self.password = uuid.uuid4().hex.encode('utf-8')
         tfile.write(self.password)
         tfile.close()
 
@@ -780,7 +798,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         assert file_in or input_split
         assert file_out or num_reducers > 0  # FIXME pipes should support this
         self.logger.debug('run start')
-        challenge = 'what? me worry?'
+        challenge = 'what? me worry?'.encode('utf-8')
         digest = create_digest(self.password, challenge)
         auth = (digest, challenge)
         jc_avro_input = self._get_jc_for_avro_input(file_in, job_conf)

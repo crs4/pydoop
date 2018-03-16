@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -32,7 +32,7 @@ def nop(x=None):
 
 class Args(object):
     def __init__(self, **kwargs):
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
     def __getattr__(self, _):
@@ -74,15 +74,15 @@ class TestAppSubmit(unittest.TestCase):
         try:
             args, unk = parser.parse_known_args(['-h'])
         except SystemExit as e:
-            self.assertEqual(e.message, 0)
+            self.assertEqual(e.args[0], 0)
         try:
             args, unk = parser.parse_known_args(['submit', '-h'])
         except SystemExit as e:
-            self.assertEqual(e.message, 0)
+            self.assertEqual(e.args[0], 0)
         try:
             args, unk = parser.parse_known_args(['submit'])
         except SystemExit as e:
-            self.assertEqual(e.message, 2)
+            self.assertEqual(e.args[0], 2)
 
     def _check_args(self, args, args_kv):
         for k, v in args_kv:
@@ -100,7 +100,6 @@ class TestAppSubmit(unittest.TestCase):
         wd = tempfile.mkdtemp(prefix='pydoop_')
         conf_file = os.path.join(wd, 'pydoop.conf')
         args_kv = (("--pretend", None),
-                   ("--mrv1", None),
                    ("--input-format", 'mapreduce.lib.input.TextInputFormat'),
                    ("--output-format", 'mapreduce.lib.input.TextOutputFormat'),
                    ("--num-reducers", 10),

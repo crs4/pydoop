@@ -1,6 +1,6 @@
 /* BEGIN_COPYRIGHT
  *
- * Copyright 2009-2016 CRS4.
+ * Copyright 2009-2018 CRS4.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -24,6 +24,7 @@
 #include <hdfs.h>
 #include <unicodeobject.h>
 #include <errno.h>
+#include <string.h>
 
 #define MAX_WD_BUFFSIZE 2048
 
@@ -51,7 +52,7 @@ PyObject* FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 void FsClass_dealloc(FsInfo* self)
 {
-    self->ob_type->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 
@@ -124,26 +125,26 @@ PyObject* FsClass_get_working_directory(FsInfo* self) {
 
 PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
-    const char* path = NULL;
+    char* path = NULL;
     PyObject* retval = NULL;
     hdfsFileInfo* info;
 
     if (!PyArg_ParseTuple(args, "es", "utf-8",  &path)) {
-        // PyArg_ParseTuple sets the exception
         return NULL;
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         info = hdfsGetPathInfo(self->_fs, path);
     Py_END_ALLOW_THREADS;
     if (info == NULL) {
-        PyErr_SetString(PyExc_IOError, "File not found");
-        goto done;
+        PyMem_Free(path);
+        return PyErr_SetFromErrno(PyExc_IOError);
     }
 
     retval =
@@ -160,12 +161,8 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
             "path", PyUnicode_FromString(info->mName),
             "size", info->mSize
     );
-    // if Py_BuildValue has a problem it'll set the exception. We fall through
-    // and return retval, which in that case will be NULL
-
+    PyMem_Free(path);
     hdfsFreeFileInfo(info, 1);
-done:
-    PyMem_Free((void*)path);
     return retval;
 }
 
@@ -174,7 +171,7 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
     Py_ssize_t start, length;
     PyObject* result = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     char*** hosts = NULL;
 
     if (!PyArg_ParseTuple(args, "esnn", "utf-8", &path, &start, &length)) {
@@ -182,21 +179,24 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     if (start < 0 || length < 0) {
-       PyErr_SetString(PyExc_ValueError, "Start position and length must be >= 0");
-       goto done;
+        PyMem_Free(path);
+        PyErr_SetString(PyExc_ValueError,
+                        "Start position and length must be >= 0");
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         hosts = hdfsGetHosts(self->_fs, path, start, length);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
     if (!hosts) {
-        PyErr_SetString(PyExc_RuntimeError, "Failed to get block information");
-        goto done;
+        return PyErr_SetFromErrno(PyExc_RuntimeError);
     }
 
     result = PyList_New(0);
@@ -209,7 +209,7 @@ PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
         for (int iBlockHost = 0; hosts[blockNumber][iBlockHost] != NULL; ++iBlockHost)
         {
-            PyObject* str = PyString_FromString(hosts[blockNumber][iBlockHost]);
+            PyObject* str = PyUnicode_FromString(hosts[blockNumber][iBlockHost]);
             if (!str) goto mem_error;
             if (PyList_Append(blockHosts, str) < 0) goto mem_error;
         }
@@ -225,7 +225,6 @@ mem_error:
     // fall through
 done:
     if (hosts) hdfsFreeHosts(hosts);
-    PyMem_Free((void*)path);
     return result;
 }
 
@@ -242,8 +241,7 @@ PyObject* FsClass_get_used(FsInfo* self) {
 
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     short replication;
     int result;
 
@@ -251,61 +249,80 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) 
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
-    // The call requires network access to talk to the NameNode. May be high
-    // latency, so we allow python threads in the meantime.
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsSetReplication(self->_fs, path, replication);
     Py_END_ALLOW_THREADS;
-    retval = PyBool_FromLong(result >= 0 ? 1 : 0);
-done:
-    PyMem_Free((void*)path);
-    return retval;
+    PyMem_Free(path);
+    if (result < 0) {
+	return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 
 PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     int result;
 
     if (!PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
-    result = hdfsSetWorkingDirectory(self->_fs, path);
-    retval = PyBool_FromLong(result >= 0 ? 1 : 0);
-done:
-    PyMem_Free((void*)path);
-    return retval;
+    Py_BEGIN_ALLOW_THREADS;
+        result = hdfsSetWorkingDirectory(self->_fs, path);
+    Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
+    if (result < 0) {
+	return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 
 PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     PyObject* retval = NULL;
-    const char* path = NULL;
-    int flags, buff_size, blocksize, readline_chunk_size;
+    char* path = NULL;
+    const char* mode = NULL;
+    int flags, buff_size, blocksize;
     short replication;
     hdfsFile file;
+    tOffset size = 0;
+    hdfsFileInfo* info;
 
-    if (!PyArg_ParseTuple(args, "es|iihii",
-                          "utf-8", &path, &flags, &buff_size, &replication,
-                          &blocksize, &readline_chunk_size)) {
+    if (!PyArg_ParseTuple(args, "es|sihi",
+                          "utf-8", &path, &mode, &buff_size, &replication,
+                          &blocksize)) {
         return NULL;
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
+    }
+
+    if (strcmp(mode, MODE_READ) == 0) {
+        flags = O_RDONLY;
+    } else if (strcmp(mode, MODE_WRITE) == 0) {
+        flags = O_WRONLY;
+    } else if (strcmp(mode, MODE_APPEND) == 0) {
+        flags = O_WRONLY | O_APPEND;
+    } else {
+        PyMem_Free(path);
+        PyErr_SetString(PyExc_ValueError, "Invalid mode");
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
@@ -313,29 +330,48 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
                             buff_size, replication, blocksize);
     Py_END_ALLOW_THREADS;
     if (file == NULL) {
-        PyErr_SetFromErrno(PyExc_IOError);
-        goto done;
+        PyMem_Free(path);
+        return PyErr_SetFromErrno(PyExc_IOError);
     }
 
-    {
-        PyObject* module = PyImport_ImportModule("pydoop.native_core_hdfs");
-
-        retval = PyObject_CallMethod(module, "CoreHdfsFile","OO", self->_fs, file); //, flags, buff_size, replication, blocksize, NULL);
-
-        FileInfo *fileInfo = ((FileInfo*) retval);
-        // LP: see hdfs_file.h: fileInfo->path = path;
-        fileInfo->flags = flags;
-        fileInfo->buff_size = buff_size;
-        fileInfo->blocksize = blocksize;
-        fileInfo->replication = replication;
-        fileInfo->readline_chunk_size = readline_chunk_size;
-
-        #ifdef HADOOP_LIBHDFS_V1
-            fileInfo->stream_type = (((flags & O_WRONLY) == 0) ? INPUT : OUTPUT);
-        #endif
+    PyObject* module = PyImport_ImportModule("pydoop.native_core_hdfs");
+    if (NULL == module) {
+        PyMem_Free(path);
+	free(file);
+	return NULL;
     }
-done:
-    PyMem_Free((void*)path);
+    PyObject *name = PyUnicode_FromString(path);
+    PyObject *pymode = PyUnicode_FromString(mode);
+    retval = PyObject_CallMethod(module, "CoreHdfsFile", "OOOO",
+				 self->_fs, file, name, pymode);
+    Py_XDECREF(pymode);
+    Py_XDECREF(name);
+    Py_XDECREF(module);
+    if (NULL == retval) {
+        PyMem_Free(path);
+        free(file);
+        return NULL;
+    }
+
+    /* get file size for the SEEK_END variant of seek */
+    if (flags == O_RDONLY) {
+        Py_BEGIN_ALLOW_THREADS;
+            info = hdfsGetPathInfo(self->_fs, path);
+        Py_END_ALLOW_THREADS;
+        if (info == NULL) {
+            PyMem_Free(path);
+            return PyErr_SetFromErrno(PyExc_IOError);
+        }
+        size = info->mSize;
+        hdfsFreeFileInfo(info, 1);
+    }
+    PyMem_Free(path);
+
+    FileInfo *fileInfo = ((FileInfo*) retval);
+    fileInfo->size = size;
+    fileInfo->buff_size = buff_size;
+    fileInfo->blocksize = blocksize;
+    fileInfo->replication = replication;
     return retval;
 }
 
@@ -368,9 +404,8 @@ PyObject *FsClass_get_capacity(FsInfo *self) {
 
 PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 {
-    PyObject* retval = NULL;
     FsInfo* to_hdfs;
-    const char *from_path = NULL, *to_path = NULL;
+    char *from_path = NULL, *to_path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
@@ -379,41 +414,42 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
     }
 
     if (str_empty(from_path) || str_empty(to_path)) {
+        PyMem_Free(from_path);
+        PyMem_Free(to_path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsCopy(self->_fs, from_path, to_hdfs->_fs, to_path);
     Py_END_ALLOW_THREADS;
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_RuntimeError);
-    else
-        retval = PyLong_FromLong(result);
-done:
-    PyMem_Free((void*)from_path);
-    PyMem_Free((void*)to_path);
-    return retval;
+    PyMem_Free(from_path);
+    PyMem_Free(to_path);
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    return PyLong_FromLong(result);
 }
 
 
 PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsExists(self->_fs, path);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
     // LP: hdfsExists (in some cases?) sets errno to ENOENT "[Errno 2] No such
     // file or directory" when the path doesn't exist or EEXIST in other cases.
@@ -423,17 +459,13 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
     //
     // if (result < 0 && errno) return PyErr_SetFromErrno(PyExc_IOError);
 
-    retval = PyBool_FromLong(result >= 0 ? 1 : 0);
-done:
-    PyMem_Free((void*)path);
-    return retval;
+    return PyBool_FromLong(result >= 0 ? 1 : 0);
 }
 
 
 PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "es", "utf-8", &path)) {
@@ -441,21 +473,19 @@ PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds)
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsCreateDirectory(self->_fs, path);
     Py_END_ALLOW_THREADS;
-
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_IOError);
-    else
-        retval = PyBool_FromLong(1);
-done:
-    PyMem_Free((void*)path);
-    return retval;
+    PyMem_Free(path);
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 /*
@@ -491,14 +521,14 @@ static int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
     // Prepare the values.  We'll check for all errors in the "set" loop below
     // The order of these values MUST match the order of the keys above
     values[i++] = PyUnicode_FromString(fileInfo->mName);
-    values[i++] = PyString_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file");
-    values[i++] = PyString_FromString(fileInfo->mGroup);
-    values[i++] = PyInt_FromLong(fileInfo->mLastMod);
-    values[i++] = PyInt_FromLong(fileInfo->mLastAccess);
-    values[i++] = PyInt_FromSize_t(fileInfo->mReplication);
-    values[i++] = PyString_FromString(fileInfo->mOwner);
-    values[i++] = PyInt_FromSize_t(fileInfo->mPermissions);
-    values[i++] = PyInt_FromLong(fileInfo->mBlockSize);
+    values[i++] = PyUnicode_FromString(fileInfo->mKind == kObjectKindDirectory ? "directory" : "file");
+    values[i++] = PyUnicode_FromString(fileInfo->mGroup);
+    values[i++] = PyLong_FromLong(fileInfo->mLastMod);
+    values[i++] = PyLong_FromLong(fileInfo->mLastAccess);
+    values[i++] = PyLong_FromSize_t(fileInfo->mReplication);
+    values[i++] = PyUnicode_FromString(fileInfo->mOwner);
+    values[i++] = PyLong_FromSize_t(fileInfo->mPermissions);
+    values[i++] = PyLong_FromLong(fileInfo->mBlockSize);
     values[i++] = PyUnicode_FromString(fileInfo->mName);
     values[i++] = PyLong_FromLongLong(fileInfo->mSize);
 
@@ -521,7 +551,7 @@ static int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
 
     hdfsFileInfo* pathList = NULL;
     int numEntries = 0;
@@ -531,13 +561,14 @@ PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
         return NULL;
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto error;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         pathInfo = hdfsGetPathInfo(self->_fs, path);
-
+        PyMem_Free(path);
         if (!pathInfo) {
             Py_BLOCK_THREADS; // later we 'goto' skipping over END_ALLOW_THREADS
             PyErr_SetFromErrno(PyExc_IOError);
@@ -590,7 +621,6 @@ error:
 
 done:
     // all code paths go through the 'done' section
-    PyMem_Free((void*)path);
     if (pathInfo != NULL)
         hdfsFreeFileInfo(pathInfo, 1);
     if (pathList != NULL)
@@ -601,9 +631,8 @@ done:
 
 PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
     FsInfo* to_hdfs;
-    const char *from_path = NULL, *to_path = NULL;
+    char *from_path = NULL, *to_path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
@@ -612,58 +641,55 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(from_path) || str_empty(to_path)) {
+        PyMem_Free(from_path);
+        PyMem_Free(to_path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsMove(self->_fs, from_path, to_hdfs->_fs, to_path);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(from_path);
+    PyMem_Free(to_path);
 
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_IOError);
-    else
-        retval = PyBool_FromLong(1);
-done:
-    PyMem_Free((void*)from_path);
-    PyMem_Free((void*)to_path);
-    return retval;
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 
 PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char *from_path = NULL, *to_path = NULL;
+    char *from_path = NULL, *to_path = NULL;
     int result;
 
     if (! PyArg_ParseTuple(args, "eses", "utf-8", &from_path, "utf-8", &to_path))
         return NULL;
 
     if (str_empty(from_path) || str_empty(to_path)) {
+        PyMem_Free(from_path);
+        PyMem_Free(to_path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsRename(self->_fs, from_path, to_path);
     Py_END_ALLOW_THREADS;
-
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_IOError);
-    else
-        retval = PyBool_FromLong(1);
-done:
-    PyMem_Free((void*)from_path);
-    PyMem_Free((void*)to_path);
-    return retval;
+    PyMem_Free(from_path);
+    PyMem_Free(to_path);
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 
 PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     int recursive = 1;
     int result;
 
@@ -672,32 +698,26 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
-        #ifdef HADOOP_LIBHDFS_V1
-        result = hdfsDelete(self->_fs, path);
-        #else
         result = hdfsDelete(self->_fs, path, recursive);
-        #endif
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_IOError);
-    else
-        retval = PyBool_FromLong(1);
-done:
-    PyMem_Free((void*)path);
-    return retval;
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 
 PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     short mode = 1;
     int result;
 
@@ -706,8 +726,9 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
@@ -716,29 +737,27 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
         errno = 0;
         result = hdfsChmod(self->_fs, path, mode);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
     if (result >= 0) {
-        retval = PyBool_FromLong(1);
+        Py_RETURN_NONE;
     }
     else {
         // there's been an error
-        if (errno)
-            PyErr_SetFromErrno(PyExc_IOError);
+        if (errno) {
+            return PyErr_SetFromErrno(PyExc_IOError);
+	}
         else {
-            PyErr_SetString(PyExc_IOError, "Unknown error while changing permissions");
+            PyErr_SetString(PyExc_IOError, "Unknown error");
+	    return NULL;
         }
     }
-done:
-    PyMem_Free((void*)path);
-    return retval;
 }
 
 
 PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char *path = NULL;
-    const char *input_user = NULL, *input_group = NULL;
+    char *path = NULL, *input_user = NULL, *input_group = NULL;
     int result;
     hdfsFileInfo* fileInfo;
 
@@ -748,40 +767,39 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
+        PyMem_Free(input_user);
+        PyMem_Free(input_group);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         fileInfo = hdfsGetPathInfo(self->_fs, path);
-        if (fileInfo) {
-            const char* new_user  = str_empty(input_user)  ? fileInfo->mOwner : input_user;
-            const char* new_group = str_empty(input_group) ? fileInfo->mGroup : input_group;
-
-            result = hdfsChown(self->_fs, path, new_user, new_group);
-            hdfsFreeFileInfo(fileInfo, 1);
+        if (NULL == fileInfo) {
+            PyMem_Free(path);
+            PyMem_Free(input_user);
+            PyMem_Free(input_group);
+	    return PyErr_SetFromErrno(PyExc_IOError);
         }
-        else {
-            result = -1;
-        }
+        const char* new_user = str_empty(input_user) ? fileInfo->mOwner : input_user;
+        const char* new_group = str_empty(input_group) ? fileInfo->mGroup : input_group;
+        result = hdfsChown(self->_fs, path, new_user, new_group);
     Py_END_ALLOW_THREADS;
-
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_IOError);
-    else
-        retval = PyBool_FromLong(1);
-done:
-    PyMem_Free((void*)path);
-    PyMem_Free((void*)input_user);
-    PyMem_Free((void*)input_group);
-    return retval;
+    PyMem_Free(path);
+    PyMem_Free(input_user);
+    PyMem_Free(input_group);
+    hdfsFreeFileInfo(fileInfo, 1);
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }
 
 
 PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    PyObject* retval = NULL;
-    const char* path = NULL;
+    char* path = NULL;
     tTime mtime, atime;
     int result;
 
@@ -790,19 +808,18 @@ PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
     }
 
     if (str_empty(path)) {
+        PyMem_Free(path);
         PyErr_SetString(PyExc_ValueError, "Empty path");
-        goto done;
+        return NULL;
     }
 
     Py_BEGIN_ALLOW_THREADS;
         result = hdfsUtime(self->_fs, path, mtime, atime);
     Py_END_ALLOW_THREADS;
+    PyMem_Free(path);
 
-    if (result < 0)
-        PyErr_SetFromErrno(PyExc_IOError);
-    else
-        retval = PyBool_FromLong(1);
-done:
-    PyMem_Free((void*)path);
-    return retval;
+    if (result < 0) {
+        return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    Py_RETURN_NONE;
 }

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -21,6 +21,7 @@ The hadut module provides access to some functionalities available
 via the Hadoop shell.
 """
 
+import logging
 import os
 import shlex
 import subprocess
@@ -29,6 +30,7 @@ import pydoop
 import pydoop.utils.misc as utils
 import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
+from .utils.py3compat import basestring
 
 
 GLOB_CHARS = frozenset('*,?[]{}')
@@ -73,7 +75,7 @@ def _merge_csv_args(args):
             merge_map.setdefault(k, []).append(v.strip())
             del args[i: i + 2]
         i -= 1
-    for k, vlist in merge_map.iteritems():
+    for k, vlist in merge_map.items():
         args.extend([k, ",".join(vlist)])
 
 # FIXME: the above functions share a lot of code
@@ -81,7 +83,7 @@ def _merge_csv_args(args):
 
 
 def _construct_property_args(prop_dict):
-    return sum((['-D', '%s=%s' % p] for p in prop_dict.iteritems()), [])
+    return sum((['-D', '%s=%s' % p] for p in prop_dict.items()), [])
 
 
 # 'a:b:c' OR ['a', 'b', 'c'] OR ['a:b', 'c'] --> {'a', 'b', 'c'}
@@ -113,8 +115,8 @@ class RunCmdError(RuntimeError):
 
 
 # keep_streams must default to True for backwards compatibility
-def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
-            hadoop_conf_dir=None, logger=None, keep_streams=True):
+def run_tool_cmd(tool, cmd, args=None, properties=None, hadoop_conf_dir=None,
+                 logger=None, keep_streams=True):
     """
     Run a Hadoop command.
 
@@ -138,8 +140,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     """
     if logger is None:
         logger = utils.NullLogger()
-    hadoop = pydoop.hadoop_exec(hadoop_home=hadoop_home)
-    _args = [hadoop]
+    _args = [tool]
     if hadoop_conf_dir:
         _args.extend(["--config", hadoop_conf_dir])
     _args.append(cmd)
@@ -152,7 +153,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         gargs = _pop_generic_args(args)
         for seq in gargs, args:
             _args.extend(map(str, seq))
-    logger.debug('final args: %r' % (_args,))
+    logger.debug('final args: %r', (_args,))
     if keep_streams:
         p = subprocess.Popen(
             _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -161,7 +162,7 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
         stderr_iterator = iter(p.stderr.readline, b"")
         for line in stderr_iterator:
             error += line
-            logger.info("cmd stderr line: " + line.strip())
+            logger.info("cmd stderr line: %s", line.strip())
 
         output, _ = p.communicate()
     else:
@@ -172,6 +173,22 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     if p.returncode:
         raise RunCmdError(p.returncode, ' '.join(_args), error)
     return output
+
+
+def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
+            hadoop_conf_dir=None, logger=None, keep_streams=True):
+    tool = pydoop.hadoop_exec(hadoop_home=hadoop_home)
+    run_tool_cmd(tool, cmd, args=args, properties=properties,
+                 hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                 keep_streams=keep_streams)
+
+
+def run_mapred_cmd(cmd, args=None, properties=None, hadoop_home=None,
+                   hadoop_conf_dir=None, logger=None, keep_streams=True):
+    tool = pydoop.mapred_exec(hadoop_home=hadoop_home)
+    run_tool_cmd(tool, cmd, args=args, properties=properties,
+                 hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                 keep_streams=keep_streams)
 
 
 def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
@@ -202,11 +219,11 @@ def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
             keep_streams=True
         )
         task_trackers = []
-        for l in stdout.splitlines():
-            if not l:
+        for line in stdout.splitlines():
+            if not line:
                 continue
-            l = l.split(":")
-            task_trackers.append((l[0].split("_")[1], int(l[-1])))
+            line = line.split(":")
+            task_trackers.append((line[0].split("_")[1], int(line[-1])))
     return task_trackers
 
 
@@ -299,15 +316,22 @@ def run_class(class_name, args=None, properties=None, classpath=None,
     old_classpath = None
     if classpath:
         old_classpath = os.getenv('HADOOP_CLASSPATH', '')
+        if isinstance(classpath, basestring):
+            classpath = [classpath]
+        # Prepend the classpaths provided by the user to the existing
+        # HADOOP_CLASSPATH value.  Order matters.  We could work a little
+        # harder to avoid duplicates, but it's not essential
         os.environ['HADOOP_CLASSPATH'] = ":".join(
-            _to_set(old_classpath) | _to_set(classpath)
+            classpath + old_classpath.split(':', 1)
         )
-        logger.debug('HADOOP_CLASSPATH: %r' % (os.getenv('HADOOP_CLASSPATH'),))
-    res = run_cmd(class_name, args, properties,
-                  hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                  keep_streams=keep_streams)
-    if old_classpath is not None:
-        os.environ['HADOOP_CLASSPATH'] = old_classpath
+        logger.debug('HADOOP_CLASSPATH: %r', os.getenv('HADOOP_CLASSPATH'))
+    try:
+        res = run_cmd(class_name, args, properties,
+                      hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                      keep_streams=keep_streams)
+    finally:
+        if old_classpath is not None:
+            os.environ['HADOOP_CLASSPATH'] = old_classpath
     return res
 
 
@@ -366,9 +390,9 @@ def run_pipes(executable, input_path, output_path, more_args=None,
                          classpath=pydoop_jar, logger=logger,
                          keep_streams=keep_streams)
     else:
-        return run_cmd("pipes", args, properties,
-                       hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                       keep_streams=keep_streams)
+        return run_mapred_cmd("pipes", args=args, properties=properties,
+                              hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                              keep_streams=keep_streams)
 
 
 def find_jar(jar_name, root_path=None):
@@ -409,7 +433,7 @@ def collect_output(mr_out_dir, out_file=None):
     if out_file is None:
         output = []
         for fn in iter_mr_out_files(mr_out_dir):
-            with hdfs.open(fn) as f:
+            with hdfs.open(fn, "rt") as f:
                 output.append(f.read())
         return "".join(output)
     else:
@@ -475,7 +499,7 @@ class PipesRunner(object):
             hdfs.put(input_, self.input)
         else:
             self.input = input_
-            self.logger.info("assigning input to %s" % self.input)
+            self.logger.info("assigning input to %s", self.input)
 
     def set_output(self, output):
         """
@@ -483,7 +507,7 @@ class PipesRunner(object):
         instantiated with a prefix.
         """
         self.output = output
-        self.logger.info("assigning output to %s" % self.output)
+        self.logger.info("assigning output to %s", self.output)
 
     def set_exe(self, pipes_code):
         """
@@ -508,10 +532,11 @@ class PipesRunner(object):
         """
         Run :func:`collect_output` on the job's output directory.
         """
-        self.logger.info("collecting output%s" % (
-            " to %s" % out_file if out_file else ''
-        ))
-        self.logger.info("self.output %s", self.output)
+        if self.logger.isEnabledFor(logging.INFO):
+            self.logger.info(
+                "collecting output %s", " to %s" % out_file if out_file else ''
+            )
+            self.logger.info("self.output %s", self.output)
         return collect_output(self.output, out_file)
 
     def __str__(self):

@@ -1,0 +1,5 @@
+avro >=1.7.4; python_version < '3'
+avro-python3 >=1.7.4; python_version >= '3'
+bintrees
+setuptools
+wheel

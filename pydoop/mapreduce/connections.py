@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -19,12 +19,10 @@
 import sys
 import os
 import socket
-from threading import Thread, Event
 import logging
 
-from pydoop.sercore import fdopen as ph_fdopen
-from .text_streams import TextDownStreamFilter, TextUpStreamFilter
-from .binary_streams import BinaryDownStreamFilter, BinaryUpStreamFilter
+from .text_streams import TextDownStreamAdapter, TextUpStreamAdapter
+from .binary_streams import BinaryDownStreamAdapter, BinaryUpStreamAdapter
 
 
 logging.basicConfig(level=logging.CRITICAL)
@@ -46,41 +44,17 @@ class Connections(object):
         self.up_link.close()
 
 
-def open_playback_connections(cmd_file, out_file):
-    in_stream = open(cmd_file, 'r')
-    out_stream = open(out_file, 'w')
-    return Connections(BinaryDownStreamFilter(in_stream),
-                       BinaryUpStreamFilter(out_stream))
+def open_playback_connections(cmd_file, out_file, auto_serialize=True):
+    in_stream = open(cmd_file, 'rb')
+    out_stream = open(out_file, 'wb')
+    cmd_stream = BinaryDownStreamAdapter(in_stream)
+    up_link = BinaryUpStreamAdapter(out_stream, auto_serialize=auto_serialize)
+    return Connections(cmd_stream, up_link)
 
 
 def open_file_connections(istream=sys.stdin, ostream=sys.stdout):
-    return Connections(TextDownStreamFilter(istream),
-                       TextUpStreamFilter(ostream))
-
-
-class LifeThread(object):
-
-    def __init__(self, all_done, port, max_tries=3):
-        self.all_done = all_done
-        self.port = port
-        self.max_tries = max_tries
-        self.logger = LOGGER.getChild('LifeThread')
-
-    def __call__(self):
-        while True:
-            if self.all_done.wait(5):
-                break
-            else:
-                for _ in range(self.max_tries):
-                    s = socket.socket()
-                    s.connect(('localhost', self.port))
-                    break
-                else:
-                    self.logger.critical('server appears to be dead')
-                    os._exit(1)
-                # FIXME protect with a try the next two
-                s.shutdown(socket.SHUT_RDWR)
-                s.close()
+    return Connections(TextDownStreamAdapter(istream),
+                       TextUpStreamAdapter(ostream))
 
 
 class NetworkConnections(Connections):
@@ -88,23 +62,19 @@ class NetworkConnections(Connections):
     def __init__(self, cmd_stream, up_link, sock, port):
         self.logger = LOGGER.getChild('NetworkConnections')
         super(NetworkConnections, self).__init__(cmd_stream, up_link)
-        self.all_done = Event()
         self.socket = sock
-        self.life_thread = Thread(target=LifeThread(self.all_done, port))
-        self.life_thread.start()
 
     def close(self):
         super(NetworkConnections, self).close()
-        self.all_done.set()
-        self.life_thread.join()
         self.socket.shutdown(socket.SHUT_RDWR)
         self.socket.close()
 
 
-def open_network_connections(port):
+def open_network_connections(port, auto_serialize=True):
     s = socket.socket()
     s.connect(('localhost', port))
-    in_stream = ph_fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
-    out_stream = ph_fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
-    return NetworkConnections(BinaryDownStreamFilter(in_stream),
-                              BinaryUpStreamFilter(out_stream), s, port)
+    in_stream = os.fdopen(os.dup(s.fileno()), 'r', BUF_SIZE)
+    out_stream = os.fdopen(os.dup(s.fileno()), 'w', BUF_SIZE)
+    cmd_stream = BinaryDownStreamAdapter(in_stream)
+    up_link = BinaryUpStreamAdapter(out_stream, auto_serialize=auto_serialize)
+    return NetworkConnections(cmd_stream, up_link, s, port)

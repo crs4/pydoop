@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -20,38 +20,27 @@
 HDFS core implementation.
 """
 
-from . import impl
+import os
 
 
-def init(backend=impl.DEFAULT):
-    if backend == impl.NATIVE:
-        import pydoop.utils.jvm as jvm
-        jvm.load_jvm_lib()
-        try:
-            # NOTE: JVM must be already instantiated
-            import pydoop.native_core_hdfs
-        except ImportError:
-            return None  # should only happen at compile time
-        else:
-            return pydoop.native_core_hdfs
-    elif backend == impl.JPYPE_BRIDGED:
-        from pydoop.hdfs.core.bridged import get_implementation_module
-        return get_implementation_module()
+def init():
+    import pydoop.utils.jvm as jvm
+    jvm.load_jvm_lib()
+    try:
+        # NOTE: JVM must be already instantiated
+        import pydoop.native_core_hdfs
+    except ImportError:
+        return None  # should only happen at compile time
     else:
-        raise ValueError("%r: unsupported hdfs backend" % (backend,))
-
-
-try:
-    from pydoop.config import HDFS_CORE_IMPL
-except ImportError:
-    _CORE_MODULE = None  # should only happen at compile time
-else:
-    _CORE_MODULE = init(backend=HDFS_CORE_IMPL)
+        return pydoop.native_core_hdfs
 
 
 def core_hdfs_fs(host, port, user):
+    _CORE_MODULE = init()
     if _CORE_MODULE is None:
-        raise RuntimeError(
-            'module not initialized, check that Pydoop is correctly installed'
-        )
+        if os.path.isdir("pydoop"):
+            msg = "Trying to import from the source directory?"
+        else:
+            msg = "Check that Pydoop is correctly installed"
+        raise RuntimeError("Core module unavailable. %s" % msg)
     return _CORE_MODULE.CoreHdfsFs(host, port, user)

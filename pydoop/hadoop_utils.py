@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -34,10 +34,6 @@ import subprocess as sp
 import xml.dom.minidom as dom
 from xml.parsers.expat import ExpatError
 
-try:
-    from pydoop.config import DEFAULT_HADOOP_HOME
-except ImportError:  # should only happen at compile time
-    DEFAULT_HADOOP_HOME = None
 SYSTEM = platform.system().lower()
 
 
@@ -93,10 +89,6 @@ def _hadoop_jars():
     pass
 
 
-def _apache_hadoop_jars_v1(hadoop_home):
-    return _jars_from_dirs([hadoop_home, os.path.join(hadoop_home, 'lib')])
-
-
 def _apache_hadoop_jars_v2(hadoop_home):
     jar_root = os.path.join(hadoop_home, 'share', 'hadoop')
     return _jars_from_dirs([os.path.join(jar_root, d) for d in (
@@ -106,16 +98,6 @@ def _apache_hadoop_jars_v2(hadoop_home):
         'mapreduce',
         'yarn',  # hadoop >= 2.2.0
     )])
-
-
-def _cdh_hadoop_jars_v1(hadoop_home):
-    hadoop_hdfs = hadoop_home + "-hdfs"
-    hadoop_mapred_v1 = hadoop_home + "-0.20-mapreduce"
-    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
-            hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
-            hadoop_mapred_v1, os.path.join(hadoop_mapred_v1, "lib")]
-    jars = _jars_from_dirs(dirs)
-    return jars
 
 
 def _cdh_hadoop_jars_v2(hadoop_home):
@@ -372,12 +354,18 @@ def _hadoop_home_from_version_cmd():
         last line contains the absolute path to the ``hadoop-core``
         jar, which should be in the Hadoop home directory.
         """
+        def find_hadoop_root(dpath):
+            while not os.path.exists(os.path.join(dpath, 'README.txt')):
+                dpath = os.path.dirname(dpath)
+                if dpath == '/':
+                    return None
+            return dpath
         if not output:
             return None
         last_line = output.splitlines()[-1]
         m = re.match(r'This command was run using (.*\.jar)', last_line)
         if m:
-            home = os.path.dirname(m.group(1))
+            home = find_hadoop_root(os.path.dirname(m.group(1)))
             return home
         return None
 
@@ -391,7 +379,8 @@ def _hadoop_home_from_version_cmd():
 
     if hadoop_exec:
         try:
-            output = sp.check_output([hadoop_exec, 'version'])
+            output = sp.check_output([hadoop_exec, 'version'],
+                                     universal_newlines=True)
             return get_hh_from_version_output(output)
         except sp.CalledProcessError:
             pass
@@ -424,12 +413,11 @@ class PathFinder(object):
     def __error(what, env_var):
         raise ValueError("%s not found, try setting %s" % (what, env_var))
 
-    def hadoop_home(self, fallback=DEFAULT_HADOOP_HOME):
+    def hadoop_home(self):
         if not self.__hadoop_home:
             self.__hadoop_home = (
                 os.getenv("HADOOP_HOME") or
                 os.getenv("HADOOP_PREFIX") or
-                fallback or
                 _hadoop_home_from_version_cmd() or
                 first_dir_in_glob("/usr/lib/hadoop*") or
                 first_dir_in_glob("/usr/share/hadoop*") or
@@ -490,7 +478,8 @@ class PathFinder(object):
                         env.pop("HADOOP_PREFIX", None)
                         env.pop("HADOOP_HOME", None)
                         p = sp.Popen([hadoop, "version"], stdout=sp.PIPE,
-                                     stderr=sp.PIPE, env=env)
+                                     stderr=sp.PIPE, env=env,
+                                     universal_newlines=True)
                         out, err = p.communicate()
                         if p.returncode:
                             raise RuntimeError(err or out)
@@ -590,22 +579,15 @@ class PathFinder(object):
             hadoop_home = self.hadoop_home()
         if not self.__hadoop_classpath:
             v = self.hadoop_version_info(hadoop_home)
+            if v.main < (2, 0, 0):
+                raise RuntimeError('Hadoop v1 is not supported')
             if v.distribution == 'apache':
-                if v.main < (2, 0, 0):
-                    jars = _apache_hadoop_jars_v1(hadoop_home)
-                else:
-                    jars = _apache_hadoop_jars_v2(hadoop_home)
+                jars = _apache_hadoop_jars_v2(hadoop_home)
             elif v.distribution == 'cdh':
                 hadoop_home = _cdh_hadoop_home()
-                if v.main < (2, 0, 0) or not v.is_yarn():
-                    jars = _cdh_hadoop_jars_v1(hadoop_home)
-                else:
-                    jars = _cdh_hadoop_jars_v2(hadoop_home)
+                jars = _cdh_hadoop_jars_v2(hadoop_home)
             elif v.distribution == 'hdp':
-                if v.main < (2, 0, 0):
-                    raise RuntimeError('%s is not supported' % v)
-                else:
-                    jars = _hdp_hadoop_jars_v2(hadoop_home)
+                jars = _hdp_hadoop_jars_v2(hadoop_home)
             jars.extend([self.hadoop_native(), self.hadoop_conf()])
             self.__hadoop_classpath = ':'.join(jars)
         return self.__hadoop_classpath

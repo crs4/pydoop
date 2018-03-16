@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -19,7 +19,7 @@
 import random
 import sys
 
-offices = ['office-%s' % i for i in xrange(3)]
+offices = ['office-%s' % i for i in range(3)]
 colors = ['red', 'blue', 'yellow', 'orange', 'maroon', 'green']
 names = ['Alyssa', 'John', 'Kathy', 'Ben', 'Karla', 'Ross', 'Violetta']
 
@@ -36,6 +36,7 @@ def create_input(n, stream):
 def main(n, filename):
     with open(filename, 'w') as f:
         create_input(n, f)
+
 
 if __name__ == '__main__':
     main(int(sys.argv[1]), sys.argv[2])

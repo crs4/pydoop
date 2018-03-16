@@ -1,3 +1,0 @@
-#!/bin/bash
-
-python run_wc.py bin/wordcount-minimal.py ../input

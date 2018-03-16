@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../../config.sh"
+
+build_parquet_jar "${this_dir}"/../java
+for io in "in" "in_out"; do
+    for mode in "k" "v" "kv"; do
+	"${this_dir}"/run_avro_container_${io} ${mode}
+    done
+    "${this_dir}"/run_avro_parquet_${io}
+done
+"${this_dir}"/run_avro_pyrw
+"${this_dir}"/run_color_count
+"${this_dir}"/run_kmer_count
+"${this_dir}"/run_simulate_cc

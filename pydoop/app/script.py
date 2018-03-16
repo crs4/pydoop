@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -47,6 +47,7 @@ DESCRIPTION = "Simplified interface for running simple MapReduce jobs"
 
 
 class PydoopScript(object):
+
     def __init__(self, args, unknown_args):
         self.script_archive = None
         self.args = None
@@ -54,17 +55,15 @@ class PydoopScript(object):
 
     @staticmethod
     def generate_driver(mr_module, args):
-        lines = []
-        template_args = {
-            'module': mr_module,
-            'map_fn': args.map_fn,
-            'reduce_fn': args.reduce_fn,
-            'combine_fn': args.combine_fn,
-            'combiner_wp': ('PydoopScriptCombiner' if args.combine_fn
-                            else 'None')
-        }
-        lines.append(DRIVER_TEMPLATE % template_args)
-        return os.linesep.join(lines) + os.linesep
+        combine_fn = args.combine_fn or args.reduce_fn
+        combiner_wp = 'PydoopScriptCombiner' if args.combine_fn else 'None'
+        return DRIVER_TEMPLATE.substitute(
+            module=mr_module,
+            map_fn=args.map_fn,
+            reduce_fn=args.reduce_fn,
+            combine_fn=combine_fn,
+            combiner_wp=combiner_wp,
+        )
 
     def convert_args(self, args, unknown_args):
         # Create a zip archive containing all we need to run the
@@ -99,19 +98,20 @@ class PydoopScript(object):
         args.program = mr_driver
         args.do_not_use_java_record_reader = False
         args.do_not_use_java_record_writer = False
-        args.input_format = None
         args.output_format = None
         args.cache_file = None
         args.cache_archive = None
         args.upload_to_cache = None
         args.libjars = None
-        args.local_fs = False
         args.conf = None
         args.disable_property_name_conversion = True
         args.job_conf = [('mapred.textoutputformat.separator',
                           args.kv_separator)]
         args.avro_input = None
         args.avro_output = None
+        args.keep_wd = False
+        args.pstats_dir = None
+        args.pstats_fmt = None
 
         # despicable hack...
         properties = dict(args.D or [])
@@ -162,11 +162,6 @@ def add_parser_arguments(parser):
                         help="--combine-fn alias for backwards compatibility")
     parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
                         help="output key-value separator")
-    parser.add_argument(
-        '--mrv1', action='store_true',
-        help=("Force use of MRv1. InputFormat and OutputFormat classes "
-              "must be mrv1-compliant")
-    )
 
 
 def add_parser(subparsers):

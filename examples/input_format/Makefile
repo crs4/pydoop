@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 # 
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -16,25 +16,26 @@
 # 
 # END_COPYRIGHT
 
+PYTHON ?= python
+PY_VER = $(shell $(PYTHON) -c 'import sys; print(sys.version_info[0])')
 PYINPUTFORMAT_JAR=pydoop-input-formats.jar
-INPUT_FORMAT_MRV1=it.crs4.pydoop.mapred.TextInputFormat
-INPUT_FORMAT_MRV2=it.crs4.pydoop.mapreduce.TextInputFormat
+INPUT_FORMAT=it.crs4.pydoop.mapreduce.TextInputFormat
 LOGLEVEL=INFO
 JOBNAME=input_format_test_job
 DATA := ../input
-WC_MODULE=wordcount_rr
-WC_MODULE_FILE=${WC_MODULE}.py
+WC_MODULE=wordcount_minimal
+WC_MODULE_FILE=../wordcount/bin/${WC_MODULE}.py
 INPUT=${JOBNAME}_input
 OUTPUT=${JOBNAME}_output
 
 pathsearch = $(firstword $(wildcard $(addsuffix /$(1),$(subst :, ,$(PATH)))))
-SUBMIT_CMD=pydoop submit
+SUBMIT_CMD = pydoop$(PY_VER) submit
 
 HDFS=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs ,\
        $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs ,\
 	       HDFS_IS_MISSING))
-HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rmr,\
-	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rmr,\
+HDFS_RMR=$(if $(call pathsearch,hdfs),$(call pathsearch,hdfs) dfs -rm -r,\
+	       $(if $(call pathsearch,hadoop),$(call pathsearch,hadoop) fs -rm -r,\
 	       HDFS_IS_MISSING))
 HDFS_PUT=${HDFS} -put
 HDFS_MKDIR=${HDFS} -mkdir
@@ -49,7 +50,7 @@ CLASSES = $(subst .java,.class,$(SRC))
 SUBMIT_ARGS = --upload-file-to-cache ${WC_MODULE_FILE} \
 --libjars ${PYINPUTFORMAT_JAR}\
 -D pydoop.input.issplitable=true\
---log-level ${LOGLEVEL} --job-name ${JOBNAME}
+--log-level ${LOGLEVEL} --job-name ${JOBNAME} --entry-point main
 
 
 .SUFFIXES: .java .class
@@ -59,7 +60,7 @@ SUBMIT_ARGS = --upload-file-to-cache ${WC_MODULE_FILE} \
 
 .PHONY: run clean distclean dfsclean
 
-run: submit_mrv1 submit_mrv2
+run: submit
 
 ${PYINPUTFORMAT_JAR}: $(CLASSES)
 	jar -cvf $@ $(CLASSES)
@@ -68,20 +69,14 @@ data:
 	-${HDFS_MKDIR}  /user
 	-${HDFS_MKDIR} /user/${USER}
 	-${HDFS_RMR} /user/${USER}/${INPUT}
-	-${HDFS_RMR} /user/${USER}/${OUTPUT}_*
+	-${HDFS_RMR} /user/${USER}/${OUTPUT}
 	${HDFS_PUT} ${DATA} ${INPUT}
 
 
-submit_mrv1: data ${PYINPUTFORMAT_JAR}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV1} --mrv1 \
-		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV1
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV1
-
-
-submit_mrv2: data ${PYINPUTFORMAT_JAR}
-	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT_MRV2} \
-		             ${WC_MODULE} ${INPUT} ${OUTPUT}_MRV2
-	python check_results.py ${DATA} /user/${USER}/${OUTPUT}_MRV2
+submit: data ${PYINPUTFORMAT_JAR}
+	${SUBMIT_CMD} ${SUBMIT_ARGS} --input-format ${INPUT_FORMAT} \
+		             ${WC_MODULE} ${INPUT} ${OUTPUT}
+	$(PYTHON) check_results.py ${DATA} /user/${USER}/${OUTPUT}
 
 
 clean:

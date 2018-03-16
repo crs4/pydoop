@@ -1,31 +1,7 @@
-include AUTHORS LICENSE VERSION README.md pydoop.properties .git_commit
+include AUTHORS LICENSE VERSION GIT_REV README.md pydoop.properties requirements.txt
 
 recursive-include src *
-
-recursive-include test *.py
-recursive-include test/common *.py
-recursive-include test/app *.py
-recursive-include test/serialize *.py *.java
-recursive-include test/hdfs *.py
-recursive-include test/mapreduce *.py
-recursive-include test/mapreduce/data *.data jobToken
-recursive-include test/avro *.py
-recursive-include test/backward_compatibility *.py
-
-recursive-include examples run_all README
-recursive-include examples/input *.txt
-recursive-include examples/pydoop_script *.py run* matrix.txt example.sam
-recursive-include examples/pydoop_submit run*
-recursive-include examples/simulator *
-recursive-include examples/hdfs run* *.py
-recursive-include examples/sequence_file/bin *.py
-recursive-include examples/sequence_file run*
-recursive-include examples/wordcount *
-recursive-exclude examples/wordcount/c++ *
-recursive-include examples/input_format *
-recursive-include examples/self_contained *
-recursive-include examples/avro *
-
+recursive-include test *
+recursive-include examples *
 recursive-include docs *
-
 recursive-include lib *

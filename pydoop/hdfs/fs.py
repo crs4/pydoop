@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -23,15 +23,24 @@ pydoop.hdfs.fs -- File System Handles
 
 import os
 import socket
-import urlparse
 import getpass
 import re
 import operator as ops
+import io
 
 import pydoop
 from . import common
-from .file import hdfs_file, local_file
+from .file import FileIO, hdfs_file, local_file, TextIOWrapper
 from .core import core_hdfs_fs
+
+# py3 compatibility
+from functools import reduce
+
+from pydoop.utils.py3compat import basestring
+try:
+    from urllib.parse import urlparse
+except ImportError:
+    from urlparse import urlparse
 
 
 class _FSStatus(object):
@@ -62,7 +71,7 @@ def _get_ip(host, default=None):
 
 def _get_connection_info(host, port, user):
     fs = core_hdfs_fs(host, port, user)
-    res = urlparse.urlparse(fs.get_working_directory())
+    res = urlparse(fs.get_working_directory())
     if res.scheme == "file":
         h, p, u = "", 0, getpass.getuser()
         fs.set_working_directory(os.getcwd())  # libhdfs "remembers" old cwd
@@ -110,9 +119,6 @@ class hdfs(object):
     **Note:** when connecting to the local file system, ``user`` is
     ignored (i.e., it will always be the current UNIX user).
     """
-    SUPPORTED_OPEN_MODES = frozenset([
-        os.O_RDONLY, os.O_WRONLY, os.O_WRONLY | os.O_APPEND, "r", "w", "a"
-    ])
     _CACHE = {}
     _ALIASES = {"host": {}, "port": {}, "user": {}}
 
@@ -211,7 +217,7 @@ class hdfs(object):
         self.__status.refcount -= 1
         if self.refcount == 0:
             self.fs.close()
-            for k, status in self._CACHE.items():  # yes, we want a copy
+            for k, status in list(self._CACHE.items()):  # yes, we want a copy
                 if status.refcount == 0:
                     del self._CACHE[k]
 
@@ -220,13 +226,18 @@ class hdfs(object):
         return self.__status.refcount == 0
 
     def open_file(self, path,
-                  flags=os.O_RDONLY,
+                  mode="r",
                   buff_size=0,
                   replication=0,
                   blocksize=0,
-                  readline_chunk_size=common.BUFSIZE):
+                  encoding=None,
+                  errors=None):
         """
         Open an HDFS file.
+
+        Supported opening modes are "r", "w", "a". In addition, a
+        trailing "t" can be added to specify text mode (e.g., "rt" =
+        open for reading text).
 
         Pass 0 as ``buff_size``, ``replication`` or ``blocksize`` if you want
         to use the "configured" values, i.e., the ones set in the Hadoop
@@ -234,44 +245,31 @@ class hdfs(object):
 
         :type path: str
         :param path: the full path to the file
-        :type flags: str
-        :param flags: opening flags: ``'r'`` or :data:`os.O_RDONLY` for
-          reading, ``'w'`` or :data:`os.O_WRONLY` for writing
+        :type mode: str
+        :param mode: opening mode
         :type buff_size: int
         :param buff_size: read/write buffer size in bytes
         :type replication: int
         :param replication: HDFS block replication
         :type blocksize: int
         :param blocksize: HDFS block size
-        :type readline_chunk_size: int
-        :param readline_chunk_size: the amount of bytes that
-          :meth:`~.file.hdfs_file.readline` will use for buffering
         :rtpye: :class:`~.file.hdfs_file`
         :return: handle to the open file
+
         """
         _complain_ifclosed(self.closed)
         if not path:
             raise ValueError("Empty path")
-        if flags not in self.SUPPORTED_OPEN_MODES:
-            raise ValueError("opening mode %r not supported" % flags)
+        m, is_text = common.parse_mode(mode)
         if not self.host:
-            if flags == os.O_RDONLY:
-                flags = "r"
-            elif flags == os.O_WRONLY:
-                flags = "w"
-            elif flags == os.O_WRONLY | os.O_APPEND:
-                flags = "a"
-            return local_file(self, path, flags)
-        if flags == "r":
-            flags = os.O_RDONLY
-        elif flags == "w":
-            flags = os.O_WRONLY
-        elif flags == "a":
-            flags = os.O_WRONLY | os.O_APPEND
-        f = self.fs.open_file(path, flags, buff_size, replication, blocksize)
-        fret = hdfs_file(f, self, path, flags, readline_chunk_size)
-        if flags == os.O_RDONLY:
-            fret.seek(0)
+            fret = local_file(self, path, m)
+            if is_text:
+                cls = io.BufferedReader if m == "r" else io.BufferedWriter
+                fret = TextIOWrapper(cls(fret), encoding, errors)
+            return fret
+        f = self.fs.open_file(path, m, buff_size, replication, blocksize)
+        cls = FileIO if is_text else hdfs_file
+        fret = cls(f, self, mode)
         return fret
 
     def capacity(self):
@@ -581,11 +579,11 @@ class hdfs(object):
         :raises: :exc:`~exceptions.IOError`
         """
         _complain_ifclosed(self.closed)
-        if isinstance(mode, basestring):
-            mode_ = self.__compute_mode_from_string(path, mode)
-        else:
-            mode_ = mode
-        return self.fs.chmod(path, mode_)
+        try:
+            return self.fs.chmod(path, mode)
+        except TypeError:
+            mode = self.__compute_mode_from_string(path, mode)
+            return self.fs.chmod(path, mode)
 
     def utime(self, path, mtime, atime):
         """

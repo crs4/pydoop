@@ -1,6 +1,6 @@
 /* BEGIN_COPYRIGHT
  *
- * Copyright 2009-2016 CRS4.
+ * Copyright 2009-2018 CRS4.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -19,10 +19,16 @@
 
 #include <Python.h>
 
+#if PY_MAJOR_VERSION >= 3
+#define IS_PY3K 1
+#endif
+
 #include "hdfs_fs.h"
 #include "hdfs_file.h"
 #include <jni.h>
 
+static char* module__name__ = "native_core_hdfs";
+static char* module__doc__ = "native_hdfs_core implementation";
 
 /* FsType */
 static PyMemberDef FsClass_members[] = {
@@ -70,8 +76,7 @@ static PyMethodDef FsClass_methods[] = {
 };
 
 static PyTypeObject FsType = {
-  PyObject_HEAD_INIT(NULL)
-  0,                                        /* ob_size */
+  PyVarObject_HEAD_INIT(NULL, 0)  
   "native_core_hdfs.CoreHdfsFs",            /* tp_name */
   sizeof(FsInfo),                           /* tp_basicsize */
   0,                                        /* tp_itemsize */
@@ -117,8 +122,22 @@ static PyMemberDef FileClass_members[] = {
   {NULL}  /* Sentinel */
 };
 
+static PyGetSetDef FileClass_getseters[] = {
+  {"closed", (getter)FileClass_getclosed, NULL, NULL},
+  {"buff_size", (getter)FileClass_getbuff_size, NULL, NULL},
+  {"name", (getter)FileClass_getname, NULL, NULL},
+  {"mode", (getter)FileClass_getmode, NULL, NULL},
+  {NULL}  /* Sentinel */
+};
+
 static PyMethodDef FileClass_methods[] = {
   {"close", (PyCFunction)FileClass_close, METH_NOARGS, "Close the file"},
+  {"readable", (PyCFunction)FileClass_readable, METH_NOARGS,
+   "True if the file can be read from"},
+  {"writable", (PyCFunction)FileClass_writable, METH_NOARGS,
+   "True if the file can be written to"},
+  {"seekable", (PyCFunction)FileClass_seekable, METH_NOARGS,
+   "True if the file support random access (it does if it's readable)"},
   {"available", (PyCFunction) FileClass_available, METH_NOARGS,
    "Number of bytes that can be read without blocking"},
   {"write", (PyCFunction)FileClass_write, METH_VARARGS, "Write to the file"},
@@ -126,6 +145,9 @@ static PyMethodDef FileClass_methods[] = {
    "Force any buffered output to be written"},
   {"read", (PyCFunction) FileClass_read, METH_VARARGS, "Read from the file"},
   {"read_chunk", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
+   "Like read, but store data to the given buffer"},
+  /* Also export read_chunk as readinto for compatibility with Python io */
+  {"readinto", (PyCFunction) FileClass_read_chunk, METH_VARARGS,
    "Like read, but store data to the given buffer"},
   {"pread", (PyCFunction) FileClass_pread, METH_VARARGS,
    "Read starting from the given position"},
@@ -139,8 +161,7 @@ static PyMethodDef FileClass_methods[] = {
 };
 
 static PyTypeObject FileType = {
-  PyObject_HEAD_INIT(NULL)
-  0,                                        /* ob_size */
+  PyVarObject_HEAD_INIT(NULL, 0)  
   "native_core_hdfs.CoreHdfsFile",          /* tp_name */
   sizeof(FileInfo),                         /* tp_basicsize */
   0,                                        /* tp_itemsize */
@@ -169,7 +190,7 @@ static PyTypeObject FileType = {
   0,                                        /* tp_iternext */
   FileClass_methods,                        /* tp_methods */
   FileClass_members,                        /* tp_members */
-  0,                                        /* tp_getset */
+  FileClass_getseters,                      /* tp_getset */
   0,                                        /* tp_base */
   0,                                        /* tp_dict */
   0,                                        /* tp_descr_get */
@@ -191,29 +212,68 @@ static PyMethodDef module_methods[] = {
 #endif
 
 
+#if IS_PY3K
+static struct PyModuleDef module_def = {
+  PyModuleDef_HEAD_INIT,
+  module__name__, /* m_name */
+  module__doc__,  /* m_doc */
+  -1,                  /* m_size */
+  module_methods,    /* m_methods */
+  NULL,                /* m_reload */
+  NULL,                /* m_traverse */
+  NULL,                /* m_clear */
+  NULL,                /* m_free */
+};
+#endif
+
+
+#if IS_PY3K
+
+PyMODINIT_FUNC
+PyInit_native_core_hdfs(void)
+{
+  PyObject* m;
+
+  if (PyType_Ready(&FsType) < 0)
+    return NULL;
+  if (PyType_Ready(&FileType) < 0)
+    return NULL;
+  m = PyModule_Create(&module_def);
+  if (m == NULL)
+    return NULL;
+
+  Py_INCREF(&FsType);
+  Py_INCREF(&FileType);
+  PyModule_AddObject(m, "CoreHdfsFs", (PyObject *)&FsType);
+  PyModule_AddObject(m, "CoreHdfsFile", (PyObject *)&FileType);
+
+  return m;
+}
+
+#else
+
 PyMODINIT_FUNC
 initnative_core_hdfs(void)
 {
-    PyObject* m;
+  PyObject* m;
 
-    if (PyType_Ready(&FsType) < 0)
-        return;
+  if (PyType_Ready(&FsType) < 0)
+    return;
+  if (PyType_Ready(&FileType) < 0)
+    return;
+  m = Py_InitModule3(module__name__, module_methods,
+                     module__doc__);
+  if (m == NULL)
+    return;
 
-    if (PyType_Ready(&FileType) < 0)
-        return;
+  Py_INCREF(&FsType);
+  Py_INCREF(&FileType);
+  PyModule_AddObject(m, "CoreHdfsFs", (PyObject *)&FsType);
+  PyModule_AddObject(m, "CoreHdfsFile", (PyObject *)&FileType);
 
-    m = Py_InitModule3("native_core_hdfs", module_methods,
-            "native_hdfs_core implementation");
-
-    if (m == NULL)
-        return;
-
-    Py_INCREF(&FsType);
-    Py_INCREF(&FileType);
-
-
-    PyModule_AddObject(m, "CoreHdfsFs", (PyObject *)&FsType);
-    PyModule_AddObject(m, "CoreHdfsFile", (PyObject *)&FileType);
+  PyModule_AddStringConstant(m, "MODE_READ", MODE_READ);
+  PyModule_AddStringConstant(m, "MODE_WRITE", MODE_WRITE);
+  PyModule_AddStringConstant(m, "MODE_APPEND", MODE_APPEND);
 }
-
+#endif
 

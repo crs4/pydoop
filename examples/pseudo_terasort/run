@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
+(( ${PY_VER} == 3 )) || die "runs only on python 3"
+
+make genrecords
+make sortrecords
+make checkrecords

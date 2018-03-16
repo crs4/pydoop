@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -20,13 +20,15 @@ import os
 import unittest
 import itertools as it
 
-import avro.schema
 import avro.datafile as avdf
 from avro.io import DatumReader, DatumWriter
 
 from pydoop.mapreduce.pipes import InputSplit
-from pydoop.avrolib import SeekableDataFileReader, AvroReader, AvroWriter
+from pydoop.avrolib import (
+    SeekableDataFileReader, AvroReader, AvroWriter, parse
+)
 from pydoop.test_utils import WDTestCase
+from pydoop.utils.py3compat import czip, cmap
 import pydoop.hdfs as hdfs
 
 from common import avro_user_record
@@ -40,14 +42,14 @@ class TestAvroIO(WDTestCase):
     def setUp(self):
         super(TestAvroIO, self).setUp()
         with open(os.path.join(THIS_DIR, "user.avsc")) as f:
-            self.schema = avro.schema.parse(f.read())
+            self.schema = parse(f.read())
 
     def write_avro_file(self, rec_creator, n_samples, sync_interval):
         avdf.SYNC_INTERVAL = sync_interval
         self.assertEqual(avdf.SYNC_INTERVAL, sync_interval)
-        fo = self._mkf('data.avro')
+        fo = self._mkf('data.avro', mode='wb')
         with avdf.DataFileWriter(fo, DatumWriter(), self.schema) as writer:
-            for i in xrange(n_samples):
+            for i in range(n_samples):
                 writer.append(rec_creator(i))
         return fo.name
 
@@ -55,14 +57,14 @@ class TestAvroIO(WDTestCase):
         fn = self.write_avro_file(avro_user_record, 500, 1024)
         with open(fn, 'rb') as f:
             sreader = SeekableDataFileReader(f, DatumReader())
-            res = [t for t in it.izip(it.imap(
+            res = [t for t in czip(cmap(
                 lambda _: f.tell(), it.repeat(1)
             ), sreader)]
             sreader.align_after(res[-1][0])
             with self.assertRaises(StopIteration):
-                r = sreader.next()
+                r = next(sreader)
             sreader.align_after(0)
-            r = sreader.next()
+            r = next(sreader)
             self.assertEqual(r, res[0][1])
 
             def offset_iterator():
@@ -73,7 +75,7 @@ class TestAvroIO(WDTestCase):
                     if t == s:
                         continue
                     s = t
-                    x = sreader.next()
+                    x = next(sreader)
                     yield (t, x)
 
             i = 0
@@ -103,10 +105,10 @@ class TestAvroIO(WDTestCase):
         areader = get_areader(0, 14)
         file_length = areader.reader.file_length
         with self.assertRaises(StopIteration):
-            areader.next()
+            next(areader)
         areader = get_areader(0, file_length)
-        with SeekableDataFileReader(open(fn), DatumReader()) as sreader:
-            for (o, a), s in it.izip(areader, sreader):
+        with SeekableDataFileReader(open(fn, 'rb'), DatumReader()) as sreader:
+            for (o, a), s in czip(areader, sreader):
                 self.assertEqual(a, s)
         mid_len = int(file_length / 2)
         lows = [x for x in get_areader(0, mid_len)]

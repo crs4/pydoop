@@ -1,6 +1,6 @@
 /* BEGIN_COPYRIGHT
  *
- * Copyright 2009-2016 CRS4.
+ * Copyright 2009-2018 CRS4.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -29,8 +29,14 @@
 #include <typeinfo>
 
 #include <hdfs.h>
+#include <structmember.h>
 
-#include "structmember.h"
+#include "../py3k_compat.h"
+
+
+#define MODE_READ "r"
+#define MODE_WRITE "w"
+#define MODE_APPEND "a"
 
 
 typedef struct {

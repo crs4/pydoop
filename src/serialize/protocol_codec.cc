@@ -1,6 +1,6 @@
 /* BEGIN_COPYRIGHT
  *
- * Copyright 2009-2016 CRS4.
+ * Copyright 2009-2018 CRS4.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -19,6 +19,10 @@
 
 #include <Python.h>
 
+#if PY_MAJOR_VERSION >= 3
+#define IS_PY3K 1
+#endif
+
 #include <string>
 #include <map>
 #include <utility>  // std::pair support
@@ -26,10 +30,18 @@
 #include "SerialUtils.hh"
 #include <errno.h>
 
+#include "../buf_macros.h"
+#include "../Py_macros.h"
+
+
+static char* module__name__ = "sercore";
+static char* module__doc__ = "serialization routine implementation";
+
+
 /*
   Encoding/Decoding formats:
 
-  s: string
+  s: string (a buffer in py3)
   i: int32
   L: int64
   A: a list of strings (!)
@@ -119,14 +131,9 @@ public:
     if (args == NULL) {
       return NULL;
     }
-#if 1
     PyObject* res = PyTuple_New(2);
     const std::string& name = _decoding_rules.at(code).first;
-    PyTuple_SET_ITEM(res, 0, 
-                     PyString_FromStringAndSize(name.c_str(), name.size()));
-#else
-    PyTuple_SET_ITEM(res, 0, PyInt_FromLong(code));
-#endif
+    PyTuple_SET_ITEM(res, 0, PyUnicode_FromString(name.c_str()));
     PyTuple_SET_ITEM(res, 1, args);
     return res;
   }
@@ -166,6 +173,20 @@ public:
     try {
       switch(code) {
       case 's': {
+#if IS_PY3K
+        // FIXME I think that this is actually python2.7 compatible as it is...
+        Py_buffer buffer;
+        if (PyObject_GetBuffer(o, &buffer, PyBUF_SIMPLE) < 0) {
+          PyErr_SetString(PyExc_TypeError,
+                          "Argument is not accessible as a Python buffer");
+        }
+        else {
+          std::string s((char *) buffer.buf, buffer.len);
+          Py_BEGIN_ALLOW_THREADS;
+          serializeString(s, stream);
+          Py_END_ALLOW_THREADS;
+        }
+#else
         Py_ssize_t size;
         char *ptr;
         if (PyString_AsStringAndSize(o, &ptr, &size) == -1) {
@@ -175,10 +196,15 @@ public:
         Py_BEGIN_ALLOW_THREADS;
         serializeString(s, stream);
         Py_END_ALLOW_THREADS;
+#endif
         return o; // everything is ok.
       }
       case 'i': {
+#if IS_PY3K
+        long v = PyLong_AsLong(o);        
+#else
         long v = PyInt_AsLong(o);
+#endif
         if (v == -1 && PyErr_Occurred()) {
           return NULL;
         }
@@ -237,14 +263,14 @@ public:
         Py_BEGIN_ALLOW_THREADS;
         deserializeString(_buffer, stream);
         Py_END_ALLOW_THREADS;
-        return PyString_FromStringAndSize(_buffer.c_str(), _buffer.size());
+        return _PyBuf_FromStringAndSize(_buffer.c_str(), _buffer.size());
       }
       case 'i': {
         long v;
         Py_BEGIN_ALLOW_THREADS;
         v = deserializeInt(stream);
         Py_END_ALLOW_THREADS;
-        return PyInt_FromLong(v);
+        return PyLong_FromLong(v);
       }
       case 'L': {
         long long v;
@@ -307,13 +333,23 @@ static PyObject *
 codec_decode_command(PyObject *self, PyObject *args) {
 
   PyObject *po = PyTuple_GetItem(args, 0);
-  if (!PyFile_Check(po)) {
-    PyErr_SetString(ProtocolCodecError, "First argument should be  a file object.");
+
+  hu::FileInStream stream;  
+
+#if IS_PY3K
+  int fd = PyObject_AsFileDescriptor(po);
+  if (fd < 0) {
+    PyErr_SetString(ProtocolCodecError, "First argument should be a file.");
     return NULL;
   }
-
-  hu::FileInStream stream;
-  stream.open(PyFile_AsFile(po));
+  stream.open(fdopen(fd, "r"));  
+#else
+  if (!PyFile_Check(po)) {
+    PyErr_SetString(ProtocolCodecError, "First argument should be a file.");
+    return NULL;
+  }
+  stream.open(PyFile_AsFILE(po));
+#endif
 
   PyObject* res; 
   if (PyTuple_Size(args) == 1) {
@@ -342,19 +378,32 @@ codec_decode_command(PyObject *self, PyObject *args) {
 static PyObject *
 codec_encode_command(PyObject *self, PyObject *args) {
   PyObject *po = PyTuple_GET_ITEM(args, 0);
-  if (!PyFile_Check(po)) {
-    PyErr_SetString(ProtocolCodecError, "First argument should be  a file object.");
+
+  hu::FileOutStream stream;
+  
+#if IS_PY3K
+  int fd = PyObject_AsFileDescriptor(po);
+  if (fd < 0) {
+    PyErr_SetString(ProtocolCodecError, "First argument should be a file.");
     return NULL;
   }
+  stream.open(fdopen(fd, "w"));  
+#else
+  if (!PyFile_Check(po)) {
+    PyErr_SetString(ProtocolCodecError, "First argument should be a file.");
+    return NULL;
+  }
+  stream.open(PyFile_AsFILE(po));
+#endif
+  
   PyObject *pcmd = PyTuple_GET_ITEM(args, 1);
   if (!PyString_Check(pcmd)) {
     PyErr_SetString(ProtocolCodecError, "Second argument should be a cmd name.");
     return NULL;
   }
-  hu::FileOutStream stream;
-  stream.open(PyFile_AsFile(po));
   std::string cmd(PyString_AsString(pcmd));
-  PyObject* res = codec.encode_cmd_to_stream(cmd, PyTuple_GET_ITEM(args, 2), stream);  
+  PyObject* res = codec.encode_cmd_to_stream(cmd, PyTuple_GET_ITEM(args, 2),
+                                             stream);  
   return res;
 }
 
@@ -412,6 +461,9 @@ util_fdopen(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "isi", &fd, &mode, &bufsize))
     return NULL;
   // FIXME: NO ARGS CHECKING!
+#if IS_PY3K
+  return PyFile_FromFd(fd, "<fdopen>", mode, bufsize, NULL, NULL, NULL, true);
+#else
   FILE *fp = fdopen(fd, mode);
   char *buffer = new char[bufsize];
   int setbuf = setvbuf(fp, buffer, _IOFBF, bufsize);
@@ -422,9 +474,10 @@ util_fdopen(PyObject *self, PyObject *args) {
     return NULL;
   }
   return PyFile_FromFile(fp, "<fdopen>", mode, fclose);
+#endif
 }
 
-static PyMethodDef ProtocolCodecMethods[] = {
+static PyMethodDef module_methods[] = {
   {"add_rule", codec_add_rule, METH_VARARGS,
    "Add protocol command decoding rule"},
   {"decode_command", codec_decode_command, METH_VARARGS,
@@ -444,14 +497,62 @@ static PyMethodDef ProtocolCodecMethods[] = {
   {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+
+#ifndef PyMODINIT_FUNC	/* declarations for DLL import/export */
+#define PyMODINIT_FUNC void
+#endif
+
+#if IS_PY3K
+static struct PyModuleDef module_def = {
+  PyModuleDef_HEAD_INIT,
+  module__name__, /* m_name */
+  module__doc__,  /* m_doc */
+  -1,                  /* m_size */
+  module_methods,    /* m_methods */
+  NULL,                /* m_reload */
+  NULL,                /* m_traverse */
+  NULL,                /* m_clear */
+  NULL,                /* m_free */
+};
+#endif
+
+
+#if IS_PY3K
+
+PyMODINIT_FUNC
+PyInit_sercore(void)
+{
+  PyObject* m;
+  m = PyModule_Create(&module_def);
+  if (m == NULL)
+    return NULL;
+
+  ProtocolCodecError = PyErr_NewException("ProtocolCodec.error", NULL, NULL);
+  Py_INCREF(ProtocolCodecError);
+  PyModule_AddObject(m, "error", ProtocolCodecError);
+  return m;
+}
+
+#else
+
 PyMODINIT_FUNC
 initsercore(void)
 {
-  PyObject *m;
-  m = Py_InitModule("sercore", ProtocolCodecMethods);
-  if (m == NULL) 
+  PyObject* m;
+
+  if (PyType_Ready(&FsType) < 0)
     return;
+  if (PyType_Ready(&FileType) < 0)
+    return;
+  m = Py_InitModule3(module__name__, module_methods,
+                     module__doc__);
+  if (m == NULL)
+    return;
+
   ProtocolCodecError = PyErr_NewException("ProtocolCodec.error", NULL, NULL);
   Py_INCREF(ProtocolCodecError);
   PyModule_AddObject(m, "error", ProtocolCodecError);
 }
+#endif
+
+

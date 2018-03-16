@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -26,6 +26,7 @@ import re
 import time
 
 from . import common, fs as hdfs_fs
+from pydoop.utils.py3compat import clong
 
 
 curdir, pardir, sep = '.', '..', '/'  # pylint: disable=C0103
@@ -48,7 +49,7 @@ class StatResult(object):
     def __init__(self, path_info):
         self.st_mode = path_info['permissions']
         self.st_ino = 0
-        self.st_dev = 0L
+        self.st_dev = clong(0)
         self.st_nlink = 1
         self.st_uid = path_info['owner']
         self.st_gid = path_info['group']

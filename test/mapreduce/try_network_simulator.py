@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -36,15 +36,19 @@ DATA = """1	Chapter One  Down the Rabbit Hole: Alice is feeling bored while
 FOOBAR_PY = """#!/usr/bin/env python
 
 import sys
-sys.path.insert(0, '../../')
+#sys.path.insert(0, '../../')
 from pydoop.mapreduce.api import Mapper, Reducer, Partitioner, Factory
 from pydoop.mapreduce.pipes import run_task
+from pydoop.utils.py3compat import iteritems, cmap
+
 import itertools as it
 class TMapper(Mapper):
     def __init__(self, ctx):
         self.ctx = ctx
     def map(self, ctx):
-        words = ''.join(c for c in ctx.value
+        v = ctx.value
+        v = v if not isinstance(v, bytes) else v.decode('utf-8')
+        words = ''.join(c for c in v
                         if c.isalnum() or c == ' ').lower().split()
         for w in words:
             ctx.emit(w, '1')
@@ -53,7 +57,7 @@ class TReducer(Reducer):
     def __init__(self, ctx):
         self.ctx = ctx
     def reduce(self, ctx):
-        s = sum(it.imap(int, ctx.values))
+        s = sum(cmap(int, ctx.values))
         ctx.emit(ctx.key, str(s))
 
 class TFactory(Factory):
@@ -92,8 +96,8 @@ def main():
     program_name = './foobar'
     dump_to_disk('data.in', DATA)
     dump_to_disk(program_name, FOOBAR_PY)
-    os.chmod(program_name, 0777)
-    hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.INFO)
+    os.chmod(program_name, 0o777)
+    hsn = HadoopSimulatorNetwork(program=program_name, loglevel=logging.DEBUG)
     hsn.run(open('data.in'), open('data.out', 'w'), {'a.useless.key': 'we'})
 
 

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -31,7 +31,7 @@ def get_res(output_dir):
     data = []
     for x in fs.list_directory(output_dir):
         if os.path.split(x['path'])[-1].startswith('part-'):
-            with fs.open_file(x['path']) as f:
+            with fs.open_file(x['path'], 'rt') as f:
                 data.append(f.read())
     all_data = ''.join(data)
     return pts.parse_mr_output(all_data, vtype=int)
@@ -55,6 +55,7 @@ def main(argv):
     measured_res = get_res(output_dir)
     expected_res = lwc.expected_output
     logger.info(check(measured_res, expected_res))
+
 
 if __name__ == "__main__":
     main(sys.argv)

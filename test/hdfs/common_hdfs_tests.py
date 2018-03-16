@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -22,19 +22,13 @@ import unittest
 import uuid
 import shutil
 import operator
-from itertools import izip
+import array
 from ctypes import create_string_buffer
 
 import pydoop.hdfs as hdfs
 import pydoop
 import pydoop.test_utils as utils
-
-
-def _get_value(buf):
-    try:
-        return buf.value  # e.g., ctypes string buffer
-    except AttributeError:
-        return create_string_buffer(str(buf)).value  # e.g., bytearray
+from pydoop.utils.py3compat import _is_py3
 
 
 class TestCommon(unittest.TestCase):
@@ -64,7 +58,7 @@ class TestCommon(unittest.TestCase):
 
     # also an implicit test for the write method
     def _make_random_file(self, where=None, content=None, **kwargs):
-        kwargs["flags"] = "w"
+        kwargs["mode"] = "w"
         content = content or utils.make_random_data(printable=True)
         path = self._make_random_path(where=where)
         with self.fs.open_file(path, **kwargs) as fo:
@@ -86,15 +80,12 @@ class TestCommon(unittest.TestCase):
     assertRaisesExternal = failUnlessRaisesExternal
 
     def open_close(self):
-        for flags in "w", os.O_WRONLY:
-            path = self._make_random_path()
-            self.fs.open_file(path, flags).close()
-            for flags in "r", os.O_RDONLY:
-                f = self.fs.open_file(path, flags)
-                self.assertFalse(f.closed)
-                f.close()
-                self.assertTrue(f.closed)
-                self.assertRaises(ValueError, f.read)
+        path = self._make_random_path()
+        self.fs.open_file(path, "w").close()
+        with self.fs.open_file(path, "r") as f:
+            self.assertFalse(f.closed)
+        self.assertTrue(f.closed)
+        self.assertRaises(ValueError, f.read)
         path = self._make_random_path()
         self.assertRaisesExternal(IOError, self.fs.open_file, path, "r")
         self.assertRaises(ValueError, self.fs.open_file, "")
@@ -117,8 +108,8 @@ class TestCommon(unittest.TestCase):
         local_fs = hdfs.hdfs('', 0)
         local_wd = utils.make_wd(local_fs)
         from_path = os.path.join(local_wd, uuid.uuid4().hex)
-        content = uuid.uuid4().hex
-        with open(from_path, "w") as f:
+        content = uuid.uuid4().bytes
+        with open(from_path, "wb") as f:
             f.write(content)
         to_path = self._make_random_file()
         local_fs.copy(from_path, self.fs, to_path)
@@ -129,7 +120,7 @@ class TestCommon(unittest.TestCase):
         shutil.rmtree(local_wd)
 
     def move(self):
-        content = uuid.uuid4().hex
+        content = utils.make_random_data(printable=True)
         from_path = self._make_random_file(content=content)
         to_path = self._make_random_path()
         self.fs.move(from_path, self.fs, to_path)
@@ -139,7 +130,7 @@ class TestCommon(unittest.TestCase):
         self.assertRaises(ValueError, self.fs.move, "", self.fs, "")
 
     def chmod(self):
-        new_perm = 0777
+        new_perm = 0o777
         path = self._make_random_dir()
         old_perm = self.fs.get_path_info(path)["permissions"]
         assert old_perm != new_perm
@@ -156,42 +147,48 @@ class TestCommon(unittest.TestCase):
 
     def chmod_w_string(self):
         path = self._make_random_dir()
-        self.fs.chmod(path, 0500)
+        self.fs.chmod(path, 0o500)
         # each user
-        self.__set_and_check_perm(path, "u+w", 0700)
-        self.__set_and_check_perm(path, "g+w", 0720)
-        self.__set_and_check_perm(path, "o+w", 0722)
+        self.__set_and_check_perm(path, "u+w", 0o700)
+        self.__set_and_check_perm(path, "g+w", 0o720)
+        self.__set_and_check_perm(path, "o+w", 0o722)
         # each permission mode
-        self.__set_and_check_perm(path, "o+r", 0726)
-        self.__set_and_check_perm(path, "o+x", 0727)
+        self.__set_and_check_perm(path, "o+r", 0o726)
+        self.__set_and_check_perm(path, "o+x", 0o727)
         # subtract operation, and multiple permission modes
-        self.__set_and_check_perm(path, "o-rwx", 0720)
+        self.__set_and_check_perm(path, "o-rwx", 0o720)
         # multiple users
-        self.__set_and_check_perm(path, "ugo-rwx", 0000)
+        self.__set_and_check_perm(path, "ugo-rwx", 0o000)
         # 'a' user
-        self.__set_and_check_perm(path, "a+r", 0444)
+        self.__set_and_check_perm(path, "a+r", 0o444)
         # blank user -- should respect the user's umask
-        umask = os.umask(0007)
+        umask = os.umask(0o007)
         self.fs.chmod(path, "+w")
         perm = self.fs.get_path_info(path)["permissions"]
         os.umask(umask)
-        self.assertEqual(0664, perm)
+        self.assertEqual(0o664, perm)
         # assignment op
-        self.__set_and_check_perm(path, "a=rwx", 0777)
+        self.__set_and_check_perm(path, "a=rwx", 0o777)
 
     def file_attrs(self):
         path = self._make_random_path()
-        with self.fs.open_file(path, os.O_WRONLY) as f:
-            self.assertTrue(f.name.endswith(path))
-            self.assertEqual(f.size, 0)
-            self.assertEqual(f.mode, "w")
-            content = utils.make_random_data()
-            f.write(content)
-        self.assertEqual(f.size, len(content))
-        with self.fs.open_file(path) as f:
-            self.assertTrue(f.name.endswith(path))
+        content = utils.make_random_data()
+        for mode in "wb", "wt":
+            with self.fs.open_file(path, mode) as f:
+                self.assertTrue(f.name.endswith(path))
+                self.assertTrue(f.fs is self.fs)
+                self.assertEqual(f.size, 0)
+                self.assertEqual(f.mode, mode)
+                self.assertTrue(f.writable())
+                f.write(content if mode == "wb" else content.decode("utf-8"))
             self.assertEqual(f.size, len(content))
-            self.assertEqual(f.mode, "r")
+        for mode in "rb", "rt":
+            with self.fs.open_file(path, mode) as f:
+                self.assertTrue(f.name.endswith(path))
+                self.assertTrue(f.fs is self.fs)
+                self.assertEqual(f.size, len(content))
+                self.assertEqual(f.mode, mode)
+                self.assertFalse(f.writable())
 
     def flush(self):
         path = self._make_random_path()
@@ -230,7 +227,10 @@ class TestCommon(unittest.TestCase):
         with self.fs.open_file(path) as f:
             self.assertEqual(f.read(3), content[:3])
             self.assertEqual(f.read(3), content[3:6])
-            self.assertRaisesExternal(IOError, f.write, content)
+            if not _is_py3 and not self.fs.host:
+                self.assertRaises(ValueError, f.write, content)
+            else:
+                self.assertRaises(IOError, f.write, content)
 
     def __read_chunk(self, chunk_factory):
         content = utils.make_random_data()
@@ -241,10 +241,13 @@ class TestCommon(unittest.TestCase):
                 chunk = chunk_factory(chunk_size)
                 bytes_read = f.read_chunk(chunk)
                 self.assertEqual(bytes_read, min(size, chunk_size))
-                self.assertEqual(_get_value(chunk), content[:bytes_read])
+                self.assertEqual(bytes(bytearray(chunk))[:bytes_read],
+                                 content[:bytes_read])
 
     def read_chunk(self):
-        for factory in bytearray, create_string_buffer:
+        def array_by_len(length):
+            return array.array("b", b"\x00" * length)
+        for factory in bytearray, create_string_buffer, array_by_len:
             self.__read_chunk(factory)
 
     def write(self):
@@ -255,34 +258,14 @@ class TestCommon(unittest.TestCase):
             self.assertEqual(bytes_written, len(content))
         with self.fs.open_file(path) as fo:
             self.assertEqual(content, fo.read())
-
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(bytearray(content))
             self.assertEqual(bytes_written, len(content))
         with self.fs.open_file(path) as fo:
             self.assertEqual(content, fo.read())
-        chunk = create_string_buffer(len(content))
-        chunk[:] = content
+        chunk = create_string_buffer(content, len(content))
         with self.fs.open_file(path, "w") as fo:
             bytes_written = fo.write(chunk)
-            self.assertEqual(bytes_written, len(content))
-        with self.fs.open_file(path, "w") as fo:
-            bytes_written = fo.write(u'some unicode data')
-
-        # try to write a unicode object
-        with self.fs.open_file(path, "w") as fo:
-            u = u'a string' + utils.UNI_CHR
-            data = u.encode('utf-8')
-            bytes_written = fo.write(u)
-            self.assertEqual(bytes_written, len(data))
-
-    def write_chunk(self):
-        content = utils.make_random_data()
-        chunk = create_string_buffer(len(content))
-        chunk[:] = content
-        path = self._make_random_path()
-        with self.fs.open_file(path, "w") as fo:
-            bytes_written = fo.write_chunk(chunk)
             self.assertEqual(bytes_written, len(content))
 
     def append(self):
@@ -318,7 +301,7 @@ class TestCommon(unittest.TestCase):
             )
             self.assertEqual(f.tell(), 0)
             self.assertEqual(content[1:], f.pread(1, -1))
-            self.assertRaises(ValueError, f.pread, -1, 10)
+            self.assertRaises(IOError, f.pread, -1, 10)
             # read starting past end of file
             self.assertRaises(IOError, f.pread, len(content) + 1, 10)
             # read past end of file
@@ -364,14 +347,13 @@ class TestCommon(unittest.TestCase):
 
     def list_directory(self):
         new_d = self._make_random_dir()
-
         self.assertEqual(self.fs.list_directory(new_d), [])
-        paths = [self._make_random_file(where=new_d) for _ in xrange(3)]
+        paths = [self._make_random_file(where=new_d) for _ in range(3)]
         paths.sort(key=os.path.basename)
         infos = self.fs.list_directory(new_d)
         infos.sort(key=lambda p: os.path.basename(p["name"]))
         self.assertEqual(len(infos), len(paths))
-        for i, p in izip(infos, paths):
+        for i, p in zip(infos, paths):
             self.__check_path_info(i, kind="file")
             self.assertTrue(i['name'].endswith(p))
         self.assertRaises(
@@ -381,43 +363,51 @@ class TestCommon(unittest.TestCase):
 
     def __check_readline(self, get_lines):
         samples = [
-            "foo\nbar\n\ntar",
-            "\nfoo\nbar\n\ntar",
-            "foo\nbar\n\ntar\n",
-            "\n\n\n", "\n", "",
-            "foobartar",
+            b"foo\nbar\n\ntar",
+            b"\nfoo\nbar\n\ntar",
+            b"foo\nbar\n\ntar\n",
+            b"\n\n\n", b"\n", b"",
+            b"foobartar",
         ]
         path = self._make_random_path()
         for text in samples:
             expected_lines = text.splitlines(True)
-            for chunk_size in 2, max(1, len(text)), 2 + len(text):
-                with self.fs.open_file(path, "w") as f:
-                    f.write(text)
-                with self.fs.open_file(
-                        path, readline_chunk_size=chunk_size) as f:
-                    lines = get_lines(f)
-                self.assertEqual(lines, expected_lines)
+            with self.fs.open_file(path, "w") as f:
+                f.write(text)
+            with self.fs.open_file(path) as f:
+                lines = get_lines(f)
+            self.assertEqual(lines, expected_lines)
 
     def readline(self):
         def get_lines(f):
             lines = []
             while 1:
-                l = f.readline()
-                if l == "":
+                line = f.readline()
+                if not line:
                     break
-                lines.append(l)
+                lines.append(line)
             return lines
         self.__check_readline(get_lines)
 
     def readline_big(self):
-        for i in xrange(10, 23):
-            x = '*' * (2**i) + "\n"
+        for i in range(10, 23):
+            x = b"*" * (2**i) + b"\n"
             path = self._make_random_file(content=x)
             with self.fs.open_file(path) as f:
-                l = f.readline()
+                line = f.readline()
             self.assertEqual(
-                l, x, "len(a) = %d, len(x) = %d" % (len(l), len(x))
+                line, x, "len(a) = %d, len(x) = %d" % (len(line), len(x))
             )
+
+    def readline_and_read(self):
+        content = b"first line\nsecond line\n"
+        path = self._make_random_file(content=content)
+        chunks = []
+        with self.fs.open_file(path) as f:
+            chunks.append(f.read(1))
+            chunks.append(f.readline())
+            chunks.append(f.read(4))
+        self.assertEqual(chunks, [b'f', b'irst line\n', b'seco'])
 
     def iter_lines(self):
 
@@ -425,7 +415,7 @@ class TestCommon(unittest.TestCase):
             lines = []
             while 1:
                 try:
-                    lines.append(f.next())
+                    lines.append(next(f))
                 except StopIteration:
                     break
             return lines
@@ -437,28 +427,27 @@ class TestCommon(unittest.TestCase):
             self.__check_readline(fun)
 
     def seek(self):
-        lines = ["1\n", "2\n", "3\n"]
-        text = "".join(lines)
+        lines = [b"1\n", b"2\n", b"3\n"]
+        data = b"".join(lines)
         path = self._make_random_path()
-        for chunk_size in range(1, 2 + len(text)):
-            with self.fs.open_file(path, "w") as f:
-                f.write(text)
-            with self.fs.open_file(path, readline_chunk_size=chunk_size) as f:
-                for i, l in enumerate(lines):
-                    f.seek(sum(map(len, lines[:i])))
-                    self.assertEqual(f.readline(), l)
-                    f.seek(0)
-                    self.assertEqual(f.readline(), lines[0])
-                    f.seek(sum(map(len, lines[:i])))
-                    self.assertEqual(f.readline(), l)
-            with self.fs.open_file(path) as f:
-                f.seek(1)
-                f.seek(1, os.SEEK_CUR)
-                self.assertEqual(f.tell(), 2)
-                f.seek(-1, os.SEEK_END)
-                self.assertEqual(f.tell(), len(text) - 1)
-                # seek past end of file
-                self.assertRaises(IOError, f.seek, len(text) + 10)
+        with self.fs.open_file(path, "w") as f:
+            f.write(data)
+        with self.fs.open_file(path) as f:
+            for i, l in enumerate(lines):
+                f.seek(sum(map(len, lines[:i])))
+                self.assertEqual(f.readline(), l)
+                f.seek(0)
+                self.assertEqual(f.readline(), lines[0])
+                f.seek(sum(map(len, lines[:i])))
+                self.assertEqual(f.readline(), l)
+        with self.fs.open_file(path) as f:
+            f.seek(1)
+            f.seek(1, os.SEEK_CUR)
+            self.assertEqual(f.tell(), 2)
+            f.seek(-1, os.SEEK_END)
+            self.assertEqual(f.tell(), len(data) - 1)
+            # seek past end of file
+            self.assertRaises(IOError, f.seek, len(data) + 10)
 
     def block_boundary(self):
         hd_info = pydoop.hadoop_version_info()
@@ -477,7 +466,7 @@ class TestCommon(unittest.TestCase):
             i = 0
             bufsize = 12 * 1024 * 1024
             while i < total_data_size:
-                data = 'X' * min(bufsize, total_data_size - i)
+                data = b'X' * min(bufsize, total_data_size - i)
                 f.write(data)
                 i += bufsize
 
@@ -500,15 +489,15 @@ class TestCommon(unittest.TestCase):
             )
         top = new_d
         cache = [top]
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=top))
         parent = self._make_random_dir(where=top)
         cache.append(parent)
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=parent))
         child = self._make_random_dir(where=parent)
         cache.append(child)
-        for _ in xrange(2):
+        for _ in range(2):
             cache.append(self._make_random_file(where=child))
         infos = list(self.fs.walk(top))
         expected_infos = [self.fs.get_path_info(p) for p in cache]
@@ -517,9 +506,12 @@ class TestCommon(unittest.TestCase):
             l.sort(key=operator.itemgetter("name"))
         self.assertEqual(infos, expected_infos)
         nonexistent_walk = self.fs.walk(self._make_random_path())
-        self.assertRaises(IOError, nonexistent_walk.next)
+        if _is_py3:
+            self.assertRaises(OSError, lambda: next(nonexistent_walk))
+        else:
+            self.assertRaises(IOError, lambda: next(nonexistent_walk))
         for top in '', None:
-            self.assertRaises(ValueError, self.fs.walk(top).next)
+            self.assertRaises(ValueError, lambda: next(self.fs.walk(top)))
 
     def exists(self):
         self.assertFalse(self.fs.exists('some_file'))
@@ -530,12 +522,33 @@ class TestCommon(unittest.TestCase):
         self.assertTrue(self.fs.exists(fname))
         self.assertRaises(ValueError, self.fs.exists, "")
 
+    def text_io(self):
+        t_path, b_path = self._make_random_path(), self._make_random_path()
+        text = u'a string' + utils.UNI_CHR
+        data = text.encode("utf-8")
+        with self.fs.open_file(t_path, "wt") as fo:
+            chars_written = fo.write(text)
+        with self.fs.open_file(b_path, "w") as fo:
+            bytes_written = fo.write(data)
+        self.assertEqual(chars_written, len(text))
+        self.assertEqual(bytes_written, len(data))
+        with self.fs.open_file(t_path, "rt") as f:
+            self.assertEqual(f.read(), text)
+            f.seek(2)
+            self.assertEqual(f.read(), text[2:])
+            self.assertEqual(f.pread(3, 4), text[3:7])
+            with self.assertRaises(AttributeError):
+                f.read_chunk("")
+                f.pread_chunk(1, "")
+        with self.fs.open_file(b_path, "r") as f:
+            self.assertEqual(f.read(), data)
+
     def __check_path_info(self, info, **expected_values):
         keys = ('kind', 'group', 'name', 'last_mod', 'replication', 'owner',
                 'permissions', 'block_size', 'last_access', 'size')
         for k in keys:
             self.assertTrue(k in info)
-        for k, exp_v in expected_values.iteritems():
+        for k, exp_v in list(expected_values.items()):
             v = info[k]
             self.assertEqual(v, exp_v)
 
@@ -553,7 +566,6 @@ def common_tests():
         'read',
         'read_chunk',
         'write',
-        'write_chunk',
         'append',
         'tell',
         'pread',
@@ -566,9 +578,11 @@ def common_tests():
         'list_directory',
         'readline',
         'readline_big',
+        'readline_and_read',
         'iter_lines',
         'seek',
         'block_boundary',
         'walk',
         'exists',
+        'text_io',
     ]

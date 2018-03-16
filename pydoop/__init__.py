@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -29,15 +29,14 @@ MapReduce applications and interact with HDFS in pure Python.
 
 import os
 import errno
-import ConfigParser
 from importlib import import_module
 import pydoop.hadoop_utils as hu
+from pydoop.utils.py3compat import configparser, parser_read
 
 try:
-    from pydoop.config import DEFAULT_HADOOP_HOME
     from pydoop.version import version as __version__
 except ImportError:  # should only happen at compile time
-    DEFAULT_HADOOP_HOME = __version__ = None
+    __version__ = None
 _PATH_FINDER = hu.PathFinder()
 _HADOOP_INFO = _PATH_FINDER.find()  # fill the cache ASAP
 
@@ -65,8 +64,8 @@ def reset():
     _PATH_FINDER.reset()
 
 
-def hadoop_home(fallback=DEFAULT_HADOOP_HOME):
-    return _PATH_FINDER.hadoop_home(fallback)
+def hadoop_home():
+    return _PATH_FINDER.hadoop_home()
 
 
 def hadoop_exec(hadoop_home=None):
@@ -162,6 +161,15 @@ class AddSectionWrapper(object):
         self.f = f
         self.sechead = '[dummy]' + os.linesep
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = self.readline()
+        if not line:
+            raise StopIteration
+        return line
+
     def readline(self):
         if self.sechead:
             try:
@@ -173,11 +181,11 @@ class AddSectionWrapper(object):
 
 
 def read_properties(fname):
-    parser = ConfigParser.SafeConfigParser()
+    parser = configparser.SafeConfigParser()
     parser.optionxform = str  # preserve key case
     try:
         with open(fname) as f:
-            parser.readfp(AddSectionWrapper(f))
+            parser_read(parser, AddSectionWrapper(f))
     except IOError as e:
         if e.errno != errno.ENOENT:
             raise
@@ -189,6 +197,3 @@ class LocalModeNotSupported(RuntimeError):
     def __init__(self):
         msg = 'ERROR: Hadoop is configured to run in local mode'
         super(LocalModeNotSupported, self).__init__(msg)
-
-
-PROPERTIES = read_properties(PROP_FN)

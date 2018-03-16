@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2018 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../../config.sh"
+
+PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
+[ -f ${PARQUET_JAR} ] || build_parquet_jar "${this_dir}"/../java
+MODULE=kmer_count
+MPY="${MODULE}".py
+JOBNAME="${MODULE}"-job
+LOGLEVEL="DEBUG"
+INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
+PROJECTION=$(cat "${this_dir}"/../schemas/alignment_record_proj.avsc)
+LOCAL_INPUT=$(mktemp -d)
+INPUT=$(basename ${LOCAL_INPUT})
+OUTPUT=kmer_count
+
+for i in 1 2; do
+    cp mini_aligned_seqs.gz.parquet ${LOCAL_INPUT}/seqs_${i}.gz.parquet
+done
+
+${HADOOP} fs -mkdir -p /user/"${USER}"
+${HADOOP} fs -rm -r "${INPUT}" || :
+${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
+${PYDOOP} submit \
+     -D parquet.avro.projection="${PROJECTION}" \
+    --upload-file-to-cache "${MPY}" \
+    --num-reducers 1 \
+    --input-format "${INPUT_FORMAT}" \
+    --avro-input v \
+    --libjars "${PARQUET_JAR}" \
+    --log-level "${LOGLEVEL}" \
+    --job-name "${JOBNAME}" \
+    "${MODULE}" "${INPUT}" "${OUTPUT}"
+
+rm -rf "${OUTPUT}"
+${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
+${PYTHON} show_kmer_count.py "${OUTPUT}"/part-r-00000

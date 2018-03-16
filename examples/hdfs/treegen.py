@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -34,8 +34,8 @@ BS_RANGE = [_ * MB for _ in range(50, 101, 10)]
 
 def treegen(fs, root, depth, span):
     if isdir(fs, root) and depth > 0:
-        for i in xrange(span):
-            path = "%s/%d_%d" % (root, depth, i)
+        for i in range(span):
+            path = u"%s/%d_%d" % (root, depth, i)
             kind = 'file' if i else 'directory'
             if kind == 'file':
                 kwargs = {}
@@ -47,7 +47,7 @@ def treegen(fs, root, depth, span):
                 sys.stderr.write(
                     "%s %s %d\n" % (kind[0].upper(), path, (bs / MB))
                 )
-                with fs.open_file(path, "w", **kwargs) as f:
+                with fs.open_file(path, "wt", **kwargs) as f:
                     f.write(path)
             else:
                 sys.stderr.write("%s %s 0\n" % (kind[0].upper(), path))
@@ -61,7 +61,7 @@ def main(argv):
         depth = int(argv[1])
         span = int(argv[2])
     except IndexError:
-        print "Usage: python %s DEPTH SPAN" % argv[0]
+        print("Usage: python %s DEPTH SPAN" % argv[0])
         sys.exit(2)
 
     fs = hdfs.hdfs()

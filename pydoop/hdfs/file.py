@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -22,6 +22,8 @@ pydoop.hdfs.file -- HDFS File Objects
 """
 
 import os
+import io
+import codecs
 
 from pydoop.hdfs import common
 
@@ -31,20 +33,7 @@ def _complain_ifclosed(closed):
         raise ValueError("I/O operation on closed HDFS file object")
 
 
-def _seek_with_boundary_checks(f, position, whence):
-    if whence == os.SEEK_CUR:
-        position += f.tell()
-    elif whence == os.SEEK_END:
-        position += f.size
-        position = max(0, position)
-    if position > f.size:
-        raise IOError('cannot seek past end of file')
-    if f.mode != 'r':
-        raise IOError('can seek only in read-only')
-    return position
-
-
-class hdfs_file(object):
+class FileIO(object):
     """
     Instances of this class represent HDFS file objects.
 
@@ -52,26 +41,37 @@ class hdfs_file(object):
     open an HDFS file, use :meth:`~.fs.hdfs.open_file`, or the
     top-level ``open`` function in the hdfs package.
     """
-    ENDL = os.linesep
+    ENCODING = "utf-8"
+    ERRORS = "strict"
 
-    def __init__(self, raw_hdfs_file, fs, name, flags,
-                 chunk_size=common.BUFSIZE):
-        if not chunk_size > 0:
-            raise ValueError("chunk size must be positive")
-        self.f = raw_hdfs_file
+    def __init__(self, raw_hdfs_file, fs, mode, encoding=None, errors=None):
+        self.mode = mode
+        self.base_mode, is_text = common.parse_mode(self.mode)
+        self.buff_size = raw_hdfs_file.buff_size
+        if self.buff_size <= 0:
+            self.buff_size = common.BUFSIZE
+        if is_text:
+            self.__encoding = encoding or self.__class__.ENCODING
+            self.__errors = errors or self.__class__.ERRORS
+            try:
+                codecs.lookup(self.__encoding)
+                codecs.lookup_error(self.__errors)
+            except LookupError as e:
+                raise ValueError(e)
+        else:
+            if encoding:
+                raise ValueError(
+                    "binary mode doesn't take an encoding argument")
+            if errors:
+                raise ValueError("binary mode doesn't take an errors argument")
+            self.__encoding = self.__errors = None
+        cls = io.BufferedReader if self.base_mode == "r" else io.BufferedWriter
+        self.f = cls(raw_hdfs_file, buffer_size=self.buff_size)
         self.__fs = fs
-        self.__name = fs.get_path_info(name)["name"]
-        self.__size = fs.get_path_info(name)["size"]
-        self.__mode = "r" if flags == os.O_RDONLY else "w"
-        self.chunk_size = chunk_size
+        info = fs.get_path_info(self.f.raw.name)
+        self.__name = info["name"]
+        self.__size = info["size"]
         self.closed = False
-        self.__reset()
-
-    def __reset(self):
-        self.buffer_list = []
-        self.chunk = ""
-        self.EOF = False
-        self.p = 0
 
     def __enter__(self):
         return self
@@ -101,57 +101,39 @@ class hdfs_file(object):
         """
         return self.__size
 
-    @property
-    def mode(self):
-        """
-        The I/O mode for the file.
-        """
-        return self.__mode
-
-    def __read_chunk(self):
-        self.chunk = self.f.read(self.chunk_size)
-        self.p = 0
-        if not self.chunk:
-            self.EOF = True
-
-    def __read_chunks_until_nl(self):
-        if self.EOF:
-            eol = self.chunk.find(self.ENDL, self.p)
-            return eol if eol > -1 else len(self.chunk)
-        if not self.chunk:
-            self.__read_chunk()
-        eol = self.chunk.find(self.ENDL, self.p)
-        while eol < 0 and not self.EOF:
-            if self.p < len(self.chunk):
-                self.buffer_list.append(self.chunk[self.p:])
-            self.__read_chunk()
-            eol = self.chunk.find(self.ENDL, self.p)
-        return eol if eol > -1 else len(self.chunk)
+    def writable(self):
+        return self.f.raw.writable()
 
     def readline(self):
         """
         Read and return a line of text.
 
         :rtype: str
-
         :return: the next line of text in the file, including the
           newline character
         """
         _complain_ifclosed(self.closed)
-        eol = self.__read_chunks_until_nl()
-        line = "".join(self.buffer_list) + self.chunk[self.p: eol + 1]
-        self.buffer_list = []
-        self.p = eol + 1
-        return line
+        line = self.f.readline()
+        if self.__encoding:
+            return line.decode(self.__encoding, self.__errors)
+        else:
+            return line
 
     def next(self):
         """
         Return the next input line, or raise :class:`StopIteration`
         when EOF is hit.
         """
+        return self.__next__()
+
+    def __next__(self):
+        """
+        Return the next input line, or raise :class:`StopIteration`
+        when EOF is hit.
+        """
         _complain_ifclosed(self.closed)
         line = self.readline()
-        if line == "":
+        if not line:
             raise StopIteration
         return line
 
@@ -167,7 +149,7 @@ class hdfs_file(object):
         :return: available bytes
         """
         _complain_ifclosed(self.closed)
-        return self.f.available()
+        return self.f.raw.available()
 
     def close(self):
         """
@@ -176,7 +158,7 @@ class hdfs_file(object):
         if not self.closed:
             self.closed = True
             retval = self.f.close()
-            if self.mode == "w":
+            if self.base_mode != "r":
                 self.__size = self.fs.get_path_info(self.name)["size"]
             return retval
 
@@ -193,32 +175,15 @@ class hdfs_file(object):
         :return: the chunk of data read from the file
         """
         _complain_ifclosed(self.closed)
-        if position < 0:
-            raise ValueError("position must be >= 0")
         if position > self.size:
             raise IOError("position cannot be past EOF")
         if length < 0:
             length = self.size - position
-        return self.f.pread(position, length)
-
-    def pread_chunk(self, position, chunk):
-        r"""
-        Works like :meth:`pread`\ , but data is stored in the writable
-        buffer ``chunk`` rather than returned. Reads at most a number of
-        bytes equal to the size of ``chunk``\ .
-
-        :type position: int
-        :param position: position from which to read
-        :type chunk: writable string buffer
-        :param chunk: a c-like string buffer, such as the one returned by the
-          ``create_string_buffer`` function in the :mod:`ctypes` module
-        :rtype: int
-        :return: the number of bytes read
-        """
-        _complain_ifclosed(self.closed)
-        if position > self.size:
-            raise IOError("position cannot be past EOF")
-        return self.f.pread_chunk(position, chunk)
+        data = self.f.raw.pread(position, length)
+        if self.__encoding:
+            return data.decode(self.__encoding, self.__errors)
+        else:
+            return data
 
     def read(self, length=-1):
         """
@@ -239,27 +204,16 @@ class hdfs_file(object):
         while 1:
             if length <= 0:
                 break
-            c = self.f.read(min(self.chunk_size, length))
-            if c == "":
+            c = self.f.read(min(self.buff_size, length))
+            if c == b"":
                 break
             chunks.append(c)
             length -= len(c)
-        return "".join(chunks)
-
-    def read_chunk(self, chunk):
-        r"""
-        Works like :meth:`read`\ , but data is stored in the writable
-        buffer ``chunk`` rather than returned. Reads at most a number of
-        bytes equal to the size of ``chunk``\ .
-
-        :type chunk: writable string buffer
-        :param chunk: a c-like string buffer, such as the one returned by the
-          ``create_string_buffer`` function in the :mod:`ctypes` module
-        :rtype: int
-        :return: the number of bytes read
-        """
-        _complain_ifclosed(self.closed)
-        return self.f.read_chunk(chunk)
+        data = b"".join(chunks)
+        if self.__encoding:
+            return data.decode(self.__encoding, self.__errors)
+        else:
+            return data
 
     def seek(self, position, whence=os.SEEK_SET):
         """
@@ -273,9 +227,7 @@ class hdfs_file(object):
           and ``os.SEEK_END`` (relative to the file's end).
         """
         _complain_ifclosed(self.closed)
-        position = _seek_with_boundary_checks(self, position, whence)
-        self.__reset()
-        return self.f.seek(position)
+        return self.f.seek(position, whence)
 
     def tell(self):
         """
@@ -291,25 +243,17 @@ class hdfs_file(object):
         """
         Write ``data`` to the file.
 
-        :type data: string
+        :type data: bytes
         :param data: the data to be written to the file
         :rtype: int
         :return: the number of bytes written
         """
         _complain_ifclosed(self.closed)
-        return self.f.write(data)
-
-    def write_chunk(self, chunk):
-        """
-        Write data from buffer ``chunk`` to the file.
-
-        :type chunk: writable string buffer
-        :param chunk: a c-like string buffer, such as the one returned by the
-          ``create_string_buffer`` function in the :mod:`ctypes` module
-        :rtype: int
-        :return: the number of bytes written
-        """
-        return self.write(chunk)
+        if self.__encoding:
+            self.f.write(data.encode(self.__encoding, self.__errors))
+            return len(data)
+        else:
+            return self.f.write(data)
 
     def flush(self):
         """
@@ -319,17 +263,58 @@ class hdfs_file(object):
         return self.f.flush()
 
 
-class local_file(file):
+class hdfs_file(FileIO):
 
-    def __init__(self, fs, name, flags):
-        if not flags.startswith("r"):
+    def pread_chunk(self, position, chunk):
+        r"""
+        Works like :meth:`pread`\ , but data is stored in the writable
+        buffer ``chunk`` rather than returned. Reads at most a number of
+        bytes equal to the size of ``chunk``\ .
+
+        :type position: int
+        :param position: position from which to read
+        :type chunk: buffer
+        :param chunk: a writable object that supports the buffer protocol
+        :rtype: int
+        :return: the number of bytes read
+        """
+        _complain_ifclosed(self.closed)
+        if position > self.size:
+            raise IOError("position cannot be past EOF")
+        return self.f.raw.pread_chunk(position, chunk)
+
+    def read_chunk(self, chunk):
+        r"""
+        Works like :meth:`read`\ , but data is stored in the writable
+        buffer ``chunk`` rather than returned. Reads at most a number of
+        bytes equal to the size of ``chunk``\ .
+
+        :type chunk: buffer
+        :param chunk: a writable object that supports the buffer protocol
+        :rtype: int
+        :return: the number of bytes read
+        """
+        _complain_ifclosed(self.closed)
+        return self.f.readinto(chunk)
+
+
+class local_file(io.FileIO):
+    """\
+    Support class to handle local files.
+
+    Objects from this class should not be instantiated directly, but
+    rather obtained through the top-level ``open`` function in the
+    hdfs package.
+    """
+    def __init__(self, fs, name, mode):
+        if not mode.startswith("r"):
             local_file.__make_parents(fs, name)
-        super(local_file, self).__init__(name, flags)
+        super(local_file, self).__init__(name, mode)
+        name = os.path.abspath(name)
         self.__fs = fs
-        self.__name = os.path.abspath(super(local_file, self).name)
         self.__size = os.fstat(super(local_file, self).fileno()).st_size
         self.f = self
-        self.chunk_size = 0
+        self.buff_size = io.DEFAULT_BUFFER_SIZE
 
     @staticmethod
     def __make_parents(fs, name):
@@ -345,61 +330,63 @@ class local_file(file):
         return self.__fs
 
     @property
-    def name(self):
-        return self.__name
-
-    @property
     def size(self):
         return self.__size
-
-    def write(self, data):
-        _complain_ifclosed(self.closed)
-        if isinstance(data, unicode):
-            data = data.encode(common.TEXT_ENCODING)
-        elif not isinstance(data, (basestring, bytearray)):
-            # access non string data through a buffer
-            data = str(buffer(data))
-        super(local_file, self).write(data)
-        return len(data)
 
     def available(self):
         _complain_ifclosed(self.closed)
         return self.size
 
     def close(self):
-        if self.mode == "w":
+        if self.writable():
             self.flush()
             os.fsync(self.fileno())
             self.__size = os.fstat(self.fileno()).st_size
         super(local_file, self).close()
 
     def seek(self, position, whence=os.SEEK_SET):
-        position = _seek_with_boundary_checks(self, position, whence)
-        return super(local_file, self).seek(position)
+        if position > self.__size:
+            raise IOError("position cannot be past EOF")
+        return super(local_file, self).seek(position, whence)
 
-    def pread(self, position, length):
+    def __seek_and_read(self, position, length=None, buf=None):
+        assert (length is None) != (buf is None)
         _complain_ifclosed(self.closed)
-        if position < 0:
-            raise ValueError("Position must be >= 0")
         old_pos = self.tell()
         self.seek(position)
-        if length < 0:
-            length = self.size - position
-        data = self.read(length)
+        if buf is not None:
+            ret = self.readinto(buf)
+        else:
+            if length < 0:
+                length = self.size - position
+            ret = self.read(length)
         self.seek(old_pos)
-        return data
+        return ret
+
+    def pread(self, position, length):
+        return self.__seek_and_read(position, length=length)
 
     def pread_chunk(self, position, chunk):
-        _complain_ifclosed(self.closed)
-        data = self.pread(position, len(chunk))
-        chunk[:len(data)] = data
-        return len(data)
+        return self.__seek_and_read(position, buf=chunk)
 
     def read_chunk(self, chunk):
         _complain_ifclosed(self.closed)
-        data = self.read(len(chunk))
-        chunk[:len(data)] = data
-        return len(data)
+        return self.readinto(chunk)
 
-    def write_chunk(self, chunk):
-        return self.write(chunk)
+
+class TextIOWrapper(io.TextIOWrapper):
+
+    def __getattr__(self, name):
+        # there is no readinto method in text mode (strings are immutable)
+        if name.endswith("_chunk"):
+            raise AttributeError("%r object has no attribute %r" % (
+                self.__class__.__name__, name
+            ))
+        a = getattr(self.buffer.raw, name)
+        if name == "mode":
+            a = "%st" % self.buffer.raw.mode[0]
+        return a
+
+    def pread(self, position, length):
+        data = self.buffer.raw.pread(position, length)
+        return data.decode(self.encoding, self.errors)

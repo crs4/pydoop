@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -25,7 +25,7 @@ import pydoop.hdfs as hdfs
 import pydoop
 from common_hdfs_tests import TestCommon, common_tests
 import pydoop.test_utils as u
-
+from pydoop.utils.py3compat import clong
 
 CURRENT_USER = getpass.getuser()
 
@@ -58,7 +58,7 @@ class TestConnection(unittest.TestCase):
             hdfs.hdfs._ALIASES = {"host": {}, "port": {}, "user": {}}  # FIXME
             with hdfs.hdfs(h1, p1) as fs1:
                 with hdfs.hdfs(h2, p2) as fs2:
-                    print ' * %r vs %r' % ((h1, p1), (h2, p2))
+                    print(' * %r vs %r' % ((h1, p1), (h2, p2)))
                     self.assertTrue(fs2.fs is fs1.fs)
                 for fs in fs1, fs2:
                     self.assertFalse(fs.closed)
@@ -73,15 +73,15 @@ class TestHDFS(TestCommon):
 
     def capacity(self):
         c = self.fs.capacity()
-        self.assertTrue(isinstance(c, (int, long)))
+        self.assertTrue(isinstance(c, (int, clong)))
 
     def default_block_size(self):
         dbs = self.fs.default_block_size()
-        self.assertTrue(isinstance(dbs, (int, long)))
+        self.assertTrue(isinstance(dbs, (int, clong)))
 
     def used(self):
         u_ = self.fs.used()
-        self.assertTrue(isinstance(u_, (int, long)))
+        self.assertTrue(isinstance(u_, (int, clong)))
 
     def chown(self):
         new_owner = "nobody"
@@ -122,13 +122,13 @@ class TestHDFS(TestCommon):
 
     def block_size(self):
         if not pydoop.hadoop_version_info().has_deprecated_bs():
-            for bs_MB in xrange(100, 500, 50):
+            for bs_MB in range(100, 500, 50):
                 bs = bs_MB * 2**20
                 path = self._make_random_file(blocksize=bs)
                 self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
 
     def replication(self):
-        for r in xrange(1, 6):
+        for r in range(1, 6):
             path = self._make_random_file(replication=r)
             self.assertEqual(self.fs.get_path_info(path)["replication"], r)
 
@@ -147,7 +147,7 @@ class TestHDFS(TestCommon):
             chunk_size = min(bs, 12 * 1048576)
             written = 0
             while written < size:
-                data = 'X' * min(chunk_size, size - written)
+                data = b'X' * min(chunk_size, size - written)
                 written += f.write(data)
 
         hd_info = pydoop.hadoop_version_info()
@@ -159,10 +159,10 @@ class TestHDFS(TestCommon):
             bs = 1048576
             kwargs['blocksize'] = bs
 
-        line = "012345678\n"
+        line = b"012345678\n"
         offset = bs - (10 * len(line) + 5)
         path = self._make_random_path()
-        with self.fs.open_file(path, flags="w", **kwargs) as f:
+        with self.fs.open_file(path, mode="w", **kwargs) as f:
             bytes_written = lines_written = 0
             _write_prefix(f, offset, bs)
             bytes_written = offset
@@ -174,13 +174,13 @@ class TestHDFS(TestCommon):
             f.seek(offset)
             lines = []
             while 1:
-                l = f.readline()
-                if l == "":
+                L = f.readline()
+                if not L:
                     break
-                lines.append(l)
+                lines.append(L)
         self.assertEqual(len(lines), lines_written)
-        for i, l in enumerate(lines):
-            self.assertEqual(l, line, "line %d: %r != %r" % (i, l, line))
+        for i, L in enumerate(lines):
+            self.assertEqual(L, line, "line %d: %r != %r" % (i, L, line))
 
     def get_hosts(self):
         hd_info = pydoop.hadoop_version_info()
@@ -192,10 +192,10 @@ class TestHDFS(TestCommon):
             blocksize = 1048576
             kwargs['blocksize'] = blocksize
         N = 4
-        content = "x" * blocksize * N
+        content = b"x" * blocksize * N
         path = self._make_random_file(content=content, **kwargs)
         start = 0
-        for i in xrange(N):
+        for i in range(N):
             length = blocksize * i + 1
             hosts_per_block = self.fs.get_hosts(path, start, length)
             self.assertEqual(len(hosts_per_block), i + 1)

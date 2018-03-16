@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -36,7 +36,7 @@ import pydoop
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32
-_DEFAULT_HDFS_HOST = "localhost"
+_DEFAULT_HDFS_HOST = os.getenv("HOSTNAME", "localhost")
 _DEFAULT_HDFS_PORT = 8020 if pydoop.is_cloudera() else 9000
 _DEFAULT_BYTES_PER_CHECKSUM = 512
 HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
@@ -61,7 +61,7 @@ def _get_special_chr():
         msg = ("local file system doesn't support unicode characters"
                "in filenames, falling back to ASCII-only")
         warnings.warn(msg, UnicodeWarning)
-        the_chr = 's'
+        the_chr = u's'
     finally:
         if fd:
             os.close(fd)
@@ -129,10 +129,8 @@ def make_wd(fs, prefix="pydoop_test_"):
 
 def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
     randint = random.randint
-    if printable:
-        return "".join([chr(randint(32, 126)) for _ in xrange(size)])
-    else:
-        return "".join([chr(randint(0, 255)) for _ in xrange(size)])
+    start, stop = (32, 126) if printable else (0, 255)
+    return bytes(bytearray([randint(start, stop) for _ in range(size)]))
 
 
 def get_bytes_per_checksum():

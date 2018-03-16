@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -17,6 +17,8 @@
 # under the License.
 #
 # END_COPYRIGHT
+
+from __future__ import print_function
 
 import sys
 import os
@@ -127,7 +129,7 @@ def main(argv):
         parser = make_parser()
         args = parser.parse_args(argv)
         if args.dataset:
-            print args.dataset
+            print(args.dataset)
             create_dataset(logger, args.dataset)
 
         if args.script:
@@ -139,12 +141,10 @@ def main(argv):
             raise IOError("script {0} not found !!!".format(piped_code_file))
 
         with open(piped_code_file) as f:
-            pipes_code = pts.add_sys_path(f.read())
+            pipes_code = pts.adapt_script(f.read())
 
         dataset = [d for d in os.listdir("dataset") if d.endswith("MB")]
-        dataset.sort(cmp=lambda x, y: cmp(
-            int(x.replace("MB", "")), int(y.replace("MB", ""))
-        ))
+        dataset.sort(key=lambda x: int(x.replace("MB", "")))
 
         logger.info(" Uploading dataset: { %s }", ', '.join(dataset))
         if not hadut.path_exists(os.path.join(DATASET_DIR)):
@@ -174,27 +174,27 @@ def main(argv):
                 runner.run(properties=CONF, hadoop_conf_dir=HADOOP_CONF_DIR,
                            logger=logger)
                 res = runner.collect_output()
-                print data_input_path
+                print(data_input_path)
                 local_wc = pts.LocalWordCount(data_input_path)
                 logging.info(local_wc.check(res))
-                # print res
+                # print(res)
                 # runner.clean()
             results[data_input] = (t.secs, t.msecs)
 
-    print "\n\n RESULTs"
-    print "=" * (len(piped_code_file) + 15)
-    print " *  script: {0}".format(piped_code_file)
-    print " *  mappers: {0}".format(CONF["mapred.map.tasks"])
-    print " *  reducers: {0}".format(CONF["mapred.reduce.tasks"])
-    print " *  dataset: [{0}]".format(",".join(dataset))
-    print " *  times (input -> secs):"
+    print("\n\n RESULTs")
+    print("=" * (len(piped_code_file) + 15))
+    print(" *  script: {0}".format(piped_code_file))
+    print(" *  mappers: {0}".format(CONF["mapred.map.tasks"]))
+    print(" *  reducers: {0}".format(CONF["mapred.reduce.tasks"]))
+    print(" *  dataset: [{0}]".format(",".join(dataset)))
+    print(" *  times (input -> secs):")
     for data_input in dataset:
-        print "    - {0} -> {1} secs.".format(
+        print("    - {0} -> {1} secs.".format(
             data_input, results[data_input][0]
-        )
-    print "\n => Total execution time: {0}".format(total_time.secs)
-    print "=" * (len(piped_code_file) + 15)
-    print "\n"
+        ))
+    print("\n => Total execution time: {0}".format(total_time.secs))
+    print("=" * (len(piped_code_file) + 15))
+    print("\n")
 
 
 if __name__ == "__main__":

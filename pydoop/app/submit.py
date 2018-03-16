@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -33,6 +33,7 @@ import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
 import pydoop.utils as utils
 import pydoop.utils.conversion_tables as conv_tables
+from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT
 
 from .argparse_types import kv_pair, a_file_that_can_be_read
 from .argparse_types import a_comma_separated_list, a_hdfs_file
@@ -55,10 +56,6 @@ AVRO_IO_CHOICES += [_.upper() for _ in AVRO_IO_CHOICES]
 class PydoopSubmitter(object):
     """
     Builds and launches pydoop jobs.
-
-    Supports both v1 and v2 mapreduce models and automatically adapts
-    configuration variable names to the specific (1.x vs 2.x) Hadoop
-    version used.
     """
     DESCRIPTION = "Simplified pydoop jobs submission"
 
@@ -84,7 +81,6 @@ class PydoopSubmitter(object):
         self.pipes_code = None
         self.files_to_upload = []
         self.unknown_args = None
-        self._use_mrv2 = None
 
     @staticmethod
     def __cache_archive_link(archive_name):
@@ -166,7 +162,6 @@ class PydoopSubmitter(object):
         self.requested_env = self._env_arg_to_dict(args.set_env or [])
         self.args = args
         self.unknown_args = unknown_args
-        self._use_mrv2 = pydoop.has_mrv2() and not self.args.mrv1
 
     def __warn_user_if_wd_maybe_unreadable(self, abs_remote_path):
         """
@@ -192,12 +187,12 @@ class PydoopSubmitter(object):
             host_port = "hdfs://%s:%s/" % (host, port)
         path_pieces = path.strip('/').split(os.path.sep)
         fs = hdfs.hdfs(host, port)
-        for i in xrange(0, len(path_pieces)):
+        for i in range(0, len(path_pieces)):
             part = os.path.join(
                 host_port, os.path.sep.join(path_pieces[0: i + 1])
             )
             permissions = fs.get_path_info(part)['permissions']
-            if permissions & 0111 != 0111:
+            if permissions & 0o111 != 0o111:
                 self.logger.warning(
                     ("remote module %s may not be readable by the task "
                      "tracker when initializing the distributed cache.  "
@@ -222,8 +217,13 @@ class PydoopSubmitter(object):
             env['PYTHONPATH'] = "${PYTHONPATH}"
 
         # set user-requested env variables
-        for var, value in self.requested_env.iteritems():
+        for var, value in self.requested_env.items():
             env[var] = value
+
+        if self.args.pstats_dir:
+            env[PSTATS_DIR] = self.args.pstats_dir
+            if self.args.pstats_fmt:
+                env[PSTATS_FMT] = self.args.pstats_fmt
 
         executable = self.args.python_program
         if self.args.python_zip:
@@ -248,7 +248,7 @@ class PydoopSubmitter(object):
         ):
             lines.append('export HOME="%s"' % os.environ['HOME'])
         # set environment variables
-        for var, value in env.iteritems():
+        for var, value in env.items():
             if value:
                 self.logger.debug("Setting env variable %s=%s", var, value)
                 lines.append('export %s="%s"' % (var, value))
@@ -281,11 +281,6 @@ class PydoopSubmitter(object):
             raise RuntimeError(
                 "Output path %r already exists" % (self.args.output,)
             )
-        if self.args.avro_input or self.args.avro_output:
-            if not self._use_mrv2:
-                raise RuntimeError(
-                    "Avro mode is currently supported only for MRv2"
-                )
 
     def __clean_wd(self):
         if self.remote_wd:
@@ -333,43 +328,25 @@ class PydoopSubmitter(object):
         if self.args is None:
             raise RuntimeError("cannot run without args, please call set_args")
         self.__validate()
-        classpath = []
+        pydoop_classpath = []
         libjars = []
+        if self.args.libjars:
+            libjars.extend(self.args.libjars)
         if self.args.avro_input or self.args.avro_output:
+            # append Pydoop's avro-mapred jar.  Don't put it at the front of
+            # the list or the user won't be able to override it.
             avro_jars = glob.glob(os.path.join(
                 pydoop.package_dir(), "avro*.jar"
             ))
-            classpath.extend(avro_jars)
+            pydoop_classpath.extend(avro_jars)
             libjars.extend(avro_jars)
-        if self.args.libjars:
-            libjars.extend(self.args.libjars)
         pydoop_jar = pydoop.jar_path()
-        if self._use_mrv2 and pydoop_jar is None:
-            raise RuntimeError("Can't find pydoop.jar, cannot switch to mrv2")
-        if self.args.local_fs and pydoop_jar is None:
-            raise RuntimeError(
-                "Can't find pydoop.jar, cannot use local fs patch"
-            )
+        if pydoop_jar is None:
+            raise RuntimeError("Can't find pydoop.jar")
         job_args = []
-        self.logger.debug(
-            "Selecting Submitter. "
-            "self._use_mrv2: %s; self.args.mrv1: %s; pydoop.has_mrv2(): %r",
-            self._use_mrv2, self.args.mrv1, pydoop.has_mrv2()
-        )
-        if self._use_mrv2:
-            submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
-            classpath.append(pydoop_jar)
-            libjars.append(pydoop_jar)
-        elif self.args.local_fs:
-            # FIXME we still need to handle the special case with
-            # hadoop security and local file system.
-            raise RuntimeError("NOT IMPLEMENTED YET")
-            # FIXME FAKE MODULE
-            submitter_class = 'it.crs4.pydoop.mapred.pipes.Submitter'
-            classpath.append(pydoop_jar)
-            libjars.append(pydoop_jar)
-        else:
-            submitter_class = 'org.apache.hadoop.mapred.pipes.Submitter'
+        submitter_class = 'it.crs4.pydoop.mapreduce.pipes.Submitter'
+        pydoop_classpath.append(pydoop_jar)
+        libjars.append(pydoop_jar)
         self.logger.debug("Submitter class: %s", submitter_class)
         if self.args.hadoop_conf:
             job_args.extend(['-conf', self.args.hadoop_conf.name])
@@ -387,10 +364,9 @@ class PydoopSubmitter(object):
         if self.args.avro_output:
             job_args.extend(['-avroOutput', self.args.avro_output])
         if not self.args.disable_property_name_conversion:
-            ctable = (conv_tables.mrv1_to_mrv2
-                      if self._use_mrv2 else conv_tables.mrv2_to_mrv1)
+            ctable = conv_tables.mrv1_to_mrv2
             props = [
-                (ctable.get(k, k), v) for (k, v) in self.properties.iteritems()
+                (ctable.get(k, k), v) for (k, v) in self.properties.items()
             ]
             self.properties = dict(props)
             self.logger.debug("properties after projection: %r",
@@ -400,16 +376,17 @@ class PydoopSubmitter(object):
             executor = (hadut.run_class if not self.args.pretend
                         else self.fake_run_class)
             executor(submitter_class, args=job_args,
-                     properties=self.properties, classpath=classpath,
+                     properties=self.properties, classpath=pydoop_classpath,
                      logger=self.logger, keep_streams=False)
             self.logger.info("Done")
         finally:
-            self.__clean_wd()
+            if not self.args.keep_wd:
+                self.__clean_wd()
 
     def fake_run_class(self, *args, **kwargs):
         kwargs['logger'].info("Fake run class")
         repr_list = map(repr, args)
-        repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
+        repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.items())
         sys.stdout.write("hadut.run_class(%s)\n" % ', '.join(repr_list))
 
 
@@ -485,7 +462,7 @@ def add_parser_common_arguments(parser):
         '--job-name', metavar='NAME', type=str, help="name of the job"
     )
     parser.add_argument(
-        '--python-program', metavar='PYTHON', type=str, default='python',
+        '--python-program', metavar='PYTHON', type=str, default=sys.executable,
         help="python executable that should be used by the wrapper"
     )
     parser.add_argument(
@@ -497,6 +474,10 @@ def add_parser_common_arguments(parser):
         '--hadoop-conf', metavar='HADOOP_CONF_FILE',
         type=a_file_that_can_be_read,
         help="Hadoop configuration file"
+    )
+    parser.add_argument(
+        '--input-format', metavar='CLASS', type=str,
+        help="java classname of InputFormat"
     )
 
 
@@ -516,16 +497,6 @@ def add_parser_arguments(parser):
         help="Do not adapt property names to the hadoop version used."
     )
     parser.add_argument(
-        '--mrv1', action='store_true',
-        help=("Force Pydoop to use MRv1, even if MRv2 is available. The "
-              "InputFormat and OutputFormat classes must be MRv1-compliant")
-    )
-    parser.add_argument(
-        '--local-fs', action='store_true',
-        help=("Use a patched pipes submitter to sidestep a Hadoop security "
-              "bug triggered when using local file systems")
-    )
-    parser.add_argument(
         '--do-not-use-java-record-reader', action='store_true',
         help="Disable java RecordReader"
     )
@@ -534,14 +505,8 @@ def add_parser_arguments(parser):
         help="Disable java RecordWriter"
     )
     parser.add_argument(
-        '--input-format', metavar='CLASS', type=str,
-        help=("java classname of InputFormat.  Default value "
-              "depends on the mapreduce version used")
-    )
-    parser.add_argument(
         '--output-format', metavar='CLASS', type=str,
-        help=("java classname of OutputFormat.  Default value "
-              "depends on the mapreduce version used")
+        help="java classname of OutputFormat"
     )
     parser.add_argument(
         '--job-conf', metavar="NAME=VALUE", type=kv_pair, action="append",
@@ -576,6 +541,17 @@ def add_parser_arguments(parser):
     parser.add_argument(
         '--avro-output', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
         help="Avro output mode (key, value or both)",
+    )
+    parser.add_argument(
+        '--pstats-dir', metavar="HDFS_DIR", type=str,
+        help="Profile each task and store stats in this dir"
+    )
+    parser.add_argument(
+        '--pstats-fmt', metavar="STRING", type=str,
+        help="pstats filename pattern (expert use only)"
+    )
+    parser.add_argument(
+        '--keep-wd', action='store_true', help="Don't remove the work dir"
     )
 
 

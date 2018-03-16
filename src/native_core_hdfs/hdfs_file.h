@@ -1,6 +1,6 @@
 /* BEGIN_COPYRIGHT
  *
- * Copyright 2009-2016 CRS4.
+ * Copyright 2009-2018 CRS4.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy
@@ -21,6 +21,7 @@
 #define PYTHON_HDFS_FILE_TYPE
 
 #include <Python.h>
+
 #include <string>
 #include <map>
 #include <utility>  // std::pair support
@@ -30,27 +31,22 @@
 
 #include <hdfs.h>
 
-#include "structmember.h"
+#include <structmember.h>
+#include "../py3k_compat.h"
 
 
 typedef struct {
     PyObject_HEAD
     hdfsFS fs;
     hdfsFile file;
-    // LP: do we need this? const char* path;
-    // If so, we should try to convert it to a PyObject* and use reference counting
-    int flags;
+    PyObject *name;
+    PyObject *mode;
+    tOffset size;
     int buff_size;
     short replication;
     int blocksize;
-    int readline_chunk_size;
-
-#ifdef HADOOP_LIBHDFS_V1
-    hdfsStreamType stream_type;
-#endif
-
+    int closed;
 } FileInfo;
-
 
 
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
@@ -62,6 +58,20 @@ int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds);
 int FileClass_init_internal(FileInfo *self, hdfsFS fs, hdfsFile file);
 
 PyObject* FileClass_close(FileInfo* self);
+
+PyObject* FileClass_getclosed(FileInfo* self, void* closure);
+
+PyObject* FileClass_getbuff_size(FileInfo* self, void* closure);
+
+PyObject* FileClass_getname(FileInfo* self, void* closure);
+
+PyObject* FileClass_getmode(FileInfo* self, void* closure);
+
+PyObject* FileClass_readable(FileInfo* self);
+
+PyObject* FileClass_writable(FileInfo* self);
+
+PyObject* FileClass_seekable(FileInfo* self);
 
 PyObject* FileClass_mode(FileInfo* self);
 

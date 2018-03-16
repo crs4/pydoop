@@ -3,7 +3,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -25,99 +25,40 @@
 #    javac -cp $(hadoop classpath) hadoop_serialize.java
 
 import unittest
-from cStringIO import StringIO
-import random
 import os
 import subprocess
 import tempfile
 import shutil
 
 import pydoop
-import pydoop.utils.serialize as srl
+from pydoop.utils.py3compat import StringIO, basestring
 import pydoop.mapreduce.jwritable_utils as wu
+import pydoop.utils.serialize as srl
+
 
 _HADOOP_SERIALIZE_CLASS = 'hadoop_serialize'
+
+
+class TestSerialization(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
 
 
 class TestSerialize(unittest.TestCase):
 
     def setUp(self):
         self.stream = StringIO()
+        self.wd = tempfile.mkdtemp(prefix="pydoop_")
 
-    def test_int(self):
-        stream = self.stream
-        for i in xrange(-16782, 16782):
-            srl.serialize_vint(i, stream)
-        stream.seek(0)
-        for i in xrange(-16782, 16782):
-            x = srl.deserialize_vint(stream)
-            self.assertEqual(i, x)
+    def tearDown(self):
+            shutil.rmtree(self.wd)
 
-    def test_int_big(self):
-        stream = self.stream
-        numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
-        for i in numbers:
-            srl.serialize_vint(i, stream)
-        stream.seek(0)
-        for i in numbers:
-            x = srl.deserialize_vint(stream)
-            self.assertEqual(i, x)
-
-    def test_float(self):
-        stream = self.stream
-        numbers = [random.uniform(-100000, 100000) for _ in range(10000)]
-        for f in numbers:
-            srl.serialize_float(f, stream)
-        stream.seek(0)
-        for f in numbers:
-            x = srl.deserialize_float(stream)
-            # be paranoid...
-            if abs(x + f) == 0:
-                self.assertTrue(abs(f - x) < 1e-6)
-            else:
-                self.assertTrue(abs(f - x) / abs(x + f) < 1e-6)
-
-    def test_string(self):
-        N = 10
-        stream = self.stream
-        test_file = __file__.replace("pyc", "py")
-        with open(test_file) as f:
-            s = unicode(f.read(), 'utf-8')
-        t = s
-        for _ in range(N):
-            srl.serialize_text(t, stream)
-        stream.seek(0)
-        t = s
-        for _ in range(N):
-            s1 = srl.deserialize_text(stream)
-            self.assertEqual(t, s1)
-
-    def test_mixture(self):
-        stream = self.stream
-        vals = [1, 0.33, 0.3290, 1902, 'sshjdhsj', 0.3, -33, 'ueiwriuqrei']
-        for v in vals:
-            if isinstance(v, int):
-                srl.serialize_int(v, stream)
-            elif isinstance(v, float):
-                srl.serialize_float(v, stream)
-            elif isinstance(v, str):
-                srl.serialize_text(v, stream)
-        stream.seek(0)
-        for v in vals:
-            if isinstance(v, int):
-                x = srl.deserialize_int(stream)
-                self.assertEqual(v, x)
-            elif isinstance(v, float):
-                x = srl.deserialize_float(stream)
-                self.assertTrue(abs(v - x) / abs(v + x) < 1e-6)
-            elif isinstance(v, str):
-                x = srl.deserialize_text(stream)
-                self.assertEqual(v, x)
-
-    def test_deserializing_java_output(self):
-        wd = tempfile.mkdtemp(prefix="pydoop_")
+    def test_deserializing_java_output_1(self):
         try:
-            byte_stream = _get_java_output_stream(wd)
+            byte_stream = _get_java_output_stream(self.wd)
 
             # read integers
             self.assertEqual(42, wu.readVInt(byte_stream))
@@ -142,40 +83,130 @@ class TestSerialize(unittest.TestCase):
                 u"à Text object", srl.deserialize_text(byte_stream)
             )
         finally:
-            shutil.rmtree(wd)
+            pass
 
-    def test_wu_ascii_string(self):
-        # test for self-consistency
-        wu.writeString(self.stream, "simple")
-        self.stream.seek(0)
-        self.assertEqual(u"simple", wu.readString(self.stream))
+    def test_deserializing_java_output_2(self):
+        try:
+            byte_stream = _get_java_output_stream(self.wd)
 
-    def test_wu_nonascii_string(self):
-        # test for self-consistency
-        wu.writeString(self.stream, u"àéìòù")
-        self.stream.seek(0)
-        self.assertEqual(u"àéìòù", wu.readString(self.stream))
+            # read integers
+            self.assertEqual(42, srl.deserialize_vint(byte_stream))
+            self.assertEqual(4242, srl.deserialize_vint(byte_stream))
+            self.assertEqual(424242, srl.deserialize_vint(byte_stream))
+            self.assertEqual(42424242, srl.deserialize_vint(byte_stream))
+            self.assertEqual(-42, srl.deserialize_vint(byte_stream))
 
-    def test_wu_ints(self):
-        # test for self-consistency
-        wu.writeVInt(self.stream, 42)
-        wu.writeVLong(self.stream, 4000000000)
-        self.stream.seek(0)
-        self.assertEqual(42, wu.readVInt(self.stream))
-        self.assertEqual(4000000000, wu.readVLong(self.stream))
+            # longs
+            self.assertEqual(42, srl.deserialize_vint(byte_stream))
+            self.assertEqual(424242, srl.deserialize_vint(byte_stream))
+            self.assertEqual(4242424242, srl.deserialize_vint(byte_stream))
 
-    def test_serialize_to_string(self):
-        numbers = random.sample(xrange(-18999289888, 18999289888), 10000)
-        for n in numbers:
-            s = srl.serialize_to_string(n)
-            stream = StringIO(s)
-            x = srl.deserialize_vint(stream)
-            self.assertEqual(n, x)
+            # strings
+            # first one is plain ASCII
+            self.assertEqual(u"hello world", wu.readString(byte_stream))
+            # second has accented characters
+            self.assertEqual(u"oggi è giovedì", wu.readString(byte_stream))
 
-    def test_private_serialize(self):
-        for obj in [1, 0.4, "Hello", [1, 2, 3], {"key": "value"}]:
-            self.assertEqual(obj, srl.private_decode(srl.private_encode(obj)))
-            # s = srl.private_encode(obj)
+            # final piece is an encoded Text object
+            self.assertEqual(
+                u"à Text object", srl.deserialize_text(byte_stream)
+            )
+        finally:
+            pass
+
+    def test_deserializing_java_output_3(self):
+        try:
+            byte_stream = _get_java_output_stream(self.wd)
+            fname = os.path.join(self.wd, 'foo.dat')
+            with open(fname, 'wb') as f:
+                f.write(byte_stream.getvalue())
+            with srl.FlowReader(open(fname, 'rb')) as flow:
+                # read integers
+                self.assertEqual(42, flow.read("i")[0])
+                self.assertEqual(4242, flow.read("i")[0])
+                self.assertEqual(424242, flow.read("i")[0])
+                self.assertEqual(42424242, flow.read("i")[0])
+                self.assertEqual(-42, flow.read("i")[0])
+                # longs
+                self.assertEqual(42, flow.read("L")[0])
+                self.assertEqual(424242, flow.read("L")[0])
+                self.assertEqual(4242424242, flow.read("L")[0])
+                # strings
+                # first one is plain ASCII
+                self.assertEqual(u"hello world",
+                                 flow.read("S")[0].decode('UTF-8'))
+                # second has accented characters
+                self.assertEqual(u"oggi è giovedì",
+                                 flow.read("S")[0].decode('UTF-8'))
+                # final piece is an encoded Text object
+                self.assertEqual(
+                    u"à Text object", flow.read("s")[0].decode('UTF-8')
+                )
+        finally:
+            pass
+
+    def test_simulate_java_output_1(self):
+        try:
+            byte_stream = _get_java_output_stream(self.wd)
+            out_stream = StringIO()
+            # write integers
+            srl.serialize_vint(42, out_stream)
+            srl.serialize_vint(4242, out_stream)
+            srl.serialize_vint(424242, out_stream)
+            srl.serialize_vint(42424242, out_stream)
+            srl.serialize_vint(-42, out_stream)
+            # write longs
+            srl.serialize_vint(42, out_stream)
+            srl.serialize_vint(424242, out_stream)
+            srl.serialize_vint(4242424242, out_stream)
+            # strings
+            wu.writeString(out_stream, u"hello world")
+            # second has accented characters
+            wu.writeString(out_stream, u"oggi è giovedì")
+            #
+            srl.serialize_text(u"à Text object", out_stream)
+            self.assertEqual(byte_stream.getvalue(), out_stream.getvalue())
+        finally:
+            pass
+
+    def srl_helper(self, data, rule=None):
+        fname = os.path.join(self.wd, 'foo.dat')
+        with srl.FlowWriter(open(fname, 'wb')) as flow:
+            if rule is None:
+                rule = ''.join(['L' if isinstance(x, int) else 'S'
+                                for x in data])
+            flow.write(rule.encode('UTF-8'), data)
+        with open(fname, 'rb') as f:
+            return f.read()
+
+    def wu_helper(self, data):
+        out_stream = StringIO()
+        for x in data:
+            if isinstance(x, int):
+                srl.serialize_vint(x, out_stream)
+            elif isinstance(x, basestring):
+                wu.writeString(out_stream, x)
+        return out_stream.getvalue()
+
+    def test_write_equiv(self):
+        data = (42, 4242, 424242, 42424242, -42,
+                42, 424242, 42424242424242,
+                u"hello world", u"oggi è giovedì", u"à Text object")
+        ser0 = self.srl_helper(data)
+        ser1 = self.wu_helper(data)
+        self.assertEqual(ser0, ser1)
+
+    def test_simulate_java_output_2(self):
+        data = (42, 4242, 424242, 42424242, -42,
+                42, 424242, 4242424242,
+                u"hello world", u"oggi è giovedì", u"à Text object")
+        rule = "iiiiiLLLSSs"
+        try:
+            ser0 = _get_java_output_stream(self.wd).getvalue()
+            ser1 = self.srl_helper(data, rule)
+            self.assertEqual(ser0, ser1)
+        finally:
+            pass
 
     def test_serialize_old_style_filename(self):
         fn = 'some_filename.file'

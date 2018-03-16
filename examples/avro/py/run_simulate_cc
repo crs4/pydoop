@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../../config.sh"
+
+N=20
+WD=$(mktemp -d)
+AVRO_FN="${WD}/users.avro"
+USER_SCHEMA_FILE="${this_dir}"/../schemas/user.avsc
+${PYTHON} generate_avro_users.py "${USER_SCHEMA_FILE}" ${N} "${AVRO_FN}"
+${PYTHON} simulate_cc.py "${AVRO_FN}"
+
+DUMP_FN=stats.tsv
+${PYTHON} avro_container_dump_results.py \
+    "$(pwd)/part-r-00000.avro" "${DUMP_FN}"
+${PYTHON} check_cc.py "${AVRO_FN}" "${DUMP_FN}"

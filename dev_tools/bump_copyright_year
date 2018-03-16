@@ -13,7 +13,7 @@ import datetime
 
 THIS_YEAR = datetime.date.today().year
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-PATTERN = re.compile(r"(?<=opyright 2009-)\d+")
+PATTERN = re.compile(br"(?<=opyright 2009-)\d+")
 
 
 def find_files(root_dir):
@@ -28,10 +28,10 @@ def bump_end_year(root_dir, year):
     for fn in find_files(root_dir):
         if fn == os.path.abspath(__file__):
             continue
-        print "processing %r" % (fn,)
-        with open(fn) as f:
+        print("processing %r" % (fn,))
+        with open(fn, "rb") as f:
             content = f.read()
-        with open(fn, "w") as f:
+        with open(fn, "wb") as f:
             f.write(re.sub(PATTERN, year, content))
 
 

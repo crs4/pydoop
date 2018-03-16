@@ -34,32 +34,22 @@ Here is the word count example modified to ignore stop words from a
 file that is distributed to all the nodes via the Hadoop distributed
 cache:
 
-.. code-block:: python
-
-  with open('stop.txt') as f:
-      STOP_WORDS = frozenset(l.strip() for l in f if not l.isspace())
-
-  def mapper(_, v, writer):
-      for word in v.split():
-          if word in STOP_WORDS:
-              writer.count("STOP_WORDS", 1)
-        else:
-            writer.emit(word, 1)
-
-  def reducer(word, icounts, writer):
-      writer.emit(word, sum(map(int, icounts)))
+.. literalinclude:: ../examples/pydoop_script/scripts/wordcount_sw.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
 
 To execute the above script, save it to a ``wc.py`` file and run::
 
-  pydoop script wc.py hdfs_input hdfs_output --upload-file-to-cache stop.txt
+  pydoop script wc.py hdfs_input hdfs_output --upload-file-to-cache stop_words.txt
 
-where ``stop.txt`` is a text file that contains the stop words, one per line.
+where ``stop_words.txt`` is a text file that contains the stop words,
+one per line.
 
 While this script works, it has the obvious weakness of loading the
 stop words list even when executing the reducer (since it's loaded as
 soon as we import the module).  If this inconvenience is a concern, we
 could solve the issue by triggering the loading from the ``mapper``
-function, or by writing a :ref:`full Pydoop application <api-docs>`
+function, or by writing a :ref:`full Pydoop application <api_tutorial>`
 which would give us all the control we need to only load the list when
 required.
 
@@ -112,7 +102,8 @@ produced by your map function.  It also receives 3 parameters:
    map function.
 
 The key-value pair emitted by your reducer will be joined by the
-key-value separator specified with the ``--kv-separator`` option.
+key-value separator specified with the ``--kv-separator`` option
+(a tab character by default).
 
 
 Writer Object
@@ -132,7 +123,7 @@ and ``reducer`` functions has the following methods:
 The latter two methods are useful for keeping your task alive in cases
 where the amount of computation to be done for a single record might
 exceed Hadoop's timeout interval: Hadoop kills a task after a number
-of milliseconds set through the ``mapred.task.timeout`` property --
+of milliseconds set through the ``mapreduce.task.timeout`` property --
 which defaults to 600000, i.e., 10 minutes -- if it neither reads an
 input, writes an output, nor updates its status string.
 

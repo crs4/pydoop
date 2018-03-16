@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -17,16 +17,57 @@
 # END_COPYRIGHT
 
 from .streams import (
-    DownStreamFilter, UpStreamFilter, ProtocolAbort, ProtocolError
+    StreamWriter, StreamReader,
+    DownStreamAdapter, UpStreamAdapter,
+    ProtocolAbort, ProtocolError
 )
-from .string_utils import quote_string
+from .string_utils import quote_string, unquote_string
 
 
-def toBool(s):
-    return s.lower().find('true') > -1
+class TextWriter(StreamWriter):
+    SEP = '\t'
+    EOL = '\n'
+    CMD_TABLE = {
+        StreamWriter.START_MESSAGE: 'start',
+        StreamWriter.SET_JOB_CONF: 'setJobConf',
+        StreamWriter.SET_INPUT_TYPES: 'setInputTypes',
+        StreamWriter.RUN_MAP: 'runMap',
+        StreamWriter.MAP_ITEM: 'mapItem',
+        StreamWriter.RUN_REDUCE: 'runReduce',
+        StreamWriter.REDUCE_KEY: 'reduceKey',
+        StreamWriter.REDUCE_VALUE: 'reduceValue',
+        StreamWriter.CLOSE: 'close',
+        StreamWriter.ABORT: 'abort',
+        StreamWriter.AUTHENTICATION_REQ: 'authenticationReq',
+        StreamWriter.OUTPUT: 'output',
+        StreamWriter.PARTITIONED_OUTPUT: 'partitionedOutput',
+        StreamWriter.STATUS: 'status',
+        StreamWriter.PROGRESS: 'progress',
+        StreamWriter.DONE: 'done',
+        StreamWriter.REGISTER_COUNTER: 'registerCounter',
+        StreamWriter.INCREMENT_COUNTER: 'incrementCounter',
+        StreamWriter.AUTHENTICATION_RESP: 'authenticationResp',
+    }
+
+    @classmethod
+    def convert_cmd(cls, cmd):
+        try:
+            return cls.CMD_TABLE[cmd]
+        except KeyError:
+            raise ProtocolError('Unrecognized command %r' % cmd)
+
+    def __init__(self, stream):
+        super(TextWriter, self).__init__(stream)
+
+    def send(self, cmd, *args):
+        self.stream.write(self.convert_cmd(cmd))
+        for a in args:
+            self.stream.write(self.SEP)
+            self.stream.write(quote_string(str(a)))
+        self.stream.write(self.EOL)
 
 
-class TextDownStreamFilter(DownStreamFilter):
+class TextReader(StreamReader):
     """
     Naive textual stream filter implementation.
 
@@ -37,16 +78,31 @@ class TextDownStreamFilter(DownStreamFilter):
     """
     SEP = '\t'
     CMD_TABLE = {
-        'mapItem': ('mapItem', 2, None),
-        'reduceValue': ('reduceValue', 1, None),
-        'reduceKey': ('reduceKey', 1, None),
-        'start': ('start', 1, lambda p: [int(p[0])]),
-        'setJobConf': ('setJobConf', None, None),
-        'setInputTypes': ('setInputTypes', 2, None),
-        'runMap': ('runMap', 3, lambda p: [p[0], int(p[1]), toBool(p[2])]),
-        'runReduce': ('runReduce', 2, lambda p: [int(p[0]), toBool(p[1])]),
-        'abort': ('abort', 0, None),
-        'close': ('close', 0, None),
+        'mapItem': (StreamReader.MAP_ITEM, 2, None),
+        'reduceValue': (StreamReader.REDUCE_VALUE, 1, None),
+        'reduceKey': (StreamReader.REDUCE_KEY, 1, None),
+        'start': (StreamReader.START_MESSAGE, 1, lambda p: [int(p[0])]),
+        'setJobConf': (StreamReader.SET_JOB_CONF, None, lambda p: [tuple(p)]),
+        'setInputTypes': (StreamReader.SET_INPUT_TYPES, 2, None),
+        'runMap': (StreamReader.RUN_MAP, 3,
+                   lambda p: [p[0], int(p[1]), int(p[2])]),
+        'runReduce': (StreamReader.RUN_REDUCE, 2,
+                      lambda p: [int(p[0]), int(p[1])]),
+        'abort': (StreamReader.ABORT, 0, None),
+        'close': (StreamReader.CLOSE, 0, None),
+        'output': (StreamReader.OUTPUT, 2, None),
+        'partitionedOutput': (StreamReader.PARTITIONED_OUTPUT, 3,
+                              lambda p: [int(p[0]), p[1], p[2]]),
+        'status': (StreamReader.STATUS, 1, None),
+        'progress': (StreamReader.PROGRESS, 1,
+                     lambda p: [float(p[0])]),
+        'done': (StreamReader.DONE, 0, None),
+        'registerCounter': (StreamReader.REGISTER_COUNTER, 3,
+                            lambda p: [int(p[0]), p[1], p[2]]),
+        'incrementCounter': (StreamReader.INCREMENT_COUNTER, 2,
+                             lambda p: [int(p[0]), int(p[1])]),
+        'authenticationReq': (StreamReader.AUTHENTICATION_REQ, 2, None),
+        'authenticationResp': (StreamReader.AUTHENTICATION_RESP, 1, None),
     }
 
     @classmethod
@@ -54,35 +110,32 @@ class TextDownStreamFilter(DownStreamFilter):
         if cmd in cls.CMD_TABLE:
             cmd, nargs, converter = cls.CMD_TABLE[cmd]
             assert nargs is None or len(args) == nargs
-            if cmd == 'abort':
+            if cmd == cls.ABORT:
                 raise ProtocolAbort('received an abort request')
             args = args if converter is None else converter(args)
-            return cmd, tuple(args) if args else None
+            return cmd, tuple((unquote_string(a)
+                               if isinstance(a, str) else a
+                               for a in args)) if args else None
         else:
             raise ProtocolError('Unrecognized command %r' % cmd)
 
     def __init__(self, stream):
-        super(TextDownStreamFilter, self).__init__(stream)
+        super(TextReader, self).__init__(stream)
 
-    def next(self):
+    def __next__(self):
         line = self.stream.readline()[:-1]
         if len(line) == 0:
             raise StopIteration
         parts = line.split(self.SEP)
         return self.convert_message(parts[0], parts[1:])
 
+    def next(self):
+        return self.__next__()
 
-class TextUpStreamFilter(UpStreamFilter):
 
-    SEP = '\t'
-    EOL = '\n'
+class TextUpStreamAdapter(TextWriter, UpStreamAdapter):
+    pass
 
-    def __init__(self, stream):
-        super(TextUpStreamFilter, self).__init__(stream)
 
-    def send(self, cmd, *args):
-        self.stream.write(cmd)
-        for a in args:
-            self.stream.write(self.SEP)
-            self.stream.write(quote_string(str(a)))
-        self.stream.write(self.EOL)
+class TextDownStreamAdapter(TextReader, DownStreamAdapter):
+    pass

@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -16,6 +16,7 @@
 #
 # END_COPYRIGHT
 
+from __future__ import print_function
 from pydoop.mapreduce.binary_streams import (
     BinaryWriter, BinaryDownStreamFilter
 )
@@ -65,16 +66,17 @@ def main():
     N = 100000
     with Timer() as t:
         write_data(N, fname)
-    print "=> write_data: %s s" % t.secs
+    print("=> write_data: %s s" % t.secs)
     # read_data_minimal(fname)
     with Timer() as t:
         read_data(fname)
-    print "=> read_data: %s s" % t.secs
+    print("=> read_data: %s s" % t.secs)
     with Timer() as t:
         read_data1(N, fname)
-    print "=> read_data1: %s s" % t.secs
+    print("=> read_data1: %s s" % t.secs)
     with Timer() as t:
         read_data2(N, fname)
-    print "=> read_data2: %s s" % t.secs
+    print("=> read_data2: %s s" % t.secs)
+
 
 main()

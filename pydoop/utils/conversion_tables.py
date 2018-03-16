@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -764,8 +764,8 @@ mrv1_to_mrv2 = {
     'dfs.metrics.session-id',
 
     # duplicate key :-o
-    'slave.host.name':
-    'dfs.datanode.hostname',
+    # 'slave.host.name':
+    # 'dfs.datanode.hostname',
 
     'slave.host.name':
     'mapreduce.tasktracker.host.name',
@@ -796,4 +796,4 @@ mrv1_to_mrv2 = {
     'yarn.app.mapreduce.client-am.ipc.max-retries-on-timeouts',
 }
 
-mrv2_to_mrv1 = dict((t[1], t[0]) for t in mrv1_to_mrv2.iteritems())
+mrv2_to_mrv1 = dict((t[1], t[0]) for t in mrv1_to_mrv2.items())

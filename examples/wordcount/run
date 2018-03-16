@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-./run_wc_minimal
-./run_wc_full
-./run_wc_minimal_new_api
-./run_wc_full_new_api
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
 
+for mode in minimal full; do
+    ${BASH} "${this_dir}"/run_wc.sh ${mode}
+done

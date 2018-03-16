@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -68,7 +68,7 @@ class TestSplit(unittest.TestCase):
     def good_with_user(self):
         if hdfs.default_is_local():
             cases = [
-                ('a/b', u, ('', 0, 'a/b')) for u in None, DEFAULT_USER, 'foo'
+                ('a/b', u, ('', 0, 'a/b')) for u in [None, DEFAULT_USER, 'foo']
             ]
         else:
             cases = [
@@ -341,12 +341,12 @@ class TestStat(unittest.TestCase):
         fn = '/user/%s/%s' % (DEFAULT_USER, bn)
         fs = hdfs.hdfs("default", 0)
         p = "hdfs://%s:%s%s" % (fs.host, fs.port, fn)
-        with fs.open_file(fn, 'w') as fo:
+        with fs.open_file(fn, 'wt') as fo:
             fo.write(make_random_str())
         info = fs.get_path_info(fn)
         fs.close()
         s = hdfs.path.stat(p)
-        for n1, n2 in self.NMAP.iteritems():
+        for n1, n2 in self.NMAP.items():
             attr = getattr(s, n1, None)
             self.assertFalse(attr is None)
             self.assertEqual(attr, info[n2])
@@ -365,7 +365,7 @@ class TestStat(unittest.TestCase):
             host = ""
         fs = hdfs.hdfs(host, 0)
         with fs.open_file(p_, 'w') as fo:
-            fo.write(make_random_str())
+            fo.write(b"foobar\n")
         info = fs.get_path_info(p_)
         fs.close()
         s = hdfs.path.stat(p)
@@ -487,7 +487,7 @@ class TestAccess(unittest.TestCase):
     def __test(self, offset, user=None):
         for mode in os.R_OK, os.W_OK, os.X_OK:
             hdfs.chmod(self.path, mode << offset)
-            print ' * mode now: %03o' % hdfs.path.stat(self.path).st_mode
+            print(' * mode now: %03o' % hdfs.path.stat(self.path).st_mode)
             self.assertTrue(hdfs.path.access(self.path, mode, user=user))
 
     def test_owner(self):

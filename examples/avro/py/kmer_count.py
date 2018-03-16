@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -18,16 +18,16 @@
 #
 # END_COPYRIGHT
 
+# DOCS_INCLUDE_START
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
 from pydoop.avrolib import AvroContext
-
 
 WIDTH = 5
 
 
 def window(s, width):
-    for i in xrange(len(s) - width + 1):
+    for i in range(len(s) - width + 1):
         yield s[i: i + width]
 
 

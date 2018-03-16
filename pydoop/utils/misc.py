@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -23,122 +23,9 @@ Miscellaneous utilities.
 import logging
 import time
 import uuid
-from struct import pack
 
 
 DEFAULT_LOG_LEVEL = "WARNING"
-
-
-def split_hdfs_path(hdfs_path, user=None):  # backwards compatibility
-    from pydoop.hdfs.path import split
-    return split(hdfs_path, user)
-
-
-def raise_pydoop_exception(msg):  # backwards compatibility
-    return UserWarning(msg)
-
-
-def jc_configure(obj, jc, k, f, df=None):
-    r"""
-    Gets a configuration parameter from ``jc`` and automatically sets a
-    corresponding attribute on ``obj``\ .
-
-    :type obj: any object, typically a MapReduce component
-    :param obj: object on which the attribute must be set
-    :type jc: :class:`JobConf`
-    :param jc: a job configuration object
-    :type k: string
-    :param k: a configuration key
-    :type f: string
-    :param f: name of the attribute to set
-    :type df: string
-    :param df: default value for the attribute if ``k`` is not present in
-      ``jc``
-    """
-    v = df
-    if jc.hasKey(k):
-        v = jc.get(k)
-    elif df is None:
-        raise_pydoop_exception("jc_configure: no default for option '%s'" % k)
-    setattr(obj, f, v)
-
-
-def jc_configure_int(obj, jc, k, f, df=None):
-    """
-    Works like :func:`jc_configure` , but converts ``jc[k]`` to an integer.
-    """
-    v = df
-    if jc.hasKey(k):
-        v = jc.getInt(k)
-    elif df is None:
-        raise_pydoop_exception(
-            "jc_configure_int: no default for option '%s'" % k
-        )
-    setattr(obj, f, v)
-
-
-def jc_configure_bool(obj, jc, k, f, df=None):
-    r"""
-    Works like :func:`jc_configure`\ , but converts ``jc[k]`` to a boolean.
-    """
-    v = df
-    if jc.hasKey(k):
-        v = jc.getBoolean(k)
-    elif df is None:
-        raise_pydoop_exception(
-            "jc_configure_bool: no default for option '%s'" % k
-        )
-    setattr(obj, f, v)
-
-
-def jc_configure_float(obj, jc, k, f, df=None):
-    r"""
-    Works like :func:`jc_configure`\ , but converts ``jc[k]`` to a float.
-    """
-    v = df
-    if jc.hasKey(k):
-        v = jc.getFloat(k)
-    elif df is None:
-        raise_pydoop_exception(
-            "jc_configure_float: no default for option '%s'" % k
-        )
-    setattr(obj, f, v)
-
-
-def jc_configure_log_level(obj, jc, k, f, df=None):
-    r"""
-    Works like :func:`jc_configure`\ , but converts ``jc[k]`` to a logging
-    level.
-
-    The default value, if specified, must be a log level string, e.g., 'INFO'.
-    """
-    jc_configure(obj, jc, k, f, df)
-    a = getattr(obj, f)
-    try:
-        setattr(obj, f, getattr(logging, a))
-    except AttributeError:
-        raise ValueError("unsupported log level: %r" % a)
-
-
-def make_input_split(filename, offset, length):
-    r"""
-    Build a fake (i.e., not tied to a real file)
-    :class:`~pydoop.pipes.InputSplit`\ . This is used for testing.
-
-    :type filename: string
-    :param filename: file name
-    :type offset: int
-    :param offset: byte offset of the split with respect to the
-      beginning of the file
-    :type length: int
-    :param length: length of the split in bytes
-    """
-    l = len(filename)
-    s = pack(">h", l)
-    s += filename
-    s += pack(">q", offset)
-    s += pack(">q", length)
-    return s
 
 
 class NullHandler(logging.Handler):
@@ -171,7 +58,7 @@ class Timer(object):
     def _get_time_counter(self, name):
         if name not in self._counters:
             counter_name = self._gen_counter_name(name)
-            self._counters[name] = self.ctx.getCounter(
+            self._counters[name] = self.ctx.get_counter(
                 self._counter_group, counter_name
             )
         return self._counters[name]
@@ -181,7 +68,7 @@ class Timer(object):
 
     def stop(self, s):
         delta_ms = 1000 * (time.time() - self._start_times[s])
-        self.ctx.incrementCounter(self._get_time_counter(s), int(delta_ms))
+        self.ctx.increment_counter(self._get_time_counter(s), int(delta_ms))
 
     def time_block(self, event_name):
         return self.TimingBlock(self, event_name)

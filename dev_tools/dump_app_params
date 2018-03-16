@@ -40,7 +40,7 @@ def get_col_widths(actions):
         for n in 'short_opt', 'long_opt', 'help':
             attr = getattr(a, n)
             lengths.setdefault(n, []).append(0 if attr is None else len(attr))
-    widths = dict((k, max(v)) for k, v in lengths.iteritems())
+    widths = dict((k, max(v)) for k, v in lengths.items())
     # add 4 for ``backticks``
     for n in 'short_opt', 'long_opt':
         widths[n] += 4
@@ -56,23 +56,23 @@ class Formatter(object):
         self.actions = actions
 
     def format_line(self, fields):
-        l = [f.ljust(self.col_widths[n]) for f, n in zip(fields, self.NAMES)]
-        return '| %s |' % ' | '.join(l)
+        ln = [f.ljust(self.col_widths[n]) for f, n in zip(fields, self.NAMES)]
+        return '| %s |' % ' | '.join(ln)
 
     def format_action(self, action):
-        l = []
+        ln = []
         for n in 'short_opt', 'long_opt':
             opt = getattr(action, n)
-            l.append('``%s``' % opt if opt else '')
-        l.append(getattr(action, 'help'))
-        return self.format_line(l)
+            ln.append('``%s``' % opt if opt else '')
+        ln.append(getattr(action, 'help'))
+        return self.format_line(ln)
 
     def hline(self, filler='-'):
-        l = []
+        ln = []
         for n in self.NAMES:
-            l.append(filler * self.col_widths[n])
+            ln.append(filler * self.col_widths[n])
         return '+{0}{1}{0}+'.format(
-            filler, '{0}+{0}'.format(filler).join(l)
+            filler, '{0}+{0}'.format(filler).join(ln)
         )
 
     def header_lines(self):
@@ -82,13 +82,13 @@ class Formatter(object):
         return lines
 
     def dump_table(self, outf, exclude_h=True):
-        for l in self.header_lines():
-            outf.write(l+'\n')
+        for ln in self.header_lines():
+            outf.write(ln + '\n')
         for a in self.actions:
             if exclude_h and a.short_opt == '-h':
                 continue
-            outf.write(self.format_action(a)+'\n')
-            outf.write(self.hline()+'\n')
+            outf.write(self.format_action(a) + '\n')
+            outf.write(self.hline() + '\n')
 
 
 def make_parser():
@@ -102,7 +102,6 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
     outf = None
-    #--
     pydoop_parser = pydoop.app.main.make_parser()
     subp = pydoop_parser._pydoop_docs_helper[args.app]
     act_map = dict((_.title, _._group_actions) for _ in subp._action_groups)

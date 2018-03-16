@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -21,7 +21,9 @@ import os
 import logging
 import time
 import numbers
-from cStringIO import StringIO
+import struct
+import types
+
 from copy import deepcopy
 
 from pydoop import hadoop_version_info
@@ -35,28 +37,64 @@ from pydoop.utils.serialize import (
     private_encode,
 )
 
-from pydoop.utils.misc import Timer
-
 from . import connections, api
 from .streams import get_key_value_stream, get_key_values_stream
+from .binary_streams import BinaryUpStreamAdapter
 from .string_utils import create_digest
+
+from pydoop.utils.py3compat import unicode, StringIO, iteritems
+
 
 logging.basicConfig()
 LOGGER = logging.getLogger('pipes')
 LOGGER.setLevel(logging.CRITICAL)
 
+PSTATS_DIR = "PYDOOP_PSTATS_DIR"
+PSTATS_FMT = "PYDOOP_PSTATS_FMT"
+DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
+if os.getenv(PSTATS_DIR):
+    import tempfile
+    import cProfile
+    import pydoop.hdfs as hdfs
 DEFAULT_IO_SORT_MB = 100
-_PORT_KEYS = [
+
+_PORT_KEYS = frozenset([
     "hadoop.pipes.command.port",  # Hadoop 1
     "mapreduce.pipes.command.port",  # Hadoop 2
-]
-_FILE_KEYS = [
+])
+_FILE_KEYS = frozenset([
     "hadoop.pipes.command.file",  # Hadoop 1
     "mapreduce.pipes.commandfile"  # Hadoop 2.  No dot.
-]
-_SECRET_LOCATION_KEYS = [
+])
+_SECRET_LOCATION_KEYS = frozenset([
     "hadoop.pipes.shared.secret.location"  # All versions
-]
+])
+_INPUT_FORMAT_KEYS = frozenset([
+    "mapred.input.format.class",
+    "mapreduce.inputformat.class",
+    "mapreduce.job.inputformat.class",
+])
+
+# FIXME: duplicate with app.submit, move to a common module
+IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
+
+
+class LongWritableDeserializer(object):
+
+    def __init__(self):
+        self.struct = struct.Struct(">q")
+
+    def deserialize(self, record):
+        return self.struct.unpack(record)[0]
+
+
+class TextDeserializer(object):
+
+    def __init__(self):
+        self.decoder = "utf-8"
+
+    def deserialize(self, record):
+        return record.decode(self.decoder)
 
 
 def _get_from_env(candidate_keys):
@@ -193,16 +231,33 @@ class CombineRunner(api.RecordWriter):
         ctx = self.ctx
         writer = ctx.writer
         ctx.writer = None
-        with ctx.timer.time_block('spill reduction'):
-            for key, values in self.data.iteritems():
-                ctx._key, ctx._values = key, iter(values)
-                self.reducer.reduce(ctx)
+        # disable auto-deserialize (ctx.key will be called by reduce)
+        # FIXME: this might break custom Context implementations
+        get_input_key = ctx.get_input_key
+        ctx.get_input_key = types.MethodType(lambda self: self._key, ctx)
+        for key, values in iteritems(self.data):
+            ctx._key, ctx._values = key, iter(values)
+            self.reducer.reduce(ctx)
         ctx.writer = writer
+        ctx.get_input_key = get_input_key
         self.data.clear()
         self.used_bytes = 0
 
 
 class TaskContext(api.MapContext, api.ReduceContext):
+
+    JOB_OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir"
+    TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
+    TASK_PARTITION = "mapreduce.task.partition"
+
+    def deserializing(self, meth, deserializer):
+        """
+        Decorate a key/value getter to make it auto-deserialize records.
+        """
+        def deserialize(*args, **kwargs):
+            ret = meth(*args, **kwargs)
+            return deserializer.deserialize(ret)
+        return deserialize
 
     def __init__(self, up_link, private_encoding=True, fast_combiner=False):
         self._fast_combiner = fast_combiner
@@ -224,7 +279,6 @@ class TaskContext(api.MapContext, api.ReduceContext):
         self._progress_float = 0.0
         self._last_progress = 0
         self._registered_counters = []
-        self.timer = Timer(self, 'Pydoop TaskContext')
         # None = unknown (yet), e.g., while setting conf.  In this
         # case, *both* is_mapper() and is_reducer() must return False
         self._is_mapper = None
@@ -247,7 +301,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
     def close(self):
         if self.writer:
             self.writer.close()
-        self.up_link.send('done')
+        self.up_link.send(self.up_link.DONE)
 
     def set_combiner(self, factory, input_split, n_reduces):
         self.n_reduces = n_reduces
@@ -269,22 +323,41 @@ class TaskContext(api.MapContext, api.ReduceContext):
         if self.writer:
             self.writer.emit(key, value)
         else:
-            if self._private_encoding:
+            if self._is_mapper and self._private_encoding:
                 key = private_encode(key)
                 value = private_encode(value)
-            else:
-                key = (key if type(key) in [str, unicode]
-                       else unicode(key))
-                value = (value if type(value) in [str, unicode]
-                         else unicode(value))
             if self.partitioner:
                 part = self.partitioner.partition(key, self.n_reduces)
-                self.up_link.send('partitionedOutput', part, key, value)
+                self.up_link.send(self.up_link.PARTITIONED_OUTPUT,
+                                  part, key, value)
             else:
-                self.up_link.send('output', key, value)
+                self.up_link.send(self.up_link.OUTPUT, key, value)
 
     def set_job_conf(self, vals):
         self._job_conf = api.JobConf(vals)
+
+    # FIXME: currently works only with the default TextInputFormat;
+    # TODO: generalize to support Hadoop Writable types
+    def setup_deserialization(self):
+        """\
+        Set up auto-deserialization of input key/values
+        """
+        # NOTE: assuming up link is binary => down link is binary
+        # the dict check is for the simulator
+        if isinstance(self.up_link, (BinaryUpStreamAdapter, dict)):
+            if not _INPUT_FORMAT_KEYS.intersection(self._job_conf):
+                self.get_input_key = self.deserializing(
+                    self.get_input_key, LongWritableDeserializer()
+                )
+                self.get_input_value = self.deserializing(
+                    self.get_input_value, TextDeserializer()
+                )
+
+    def setup_serialization(self):
+        """\
+        Set up auto-serialization of output key/values
+        """
+        pass
 
     def get_job_conf(self):
         return self._job_conf
@@ -305,10 +378,10 @@ class TaskContext(api.MapContext, api.ReduceContext):
         if now - self._last_progress > 1:
             self._last_progress = now
             if self._status_set:
-                self.up_link.send("status", self._status)
+                self.up_link.send(self.up_link.STATUS, self._status)
                 LOGGER.debug("Sending status: %r", self._status)
                 self._status_set = False
-            self.up_link.send("progress", self._progress_float)
+            self.up_link.send(self.up_link.PROGRESS, self._progress_float)
             self.up_link.flush()
             LOGGER.debug("Sending progress: %r", self._progress_float)
 
@@ -320,17 +393,16 @@ class TaskContext(api.MapContext, api.ReduceContext):
     def get_counter(self, group, name):
         counter_id = len(self._registered_counters)
         self._registered_counters.append(counter_id)
-        self.up_link.send("registerCounter", counter_id, group, name)
+        self.up_link.send(self.up_link.REGISTER_COUNTER,
+                          counter_id, group, name)
         return api.Counter(counter_id)
 
     def increment_counter(self, counter, amount):
-        self.up_link.send("incrementCounter", counter.get_id(), amount)
+        self.up_link.send(self.up_link.INCREMENT_COUNTER,
+                          counter.get_id(), amount)
 
-    def get_input_split(self):
-        return InputSplit(self._input_split)
-
-    def getInputSplit(self):
-        return self._input_split
+    def get_input_split(self, raw=False):
+        return self._input_split if raw else InputSplit(self._input_split)
 
     def get_input_key_class(self):
         return self._input_key_class
@@ -340,13 +412,36 @@ class TaskContext(api.MapContext, api.ReduceContext):
 
     def next_value(self):
         try:
-            self._value = self._values.next()
+            self._value = next(self._values)
             return True
         except StopIteration:
             return False
 
+    def get_output_dir(self):
+        return self._job_conf[self.JOB_OUTPUT_DIR]
 
-def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
+    def get_work_path(self):
+        try:
+            return self._job_conf[self.TASK_OUTPUT_DIR]
+        except KeyError:
+            raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
+
+    def get_task_partition(self):
+        return self._job_conf.get_int(self.TASK_PARTITION)
+
+    def get_default_work_file(self, extension=""):
+        partition = self.get_task_partition()
+        if partition is None:
+            raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
+        base = self._job_conf.get("mapreduce.output.basename", "part")
+        task_type = "r" if self.is_reducer() else "m"
+        return "%s/%s-%s-%05d%s" % (
+            self.get_work_path(), base, task_type, partition, extension
+        )
+
+
+def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None,
+                        auto_serialize=True):
     """
     Select appropriate connection streams and protocol.
     """
@@ -354,11 +449,14 @@ def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None):
     cmd_file = cmd_file or get_command_file()
     if port is not None:
         port = int(port)
-        conn = connections.open_network_connections(port)
+        conn = connections.open_network_connections(port, auto_serialize)
     elif cmd_file is not None:
         out_file = cmd_file + '.out'
-        conn = connections.open_playback_connections(cmd_file, out_file)
+        conn = connections.open_playback_connections(
+            cmd_file, out_file, auto_serialize
+        )
     else:
+        # auto_serialize has no effect here. Should we warn the user?
         istream = sys.stdin if istream is None else istream
         ostream = sys.stdout if ostream is None else ostream
         conn = connections.open_file_connections(istream=istream,
@@ -384,7 +482,7 @@ class StreamRunner(object):
             self.password = None
             return
         try:
-            with open(pfile_name) as f:
+            with open(pfile_name, 'rb') as f:
                 self.password = f.read()
                 self.logger.debug('password: %r', self.password)
         except IOError:
@@ -392,25 +490,34 @@ class StreamRunner(object):
 
     def run(self):
         self.logger.debug('start running')
+        AUTHENTICATION_REQ = self.cmd_stream.AUTHENTICATION_REQ
+        SET_JOB_CONF = self.cmd_stream.SET_JOB_CONF
+        RUN_MAP = self.cmd_stream.RUN_MAP
+        RUN_REDUCE = self.cmd_stream.RUN_REDUCE
+
         for cmd, args in self.cmd_stream:
             self.logger.debug('dispatching cmd: %s, args: %s', cmd, args)
-            if cmd == 'authenticationReq':
+            if cmd == AUTHENTICATION_REQ:
                 digest, challenge = args
                 self.logger.debug(
                     'authenticationReq: %r, %r', digest, challenge)
                 if self.fails_to_authenticate(digest, challenge):
                     self.logger.critical('Server failed to authenticate')
                     break  # bailing out
-            elif cmd == 'setJobConf':
+            elif cmd == SET_JOB_CONF:
                 self.ctx.set_job_conf(args[0])
-            elif cmd == 'runMap':
+            elif cmd == RUN_MAP:
                 self.ctx.set_is_mapper()
                 input_split, n_reduces, piped_input = args
+                if piped_input:
+                    self.ctx.setup_deserialization()
                 self.run_map(input_split, n_reduces, piped_input)
                 break  # we can bail out, there is nothing more to do.
-            elif cmd == 'runReduce':
+            elif cmd == RUN_REDUCE:
                 self.ctx.set_is_reducer()
                 part, piped_output = args
+                if piped_output:
+                    self.ctx.setup_serialization()
                 self.run_reduce(part, piped_output)
                 break  # we can bail out, there is nothing more to do.
         self.logger.debug('done')
@@ -426,7 +533,8 @@ class StreamRunner(object):
         self.authenticated = True
         response_digest = create_digest(self.password, digest)
         self.logger.debug('authenticationResp: %r', response_digest)
-        self.ctx.up_link.send('authenticationResp', response_digest)
+        self.ctx.up_link.send(self.ctx.up_link.AUTHENTICATION_RESP,
+                              response_digest)
         self.ctx.up_link.flush()
         return False
 
@@ -438,13 +546,13 @@ class StreamRunner(object):
         ctx._input_split = input_split
         LOGGER.debug("Input split: %r", input_split)
         if piped_input:
-            cmd, args = self.cmd_stream.next()
-            if cmd == "setInputTypes":
+            cmd, args = next(iter(self.cmd_stream))
+            if cmd == self.cmd_stream.SET_INPUT_TYPES:
                 ctx._input_key_class, ctx._input_value_class = args
                 LOGGER.debug("Input (key, value) class: (%r, %r)",
                              ctx._input_key_class, ctx._input_value_class)
         reader = factory.create_record_reader(ctx)
-        if reader is None and piped_input is None:
+        if reader is None and not piped_input:
             raise api.PydoopError('RecordReader not defined')
         send_progress = reader is not None
         mapper = factory.create_mapper(ctx)
@@ -452,13 +560,16 @@ class StreamRunner(object):
         ctx.set_combiner(factory, input_split, n_reduces)
         mapper_map = mapper.map
         progress_function = ctx.progress
+        if n_reduces == 0:
+            ctx.writer = factory.create_record_writer(ctx)
+            if ctx.writer is None and not ctx.job_conf.get_bool(IS_JAVA_RW):
+                raise api.PydoopError('RecordWriter not defined')
         for ctx._key, ctx._value in reader:
             if send_progress:
                 ctx._progress_float = reader.get_progress()
                 LOGGER.debug("Progress updated to %r ", ctx._progress_float)
                 progress_function()
-            with ctx.timer.time_block('map calls'):
-                mapper_map(ctx)
+            mapper_map(ctx)
         mapper.close()
         self.logger.debug('done with run_map')
 
@@ -474,15 +585,14 @@ class StreamRunner(object):
                                            ctx.private_encoding)
         reducer_reduce = reducer.reduce
         for ctx._key, ctx._values in kvs_stream:
-            with ctx.timer.time_block('reduce calls'):
-                reducer_reduce(ctx)
+            reducer_reduce(ctx)
         reducer.close()
         self.logger.debug('done with run_reduce')
 
 
 def run_task(factory, port=None, istream=None, ostream=None,
              private_encoding=True, context_class=TaskContext,
-             cmd_file=None, fast_combiner=False):
+             cmd_file=None, fast_combiner=False, auto_serialize=True):
     """
     Run the assigned task in the framework.
 
@@ -490,42 +600,29 @@ def run_task(factory, port=None, istream=None, ostream=None,
     :return: :obj:`True` if the task succeeded.
     """
     connections = resolve_connections(
-        port, istream=istream, ostream=ostream, cmd_file=cmd_file
+        port, istream=istream, ostream=ostream, cmd_file=cmd_file,
+        auto_serialize=auto_serialize
     )
     context = context_class(connections.up_link,
                             private_encoding=private_encoding,
                             fast_combiner=fast_combiner)
     stream_runner = StreamRunner(factory, context, connections.cmd_stream)
-    stream_runner.run()
+    pstats_dir = os.getenv(PSTATS_DIR)
+    if pstats_dir:
+        pstats_fmt = os.getenv(PSTATS_FMT, DEFAULT_PSTATS_FMT)
+        hdfs.mkdir(pstats_dir)
+        fd, pstats_fn = tempfile.mkstemp(suffix=".pstats")
+        os.close(fd)
+        cProfile.runctx("stream_runner.run()",
+                        {"stream_runner": stream_runner}, globals(),
+                        filename=pstats_fn)
+        name = pstats_fmt % (
+            "r" if context.is_reducer() else "m",
+            context.get_task_partition(), os.path.basename(pstats_fn)
+        )
+        hdfs.put(pstats_fn, hdfs.path.join(pstats_dir, name))
+    else:
+        stream_runner.run()
     context.close()
     connections.close()
     return True
-
-
-def runTask(factory):
-    run_task(factory, private_encoding=False, fast_combiner=False)
-
-
-class RecordReaderWrapper(object):
-
-    def __init__(self, obj):
-        self._obj = obj
-
-    def __iter__(self):
-        return self.fast_iterator()
-
-    def fast_iterator(self):
-        obj = self._obj
-        next_op = obj.next
-        flag, key, value = next_op()
-        if flag:
-            yield (key, value)
-        else:
-            raise StopIteration
-
-    def next(self):
-        flag, key, value = self._obj.next()
-        if flag:
-            return (key, value)
-        else:
-            raise StopIteration

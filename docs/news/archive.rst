@@ -2,6 +2,18 @@ News Archive
 ------------
 
 
+New in 1.2.0
+^^^^^^^^^^^^
+
+ * Added support for Hadoop 2.7.2.
+ * Dropped support for Python 2.6. Maintaining 2.6 compatibility would
+   require adding another dimension to the Travis matrix, vastly
+   increasing the build time and ultimately slowing down the
+   development. Since the default Python version in all major
+   distributions is 2.7, the added effort would gain us little.
+ * Bug fixes.
+
+
 New in 1.1.0
 ^^^^^^^^^^^^
 
@@ -200,9 +212,7 @@ New in 0.5.0
 
 * Pydoop now works with Hadoop 1.0
 * Multiple versions of Hadoop can now be supported by the same
-  installation of Pydoop.  See the section on building for
-  :ref:`multiple Hadoop versions <multiple_hadoop_versions>`) for the
-  details
+  installation of Pydoop.
 * We have added a :ref:`command line tool <pydoop_script_tutorial>` to
   make it trivially simple to write shorts scripts for simple
   problems.

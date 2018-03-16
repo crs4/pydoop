@@ -7,9 +7,12 @@ Pydoop applications are run via the ``pydoop submit`` command.  To
 start, you will need a working Hadoop cluster.  If you don't have one
 available, you can bring up a single-node Hadoop cluster on your
 machine -- see `the Hadoop web site <http://hadoop.apache.org>`_ for
-instructions.
+instructions. Alternatively, the source directory contains a
+Dockerfile that can be used to build an image with Hadoop and Pydoop
+installed and (minimally) configured. Check out ``.travis.yml`` for
+usage hints.
 
-If your applications is contained in a single (local) file named
+If your application is contained in a single (local) file named
 ``wc.py``, with an entry point called ``__main__`` (see
 :ref:`api_tutorial`) you can run it as follows::
 

@@ -1,15 +1,10 @@
 *.pyc
 *~
-DEFAULT_HADOOP_HOME
 build
-docs/_build/
 docs/_static/favicon.ico
 docs/_static/logo.png
 pydoop/config.py
 pydoop/version.py
-src/_hdfs_*_main.cpp
-src/_pipes_*_main.cpp
-src/hadoop*.patched/
 src/hadoop*/libhdfs/config.h
 src/hdfs/hdfs.xcodeproj
 src/hdfs/hdfs/*

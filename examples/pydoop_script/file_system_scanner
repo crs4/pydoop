@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -146,7 +146,7 @@ def hash_mapper(_, pinfo, writer):
 
 def hash_reducer(fname, lpinfo, writer, jc):
     prefix = jc.get('fscanner.path.prefix', '')
-    info = unpack_info(lpinfo.next())
+    info = unpack_info(next(lpinfo))
     writer.status('processing {}'.format(info['name']))
     info['md5'] = compute_md5(info['name'])
     if prefix != '':

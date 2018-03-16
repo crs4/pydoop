@@ -13,23 +13,12 @@ basically have two options:
 To write sequence files with Pydoop, set the ouput format and the
 compression type as follows::
 
-  [MapReduce V1]
-  pydoop submit \
-  --output-format=org.apache.hadoop.mapred.SequenceFileOutputFormat \
-  -D mapred.output.compression.type=NONE|RECORD|BLOCK [...]
-
-  [MapReduce V2]
   pydoop submit \
   --output-format=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat \
   -D mapreduce.output.fileoutputformat.compress.type=NONE|RECORD|BLOCK [...]
 
 To read sequence files, set the input format as follows::
 
-  [MapReduce V1]
-  pydoop submit \
-  --input-format=org.apache.hadoop.mapred.SequenceFileInputFormat
-
-  [MapReduce V2]
   pydoop submit \
   --input-format=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat
 
@@ -55,13 +44,9 @@ representation could require as much as 10 bytes, you decide to save
 space by having the wordcount reducer emit the raw four bytes of the
 integer instead:
 
-.. code-block:: python
-
-  class WordCountReducer(Reducer):
-
-      def reduce(self, context):
-          s = sum(context.values)
-          context.emit(context.key, struct.pack(">i", s))
+.. literalinclude:: ../../examples/sequence_file/bin/wordcount.py
+   :language: python
+   :pyobject: WordCountReducer
 
 Since newline characters can appear in the serialized values, you
 cannot use the standard text format where each line contains a

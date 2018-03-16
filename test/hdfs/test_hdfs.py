@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -16,11 +16,13 @@
 #
 # END_COPYRIGHT
 
+from __future__ import division
+
 import unittest
 import tempfile
 import os
 import stat
-from itertools import izip
+from pydoop.utils.py3compat import czip
 from threading import Thread
 
 import pydoop.hdfs as hdfs
@@ -38,11 +40,11 @@ class TestHDFS(unittest.TestCase):
         fs.create_directory(wd_bn)
         self.hdfs_wd = fs.get_path_info(wd_bn)["name"]
         fs.close()
-        basenames = ["test_path_%d" % i for i in xrange(2)]
+        basenames = ["test_path_%d" % i for i in range(2)]
         self.local_paths = ["%s/%s" % (self.local_wd, bn) for bn in basenames]
         self.hdfs_paths = ["%s/%s" % (self.hdfs_wd, bn) for bn in basenames]
         self.data = make_random_data(
-            4 * BUFSIZE + BUFSIZE / 2, printable=False
+            4 * BUFSIZE + BUFSIZE // 2, printable=False
         )
         for path in self.local_paths:
             self.assertTrue(path.startswith("file:"))
@@ -69,21 +71,21 @@ class TestHDFS(unittest.TestCase):
 
     def dump(self):
         for test_path in self.hdfs_paths[0], self.local_paths[0]:
-            hdfs.dump(self.data, test_path)
+            hdfs.dump(self.data, test_path, mode="wb")
             with hdfs.open(test_path) as fi:
                 rdata = fi.read()
             fi.fs.close()
             self.assertEqual(rdata, self.data)
 
     def __ls(self, ls_func, path_transform):
-        for wd, paths in izip(
+        for wd, paths in czip(
             (self.local_wd, self.hdfs_wd), (self.local_paths, self.hdfs_paths)
         ):
             for p in paths:
-                hdfs.dump(self.data, p)
+                hdfs.dump(self.data, p, mode="wb")
             test_dir = "%s/%s" % (wd, "test_dir")
             test_path = "%s/%s" % (test_dir, "test_path")
-            hdfs.dump(self.data, test_path)
+            hdfs.dump(self.data, test_path, mode="wb")
             paths.append(test_dir)
             for recursive in False, True:
                 if recursive:
@@ -110,33 +112,41 @@ class TestHDFS(unittest.TestCase):
 
     def load(self):
         for test_path in self.hdfs_paths[0], self.local_paths[0]:
-            hdfs.dump(self.data, test_path)
+            hdfs.dump(self.data, test_path, mode="wb")
             rdata = hdfs.load(test_path)
             self.assertEqual(rdata, self.data)
 
-    def __make_tree(self, wd):
-        d1 = "%s/d1" % wd
+    def __make_tree(self, wd, root="d1", create=True):
+        """
+        d1
+        |-- d2
+        |   `-- f2
+        `-- f1
+        """
+        d1 = "%s/%s" % (wd, root)
         t1 = FSTree(d1)
         d2 = "%s/d2" % d1
         t2 = t1.add(d2)
-        hdfs.mkdir(d2)
+        if create:
+            hdfs.mkdir(d2)
         for t, d, bn in ((t1, d1, "f1"), (t2, d2, "f2")):
             f = "%s/%s" % (d, bn)
-            hdfs.dump(self.data, f)
+            if create:
+                hdfs.dump(self.data, f, mode="wb")
             t.add(f, 0)
         return t1
 
     def __cp_file(self, wd):
         fn = "%s/fn" % wd
-        hdfs.dump(self.data, fn)
+        hdfs.dump(self.data, fn, mode="wb")
         dest_dir = "%s/dest_dir" % wd
         hdfs.mkdir(dest_dir)
         fn_copy_on_wd = "%s/fn_copy" % wd
-        hdfs.cp(fn, fn_copy_on_wd)
+        hdfs.cp(fn, fn_copy_on_wd, mode="wb")
         self.assertEqual(hdfs.load(fn_copy_on_wd), self.data)
         self.assertRaises(IOError, hdfs.cp, fn, fn_copy_on_wd)
         fn_copy_on_dest_dir = "%s/fn" % dest_dir
-        hdfs.cp(fn, dest_dir)
+        hdfs.cp(fn, dest_dir, mode="wb")
         self.assertEqual(hdfs.load(fn_copy_on_dest_dir), self.data)
         self.assertRaises(IOError, hdfs.cp, fn, dest_dir)
 
@@ -145,9 +155,9 @@ class TestHDFS(unittest.TestCase):
         hdfs.mkdir(src_dir)
         copy_on_wd = "%s/src_dir_copy" % wd
         copy_on_copy_on_wd = "%s/src_dir" % copy_on_wd
-        hdfs.cp(src_dir, copy_on_wd)
+        hdfs.cp(src_dir, copy_on_wd, mode="wb")
         self.assertTrue(hdfs.path.exists(copy_on_wd))
-        hdfs.cp(src_dir, copy_on_wd)
+        hdfs.cp(src_dir, copy_on_wd, mode="wb")
         self.assertTrue(hdfs.path.exists(copy_on_copy_on_wd))
         self.assertRaises(IOError, hdfs.cp, src_dir, copy_on_wd)
 
@@ -158,20 +168,21 @@ class TestHDFS(unittest.TestCase):
         src_bn, copy_on_wd_bn = [
             hdfs.path.basename(d) for d in (src, copy_on_wd)
         ]
-        hdfs.cp(src, copy_on_wd)
-        for t in src_t.walk():
-            copy_name = t.name.replace(src_bn, copy_on_wd_bn)
-            self.assertTrue(hdfs.path.exists(copy_name))
+        hdfs.cp(src, copy_on_wd, mode="wb")
+        exp_t = self.__make_tree(wd, root=copy_on_wd_bn, create=False)
+        for t, exp_t in czip(src_t.walk(), exp_t.walk()):
+            self.assertTrue(hdfs.path.exists(exp_t.name))
             if t.kind == 0:
-                self.assertEqual(hdfs.load(copy_name), self.data)
-        hdfs.cp(src, copy_on_wd)
-        for t in src_t.walk():
-            copy_name = t.name.replace(
-                src_bn, "%s/%s" % (copy_on_wd_bn, src_bn)
-            )
-            self.assertTrue(hdfs.path.exists(copy_name))
+                self.assertEqual(hdfs.load(exp_t.name), self.data)
+        # check semantics when target dir already exists
+        hdfs.rmr(copy_on_wd)
+        hdfs.mkdir(copy_on_wd)
+        hdfs.cp(src, copy_on_wd, mode="wb")
+        exp_t = self.__make_tree(copy_on_wd, root=src_bn, create=False)
+        for t, exp_t in czip(src_t.walk(), exp_t.walk()):
+            self.assertTrue(hdfs.path.exists(exp_t.name))
             if t.kind == 0:
-                self.assertEqual(hdfs.load(copy_name), self.data)
+                self.assertEqual(hdfs.load(exp_t.name), self.data)
 
     def cp(self):
         for wd in self.local_wd, self.hdfs_wd:
@@ -182,9 +193,9 @@ class TestHDFS(unittest.TestCase):
     def put(self):
         src = hdfs.path.split(self.local_paths[0])[-1]
         dest = self.hdfs_paths[0]
-        with open(src, "w") as f:
+        with open(src, "wb") as f:
             f.write(self.data)
-        hdfs.put(src, dest)
+        hdfs.put(src, dest, mode="wb")
         with hdfs.open(dest) as fi:
             rdata = fi.read()
         self.assertEqual(rdata, self.data)
@@ -192,9 +203,9 @@ class TestHDFS(unittest.TestCase):
     def get(self):
         src = self.hdfs_paths[0]
         dest = hdfs.path.split(self.local_paths[0])[-1]
-        hdfs.dump(self.data, src)
-        hdfs.get(src, dest)
-        with open(dest) as fi:
+        hdfs.dump(self.data, src, mode="wb")
+        hdfs.get(src, dest, mode="wb")
+        with open(dest, 'rb') as fi:
             rdata = fi.read()
         self.assertEqual(rdata, self.data)
 
@@ -223,7 +234,7 @@ class TestHDFS(unittest.TestCase):
     def chown(self):
         new_user = 'nobody'
         test_path = self.hdfs_paths[0]
-        hdfs.dump(self.data, test_path)
+        hdfs.dump(self.data, test_path, mode="wb")
         hdfs.chown(test_path, user=new_user)
         path_info = hdfs.lsl(test_path)[0]
         self.assertEqual(path_info['owner'], new_user)
@@ -238,7 +249,7 @@ class TestHDFS(unittest.TestCase):
     def rename(self):
         test_path = self.hdfs_paths[0]
         new_path = "%s.new" % test_path
-        hdfs.dump(self.data, test_path)
+        hdfs.dump(self.data, test_path, mode="wb")
         hdfs.rename(test_path, new_path)
         self.assertFalse(hdfs.path.exists(test_path))
         self.assertTrue(hdfs.path.exists(new_path))
@@ -248,7 +259,7 @@ class TestHDFS(unittest.TestCase):
 
     def renames(self):
         test_path = self.hdfs_paths[0]
-        hdfs.dump(self.data, test_path)
+        hdfs.dump(self.data, test_path, mode="wb")
         new_d = hdfs.path.join(self.hdfs_wd, "new_dir")
         new_path = hdfs.path.join(new_d, "new_p")
         hdfs.renames(test_path, new_path)
@@ -268,7 +279,7 @@ class TestHDFS(unittest.TestCase):
         if hdfs.default_is_local():
             # only run on HDFS
             return
-        hdfs.dump(self.data, self.hdfs_paths[0])
+        hdfs.dump(self.data, self.hdfs_paths[0], mode="wb")
         fs = hdfs.hdfs("default", 0)
         hs = fs.get_hosts(self.hdfs_paths[0], 0, 10)
         self.assertTrue(len(hs) > 0)
@@ -310,7 +321,7 @@ class TestHDFS(unittest.TestCase):
             def count(self):
                 return self.counter.count
 
-        some_data = "a" * (5 * 1024 * 1024)  # 5 MB
+        some_data = b"a" * (5 * 1024 * 1024)  # 5 MB
         counter = BusyContext()
 
         ###########################
@@ -345,7 +356,7 @@ class TestHDFS(unittest.TestCase):
         self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:
-            hdfs.cp(self.hdfs_paths[0], self.hdfs_paths[0] + '_2')
+            hdfs.cp(self.hdfs_paths[0], self.hdfs_paths[0] + '_2', mode="wb")
         self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:

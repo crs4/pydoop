@@ -10,8 +10,7 @@ installing to each node is not feasible (e.g., lack of a shared mount
 point). Of course, Hadoop itself must be already installed and
 properly configured in all cluster nodes before you can run this.
 
-Source code for this example is available under
-``examples/self_contained``\ .
+Source code for this example is available under ``examples/self_contained``\ .
 
 
 Example Application: Count Vowels
@@ -20,7 +19,19 @@ Example Application: Count Vowels
 The example MapReduce application, ``vowelcount``, is rather trivial: it counts
 the occurrence of each vowel in the input text. Since the point here
 is to show how a structured package can be distributed and imported,
-the implementation is exceedingly verbose and inefficient.
+the implementation is exceedingly verbose.
+
+.. literalinclude:: ../examples/self_contained/vowelcount/lib/__init__.py
+   :language: python
+   :start-after: DOCS_INCLUDE_START
+
+.. literalinclude:: ../examples/self_contained/vowelcount/mr/mapper.py
+   :language: python
+   :pyobject: Mapper
+
+.. literalinclude:: ../examples/self_contained/vowelcount/mr/reducer.py
+   :language: python
+   :pyobject: Reducer
 
 
 How it Works
@@ -39,7 +50,10 @@ all slave nodes and unpacked; in addition, ``pydoop`` and
 ``vowelcount`` symlinks will be created in the current working
 directory of each task before it is executed.  If you include in each
 archive the *contents* of the corresponding package, they will be
-available for import.
+available for import::
+
+  cd examples/self_contained/vowelcount
+  tar cfz ../vowelcount.tgz .
 
 The archive must be in one of the formats supported by Hadoop: zip, tar or tgz.
 

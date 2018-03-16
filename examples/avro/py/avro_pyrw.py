@@ -2,7 +2,7 @@
 
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -24,11 +24,9 @@ Avro color count with Python record reader/writer.
 
 from collections import Counter
 
-import avro.schema
-
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from pydoop.avrolib import AvroReader, AvroWriter
+from pydoop.avrolib import AvroReader, AvroWriter, parse
 
 
 class UserReader(AvroReader):
@@ -37,7 +35,7 @@ class UserReader(AvroReader):
 
 class ColorWriter(AvroWriter):
 
-    schema = avro.schema.parse(open("stats.avsc").read())
+    schema = parse(open("stats.avsc").read())
 
     def emit(self, key, value):
         self.writer.append({'office': key, 'counts': value})

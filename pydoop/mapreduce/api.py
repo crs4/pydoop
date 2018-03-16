@@ -1,6 +1,6 @@
 # BEGIN_COPYRIGHT
 #
-# Copyright 2009-2016 CRS4.
+# Copyright 2009-2018 CRS4.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -26,8 +26,9 @@ methods called by the framework.
 """
 
 import json
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
+from pydoop.utils.py3compat import ABC
 from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
 
 
@@ -49,9 +50,6 @@ class Counter(object):
 
     def get_id(self):
         return self.id
-
-    def getId(self):
-        return self.get_id()
 
 
 class JobConf(dict):
@@ -83,11 +81,12 @@ class JobConf(dict):
     def __init__(self, values):
         if 1 & len(values):
             raise PydoopError('JobConf.__init__: len(values) should be even')
-        super(JobConf, self).__init__(zip(values[::2], values[1::2]))
+        # FIXME -- this is a kludge but otherwise we would break backward
+        # compatibility
+        nvalues = [_.decode('UTF-8') if isinstance(_, bytes) else _
+                   for _ in values]
+        super(JobConf, self).__init__(zip(nvalues[::2], nvalues[1::2]))
         self.__mirror_conf_across_versions()
-
-    def hasKey(self, key):
-        return key in self
 
     def get_int(self, key, default=None):
         """
@@ -95,17 +94,11 @@ class JobConf(dict):
         """
         return int(self.get(key, default))
 
-    def getInt(self, key, default=None):
-        return self.get_int(key, default)
-
     def get_float(self, key, default=None):
         """
         Same as :meth:`dict.get`, but the value is converted to an float.
         """
         return float(self.get(key, default))
-
-    def getFloat(self, key, default=None):
-        return self.get_float(key, default)
 
     def get_bool(self, key, default=None):
         """
@@ -128,9 +121,6 @@ class JobConf(dict):
                 v = default
         return v
 
-    def getBoolean(self, key, default=None):
-        return self.get_bool(key, default)
-
     def get_json(self, key, default=None):
         return json.loads(self.get(key, default))
 
@@ -142,7 +132,7 @@ class JobConf(dict):
             try:
                 return self[args[0]]
             except KeyError as ex:
-                raise RuntimeError(ex.message)
+                raise RuntimeError(ex.args[0])
 
     def __mirror_conf_across_versions(self):
         ext = {}
@@ -154,7 +144,7 @@ class JobConf(dict):
         self.update(ext)
 
 
-class Context(object):
+class Context(ABC):
     """
     Context objects are used for communication between the framework
     and the Mapreduce application.  These objects are instantiated by the
@@ -167,7 +157,6 @@ class Context(object):
               ...
               context.emit(new_key, new_value)
     """
-    __metaclass__ = ABCMeta
 
     @property
     def job_conf(self):
@@ -180,9 +169,6 @@ class Context(object):
     def get_job_conf(self):
         pass
 
-    def getJobConf(self):
-        return self.get_job_conf()
-
     @property
     def key(self):
         """
@@ -194,9 +180,6 @@ class Context(object):
     def get_input_key(self):
         pass
 
-    def getInputKey(self):
-        return self.get_input_key()
-
     @property
     def value(self):
         """
@@ -207,9 +190,6 @@ class Context(object):
     @abstractmethod
     def get_input_value(self):
         pass
-
-    def getInputValue(self):
-        return self.get_input_value()
 
     @abstractmethod
     def emit(self, key, value):
@@ -232,9 +212,6 @@ class Context(object):
         """
         pass
 
-    def setStatus(self, status):
-        return self.set_status(status)
-
     @abstractmethod
     def get_counter(self, group, name):
         """
@@ -249,18 +226,12 @@ class Context(object):
         """
         pass
 
-    def getCounter(self, group, name):
-        return self.get_counter(group, name)
-
     @abstractmethod
     def increment_counter(self, counter, amount):
         """
         Update a :class:`Counter` by the specified amount.
         """
         pass
-
-    def incrementCounter(self, counter, amount):
-        return self.increment_counter(counter, amount)
 
 
 class MapContext(Context):
@@ -269,19 +240,19 @@ class MapContext(Context):
     """
     @property
     def input_split(self):
-        """
-        Get the current input split as an :class:`~.pipes.InputSplit` object.
+        """\
+        The current input split as an :class:`~.pipes.InputSplit` object.
         """
         return self.get_input_split()
 
     @abstractmethod
-    def get_input_split(self):
-        pass
+    def get_input_split(self, raw=False):
+        """\
+        Get the current input split.
 
-    @abstractmethod
-    def getInputSplit(self):
-        """
-        Get the raw input split as a byte string (backward compatibility).
+        If ``raw`` is :obj:`False` (the default), return an
+        :class:`~.pipes.InputSplit` object; if it's :obj:`True`, return
+        a byte string (the unserialized split as sent via the downlink).
         """
         pass
 
@@ -296,9 +267,6 @@ class MapContext(Context):
     def get_input_key_class(self):
         pass
 
-    def getInputKeyClass(self):
-        return self.get_input_key_class()
-
     @property
     def input_value_class(self):
         return self.get_input_value_class()
@@ -306,12 +274,9 @@ class MapContext(Context):
     @abstractmethod
     def get_input_value_class(self):
         """
-        Return the type of the input key.
+        Return the type of the input value.
         """
         pass
-
-    def getInputValueClass(self):
-        return self.get_input_value_class()
 
 
 class ReduceContext(Context):
@@ -326,9 +291,6 @@ class ReduceContext(Context):
     def get_input_values(self):
         pass
 
-    def getInputValues(self):
-        return self.get_input_values()
-
     @abstractmethod
     def next_value(self):
         """
@@ -336,11 +298,8 @@ class ReduceContext(Context):
         """
         pass
 
-    def nextValue(self):
-        return self.next_value()
 
-
-class Closable(object):
+class Closable(ABC):
 
     def close(self):
         """
@@ -355,7 +314,6 @@ class Mapper(Closable):
     """
     Maps input key/value pairs to a set of intermediate key/value pairs.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context):
         self.context = context
@@ -380,7 +338,6 @@ class Reducer(Closable):
     Reduces a set of intermediate values which share a key to a
     (possibly) smaller set of values.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         self.context = context
@@ -399,7 +356,7 @@ class Reducer(Closable):
         assert isinstance(context, ReduceContext)
 
 
-class Partitioner(object):
+class Partitioner(ABC):
     r"""
     Controls the partitioning of intermediate keys output by the
     :class:`Mapper`\ . The key (or a subset of it) is used to derive the
@@ -408,7 +365,6 @@ class Partitioner(object):
     job. Hence this controls which of the *m* reduce tasks the
     intermediate key (and hence the record) is sent to for reduction.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context):
         self.context = context
@@ -435,7 +391,6 @@ class RecordReader(Closable):
     r"""
     Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         self.context = context
@@ -457,6 +412,9 @@ class RecordReader(Closable):
         """
         raise StopIteration
 
+    def __next__(self):
+        return self.next()
+
     @abstractmethod
     def get_progress(self):
         """
@@ -468,15 +426,11 @@ class RecordReader(Closable):
         """
         pass
 
-    def getProgress(self):
-        return self.get_progress()
-
 
 class RecordWriter(Closable):
     """
     Writes the output key/value pairs to an output file.
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, context=None):
         self.context = context
@@ -494,14 +448,13 @@ class RecordWriter(Closable):
         pass
 
 
-class Factory(object):
+class Factory(ABC):
     """
     Creates MapReduce application components.
 
     The classes to use for each component must be specified as arguments
     to the constructor.
     """
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def create_mapper(self, context):

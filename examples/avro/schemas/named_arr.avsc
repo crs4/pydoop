@@ -1,9 +1,0 @@
-{
-    "namespace": "example.avro",
-    "type": "record",
-    "name": "NamedArr",
-    "fields": [
-        {"name": "name", "type": "string"},
-        {"name": "data", "type": "bytes"}
-    ]
-}
