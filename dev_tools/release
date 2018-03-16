@@ -27,10 +27,10 @@ if [ -n "${STATUS}" ]; then
     exit 1
 fi
 
-pushd ${this_dir}/..
+pushd "${this_dir}/.."
 VERSION=$(<"VERSION")
-git rev-parse HEAD > .git_commit
-docker build -t crs4/pydoop:${VERSION} .
-docker build -t crs4/pydoop-docs:${VERSION} -f Dockerfile.docs .
-docker run --rm -v "${RELEASE_DIR}":/release crs4/pydoop-docs bash -c "source /etc/profile && python setup.py sdist && cp -a dist /release"
+git rev-parse HEAD > "GIT_REV"
+docker build -t crs4/pydoop:latest -t crs4/pydoop:${VERSION} .
+docker build -t crs4/pydoop-docs:latest -t crs4/pydoop-docs:${VERSION} -f Dockerfile.docs .
+docker run --rm -v "${RELEASE_DIR}":/release crs4/pydoop-docs:${VERSION} bash -c "source /etc/profile && python3 setup.py sdist && cp -a dist /release"
 popd
