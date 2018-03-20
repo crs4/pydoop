@@ -40,6 +40,7 @@ import glob
 import shutil
 import subprocess
 import itertools
+import tempfile
 
 SETUPTOOLS_MIN_VER = '3.3'
 
@@ -61,8 +62,9 @@ os.environ['OPT'] = ' '.join(
 
 from setuptools import setup, find_packages, Extension
 from distutils.command.build import build
+from distutils.command.build_ext import build_ext
 from distutils.command.clean import clean
-from distutils.errors import DistutilsSetupError
+from distutils.errors import DistutilsSetupError, CompileError
 from distutils import log
 
 import pydoop
@@ -140,20 +142,6 @@ def write_config(filename="pydoop/config.py"):
                 fo.write("%s = %r\n" % (k, props[k]))
 
 
-def generate_hdfs_config():
-    """
-    Generate config.h for libhdfs.
-
-    This is only relevant for recent Hadoop versions.
-    """
-    config_fn = os.path.join("src", "libhdfs", "config.h")
-    with open(config_fn, "w") as f:
-        f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
-        if have_better_tls():
-            f.write("#define HAVE_BETTER_TLS\n")
-        f.write("#endif\n")
-
-
 def get_git_rev():
     if os.path.isfile(GIT_REV_FN):
         with open(GIT_REV_FN) as f:
@@ -176,7 +164,6 @@ def write_version(filename="pydoop/version.py"):
 
 
 def build_hdfscore():
-    generate_hdfs_config()
     hdfs_ext_sources = list(itertools.chain(
         glob.iglob('src/libhdfs/*.c'),
         glob.iglob('src/libhdfs/common/*.c'),
@@ -210,13 +197,6 @@ def build_sercore_extension():
         extra_compile_args=extra_compile_args
     )
     EXTENSION_MODULES.append(binary_encoder)
-
-
-def have_better_tls():
-    """
-    See ${HADOOP_HOME}/hadoop-hdfs-project/hadoop-hdfs/src/CMakeLists.txt
-    """
-    return False  # FIXME: need a portable implementation
 
 
 # ------------
@@ -296,6 +276,37 @@ class JavaBuilder(object):
             raise DistutilsSetupError(
                 "Error packaging java component.  Command: %s" % package_cmd
             )
+
+
+class BuildPydoopExt(build_ext):
+
+    def __have_better_tls(self):
+        test_code = "int main(void) { static __thread int i = 0; return i; }"
+        wd = tempfile.mkdtemp(prefix="pydoop_")
+        test_src = os.path.join(wd, "temp.c")
+        with open(test_src, "w") as f:
+            f.write(test_code)
+        try:
+            self.compiler.compile([test_src], output_dir=wd)
+        except CompileError:
+            ret = False
+        else:
+            ret = True
+        shutil.rmtree(wd)
+        return ret
+
+    def __generate_libhdfs_config(self):
+        config_fn = os.path.join("src", "libhdfs", "config.h")
+        with open(config_fn, "w") as f:
+            f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
+            if self.__have_better_tls():
+                f.write("#define HAVE_BETTER_TLS\n")
+            f.write("#endif\n")
+
+    # called by self.run after compiler has been set up
+    def build_extensions(self):
+        self.__generate_libhdfs_config()
+        build_ext.build_extensions(self)
 
 
 class BuildPydoop(build):
@@ -385,6 +396,7 @@ setup(
     package_data={"pydoop": [PROP_FN]},
     cmdclass={
         "build": BuildPydoop,
+        "build_ext": BuildPydoopExt,
         "clean": Clean
     },
     entry_points={'console_scripts': CONSOLE_SCRIPTS},
