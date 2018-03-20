@@ -170,8 +170,12 @@ def build_hdfscore():
         glob.iglob('src/libhdfs/os/posix/*.c'),
         glob.iglob('src/native_core_hdfs/*.cc')
     ))
-    inc_dirs = jvm.get_include_dirs() + ['src/libhdfs', 'src/libhdfs/os/posix']
-    native_hdfs_core = Extension(
+    inc_dirs = jvm.get_include_dirs() + [
+        'src/libhdfs',
+        'src/libhdfs/include',
+        'src/libhdfs/os/posix',
+    ]
+    EXTENSION_MODULES.append(Extension(
         'pydoop.native_core_hdfs',
         include_dirs=inc_dirs,
         libraries=jvm.get_libraries(),
@@ -180,13 +184,12 @@ def build_hdfscore():
         define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
         extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
-    )
-    EXTENSION_MODULES.append(native_hdfs_core)
+    ))
 
 
 def build_sercore_extension():
     extra_compile_args = EXTRA_COMPILE_ARGS + ["-O3"]
-    binary_encoder = Extension(
+    EXTENSION_MODULES.append(Extension(
         'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
             'sermodule.cc',
@@ -195,8 +198,7 @@ def build_sercore_extension():
         ]],
         undef_macros=["NDEBUG"],  # FIXME
         extra_compile_args=extra_compile_args
-    )
-    EXTENSION_MODULES.append(binary_encoder)
+    ))
 
 
 # ------------
@@ -281,6 +283,7 @@ class JavaBuilder(object):
 class BuildPydoopExt(build_ext):
 
     def __have_better_tls(self):
+        log.info("checking for TLS support")
         test_code = "int main(void) { static __thread int i = 0; return i; }"
         wd = tempfile.mkdtemp(prefix="pydoop_")
         test_src = os.path.join(wd, "temp.c")
@@ -303,10 +306,16 @@ class BuildPydoopExt(build_ext):
                 f.write("#define HAVE_BETTER_TLS\n")
             f.write("#endif\n")
 
-    # called by self.run after compiler has been set up
-    def build_extensions(self):
-        self.__generate_libhdfs_config()
-        build_ext.build_extensions(self)
+    # called for each extension, after compiler has been set up
+    def build_extension(self, ext):
+        if ext.name == "pydoop.native_core_hdfs":
+            self.__generate_libhdfs_config()
+            try:
+                # too many warnings in libhdfs
+                self.compiler.compiler_so.remove("-Wsign-compare")
+            except (AttributeError, ValueError):
+                pass
+        build_ext.build_extension(self, ext)
 
 
 class BuildPydoop(build):

@@ -21,7 +21,7 @@
 #include "hdfs_file.h"
 
 #include <sstream>
-#include <hdfs.h>
+#include <hdfs/hdfs.h>
 #include <unicodeobject.h>
 #include <errno.h>
 #include <string.h>
