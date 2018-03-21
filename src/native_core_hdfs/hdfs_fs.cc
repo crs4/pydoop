@@ -294,7 +294,7 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
 {
     PyObject* retval = NULL;
     char* path = NULL;
-    const char* mode = NULL;
+    const char* mode = MODE_READ;
     int flags, buff_size, blocksize;
     short replication;
     hdfsFile file;
