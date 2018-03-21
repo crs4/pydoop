@@ -1002,19 +1002,8 @@ hdfsFile hdfsOpenFile(hdfsFS fs, const char *path, int flags,
     file->type = (((flags & O_WRONLY) == 0) ? HDFS_STREAM_INPUT :
         HDFS_STREAM_OUTPUT);
     file->flags = 0;
-
     if ((flags & O_WRONLY) == 0) {
-        // Try a test read to see if we can do direct reads
-        char buf;
-        if (readDirect(fs, file, &buf, 0) == 0) {
-            // Success - 0-byte read should return 0
-            file->flags |= HDFS_FILE_SUPPORTS_DIRECT_READ;
-        } else if (errno != ENOTSUP) {
-            // Unexpected error. Clear it, don't set the direct flag.
-            fprintf(stderr,
-                  "hdfsOpenFile(%s): WARN: Unexpected error %d when testing "
-                  "for direct read compatibility\n", path, errno);
-        }
+	file->flags |= HDFS_FILE_SUPPORTS_DIRECT_READ;
     }
     ret = 0;
 
@@ -1223,6 +1212,7 @@ tSize hdfsRead(hdfsFS fs, hdfsFile f, void* buffer, tSize length)
     jvalue jVal;
     jthrowable jthr;
     JNIEnv* env;
+    tSize ret;
 
     if (length == 0) {
         return 0;
@@ -1231,7 +1221,14 @@ tSize hdfsRead(hdfsFS fs, hdfsFile f, void* buffer, tSize length)
         return -1;
     }
     if (f->flags & HDFS_FILE_SUPPORTS_DIRECT_READ) {
-      return readDirect(fs, f, buffer, length);
+      if ((ret = readDirect(fs, f, buffer, length)) < 0) {
+	  if (errno != ENOTSUP) {
+	      return -1;
+	  }
+	  hdfsFileDisableDirectRead(f);
+      } else {
+	  return ret;
+      }
     }
 
     // JAVA EQUIVALENT:
