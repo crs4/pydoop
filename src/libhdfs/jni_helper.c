@@ -577,7 +577,7 @@ jthrowable fetchEnumInstance(JNIEnv *env, const char *className,
                 className, valueName);
     }
     if (snprintf(prettyClass, sizeof(prettyClass), "L%s;", className)
-        >= (int) sizeof(prettyClass)) {
+          >= sizeof(prettyClass)) {
         return newRuntimeError(env, "fetchEnum(%s, %s): class name too long.",
                 className, valueName);
     }
