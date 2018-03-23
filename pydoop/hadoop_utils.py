@@ -78,49 +78,6 @@ def _cdh_hadoop_home():
     raise RuntimeError("unsupported CDH deployment")
 
 
-def _jars_from_dirs(dirs):
-    jars = []
-    for d in dirs:
-        jars.extend(glob.glob(os.path.join(d, '*.jar')))
-    return jars
-
-
-def _hadoop_jars():
-    pass
-
-
-def _apache_hadoop_jars_v2(hadoop_home):
-    jar_root = os.path.join(hadoop_home, 'share', 'hadoop')
-    return _jars_from_dirs([os.path.join(jar_root, d) for d in (
-        'hdfs',
-        'common',
-        os.path.join('common', 'lib'),
-        'mapreduce',
-        'yarn',  # hadoop >= 2.2.0
-    )])
-
-
-def _cdh_hadoop_jars_v2(hadoop_home):
-    hadoop_hdfs = hadoop_home + "-hdfs"
-    hadoop_yarn = hadoop_home + "-yarn"
-    hadoop_mapred_v2 = hadoop_home + "-mapreduce"
-    dirs = [hadoop_home, os.path.join(hadoop_home, "lib"),
-            hadoop_hdfs, os.path.join(hadoop_hdfs, "lib"),
-            hadoop_yarn, os.path.join(hadoop_yarn, "lib"),
-            hadoop_mapred_v2, os.path.join(hadoop_mapred_v2, "lib")]
-    jars = _jars_from_dirs(dirs)
-    return jars
-
-
-def _hdp_hadoop_jars_v2(hadoop_home):
-    dirs = []
-    for ext in ['', '-hdfs', '-yarn', '-mapreduce']:
-        p = hadoop_home + ext
-        dirs.extend([p, os.path.join(p, 'lib')])
-    jars = _jars_from_dirs(dirs)
-    return jars
-
-
 class HadoopVersion(object):
     """
     Stores Hadoop version information.
@@ -578,18 +535,13 @@ class PathFinder(object):
         if hadoop_home is None:
             hadoop_home = self.hadoop_home()
         if not self.__hadoop_classpath:
-            v = self.hadoop_version_info(hadoop_home)
-            if v.main < (2, 0, 0):
-                raise RuntimeError('Hadoop v1 is not supported')
-            if v.distribution == 'apache':
-                jars = _apache_hadoop_jars_v2(hadoop_home)
-            elif v.distribution == 'cdh':
-                hadoop_home = _cdh_hadoop_home()
-                jars = _cdh_hadoop_jars_v2(hadoop_home)
-            elif v.distribution == 'hdp':
-                jars = _hdp_hadoop_jars_v2(hadoop_home)
-            jars.extend([self.hadoop_native(), self.hadoop_conf()])
-            self.__hadoop_classpath = ':'.join(jars)
+            hadoop = self.hadoop_exec(hadoop_home=hadoop_home)
+            cmd = [hadoop, 'classpath', '--glob']
+            cp = sp.check_output(cmd, universal_newlines=True).strip()
+            # older hadoop versions ignore --glob
+            if 'hadoop-common' not in cp:
+                cp = ':'.join(':'.join(glob.iglob(_)) for _ in cp.split(':'))
+            self.__hadoop_classpath = cp
         return self.__hadoop_classpath
 
     def find(self):
