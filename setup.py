@@ -76,7 +76,6 @@ JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
 HADOOP_HOME = pydoop.hadoop_home()
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
-EXTENSION_MODULES = []
 VERSION_FN = "VERSION"
 GIT_REV_FN = "GIT_REV"
 EXTRA_COMPILE_ARGS = ["-Wno-write-strings"]  # http://bugs.python.org/issue6952
@@ -163,42 +162,36 @@ def write_version(filename="pydoop/version.py"):
             f.write("git_rev = %r\n" % (get_git_rev(),))
 
 
-def build_hdfscore():
-    hdfs_ext_sources = list(itertools.chain(
-        glob.iglob('src/libhdfs/*.c'),
-        glob.iglob('src/libhdfs/common/*.c'),
-        glob.iglob('src/libhdfs/os/posix/*.c'),
-        glob.iglob('src/native_core_hdfs/*.cc')
-    ))
-    inc_dirs = jvm.get_include_dirs() + [
-        'src/libhdfs',
-        'src/libhdfs/include',
-        'src/libhdfs/os/posix',
-    ]
-    EXTENSION_MODULES.append(Extension(
+EXTENSION_MODULES = [
+    Extension(
         'pydoop.native_core_hdfs',
-        include_dirs=inc_dirs,
+        include_dirs=jvm.get_include_dirs() + [
+            'src/libhdfs',
+            'src/libhdfs/include',
+            'src/libhdfs/os/posix',
+        ],
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
-        sources=hdfs_ext_sources,
+        sources=list(itertools.chain(
+            glob.iglob('src/libhdfs/*.c'),
+            glob.iglob('src/libhdfs/common/*.c'),
+            glob.iglob('src/libhdfs/os/posix/*.c'),
+            glob.iglob('src/native_core_hdfs/*.cc')
+        )),
         define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
         extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
-    ))
-
-
-def build_sercore_extension():
-    extra_compile_args = EXTRA_COMPILE_ARGS + ["-O3"]
-    EXTENSION_MODULES.append(Extension(
+    ),
+    Extension(
         'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
-            'sermodule.cc',
-            'flow.cc', 'command.cc',
+            'sermodule.cc', 'flow.cc', 'command.cc',
             'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
         undef_macros=["NDEBUG"],  # FIXME
-        extra_compile_args=extra_compile_args
-    ))
+        extra_compile_args=EXTRA_COMPILE_ARGS + ["-O3"]
+    )
+]
 
 
 # ------------
@@ -298,18 +291,11 @@ class BuildPydoopExt(build_ext):
         shutil.rmtree(wd)
         return ret
 
-    def __generate_libhdfs_config(self):
-        config_fn = os.path.join("src", "libhdfs", "config.h")
-        with open(config_fn, "w") as f:
-            f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
-            if self.__have_better_tls():
-                f.write("#define HAVE_BETTER_TLS\n")
-            f.write("#endif\n")
-
     # called for each extension, after compiler has been set up
     def build_extension(self, ext):
         if ext.name == "pydoop.native_core_hdfs":
-            self.__generate_libhdfs_config()
+            if self.__have_better_tls():
+                ext.define_macros.append(("HAVE_BETTER_TLS", None))
             try:
                 # too many warnings in libhdfs
                 self.compiler.compiler_so.remove("-Wsign-compare")
@@ -344,8 +330,6 @@ class BuildPydoop(build):
         write_version()
         write_config()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
-        build_sercore_extension()
-        build_hdfscore()
         build.run(self)
         try:
             self.create_tmp()

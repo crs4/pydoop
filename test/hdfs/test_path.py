@@ -16,7 +16,6 @@
 #
 # END_COPYRIGHT
 
-import sys
 import os
 import unittest
 import tempfile
@@ -442,9 +441,7 @@ class TestReal(unittest.TestCase):
         wd = 'file:%s' % wd_
         link = os.path.join(wd_, make_random_str())
         os.symlink(wd_, link)
-        expected_path = ('file:%s%s' % ("/private", wd_)
-                         if sys.platform == "darwin"
-                         else 'file:%s' % wd_)
+        expected_path = 'file:%s' % os.path.realpath(wd_)
         self.assertEqual(hdfs.path.realpath('file:%s' % link), expected_path)
         hdfs.rmr(wd)
 
