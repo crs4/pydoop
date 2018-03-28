@@ -47,9 +47,11 @@ Prerequisites
 
 * `setuptools <https://pypi.python.org/pypi/setuptools>`_ >= 3.3;
 
-* `Apache Hadoop <http://hadoop.apache.org>`_ 2 (currently tested with 2.7,
-  support for more distributions and/or versions is planned). Hadoop 1 is not
-  supported anymore.
+* Hadoop 2.x. Currently, Pydoop is being regularly tested with `Apache
+  Hadoop <http://hadoop.apache.org/releases.html>`_ 2.8 only, but it
+  should also work on other Hadoop distributions. In particular, we
+  are using it on `Amazon EMR <https://aws.amazon.com/emr>`_ (see
+  :ref:`emr`).
 
 These are both build time and run time requirements. At build time only, you
 will also need a C++ compiler (e.g., ``yum install gcc gcc-c++``) and a JDK
@@ -185,3 +187,50 @@ running tests and examples, see ``.travis.yml``.
    set the ``dfs.permissions.superusergroup`` Hadoop property to one of your
    unix groups (type ``groups`` at the command prompt to get the list of
    groups for your current user), then restart the HDFS daemons.
+
+
+.. _emr:
+
+Using Pydoop on Amazon EMR
+--------------------------
+
+You can configure your EMR cluster to automatically install Pydoop on
+all nodes via `Bootstrap Actions
+<https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html>`_. The
+main difficulty is that Pydoop relies on Hadoop being installed and
+configured, even at compile time, so the bootstrap script needs to
+wait until EMR has finished setting it up:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  PYDOOP_INSTALL_SCRIPT=$(cat <<EOF
+  #!/bin/bash
+  NM_PID=/var/run/hadoop-yarn/yarn-yarn-nodemanager.pid
+  RM_PID=/var/run/hadoop-yarn/yarn-yarn-resourcemanager.pid
+  while [ ! -f \${RM_PID} ] && [ ! -f \${NM_PID} ]; do
+    sleep 2
+  done
+  export JAVA_HOME=/etc/alternatives/java_sdk
+  sudo -E pip install pydoop
+  EOF
+  )
+  echo "${PYDOOP_INSTALL_SCRIPT}" | tee -a /tmp/pydoop_install.sh
+  chmod u+x /tmp/pydoop_install.sh
+  /tmp/pydoop_install.sh >/tmp/pydoop_install.out 2>/tmp/pydoop_install.err &
+
+The bootstrap script creates the actual installation script and calls
+it; the latter, in turn, waits for either the node manager or the
+resource manager to be up (i.e., for YARN to be up whether we are on
+the master or on a slave) before installing Pydoop. If you want to use
+Python 3, install version 3.6 with yum:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  sudo yum -y install python36-devel python36-pip
+  sudo alternatives --set python /usr/bin/python3.6
+  PYDOOP_INSTALL_SCRIPT=$(cat <<EOF
+  ...
+
+The above instructions have been tested on ``emr-5.12.0``.
