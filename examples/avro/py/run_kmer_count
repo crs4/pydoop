@@ -24,8 +24,9 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../../config.sh"
 
-PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
-[ -f ${PARQUET_JAR} ] || build_parquet_jar "${this_dir}"/../java
+PARQUET_JAR=/tmp/pydoop-avro-examples.jar
+CP_PATH=/tmp/cp.txt
+"${this_dir}"/../build.sh "${CP_PATH}" "${PARQUET_JAR}"
 MODULE=kmer_count
 MPY="${MODULE}".py
 JOBNAME="${MODULE}"-job
@@ -44,13 +45,15 @@ ${HADOOP} fs -mkdir -p /user/"${USER}"
 ${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
 ${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
+
+HADOOP_CLASSPATH=$(<"${CP_PATH}")
 ${PYDOOP} submit \
      -D parquet.avro.projection="${PROJECTION}" \
     --upload-file-to-cache "${MPY}" \
     --num-reducers 1 \
     --input-format "${INPUT_FORMAT}" \
     --avro-input v \
-    --libjars "${PARQUET_JAR}" \
+    --libjars "${PARQUET_JAR},${HADOOP_CLASSPATH//:/,}" \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${INPUT}" "${OUTPUT}"

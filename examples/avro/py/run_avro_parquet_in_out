@@ -24,8 +24,9 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../../config.sh"
 
-PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
-[ -f ${PARQUET_JAR} ] || build_parquet_jar "${this_dir}"/../java
+PARQUET_JAR=/tmp/pydoop-avro-examples.jar
+CP_PATH=/tmp/cp.txt
+"${this_dir}"/../build.sh "${CP_PATH}" "${PARQUET_JAR}"
 IN_SCHEMA_FILE_LOCAL="${this_dir}"/../schemas/user.avsc
 IN_SCHEMA_FILE_HDFS=user.avsc
 OUT_SCHEMA_FILE_LOCAL="${this_dir}"/../schemas/stats.avsc
@@ -47,7 +48,9 @@ ${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${CSV_INPUT}" "${INPUT}"
 
 ${HADOOP} fs -put -f "${IN_SCHEMA_FILE_LOCAL}" "${IN_SCHEMA_FILE_HDFS}"
+export HADOOP_CLASSPATH=$(<"${CP_PATH}")
 hadoop jar "${PARQUET_JAR}" it.crs4.pydoop.WriteParquet \
+    -libjars="${HADOOP_CLASSPATH//:/,}" \
     "${INPUT}" "${PARQUETS_DIR}" "${IN_SCHEMA_FILE_HDFS}"
 
 # --- run color count ---
@@ -72,7 +75,7 @@ ${PYDOOP} submit \
     --output-format "${OUTPUT_FORMAT}" \
     --avro-input v \
     --avro-output v \
-    --libjars "${PARQUET_JAR}" \
+    --libjars "${PARQUET_JAR},${HADOOP_CLASSPATH//:/,}" \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${PARQUETS_DIR}" "${CC_OUTPUT}"
@@ -92,7 +95,7 @@ ${PYDOOP} submit \
     --num-reducers 0 \
     --input-format "${INPUT_FORMAT}" \
     --avro-input v \
-    --libjars "${PARQUET_JAR}" \
+    --libjars "${PARQUET_JAR},${HADOOP_CLASSPATH//:/,}" \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${CC_OUTPUT}" "${OUTPUT}"

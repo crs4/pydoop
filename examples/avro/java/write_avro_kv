@@ -1,4 +1,18 @@
 #!/bin/bash
 
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+
+CP_PATH=/tmp/cp.txt
+
+pushd "${this_dir}"
+../dep_classpath "${CP_PATH}"
+cp="$(<"${CP_PATH}")"
+class_dir=target/classes
+mkdir -p "${class_dir}"
+javac -cp $(<"${CP_PATH}") -d "${class_dir}" src/main/java/it/crs4/pydoop/WriteKV.java
 # args: KEY_SCHEMA_FILE, VALUE_SCHEMA_FILE, CSV_IN_FILE AVRO_OUT_FILE
-sbt "runMain it.crs4.pydoop.WriteKV $*"
+java -cp "${class_dir}:$(<${CP_PATH})" it.crs4.pydoop.WriteKV $*
+popd

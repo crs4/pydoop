@@ -2,22 +2,21 @@ ARG HADOOP_MAJOR_VERSION=3
 FROM crs4/hadoop:${HADOOP_MAJOR_VERSION}
 MAINTAINER simone.leo@crs4.it
 
-RUN yum install https://centos7.iuscommunity.org/ius-release.rpm
-RUN curl https://bintray.com/sbt/rpm/rpm -o /etc/yum.repos.d/bintray-sbt-rpm.repo
+COPY install_maven.sh /
 
-# needed only to run examples: zip, wheel, sbt
-# needed TEMPORARILY: bc (https://github.com/sbt/sbt-launcher-package/pull/191)
+RUN yum install https://centos7.iuscommunity.org/ius-release.rpm
+
+# needed only to run examples: zip, wheel
 RUN yum install \
-      bc \
       gcc \
       gcc-c++ \
       python-devel \
       python-pip \
       python36u-devel \
       python36u-pip \
-      sbt \
       zip && \
     yum clean all && \
+    bash /install_maven.sh && \
     ln -rs /usr/bin/python3.6 /usr/bin/python3 && \
     ln -rs /usr/bin/pip3.6 /usr/bin/pip3 && \
     for v in 2 3; do \
