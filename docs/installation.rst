@@ -220,8 +220,8 @@ wait until EMR has finished setting it up:
   /tmp/pydoop_install.sh >/tmp/pydoop_install.out 2>/tmp/pydoop_install.err &
 
 The bootstrap script creates the actual installation script and calls
-it; the latter, in turn, waits for either the node manager or the
-resource manager to be up (i.e., for YARN to be up whether we are on
+it; the latter, in turn, waits for either the resource manager or the
+node manager to be up (i.e., for YARN to be up whether we are on
 the master or on a slave) before installing Pydoop. If you want to use
 Python 3, install version 3.6 with yum:
 
