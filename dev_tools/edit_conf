@@ -11,38 +11,42 @@ Usage::
 
 """
 
-from lxml import etree
+from lxml import etree as ET
 import sys
 
-
-def add_replace(data, key, value):
-    root = etree.fromstring(data)
-    found = False
+def doc_to_dict(doc):
+    props = {}
+    root = doc.getroot()
     for p in root.findall('property'):
-        if p.find('name').text == key:
-            p.find('value').text = value
-            found = True
-    if not found:
-        p = etree.SubElement(root, "property")
-        name = etree.SubElement(p, "name")
-        val = etree.SubElement(p, "value")
-        name.text, val.text = key, value
-    return etree.tostring(root, pretty_print=True)
+        props[p.find('name').text] = p.find('value').text
+    return props
 
+def dict_to_doc(props):
+    doc = ET.ElementTree(ET.fromstring('<configuration/>'))
+    root = doc.getroot()
+    pi = ET.ProcessingInstruction(
+        'xml-stylesheet',
+        'type="text/xsl" href="configuration.xsl"')
+    root.addprevious(pi)
+    for k in props:
+        p = ET.SubElement(root, "property")
+        name = ET.SubElement(root, "name")
+        val = ET.SubElement(root, "value")
+        name.text, val.text = k, props[k]
+    return doc
 
 def main(argv):
-    assert len(argv) > 2 and not (len(argv) & 0x01)
+    assert len(argv) >= 2 and not (len(argv) & 0x01)
     conf_input = argv[0]
     conf_output = argv[1]
     nprops = len(argv[2:]) // 2
-    with open(conf_input, 'rb') as f:
-        data = f.read()
-    for i in range(nprops):
-        k, v = argv[2 + 2 * i], argv[3 + 2 * i]
-        data = add_replace(data, k, v)
+    doc = ET.parse(conf_input)
+    props = doc_to_dict(doc)
+    ndoc = dict_to_doc(props)
     with open(conf_output, 'wb') as f:
-        f.write(data)
-
+        f.write(ET.tostring(doc,
+                encoding="utf-8",                                
+                xml_declaration=True))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
