@@ -30,8 +30,8 @@ def dict_to_doc(props):
     root.addprevious(pi)
     for k in props:
         p = ET.SubElement(root, "property")
-        name = ET.SubElement(root, "name")
-        val = ET.SubElement(root, "value")
+        name = ET.SubElement(p, "name")
+        val = ET.SubElement(p, "value")
         name.text, val.text = k, props[k]
     return doc
 
@@ -39,12 +39,14 @@ def main(argv):
     assert len(argv) >= 2 and not (len(argv) & 0x01)
     conf_input = argv[0]
     conf_output = argv[1]
-    nprops = len(argv[2:]) // 2
     doc = ET.parse(conf_input)
     props = doc_to_dict(doc)
+    ai = iter(argv[2:])
+    for k, v in zip(ai, ai):
+        props[k] = v
     ndoc = dict_to_doc(props)
     with open(conf_output, 'wb') as f:
-        f.write(ET.tostring(doc,
+        f.write(ET.tostring(ndoc,
                 encoding="utf-8",                                
                 xml_declaration=True))
 
