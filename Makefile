@@ -3,6 +3,9 @@ TEMPDIR := $(shell mktemp -u)
 GIT_REV_FN = GIT_REV
 WHEEL_DIR=./dist
 PY_V := $(shell ${PYTHON} -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+TMP_CONF = /tmp/hadoop_conf_dir
+HDFS_PROPS = ./fix_hdfs.props
+YARN_PROPS = ./fix_yarn.props
 
 TARGETS=all build wheel install install_user install_wheel install_wheel_user\
         docs docs_py docs_view \
@@ -78,3 +81,24 @@ clean:
 uninstall_user:
 	rm -rf ~/.local/lib/python$(PY_V)/site-packages/pydoop*
 	rm -f ~/.local/bin/pydoop
+
+# This is purely for development testing purposes
+run_docker:
+	if [ -f ${HDFS_PROPS} -o -f ${YARN_PROPS} ]; then\
+		docker run --rm -it --entrypoint /bin/bash -v /tmp:/tmp crs4/pydoop \
+    -c "rm -rf ${TMP_CONF}; cp -a /opt/hadoop/etc/hadoop ${TMP_CONF}; chmod -R a+w ${TMP_CONF}"; fi;\
+  if [ -f ${HDFS_PROPS} ]; then \
+		python ./dev_tools/edit_conf ${TMP_CONF}/hdfs-site.xml ${TMP_CONF}/hdfs-site.xml `cat ${HDFS_PROPS}`;\
+	fi;\
+  if [ -f ${YARN_PROPS} ]; then \
+		python ./dev_tools/edit_conf ${TMP_CONF}/yarn-site.xml ${TMP_CONF}/yarn-site.xml `cat ${YARN_PROPS}`;\
+	fi;\
+	docker run --name pydoop \
+    -p 8020:8020 -p 8042:8042 -p 8088:8088 -p 9000:9000 \
+    -p 10020:10020 -p 19888:19888 -p 50010:50010 -p 50020:50020 \
+    -p 50070:50070 -p 50075:50075 -p 50090:50090 \
+    -v ${TMP_CONF}:/opt/hadoop/etc/hadoop \
+    -d crs4/pydoop;
+	@echo ""
+	@echo "* WARNING: Hadoop is using ${TMP_CONF} as configuration directory. *"
+	@echo ""
