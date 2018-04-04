@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
-"""
-An utility to edit hadoop configuration files.
+"""\
+A utility to edit hadoop configuration files.
 
 Usage::
 
   $ edit_conf conf/yarn-site.xml tmp.xml \
        yarn.nodemanager.resource.cpu-vcores 2 \
        yarn.nodemanager.resource.memory-mb 1024
-
 """
 
 from lxml import etree as ET
 import sys
+
 
 def doc_to_dict(doc):
     props = {}
@@ -20,6 +20,7 @@ def doc_to_dict(doc):
     for p in root.findall('property'):
         props[p.find('name').text] = p.find('value').text
     return props
+
 
 def dict_to_doc(props):
     doc = ET.ElementTree(ET.fromstring('<configuration/>'))
@@ -35,6 +36,7 @@ def dict_to_doc(props):
         name.text, val.text = k, props[k]
     return doc
 
+
 def main(argv):
     assert len(argv) >= 2 and not (len(argv) & 0x01)
     conf_input = argv[0]
@@ -46,9 +48,13 @@ def main(argv):
         props[k] = v
     ndoc = dict_to_doc(props)
     with open(conf_output, 'wb') as f:
-        f.write(ET.tostring(ndoc,
-                encoding="utf-8",                                
-                xml_declaration=True))
+        f.write(ET.tostring(
+            ndoc,
+            encoding="utf-8",
+            xml_declaration=True,
+            pretty_print=True
+        ))
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
