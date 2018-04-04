@@ -19,11 +19,6 @@
 #
 # END_COPYRIGHT
 
-
-# to compile the Java program used by test_deserializing_java_output:
-#
-#    javac -cp $(hadoop classpath) hadoop_serialize.java
-
 import unittest
 import os
 import subprocess
@@ -34,9 +29,13 @@ import pydoop
 from pydoop.utils.py3compat import StringIO, basestring
 import pydoop.mapreduce.jwritable_utils as wu
 import pydoop.utils.serialize as srl
+import pydoop.utils.jvm as jvm
 
 
 _HADOOP_SERIALIZE_CLASS = 'hadoop_serialize'
+JAVA_HOME = jvm.get_java_home()
+JAVA = os.path.join(JAVA_HOME, "bin", "java")
+JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
 
 
 class TestSerialization(unittest.TestCase):
@@ -222,7 +221,7 @@ def _compile_java_part(java_class_file, classpath):
     )[0] + '.java'
     if (not os.path.exists(java_class_file) or
             os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
-        cmd = ['javac', '-cp', classpath, java_file]
+        cmd = [JAVAC, '-cp', classpath, java_file]
         try:
             subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
         except subprocess.CalledProcessError:
@@ -237,9 +236,8 @@ def _get_java_output_stream(wd):
     filename_root = os.path.join(wd, _HADOOP_SERIALIZE_CLASS)
     _compile_java_part(filename_root + ".class", classpath)
     output = subprocess.check_output(
-        ['java', '-cp', classpath, _HADOOP_SERIALIZE_CLASS],
-        cwd=wd,
-        stderr=open('/dev/null', 'w')
+        [JAVA, '-cp', classpath, _HADOOP_SERIALIZE_CLASS],
+        cwd=wd, stderr=open('/dev/null', 'w')
     )
     stream = StringIO(output)
     return stream
