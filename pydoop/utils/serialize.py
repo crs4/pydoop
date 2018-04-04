@@ -126,6 +126,26 @@ def private_decode(s):
     return pickle.loads(s)
 
 
+class Opaque(object):
+    def __init__(self, code, payload):
+        self.code = code
+        self.payload = payload
+
+    def write(self, stream):
+        serialize_bytes(private_encode(self.code), stream)
+        serialize_bytes(private_encode(self.payload), stream)
+
+    def read(self, stream):
+        self.code = private_decode(deserialize_bytes(stream))
+        self.payload = private_decode(deserialize_bytes(stream))
+
+
+def write_opaques(opaques, stream):
+    serialize_vint(len(opaques), stream)
+    for o in opaques:
+        o.write(stream)
+
+
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions.
 # Do not use these functions in time-critical regions.
 

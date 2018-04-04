@@ -50,6 +50,31 @@ public class TestPipesExternalSplits {
   public static final int N_SPLITS = 10;
 
   @Test
+  public void testPydoopLoop()
+      throws IOException, InterruptedException {
+    JobID jobId = new JobID("201408272347", 0);
+    TaskID taskId = new TaskID(jobId, TaskType.MAP, 0);
+    TaskAttemptID taskAttemptid = new TaskAttemptID(taskId, 0);
+
+    Job job = new Job(new Configuration());
+    job.setJobID(jobId);
+    Configuration conf = job.getConfiguration();
+    final String uri = "PYDOOP_INPUT";
+    conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, uri);
+
+    TaskAttemptContextImpl tcontext =
+        new TaskAttemptContextImpl(conf, taskAttemptid);
+
+    PipesNonJavaInputFormat input_format = new PipesNonJavaInputFormat();
+    List<InputSplit> read = input_format.getSplits(tcontext);
+    
+    Path path = new Path("PYDOOP_OUTPUT");
+    FileSystem fs = FileSystem.get(conf);
+    write_input_splits(read, fs, path);
+    fs.close();
+  }
+
+  @Test
   public void testExternalSplitsSupport()
       throws IOException, InterruptedException {
     JobID jobId = new JobID("201408272347", 0);
@@ -68,7 +93,8 @@ public class TestPipesExternalSplits {
         new TaskAttemptContextImpl(conf, taskAttemptid);
 
     PipesNonJavaInputFormat input_format = new PipesNonJavaInputFormat();
-    List<InputSplit> written = write_input_splits(fs, path);
+    List<InputSplit> written = generate_input_splits(N_SPLITS);
+    write_input_splits(written, fs, path);
     List<InputSplit> read = input_format.getSplits(tcontext);
 
     assertEquals(written.size(), N_SPLITS);
@@ -82,26 +108,32 @@ public class TestPipesExternalSplits {
     fs.close();
   }
 
-  private List<InputSplit> write_input_splits(FileSystem fs, Path path)
+  private List<InputSplit> generate_input_splits(int n) {
+      List<InputSplit> splits = new ArrayList<InputSplit>();
+      for(int i = 0; i < n; i++) {
+        String code = "code-" + i;
+        String payload = "payload-" + i;
+        OpaqueSplit osplit = new OpaqueSplit(
+            code.getBytes(), payload.getBytes());
+        splits.add((InputSplit)osplit);
+      }
+      return splits;
+  }
+
+  private void write_input_splits(List<InputSplit> splits,
+                                  FileSystem fs, Path path)
       throws IOException, InterruptedException {
-    IntWritable n_records = new IntWritable(N_SPLITS);
-    List<InputSplit> splits = new ArrayList<InputSplit>();
+    IntWritable n_records = new IntWritable(splits.size());
     FSDataOutputStream out = fs.create(path);
     fs.deleteOnExit(path);
     try {
       n_records.write(out);
       for(int i = 0; i < n_records.get(); i++) {
-        String code = "code-" + i;
-        String payload = "payload-" + i;
-        OpaqueSplit osplit = new OpaqueSplit(
-            code.getBytes(), payload.getBytes());
-        osplit.write(out);
-        splits.add(osplit);
+        ((OpaqueSplit)splits.get(i)).write(out);
       }
     } finally {
       out.close();
     }
-    return splits;
   }
 
 }
