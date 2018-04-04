@@ -125,7 +125,6 @@ public class TestPipesExternalSplits {
       throws IOException, InterruptedException {
     IntWritable n_records = new IntWritable(splits.size());
     FSDataOutputStream out = fs.create(path);
-    fs.deleteOnExit(path);
     try {
       n_records.write(out);
       for(int i = 0; i < n_records.get(); i++) {
