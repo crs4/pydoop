@@ -98,6 +98,8 @@ run_docker:
     -p 10020:10020 -p 19888:19888 -p 50010:50010 -p 50020:50020 \
     -p 50070:50070 -p 50075:50075 -p 50090:50090 \
     -v ${TMP_CONF}:/opt/hadoop/etc/hadoop \
+    -v ${PWD}/examples:/build/pydoop/examples \
+    -v ${PWD}/test:/build/pydoop/test \
     -d crs4/pydoop;
 	@echo ""
 	@echo "* WARNING: Hadoop is using ${TMP_CONF} as configuration directory. *"
