@@ -48,9 +48,12 @@ def main(argv):
         props[k] = v
     ndoc = dict_to_doc(props)
     with open(conf_output, 'wb') as f:
-        f.write(ET.tostring(ndoc,
-                encoding="utf-8",
-                xml_declaration=True))
+        f.write(ET.tostring(
+            ndoc,
+            encoding="utf-8",
+            xml_declaration=True,
+            pretty_print=True
+        ))
 
 
 if __name__ == "__main__":
