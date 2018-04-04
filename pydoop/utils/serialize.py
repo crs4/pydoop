@@ -132,16 +132,16 @@ class Opaque(object):
         self.payload = payload
 
     def write(self, stream):
-        serialize_bytes(private_encode(self.code), stream)
-        serialize_bytes(private_encode(self.payload), stream)
+        serialize_bytes_writable(private_encode(self.code), stream)
+        serialize_bytes_writable(private_encode(self.payload), stream)
 
     def read(self, stream):
-        self.code = private_decode(deserialize_bytes(stream))
-        self.payload = private_decode(deserialize_bytes(stream))
+        self.code = private_decode(deserialize_bytes_writable(stream))
+        self.payload = private_decode(deserialize_bytes_writable(stream))
 
 
 def write_opaques(opaques, stream):
-    serialize_vint(len(opaques), stream)
+    serialize_int_java_io(len(opaques), stream)
     for o in opaques:
         o.write(stream)
 
@@ -178,6 +178,16 @@ def deserialize_long(stream):
 
 def serialize_long(v, stream):
     stream.write(struct.pack('>q', v))
+
+
+def deserialize_int_java_io(stream):
+    SIZE_OF_INT = 4
+    buf = read_buffer(SIZE_OF_INT, stream)
+    return struct.unpack('>i', buf)[0]
+
+
+def serialize_int_java_io(v, stream):
+    stream.write(struct.pack('>i', v))
 
 
 def serialize_vint(t, stream):
@@ -236,10 +246,28 @@ def serialize_bytes(s, stream):
         stream.write(s)
 
 
+def serialize_bytes_writable(s, stream):
+    """
+    This is what it is need to serialize hadoop BytesWritable 
+    """
+    serialize_int_java_io(len(s), stream)
+    if len(s) > 0:
+        stream.write(s)
+
+
+def deserialize_bytes_writable(stream):
+    """
+    This is what it is need to deserialize hadoop BytesWritable 
+    """
+    length = deserialize_int_java_io(stream)
+    return read_buffer(length, stream)
+
+
 def deserialize_bytes(stream):
     """
     This is the wire format generically used by hadoop pipes.
     The data length is encoded using VInt.  Note that Text is encoded in UTF-8
+
     (so use deserialize_text) and complex objects can implement their own
     serialization -- within the (data length, data) stream structure.
     """
