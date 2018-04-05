@@ -1,3 +1,8 @@
+New in 2.0a2
+------------
+
+ * Support for Amazon EMR
+
 New in 2.0a1
 ------------
 
