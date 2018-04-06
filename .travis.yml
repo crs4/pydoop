@@ -4,6 +4,10 @@ python:
  - "2.7"
  - "3.6"
 
+env:
+  - CHECKS=base
+  - CHECKS=extras
+
 sudo: required
 
 services: docker
@@ -24,12 +28,13 @@ script:
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop
  - docker rm pydoop
- - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
+ - if [ "${CHECKS}" = "extras" ]; then docker build -t crs4/pydoop-docs -f Dockerfile.docs .; fi
 
 deploy:
   provider: script
   script: .travis/deploy
   on:
     python: "3.6"
+    condition: $CHECKS = base
     repo: crs4/pydoop
     tags: true
