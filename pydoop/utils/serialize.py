@@ -127,7 +127,7 @@ def private_decode(s):
 
 
 class Opaque(object):
-    def __init__(self, code, payload):
+    def __init__(self, code='', payload=''):
         self.code = code
         self.payload = payload
 
@@ -144,6 +144,11 @@ def write_opaques(opaques, stream):
     serialize_int_java_io(len(opaques), stream)
     for o in opaques:
         o.write(stream)
+
+
+def read_opaques(stream):
+    n = deserialize_int_java_io(stream)
+    return [Opaque().read(stream) for _ in range(n)]
 
 
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions.
