@@ -29,13 +29,10 @@ import pydoop
 from pydoop.utils.py3compat import StringIO, basestring
 import pydoop.mapreduce.jwritable_utils as wu
 import pydoop.utils.serialize as srl
-import pydoop.utils.jvm as jvm
+from pydoop.test_utils import compile_java, get_java_output_stream
 
 
 _HADOOP_SERIALIZE_CLASS = 'hadoop_serialize'
-JAVA_HOME = jvm.get_java_home()
-JAVA = os.path.join(JAVA_HOME, "bin", "java")
-JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
 
 
 class TestSerialization(unittest.TestCase):
@@ -53,7 +50,7 @@ class TestSerialize(unittest.TestCase):
         self.wd = tempfile.mkdtemp(prefix="pydoop_")
 
     def tearDown(self):
-            shutil.rmtree(self.wd)
+        shutil.rmtree(self.wd)
 
     def test_deserializing_java_output_1(self):
         try:
@@ -215,32 +212,14 @@ class TestSerialize(unittest.TestCase):
         self.assertEqual(fn, new_fn)
 
 
-def _compile_java_part(java_class_file, classpath):
-    java_file = os.path.splitext(
-        os.path.realpath(java_class_file)
-    )[0] + '.java'
-    if (not os.path.exists(java_class_file) or
-            os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
-        cmd = [JAVAC, '-cp', classpath, java_file]
-        try:
-            subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
-        except subprocess.CalledProcessError:
-            raise RuntimeError("Error compiling Java file %s" % java_file)
-
-
 def _get_java_output_stream(wd):
     this_directory = os.path.abspath(os.path.dirname(__file__))
     src = os.path.join(this_directory, "%s.java" % _HADOOP_SERIALIZE_CLASS)
     shutil.copy(src, wd)
+    nsrc = os.path.join(wd, "%s.java" % _HADOOP_SERIALIZE_CLASS)
     classpath = '.:%s:%s' % (pydoop.hadoop_classpath(), wd)
-    filename_root = os.path.join(wd, _HADOOP_SERIALIZE_CLASS)
-    _compile_java_part(filename_root + ".class", classpath)
-    output = subprocess.check_output(
-        [JAVA, '-cp', classpath, _HADOOP_SERIALIZE_CLASS],
-        cwd=wd, stderr=open('/dev/null', 'w')
-    )
-    stream = StringIO(output)
-    return stream
+    compile_java(nsrc, classpath)
+    return get_java_output_stream(_HADOOP_SERIALIZE_CLASS, classpath, [], wd)
 
 
 def suite():
