@@ -1,5 +1,10 @@
-New in 2.0.0-alpha1
--------------------
+New in 2.0a2
+------------
+
+ * Support for Amazon EMR
+
+New in 2.0a1
+------------
 
  * Added support for Python 3
  * `Dropped support for Hadoop 1 <https://github.com/crs4/pydoop/pull/237>`_

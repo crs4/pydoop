@@ -23,11 +23,14 @@ import java.util.List;
 
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.FloatWritable;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -39,21 +42,57 @@ import org.apache.hadoop.util.ReflectionUtils;
  * Dummy input format used when non-Java a {@link RecordReader} is used by
  * the Pipes' application.
  *
- * The only useful thing this does is set up the Map-Reduce job to get the
- * {@link PipesDummyRecordReader}, everything else left for the 'actual'
- * InputFormat specified by the user which is given by 
- * <i>mapreduce.pipes.inputformat</i>.
+ * Sets up the Map-Reduce job to get the {@link PipesDummyRecordReader} and
+ * the input splits. If <i>pydoop.mapreduce.pipes.externalsplits.uri</i> is
+ * defined, input splits are read from the specified HDFS URI as a binary
+ * sequence in the following format: <N><OBJ_1><OBJ_2>...<OBJ_N>, i.e., a
+ * WritableInt N followed by N opaque objects. If it's not defined, input
+ * splits are retrieved by invoking the getSplits method of the 'actual'
+ * InputFormat specified by the user in <i>mapreduce.pipes.inputformat</i>.
  */
 class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
+
+    public static final String EXTERNAL_SPLITS_URI =
+        "pydoop.mapreduce.pipes.externalsplits.uri";
 
     public List<InputSplit> getSplits(JobContext context
                                       ) throws IOException, InterruptedException {
         
         Configuration conf = context.getConfiguration();
-        return ReflectionUtils.newInstance(
-                  conf.getClass(Submitter.INPUT_FORMAT, 
+        String splits_uri = conf.get(EXTERNAL_SPLITS_URI);
+        if (splits_uri != null) {
+            return getSplitsFromPath(conf, splits_uri);
+        } else {
+            return ReflectionUtils.newInstance(
+                                conf.getClass(Submitter.INPUT_FORMAT, 
                                 TextInputFormat.class, 
                                 InputFormat.class), conf).getSplits(context);
+        }
+    }
+
+    private List<InputSplit> getSplitsFromPath(Configuration conf,
+                                               String splits_uri
+                                               ) throws IOException,
+                                                        InterruptedException {
+        FileSystem fs = FileSystem.get(conf);
+        Path path = new Path(splits_uri);
+        if (!fs.exists(path)) {
+            throw new IOException(splits_uri + " does not exists");
+        }
+        List<InputSplit> splits = new ArrayList<InputSplit>();
+        FSDataInputStream in = fs.open(path);
+        try {
+            IntWritable n_records = new IntWritable();
+            n_records.readFields(in);
+            for(int i = 0; i < n_records.get(); i++) {
+                OpaqueSplit o = new OpaqueSplit();
+                o.readFields(in);
+                splits.add(o);
+            }
+        } finally {
+            in.close();
+        }
+        return splits;
     }
 
     @Override

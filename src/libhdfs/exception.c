@@ -17,7 +17,7 @@
  */
 
 #include "exception.h"
-#include "hdfs.h"
+#include "hdfs/hdfs.h"
 #include "jni_helper.h"
 #include "platform.h"
 
@@ -80,6 +80,11 @@ static const struct ExceptionInfo gExceptionInfo[] = {
         EDQUOT,
     },
     {
+        "java.lang.UnsupportedOperationException",
+        0,
+        ENOTSUP,
+    },
+    {
         "org.apache.hadoop.hdfs.server.namenode.LeaseExpiredException",
         0,
         ESTALE,
@@ -89,7 +94,7 @@ static const struct ExceptionInfo gExceptionInfo[] = {
 void getExceptionInfo(const char *excName, int noPrintFlags,
                       int *excErrno, int *shouldPrint)
 {
-    unsigned int i;
+    int i;
 
     for (i = 0; i < EXCEPTION_INFO_LEN; i++) {
         if (strstr(gExceptionInfo[i].name, excName)) {
@@ -108,7 +113,7 @@ void getExceptionInfo(const char *excName, int noPrintFlags,
 int printExceptionAndFreeV(JNIEnv *env, jthrowable exc, int noPrintFlags,
         const char *fmt, va_list ap)
 {
-    unsigned int i, noPrint, excErrno;
+    int i, noPrint, excErrno;
     char *className = NULL;
     jstring jStr = NULL;
     jvalue jVal;

@@ -28,7 +28,7 @@
 #include <errno.h>
 #include <typeinfo>
 
-#include <hdfs.h>
+#include <hdfs/hdfs.h>
 #include <structmember.h>
 
 #include "../py3k_compat.h"

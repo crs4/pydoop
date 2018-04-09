@@ -40,6 +40,7 @@ import glob
 import shutil
 import subprocess
 import itertools
+import tempfile
 
 SETUPTOOLS_MIN_VER = '3.3'
 
@@ -61,8 +62,9 @@ os.environ['OPT'] = ' '.join(
 
 from setuptools import setup, find_packages, Extension
 from distutils.command.build import build
+from distutils.command.build_ext import build_ext
 from distutils.command.clean import clean
-from distutils.errors import DistutilsSetupError
+from distutils.errors import DistutilsSetupError, CompileError
 from distutils import log
 
 import pydoop
@@ -74,7 +76,6 @@ JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
 HADOOP_HOME = pydoop.hadoop_home()
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
-EXTENSION_MODULES = []
 VERSION_FN = "VERSION"
 GIT_REV_FN = "GIT_REV"
 EXTRA_COMPILE_ARGS = ["-Wno-write-strings"]  # http://bugs.python.org/issue6952
@@ -140,20 +141,6 @@ def write_config(filename="pydoop/config.py"):
                 fo.write("%s = %r\n" % (k, props[k]))
 
 
-def generate_hdfs_config():
-    """
-    Generate config.h for libhdfs.
-
-    This is only relevant for recent Hadoop versions.
-    """
-    config_fn = os.path.join("src", "libhdfs", "config.h")
-    with open(config_fn, "w") as f:
-        f.write("#ifndef CONFIG_H\n#define CONFIG_H\n")
-        if have_better_tls():
-            f.write("#define HAVE_BETTER_TLS\n")
-        f.write("#endif\n")
-
-
 def get_git_rev():
     if os.path.isfile(GIT_REV_FN):
         with open(GIT_REV_FN) as f:
@@ -175,48 +162,36 @@ def write_version(filename="pydoop/version.py"):
             f.write("git_rev = %r\n" % (get_git_rev(),))
 
 
-def build_hdfscore():
-    generate_hdfs_config()
-    hdfs_ext_sources = list(itertools.chain(
-        glob.iglob('src/libhdfs/*.c'),
-        glob.iglob('src/libhdfs/common/*.c'),
-        glob.iglob('src/libhdfs/os/posix/*.c'),
-        glob.iglob('src/native_core_hdfs/*.cc')
-    ))
-    inc_dirs = jvm.get_include_dirs() + ['src/libhdfs', 'src/libhdfs/os/posix']
-    native_hdfs_core = Extension(
+EXTENSION_MODULES = [
+    Extension(
         'pydoop.native_core_hdfs',
-        include_dirs=inc_dirs,
+        include_dirs=jvm.get_include_dirs() + [
+            'src/libhdfs',
+            'src/libhdfs/include',
+            'src/libhdfs/os/posix',
+        ],
         libraries=jvm.get_libraries(),
         library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
-        sources=hdfs_ext_sources,
+        sources=list(itertools.chain(
+            glob.iglob('src/libhdfs/*.c'),
+            glob.iglob('src/libhdfs/common/*.c'),
+            glob.iglob('src/libhdfs/os/posix/*.c'),
+            glob.iglob('src/native_core_hdfs/*.cc')
+        )),
         define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
         extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
-    )
-    EXTENSION_MODULES.append(native_hdfs_core)
-
-
-def build_sercore_extension():
-    extra_compile_args = EXTRA_COMPILE_ARGS + ["-O3"]
-    binary_encoder = Extension(
+    ),
+    Extension(
         'pydoop.sercore',
         sources=[os.path.join('src/serialize', x) for x in [
-            'sermodule.cc',
-            'flow.cc', 'command.cc',
+            'sermodule.cc', 'flow.cc', 'command.cc',
             'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
         ]],
         undef_macros=["NDEBUG"],  # FIXME
-        extra_compile_args=extra_compile_args
+        extra_compile_args=EXTRA_COMPILE_ARGS + ["-O3"]
     )
-    EXTENSION_MODULES.append(binary_encoder)
-
-
-def have_better_tls():
-    """
-    See ${HADOOP_HOME}/hadoop-hdfs-project/hadoop-hdfs/src/CMakeLists.txt
-    """
-    return False  # FIXME: need a portable implementation
+]
 
 
 # ------------
@@ -298,6 +273,37 @@ class JavaBuilder(object):
             )
 
 
+class BuildPydoopExt(build_ext):
+
+    def __have_better_tls(self):
+        log.info("checking for TLS support")
+        test_code = "int main(void) { static __thread int i = 0; return i; }"
+        wd = tempfile.mkdtemp(prefix="pydoop_")
+        test_src = os.path.join(wd, "temp.c")
+        with open(test_src, "w") as f:
+            f.write(test_code)
+        try:
+            self.compiler.compile([test_src], output_dir=wd)
+        except CompileError:
+            ret = False
+        else:
+            ret = True
+        shutil.rmtree(wd)
+        return ret
+
+    # called for each extension, after compiler has been set up
+    def build_extension(self, ext):
+        if ext.name == "pydoop.native_core_hdfs":
+            if self.__have_better_tls():
+                ext.define_macros.append(("HAVE_BETTER_TLS", None))
+            try:
+                # too many warnings in libhdfs
+                self.compiler.compiler_so.remove("-Wsign-compare")
+            except (AttributeError, ValueError):
+                pass
+        build_ext.build_extension(self, ext)
+
+
 class BuildPydoop(build):
 
     def build_java(self):
@@ -324,8 +330,6 @@ class BuildPydoop(build):
         write_version()
         write_config()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
-        build_sercore_extension()
-        build_hdfscore()
         build.run(self)
         try:
             self.create_tmp()
@@ -385,6 +389,7 @@ setup(
     package_data={"pydoop": [PROP_FN]},
     cmdclass={
         "build": BuildPydoop,
+        "build_ext": BuildPydoopExt,
         "clean": Clean
     },
     entry_points={'console_scripts': CONSOLE_SCRIPTS},

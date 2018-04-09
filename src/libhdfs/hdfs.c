@@ -17,7 +17,7 @@
  */
 
 #include "exception.h"
-#include "hdfs.h"
+#include "hdfs/hdfs.h"
 #include "jni_helper.h"
 #include "platform.h"
 
@@ -181,7 +181,38 @@ done:
 int64_t hdfsReadStatisticsGetRemoteBytesRead(
                             const struct hdfsReadStatistics *stats)
 {
-  return stats->totalBytesRead - stats->totalLocalBytesRead;
+    return stats->totalBytesRead - stats->totalLocalBytesRead;
+}
+
+int hdfsFileClearReadStatistics(hdfsFile file)
+{
+    jthrowable jthr;
+    int ret;
+    JNIEnv* env = getJNIEnv();
+
+    if (env == NULL) {
+        errno = EINTERNAL;
+        return EINTERNAL;
+    }
+    if (file->type != HDFS_STREAM_INPUT) {
+        ret = EINVAL;
+        goto done;
+    }
+    jthr = invokeMethod(env, NULL, INSTANCE, file->file,
+                  "org/apache/hadoop/hdfs/client/HdfsDataInputStream",
+                  "clearReadStatistics", "()V");
+    if (jthr) {
+        ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+            "hdfsFileClearReadStatistics: clearReadStatistics failed");
+        goto done;
+    }
+    ret = 0;
+done:
+    if (ret) {
+        errno = ret;
+        return ret;
+    }
+    return 0;
 }
 
 void hdfsFileFreeReadStatistics(struct hdfsReadStatistics *stats)
@@ -971,19 +1002,8 @@ hdfsFile hdfsOpenFile(hdfsFS fs, const char *path, int flags,
     file->type = (((flags & O_WRONLY) == 0) ? HDFS_STREAM_INPUT :
         HDFS_STREAM_OUTPUT);
     file->flags = 0;
-
     if ((flags & O_WRONLY) == 0) {
-        // Try a test read to see if we can do direct reads
-        char buf;
-        if (readDirect(fs, file, &buf, 0) == 0) {
-            // Success - 0-byte read should return 0
-            file->flags |= HDFS_FILE_SUPPORTS_DIRECT_READ;
-        } else if (errno != ENOTSUP) {
-            // Unexpected error. Clear it, don't set the direct flag.
-            fprintf(stderr,
-                  "hdfsOpenFile(%s): WARN: Unexpected error %d when testing "
-                  "for direct read compatibility\n", path, errno);
-        }
+	file->flags |= HDFS_FILE_SUPPORTS_DIRECT_READ;
     }
     ret = 0;
 
@@ -1004,6 +1024,71 @@ done:
         return NULL;
     }
     return file;
+}
+
+int hdfsTruncateFile(hdfsFS fs, const char* path, tOffset newlength)
+{
+    jobject jFS = (jobject)fs;
+    jthrowable jthr;
+    jvalue jVal;
+    jobject jPath = NULL;
+
+    JNIEnv *env = getJNIEnv();
+
+    if (!env) {
+        errno = EINTERNAL;
+        return -1;
+    }
+
+    /* Create an object of org.apache.hadoop.fs.Path */
+    jthr = constructNewObjectOfPath(env, path, &jPath);
+    if (jthr) {
+        errno = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+            "hdfsTruncateFile(%s): constructNewObjectOfPath", path);
+        return -1;
+    }
+
+    jthr = invokeMethod(env, &jVal, INSTANCE, jFS, HADOOP_FS,
+                        "truncate", JMETHOD2(JPARAM(HADOOP_PATH), "J", "Z"),
+                        jPath, newlength);
+    destroyLocalReference(env, jPath);
+    if (jthr) {
+        errno = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+            "hdfsTruncateFile(%s): FileSystem#truncate", path);
+        return -1;
+    }
+    if (jVal.z == JNI_TRUE) {
+        return 1;
+    }
+    return 0;
+}
+
+int hdfsUnbufferFile(hdfsFile file)
+{
+    int ret;
+    jthrowable jthr;
+    JNIEnv *env = getJNIEnv();
+
+    if (!env) {
+        ret = EINTERNAL;
+        goto done;
+    }
+    if (file->type != HDFS_STREAM_INPUT) {
+        ret = ENOTSUP;
+        goto done;
+    }
+    jthr = invokeMethod(env, NULL, INSTANCE, file->file, HADOOP_ISTRM,
+                     "unbuffer", "()V");
+    if (jthr) {
+        ret = printExceptionAndFree(env, jthr, PRINT_EXC_ALL,
+                HADOOP_ISTRM "#unbuffer failed:");
+        goto done;
+    }
+    ret = 0;
+
+done:
+    errno = ret;
+    return ret;
 }
 
 int hdfsCloseFile(hdfsFS fs, hdfsFile file)
@@ -1127,6 +1212,7 @@ tSize hdfsRead(hdfsFS fs, hdfsFile f, void* buffer, tSize length)
     jvalue jVal;
     jthrowable jthr;
     JNIEnv* env;
+    tSize ret;
 
     if (length == 0) {
         return 0;
@@ -1135,7 +1221,14 @@ tSize hdfsRead(hdfsFS fs, hdfsFile f, void* buffer, tSize length)
         return -1;
     }
     if (f->flags & HDFS_FILE_SUPPORTS_DIRECT_READ) {
-      return readDirect(fs, f, buffer, length);
+      if ((ret = readDirect(fs, f, buffer, length)) < 0) {
+	  if (errno != ENOTSUP) {
+	      return -1;
+	  }
+	  hdfsFileDisableDirectRead(f);
+      } else {
+	  return ret;
+      }
     }
 
     // JAVA EQUIVALENT:
@@ -1811,7 +1904,7 @@ char* hdfsGetWorkingDirectory(hdfsFS fs, char* buffer, size_t bufferSize)
 
     //Copy to user-provided buffer
     ret = snprintf(buffer, bufferSize, "%s", jPathChars);
-    if (ret >= (int) bufferSize) {
+    if (ret >= bufferSize) {
         ret = ENAMETOOLONG;
         goto done;
     }
@@ -2742,7 +2835,7 @@ tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, const char *path)
     jthrowable jthr;
     jobject jFS = (jobject)fs;
     jobject jPath;
-    jlong blockSize; // jlong & tOffset are defined as aliases of int64_t
+    tOffset blockSize;
     JNIEnv* env = getJNIEnv();
 
     if (env == NULL) {
@@ -2764,7 +2857,7 @@ tOffset hdfsGetDefaultBlockSizeAtPath(hdfsFS fs, const char *path)
             "FileSystem#getDefaultBlockSize", path);
         return -1;
     }
-    return (tOffset) blockSize;
+    return blockSize;
 }
 
 
@@ -2871,14 +2964,12 @@ static size_t getExtendedFileInfoOffset(const char *str)
     return num_64_bit_words * 8;
 }
 
-#ifdef HDFS_SUPPORTS_IS_ENCRYPTED
 static struct hdfsExtendedFileInfo *getExtendedFileInfo(hdfsFileInfo *fileInfo)
 {
     char *owner = fileInfo->mOwner;
     return (struct hdfsExtendedFileInfo *)(owner +
                 getExtendedFileInfoOffset(owner));
 }
-#endif
 
 static jthrowable
 getFileInfoFromStat(JNIEnv *env, jobject jStat, hdfsFileInfo *fileInfo)
@@ -2893,9 +2984,7 @@ getFileInfoFromStat(JNIEnv *env, jobject jStat, hdfsFileInfo *fileInfo)
     const char *cPathName;
     const char *cUserName;
     const char *cGroupName;
-#ifdef HDFS_SUPPORTS_IS_ENCRYPTED
     struct hdfsExtendedFileInfo *extInfo;
-#endif
     size_t extOffset;
 
     jthr = invokeMethod(env, &jVal, INSTANCE, jStat,
@@ -2979,7 +3068,6 @@ getFileInfoFromStat(JNIEnv *env, jobject jStat, hdfsFileInfo *fileInfo)
     }
     strcpy(fileInfo->mOwner, cUserName);
     (*env)->ReleaseStringUTFChars(env, jUserName, cUserName);
-#ifdef HDFS_SUPPORTS_IS_ENCRYPTED    
     extInfo = getExtendedFileInfo(fileInfo);
     memset(extInfo, 0, sizeof(*extInfo));
     jthr = invokeMethod(env, &jVal, INSTANCE, jStat,
@@ -2990,7 +3078,6 @@ getFileInfoFromStat(JNIEnv *env, jobject jStat, hdfsFileInfo *fileInfo)
     if (jVal.z == JNI_TRUE) {
         extInfo->flags |= HDFS_EXTENDED_FILE_INFO_ENCRYPTED;
     }
-#endif
     jthr = invokeMethod(env, &jVal, INSTANCE, jStat, HADOOP_STAT,
                     "getGroup", "()Ljava/lang/String;");
     if (jthr)
@@ -3096,9 +3183,6 @@ hdfsFileInfo* hdfsListDirectory(hdfsFS fs, const char *path, int *numEntries)
     jsize i;
     jobject tmpStat;
 
-    // Reset errno, just in case
-    errno = 0; 
-
     //Get the JNIEnv* corresponding to current thread
     JNIEnv* env = getJNIEnv();
     if (env == NULL) {
@@ -3170,6 +3254,7 @@ done:
         return NULL;
     }
     *numEntries = jPathListSize;
+    errno = 0;
     return pathList;
 }
 
@@ -3239,7 +3324,6 @@ void hdfsFreeFileInfo(hdfsFileInfo *hdfsFileInfo, int numEntries)
     free(hdfsFileInfo);
 }
 
-#ifdef HDFS_SUPPORTS_IS_ENCRYPTED
 int hdfsFileIsEncrypted(hdfsFileInfo *fileInfo)
 {
     struct hdfsExtendedFileInfo *extInfo;
@@ -3247,7 +3331,6 @@ int hdfsFileIsEncrypted(hdfsFileInfo *fileInfo)
     extInfo = getExtendedFileInfo(fileInfo);
     return !!(extInfo->flags & HDFS_EXTENDED_FILE_INFO_ENCRYPTED);
 }
-#endif
 
 
 

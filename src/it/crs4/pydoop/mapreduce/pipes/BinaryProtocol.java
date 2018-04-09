@@ -42,7 +42,7 @@ import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableUtils;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.mapreduce.lib.input.FileSplit; // FIXME: InputSplit is NOT writable
+import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.util.StringUtils;
 
 /**
@@ -299,10 +299,13 @@ class BinaryProtocol<K1 extends Writable, V1 extends Writable,
         Text.writeString(stream, valueType);
     }
 
-    public void runMap(FileSplit split, int numReduces, 
+    public void runMap(InputSplit split, int numReduces, 
                        boolean pipedInput) throws IOException {
+        if (!Writable.class.isInstance(split)) {
+          throw new RuntimeException("split is not Writable");
+        }
         WritableUtils.writeVInt(stream, MessageType.RUN_MAP.code);
-        writeObject(split);
+        writeObject((Writable)split);
         WritableUtils.writeVInt(stream, numReduces);
         WritableUtils.writeVInt(stream, pipedInput ? 1 : 0);
     }
