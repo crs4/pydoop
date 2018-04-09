@@ -23,6 +23,7 @@ from pydoop.test_utils import get_module
 TEST_MODULE_NAMES = [
     'test_flow',
     'test_serialize',
+    'test_opaque',
 ]
 
 
