@@ -254,7 +254,7 @@ def serialize_bytes(s, stream):
 
 def serialize_bytes_writable(s, stream):
     """
-    This is what it is need to serialize hadoop BytesWritable 
+    This is what it is need to serialize hadoop BytesWritable
     """
     serialize_int_java_io(len(s), stream)
     if len(s) > 0:
@@ -263,7 +263,7 @@ def serialize_bytes_writable(s, stream):
 
 def deserialize_bytes_writable(stream):
     """
-    This is what it is need to deserialize hadoop BytesWritable 
+    This is what it is need to deserialize hadoop BytesWritable
     """
     length = deserialize_int_java_io(stream)
     return read_buffer(length, stream)
