@@ -29,9 +29,15 @@ import imp
 import unittest
 import shutil
 import warnings
+import subprocess
 
 import pydoop
+import pydoop.utils.jvm as jvm
+from pydoop.utils.py3compat import StringIO
 
+JAVA_HOME = jvm.get_java_home()
+JAVA = os.path.join(JAVA_HOME, "bin", "java")
+JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
 
 _HADOOP_HOME = pydoop.hadoop_home()
 _HADOOP_CONF_DIR = pydoop.hadoop_conf()
@@ -162,6 +168,35 @@ def get_module(name, path=None):
         return module
     finally:
         fp.close()
+
+
+def compile_java(java_file, classpath):
+    java_class_file = os.path.splitext(
+        os.path.realpath(java_file)
+    )[0] + '.class'
+    if (not os.path.exists(java_class_file) or
+            os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
+        cmd = [JAVAC, '-cp', classpath, java_file]
+        try:
+            subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError("Error compiling Java file %s\n%s" % (
+                java_file, e))
+
+
+def run_java(jclass, classpath, args, wd):
+    try:
+        subprocess.check_call([JAVA, '-cp', classpath, jclass] + args, cwd=wd)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Error running Java class %s\n%s" % (
+            jclass, e))
+
+
+def get_java_output_stream(jclass, classpath, args, wd):
+    output = subprocess.check_output(
+        [JAVA, '-cp', classpath, jclass] + args,
+        cwd=wd, stderr=open('/dev/null', 'w'))
+    return StringIO(output)
 
 
 class WDTestCase(unittest.TestCase):
