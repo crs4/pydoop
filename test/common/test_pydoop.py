@@ -33,12 +33,19 @@ class TestPydoop(unittest.TestCase):
 
     def setUp(self):
         self.wd = tempfile.mkdtemp(prefix='pydoop_test_')
-        self.old_env = os.environ.copy()
+        self.old_vars = {
+            'HADOOP_HOME': os.getenv('HADOOP_HOME'),
+            'HADOOP_CONF_DIR': os.getenv('HADOOP_CONF_DIR'),
+        }
 
     def tearDown(self):
-        shutil.rmtree(self.wd)
-        os.environ = self.old_env
+        for k, v in self.old_vars.items():
+            if v:
+                os.environ[k] = v
+            else:
+                os.environ.pop(k, None)
         reload(pydoop)
+        shutil.rmtree(self.wd)
 
     def test_home(self):
         old_home = pydoop.hadoop_home()
@@ -51,6 +58,9 @@ class TestPydoop(unittest.TestCase):
 
     def test_conf(self):
         os.environ['HADOOP_CONF_DIR'] = self.wd
+        # silence Hadoop 3 warning
+        with open(os.path.join(self.wd, 'log4j.properties'), 'w'):
+            pass
         reload(pydoop)
         self.assertEqual(pydoop.hadoop_conf(), self.wd)
 
