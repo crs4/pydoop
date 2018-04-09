@@ -179,15 +179,17 @@ def compile_java(java_file, classpath):
         cmd = [JAVAC, '-cp', classpath, java_file]
         try:
             subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
-        except subprocess.CalledProcessError:
-            raise RuntimeError("Error compiling Java file %s" % java_file)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError("Error compiling Java file %s\n%s" % (
+                java_file, e))
 
 
 def run_java(jclass, classpath, args, wd):
     try:
         subprocess.check_call([JAVA, '-cp', classpath, jclass] + args, cwd=wd)
-    except subprocess.CalledProcessError:
-        raise RuntimeError("Error running Java class %s" % jclass)
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError("Error running Java class %s\n%s" % (
+            jclass, e))
 
 
 def get_java_output_stream(jclass, classpath, args, wd):
