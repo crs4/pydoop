@@ -28,7 +28,9 @@ from pydoop.utils.serialize import Opaque, write_opaques, read_opaques
 import pydoop.utils.jvm as jvm
 import pydoop.test_utils as utils
 
-_OPAQUE_GET_SPLIT_CLASS = 'opaque_roundtrip'
+_JAVA_SRC_ROOT = 'it'
+_OPAQUE_ROUNDTRIP_CLASS = 'it.crs4.pydoop.mapreduce.pipes.opaque_roundtrip'
+_OPAQUE_ROUNDTRIP_SRC = 'it/crs4/pydoop/mapreduce/pipes/opaque_roundtrip.java'
 JAVA_HOME = jvm.get_java_home()
 JAVA = os.path.join(JAVA_HOME, "bin", "java")
 JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
@@ -62,14 +64,14 @@ class TestOpaque(unittest.TestCase):
 
     def _run_java(self, in_uri, out_uri, wd):
         this_directory = os.path.abspath(os.path.dirname(__file__))
-        jname = "%s.java" % _OPAQUE_GET_SPLIT_CLASS
-        src = os.path.join(this_directory, jname)
-        shutil.copy(src, wd)
-        nsrc = os.path.join(wd, jname)
-        classpath = '.:%s:%s' % (pydoop.hadoop_classpath(), wd)
-        utils.compile_java(nsrc, classpath)
+        shutil.copytree(os.path.join(this_directory, _JAVA_SRC_ROOT),
+                        os.path.join(wd, _JAVA_SRC_ROOT))
+        classpath = '.:%s:%s:%s' % (
+            wd, pydoop.jar_path(), pydoop.hadoop_classpath())
+        src = os.path.join(wd, _OPAQUE_ROUNDTRIP_SRC)
+        utils.compile_java(src, classpath)
         utils.run_java(
-            _OPAQUE_GET_SPLIT_CLASS, classpath, [in_uri, out_uri], wd)
+            _OPAQUE_ROUNDTRIP_CLASS, classpath, [in_uri, out_uri], wd)
 
     def test_opaque(self):
         code = "acode222"
@@ -97,12 +99,15 @@ class TestOpaque(unittest.TestCase):
         with open(fname, 'rb') as f:
             nopaques = read_opaques(f)
         self._test_opaques(opaques, nopaques)
-        shutil.rm(fname)
+        os.unlink(fname)
 
     def test_opaque_java_round_trip(self):
         n = 10
         splits = self._generate_opaque_splits(n)
-        nsplits = self._do_java_roundtrip(splits)
+        dname = self._make_random_path('/tmp')
+        os.mkdir(dname)
+        nsplits = self._do_java_roundtrip(splits, wd=dname)
+        shutil.rmtree(dname)
         self._test_opaques(splits, nsplits)
 
     def _do_java_roundtrip(self, splits, wd='/tmp'):
@@ -110,7 +115,11 @@ class TestOpaque(unittest.TestCase):
         out_uri = self._make_random_path()
         with self.fs.open_file(in_uri, 'wb') as f:
             write_opaques(splits, f)
-        return self._run_java(in_uri, out_uri, wd)
+        self._run_java(in_uri, out_uri, wd)
+        with self.fs.open_file(out_uri, 'rb') as f:
+            nsplits = read_opaques(f)
+        return nsplits
+
 
 
 def suite():
