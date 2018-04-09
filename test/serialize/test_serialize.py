@@ -21,7 +21,6 @@
 
 import unittest
 import os
-import subprocess
 import tempfile
 import shutil
 
