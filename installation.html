@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Installation &#8212; Pydoop 2.0a1 documentation</title>
+    <title>Installation &#8212; Pydoop 2.0a2 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -57,6 +57,7 @@
 <li><a class="reference internal" href="#building-and-installing">Building and Installing</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 <li><a class="reference internal" href="#testing-your-installation">Testing your Installation</a></li>
+<li><a class="reference internal" href="#using-pydoop-on-amazon-emr">Using Pydoop on Amazon EMR</a></li>
 </ul>
 </li>
 </ul>
@@ -140,9 +141,11 @@ some tweaking) on macOS. Windows is <strong>not</strong> supported.</p>
 including header files (e.g., <code class="docutils literal notranslate"><span class="pre">python-devel</span></code> on CentOS, <code class="docutils literal notranslate"><span class="pre">python-dev</span></code> on
 Debian);</li>
 <li><a class="reference external" href="https://pypi.python.org/pypi/setuptools">setuptools</a> &gt;= 3.3;</li>
-<li><a class="reference external" href="http://hadoop.apache.org">Apache Hadoop</a> 2 (currently tested with 2.7,
-support for more distributions and/or versions is planned). Hadoop 1 is not
-supported anymore.</li>
+<li>Hadoop 2.x. Currently, Pydoop is being regularly tested with <a class="reference external" href="http://hadoop.apache.org/releases.html">Apache
+Hadoop</a> 2.8 only, but it
+should also work on other Hadoop distributions. In particular, we
+are using it on <a class="reference external" href="https://aws.amazon.com/emr">Amazon EMR</a> (see
+<a class="reference internal" href="#emr"><span class="std std-ref">Using Pydoop on Amazon EMR</span></a>).</li>
 </ul>
 <p>These are both build time and run time requirements. At build time only, you
 will also need a C++ compiler (e.g., <code class="docutils literal notranslate"><span class="pre">yum</span> <span class="pre">install</span> <span class="pre">gcc</span> <span class="pre">gcc-c++</span></code>) and a JDK
@@ -275,6 +278,44 @@ groups for your current user), then restart the HDFS daemons.</p>
 </li>
 </ol>
 </div>
+<div class="section" id="using-pydoop-on-amazon-emr">
+<span id="emr"></span><h2>Using Pydoop on Amazon EMR<a class="headerlink" href="#using-pydoop-on-amazon-emr" title="Permalink to this headline">¶</a></h2>
+<p>You can configure your EMR cluster to automatically install Pydoop on
+all nodes via <a class="reference external" href="https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-bootstrap.html">Bootstrap Actions</a>. The
+main difficulty is that Pydoop relies on Hadoop being installed and
+configured, even at compile time, so the bootstrap script needs to
+wait until EMR has finished setting it up:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="nv">PYDOOP_INSTALL_SCRIPT</span><span class="o">=</span><span class="k">$(</span>cat <span class="s">&lt;&lt;EOF</span>
+<span class="s">#!/bin/bash</span>
+<span class="s">NM_PID=/var/run/hadoop-yarn/yarn-yarn-nodemanager.pid</span>
+<span class="s">RM_PID=/var/run/hadoop-yarn/yarn-yarn-resourcemanager.pid</span>
+<span class="s">while [ ! -f \${RM_PID} ] &amp;&amp; [ ! -f \${NM_PID} ]; do</span>
+<span class="s">  sleep 2</span>
+<span class="s">done</span>
+<span class="s">export JAVA_HOME=/etc/alternatives/java_sdk</span>
+<span class="s">sudo -E pip install pydoop</span>
+<span class="s">EOF</span>
+<span class="k">)</span>
+<span class="nb">echo</span> <span class="s2">&quot;</span><span class="si">${</span><span class="nv">PYDOOP_INSTALL_SCRIPT</span><span class="si">}</span><span class="s2">&quot;</span> <span class="p">|</span> tee -a /tmp/pydoop_install.sh
+chmod u+x /tmp/pydoop_install.sh
+/tmp/pydoop_install.sh &gt;/tmp/pydoop_install.out <span class="m">2</span>&gt;/tmp/pydoop_install.err <span class="p">&amp;</span>
+</pre></div>
+</div>
+<p>The bootstrap script creates the actual installation script and calls
+it; the latter, in turn, waits for either the resource manager or the
+node manager to be up (i.e., for YARN to be up whether we are on
+the master or on a slave) before installing Pydoop. If you want to use
+Python 3, install version 3.6 with yum:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+sudo yum -y install python36-devel python36-pip
+sudo alternatives --set python /usr/bin/python3.6
+<span class="nv">PYDOOP_INSTALL_SCRIPT</span><span class="o">=</span><span class="k">$(</span>cat &lt;&lt;EOF
+...
+</pre></div>
+</div>
+<p>The above instructions have been tested on <code class="docutils literal notranslate"><span class="pre">emr-5.12.0</span></code>.</p>
+</div>
 </div>
 
 
@@ -308,7 +349,7 @@ groups for your current user), then restart the HDFS daemons.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2009-2018, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
     </div>
   </body>
 </html>
