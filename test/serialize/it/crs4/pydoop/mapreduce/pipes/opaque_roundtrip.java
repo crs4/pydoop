@@ -20,7 +20,7 @@
 /**
  *
  */
-
+package it.crs4.pydoop.mapreduce.pipes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,8 @@ import org.apache.hadoop.conf.Configuration;
 
 public class opaque_roundtrip {
     
-	public static void main(String[] args) throws java.io.IOException {
+	public static void main(String[] args)
+      throws java.io.IOException, InterruptedException {
       final String in_uri = args[0];
       final String out_uri = args[1];      
       
@@ -57,9 +58,8 @@ public class opaque_roundtrip {
       conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, in_uri);
       TaskAttemptContextImpl tcontext =
           new TaskAttemptContextImpl(conf, taskAttemptid);
-
-      PipesNonJavaInputFormat input_format = new PipesNonJavaInputFormat();
-      List<InputSplit> read = input_format.getSplits(tcontext);
+      PipesNonJavaInputFormat iformat = new PipesNonJavaInputFormat();
+      List<InputSplit> read = iformat.getSplits(tcontext);
     
       Path path = new Path(out_uri);
       FileSystem fs = FileSystem.get(conf);
@@ -67,8 +67,8 @@ public class opaque_roundtrip {
       fs.close();
   }
   
-  private void write_input_splits(List<InputSplit> splits,
-                                  FileSystem fs, Path path)
+  private static void write_input_splits(List<InputSplit> splits,
+                                         FileSystem fs, Path path)
       throws IOException, InterruptedException {
     IntWritable n_records = new IntWritable(splits.size());
     FSDataOutputStream out = fs.create(path);
