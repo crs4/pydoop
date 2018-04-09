@@ -73,6 +73,16 @@ class TestOpaque(unittest.TestCase):
         utils.run_java(
             _OPAQUE_ROUNDTRIP_CLASS, classpath, [in_uri, out_uri], wd)
 
+    def _do_java_roundtrip(self, splits, wd='/tmp'):
+        in_uri = self._make_random_path()
+        out_uri = self._make_random_path()
+        with self.fs.open_file(in_uri, 'wb') as f:
+            write_opaques(splits, f)
+        self._run_java(in_uri, out_uri, wd)
+        with self.fs.open_file(out_uri, 'rb') as f:
+            nsplits = read_opaques(f)
+        return nsplits
+
     def test_opaque(self):
         code = "acode222"
         payload = {'a': 33, 'b': "333"}
@@ -109,17 +119,6 @@ class TestOpaque(unittest.TestCase):
         nsplits = self._do_java_roundtrip(splits, wd=dname)
         shutil.rmtree(dname)
         self._test_opaques(splits, nsplits)
-
-    def _do_java_roundtrip(self, splits, wd='/tmp'):
-        in_uri = self._make_random_path()
-        out_uri = self._make_random_path()
-        with self.fs.open_file(in_uri, 'wb') as f:
-            write_opaques(splits, f)
-        self._run_java(in_uri, out_uri, wd)
-        with self.fs.open_file(out_uri, 'rb') as f:
-            nsplits = read_opaques(f)
-        return nsplits
-
 
 
 def suite():
