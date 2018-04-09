@@ -138,6 +138,7 @@ class Opaque(object):
     def read(self, stream):
         self.code = private_decode(deserialize_bytes_writable(stream))
         self.payload = private_decode(deserialize_bytes_writable(stream))
+        return self
 
 
 def write_opaques(opaques, stream):
