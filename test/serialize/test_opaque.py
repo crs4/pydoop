@@ -89,8 +89,6 @@ class TestOpaque(unittest.TestCase):
         o = Opaque(code, payload)
         self.assertEqual(code, o.code)
         self.assertEqual(payload, o.payload)
-        # FIXME we are implicitly assuming that we will always be tested on a
-        # unix machine.
         fname = self._make_random_path('/tmp')
         with open(fname, 'wb') as f:
             o.write(f)

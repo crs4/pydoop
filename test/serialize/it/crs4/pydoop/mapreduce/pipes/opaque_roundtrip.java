@@ -17,9 +17,6 @@
  * END_COPYRIGHT
  */
 
-/**
- *
- */
 package it.crs4.pydoop.mapreduce.pipes;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,12 +39,12 @@ import org.apache.hadoop.conf.Configuration;
 
 
 public class opaque_roundtrip {
-    
+
 	public static void main(String[] args)
       throws java.io.IOException, InterruptedException {
       final String in_uri = args[0];
-      final String out_uri = args[1];      
-      
+      final String out_uri = args[1];
+
       JobID jobId = new JobID("201408272347", 0);
       TaskID taskId = new TaskID(jobId, TaskType.MAP, 0);
       TaskAttemptID taskAttemptid = new TaskAttemptID(taskId, 0);
@@ -60,13 +57,13 @@ public class opaque_roundtrip {
           new TaskAttemptContextImpl(conf, taskAttemptid);
       PipesNonJavaInputFormat iformat = new PipesNonJavaInputFormat();
       List<InputSplit> read = iformat.getSplits(tcontext);
-    
+
       Path path = new Path(out_uri);
       FileSystem fs = FileSystem.get(conf);
       write_input_splits(read, fs, path);
       fs.close();
   }
-  
+
   private static void write_input_splits(List<InputSplit> splits,
                                          FileSystem fs, Path path)
       throws IOException, InterruptedException {
