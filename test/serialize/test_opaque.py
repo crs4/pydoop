@@ -25,15 +25,11 @@ import pydoop
 from pydoop.hdfs import hdfs
 from pydoop.utils.serialize import Opaque, write_opaques, read_opaques
 
-import pydoop.utils.jvm as jvm
 import pydoop.test_utils as utils
 
 _JAVA_SRC_ROOT = 'it'
 _OPAQUE_ROUNDTRIP_CLASS = 'it.crs4.pydoop.mapreduce.pipes.opaque_roundtrip'
 _OPAQUE_ROUNDTRIP_SRC = 'it/crs4/pydoop/mapreduce/pipes/opaque_roundtrip.java'
-JAVA_HOME = jvm.get_java_home()
-JAVA = os.path.join(JAVA_HOME, "bin", "java")
-JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
 
 
 class TestOpaque(unittest.TestCase):
