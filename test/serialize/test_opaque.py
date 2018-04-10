@@ -23,7 +23,8 @@ import uuid
 
 import pydoop
 from pydoop.hdfs import hdfs
-from pydoop.utils.serialize import Opaque, write_opaques, read_opaques
+from pydoop.utils.serialize import (
+    OpaqueInputSplit, write_opaques, read_opaques)
 
 import pydoop.test_utils as utils
 
@@ -32,7 +33,7 @@ _OPAQUE_ROUNDTRIP_CLASS = 'it.crs4.pydoop.mapreduce.pipes.opaque_roundtrip'
 _OPAQUE_ROUNDTRIP_SRC = 'it/crs4/pydoop/mapreduce/pipes/opaque_roundtrip.java'
 
 
-class TestOpaque(unittest.TestCase):
+class TestOpaqueInputSplit(unittest.TestCase):
 
     def setUp(self):
         self.fs = hdfs()
@@ -46,7 +47,7 @@ class TestOpaque(unittest.TestCase):
         return "%s/%s_%s" % (where or self.wd, uuid.uuid4().hex, utils.UNI_CHR)
 
     def _generate_opaque_splits(self, n):
-        return [Opaque('{}_code'.format(_), '{}_payload'.format(_))
+        return [OpaqueInputSplit('{}_code'.format(_), '{}_payload'.format(_))
                 for _ in range(n)]
 
     def _test_opaque(self, o, no):
@@ -82,14 +83,14 @@ class TestOpaque(unittest.TestCase):
     def test_opaque(self):
         code = "acode222"
         payload = {'a': 33, 'b': "333"}
-        o = Opaque(code, payload)
+        o = OpaqueInputSplit(code, payload)
         self.assertEqual(code, o.code)
         self.assertEqual(payload, o.payload)
         fname = self._make_random_path('/tmp')
         with open(fname, 'wb') as f:
             o.write(f)
         with open(fname, 'rb') as f:
-            no = Opaque()
+            no = OpaqueInputSplit()
             no.read(f)
         self._test_opaque(o, no)
         os.unlink(fname)
@@ -116,7 +117,7 @@ class TestOpaque(unittest.TestCase):
 
 
 def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestOpaque)
+    return unittest.TestLoader().loadTestsFromTestCase(TestOpaqueInputSplit)
 
 
 if __name__ == '__main__':
