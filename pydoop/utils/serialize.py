@@ -127,6 +127,7 @@ def private_decode(s):
 
 
 class Opaque(object):
+
     def __init__(self, code='', payload=''):
         self.code = code
         self.payload = payload
@@ -254,7 +255,7 @@ def serialize_bytes(s, stream):
 
 def serialize_bytes_writable(s, stream):
     """
-    This is what it is need to serialize hadoop BytesWritable
+    Serialize hadoop BytesWritable
     """
     serialize_int_java_io(len(s), stream)
     if len(s) > 0:
@@ -263,7 +264,7 @@ def serialize_bytes_writable(s, stream):
 
 def deserialize_bytes_writable(stream):
     """
-    This is what it is need to deserialize hadoop BytesWritable
+    Deserialize hadoop BytesWritable
     """
     length = deserialize_int_java_io(stream)
     return read_buffer(length, stream)
@@ -273,7 +274,6 @@ def deserialize_bytes(stream):
     """
     This is the wire format generically used by hadoop pipes.
     The data length is encoded using VInt.  Note that Text is encoded in UTF-8
-
     (so use deserialize_text) and complex objects can implement their own
     serialization -- within the (data length, data) stream structure.
     """
