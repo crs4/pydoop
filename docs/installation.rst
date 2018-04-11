@@ -7,10 +7,10 @@ The fastest way to try Pydoop is via the `Docker <https://www.docker.com/>`_
 image::
 
   docker pull crs4/pydoop
-  docker run -p 8020:8020 [-p ...] --name pydoop -d crs4/pydoop
+  export PORT_FW="-p 8020:8020 -p 8042:8042 -p 8088:8088 -p 9000:9000 -p 10020:10020 -p 19888:19888 -p 9866:9866 -p 9867:9867 -p 9870:9870 -p 9864:9864 -p 9868:9868"
+  docker run ${PORT_FW} --name pydoop -d crs4/pydoop
 
-Check out ``.travis.yml`` for more port bindings you probably want. This spins
-up a single-node, `pseudo-distributed
+This spins up a single-node, `pseudo-distributed
 <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation>`_
 Hadoop cluster with `HDFS
 <https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html#Introduction>`_,
