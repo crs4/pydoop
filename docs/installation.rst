@@ -27,7 +27,7 @@ like this::
   75 NameNode
   301 ResourceManager
 
-If you want to build Pydoop yourself, read on.
+Read on for detailed installation instructions.
 
 
 Supported Platforms
@@ -47,11 +47,11 @@ Prerequisites
 
 * `setuptools <https://pypi.python.org/pypi/setuptools>`_ >= 3.3;
 
-* Hadoop 2.x. Currently, Pydoop is being regularly tested with `Apache
-  Hadoop <http://hadoop.apache.org/releases.html>`_ 2.8 only, but it
-  should also work on other Hadoop distributions. In particular, we
-  are using it on `Amazon EMR <https://aws.amazon.com/emr>`_ (see
-  :ref:`emr`).
+* Hadoop >=2. We currently run regular CI tests with the latest versions of
+  `Apache Hadoop <http://hadoop.apache.org/releases.html>`_ 2.x and 3.x,
+  but we expect Pydoop to also work on other Hadoop distributions. In
+  particular, we have tested it on `Amazon EMR <https://aws.amazon.com/emr>`_
+  (see :ref:`emr`).
 
 These are both build time and run time requirements. At build time only, you
 will also need a C++ compiler (e.g., ``yum install gcc gcc-c++``) and a JDK
@@ -74,7 +74,7 @@ Pydoop needs to know where the JDK and Hadoop are installed on your
 system. This is done by exporting, respectively, the ``JAVA_HOME`` and
 ``HADOOP_HOME`` environment variables. For instance::
 
-  export HADOOP_HOME="/opt/hadoop-2.7.4"
+  export HADOOP_HOME="/opt/hadoop-3.0.1"
   export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
 If you don't know where your JDK is, find the path of the ``java`` executable::
