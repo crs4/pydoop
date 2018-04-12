@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for v in 2 3; do
+    docker build --build-arg HADOOP_MAJOR_VERSION=${v} \
+      -t crs4/pydoop-base:${v} -f Dockerfile.base .
+done
+docker tag crs4/pydoop-base:3 crs4/pydoop-base:latest
+docker build -t crs4/pydoop-docs-base -f Dockerfile.docs-base .

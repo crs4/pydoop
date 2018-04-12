@@ -1,4 +1,5 @@
-FROM crs4/pydoop-base
+ARG HADOOP_MAJOR_VERSION=3
+FROM crs4/pydoop-base:${HADOOP_MAJOR_VERSION}
 MAINTAINER simone.leo@crs4.it
 
 COPY . /build/pydoop

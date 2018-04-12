@@ -504,7 +504,10 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(len(infos), len(expected_infos))
         for l in infos, expected_infos:
             l.sort(key=operator.itemgetter("name"))
-        self.assertEqual(infos, expected_infos)
+        for i, e in zip(infos, expected_infos):
+            self.assertTrue(i["last_access"] <= e["last_access"])
+            del i["last_access"], e["last_access"]
+            self.assertEqual(i, e)
         nonexistent_walk = self.fs.walk(self._make_random_path())
         if _is_py3:
             self.assertRaises(OSError, lambda: next(nonexistent_walk))
