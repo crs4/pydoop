@@ -5,8 +5,10 @@ python:
  - "3.6"
 
 env:
-  - CHECKS=base
-  - CHECKS=extras
+  - HADOOP_MAJOR_VERSION=2 CHECKS=base
+  - HADOOP_MAJOR_VERSION=3 CHECKS=base
+  - HADOOP_MAJOR_VERSION=2 CHECKS=extras
+  - HADOOP_MAJOR_VERSION=3 CHECKS=extras
 
 sudo: required
 
@@ -22,8 +24,8 @@ before_script:
   - DEBUG=true ./.travis/check_script_template -v
 
 script:
- - docker build -t crs4/pydoop .
- - docker run --name pydoop -p 8020:8020 -p 8042:8042 -p 8088:8088 -p 9000:9000 -p 10020:10020 -p 19888:19888 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 50090:50090 -d crs4/pydoop
+ - docker build --build-arg HADOOP_MAJOR_VERSION=${HADOOP_MAJOR_VERSION} -t crs4/pydoop .
+ - docker run --name pydoop -d crs4/pydoop
  - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop

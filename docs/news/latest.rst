@@ -1,3 +1,10 @@
+New in 2.0a3
+------------
+
+ * Support for Hadoop 3
+ * `Support for opaque binary input splits <https://github.com/crs4/pydoop/pull/302>`_
+ * Moved terasort example to https://github.com/crs4/pydoop-examples
+
 New in 2.0a2
 ------------
 

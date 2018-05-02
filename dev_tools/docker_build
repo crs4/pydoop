@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+
+pushd "${this_dir}/.."
+docker build --build-arg HADOOP_MAJOR_VERSION=2 -t crs4/pydoop-hadoop2 .
+docker build -t crs4/pydoop .
+docker build -t crs4/pydoop-docs -f Dockerfile.docs .
+popd
