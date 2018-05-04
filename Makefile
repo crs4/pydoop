@@ -28,10 +28,10 @@ wheel:
 	${PYTHON} setup.py bdist_wheel --dist-dir=${WHEEL_DIR}
 
 install_wheel: wheel
-	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop
+	pip install --only-binary=:all: --no-index --pre --find-links=${WHEEL_DIR} pydoop
 
 install_wheel_user: wheel
-	pip install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} pydoop --user
+	pip install --only-binary=:all: --no-index --pre --find-links=${WHEEL_DIR} pydoop --user
 
 logo: docs/_static/logo.png
 
