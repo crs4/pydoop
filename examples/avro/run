@@ -4,7 +4,7 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
-. "${this_dir}/../../config.sh"
+. "${this_dir}/../config.sh"
 
 for io in "in" "in_out"; do
     for mode in "k" "v" "kv"; do

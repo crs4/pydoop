@@ -16,5 +16,5 @@ if [ "${CHECKS}" = "extras" ]; then
   docker exec pydoop bash -c \
     "source /etc/profile && cd test/avro && ${PYTHON} all_tests.py"
   docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
-    "source /etc/profile && cd examples/avro/py && ./run"
+    "source /etc/profile && cd examples/avro && ./run"
 fi

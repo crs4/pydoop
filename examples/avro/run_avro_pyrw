@@ -22,10 +22,11 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
-. "${this_dir}/../../config.sh"
+. "${this_dir}/../config.sh"
 
-USER_SCHEMA_FILE="${this_dir}"/../schemas/user.avsc
-STATS_SCHEMA_FILE="${this_dir}"/../schemas/stats.avsc
+pushd "${this_dir}"
+USER_SCHEMA_FILE=schemas/user.avsc
+STATS_SCHEMA_FILE=schemas/stats.avsc
 CSV_INPUT=$(mktemp -d)
 LOCAL_INPUT=$(mktemp -d)
 INPUT=$(basename ${LOCAL_INPUT})
@@ -34,14 +35,14 @@ OUTPUT=results
 # --- generate avro input ---
 N=20
 for i in 1 2; do
-    ${PYTHON} create_input.py ${N} "${CSV_INPUT}/users_${i}.csv"
-    ${PYTHON} write_avro.py "${USER_SCHEMA_FILE}" \
+    ${PYTHON} py/create_input.py ${N} "${CSV_INPUT}/users_${i}.csv"
+    ${PYTHON} py/write_avro.py "${USER_SCHEMA_FILE}" \
       "${CSV_INPUT}/users_${i}.csv" "${LOCAL_INPUT}/users_${i}.avro"
 done
 
 # --- run cc ---
 MODULE=avro_pyrw
-MPY="${MODULE}".py
+MPY=py/"${MODULE}".py
 JOBNAME="${MODULE}"-job
 LOGLEVEL="DEBUG"
 
@@ -65,9 +66,10 @@ DUMP_DIR=$(mktemp -d)
 rm -rf "${OUTPUT}"
 ${HADOOP} fs -get "${OUTPUT}"
 for f in "${OUTPUT}"/part*; do
-    ${PYTHON} avro_container_dump_results.py \
+    ${PYTHON} py/avro_container_dump_results.py \
       "${f}" "${DUMP_DIR}"/$(basename ${f}).tsv
 done
-${PYTHON} check_results.py "${CSV_INPUT}" "${DUMP_DIR}"
+${PYTHON} py/check_results.py "${CSV_INPUT}" "${DUMP_DIR}"
 
 rm -rf "${CSV_INPUT}" "${LOCAL_INPUT}" "${OUTPUT}" "${DUMP_DIR}"
+popd

@@ -22,23 +22,23 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
-. "${this_dir}/../../config.sh"
+. "${this_dir}/../config.sh"
+. "${this_dir}/config.sh"
 
-PARQUET_JAR=/tmp/pydoop-avro-examples.jar
-CP_PATH=/tmp/cp.txt
-"${this_dir}"/../build.sh "${CP_PATH}" "${PARQUET_JAR}"
+pushd "${this_dir}"
+[ -f "${JAR_PATH}" ] || ./build.sh
 MODULE=kmer_count
-MPY="${MODULE}".py
+MPY=py/"${MODULE}".py
 JOBNAME="${MODULE}"-job
 LOGLEVEL="DEBUG"
 INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
-PROJECTION=$(cat "${this_dir}"/../schemas/alignment_record_proj.avsc)
+PROJECTION=$(cat schemas/alignment_record_proj.avsc)
 LOCAL_INPUT=$(mktemp -d)
 INPUT=$(basename ${LOCAL_INPUT})
 OUTPUT=kmer_count
 
 for i in 1 2; do
-    cp mini_aligned_seqs.gz.parquet ${LOCAL_INPUT}/seqs_${i}.gz.parquet
+    cp data/mini_aligned_seqs.gz.parquet ${LOCAL_INPUT}/seqs_${i}.gz.parquet
 done
 
 ${HADOOP} fs -mkdir -p /user/"${USER}"
@@ -53,11 +53,14 @@ ${PYDOOP} submit \
     --num-reducers 1 \
     --input-format "${INPUT_FORMAT}" \
     --avro-input v \
-    --libjars "${PARQUET_JAR},${HADOOP_CLASSPATH//:/,}" \
+    --libjars "${JAR_PATH},${HADOOP_CLASSPATH//:/,}" \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${INPUT}" "${OUTPUT}"
 
 rm -rf "${OUTPUT}"
 ${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
-${PYTHON} show_kmer_count.py "${OUTPUT}"/part-r-00000
+${PYTHON} py/show_kmer_count.py "${OUTPUT}"/part-r-00000
+
+rm -rf "${OUTPUT}" "${LOCAL_INPUT}"
+popd
