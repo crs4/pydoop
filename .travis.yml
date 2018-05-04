@@ -5,10 +5,8 @@ python:
  - "3.6"
 
 env:
-  - HADOOP_MAJOR_VERSION=2 CHECKS=base
-  - HADOOP_MAJOR_VERSION=3 CHECKS=base
-  - HADOOP_MAJOR_VERSION=2 CHECKS=extras
-  - HADOOP_MAJOR_VERSION=3 CHECKS=extras
+  - HADOOP_MAJOR_VERSION=2
+  - HADOOP_MAJOR_VERSION=3
 
 sudo: required
 
@@ -25,18 +23,20 @@ before_script:
 
 script:
  - docker build --build-arg HADOOP_MAJOR_VERSION=${HADOOP_MAJOR_VERSION} -t crs4/pydoop .
- - docker run --name pydoop -d crs4/pydoop
+ - docker run --rm --name pydoop -d crs4/pydoop
  - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop
- - docker rm pydoop
- - if [ "${CHECKS}" = "extras" ]; then docker build -t crs4/pydoop-docs -f Dockerfile.docs .; fi
+
+# Needs to run only once. Use different matrix values from deploy for balance
+after_script:
+  - if ([ "${TRAVIS_PYTHON_VERSION}" = "2.7" ] && [ "${HADOOP_MAJOR_VERSION}" = "2" ]); then docker build -t crs4/pydoop-docs -f Dockerfile.docs .; fi
 
 deploy:
   provider: script
   script: .travis/deploy
   on:
     python: "3.6"
-    condition: $CHECKS = base
+    condition: $HADOOP_MAJOR_VERSION = 3
     repo: crs4/pydoop
     tags: true
