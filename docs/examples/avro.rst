@@ -113,15 +113,8 @@ Running the examples
 
 To run the Avro examples you have to install the Python Avro package
 (you can get it from the Avro web site), while the ``avro`` jar is
-included in Hadoop and the ``avro-mapred`` one is included in
-Pydoop.  Part of the examples code (e.g., input generation) is written
-in Java.  To compile it, you need `sbt <http://www.scala-sbt.org>`_.
-
-Move to the examples directory and compile the Java code:
-
-.. code-block:: bash
-
-   cd examples/avro/java
-   sbt assembly
-
-Now you should be able to run all examples under ``examples/avro/py``.
+included in Hadoop and the ``avro-mapred`` one is included in Pydoop.
+Part of the examples code (e.g., input generation) is written in Java.
+Compilation and packaging into a jar is handled by the bash runners,
+but `Maven <https://maven.apache.org/>`_ needs to be installed on the
+client machine.

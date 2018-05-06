@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# args: KEY_SCHEMA_FILE, VALUE_SCHEMA_FILE, CSV_IN_FILE AVRO_OUT_FILE
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/config.sh"
+
+pushd "${this_dir}"
+[ -f "${CLASS_DIR}/it/crs4/pydoop/WriteKV.class" ] || ./build.sh
+java -cp "${CLASS_DIR}:$(<${CP_PATH})" it.crs4.pydoop.WriteKV $*
+popd

@@ -22,39 +22,52 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
-. "${this_dir}/../../config.sh"
+. "${this_dir}/../config.sh"
 
-PARQUET_JAR="${this_dir}"/../java/target/ParquetMR-assembly-0.1.jar
-[ -f ${PARQUET_JAR} ] || build_parquet_jar "${this_dir}"/../java
-MODULE=kmer_count
-MPY="${MODULE}".py
-JOBNAME="${MODULE}"-job
-LOGLEVEL="DEBUG"
-INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
-PROJECTION=$(cat "${this_dir}"/../schemas/alignment_record_proj.avsc)
+pushd "${this_dir}"
+MODULE="color_count"
+USER_SCHEMA_FILE=schemas/user.avsc
+STATS_SCHEMA_FILE=schemas/stats.avsc
+STATS_SCHEMA=$(cat "${STATS_SCHEMA_FILE}")
 LOCAL_INPUT=$(mktemp -d)
 INPUT=$(basename ${LOCAL_INPUT})
-OUTPUT=kmer_count
+OUTPUT=results
 
+# --- generate avro input ---
+N=20
 for i in 1 2; do
-    cp mini_aligned_seqs.gz.parquet ${LOCAL_INPUT}/seqs_${i}.gz.parquet
+    ${PYTHON} py/generate_avro_users.py "${USER_SCHEMA_FILE}" ${N} \
+      "${LOCAL_INPUT}/users_${i}.avro"
 done
-
 ${HADOOP} fs -mkdir -p /user/"${USER}"
 ${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
-${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
+
+# --- run cc ---
+MPY=py/"${MODULE}".py
+JOBNAME="${MODULE}"-job
+LOGLEVEL="DEBUG"
+
+${HADOOP} fs -rm -r "/user/${USER}/${OUTPUT}" || :
 ${PYDOOP} submit \
-     -D parquet.avro.projection="${PROJECTION}" \
+    -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
     --upload-file-to-cache "${MPY}" \
     --num-reducers 1 \
-    --input-format "${INPUT_FORMAT}" \
     --avro-input v \
-    --libjars "${PARQUET_JAR}" \
+    --avro-output v \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${INPUT}" "${OUTPUT}"
 
+# --- dump & check results ---
+DUMP_DIR=$(mktemp -d)
 rm -rf "${OUTPUT}"
-${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
-${PYTHON} show_kmer_count.py "${OUTPUT}"/part-r-00000
+${HADOOP} fs -get "${OUTPUT}"
+for f in "${OUTPUT}"/part*; do
+    ${PYTHON} py/avro_container_dump_results.py \
+      "${f}" "${DUMP_DIR}"/$(basename ${f}).tsv
+done
+${PYTHON} py/check_cc.py "${LOCAL_INPUT}" "${DUMP_DIR}"
+
+rm -rf "${LOCAL_INPUT}" "${OUTPUT}" "${DUMP_DIR}"
+popd

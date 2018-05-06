@@ -79,7 +79,7 @@ vowelcount.tgz:
 pydoop.tgz:
 	cd ../..; $(PYTHON) setup.py bdist_wheel --dist-dir=./dist; cd -
 	$(PIP) wheel --wheel-dir=${WHEEL_DIR} setuptools==$(SETUPTOOLS_VERSION)
-	$(PIP) install --use-wheel --no-index --pre --find-links=${WHEEL_DIR} -t .  pydoop
+	$(PIP) install --only-binary=:all: --no-index --pre --find-links=${WHEEL_DIR} -t .  pydoop
 	cd pydoop; tar cfz ../pydoop.tgz . ; cd -
 	rm -rf pydoop pydoop-*
 

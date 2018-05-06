@@ -25,6 +25,8 @@ from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 from pydoop.mapreduce.pipes import InputSplit
 import pydoop.test_support as pts
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT = os.path.join(THIS_DIR, os.pardir)
 WD = tempfile.mkdtemp(prefix="pydoop_")
 
 
@@ -41,8 +43,8 @@ def main(argv):
         data_in = argv[1]
     except IndexError:
         sys.exit("Usage: python %s AVRO_FILE" % argv[0])
-    shutil.copy('../schemas/stats.avsc', 'stats.avsc')
-    program_name = cp_script('./avro_pyrw.py')
+    shutil.copy(os.path.join(PARENT, 'schemas', 'stats.avsc'), 'stats.avsc')
+    program_name = cp_script(os.path.join(THIS_DIR, 'avro_pyrw.py'))
     path = os.path.realpath(data_in)
     length = os.stat(path).st_size
     input_split = InputSplit.to_string('file://' + path, 0, length)

@@ -22,50 +22,45 @@ set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
-. "${this_dir}/../../config.sh"
+. "${this_dir}/../config.sh"
+. "${this_dir}/config.sh"
 
-MODULE="color_count"
-USER_SCHEMA_FILE="${this_dir}"/../schemas/user.avsc
-STATS_SCHEMA_FILE="${this_dir}"/../schemas/stats.avsc
-STATS_SCHEMA=$(cat "${STATS_SCHEMA_FILE}")
+pushd "${this_dir}"
+[ -f "${JAR_PATH}" ] || ./build.sh
+MODULE=kmer_count
+MPY=py/"${MODULE}".py
+JOBNAME="${MODULE}"-job
+LOGLEVEL="DEBUG"
+INPUT_FORMAT=org.apache.parquet.avro.AvroParquetInputFormat
+PROJECTION=$(cat schemas/alignment_record_proj.avsc)
 LOCAL_INPUT=$(mktemp -d)
 INPUT=$(basename ${LOCAL_INPUT})
-OUTPUT=results
+OUTPUT=kmer_count
 
-# --- generate avro input ---
-N=20
 for i in 1 2; do
-    ${PYTHON} generate_avro_users.py "${USER_SCHEMA_FILE}" ${N} \
-      "${LOCAL_INPUT}/users_${i}.avro"
+    cp data/mini_aligned_seqs.gz.parquet ${LOCAL_INPUT}/seqs_${i}.gz.parquet
 done
+
 ${HADOOP} fs -mkdir -p /user/"${USER}"
 ${HADOOP} fs -rm -r "${INPUT}" || :
 ${HADOOP} fs -put "${LOCAL_INPUT}" "${INPUT}"
+${HADOOP} fs -rm -r /user/"${USER}"/"${OUTPUT}" || :
 
-# --- run cc ---
-MPY="${MODULE}".py
-JOBNAME="${MODULE}"-job
-LOGLEVEL="DEBUG"
-
-${HADOOP} fs -rm -r "/user/${USER}/${OUTPUT}" || :
+HADOOP_CLASSPATH=$(<"${CP_PATH}")
 ${PYDOOP} submit \
-    -D pydoop.mapreduce.avro.value.output.schema="${STATS_SCHEMA}" \
+     -D parquet.avro.projection="${PROJECTION}" \
     --upload-file-to-cache "${MPY}" \
     --num-reducers 1 \
+    --input-format "${INPUT_FORMAT}" \
     --avro-input v \
-    --avro-output v \
+    --libjars "${JAR_PATH},${HADOOP_CLASSPATH//:/,}" \
     --log-level "${LOGLEVEL}" \
     --job-name "${JOBNAME}" \
     "${MODULE}" "${INPUT}" "${OUTPUT}"
 
-# --- dump & check results ---
-DUMP_DIR=$(mktemp -d)
 rm -rf "${OUTPUT}"
-${HADOOP} fs -get "${OUTPUT}"
-for f in "${OUTPUT}"/part*; do
-    ${PYTHON} avro_container_dump_results.py \
-      "${f}" "${DUMP_DIR}"/$(basename ${f}).tsv
-done
-${PYTHON} check_cc.py "${LOCAL_INPUT}" "${DUMP_DIR}"
+${HADOOP} fs -get /user/"${USER}"/"${OUTPUT}"
+${PYTHON} py/show_kmer_count.py "${OUTPUT}"/part-r-00000
 
-rm -rf "${LOCAL_INPUT}" "${OUTPUT}" "${DUMP_DIR}"
+rm -rf "${OUTPUT}" "${LOCAL_INPUT}"
+popd
