@@ -295,11 +295,13 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     PyObject* retval = NULL;
     char* path = NULL;
     const char* mode = MODE_READ;
-    int flags, buff_size, blocksize;
-    short replication;
-    hdfsFile file;
+    int flags = 0;
+    int buff_size = 0;
+    int blocksize = 0;
+    short replication = 0;
+    hdfsFile file = NULL;
     tOffset size = 0;
-    hdfsFileInfo* info;
+    hdfsFileInfo* info = NULL;
 
     if (!PyArg_ParseTuple(args, "es|sihi",
                           "utf-8", &path, &mode, &buff_size, &replication,
