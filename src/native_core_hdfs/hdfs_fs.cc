@@ -32,17 +32,14 @@
 
 PyObject* FsClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    FsInfo *self;
+    FsInfo *self = NULL;
 
     self = (FsInfo *)type->tp_alloc(type, 0);
     if (self != NULL) {
-
         self->host = NULL;
         self->port = 0;
-
         self->user = NULL;
         self->group = NULL;
-
         self->_fs = NULL;
     }
 
@@ -127,7 +124,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
     char* path = NULL;
     PyObject* retval = NULL;
-    hdfsFileInfo* info;
+    hdfsFileInfo* info = NULL;
 
     if (!PyArg_ParseTuple(args, "es", "utf-8",  &path)) {
         return NULL;
@@ -169,7 +166,7 @@ PyObject* FsClass_get_path_info(FsInfo* self, PyObject *args, PyObject *kwds) {
 
 PyObject* FsClass_get_hosts(FsInfo* self, PyObject *args, PyObject *kwds) {
 
-    Py_ssize_t start, length;
+    Py_ssize_t start = 0, length = 0;
     PyObject* result = NULL;
     char* path = NULL;
     char*** hosts = NULL;
@@ -234,7 +231,6 @@ PyObject* FsClass_get_default_block_size(FsInfo* self) {
 }
 
 PyObject* FsClass_get_used(FsInfo* self) {
-
     tOffset size = hdfsGetUsed(self->_fs);
     return PyLong_FromSsize_t(size);
 }
@@ -242,8 +238,8 @@ PyObject* FsClass_get_used(FsInfo* self) {
 PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) {
 
     char* path = NULL;
-    short replication;
-    int result;
+    short replication = 0;
+    int result = 0;
 
     if (!PyArg_ParseTuple(args, "esh", "utf-8", &path, &replication))
         return NULL;
@@ -268,7 +264,7 @@ PyObject* FsClass_set_replication(FsInfo* self, PyObject* args, PyObject* kwds) 
 PyObject* FsClass_set_working_directory(FsInfo* self, PyObject* args, PyObject* kwds) {
 
     char* path = NULL;
-    int result;
+    int result = 0;
 
     if (!PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
@@ -295,11 +291,13 @@ PyObject* FsClass_open_file(FsInfo* self, PyObject *args, PyObject *kwds)
     PyObject* retval = NULL;
     char* path = NULL;
     const char* mode = MODE_READ;
-    int flags, buff_size, blocksize;
-    short replication;
-    hdfsFile file;
+    int flags = 0;
+    int buff_size = 0;
+    int blocksize = 0;
+    short replication = 0;
+    hdfsFile file = NULL;
     tOffset size = 0;
-    hdfsFileInfo* info;
+    hdfsFileInfo* info = NULL;
 
     if (!PyArg_ParseTuple(args, "es|sihi",
                           "utf-8", &path, &mode, &buff_size, &replication,
@@ -404,9 +402,9 @@ PyObject *FsClass_get_capacity(FsInfo *self) {
 
 PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 {
-    FsInfo* to_hdfs;
+    FsInfo* to_hdfs = NULL;
     char *from_path = NULL, *to_path = NULL;
-    int result;
+    int result = 0;
 
     if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
                 &to_hdfs, "utf-8", &to_path)) {
@@ -435,7 +433,7 @@ PyObject* FsClass_copy(FsInfo* self, PyObject *args, PyObject *kwds)
 PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char* path = NULL;
-    int result;
+    int result = 0;
 
     if (! PyArg_ParseTuple(args, "es", "utf-8", &path))
         return NULL;
@@ -466,7 +464,7 @@ PyObject *FsClass_exists(FsInfo *self, PyObject *args, PyObject *kwds) {
 PyObject *FsClass_create_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char* path = NULL;
-    int result;
+    int result = 0;
 
     if (! PyArg_ParseTuple(args, "es", "utf-8", &path)) {
         return NULL;
@@ -549,10 +547,8 @@ static int setPathInfo(PyObject* dict, hdfsFileInfo* fileInfo) {
 }
 
 PyObject *FsClass_list_directory(FsInfo *self, PyObject *args, PyObject *kwds) {
-
     PyObject* retval = NULL;
     char* path = NULL;
-
     hdfsFileInfo* pathList = NULL;
     int numEntries = 0;
     hdfsFileInfo* pathInfo = NULL;
@@ -631,9 +627,9 @@ done:
 
 PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 
-    FsInfo* to_hdfs;
+    FsInfo* to_hdfs = NULL;
     char *from_path = NULL, *to_path = NULL;
-    int result;
+    int result = 0;
 
     if (! PyArg_ParseTuple(args, "esOes", "utf-8", &from_path,
                 &to_hdfs, "utf-8", &to_path)) {
@@ -663,7 +659,7 @@ PyObject *FsClass_move(FsInfo *self, PyObject *args, PyObject *kwds) {
 PyObject *FsClass_rename(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char *from_path = NULL, *to_path = NULL;
-    int result;
+    int result = 0;
 
     if (! PyArg_ParseTuple(args, "eses", "utf-8", &from_path, "utf-8", &to_path))
         return NULL;
@@ -691,7 +687,7 @@ PyObject *FsClass_delete(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char* path = NULL;
     int recursive = 1;
-    int result;
+    int result = 0;
 
     if (!PyArg_ParseTuple(args, "es|i", "utf-8", &path, &recursive)) {
         return NULL;
@@ -719,7 +715,7 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char* path = NULL;
     short mode = 1;
-    int result;
+    int result = 0;
 
     if (!PyArg_ParseTuple(args, "esh", "utf-8", &path, &mode)) {
         return NULL;
@@ -758,8 +754,8 @@ PyObject *FsClass_chmod(FsInfo *self, PyObject *args, PyObject *kwds) {
 PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char *path = NULL, *input_user = NULL, *input_group = NULL;
-    int result;
-    hdfsFileInfo* fileInfo;
+    int result = 0;
+    hdfsFileInfo* fileInfo = NULL;
 
     if (! PyArg_ParseTuple(args, "es|eses",
                 "utf-8", &path, "utf-8", &input_user, "utf-8", &input_group)) {
@@ -800,8 +796,8 @@ PyObject *FsClass_chown(FsInfo *self, PyObject *args, PyObject *kwds) {
 PyObject *FsClass_utime(FsInfo *self, PyObject *args, PyObject *kwds) {
 
     char* path = NULL;
-    tTime mtime, atime;
-    int result;
+    tTime mtime = 0, atime = 0;
+    int result = 0;
 
     if (! PyArg_ParseTuple(args, "esll", "utf-8", &path, &mtime, &atime)) {
         return NULL;
