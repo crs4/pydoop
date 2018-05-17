@@ -25,7 +25,7 @@
 
 PyObject* FileClass_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    FileInfo *self;
+    FileInfo *self = NULL;
 
     self = (FileInfo *)type->tp_alloc(type, 0);
     if (self != NULL) {
@@ -58,7 +58,7 @@ void FileClass_dealloc(FileInfo* self)
 
 int FileClass_init(FileInfo *self, PyObject *args, PyObject *kwds)
 {
-    PyObject *name = NULL, *mode = NULL, *tmp;
+    PyObject *name = NULL, *mode = NULL, *tmp = NULL;
 
     if (!PyArg_ParseTuple(args, "OOOO",
                           &(self->fs), &(self->file), &name, &mode)) {
@@ -275,7 +275,7 @@ static PyObject* _pread_new_pybuf(FileInfo* self, Py_ssize_t pos, Py_ssize_t nby
 
 PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    Py_ssize_t nbytes;
+    Py_ssize_t nbytes = 0;
 
     if (!_ensure_open_for_reading(self))
         return NULL;
@@ -298,7 +298,7 @@ PyObject* FileClass_read(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    Py_buffer buffer;
+    Py_buffer buffer = {NULL, NULL};
 
     if (!_ensure_open_for_reading(self))
         return NULL;
@@ -318,8 +318,8 @@ PyObject* FileClass_read_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    Py_ssize_t position;
-    Py_ssize_t nbytes;
+    Py_ssize_t position = 0;
+    Py_ssize_t nbytes = 0;
 
     if (!_ensure_open_for_reading(self))
         return NULL;
@@ -345,8 +345,8 @@ PyObject* FileClass_pread(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
-    Py_buffer buffer;
-    Py_ssize_t position;
+    Py_buffer buffer = {NULL, NULL};
+    Py_ssize_t position = 0;
 
     if (!_ensure_open_for_reading(self))
         return NULL;
@@ -374,7 +374,7 @@ PyObject* FileClass_pread_chunk(FileInfo *self, PyObject *args, PyObject *kwds){
 
 PyObject* FileClass_seek(FileInfo *self, PyObject *args, PyObject *kwds) {
 
-    tOffset position, curpos;
+    tOffset position = 0, curpos = 0;
     int whence = SEEK_SET;
 
     if (!PyArg_ParseTuple(args, "n|i", &position, &whence))
@@ -427,8 +427,8 @@ PyObject* FileClass_tell(FileInfo *self, PyObject *args, PyObject *kwds){
 
 
 PyObject* FileClass_write(FileInfo* self, PyObject *args, PyObject *kwds) {
-    PyObject *input;
-    Py_buffer buffer;
+    PyObject *input = NULL;
+    Py_buffer buffer = {NULL, NULL};
 
     if (!hdfsFileIsOpenForWrite(self->file)) {
         PyErr_SetString(PyExc_IOError, "not writable");
