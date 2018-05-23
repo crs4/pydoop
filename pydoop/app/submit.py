@@ -99,6 +99,9 @@ class PydoopSubmitter(object):
                                 for e in upload_and_cache)
             ]
             self.files_to_upload += upf_to_cache
+            for t in self.files_to_upload:
+                if not hdfs.path.isfile(t[0]):
+                    raise RuntimeError("not a file: %r" % (t[0]))
             cached_files = ["%s#%s" % (h, b) for (_, h, b) in upf_to_cache]
             cfiles += cached_files
         self.properties[prop] = ','.join(cfiles)
@@ -441,8 +444,8 @@ def add_parser_common_arguments(parser):
         help='Set a Hadoop property, e.g., -D mapred.compress.map.output=true'
     )
     parser.add_argument(
-        '--python-zip', metavar='ZIP_FILE', type=str, action="append",
-        help="Additional python zip file"
+        '--python-zip', metavar='ZIP_FILE', type=a_file_that_can_be_read,
+        action="append", help="Additional python zip file"
     )
     parser.add_argument(
         '--upload-file-to-cache', metavar='FILE', type=a_file_that_can_be_read,
