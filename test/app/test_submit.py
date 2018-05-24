@@ -103,7 +103,6 @@ class TestAppSubmit(unittest.TestCase):
                    ("--input-format", 'mapreduce.lib.input.TextInputFormat'),
                    ("--output-format", 'mapreduce.lib.input.TextOutputFormat'),
                    ("--num-reducers", 10),
-                   ("--python-zip", 'allmymodules.zip'),
                    )
         try:
             with open(conf_file, 'w') as cf:
@@ -231,6 +230,11 @@ class TestAppSubmit(unittest.TestCase):
         self.assertEquals('value1', d['var1'])
         self.assertEquals('value2', d['var2'])
         self.assertEquals('str with = sign', d['var3'])
+
+    def test_bad_upload_files(self):
+        args = self._gen_default_args()
+        args.python_zip = [""]
+        self.assertRaises(Exception, self.submitter.set_args, args)
 
 
 def suite():
