@@ -29,8 +29,6 @@ python module.
 """
 
 import os
-import warnings
-import pydoop
 import pydoop.hadut as hadut
 import pydoop.utils as utils
 import argparse
@@ -40,7 +38,7 @@ from .submit import PydoopSubmitter, add_parser_common_arguments
 from .script_template import DRIVER_TEMPLATE
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
-DEFAULT_OUTPUT_FORMAT = 'org.apache.hadoop.mapred.TextOutputFormat'
+OUT_SEP_KEY = 'mapreduce.output.textoutputformat.separator'
 NOSEP_OUTPUT_FORMAT = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
 
 DESCRIPTION = "Simplified interface for running simple MapReduce jobs"
@@ -105,32 +103,20 @@ class PydoopScript(object):
         args.libjars = None
         args.conf = None
         args.disable_property_name_conversion = True
-        args.job_conf = [('mapred.textoutputformat.separator',
-                          args.kv_separator)]
         args.avro_input = None
         args.avro_output = None
         args.keep_wd = False
         args.pstats_dir = None
         args.pstats_fmt = None
 
-        # despicable hack...
-        properties = dict(args.D or [])
-        properties.update(dict(args.job_conf))
-        output_format = properties.get('mapred.output.format.class',
-                                       DEFAULT_OUTPUT_FORMAT)
-        if output_format == DEFAULT_OUTPUT_FORMAT:
-            if properties['mapred.textoutputformat.separator'] == '':
-                pydoop_jar = pydoop.jar_path()
-                if pydoop_jar is not None:
-                    args.output_format = NOSEP_OUTPUT_FORMAT
-                    args.libjars = [pydoop_jar]
-                else:
-                    warnings.warn(("Can't find pydoop.jar, output will "
-                                   "probably be tab-separated"))
         self.args, self.unknown_args = args, unknown_args
 
     def run(self):
         submitter = PydoopSubmitter()
+        if self.args.kv_separator is not None:
+            submitter.properties[OUT_SEP_KEY] = self.args.kv_separator
+        if submitter.properties.get(OUT_SEP_KEY) == '':
+            self.args.output_format = NOSEP_OUTPUT_FORMAT
         submitter.set_args(self.args, self.unknown_args)
         submitter.run()
         return 0
@@ -160,7 +146,7 @@ def add_parser_arguments(parser):
                         help="name of combine function within module")
     parser.add_argument('--combiner-fn', metavar='COM', default=None,
                         help="--combine-fn alias for backwards compatibility")
-    parser.add_argument('-t', '--kv-separator', metavar='SEP', default='\t',
+    parser.add_argument('-t', '--kv-separator', metavar='SEP',
                         help="output key-value separator")
 
 

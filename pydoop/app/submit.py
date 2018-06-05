@@ -35,20 +35,20 @@ import pydoop.utils as utils
 import pydoop.utils.conversion_tables as conv_tables
 from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT
 
-from .argparse_types import kv_pair, a_file_that_can_be_read
+from .argparse_types import a_file_that_can_be_read, UpdateMap
 from .argparse_types import a_comma_separated_list, a_hdfs_file
 
 
 DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 DEFAULT_ENTRY_POINT = '__main__'
-IS_JAVA_RR = "hadoop.pipes.java.recordreader"
-IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
-CACHE_FILES = "mapred.cache.files"
-CACHE_ARCHIVES = "mapred.cache.archives"
+IS_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
+IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+CACHE_FILES = "mapreduce.job.cache.files"
+CACHE_ARCHIVES = "mapreduce.job.cache.archives"
 USER_HOME = "mapreduce.admin.user.home.dir"
-JOB_REDUCES = "mapred.reduce.tasks"
-JOB_NAME = "mapred.job.name"
-COMPRESS_MAP_OUTPUT = "mapred.compress.map.output"
+JOB_REDUCES = "mapreduce.job.reduces"
+JOB_NAME = "mapreduce.job.name"
+COMPRESS_MAP_OUTPUT = "mapreduce.map.output.compress"
 AVRO_IO_CHOICES = ['k', 'v', 'kv']
 AVRO_IO_CHOICES += [_.upper() for _ in AVRO_IO_CHOICES]
 
@@ -70,7 +70,6 @@ class PydoopSubmitter(object):
             CACHE_ARCHIVES: '',
             'mapred.create.symlink': 'yes',  # backward compatibility
             COMPRESS_MAP_OUTPUT: 'true',
-            'bl.libhdfs.opts': '-Xmx48m'
         }
         self.args = None
         self.requested_env = dict()
@@ -158,8 +157,7 @@ class PydoopSubmitter(object):
         self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name
-        self.properties.update(dict(args.D or []))
-        self.properties.update(dict(args.job_conf or []))
+        self.properties.update(args.job_conf or {})
         self.__set_files_to_cache(args)
         self.__set_archives_to_cache(args)
         self.requested_env = self._env_arg_to_dict(args.set_env or [])
@@ -440,7 +438,7 @@ def add_parser_common_arguments(parser):
               "is set to '', it will not be overridden by Pydoop.")
     )
     parser.add_argument(
-        '-D', metavar="NAME=VALUE", type=kv_pair, action="append",
+        '-D', '--job-conf', metavar='NAME=VALUE', action=UpdateMap,
         help='Set a Hadoop property, e.g., -D mapred.compress.map.output=true'
     )
     parser.add_argument(
@@ -510,11 +508,6 @@ def add_parser_arguments(parser):
     parser.add_argument(
         '--output-format', metavar='CLASS', type=str,
         help="java classname of OutputFormat"
-    )
-    parser.add_argument(
-        '--job-conf', metavar="NAME=VALUE", type=kv_pair, action="append",
-        nargs='+',
-        help='Set a Hadoop property, e.g., mapreduce.compress.map.output=true'
     )
     parser.add_argument(
         '--libjars', metavar='JAR_FILE', type=a_comma_separated_list,
