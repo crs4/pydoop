@@ -91,9 +91,16 @@ def _get_connection_info(host, port, user):
 
 
 def default_is_local(hadoop_conf=None, hadoop_home=None):
+    """\
+    Is Hadoop configured to use the local file system?
+
+    By default, it is. A DFS must be explicitly configured.
+    """
     params = pydoop.hadoop_params(hadoop_conf, hadoop_home)
-    default_fs = params.get('fs.default.name', params.get('fs.defaultFS', ''))
-    return default_fs.startswith('file:')
+    for k in 'fs.defaultFS', 'fs.default.name':
+        if not params.get(k, 'file:').startswith('file:'):
+            return False
+    return True
 
 
 class hdfs(object):

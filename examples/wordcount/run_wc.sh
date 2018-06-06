@@ -7,8 +7,8 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
 FULL_OPTS="\
--D hadoop.pipes.java.recordreader=false
--D hadoop.pipes.java.recordwriter=false
+-D mapreduce.pipes.isjavarecordreader=false
+-D mapreduce.pipes.isjavarecordwriter=false
 -D pydoop.hdfs.user=${USER}"
 
 nargs=1

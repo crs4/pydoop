@@ -439,7 +439,7 @@ def add_parser_common_arguments(parser):
     )
     parser.add_argument(
         '-D', '--job-conf', metavar='NAME=VALUE', action=UpdateMap,
-        help='Set a Hadoop property, e.g., -D mapred.compress.map.output=true'
+        help='Set a Hadoop property, e.g., -D mapreduce.map.output.compress=true'
     )
     parser.add_argument(
         '--python-zip', metavar='ZIP_FILE', type=a_file_that_can_be_read,

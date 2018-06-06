@@ -566,10 +566,17 @@ class PathFinder(object):
         ).lower() == 'yarn'
 
     def is_local(self, hadoop_conf=None, hadoop_home=None):
+        """\
+        Is Hadoop configured to run in local mode?
+
+        By default, it is. [pseudo-]distributed mode must be
+        explicitly configured.
+        """
         conf = self.hadoop_params(hadoop_conf, hadoop_home)
-        framework_name = conf.get('mapreduce.framework.name', '').lower()
-        if not framework_name:  # pre-yarn version
-            framework_name = conf.get('mapred.job.tracker', '').lower()
-        # We also interpret the empty string as 'local' since it's the
-        # default value for both the properties above.
-        return framework_name == 'local' or framework_name == ''
+        keys = ('mapreduce.framework.name',
+                'mapreduce.jobtracker.address',
+                'mapred.job.tracker')
+        for k in keys:
+            if conf.get(k, 'local').lower() != 'local':
+                return False
+        return True

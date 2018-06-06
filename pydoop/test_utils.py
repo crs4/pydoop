@@ -141,8 +141,8 @@ def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
 
 def get_bytes_per_checksum():
     params = pydoop.hadoop_params(_HADOOP_CONF_DIR, _HADOOP_HOME)
-    return int(params.get('io.bytes.per.checksum',
-                          params.get('dfs.bytes-per-checksum',
+    return int(params.get('dfs.bytes-per-checksum',
+                          params.get('io.bytes.per.checksum',
                                      _DEFAULT_BYTES_PER_CHECKSUM)))
 
 

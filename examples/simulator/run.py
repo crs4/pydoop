@@ -113,11 +113,11 @@ def create_configuration():
     output_dir = tempfile.mkdtemp(prefix="pydoop_")
     output_dir_uri = 'file://%s' % output_dir
     conf = {
-        "mapred.map.tasks": "2",
-        "mapred.reduce.tasks": "1",
-        "mapred.job.name": "wordcount",
-        "mapred.work.output.dir": output_dir_uri,
-        "mapred.task.partition": "0",
+        "mapreduce.job.maps": "2",
+        "mapreduce.job.reduces": "1",
+        "mapreduce.job.name": "wordcount",
+        "mapreduce.task.output.dir": output_dir_uri,
+        "mapreduce.task.partition": "0",
     }
     input_split = InputSplit.to_string(data_in_uri, 0, data_in_size)
     return data_in, data_out, conf, input_split, output_dir
@@ -176,7 +176,7 @@ def run_local_full(logger):
                                loglevel=logger.level)
     hsl.run(None, None, conf, input_split=input_split, num_reducers=1)
     data_out = os.path.join(output_dir,
-                            'part-r-%05d' % int(conf["mapred.task.partition"]))
+                            'part-r-%05d' % int(conf["mapreduce.task.partition"]))
     dump_counters(hsl, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
@@ -189,7 +189,7 @@ def run_network_full(logger):
                                 loglevel=logger.level)
     hs.run(None, None, conf, input_split=input_split)
     data_out = os.path.join(output_dir,
-                            'part-r-%05d' % int(conf["mapred.task.partition"]))
+                            'part-r-%05d' % int(conf["mapreduce.task.partition"]))
     dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)

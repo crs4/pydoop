@@ -2,27 +2,27 @@
 <configuration>
 
 <property>
-  <name>hadoop.pipes.executable</name>
+  <name>mapreduce.pipes.executable</name>
   <value>WordCount</value>
 </property>
 
 <property>
-  <name>hadoop.pipes.java.recordreader</name>
+  <name>mapreduce.pipes.isjavarecordreader</name>
   <value>true</value>
 </property>
 
 <property>
-  <name>hadoop.pipes.java.recordwriter</name>
+  <name>mapreduce.pipes.isjavarecordwriter</name>
   <value>true</value>
 </property>
 
 <!-- debug settings
 <property>
-  <name>keep.failed.task.files</name>
+  <name>mapreduce.task.files.preserve.failedtasks</name>
   <value>true</value>
 </property>
 <property>
-  <name>hadoop.pipes.command-file.keep</name>
+  <name>mapreduce.pipes.commandfile.preserve</name>
   <value>true</value>
 </property>
 -->
