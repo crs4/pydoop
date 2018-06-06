@@ -175,8 +175,9 @@ def run_local_full(logger):
     hsl = HadoopSimulatorLocal(factory=factory_full, logger=logger,
                                loglevel=logger.level)
     hsl.run(None, None, conf, input_split=input_split, num_reducers=1)
-    data_out = os.path.join(output_dir,
-                            'part-r-%05d' % int(conf["mapreduce.task.partition"]))
+    data_out = os.path.join(
+        output_dir, 'part-r-%05d' % int(conf["mapreduce.task.partition"])
+    )
     dump_counters(hsl, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
@@ -188,8 +189,9 @@ def run_network_full(logger):
     hs = HadoopSimulatorNetwork(program=program_name, logger=logger,
                                 loglevel=logger.level)
     hs.run(None, None, conf, input_split=input_split)
-    data_out = os.path.join(output_dir,
-                            'part-r-%05d' % int(conf["mapreduce.task.partition"]))
+    data_out = os.path.join(
+        output_dir, 'part-r-%05d' % int(conf["mapreduce.task.partition"])
+    )
     dump_counters(hs, logger)
     check_results(data_in, data_out, logger)
     clean_up(data_out, output_dir)
