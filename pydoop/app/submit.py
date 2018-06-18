@@ -328,7 +328,8 @@ class PydoopSubmitter(object):
     def run(self):
         if self.args is None:
             raise RuntimeError("cannot run without args, please call set_args")
-        self.__validate()
+        if not self.args.pretend:
+            self.__validate()
         pydoop_classpath = []
         libjars = []
         if self.args.libjars:
@@ -386,7 +387,7 @@ class PydoopSubmitter(object):
 
     def fake_run_class(self, *args, **kwargs):
         kwargs['logger'].info("Fake run class")
-        repr_list = map(repr, args)
+        repr_list = [repr(_) for _ in args]
         repr_list.extend('%s=%r' % (k, v) for k, v in kwargs.items())
         sys.stdout.write("hadut.run_class(%s)\n" % ', '.join(repr_list))
 

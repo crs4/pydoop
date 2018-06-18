@@ -20,10 +20,12 @@ import unittest
 import shutil
 import tempfile
 import os
+import re
+import sys
+from io import StringIO, BytesIO
 
 import pydoop.app.main as app
 from pydoop.app.submit import PydoopSubmitter
-import re
 
 
 def nop(x=None):
@@ -56,6 +58,7 @@ class TestAppSubmit(unittest.TestCase):
             no_override_env=False,
             no_override_home=False,
             python_program='python',
+            input="input_path",
             output="output_path",
             job_name="job_name",
             num_reducers=0,
@@ -235,6 +238,18 @@ class TestAppSubmit(unittest.TestCase):
         args = self._gen_default_args()
         args.python_zip = [""]
         self.assertRaises(Exception, self.submitter.set_args, args)
+
+    def test_pretend(self):
+        args = self._gen_default_args()
+        args.pretend = True
+        args.log_level = "CRITICAL"
+        stdout = sys.stdout
+        sys.stdout = StringIO() if sys.version_info >= (3,) else BytesIO()
+        self.submitter.set_args(args)
+        self.submitter.run()
+        captured = sys.stdout.getvalue()
+        sys.stdout = stdout
+        self.assertGreaterEqual(len(captured), 0)
 
 
 def suite():
