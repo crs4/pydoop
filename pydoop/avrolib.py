@@ -152,10 +152,16 @@ class AvroContext(pp.TaskContext):
 
     # move to super?
     def __is_map_only(self):
-        jc = self.job_conf
-        return jc.get_int(
-            'mapred.reduce.tasks', jc.get_int('mapreduce.job.reduces', 0)
-        ) < 1
+        """\
+        Is this a map-only job?
+
+        By default, Hadoop runs a map-reduce job. To run a map-only
+        job, users must explicitly set the number of reducers to 0.
+        """
+        for k in 'mapreduce.job.reduces', 'mapred.reduce.tasks':
+            if self.job_conf.get_int(k, 1) < 1:
+                return True
+        return False
 
 
 class SeekableDataFileReader(DataFileReader):

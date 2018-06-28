@@ -26,7 +26,7 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 
 OPTS=(
     "-D" "mapreduce.task.timeout=10000"
-    "-D" "mapred.map.tasks=2"
+    "-D" "mapreduce.job.maps=2"
     "--python-program" "${PYTHON}"
 )
 

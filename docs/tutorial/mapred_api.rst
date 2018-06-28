@@ -139,7 +139,7 @@ shows how to get job configuration parameters: the one starting with
 ``mapreduce`` is a standard Hadoop parameter, while ``pydoop.hdfs.user``
 is a custom parameter defined by the application developer.
 Configuration properties are passed as ``-D <key>=<value>`` (e.g.,
-``-D mapred.textoutputformat.separator='|'``) to the submitter.
+``-D mapreduce.output.textoutputformat.separator='|'``) to the submitter.
 
 To use the writer, pass the class object to the factory with
 ``record_writer_class=Writer`` and, when running the program with

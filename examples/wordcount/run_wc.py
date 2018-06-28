@@ -31,9 +31,9 @@ import pydoop.test_support as pts
 
 
 CONF = {
-    "mapred.map.tasks": "2",
-    "mapred.reduce.tasks": "2",
-    "mapred.job.name": "wordcount",
+    "mapreduce.job.maps": "2",
+    "mapreduce.job.reduces": "2",
+    "mapreduce.job.name": "wordcount",
 }
 HADOOP_CONF_DIR = pydoop.hadoop_conf()
 PREFIX = os.getenv("PREFIX", pts.get_wd_prefix())

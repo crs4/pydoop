@@ -71,12 +71,12 @@ _SECRET_LOCATION_KEYS = frozenset([
 ])
 _INPUT_FORMAT_KEYS = frozenset([
     "mapred.input.format.class",
-    "mapreduce.inputformat.class",
+    "mapreduce.job.inputformat.class",
     "mapreduce.job.inputformat.class",
 ])
 
 # FIXME: duplicate with app.submit, move to a common module
-IS_JAVA_RW = "hadoop.pipes.java.recordwriter"
+IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
 
 
 class LongWritableDeserializer(object):
@@ -309,7 +309,7 @@ class TaskContext(api.MapContext, api.ReduceContext):
             self.partitioner = factory.create_partitioner(self)
             reducer = factory.create_combiner(self)
             spill_size = self._job_conf.get_int(
-                "mapreduce.task.io.sort.mb", DEFAULT_IO_SORT_MB
+                "mapreduce.task.mapreduce.task.io.sort.mb", DEFAULT_IO_SORT_MB
             )
             if reducer:
                 self.writer = CombineRunner(spill_size * 1024 * 1024,

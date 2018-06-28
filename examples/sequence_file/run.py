@@ -47,12 +47,12 @@ LOCAL_FILTER_SCRIPT = "bin/filter.py"
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_INPUT = os.path.normpath(os.path.join(THIS_DIR, "../input"))
 
-MR_JOB_NAME = "mapred.job.name"
+MR_JOB_NAME = "mapreduce.job.name"
 MR_HOME_DIR = 'mapreduce.admin.user.home.dir'
-PIPES_JAVA_RR = "hadoop.pipes.java.recordreader"
-PIPES_JAVA_RW = "hadoop.pipes.java.recordwriter"
-MR_OUT_COMPRESS_TYPE = "mapred.output.compression.type"
-MR_REDUCE_TASKS = "mapred.reduce.tasks"
+PIPES_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
+PIPES_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+MR_OUT_COMPRESS_TYPE = "mapreduce.output.fileoutputformat.compression.type"
+MR_REDUCE_TASKS = "mapreduce.job.reduces"
 MR_IN_CLASS = "mapred.input.format.class"
 MR_OUT_CLASS = "mapred.output.format.class"
 MRLIB = "org.apache.hadoop.mapred"

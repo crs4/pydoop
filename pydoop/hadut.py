@@ -345,8 +345,8 @@ def run_pipes(executable, input_path, output_path, more_args=None,
     are passed to :func:`run_cmd`.
 
     If not specified otherwise, this function sets the properties
-    ``hadoop.pipes.java.recordreader`` and ``hadoop.pipes.java.recordwriter``
-    to ``"true"``.
+    ``mapreduce.pipes.isjavarecordreader`` and
+    ``mapreduce.pipes.isjavarecordwriter`` to ``"true"``.
 
     This function works around a bug in Hadoop pipes that affects
     versions of Hadoop with security when the local file system is
@@ -364,8 +364,8 @@ def run_pipes(executable, input_path, output_path, more_args=None,
         raise IOError("input path %s not found" % input_path)
     if properties is None:
         properties = {}
-    properties.setdefault('hadoop.pipes.java.recordreader', 'true')
-    properties.setdefault('hadoop.pipes.java.recordwriter', 'true')
+    properties.setdefault('mapreduce.pipes.isjavarecordreader', 'true')
+    properties.setdefault('mapreduce.pipes.isjavarecordwriter', 'true')
     if force_pydoop_submitter:
         use_pydoop_submit = True
     else:

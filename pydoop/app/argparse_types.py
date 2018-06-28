@@ -16,11 +16,38 @@
 #
 # END_COPYRIGHT
 
+import argparse
 import pydoop.hdfs as hdfs
 
 
 def kv_pair(s):
-    return s.split("=", 1)
+    try:
+        k, v = s.split("=", 1)
+    except ValueError:
+        raise argparse.ArgumentTypeError("arg must be in the k=v form")
+    return k, v
+
+
+class UpdateMap(argparse.Action):
+    """\
+    Update the destination map with a K=V pair.
+
+    >>> parser = argparse.ArgumentParser()
+    >>> _ = parser.add_argument("-D", metavar="K=V", action=UpdateMap)
+    >>> args = parser.parse_args(["-D", "k1=v1", "-D", "k2=v2", "-D", "k2=v3"])
+    >>> args.D == {'k1': 'v1', 'k2': 'v3'}
+    True
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        kwargs = {k: v for k, v in kwargs.items() if k in {"help", "metavar"}}
+        kwargs["type"] = kv_pair
+        super(UpdateMap, self).__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if getattr(namespace, self.dest, None) is None:
+            setattr(namespace, self.dest, {})
+        getattr(namespace, self.dest).update([values])
 
 
 def a_file_that_can_be_read(x):

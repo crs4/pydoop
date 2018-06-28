@@ -37,11 +37,11 @@ from timer import Timer
 DEFAULT_SCRIPT = "../../examples/wordcount/bin/wordcount-full.py"
 
 CONF = {
-    "mapred.map.tasks": "2",
-    "mapred.reduce.tasks": "2",
-    "mapred.job.name": "wordcount",
-    "hadoop.pipes.java.recordreader": "false",
-    "hadoop.pipes.java.recordwriter": "false"
+    "mapreduce.job.maps": "2",
+    "mapreduce.job.reduces": "2",
+    "mapreduce.job.name": "wordcount",
+    "mapreduce.pipes.isjavarecordreader": "false",
+    "mapreduce.pipes.isjavarecordwriter": "false"
 }
 
 DATASET_DIR = "dataset"
@@ -58,9 +58,9 @@ def update_conf(args):
             k, v = [_.strip() for _ in kv_pair.split("=")]
             CONF[k] = v
     if args.mappers:
-        CONF["mapred.map.tasks"] = args.mappers
+        CONF["mapreduce.job.maps"] = args.mappers
     if args.reducers:
-        CONF["mapred.reduce.tasks"] = args.reducers
+        CONF["mapreduce.job.reduces"] = args.reducers
 
 
 def make_parser():
@@ -184,8 +184,8 @@ def main(argv):
     print("\n\n RESULTs")
     print("=" * (len(piped_code_file) + 15))
     print(" *  script: {0}".format(piped_code_file))
-    print(" *  mappers: {0}".format(CONF["mapred.map.tasks"]))
-    print(" *  reducers: {0}".format(CONF["mapred.reduce.tasks"]))
+    print(" *  mappers: {0}".format(CONF["mapreduce.job.maps"]))
+    print(" *  reducers: {0}".format(CONF["mapreduce.job.reduces"]))
     print(" *  dataset: [{0}]".format(",".join(dataset)))
     print(" *  times (input -> secs):")
     for data_input in dataset:

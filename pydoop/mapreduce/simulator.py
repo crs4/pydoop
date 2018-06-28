@@ -53,9 +53,9 @@ from pydoop.config import (
 CMD_PORT_KEY = "mapreduce.pipes.command.port"
 CMD_FILE_KEY = "mapreduce.pipes.commandfile"
 SECRET_LOCATION_KEY = 'hadoop.pipes.shared.secret.location'
-TASK_PARTITION_V1 = 'mapred.task.partition'
+TASK_PARTITION_V1 = 'mapreduce.task.partition'
 TASK_PARTITION_V2 = 'mapreduce.task.partition'
-OUTPUT_DIR_V1 = 'mapred.work.output.dir'
+OUTPUT_DIR_V1 = 'mapreduce.task.output.dir'
 OUTPUT_DIR_V2 = 'mapreduce.task.output.dir'
 DEFAULT_SLEEP_DELTA = 3
 
@@ -725,9 +725,9 @@ class HadoopSimulatorNetwork(HadoopSimulator):
       os.makedirs(output_dir)
       output_dir_uri = 'file://' + os.path.realpath(output_dir)
       conf = {
-        "mapred.job.name": "wordcount",
-        "mapred.work.output.dir": output_dir_uri,
-        "mapred.task.partition": "0",
+        "mapreduce.job.name": "wordcount",
+        "mapreduce.task.output.dir": output_dir_uri,
+        "mapreduce.task.partition": "0",
       }
       input_split = InputSplit.to_string(data_in_uri, 0, data_in_size)
       hsn = HadoopSimulatorNetwork(program=program_name, logger=logger,
