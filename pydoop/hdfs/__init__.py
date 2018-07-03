@@ -77,8 +77,6 @@ __all__ = [
 
 
 import os
-import operator
-from functools import reduce
 
 import pydoop
 from . import common, path
@@ -154,17 +152,10 @@ def load(hdfs_path, **kwargs):
     m, _ = common.parse_mode(kwargs.get("mode", "r"))
     if m != "r":
         raise ValueError("opening mode must be readonly")
-    data = []
     with open(hdfs_path, **kwargs) as fi:
-        bufsize = common.BUFSIZE
-        while 1:
-            chunk = fi.read(bufsize)
-            if chunk:
-                data.append(chunk)
-            else:
-                break
+        data = fi.read()
     fi.fs.close()
-    return reduce(operator.add, data)
+    return data
 
 
 def _cp_file(src_fs, src_path, dest_fs, dest_path, **kwargs):
