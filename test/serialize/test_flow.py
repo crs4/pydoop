@@ -22,8 +22,9 @@ from pydoop.test_utils import WDTestCase
 
 
 class TestFlow(WDTestCase):
+
     def write_read_helper(self, N, rule, data):
-        fname = 'foo.dat'  # self._mkfn('foo.dat')
+        fname = self._mkfn('foo.dat')
         with FlowWriter(open(fname, 'wb')) as stream:
             for _ in range(N):
                 stream.write(rule, data)
@@ -43,15 +44,15 @@ class TestFlow(WDTestCase):
         N = 10
         self.write_read_helper(N, rule, data)
 
-    def test_write_read_list_of_strings(self):
+    def test_write_read_dict(self):
         rule = b'A'
-        data = ((b'aaa', b'bbb', b'ccc', b'ddd'),)
-        N = 10
+        data = ({b'k1': b'v1', b'k2': b'v2'},)
+        N = 1
         self.write_read_helper(N, rule, data)
 
     def test_write_read_mixed(self):
         rule = b'fAsiisS'
-        data = (0.54, (b'aaa', b'bbb', b'ccc', b'ddd'),
+        data = (0.54, {b'k1': b'v1', b'k2': b'v2'},
                 b'ssed', 4343, 35555, b'weweew', b'ooioioi')
         N = 10
         self.write_read_helper(N, rule, data)

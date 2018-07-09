@@ -20,13 +20,14 @@ import unittest
 import os
 from collections import Counter
 import logging
+import json
+from itertools import product
 
 from pydoop.mapreduce.api import Mapper, Reducer, Factory, JobConf
 from pydoop.mapreduce.simulator import HadoopSimulatorLocal
 from pydoop.mapreduce.simulator import TrivialRecordReader
 from pydoop.test_utils import WDTestCase
-from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
-from pydoop.utils.py3compat import iteritems, cmap
+from pydoop.utils.py3compat import cmap
 
 
 DATA = \
@@ -127,28 +128,18 @@ class TestFramework(WDTestCase):
             fo.write(DATA)
 
     def test_job_conf(self):
-        job_conf = {}
-        for k in mrv1_to_mrv2:
-            job_conf[k] = k
-        jc = JobConf(
-            [item for sublist in iteritems(job_conf) for item in sublist]
-        )
-        for k in mrv2_to_mrv1:
-            self.assertEqual(jc[k], job_conf[mrv2_to_mrv1[k]])
-
-    def test_job_conf_getters(self):
-        values = ['int', '1', 'float', '2.3', 'bool', 'false']
-        conv_values = [1, 2.3, False]
-        jc = JobConf(values)
-        print(jc)
-        return
-        for i, k in enumerate(values[::2]):
-            getter = getattr(jc, 'get_%s' % k)
-            self.assertEqual(getter(k), conv_values[i])
-        for jc in JobConf([]), JobConf(['x', 'foo']):
-            for d in False, True:
-                self.assertEqual(jc.get_bool('x', default=d), d)
-        self.assertRaises(RuntimeError, JobConf(['x', 'foo']).get_bool, 'x')
+        self.assertEqual(JobConf(k='1').get_int('k'), 1)
+        self.assertAlmostEqual(JobConf(k='2.3').get_float('k'), 2.3)
+        for p in list(product("tT", "rR", "uU", "eE")):
+            self.assertTrue(JobConf(k=''.join(p)).get_bool('k'))
+        for p in list(product("fF", "aA", "lL", "sS", "eE")):
+            self.assertFalse(JobConf(k=''.join(p)).get_bool('k'))
+        v = dict(a=1, b=2)
+        self.assertEqual(JobConf(k=json.dumps(v)).get_json('k'), v)
+        self.assertIsNone(JobConf().get_int('k'))
+        self.assertIsNone(JobConf().get_float('k'))
+        self.assertIsNone(JobConf().get_bool('k'))
+        self.assertIsNone(JobConf().get_json('k'))
 
     def test_map_only(self):
         job_conf = {'this.is.not.used': '22'}

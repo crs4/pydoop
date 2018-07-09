@@ -29,7 +29,6 @@ import json
 from abc import abstractmethod
 
 from pydoop.utils.py3compat import ABC
-from pydoop.utils.conversion_tables import mrv1_to_mrv2, mrv2_to_mrv1
 
 
 class PydoopError(Exception):
@@ -64,41 +63,20 @@ class JobConf(dict):
       '1'
       >>> jc.get_int('a')
       1
-
-    .. warning::
-
-      For the most part, a JobConf object behaves like a :class:`dict`.
-      For backwards compatibility, however, there are two important exceptions:
-
-      #. objects are constructed from a ``[key1, value1, key2, value2,
-         ...]`` sequence
-
-      #. if ``k`` is not in ``jc``, ``jc.get(k)`` raises :exc:`RuntimeError`
-         instead of returning :obj:`None` (``jc.get(k, None)`` returns
-         :obj:`None` as in :class:`dict`).
     """
-
-    def __init__(self, values):
-        if 1 & len(values):
-            raise PydoopError('JobConf.__init__: len(values) should be even')
-        # FIXME -- this is a kludge but otherwise we would break backward
-        # compatibility
-        nvalues = [_.decode('UTF-8') if isinstance(_, bytes) else _
-                   for _ in values]
-        super(JobConf, self).__init__(zip(nvalues[::2], nvalues[1::2]))
-        self.__mirror_conf_across_versions()
-
     def get_int(self, key, default=None):
         """
         Same as :meth:`dict.get`, but the value is converted to an int.
         """
-        return int(self.get(key, default))
+        value = self.get(key, default)
+        return None if value is None else int(value)
 
     def get_float(self, key, default=None):
         """
         Same as :meth:`dict.get`, but the value is converted to an float.
         """
-        return float(self.get(key, default))
+        value = self.get(key, default)
+        return None if value is None else float(value)
 
     def get_bool(self, key, default=None):
         """
@@ -122,26 +100,8 @@ class JobConf(dict):
         return v
 
     def get_json(self, key, default=None):
-        return json.loads(self.get(key, default))
-
-    # get below is deprecated behaviour, here only for backward compatibility
-    def get(self, *args):
-        if len(args) == 2:
-            return super(JobConf, self).get(*args)
-        else:
-            try:
-                return self[args[0]]
-            except KeyError as ex:
-                raise RuntimeError(ex.args[0])
-
-    def __mirror_conf_across_versions(self):
-        ext = {}
-        for k in self:
-            if k in mrv1_to_mrv2 and not mrv1_to_mrv2[k] in self:
-                ext[mrv1_to_mrv2[k]] = self[k]
-            if k in mrv2_to_mrv1 and not mrv2_to_mrv1[k] in self:
-                ext[mrv2_to_mrv1[k]] = self[k]
-        self.update(ext)
+        value = self.get(key, default)
+        return None if value is None else json.loads(value)
 
 
 class Context(ABC):

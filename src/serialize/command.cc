@@ -236,11 +236,25 @@ PyObject* CommandWriter_close(CommandWriterInfo *self) {
 PyObject* get_rules(void) {
   load_rules_if_empty();
   PyObject* py_rules = PyDict_New();
+  if (py_rules == NULL) return NULL;
+  PyObject* key;
+  PyObject* value;
   for (rules_map_t::iterator it = rules.begin(); it != rules.end(); it++) {
-    PyDict_SetItem(
-      py_rules,
-      PyLong_FromLong(it->first),
-      PyUnicode_FromString((it->second).c_str()));
+    if ((key = PyLong_FromLong(it->first)) == NULL) {
+      Py_DECREF(py_rules);
+      return NULL;
+    }
+    if ((value = PyUnicode_FromString((it->second).c_str())) == NULL) {
+      Py_DECREF(key);
+      Py_DECREF(py_rules);
+      return NULL;
+    }
+    if (PyDict_SetItem(py_rules, key, value) == -1) {
+      Py_DECREF(value);
+      Py_DECREF(key);
+      Py_DECREF(py_rules);
+      return NULL;
+    }
   }
   return py_rules;
 }
