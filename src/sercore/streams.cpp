@@ -77,6 +77,19 @@ FileInStream_read(FileInStreamObj *self, PyObject *args) {
   return PyString_FromStringAndSize(buf, len);
 }
 
+
+static PyObject *
+FileInStream_skip(FileInStreamObj *self, PyObject *args) {
+  size_t len;
+  if (!PyArg_ParseTuple(args, "n", &len)) {
+    return NULL;
+  }
+  if (!self->stream->skip(len)) {
+    return PyErr_SetFromErrno(PyExc_IOError);
+  }
+  Py_RETURN_NONE;
+}
+
 static PyMethodDef FileInStream_methods[] = {
   {"open", (PyCFunction)FileInStream_open, METH_VARARGS,
    "open(filename): open file with the given name"},
@@ -84,6 +97,8 @@ static PyMethodDef FileInStream_methods[] = {
    "close(): close the currently open file"},
   {"read", (PyCFunction)FileInStream_read, METH_VARARGS,
    "read(len): read len bytes from the stream"},
+  {"skip", (PyCFunction)FileInStream_skip, METH_VARARGS,
+   "skip(len): skip len bytes"},
   {NULL}  /* Sentinel */
 };
 

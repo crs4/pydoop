@@ -16,17 +16,28 @@
 #
 # END_COPYRIGHT
 
+import io
 import unittest
+import uuid
 
 import sercore
 
 
 class TestFileInStream(unittest.TestCase):
 
-    def runTest(self):
+    def test_normal(self):
+        with io.open(__file__, "rb") as f:
+            self.data = f.read()
         stream = sercore.FileInStream()
         stream.open(__file__)
-        print("first 10 bytes: %r" % (stream.read(10)))
+        self.assertEqual(stream.read(10), self.data[:10])
+        stream.skip(20)
+        self.assertEqual(stream.read(20), self.data[30:50])
+        stream.close()
+
+    def test_errors(self):
+        stream = sercore.FileInStream()
+        self.assertRaises(IOError, stream.open, uuid.uuid4().hex)
 
 
 def suite():
