@@ -17,6 +17,9 @@
 # END_COPYRIGHT
 
 import io
+import os
+import shutil
+import tempfile
 import unittest
 import uuid
 
@@ -40,8 +43,32 @@ class TestFileInStream(unittest.TestCase):
         self.assertRaises(IOError, stream.open, uuid.uuid4().hex)
 
 
+class TestFileOutStream(unittest.TestCase):
+
+    def test_normal(self):
+        wd = tempfile.mkdtemp(prefix="pydoop_")
+        fname = os.path.join(wd, "foo")
+        data = b"abcdefgh"
+        stream = sercore.FileOutStream()
+        stream.open(fname)
+        stream.write(data)
+        stream.close()
+        with io.open(fname, "rb") as f:
+            self.assertEqual(f.read(), data)
+        shutil.rmtree(wd)
+
+    def test_errors(self):
+        fname = os.path.join(uuid.uuid4().hex, "foo")
+        stream = sercore.FileOutStream()
+        self.assertRaises(IOError, stream.open, fname)
+
+
 def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFileInStream)
+    ret = unittest.TestSuite()
+    test_loader = unittest.TestLoader()
+    for c in TestFileInStream, TestFileOutStream:
+        ret.addTest(test_loader.loadTestsFromTestCase(c))
+    return ret
 
 
 if __name__ == '__main__':
