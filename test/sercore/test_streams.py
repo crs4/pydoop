@@ -52,9 +52,12 @@ class TestFileOutStream(unittest.TestCase):
         stream = sercore.FileOutStream()
         stream.open(fname)
         stream.write(data)
+        stream.flush()
+        stream.advance(10)
+        stream.write(data)
         stream.close()
         with io.open(fname, "rb") as f:
-            self.assertEqual(f.read(), data)
+            self.assertEqual(f.read(), data + 10 * b'\x00' + data)
         shutil.rmtree(wd)
 
     def test_errors(self):

@@ -195,6 +195,26 @@ FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
 }
 
 
+static PyObject *
+FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
+  size_t len;
+  if (!PyArg_ParseTuple(args, "n", &len)) {
+    return NULL;
+  }
+  if (!self->stream->advance(len)) {
+    return PyErr_SetFromErrno(PyExc_IOError);
+  }
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *
+FileOutStream_flush(FileOutStreamObj *self) {
+  self->stream->flush();
+  Py_RETURN_NONE;
+}
+
+
 static PyMethodDef FileOutStream_methods[] = {
   {"open", (PyCFunction)FileOutStream_open, METH_VARARGS,
    "open(filename): open file with the given name"},
@@ -202,6 +222,10 @@ static PyMethodDef FileOutStream_methods[] = {
    "close(): close the currently open file"},
   {"write", (PyCFunction)FileOutStream_write, METH_VARARGS,
    "write(data): write data to the stream"},
+  {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
+   "advance(len): advance len bytes"},
+  {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,
+   "flush(): flush the stream"},
   {NULL}  /* Sentinel */
 };
 
