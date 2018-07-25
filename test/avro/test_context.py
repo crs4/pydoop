@@ -107,16 +107,18 @@ class TestContext(WDTestCase):
             raise RuntimeError("Mode %r not supported" % (mode,))
         schema_prop = (AVRO_KEY_INPUT_SCHEMA if mode == 'K'
                        else AVRO_VALUE_INPUT_SCHEMA)
+        job_conf = {
+            AVRO_INPUT: mode,
+            schema_prop: str(self.schema),
+            'mapreduce.pipes.isjavarecordreader': 'true',
+            'mapreduce.pipes.isjavarecordwriter': 'true'
+        }
         cmd_fn = self._mkfn('map_in')
         serializer = AvroSerializer(self.schema)
         with open(cmd_fn, 'wb') as f:
             bw = BinaryWriter(f)
             bw.send(bw.START_MESSAGE, 0)
-            bw.send(bw.SET_JOB_CONF,
-                    AVRO_INPUT, mode,
-                    schema_prop, str(self.schema),
-                    'mapreduce.pipes.isjavarecordreader', 'true',
-                    'mapreduce.pipes.isjavarecordwriter', 'true')
+            bw.send(bw.SET_JOB_CONF, job_conf)
             bw.send(bw.RUN_MAP, 'input_split', 0, True)
             bw.send(bw.SET_INPUT_TYPES, 'key_type', 'value_type')
             for r in self.records:

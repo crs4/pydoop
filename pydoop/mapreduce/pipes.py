@@ -333,8 +333,8 @@ class TaskContext(api.MapContext, api.ReduceContext):
             else:
                 self.up_link.send(self.up_link.OUTPUT, key, value)
 
-    def set_job_conf(self, vals):
-        self._job_conf = api.JobConf(vals)
+    def set_job_conf(self, d):
+        self._job_conf = api.JobConf(d)
 
     # FIXME: currently works only with the default TextInputFormat;
     # TODO: generalize to support Hadoop Writable types
@@ -505,7 +505,11 @@ class StreamRunner(object):
                     self.logger.critical('Server failed to authenticate')
                     break  # bailing out
             elif cmd == SET_JOB_CONF:
-                self.ctx.set_job_conf(args[0])
+                self.ctx.set_job_conf({
+                    k.decode('utf-8') if isinstance(k, bytes) else k:
+                    v.decode('utf-8') if isinstance(v, bytes) else v
+                    for k, v in iteritems(args[0])
+                })
             elif cmd == RUN_MAP:
                 self.ctx.set_is_mapper()
                 input_split, n_reduces, piped_input = args

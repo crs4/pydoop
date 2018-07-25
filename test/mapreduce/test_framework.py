@@ -320,7 +320,7 @@ class TestFramework(WDTestCase):
                     data.setdefault(args[0], []).append(args[1])
         stream = []
         stream.append((bw.START_MESSAGE, 0))
-        stream.append((bw.SET_JOB_CONF, 'key1', 'value1', 'key2', 'value2'))
+        stream.append((bw.SET_JOB_CONF, {'key1': 'value1', 'key2': 'value2'}))
         stream.append((bw.RUN_REDUCE, 0, 0))
         for k in data:
             stream.append((bw.REDUCE_KEY, k))

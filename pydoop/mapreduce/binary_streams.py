@@ -20,7 +20,7 @@ from .streams import (
     StreamWriter, StreamReader, DownStreamAdapter, UpStreamAdapter,
 )
 from pydoop.utils.serialize import CommandReader, CommandWriter, RULES
-from pydoop.utils.py3compat import unicode
+from pydoop.utils.py3compat import unicode, iteritems
 
 import logging
 logging.basicConfig()
@@ -39,11 +39,11 @@ class BinaryWriter(StreamWriter):
         self.original_stream = stream
 
     def send(self, cmd, *args):
-        typecodes = RULES[cmd] if cmd != self.SET_JOB_CONF else 's' * len(args)
         if self.auto_serialize:
-            args = self.__to_bytes(args, typecodes)
-        if cmd == self.SET_JOB_CONF:
-            args = (args,)
+            if cmd == self.SET_JOB_CONF:
+                args = (self.__jc_to_bytes(args[0]),)
+            else:
+                args = self.__to_bytes(args, RULES[cmd])
         self.stream.write((cmd, args))
 
     def __to_bytes(self, args, typecodes):
@@ -55,6 +55,12 @@ class BinaryWriter(StreamWriter):
                 a = a.encode('utf-8')
             out_args.append(a)
         return tuple(out_args)
+
+    def __jc_to_bytes(self, jc):
+        out_jc_items = []
+        for kv in iteritems(jc):
+            out_jc_items.append(self.__to_bytes(kv, 'ss'))
+        return dict(out_jc_items)
 
 
 class BinaryReader(StreamReader):

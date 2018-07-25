@@ -489,10 +489,9 @@ class HadoopSimulator(object):
             stream.send(stream.AUTHENTICATION_REQ, digest, challenge)
 
     def write_header_down_stream(self, down_stream, authorization, job_conf):
-        out_jc = sum([[k, v] for k, v in iteritems(job_conf)], [])
         self.write_authorization(down_stream, authorization)
         down_stream.send(down_stream.START_MESSAGE, 0)
-        down_stream.send(down_stream.SET_JOB_CONF, *out_jc)
+        down_stream.send(down_stream.SET_JOB_CONF, job_conf)
 
     def write_map_down_stream(self, file_in, job_conf, num_reducers,
                               authorization=None, input_split=''):

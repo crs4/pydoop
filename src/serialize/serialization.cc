@@ -101,23 +101,22 @@ PyObject* serialize_item(hu::OutStream& stream,
     return o; // everything is ok.
   }
   case 'A': {
-    if (!PyTuple_Check(o)) {
-      PyErr_SetString(PyExc_TypeError,
-                      "A argument should be a tuple.");
+    if (!PyDict_Check(o)) {
+      PyErr_SetString(PyExc_TypeError, "'A' argument should be a dict");
       return NULL;
     }
-    Py_ssize_t n = PyTuple_GET_SIZE(o);
+    Py_ssize_t n = 2 * PyDict_Size(o);
     SERIALIZE_IN_THREADS(serializeInt(n, stream));
-    for(Py_ssize_t i = 0; i < n; ++i){
-      PyObject *item = serialize_item(stream, 's', PyTuple_GET_ITEM(o, i));
-      if (item == NULL) {
-        return NULL;
-      }
+    PyObject* key;
+    PyObject* value;
+    for (Py_ssize_t i = 0; PyDict_Next(o, &i, &key, &value);) {
+      if (serialize_item(stream, 's', key) == NULL) return NULL;
+      if (serialize_item(stream, 's', value) == NULL) return NULL;
     }
     return o;
   }
   default:
-    PyErr_SetString(PyExc_TypeError, "Unknown decoding code.");
+    PyErr_Format(PyExc_ValueError, "Unknown code '%c'", code);
     return NULL;
   }
 }
@@ -157,20 +156,37 @@ PyObject* deserialize_item(hu::InStream& stream, char code) {
     return PyFloat_FromDouble((double)v);
   }
   case 'A': {
-      Py_ssize_t n;
-      DESERIALIZE_IN_THREADS(n = deserializeInt(stream));
-      PyObject* res = PyTuple_New(n);        
-      for(Py_ssize_t i = 0; i < n; ++i){
-        PyObject* item = deserialize_item(stream, 's');
-        if (item == NULL) {
-          return NULL;
-        }
-        PyTuple_SET_ITEM(res, i, item);
+    Py_ssize_t n;
+    DESERIALIZE_IN_THREADS(n = deserializeInt(stream));
+    if (n & 1) {
+      PyErr_SetString(PyExc_ValueError, "number of items must be even");
+      return NULL;
+    }
+    PyObject* res = PyDict_New();
+    if (res == NULL) return NULL;
+    PyObject* key;
+    PyObject* value;
+    for (Py_ssize_t i = 0; i < n / 2; ++i) {
+      if ((key = deserialize_item(stream, 's')) == NULL) {
+	Py_DECREF(res);
+	return NULL;
       }
-      return res;
+      if ((value = deserialize_item(stream, 's')) == NULL) {
+	Py_DECREF(key);
+	Py_DECREF(res);
+	return NULL;
+      }
+      if (PyDict_SetItem(res, key, value) == -1) {
+	Py_DECREF(value);
+	Py_DECREF(key);
+	Py_DECREF(res);
+	return NULL;
+      }
+    }
+    return res;
   }
   default:
-    PyErr_SetString(PyExc_TypeError, "Unknown decoding code.");
+    PyErr_Format(PyExc_ValueError, "Unknown code '%c'", code);
     return NULL;
   }
 }

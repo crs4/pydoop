@@ -61,6 +61,9 @@ class TextWriter(StreamWriter):
 
     def send(self, cmd, *args):
         self.stream.write(self.convert_cmd(cmd))
+        if cmd == StreamWriter.SET_JOB_CONF:
+            assert len(args) == 1
+            args = sum(args[0].items(), ())
         for a in args:
             self.stream.write(self.SEP)
             self.stream.write(quote_string(str(a)))
@@ -82,7 +85,10 @@ class TextReader(StreamReader):
         'reduceValue': (StreamReader.REDUCE_VALUE, 1, None),
         'reduceKey': (StreamReader.REDUCE_KEY, 1, None),
         'start': (StreamReader.START_MESSAGE, 1, lambda p: [int(p[0])]),
-        'setJobConf': (StreamReader.SET_JOB_CONF, None, lambda p: [tuple(p)]),
+        'setJobConf': (
+            StreamReader.SET_JOB_CONF, 1,
+            lambda p: [dict(p[i: i + 2] for i in range(0, len(p), 2))]
+        ),
         'setInputTypes': (StreamReader.SET_INPUT_TYPES, 2, None),
         'runMap': (StreamReader.RUN_MAP, 3,
                    lambda p: [p[0], int(p[1]), int(p[2])]),
@@ -109,13 +115,17 @@ class TextReader(StreamReader):
     def convert_message(cls, cmd, args):
         if cmd in cls.CMD_TABLE:
             cmd, nargs, converter = cls.CMD_TABLE[cmd]
-            assert nargs is None or len(args) == nargs
             if cmd == cls.ABORT:
                 raise ProtocolAbort('received an abort request')
             args = args if converter is None else converter(args)
-            return cmd, tuple((unquote_string(a)
-                               if isinstance(a, str) else a
-                               for a in args)) if args else None
+            assert len(args) == nargs
+            if cmd == cls.SET_JOB_CONF:
+                args = ({unquote_string(k): unquote_string(v)
+                         for k, v in args[0].items()},)
+            else:
+                args = tuple((unquote_string(a) if isinstance(a, str) else a
+                              for a in args))
+            return cmd, args
         else:
             raise ProtocolError('Unrecognized command %r' % cmd)
 

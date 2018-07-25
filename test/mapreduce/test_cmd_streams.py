@@ -17,10 +17,9 @@
 # END_COPYRIGHT
 
 import unittest
-from pydoop.utils.py3compat import czip, unicode
+from pydoop.utils.py3compat import czip
 
 import pydoop.mapreduce.streams as streams
-from pydoop.mapreduce.streams import ProtocolError
 from pydoop.mapreduce.text_streams import (TextWriter,
                                            TextDownStreamAdapter,
                                            TextUpStreamAdapter)
@@ -41,33 +40,39 @@ def stream_writer(fname, data, mod, Writer):
         writer.flush()
 
 
+def encode_strings(t):
+    ret = []
+    for item in t:
+        try:
+            ret.append(item.encode())
+        except AttributeError:
+            ret.append(item)
+    return tuple(ret)
+
+
 class TestCmdStreams(WDTestCase):
 
     def link_helper(self, mod, Writer, DownStreamAdapter):
         fname = self._mkfn('foo.' + ('bin' if mod == 'b' else 'txt'))
         stream_writer(fname, STREAM_1, mod, Writer)
         with open(fname, 'r' + mod) as f:
-            stream = DownStreamAdapter(f)
-            try:
-                at_least_once_in_loop = False
-                for (cmd, args), vals in czip(stream, STREAM_1):
-                    at_least_once_in_loop = True
-                    self.assertEqual(cmd, vals[0])
-                    vals = vals[1:]
-                    if mod == 'b':
-                        vals = [x.encode('utf-8')
-                                if isinstance(x, unicode) else x
-                                for x in vals]
-                    vals = tuple(vals)
-                    if cmd == streams.SET_JOB_CONF:
-                        self.assertEqual(len(args), 1)
-                        self.assertEqual(args[0], vals)
-                    else:
-                        self.assertTrue((len(vals) == 0 and not args) or
-                                        (vals == args))
-                self.assertTrue(at_least_once_in_loop)
-            except ProtocolError as e:
-                print('error -- %s' % e)
+            commands = list(DownStreamAdapter(f))
+        self.assertEqual(len(commands), len(STREAM_1))
+        for in_t, t in czip(STREAM_1, commands):
+            in_code, in_args = in_t[0], in_t[1:]
+            self.assertEqual(len(t), 2)
+            code, args = t
+            self.assertEqual(code, in_code)
+            self.assertEqual(len(args), len(in_args))
+            if code == streams.SET_JOB_CONF:
+                in_jc, jc = in_args[0], args[0]
+                if mod == 'b':
+                    in_jc = {k.encode(): v.encode() for k, v in in_jc.items()}
+                self.assertEqual(jc, in_jc)
+            else:
+                if mod == 'b':
+                    in_args = encode_strings(in_args)
+                self.assertEqual(args, in_args)
 
     def test_text_downlink(self):
         self.link_helper('', TextWriter, TextDownStreamAdapter)
