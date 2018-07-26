@@ -95,11 +95,11 @@ class OutputHandler<K extends WritableComparable, V extends Writable>
      */
     @Override
     public void progress(float progress) throws IOException {
+        progressValue = progress;
+        context.progress();
         if (recordReader != null) {
             progressKey.set(progress);
             recordReader.next(progressKey, nullValue);
-        } else { // FIXME --- Are we sure?
-            progressValue = progress;
         }
     }
 
