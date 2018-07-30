@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# Set up the layout needed to build the "mapred" version of pipes
+
+set -euo pipefail
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 HADOOP_SRC"
+    exit 1
+fi
+if [ ! -d "${1}"/hadoop-mapreduce-project ]; then
+    echo "ERROR: \"$1\" does not look like a Hadoop source dir"
+    exit 1
+fi
+hadoop_src=${1}
+
+pushd "${this_dir}/.."
+mapred_pipes_dir=src/it/crs4/pydoop/mapred/pipes
+rm -rf "${mapred_pipes_dir}"
+mkdir -p "${mapred_pipes_dir}"
+cp -rf "${hadoop_src}"/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-core/src/main/java/org/apache/hadoop/mapred/pipes/* "${mapred_pipes_dir}"/
+sed -i 's/package org\.apache\.hadoop/package it\.crs4\.pydoop/g' "${mapred_pipes_dir}"/*
+
+# not exactly future-proof
+sed_cmd="s|self\.java_files = |self\.java_files = glob.glob(\"${mapred_pipes_dir}/*.java\") + |"
+sed -i "${sed_cmd}" setup.py
+popd
