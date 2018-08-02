@@ -5,14 +5,14 @@ cache: pip
 matrix:
   include:
   - python: "2.7"
+    env: HADOOP_MAJOR_VERSION=2
+  - python: "2.7"
+    env: HADOOP_MAJOR_VERSION=3
   - python: "3.6"
+    env: HADOOP_MAJOR_VERSION=3
   - python: "3.7"
-    sudo: required
+    env: HADOOP_MAJOR_VERSION=3
     dist: xenial
-
-env:
-  - HADOOP_MAJOR_VERSION=2
-  - HADOOP_MAJOR_VERSION=3
 
 sudo: required
 
