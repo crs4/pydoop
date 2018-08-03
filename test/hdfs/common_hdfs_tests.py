@@ -79,6 +79,23 @@ class TestCommon(unittest.TestCase):
 
     assertRaisesExternal = failUnlessRaisesExternal
 
+    def assertEqualPathInfo(self, info1, info2, tolerance=10):
+        """\
+        Check path info results for equality.
+
+        Since ``last_access`` values are timestamps in seconds, we
+        need to tolerate a small difference between them. In practice,
+        unless the expected value is stored way in advance, this
+        difference should be 0 or 1 second.
+        """
+        self.assertEqual(info1.keys(), info2.keys())
+        for (k, v1) in info1.items():
+            v2 = info2[k]
+            if k == "last_access":
+                self.assertLessEqual(abs(v2 - v1), tolerance)
+            else:
+                self.assertEqual(v1, v2)
+
     def open_close(self):
         path = self._make_random_path()
         self.fs.open_file(path, "w").close()
@@ -484,9 +501,9 @@ class TestCommon(unittest.TestCase):
     def walk(self):
         new_d, new_f = self._make_random_dir(), self._make_random_file()
         for top in new_d, new_f:
-            self.assertEqual(
-                list(self.fs.walk(top)), [self.fs.get_path_info(top)]
-            )
+            items = list(self.fs.walk(top))
+            self.assertEqual(len(items), 1)
+            self.assertEqualPathInfo(items[0], self.fs.get_path_info(top))
         top = new_d
         cache = [top]
         for _ in range(2):
@@ -505,9 +522,7 @@ class TestCommon(unittest.TestCase):
         for l in infos, expected_infos:
             l.sort(key=operator.itemgetter("name"))
         for i, e in zip(infos, expected_infos):
-            self.assertTrue(i["last_access"] <= e["last_access"])
-            del i["last_access"], e["last_access"]
-            self.assertEqual(i, e)
+            self.assertEqualPathInfo(i, e)
         nonexistent_walk = self.fs.walk(self._make_random_path())
         if _is_py3:
             self.assertRaises(OSError, lambda: next(nonexistent_walk))
