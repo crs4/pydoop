@@ -9,6 +9,8 @@ docker exec pydoop bash -c \
 docker exec pydoop bash -c \
   "source /etc/profile && cd test/avro && ${PYTHON} all_tests.py"
 docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
+  "source /etc/profile && cd int_test && ./run_all"
+docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
   "source /etc/profile && cd examples && ./run_all"
 docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
   "source /etc/profile && cd examples/avro && ./run"

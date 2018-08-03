@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2018 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
+MODULE="mrapp"
+TIMEOUT_SECS=10
+N_LINES=$((5 * TIMEOUT_SECS))
+OPTS=(
+    "-D" "mapreduce.task.timeout=$((1000 * TIMEOUT_SECS))"
+    "-D" "mapreduce.job.maps=1"
+    "--python-program" "${PYTHON}"
+    "--job-name" "${MODULE}"
+    "--num-reducers" "0"
+    "--upload-file-to-cache" "${this_dir}/${MODULE}.py"
+    "--do-not-use-java-record-writer"
+)
+[ -n "${DEBUG:-}" ] && OPTS+=( "--log-level" "DEBUG" )
+
+WD=$(mktemp -d)
+DATA="${WD}"/${RANDOM}
+for i in $(seq 1 ${N_LINES}); do
+    echo "foobar_${i}" >> "${DATA}"
+done
+INPUT=$(basename ${DATA})_in
+OUTPUT=$(basename ${DATA})_out
+
+ensure_dfs_home
+${HDFS} dfs -rm -r -f "${INPUT}" "${OUTPUT}"
+${HDFS} dfs -put "${DATA}" "${INPUT}"
+${PYDOOP} submit "${OPTS[@]}" ${MODULE} "${INPUT}" "${OUTPUT}"
+
+${HDFS} dfs -test -e "${OUTPUT}"/part-m-00000
+rm -rf "${WD}"
