@@ -29,6 +29,9 @@
 #define PyInt_FromSize_t PyLong_FromSize_t
 #define PyString_FromString PyBytes_FromString
 #define PyString_FromStringAndSize PyBytes_FromStringAndSize
+#define PyString_AsString PyBytes_AsString
+#define PyString_AS_STRING PyBytes_AS_STRING
+#define PyString_AsStringAndSize PyBytes_AsStringAndSize
 #endif
 
 
@@ -64,17 +67,25 @@ FileInStream_close(FileInStreamObj *self) {
 static PyObject *
 FileInStream_read(FileInStreamObj *self, PyObject *args) {
   size_t len;
+  PyObject *rval;
+  PyThreadState *state;
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
-  char* buf = reinterpret_cast<char*>(malloc(len));
-  try {
-    self->stream->read(buf, len);
-  } catch (const std::exception& e) {
-    PyErr_SetString(PyExc_IOError, e.what());
+  if (!(rval = PyString_FromStringAndSize(NULL, len))) {
     return NULL;
   }
-  return PyString_FromStringAndSize(buf, len);
+  state = PyEval_SaveThread();
+  try {
+    self->stream->read(PyString_AS_STRING(rval), len);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    Py_DECREF(rval);
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  return rval;
 }
 
 
@@ -178,6 +189,7 @@ static PyObject *
 FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
   PyObject* data = NULL;
   Py_buffer buffer = {NULL, NULL};
+  PyThreadState *state;
   if (!PyArg_ParseTuple(args, "O", &data)) {
     return NULL;
   }
@@ -185,12 +197,15 @@ FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
     PyErr_SetString(PyExc_TypeError, "data not accessible as a buffer");
     return NULL;
   }
+  state = PyEval_SaveThread();
   try {
     self->stream->write(buffer.buf, buffer.len);
-  } catch (const std::exception& e) {
-    PyErr_SetString(PyExc_IOError, e.what());
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
     return NULL;
   }
+  PyEval_RestoreThread(state);
   Py_RETURN_NONE;
 }
 
@@ -269,4 +284,119 @@ PyTypeObject FileOutStreamType = {
     (initproc)FileOutStream_init,                     /* tp_init */
     0,                                                /* tp_alloc */
     0,                                                /* tp_new */
+};
+
+
+static PyObject*
+BufferInStream_new(PyTypeObject *type, PyObject *args, PyObject *kwds) {
+  BufferInStreamObj *self = NULL;
+  self = (BufferInStreamObj*)type->tp_alloc(type, 0);
+  if (self) {
+    if (!(self->data = PyString_FromString(""))) {
+      Py_DECREF(self);
+      return NULL;
+    }
+  }
+  return (PyObject*)self;
+}
+
+
+static void
+BufferInStream_dealloc(BufferInStreamObj *self) {
+  Py_XDECREF(self->data);
+  Py_TYPE(self)->tp_free((PyObject*)self);
+}
+
+
+static int
+BufferInStream_init(BufferInStreamObj *self, PyObject *args, PyObject *kwds) {
+  PyObject *data = NULL, *tmp = NULL;
+  Py_buffer buffer = {NULL, NULL};
+  if (!PyArg_ParseTuple(args, "O", &data)) {
+    return -1;
+  }
+  if (PyObject_GetBuffer(data, &buffer, PyBUF_SIMPLE) < 0) {
+    PyErr_SetString(PyExc_TypeError, "data not accessible as a buffer");
+    return -1;
+  }
+  self->stream = std::make_shared<HadoopUtils::BufferInStream>();
+  self->stream->open((char*)buffer.buf, buffer.len);
+  tmp = self->data;
+  Py_INCREF(data);
+  self->data = data;
+  Py_XDECREF(tmp);
+  return 0;
+}
+
+
+static PyObject *
+BufferInStream_read(BufferInStreamObj *self, PyObject *args) {
+  size_t len;
+  PyObject *rval;
+  PyThreadState *state;
+  if (!PyArg_ParseTuple(args, "n", &len)) {
+    return NULL;
+  }
+  if (!(rval = PyString_FromStringAndSize(NULL, len))) {
+    return NULL;
+  }
+  state = PyEval_SaveThread();
+  try {
+    self->stream->read(PyString_AS_STRING(rval), len);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    Py_DECREF(rval);
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  return rval;
+}
+
+static PyMethodDef BufferInStream_methods[] = {
+  {"read", (PyCFunction)BufferInStream_read, METH_VARARGS,
+   "read(len): read len bytes from the stream"},
+  {NULL}
+};
+
+
+PyTypeObject BufferInStreamType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "sercore.BufferInStream",                         /* tp_name */
+    sizeof(BufferInStreamObj),                        /* tp_basicsize */
+    0,                                                /* tp_itemsize */
+    (destructor) BufferInStream_dealloc,              /* tp_dealloc */
+    0,                                                /* tp_print */
+    0,                                                /* tp_getattr */
+    0,                                                /* tp_setattr */
+    0,                                                /* tp_compare */
+    0,                                                /* tp_repr */
+    0,                                                /* tp_as_number */
+    0,                                                /* tp_as_sequence */
+    0,                                                /* tp_as_mapping */
+    0,                                                /* tp_hash */
+    0,                                                /* tp_call */
+    0,                                                /* tp_str */
+    0,                                                /* tp_getattro */
+    0,                                                /* tp_setattro */
+    0,                                                /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,         /* tp_flags */
+    "A stream that reads from a buffer",              /* tp_doc */
+    0,                                                /* tp_traverse */
+    0,                                                /* tp_clear */
+    0,                                                /* tp_richcompare */
+    0,                                                /* tp_weaklistoffset */
+    0,                                                /* tp_iter */
+    0,                                                /* tp_iternext */
+    BufferInStream_methods,                           /* tp_methods */
+    0,                                                /* tp_members */
+    0,                                                /* tp_getset */
+    0,                                                /* tp_base */
+    0,                                                /* tp_dict */
+    0,                                                /* tp_descr_get */
+    0,                                                /* tp_descr_set */
+    0,                                                /* tp_dictoffset */
+    (initproc)BufferInStream_init,                    /* tp_init */
+    0,                                                /* tp_alloc */
+    BufferInStream_new,                               /* tp_new */
 };

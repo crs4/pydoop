@@ -28,9 +28,11 @@ import sercore
 
 class TestFileInStream(unittest.TestCase):
 
-    def test_normal(self):
+    def setUp(self):
         with io.open(__file__, "rb") as f:
             self.data = f.read()
+
+    def test_normal(self):
         stream = sercore.FileInStream()
         stream.open(__file__)
         self.assertEqual(stream.read(10), self.data[:10])
@@ -41,6 +43,9 @@ class TestFileInStream(unittest.TestCase):
     def test_errors(self):
         stream = sercore.FileInStream()
         self.assertRaises(IOError, stream.open, uuid.uuid4().hex)
+        stream.open(__file__)
+        stream.skip(len(self.data))
+        self.assertRaises(IOError, stream.read, 1)
 
 
 class TestFileOutStream(unittest.TestCase):
@@ -66,10 +71,24 @@ class TestFileOutStream(unittest.TestCase):
         self.assertRaises(IOError, stream.open, fname)
 
 
+class TestBufferInStream(unittest.TestCase):
+
+    def test_normal(self):
+        data = b"abcdefgh"
+        stream = sercore.BufferInStream(data)
+        self.assertEqual(stream.read(5), data[:5])
+        self.assertEqual(stream.read(3), data[5:8])
+
+    def test_errors(self):
+        data = b"abc"
+        stream = sercore.BufferInStream(data)
+        self.assertRaises(IOError, stream.read, 5)
+
+
 def suite():
     ret = unittest.TestSuite()
     test_loader = unittest.TestLoader()
-    for c in TestFileInStream, TestFileOutStream:
+    for c in TestFileInStream, TestFileOutStream, TestBufferInStream:
         ret.addTest(test_loader.loadTestsFromTestCase(c))
     return ret
 

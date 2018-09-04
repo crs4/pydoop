@@ -66,6 +66,10 @@ initsercore(void) {
   if (PyType_Ready(&FileOutStreamType) < 0) {
     INIT_RETURN(NULL);;
   }
+  BufferInStreamType.tp_new = PyType_GenericNew;
+  if (PyType_Ready(&BufferInStreamType) < 0) {
+    INIT_RETURN(NULL);;
+  }
 #ifdef PY3
   m = PyModule_Create(&module_def);
 #else
@@ -78,5 +82,7 @@ initsercore(void) {
   PyModule_AddObject(m, "FileInStream", (PyObject *)&FileInStreamType);
   Py_INCREF(&FileOutStreamType);
   PyModule_AddObject(m, "FileOutStream", (PyObject *)&FileOutStreamType);
+  Py_INCREF(&BufferInStreamType);
+  PyModule_AddObject(m, "BufferInStream", (PyObject *)&BufferInStreamType);
   INIT_RETURN(m);
 }
