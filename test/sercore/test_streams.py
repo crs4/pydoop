@@ -85,10 +85,78 @@ class TestBufferInStream(unittest.TestCase):
         self.assertRaises(IOError, stream.read, 5)
 
 
+class TestSerDe(unittest.TestCase):
+
+    INT = 42
+    LONG = (2 << 62) - 1
+    FLOAT = 3.14
+
+    def setUp(self):
+        self.wd = tempfile.mkdtemp(prefix="pydoop_")
+        self.fname = os.path.join(self.wd, "foo")
+        self.ostream = sercore.FileOutStream()
+        self.istream = sercore.FileInStream()
+
+    def tearDown(self):
+        shutil.rmtree(self.wd)
+
+    def test_int(self):
+        self.ostream.open(self.fname)
+        self.ostream.write_int(self.INT)
+        self.ostream.close()
+        self.istream.open(self.fname)
+        try:
+            self.assertEqual(self.istream.read_int(), self.INT)
+        finally:
+            self.istream.close()
+
+    def test_long(self):
+        self.ostream.open(self.fname)
+        self.ostream.write_long(self.LONG)
+        self.ostream.close()
+        self.istream.open(self.fname)
+        try:
+            self.assertEqual(self.istream.read_long(), self.LONG)
+        finally:
+            self.istream.close()
+
+    def test_float(self):
+        self.ostream.open(self.fname)
+        self.ostream.write_float(self.FLOAT)
+        self.ostream.close()
+        self.istream.open(self.fname)
+        try:
+            self.assertAlmostEqual(self.istream.read_float(), self.FLOAT, 3)
+        finally:
+            self.istream.close()
+
+    def test_multi(self):
+        self.ostream.open(self.fname)
+        self.ostream.write_int(self.INT)
+        self.ostream.write_long(self.LONG)
+        self.ostream.write_float(self.FLOAT)
+        self.ostream.close()
+        self.istream.open(self.fname)
+        try:
+            self.assertEqual(self.istream.read_int(), self.INT)
+            self.assertEqual(self.istream.read_long(), self.LONG)
+            self.assertAlmostEqual(self.istream.read_float(), self.FLOAT, 3)
+        finally:
+            self.istream.close()
+
+
+CASES = [
+    TestFileInStream,
+    TestFileOutStream,
+    TestBufferInStream,
+    TestSerDe,
+]
+
+
 def suite():
     ret = unittest.TestSuite()
     test_loader = unittest.TestLoader()
-    for c in TestFileInStream, TestFileOutStream, TestBufferInStream:
+    for c in CASES:
         ret.addTest(test_loader.loadTestsFromTestCase(c))
     return ret
 

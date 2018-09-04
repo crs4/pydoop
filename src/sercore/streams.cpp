@@ -21,11 +21,13 @@
 #include <string>
 #include <memory>
 #include <cstdlib>
+#include <cstdint>
 
 #include "streams.h"
 
 
 #if PY_MAJOR_VERSION >= 3
+#define PyInt_FromLong PyLong_FromLong
 #define PyInt_FromSize_t PyLong_FromSize_t
 #define PyString_FromString PyBytes_FromString
 #define PyString_FromStringAndSize PyBytes_FromStringAndSize
@@ -90,6 +92,57 @@ FileInStream_read(FileInStreamObj *self, PyObject *args) {
 
 
 static PyObject *
+FileInStream_readInt(FileInStreamObj *self) {
+  int32_t rval;
+  PyThreadState *state;
+  state = PyEval_SaveThread();
+  try {
+    rval = HadoopUtils::deserializeInt(*self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  return PyInt_FromLong(rval);
+}
+
+
+static PyObject *
+FileInStream_readLong(FileInStreamObj *self) {
+  int64_t rval;
+  PyThreadState *state;
+  state = PyEval_SaveThread();
+  try {
+    rval = HadoopUtils::deserializeLong(*self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  return PyLong_FromLong(rval);
+}
+
+
+static PyObject *
+FileInStream_readFloat(FileInStreamObj *self) {
+  float rval;
+  PyThreadState *state;
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::deserializeFloat(rval, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  return PyFloat_FromDouble(rval);
+}
+
+
+static PyObject *
 FileInStream_skip(FileInStreamObj *self, PyObject *args) {
   size_t len;
   if (!PyArg_ParseTuple(args, "n", &len)) {
@@ -101,6 +154,7 @@ FileInStream_skip(FileInStreamObj *self, PyObject *args) {
   Py_RETURN_NONE;
 }
 
+
 static PyMethodDef FileInStream_methods[] = {
   {"open", (PyCFunction)FileInStream_open, METH_VARARGS,
    "open(filename): open file with the given name"},
@@ -108,6 +162,12 @@ static PyMethodDef FileInStream_methods[] = {
    "close(): close the currently open file"},
   {"read", (PyCFunction)FileInStream_read, METH_VARARGS,
    "read(len): read len bytes from the stream"},
+  {"read_int", (PyCFunction)FileInStream_readInt, METH_NOARGS,
+   "read_int(): read an integer from the stream"},
+  {"read_long", (PyCFunction)FileInStream_readLong, METH_NOARGS,
+   "read_long(): read a long integer from the stream"},
+  {"read_float", (PyCFunction)FileInStream_readFloat, METH_NOARGS,
+   "read_float(): read a float from the stream"},
   {"skip", (PyCFunction)FileInStream_skip, METH_VARARGS,
    "skip(len): skip len bytes"},
   {NULL}  /* Sentinel */
@@ -211,6 +271,66 @@ FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
 
 
 static PyObject *
+FileOutStream_writeInt(FileOutStreamObj *self, PyObject *args) {
+  int32_t val = 0;
+  PyThreadState *state;
+  if (!PyArg_ParseTuple(args, "n", &val)) {
+    return NULL;
+  }
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::serializeInt(val, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *
+FileOutStream_writeLong(FileOutStreamObj *self, PyObject *args) {
+  int64_t val;
+  PyThreadState *state;
+  if (!PyArg_ParseTuple(args, "n", &val)) {
+    return NULL;
+  }
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::serializeLong(val, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *
+FileOutStream_writeFloat(FileOutStreamObj *self, PyObject *args) {
+  float val;
+  PyThreadState *state;
+  if (!PyArg_ParseTuple(args, "f", &val)) {
+    return NULL;
+  }
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::serializeFloat(val, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *
 FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
   size_t len;
   if (!PyArg_ParseTuple(args, "n", &len)) {
@@ -237,6 +357,12 @@ static PyMethodDef FileOutStream_methods[] = {
    "close(): close the currently open file"},
   {"write", (PyCFunction)FileOutStream_write, METH_VARARGS,
    "write(data): write data to the stream"},
+  {"write_int", (PyCFunction)FileOutStream_writeInt, METH_VARARGS,
+   "write_int(n): write an integer to the stream"},
+  {"write_long", (PyCFunction)FileOutStream_writeLong, METH_VARARGS,
+   "write_long(n): write a long integer to the stream"},
+  {"write_float", (PyCFunction)FileOutStream_writeFloat, METH_VARARGS,
+   "write_float(n): write a float to the stream"},
   {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
    "advance(len): advance len bytes"},
   {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,
