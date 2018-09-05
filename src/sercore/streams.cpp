@@ -143,6 +143,23 @@ FileInStream_readFloat(FileInStreamObj *self) {
 
 
 static PyObject *
+FileInStream_readString(FileInStreamObj *self) {
+  std::string rval;
+  PyThreadState *state;
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::deserializeString(rval, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  return PyUnicode_FromString(rval.c_str());
+}
+
+
+static PyObject *
 FileInStream_skip(FileInStreamObj *self, PyObject *args) {
   size_t len;
   if (!PyArg_ParseTuple(args, "n", &len)) {
@@ -168,6 +185,8 @@ static PyMethodDef FileInStream_methods[] = {
    "read_long(): read a long integer from the stream"},
   {"read_float", (PyCFunction)FileInStream_readFloat, METH_NOARGS,
    "read_float(): read a float from the stream"},
+  {"read_string", (PyCFunction)FileInStream_readString, METH_NOARGS,
+   "read_string(): read a string from the stream"},
   {"skip", (PyCFunction)FileInStream_skip, METH_VARARGS,
    "skip(len): skip len bytes"},
   {NULL}  /* Sentinel */
@@ -331,6 +350,26 @@ FileOutStream_writeFloat(FileOutStreamObj *self, PyObject *args) {
 
 
 static PyObject *
+FileOutStream_writeString(FileOutStreamObj *self, PyObject *args) {
+  char* val;
+  PyThreadState *state;
+  if (!PyArg_ParseTuple(args, "es", "utf-8",  &val)) {
+    return NULL;
+  }
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::serializeString(std::string(val), *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *
 FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
   size_t len;
   if (!PyArg_ParseTuple(args, "n", &len)) {
@@ -363,6 +402,8 @@ static PyMethodDef FileOutStream_methods[] = {
    "write_long(n): write a long integer to the stream"},
   {"write_float", (PyCFunction)FileOutStream_writeFloat, METH_VARARGS,
    "write_float(n): write a float to the stream"},
+  {"write_string", (PyCFunction)FileOutStream_writeString, METH_VARARGS,
+   "write_string(n): write a string to the stream"},
   {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
    "advance(len): advance len bytes"},
   {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,

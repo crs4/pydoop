@@ -26,6 +26,10 @@ import uuid
 import sercore
 
 
+# TODO: from pydoop.test_utils import UNI_CHR
+UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
+
+
 class TestFileInStream(unittest.TestCase):
 
     def setUp(self):
@@ -90,6 +94,7 @@ class TestSerDe(unittest.TestCase):
     INT = 42
     LONG = (2 << 62) - 1
     FLOAT = 3.14
+    STRING = u'BO' + UNI_CHR
 
     def setUp(self):
         self.wd = tempfile.mkdtemp(prefix="pydoop_")
@@ -130,17 +135,26 @@ class TestSerDe(unittest.TestCase):
         finally:
             self.istream.close()
 
+    def test_string(self):
+        self.ostream.open(self.fname)
+        self.ostream.write_string(self.STRING)
+        self.ostream.close()
+        self.istream.open(self.fname)
+        self.assertEqual(self.istream.read_string(), self.STRING)
+
     def test_multi(self):
         self.ostream.open(self.fname)
         self.ostream.write_int(self.INT)
         self.ostream.write_long(self.LONG)
         self.ostream.write_float(self.FLOAT)
+        self.ostream.write_string(self.STRING)
         self.ostream.close()
         self.istream.open(self.fname)
         try:
             self.assertEqual(self.istream.read_int(), self.INT)
             self.assertEqual(self.istream.read_long(), self.LONG)
             self.assertAlmostEqual(self.istream.read_float(), self.FLOAT, 3)
+            self.assertEqual(self.istream.read_string(), self.STRING)
         finally:
             self.istream.close()
 
