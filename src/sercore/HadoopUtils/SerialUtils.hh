@@ -74,8 +74,6 @@ namespace HadoopUtils {
      * @throws Error if there are problems reading
      */
     virtual void read(void *buf, size_t len) = 0;
-    virtual bool skip(size_t n_bytes) { return true; }    
-    virtual bool close() {return true;};
     virtual ~InStream() {}
   };
 
@@ -95,7 +93,6 @@ namespace HadoopUtils {
      * Flush the data to the underlying store.
      */
     virtual void flush() = 0;
-    virtual inline bool close() { flush(); return true;};
     virtual ~OutStream() {}
   };
 
@@ -160,33 +157,15 @@ namespace HadoopUtils {
     std::string::const_iterator itr;
   };
 
-  /**
-   * A stream that reads from a buffer.
-   */
-  class BufferInStream: public InStream {
-  public:
-    BufferInStream();
-    bool open(const char* buffer, size_t buflen);
-    virtual void read(void *buf, size_t buflen);
-  private:
-    const char* buffer;
-    std::size_t size;
-    const char* itr;
-  };
-
-
-
   void serializeInt(int32_t t, OutStream& stream);
   int32_t deserializeInt(InStream& stream);
   void serializeLong(int64_t t, OutStream& stream);
   int64_t deserializeLong(InStream& stream);
   void serializeFloat(float t, OutStream& stream);
-  //  float deserializeFloat(InStream& stream);
   void deserializeFloat(float& t, InStream& stream);
+  float deserializeFloat(InStream& stream);
   void serializeString(const std::string& t, OutStream& stream);
   void deserializeString(std::string& t, InStream& stream);
-  void serializeWUString(const std::string& t, bool is_empty, OutStream& stream);
-  void deserializeWUString(std::string& t, bool& is_empty, InStream& stream);
 }
 
 #endif

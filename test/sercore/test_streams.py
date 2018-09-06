@@ -75,18 +75,18 @@ class TestFileOutStream(unittest.TestCase):
         self.assertRaises(IOError, stream.open, fname)
 
 
-class TestBufferInStream(unittest.TestCase):
+class TestStringInStream(unittest.TestCase):
 
     def test_normal(self):
         data = b"abcdefgh"
-        stream = sercore.BufferInStream(data)
+        stream = sercore.StringInStream(data)
         self.assertEqual(stream.read(5), data[:5])
         self.assertEqual(stream.read(3), data[5:8])
 
-    def test_errors(self):
+    def test_oob(self):
         data = b"abc"
-        stream = sercore.BufferInStream(data)
-        self.assertRaises(IOError, stream.read, 5)
+        for length in -1, 100:
+            self.assertEqual(sercore.StringInStream(data).read(length), data)
 
 
 class TestSerDe(unittest.TestCase):
@@ -162,7 +162,7 @@ class TestSerDe(unittest.TestCase):
 CASES = [
     TestFileInStream,
     TestFileOutStream,
-    TestBufferInStream,
+    TestStringInStream,
     TestSerDe,
 ]
 

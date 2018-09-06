@@ -20,6 +20,7 @@
 
 #include <Python.h>
 #include <memory>
+#include <string>
 #include "HadoopUtils/SerialUtils.hh"
 
 typedef struct {
@@ -34,10 +35,10 @@ typedef struct {
 
 typedef struct {
     PyObject_HEAD
-    PyObject *data;
-    std::shared_ptr<HadoopUtils::BufferInStream> stream;
-} BufferInStreamObj;
+    std::shared_ptr<std::string> data;
+    std::shared_ptr<HadoopUtils::StringInStream> stream;
+} StringInStreamObj;
 
 extern PyTypeObject FileInStreamType;
 extern PyTypeObject FileOutStreamType;
-extern PyTypeObject BufferInStreamType;
+extern PyTypeObject StringInStreamType;
