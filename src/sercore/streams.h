@@ -19,17 +19,20 @@
 #pragma once
 
 #include <Python.h>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include "HadoopUtils/SerialUtils.hh"
 
 typedef struct {
     PyObject_HEAD
+    FILE *fp;
     std::shared_ptr<HadoopUtils::FileInStream> stream;
 } FileInStreamObj;
 
 typedef struct {
     PyObject_HEAD
+    FILE *fp;
     std::shared_ptr<HadoopUtils::FileOutStream> stream;
 } FileOutStreamObj;
 

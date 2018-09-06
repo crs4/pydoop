@@ -35,51 +35,74 @@ class TestFileInStream(unittest.TestCase):
     def setUp(self):
         with io.open(__file__, "rb") as f:
             self.data = f.read()
+        self.stream = sercore.FileInStream()
 
-    def test_normal(self):
-        stream = sercore.FileInStream()
-        stream.open(__file__)
-        try:
-            self.assertEqual(stream.read(10), self.data[:10])
-            stream.skip(20)
-            self.assertEqual(stream.read(20), self.data[30:50])
-        finally:
-            stream.close()
+    def test_from_path(self):
+        self.stream.open(__file__)
+        self.__check_stream()
+
+    def test_from_file(self):
+        with io.open(__file__, "rb") as f:
+            self.stream.open(f)
+            self.__check_stream()
 
     def test_errors(self):
-        stream = sercore.FileInStream()
-        self.assertRaises(IOError, stream.open, uuid.uuid4().hex)
-        stream.open(__file__)
+        self.assertRaises(IOError, self.stream.open, uuid.uuid4().hex)
+        self.stream.open(__file__)
         try:
-            stream.skip(len(self.data))
-            self.assertRaises(IOError, stream.read, 1)
+            self.stream.skip(len(self.data))
+            self.assertRaises(IOError, self.stream.read, 1)
         finally:
-            stream.close()
+            self.stream.close()
+
+    def __check_stream(self):
+        try:
+            self.assertEqual(self.stream.read(10), self.data[:10])
+            self.stream.skip(20)
+            self.assertEqual(self.stream.read(20), self.data[30:50])
+        finally:
+            self.stream.close()
 
 
 class TestFileOutStream(unittest.TestCase):
 
-    def test_normal(self):
-        wd = tempfile.mkdtemp(prefix="pydoop_")
-        fname = os.path.join(wd, "foo")
-        data = b"abcdefgh"
-        stream = sercore.FileOutStream()
-        stream.open(fname)
-        try:
-            stream.write(data)
-            stream.flush()
-            stream.advance(10)
-            stream.write(data)
-        finally:
-            stream.close()
-        with io.open(fname, "rb") as f:
-            self.assertEqual(f.read(), data + 10 * b'\x00' + data)
-        shutil.rmtree(wd)
+    def setUp(self):
+        self.wd = tempfile.mkdtemp(prefix="pydoop_")
+        self.fname = os.path.join(self.wd, "foo")
+        self.data = b"abcdefgh"
+        self.stream = sercore.FileOutStream()
+
+    def tearDown(self):
+        shutil.rmtree(self.wd)
+
+    def test_from_path(self):
+        self.stream.open(self.fname)
+        self.__fill_stream()
+        self.__check_stream()
+
+    def test_from_file(self):
+        with io.open(self.fname, "wb") as f:
+            self.stream.open(f)
+            self.__fill_stream()
+        self.__check_stream()
 
     def test_errors(self):
         fname = os.path.join(uuid.uuid4().hex, "foo")
         stream = sercore.FileOutStream()
         self.assertRaises(IOError, stream.open, fname)
+
+    def __fill_stream(self):
+        try:
+            self.stream.write(self.data)
+            self.stream.flush()
+            self.stream.advance(10)
+            self.stream.write(self.data)
+        finally:
+            self.stream.close()
+
+    def __check_stream(self):
+        with io.open(self.fname, "rb") as f:
+            self.assertEqual(f.read(), self.data + 10 * b'\x00' + self.data)
 
 
 class TestStringInStream(unittest.TestCase):

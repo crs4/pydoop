@@ -24,6 +24,7 @@
 #include <memory>
 #include <cstdlib>
 #include <cstdint>
+#include <cstdio>
 
 #include "streams.h"
 
@@ -39,8 +40,29 @@
 #endif
 
 
+// PyFile_AsFile is only available in Python 2, for "old style" file objects
+// This should work on anything associated to a file descriptor
+FILE *
+_PyFile_AsFile(PyObject *f, const char* mode) {
+  int fd, newfd;
+  FILE *fp;
+  if ((fd = PyObject_AsFileDescriptor(f)) == -1) {
+    return NULL;
+  }
+  if ((newfd = dup(fd)) == -1) {
+    PyErr_SetFromErrno(PyExc_IOError);
+    return NULL;
+  }
+  if (!(fp = fdopen(newfd, mode))) {
+    PyErr_SetFromErrno(PyExc_IOError);
+    return NULL;
+  }
+  return fp;
+}
+
 static int
 FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
+  self->fp = NULL;
   self->stream = std::make_shared<HadoopUtils::FileInStream>();
   return 0;
 }
@@ -49,11 +71,22 @@ FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
 static PyObject *
 FileInStream_open(FileInStreamObj *self, PyObject *args) {
   const char *filename;
-  if (!PyArg_ParseTuple(args, "s", &filename)) {
-    return NULL;
-  }
-  if (!self->stream->open(std::string(filename))) {
-    return PyErr_SetFromErrno(PyExc_IOError);
+  if (PyArg_ParseTuple(args, "es", "utf-8", &filename)) {
+    if (!self->stream->open(std::string(filename))) {
+      PyMem_Free((void*)filename);
+      return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    PyMem_Free((void*)filename);
+  } else {
+    PyErr_Clear();
+    PyObject *inarg;
+    if (!PyArg_ParseTuple(args, "O", &inarg)) {
+      return NULL;
+    }
+    if (!(self->fp = _PyFile_AsFile(inarg, "rb"))) {
+      return NULL;
+    }
+    self->stream->open(self->fp);
   }
   Py_RETURN_NONE;
 }
@@ -61,6 +94,9 @@ FileInStream_open(FileInStreamObj *self, PyObject *args) {
 
 static PyObject *
 FileInStream_close(FileInStreamObj *self) {
+  if (self->fp) {
+    fclose(self->fp);
+  }
   if (!self->stream->close()) {
     return PyErr_SetFromErrno(PyExc_IOError);
   }
@@ -239,6 +275,7 @@ PyTypeObject FileInStreamType = {
 
 static int
 FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
+  self->fp = NULL;
   self->stream = std::make_shared<HadoopUtils::FileOutStream>();
   return 0;
 }
@@ -247,11 +284,22 @@ FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
 static PyObject *
 FileOutStream_open(FileOutStreamObj *self, PyObject *args) {
   const char *filename;
-  if (!PyArg_ParseTuple(args, "s", &filename)) {
-    return NULL;
-  }
-  if (!self->stream->open(std::string(filename), true)) {
-    return PyErr_SetFromErrno(PyExc_IOError);
+  if (PyArg_ParseTuple(args, "es", "utf-8", &filename)) {
+    if (!self->stream->open(std::string(filename), true)) {
+      PyMem_Free((void*)filename);
+      return PyErr_SetFromErrno(PyExc_IOError);
+    }
+    PyMem_Free((void*)filename);
+  } else {
+    PyErr_Clear();
+    PyObject *inarg;
+    if (!PyArg_ParseTuple(args, "O", &inarg)) {
+      return NULL;
+    }
+    if (!(self->fp = _PyFile_AsFile(inarg, "wb"))) {
+      return NULL;
+    }
+    self->stream->open(self->fp);
   }
   Py_RETURN_NONE;
 }
@@ -259,6 +307,9 @@ FileOutStream_open(FileOutStreamObj *self, PyObject *args) {
 
 static PyObject *
 FileOutStream_close(FileOutStreamObj *self) {
+  if (self->fp) {
+    fclose(self->fp);
+  }
   if (!self->stream->close()) {
     return PyErr_SetFromErrno(PyExc_IOError);
   }
@@ -364,9 +415,11 @@ FileOutStream_writeString(FileOutStreamObj *self, PyObject *args) {
   } catch (HadoopUtils::Error e) {
     PyEval_RestoreThread(state);
     PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    PyMem_Free((void*)val);
     return NULL;
   }
   PyEval_RestoreThread(state);
+  PyMem_Free((void*)val);
   Py_RETURN_NONE;
 }
 
