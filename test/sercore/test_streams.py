@@ -39,17 +39,22 @@ class TestFileInStream(unittest.TestCase):
     def test_normal(self):
         stream = sercore.FileInStream()
         stream.open(__file__)
-        self.assertEqual(stream.read(10), self.data[:10])
-        stream.skip(20)
-        self.assertEqual(stream.read(20), self.data[30:50])
-        stream.close()
+        try:
+            self.assertEqual(stream.read(10), self.data[:10])
+            stream.skip(20)
+            self.assertEqual(stream.read(20), self.data[30:50])
+        finally:
+            stream.close()
 
     def test_errors(self):
         stream = sercore.FileInStream()
         self.assertRaises(IOError, stream.open, uuid.uuid4().hex)
         stream.open(__file__)
-        stream.skip(len(self.data))
-        self.assertRaises(IOError, stream.read, 1)
+        try:
+            stream.skip(len(self.data))
+            self.assertRaises(IOError, stream.read, 1)
+        finally:
+            stream.close()
 
 
 class TestFileOutStream(unittest.TestCase):
@@ -60,11 +65,13 @@ class TestFileOutStream(unittest.TestCase):
         data = b"abcdefgh"
         stream = sercore.FileOutStream()
         stream.open(fname)
-        stream.write(data)
-        stream.flush()
-        stream.advance(10)
-        stream.write(data)
-        stream.close()
+        try:
+            stream.write(data)
+            stream.flush()
+            stream.advance(10)
+            stream.write(data)
+        finally:
+            stream.close()
         with io.open(fname, "rb") as f:
             self.assertEqual(f.read(), data + 10 * b'\x00' + data)
         shutil.rmtree(wd)
@@ -107,8 +114,10 @@ class TestSerDe(unittest.TestCase):
 
     def test_int(self):
         self.ostream.open(self.fname)
-        self.ostream.write_int(self.INT)
-        self.ostream.close()
+        try:
+            self.ostream.write_int(self.INT)
+        finally:
+            self.ostream.close()
         self.istream.open(self.fname)
         try:
             self.assertEqual(self.istream.read_int(), self.INT)
@@ -117,8 +126,10 @@ class TestSerDe(unittest.TestCase):
 
     def test_long(self):
         self.ostream.open(self.fname)
-        self.ostream.write_long(self.LONG)
-        self.ostream.close()
+        try:
+            self.ostream.write_long(self.LONG)
+        finally:
+            self.ostream.close()
         self.istream.open(self.fname)
         try:
             self.assertEqual(self.istream.read_long(), self.LONG)
@@ -127,8 +138,10 @@ class TestSerDe(unittest.TestCase):
 
     def test_float(self):
         self.ostream.open(self.fname)
-        self.ostream.write_float(self.FLOAT)
-        self.ostream.close()
+        try:
+            self.ostream.write_float(self.FLOAT)
+        finally:
+            self.ostream.close()
         self.istream.open(self.fname)
         try:
             self.assertAlmostEqual(self.istream.read_float(), self.FLOAT, 3)
@@ -137,18 +150,22 @@ class TestSerDe(unittest.TestCase):
 
     def test_string(self):
         self.ostream.open(self.fname)
-        self.ostream.write_string(self.STRING)
-        self.ostream.close()
+        try:
+            self.ostream.write_string(self.STRING)
+        finally:
+            self.ostream.close()
         self.istream.open(self.fname)
         self.assertEqual(self.istream.read_string(), self.STRING)
 
     def test_multi(self):
         self.ostream.open(self.fname)
-        self.ostream.write_int(self.INT)
-        self.ostream.write_long(self.LONG)
-        self.ostream.write_float(self.FLOAT)
-        self.ostream.write_string(self.STRING)
-        self.ostream.close()
+        try:
+            self.ostream.write_int(self.INT)
+            self.ostream.write_long(self.LONG)
+            self.ostream.write_float(self.FLOAT)
+            self.ostream.write_string(self.STRING)
+        finally:
+            self.ostream.close()
         self.istream.open(self.fname)
         try:
             self.assertEqual(self.istream.read_int(), self.INT)
