@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 #include "SerialUtils.hh"
-#include "StringUtils.hh"
 
 #include <errno.h>
 #include <rpc/types.h>
@@ -34,7 +33,7 @@ namespace HadoopUtils {
   Error::Error(const std::string& msg,
                const std::string& file, int line,
                const std::string& function) {
-    error = msg + " at " + file + ":" + toString(line) +
+    error = msg + " at " + file + ":" + std::to_string(line) +
             " in " + function;
   }
 

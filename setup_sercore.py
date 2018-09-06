@@ -7,7 +7,6 @@ ext = Extension(
         "src/sercore/sercore.cpp",
         "src/sercore/streams.cpp",
         "src/sercore/HadoopUtils/SerialUtils.cc",
-        "src/sercore/HadoopUtils/StringUtils.cc"
     ],
     include_dirs=["src/sercore/HadoopUtils"],
     extra_compile_args=['-std=c++11'],
