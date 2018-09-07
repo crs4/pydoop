@@ -197,6 +197,16 @@ class TestSerDe(unittest.TestCase):
             self.assertEqual(self.istream.read_string(), self.STRING)
         finally:
             self.istream.close()
+        self.istream.open(self.fname)
+        try:
+            t = self.istream.read_tuple('ilfs')
+            self.assertEqual(len(t), 4)
+            self.assertEqual(t[0], self.INT)
+            self.assertEqual(t[1], self.LONG)
+            self.assertAlmostEqual(t[2], self.FLOAT, 3)
+            self.assertEqual(t[3], self.STRING)
+        finally:
+            self.istream.close()
 
 
 CASES = [

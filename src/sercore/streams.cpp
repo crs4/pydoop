@@ -198,6 +198,57 @@ FileInStream_readString(FileInStreamObj *self) {
 
 
 static PyObject *
+FileInStream_readTuple(FileInStreamObj *self, PyObject *args) {
+  char *fmt;
+  PyObject *rval;
+  if (!PyArg_ParseTuple(args, "s", &fmt)) {
+    return NULL;
+  }
+  std::size_t nitems = strlen(fmt);
+  if (!(rval = PyTuple_New(nitems))) {
+    return NULL;
+  }
+  PyObject *item;
+  for (std::size_t i = 0; i < nitems; ++i) {
+    switch(fmt[i]) {
+    case 'i':
+      if (!(item = FileInStream_readInt(self))) {
+	Py_DECREF(rval);
+	return NULL;
+      }
+      PyTuple_SET_ITEM(rval, i, item);
+      break;
+    case 'l':
+      if (!(item = FileInStream_readLong(self))) {
+	Py_DECREF(rval);
+	return NULL;
+      }
+      PyTuple_SET_ITEM(rval, i, item);
+      break;
+    case 'f':
+      if (!(item = FileInStream_readFloat(self))) {
+	Py_DECREF(rval);
+	return NULL;
+      }
+      PyTuple_SET_ITEM(rval, i, item);
+      break;
+    case 's':
+      if (!(item = FileInStream_readString(self))) {
+	Py_DECREF(rval);
+	return NULL;
+      }
+      PyTuple_SET_ITEM(rval, i, item);
+      break;
+    default:
+      Py_DECREF(rval);
+      return PyErr_Format(PyExc_ValueError, "Unknown format '%c'", fmt[i]);
+    }
+  }
+  return rval;
+}
+
+
+static PyObject *
 FileInStream_skip(FileInStreamObj *self, PyObject *args) {
   size_t len;
   if (!PyArg_ParseTuple(args, "n", &len)) {
@@ -225,6 +276,8 @@ static PyMethodDef FileInStream_methods[] = {
    "read_float(): read a float from the stream"},
   {"read_string", (PyCFunction)FileInStream_readString, METH_NOARGS,
    "read_string(): read a string from the stream"},
+  {"read_tuple", (PyCFunction)FileInStream_readTuple, METH_VARARGS,
+   "read_tuple(fmt): read len(fmt) values, where fmt specifies types"},
   {"skip", (PyCFunction)FileInStream_skip, METH_VARARGS,
    "skip(len): skip len bytes"},
   {NULL}  /* Sentinel */
