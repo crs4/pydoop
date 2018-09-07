@@ -125,6 +125,7 @@ class TestSerDe(unittest.TestCase):
     LONG = (2 << 62) - 1
     FLOAT = 3.14
     STRING = u'BO' + UNI_CHR
+    TUPLE = INT, LONG, FLOAT, STRING
 
     def setUp(self):
         self.wd = tempfile.mkdtemp(prefix="pydoop_")
@@ -180,7 +181,23 @@ class TestSerDe(unittest.TestCase):
         self.istream.open(self.fname)
         self.assertEqual(self.istream.read_string(), self.STRING)
 
-    def test_multi(self):
+    def test_multi_no_tuple(self):
+        self.__fill_stream_multi()
+        self.__check_stream_multi()
+
+    def test_multi_read_tuple(self):
+        self.__fill_stream_multi()
+        self.__check_stream_tuple()
+
+    def test_multi_write_tuple(self):
+        self.__fill_stream_tuple()
+        self.__check_stream_multi()
+
+    def test_multi_rw_tuple(self):
+        self.__fill_stream_tuple()
+        self.__check_stream_tuple()
+
+    def __fill_stream_multi(self):
         self.ostream.open(self.fname)
         try:
             self.ostream.write_int(self.INT)
@@ -189,6 +206,15 @@ class TestSerDe(unittest.TestCase):
             self.ostream.write_string(self.STRING)
         finally:
             self.ostream.close()
+
+    def __fill_stream_tuple(self):
+        self.ostream.open(self.fname)
+        try:
+            self.ostream.write_tuple(self.TUPLE, 'ilfs')
+        finally:
+            self.ostream.close()
+
+    def __check_stream_multi(self):
         self.istream.open(self.fname)
         try:
             self.assertEqual(self.istream.read_int(), self.INT)
@@ -197,6 +223,8 @@ class TestSerDe(unittest.TestCase):
             self.assertEqual(self.istream.read_string(), self.STRING)
         finally:
             self.istream.close()
+
+    def __check_stream_tuple(self):
         self.istream.open(self.fname)
         try:
             t = self.istream.read_tuple('ilfs')

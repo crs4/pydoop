@@ -478,6 +478,61 @@ FileOutStream_writeString(FileOutStreamObj *self, PyObject *args) {
 
 
 static PyObject *
+FileOutStream_writeTuple(FileOutStreamObj *self, PyObject *args) {
+  PyObject *inarg, *iterator, *item;
+  char *fmt;
+  if (!PyArg_ParseTuple(args, "Os", &inarg, &fmt)) {
+    return NULL;
+  }
+  if (!(iterator = PyObject_GetIter(inarg))) {
+    return NULL;
+  }
+  for (std::size_t i = 0; i < strlen(fmt); ++i) {
+    if (!(item = PyIter_Next(iterator))) {
+      if (!PyErr_Occurred()) {
+	PyErr_SetString(PyExc_ValueError, "not enough items");
+      }
+      Py_DECREF(iterator);
+      return NULL;
+    }
+    switch(fmt[i]) {
+    case 'i':
+      if (!FileOutStream_writeInt(self, PyTuple_Pack(1, item))) {
+	goto error;
+      }
+      break;
+    case 'l':
+      if (!FileOutStream_writeLong(self, PyTuple_Pack(1, item))) {
+	goto error;
+      }
+      break;
+    case 'f':
+      if (!FileOutStream_writeFloat(self, PyTuple_Pack(1, item))) {
+	goto error;
+      }
+      break;
+    case 's':
+      if (!FileOutStream_writeString(self, PyTuple_Pack(1, item))) {
+	goto error;
+      }
+      break;
+    default:
+      PyErr_Format(PyExc_ValueError, "Unknown format '%c'", fmt[i]);
+      goto error;
+    }
+    Py_DECREF(item);
+  }
+  Py_DECREF(iterator);
+  Py_RETURN_NONE;
+
+error:
+  Py_DECREF(item);
+  Py_DECREF(iterator);
+  return NULL;
+}
+
+
+static PyObject *
 FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
   size_t len;
   if (!PyArg_ParseTuple(args, "n", &len)) {
@@ -512,6 +567,8 @@ static PyMethodDef FileOutStream_methods[] = {
    "write_float(n): write a float to the stream"},
   {"write_string", (PyCFunction)FileOutStream_writeString, METH_VARARGS,
    "write_string(n): write a string to the stream"},
+  {"write_tuple", (PyCFunction)FileOutStream_writeTuple, METH_VARARGS,
+   "write_tuple(t, fmt): write values from iterable t to the stream"},
   {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
    "advance(len): advance len bytes"},
   {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,
