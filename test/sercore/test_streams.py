@@ -236,6 +236,27 @@ class TestSerDe(unittest.TestCase):
         finally:
             self.istream.close()
 
+    def test_errors(self):
+        self.ostream.open(self.fname)
+        with self.assertRaises(ValueError):
+            self.ostream.write_tuple((1, 2), "iis")
+        self.ostream.close()
+        self.ostream.open(self.fname)
+        with self.assertRaises(TypeError):
+            self.ostream.write_tuple((1, 2.1), "ii")
+        self.ostream.close()
+        # actually write something for istream testing
+        self.ostream.open(self.fname)
+        try:
+            self.ostream.write_tuple(self.TUPLE, "ilfs")
+        finally:
+            self.ostream.close()
+        # test istream
+        self.istream.open(self.fname)
+        with self.assertRaises(IOError):
+            self.istream.read_tuple("ilfss")
+        self.istream.close()
+
 
 CASES = [
     TestFileInStream,
