@@ -39,6 +39,13 @@
 #define PyString_AsStringAndSize PyBytes_AsStringAndSize
 #endif
 
+# define _ASSERT_STREAM_OPEN {                                           \
+  if (self->closed) {                                                    \
+    PyErr_SetString(PyExc_ValueError, "I/O operation on closed stream"); \
+    return NULL;                                                         \
+  }                                                                      \
+}
+
 
 // PyFile_AsFile is only available in Python 2, for "old style" file objects
 // This should work on anything associated to a file descriptor
@@ -60,9 +67,11 @@ _PyFile_AsFile(PyObject *f, const char* mode) {
   return fp;
 }
 
+
 static int
 FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
   self->fp = NULL;
+  self->closed = true;
   self->stream = std::make_shared<HadoopUtils::FileInStream>();
   return 0;
 }
@@ -88,6 +97,7 @@ FileInStream_open(FileInStreamObj *self, PyObject *args) {
     }
     self->stream->open(self->fp);
   }
+  self->closed = false;
   Py_RETURN_NONE;
 }
 
@@ -100,6 +110,7 @@ FileInStream_close(FileInStreamObj *self) {
   if (!self->stream->close()) {
     return PyErr_SetFromErrno(PyExc_IOError);
   }
+  self->closed = true;
   Py_RETURN_NONE;
 }
 
@@ -109,6 +120,7 @@ FileInStream_read(FileInStreamObj *self, PyObject *args) {
   size_t len;
   PyObject *rval;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
@@ -133,6 +145,7 @@ static PyObject *
 FileInStream_readInt(FileInStreamObj *self) {
   int32_t rval;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   state = PyEval_SaveThread();
   try {
     rval = HadoopUtils::deserializeInt(*self->stream);
@@ -150,6 +163,7 @@ static PyObject *
 FileInStream_readLong(FileInStreamObj *self) {
   int64_t rval;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   state = PyEval_SaveThread();
   try {
     rval = HadoopUtils::deserializeLong(*self->stream);
@@ -167,6 +181,7 @@ static PyObject *
 FileInStream_readFloat(FileInStreamObj *self) {
   float rval;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   state = PyEval_SaveThread();
   try {
     rval = HadoopUtils::deserializeFloat(*self->stream);
@@ -184,6 +199,7 @@ static PyObject *
 FileInStream_readString(FileInStreamObj *self) {
   std::string rval;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   state = PyEval_SaveThread();
   try {
     HadoopUtils::deserializeString(rval, *self->stream);
@@ -201,6 +217,7 @@ static PyObject *
 FileInStream_readTuple(FileInStreamObj *self, PyObject *args) {
   char *fmt;
   PyObject *rval;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "s", &fmt)) {
     return NULL;
   }
@@ -251,6 +268,7 @@ FileInStream_readTuple(FileInStreamObj *self, PyObject *args) {
 static PyObject *
 FileInStream_skip(FileInStreamObj *self, PyObject *args) {
   size_t len;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
@@ -329,6 +347,7 @@ PyTypeObject FileInStreamType = {
 static int
 FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
   self->fp = NULL;
+  self->closed = true;
   self->stream = std::make_shared<HadoopUtils::FileOutStream>();
   return 0;
 }
@@ -354,6 +373,7 @@ FileOutStream_open(FileOutStreamObj *self, PyObject *args) {
     }
     self->stream->open(self->fp);
   }
+  self->closed = false;
   Py_RETURN_NONE;
 }
 
@@ -366,6 +386,7 @@ FileOutStream_close(FileOutStreamObj *self) {
   if (!self->stream->close()) {
     return PyErr_SetFromErrno(PyExc_IOError);
   }
+  self->closed = true;
   Py_RETURN_NONE;
 }
 
@@ -375,6 +396,7 @@ FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
   PyObject* data = NULL;
   Py_buffer buffer = {NULL, NULL};
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "O", &data)) {
     return NULL;
   }
@@ -399,6 +421,7 @@ static PyObject *
 FileOutStream_writeInt(FileOutStreamObj *self, PyObject *args) {
   int32_t val = 0;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &val)) {
     return NULL;
   }
@@ -419,6 +442,7 @@ static PyObject *
 FileOutStream_writeLong(FileOutStreamObj *self, PyObject *args) {
   int64_t val;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &val)) {
     return NULL;
   }
@@ -439,6 +463,7 @@ static PyObject *
 FileOutStream_writeFloat(FileOutStreamObj *self, PyObject *args) {
   float val;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "f", &val)) {
     return NULL;
   }
@@ -459,6 +484,7 @@ static PyObject *
 FileOutStream_writeString(FileOutStreamObj *self, PyObject *args) {
   char* val;
   PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "es", "utf-8",  &val)) {
     return NULL;
   }
@@ -481,6 +507,7 @@ static PyObject *
 FileOutStream_writeTuple(FileOutStreamObj *self, PyObject *args) {
   PyObject *inarg, *iterator, *item;
   char *fmt;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "Os", &inarg, &fmt)) {
     return NULL;
   }
@@ -535,6 +562,7 @@ error:
 static PyObject *
 FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
   size_t len;
+  _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
@@ -547,6 +575,7 @@ FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
 
 static PyObject *
 FileOutStream_flush(FileOutStreamObj *self) {
+  _ASSERT_STREAM_OPEN;
   self->stream->flush();
   Py_RETURN_NONE;
 }

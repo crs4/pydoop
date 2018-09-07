@@ -258,11 +258,55 @@ class TestSerDe(unittest.TestCase):
         self.istream.close()
 
 
+class TestCheckClosed(unittest.TestCase):
+
+    def test_instream(self):
+        stream = sercore.FileInStream()
+        ops = (
+            (stream.read, (1,)),
+            (stream.read_int, ()),
+            (stream.read_long, ()),
+            (stream.read_float, ()),
+            (stream.read_string, ()),
+            (stream.read_tuple, ("ii")),
+            (stream.skip, (1,)),
+        )
+        self.__check(ops)
+        stream.open(__file__)
+        stream.close()
+        self.__check(ops)
+
+    def test_outstream(self):
+        wd = tempfile.mkdtemp(prefix="pydoop_")
+        fname = os.path.join(wd, "foo")
+        stream = sercore.FileOutStream()
+        ops = (
+            (stream.write, (b"x",)),
+            (stream.write_int, (1,)),
+            (stream.write_long, (1,)),
+            (stream.write_float, (1.0,)),
+            (stream.write_string, ("x")),
+            (stream.write_tuple, ("ii")),
+            (stream.advance, (1,)),
+            (stream.flush, ()),
+        )
+        self.__check(ops)
+        stream.open(fname)
+        stream.close()
+        self.__check(ops)
+        shutil.rmtree(wd)
+
+    def __check(self, ops):
+        for o, args in ops:
+            self.assertRaises(ValueError, o, *args)
+
+
 CASES = [
     TestFileInStream,
     TestFileOutStream,
     TestStringInStream,
     TestSerDe,
+    TestCheckClosed,
 ]
 
 

@@ -27,12 +27,14 @@
 typedef struct {
     PyObject_HEAD
     FILE *fp;
+    bool closed;
     std::shared_ptr<HadoopUtils::FileInStream> stream;
 } FileInStreamObj;
 
 typedef struct {
     PyObject_HEAD
     FILE *fp;
+    bool closed;
     std::shared_ptr<HadoopUtils::FileOutStream> stream;
 } FileOutStreamObj;
 
