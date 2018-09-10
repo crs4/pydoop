@@ -53,31 +53,41 @@ FILE *
 _PyFile_AsFile(PyObject *f, const char* mode) {
   int fd, newfd;
   FILE *fp;
+  PyThreadState *state;
   if ((fd = PyObject_AsFileDescriptor(f)) == -1) {
     return NULL;
   }
+  state = PyEval_SaveThread();
   if ((newfd = dup(fd)) == -1) {
-    PyErr_SetFromErrno(PyExc_IOError);
-    return NULL;
+    goto error;
   }
   if (!(fp = fdopen(newfd, mode))) {
+    goto error;
+  }
+  PyEval_RestoreThread(state);
+  return fp;
+
+error:
+    PyEval_RestoreThread(state);
     PyErr_SetFromErrno(PyExc_IOError);
     return NULL;
-  }
-  return fp;
 }
 
 
 static int
 FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
   const char *filename;
+  PyThreadState *state;
   self->stream = std::make_shared<HadoopUtils::FileInStream>();
   if (PyArg_ParseTuple(args, "es", "utf-8", &filename)) {
+    state = PyEval_SaveThread();
     if (!self->stream->open(std::string(filename))) {
+      PyEval_RestoreThread(state);
       PyErr_SetFromErrno(PyExc_IOError);
       PyMem_Free((void*)filename);
       return -1;
     }
+    PyEval_RestoreThread(state);
     PyMem_Free((void*)filename);
   } else {
     PyErr_Clear();
@@ -354,13 +364,17 @@ PyTypeObject FileInStreamType = {
 static int
 FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
   const char *filename;
+  PyThreadState *state;
   self->stream = std::make_shared<HadoopUtils::FileOutStream>();
   if (PyArg_ParseTuple(args, "es", "utf-8", &filename)) {
+    state = PyEval_SaveThread();
     if (!self->stream->open(std::string(filename), true)) {
+      PyEval_RestoreThread(state);
       PyErr_SetFromErrno(PyExc_IOError);
       PyMem_Free((void*)filename);
       return -1;
     }
+    PyEval_RestoreThread(state);
     PyMem_Free((void*)filename);
   } else {
     PyErr_Clear();
