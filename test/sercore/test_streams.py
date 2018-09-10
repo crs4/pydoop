@@ -35,33 +35,28 @@ class TestFileInStream(unittest.TestCase):
     def setUp(self):
         with io.open(__file__, "rb") as f:
             self.data = f.read()
-        self.stream = sercore.FileInStream()
 
     def test_from_path(self):
-        self.stream.open(__file__)
-        self.__check_stream()
+        with sercore.FileInStream(__file__) as s:
+            self.__check_stream(s)
 
     def test_from_file(self):
         with io.open(__file__, "rb") as f:
-            self.stream.open(f)
-            self.__check_stream()
+            with sercore.FileInStream(f) as s:
+                self.__check_stream(s)
 
     def test_errors(self):
-        self.assertRaises(IOError, self.stream.open, uuid.uuid4().hex)
-        self.stream.open(__file__)
-        try:
-            self.stream.skip(len(self.data))
-            self.assertRaises(IOError, self.stream.read, 1)
-        finally:
-            self.stream.close()
+        with self.assertRaises(IOError):
+            sercore.FileInStream(uuid.uuid4().hex)
+        with sercore.FileInStream(__file__) as s:
+            s.skip(len(self.data))
+            with self.assertRaises(IOError):
+                s.read(1)
 
-    def __check_stream(self):
-        try:
-            self.assertEqual(self.stream.read(10), self.data[:10])
-            self.stream.skip(20)
-            self.assertEqual(self.stream.read(20), self.data[30:50])
-        finally:
-            self.stream.close()
+    def __check_stream(self, s):
+        self.assertEqual(s.read(10), self.data[:10])
+        s.skip(20)
+        self.assertEqual(s.read(20), self.data[30:50])
 
 
 class TestFileOutStream(unittest.TestCase):
@@ -70,35 +65,30 @@ class TestFileOutStream(unittest.TestCase):
         self.wd = tempfile.mkdtemp(prefix="pydoop_")
         self.fname = os.path.join(self.wd, "foo")
         self.data = b"abcdefgh"
-        self.stream = sercore.FileOutStream()
 
     def tearDown(self):
         shutil.rmtree(self.wd)
 
     def test_from_path(self):
-        self.stream.open(self.fname)
-        self.__fill_stream()
+        with sercore.FileOutStream(self.fname) as s:
+            self.__fill_stream(s)
         self.__check_stream()
 
     def test_from_file(self):
         with io.open(self.fname, "wb") as f:
-            self.stream.open(f)
-            self.__fill_stream()
+            with sercore.FileOutStream(f) as s:
+                self.__fill_stream(s)
         self.__check_stream()
 
     def test_errors(self):
-        fname = os.path.join(uuid.uuid4().hex, "foo")
-        stream = sercore.FileOutStream()
-        self.assertRaises(IOError, stream.open, fname)
+        with self.assertRaises(IOError):
+            sercore.FileOutStream(os.path.join(uuid.uuid4().hex, "foo"))
 
-    def __fill_stream(self):
-        try:
-            self.stream.write(self.data)
-            self.stream.flush()
-            self.stream.advance(10)
-            self.stream.write(self.data)
-        finally:
-            self.stream.close()
+    def __fill_stream(self, s):
+        s.write(self.data)
+        s.flush()
+        s.advance(10)
+        s.write(self.data)
 
     def __check_stream(self):
         with io.open(self.fname, "rb") as f:
@@ -130,56 +120,33 @@ class TestSerDe(unittest.TestCase):
     def setUp(self):
         self.wd = tempfile.mkdtemp(prefix="pydoop_")
         self.fname = os.path.join(self.wd, "foo")
-        self.ostream = sercore.FileOutStream()
-        self.istream = sercore.FileInStream()
 
     def tearDown(self):
         shutil.rmtree(self.wd)
 
     def test_int(self):
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_int(self.INT)
-        finally:
-            self.ostream.close()
-        self.istream.open(self.fname)
-        try:
-            self.assertEqual(self.istream.read_int(), self.INT)
-        finally:
-            self.istream.close()
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_int(self.INT)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_int(), self.INT)
 
     def test_long(self):
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_long(self.LONG)
-        finally:
-            self.ostream.close()
-        self.istream.open(self.fname)
-        try:
-            self.assertEqual(self.istream.read_long(), self.LONG)
-        finally:
-            self.istream.close()
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_long(self.LONG)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_long(), self.LONG)
 
     def test_float(self):
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_float(self.FLOAT)
-        finally:
-            self.ostream.close()
-        self.istream.open(self.fname)
-        try:
-            self.assertAlmostEqual(self.istream.read_float(), self.FLOAT, 3)
-        finally:
-            self.istream.close()
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_float(self.FLOAT)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertAlmostEqual(s.read_float(), self.FLOAT, 3)
 
     def test_string(self):
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_string(self.STRING)
-        finally:
-            self.ostream.close()
-        self.istream.open(self.fname)
-        self.assertEqual(self.istream.read_string(), self.STRING)
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_string(self.STRING)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_string(), self.STRING)
 
     def test_multi_no_tuple(self):
         self.__fill_stream_multi()
@@ -198,70 +165,51 @@ class TestSerDe(unittest.TestCase):
         self.__check_stream_tuple()
 
     def __fill_stream_multi(self):
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_int(self.INT)
-            self.ostream.write_long(self.LONG)
-            self.ostream.write_float(self.FLOAT)
-            self.ostream.write_string(self.STRING)
-        finally:
-            self.ostream.close()
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_int(self.INT)
+            s.write_long(self.LONG)
+            s.write_float(self.FLOAT)
+            s.write_string(self.STRING)
 
     def __fill_stream_tuple(self):
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_tuple(self.TUPLE, 'ilfs')
-        finally:
-            self.ostream.close()
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_tuple(self.TUPLE, 'ilfs')
 
     def __check_stream_multi(self):
-        self.istream.open(self.fname)
-        try:
-            self.assertEqual(self.istream.read_int(), self.INT)
-            self.assertEqual(self.istream.read_long(), self.LONG)
-            self.assertAlmostEqual(self.istream.read_float(), self.FLOAT, 3)
-            self.assertEqual(self.istream.read_string(), self.STRING)
-        finally:
-            self.istream.close()
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_int(), self.INT)
+            self.assertEqual(s.read_long(), self.LONG)
+            self.assertAlmostEqual(s.read_float(), self.FLOAT, 3)
+            self.assertEqual(s.read_string(), self.STRING)
 
     def __check_stream_tuple(self):
-        self.istream.open(self.fname)
-        try:
-            t = self.istream.read_tuple('ilfs')
+        with sercore.FileInStream(self.fname) as s:
+            t = s.read_tuple('ilfs')
             self.assertEqual(len(t), 4)
             self.assertEqual(t[0], self.INT)
             self.assertEqual(t[1], self.LONG)
             self.assertAlmostEqual(t[2], self.FLOAT, 3)
             self.assertEqual(t[3], self.STRING)
-        finally:
-            self.istream.close()
 
     def test_errors(self):
-        self.ostream.open(self.fname)
-        with self.assertRaises(ValueError):
-            self.ostream.write_tuple((1, 2), "iis")
-        self.ostream.close()
-        self.ostream.open(self.fname)
-        with self.assertRaises(TypeError):
-            self.ostream.write_tuple((1, 2.1), "ii")
-        self.ostream.close()
-        # actually write something for istream testing
-        self.ostream.open(self.fname)
-        try:
-            self.ostream.write_tuple(self.TUPLE, "ilfs")
-        finally:
-            self.ostream.close()
-        # test istream
-        self.istream.open(self.fname)
-        with self.assertRaises(IOError):
-            self.istream.read_tuple("ilfss")
-        self.istream.close()
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_tuple(self.TUPLE, "ilfs")
+        with sercore.FileInStream(self.fname) as s:
+            with self.assertRaises(IOError):
+                s.read_tuple("ilfss")  # EOF
+        with sercore.FileOutStream(self.fname) as s:
+            with self.assertRaises(ValueError):
+                s.write_tuple((1, 2), "iis")  # not enough items
+        with sercore.FileOutStream(self.fname) as s:
+            with self.assertRaises(TypeError):
+                s.write_tuple((1, 2.1), "ii")
 
 
 class TestCheckClosed(unittest.TestCase):
 
     def test_instream(self):
-        stream = sercore.FileInStream()
+        with sercore.FileInStream(__file__) as stream:
+            pass
         ops = (
             (stream.read, (1,)),
             (stream.read_int, ()),
@@ -272,14 +220,12 @@ class TestCheckClosed(unittest.TestCase):
             (stream.skip, (1,)),
         )
         self.__check(ops)
-        stream.open(__file__)
-        stream.close()
-        self.__check(ops)
 
     def test_outstream(self):
         wd = tempfile.mkdtemp(prefix="pydoop_")
         fname = os.path.join(wd, "foo")
-        stream = sercore.FileOutStream()
+        with sercore.FileOutStream(fname) as stream:
+            pass
         ops = (
             (stream.write, (b"x",)),
             (stream.write_int, (1,)),
@@ -290,9 +236,6 @@ class TestCheckClosed(unittest.TestCase):
             (stream.advance, (1,)),
             (stream.flush, ()),
         )
-        self.__check(ops)
-        stream.open(fname)
-        stream.close()
         self.__check(ops)
         shutil.rmtree(wd)
 

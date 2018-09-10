@@ -70,35 +70,28 @@ _PyFile_AsFile(PyObject *f, const char* mode) {
 
 static int
 FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
-  self->fp = NULL;
-  self->closed = true;
-  self->stream = std::make_shared<HadoopUtils::FileInStream>();
-  return 0;
-}
-
-
-static PyObject *
-FileInStream_open(FileInStreamObj *self, PyObject *args) {
   const char *filename;
+  self->stream = std::make_shared<HadoopUtils::FileInStream>();
   if (PyArg_ParseTuple(args, "es", "utf-8", &filename)) {
     if (!self->stream->open(std::string(filename))) {
+      PyErr_SetFromErrno(PyExc_IOError);
       PyMem_Free((void*)filename);
-      return PyErr_SetFromErrno(PyExc_IOError);
+      return -1;
     }
     PyMem_Free((void*)filename);
   } else {
     PyErr_Clear();
     PyObject *inarg;
     if (!PyArg_ParseTuple(args, "O", &inarg)) {
-      return NULL;
+      return -1;
     }
     if (!(self->fp = _PyFile_AsFile(inarg, "rb"))) {
-      return NULL;
+      return -1;
     }
     self->stream->open(self->fp);
   }
   self->closed = false;
-  Py_RETURN_NONE;
+  return 0;
 }
 
 
@@ -112,6 +105,20 @@ FileInStream_close(FileInStreamObj *self) {
   }
   self->closed = true;
   Py_RETURN_NONE;
+}
+
+
+static PyObject *
+FileInStream_enter(FileInStreamObj *self) {
+  _ASSERT_STREAM_OPEN;
+  Py_INCREF(self);
+  return (PyObject*)self;
+}
+
+
+static PyObject *
+FileInStream_exit(FileInStreamObj *self, PyObject *args) {
+  return FileInStream_close(self);
 }
 
 
@@ -280,8 +287,6 @@ FileInStream_skip(FileInStreamObj *self, PyObject *args) {
 
 
 static PyMethodDef FileInStream_methods[] = {
-  {"open", (PyCFunction)FileInStream_open, METH_VARARGS,
-   "open(filename): open file with the given name"},
   {"close", (PyCFunction)FileInStream_close, METH_NOARGS,
    "close(): close the currently open file"},
   {"read", (PyCFunction)FileInStream_read, METH_VARARGS,
@@ -298,6 +303,8 @@ static PyMethodDef FileInStream_methods[] = {
    "read_tuple(fmt): read len(fmt) values, where fmt specifies types"},
   {"skip", (PyCFunction)FileInStream_skip, METH_VARARGS,
    "skip(len): skip len bytes"},
+  {"__enter__", (PyCFunction)FileInStream_enter, METH_NOARGS},
+  {"__exit__", (PyCFunction)FileInStream_exit, METH_VARARGS},
   {NULL}  /* Sentinel */
 };
 
@@ -346,35 +353,28 @@ PyTypeObject FileInStreamType = {
 
 static int
 FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
-  self->fp = NULL;
-  self->closed = true;
-  self->stream = std::make_shared<HadoopUtils::FileOutStream>();
-  return 0;
-}
-
-
-static PyObject *
-FileOutStream_open(FileOutStreamObj *self, PyObject *args) {
   const char *filename;
+  self->stream = std::make_shared<HadoopUtils::FileOutStream>();
   if (PyArg_ParseTuple(args, "es", "utf-8", &filename)) {
     if (!self->stream->open(std::string(filename), true)) {
+      PyErr_SetFromErrno(PyExc_IOError);
       PyMem_Free((void*)filename);
-      return PyErr_SetFromErrno(PyExc_IOError);
+      return -1;
     }
     PyMem_Free((void*)filename);
   } else {
     PyErr_Clear();
     PyObject *inarg;
     if (!PyArg_ParseTuple(args, "O", &inarg)) {
-      return NULL;
+      return -1;
     }
     if (!(self->fp = _PyFile_AsFile(inarg, "wb"))) {
-      return NULL;
+      return -1;
     }
     self->stream->open(self->fp);
   }
   self->closed = false;
-  Py_RETURN_NONE;
+  return 0;
 }
 
 
@@ -388,6 +388,20 @@ FileOutStream_close(FileOutStreamObj *self) {
   }
   self->closed = true;
   Py_RETURN_NONE;
+}
+
+
+static PyObject *
+FileOutStream_enter(FileOutStreamObj *self) {
+  _ASSERT_STREAM_OPEN;
+  Py_INCREF(self);
+  return (PyObject*)self;
+}
+
+
+static PyObject *
+FileOutStream_exit(FileOutStreamObj *self, PyObject *args) {
+  return FileOutStream_close(self);
 }
 
 
@@ -582,8 +596,6 @@ FileOutStream_flush(FileOutStreamObj *self) {
 
 
 static PyMethodDef FileOutStream_methods[] = {
-  {"open", (PyCFunction)FileOutStream_open, METH_VARARGS,
-   "open(filename): open file with the given name"},
   {"close", (PyCFunction)FileOutStream_close, METH_NOARGS,
    "close(): close the currently open file"},
   {"write", (PyCFunction)FileOutStream_write, METH_VARARGS,
@@ -602,6 +614,8 @@ static PyMethodDef FileOutStream_methods[] = {
    "advance(len): advance len bytes"},
   {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,
    "flush(): flush the stream"},
+  {"__enter__", (PyCFunction)FileOutStream_enter, METH_NOARGS},
+  {"__exit__", (PyCFunction)FileOutStream_exit, METH_VARARGS},  
   {NULL}  /* Sentinel */
 };
 
