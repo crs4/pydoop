@@ -233,22 +233,26 @@ _FileInStream_read_cppstring(FileInStreamObj *self) {
 static PyObject *
 FileInStream_readString(FileInStreamObj *self) {
   _ASSERT_STREAM_OPEN;
+  std::string s;
   try {
-    return PyUnicode_FromString(_FileInStream_read_cppstring(self).c_str());
+    s = _FileInStream_read_cppstring(self);
   } catch (HadoopUtils::Error e) {
     return NULL;
   }
+  return PyUnicode_FromStringAndSize(s.c_str(), s.size());
 }
 
 
 static PyObject *
 FileInStream_readBytes(FileInStreamObj *self) {
   _ASSERT_STREAM_OPEN;
+  std::string s;
   try {
-    return PyString_FromString(_FileInStream_read_cppstring(self).c_str());
+    s = _FileInStream_read_cppstring(self);
   } catch (HadoopUtils::Error e) {
     return NULL;
   }
+  return PyString_FromStringAndSize(s.c_str(), s.size());
 }
 
 
@@ -539,26 +543,47 @@ FileOutStream_writeFloat(FileOutStreamObj *self, PyObject *args) {
 }
 
 
+static PyObject*
+_FileOutStream_write_cppstring(FileOutStreamObj *self, std::string s) {
+  PyThreadState *state = PyEval_SaveThread();
+  try {
+    HadoopUtils::serializeString(s, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  Py_RETURN_NONE;
+}
+
+
 static PyObject *
 FileOutStream_writeString(FileOutStreamObj *self, PyObject *args) {
-  char* val;
-  PyThreadState *state;
+  char *val;
+  PyObject *rval;
   _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "es", "utf-8",  &val)) {
     return NULL;
   }
-  state = PyEval_SaveThread();
-  try {
-    HadoopUtils::serializeString(std::string(val), *self->stream);
-  } catch (HadoopUtils::Error e) {
-    PyEval_RestoreThread(state);
-    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
-    PyMem_Free((void*)val);
+  rval = _FileOutStream_write_cppstring(self, std::string(val));
+  PyMem_Free((void*)val);
+  return rval;
+}
+
+
+static PyObject *
+FileOutStream_writeBytes(FileOutStreamObj *self, PyObject *args) {
+  Py_buffer buffer = {NULL, NULL};
+  PyObject *rval;
+  _ASSERT_STREAM_OPEN;
+  if (!PyArg_ParseTuple(args, "s*", &buffer)) {
     return NULL;
   }
-  PyEval_RestoreThread(state);
-  PyMem_Free((void*)val);
-  Py_RETURN_NONE;
+  std::string s((const char*)buffer.buf, buffer.len);
+  rval = _FileOutStream_write_cppstring(self, s);
+  PyBuffer_Release(&buffer);
+  return rval;
 }
 
 
@@ -599,6 +624,11 @@ FileOutStream_writeTuple(FileOutStreamObj *self, PyObject *args) {
       break;
     case 's':
       if (!FileOutStream_writeString(self, PyTuple_Pack(1, item))) {
+	goto error;
+      }
+      break;
+    case 'b':
+      if (!FileOutStream_writeBytes(self, PyTuple_Pack(1, item))) {
 	goto error;
       }
       break;
@@ -653,6 +683,8 @@ static PyMethodDef FileOutStream_methods[] = {
    "write_float(n): write a float to the stream"},
   {"write_string", (PyCFunction)FileOutStream_writeString, METH_VARARGS,
    "write_string(n): write a string to the stream"},
+  {"write_bytes", (PyCFunction)FileOutStream_writeBytes, METH_VARARGS,
+   "write_bytes(n): write a bytes object to the stream"},
   {"write_tuple", (PyCFunction)FileOutStream_writeTuple, METH_VARARGS,
    "write_tuple(t, fmt): write values from iterable t to the stream"},
   {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
