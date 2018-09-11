@@ -28,17 +28,6 @@
 
 #include "streams.h"
 
-
-#if PY_MAJOR_VERSION >= 3
-#define PyInt_FromLong PyLong_FromLong
-#define PyInt_FromSize_t PyLong_FromSize_t
-#define PyString_FromString PyBytes_FromString
-#define PyString_FromStringAndSize PyBytes_FromStringAndSize
-#define PyString_AsString PyBytes_AsString
-#define PyString_AS_STRING PyBytes_AS_STRING
-#define PyString_AsStringAndSize PyBytes_AsStringAndSize
-#endif
-
 // This can only be used in functions that return a PyObject*
 # define _ASSERT_STREAM_OPEN {                                           \
   if (self->closed) {                                                    \
@@ -142,12 +131,12 @@ FileInStream_read(FileInStreamObj *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
-  if (!(rval = PyString_FromStringAndSize(NULL, len))) {
+  if (!(rval = PyBytes_FromStringAndSize(NULL, len))) {
     return NULL;
   }
   state = PyEval_SaveThread();
   try {
-    self->stream->read(PyString_AS_STRING(rval), len);
+    self->stream->read(PyBytes_AS_STRING(rval), len);
   } catch (HadoopUtils::Error e) {
     PyEval_RestoreThread(state);
     PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
@@ -173,7 +162,7 @@ FileInStream_readInt(FileInStreamObj *self) {
     return NULL;
   }
   PyEval_RestoreThread(state);
-  return PyInt_FromLong(rval);
+  return Py_BuildValue("I", rval);
 }
 
 
@@ -191,7 +180,7 @@ FileInStream_readLong(FileInStreamObj *self) {
     return NULL;
   }
   PyEval_RestoreThread(state);
-  return PyLong_FromLong(rval);
+  return Py_BuildValue("L", rval);
 }
 
 
@@ -252,7 +241,7 @@ FileInStream_readBytes(FileInStreamObj *self) {
   } catch (HadoopUtils::Error e) {
     return NULL;
   }
-  return PyString_FromStringAndSize(s.c_str(), s.size());
+  return PyBytes_FromStringAndSize(s.c_str(), s.size());
 }
 
 
@@ -763,12 +752,12 @@ StringInStream_read(StringInStreamObj *self, PyObject *args) {
   if (len < 0 || len > self->data->size()) {
     len = self->data->size();  // as in io.BytesIO
   }
-  if (!(rval = PyString_FromStringAndSize(NULL, len))) {
+  if (!(rval = PyBytes_FromStringAndSize(NULL, len))) {
     return NULL;
   }
   state = PyEval_SaveThread();
   try {
-    self->stream->read(PyString_AS_STRING(rval), len);
+    self->stream->read(PyBytes_AS_STRING(rval), len);
   } catch (HadoopUtils::Error e) {
     PyEval_RestoreThread(state);
     PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
