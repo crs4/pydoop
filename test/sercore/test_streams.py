@@ -115,7 +115,7 @@ class TestSerDe(unittest.TestCase):
     LONG = (2 << 62) - 1
     FLOAT = 3.14
     STRING = u'BO' + UNI_CHR
-    TUPLE = INT, LONG, FLOAT, STRING
+    TUPLE = INT, LONG, FLOAT, STRING, STRING
 
     def setUp(self):
         self.wd = tempfile.mkdtemp(prefix="pydoop_")
@@ -148,6 +148,12 @@ class TestSerDe(unittest.TestCase):
         with sercore.FileInStream(self.fname) as s:
             self.assertEqual(s.read_string(), self.STRING)
 
+    def test_bytes(self):
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_string(self.STRING)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_bytes(), self.STRING.encode("utf8"))
+
     def test_multi_no_tuple(self):
         self.__fill_stream_multi()
         self.__check_stream_multi()
@@ -170,10 +176,11 @@ class TestSerDe(unittest.TestCase):
             s.write_long(self.LONG)
             s.write_float(self.FLOAT)
             s.write_string(self.STRING)
+            s.write_string(self.STRING)
 
     def __fill_stream_tuple(self):
         with sercore.FileOutStream(self.fname) as s:
-            s.write_tuple(self.TUPLE, 'ilfs')
+            s.write_tuple(self.TUPLE, 'ilfss')
 
     def __check_stream_multi(self):
         with sercore.FileInStream(self.fname) as s:
@@ -181,22 +188,23 @@ class TestSerDe(unittest.TestCase):
             self.assertEqual(s.read_long(), self.LONG)
             self.assertAlmostEqual(s.read_float(), self.FLOAT, 3)
             self.assertEqual(s.read_string(), self.STRING)
+            self.assertEqual(s.read_bytes(), self.STRING.encode("utf8"))
 
     def __check_stream_tuple(self):
         with sercore.FileInStream(self.fname) as s:
-            t = s.read_tuple('ilfs')
-            self.assertEqual(len(t), 4)
+            t = s.read_tuple('ilfsb')
+            self.assertEqual(len(t), 5)
             self.assertEqual(t[0], self.INT)
             self.assertEqual(t[1], self.LONG)
             self.assertAlmostEqual(t[2], self.FLOAT, 3)
             self.assertEqual(t[3], self.STRING)
+            self.assertEqual(t[4], self.STRING.encode("utf8"))
 
     def test_errors(self):
-        with sercore.FileOutStream(self.fname) as s:
-            s.write_tuple(self.TUPLE, "ilfs")
+        self.__fill_stream_tuple()
         with sercore.FileInStream(self.fname) as s:
             with self.assertRaises(IOError):
-                s.read_tuple("ilfss")  # EOF
+                s.read_tuple("ilfsbi")  # EOF
         with sercore.FileOutStream(self.fname) as s:
             with self.assertRaises(ValueError):
                 s.write_tuple((1, 2), "iis")  # not enough items

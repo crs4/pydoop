@@ -39,6 +39,7 @@
 #define PyString_AsStringAndSize PyBytes_AsStringAndSize
 #endif
 
+// This can only be used in functions that return a PyObject*
 # define _ASSERT_STREAM_OPEN {                                           \
   if (self->closed) {                                                    \
     PyErr_SetString(PyExc_ValueError, "I/O operation on closed stream"); \
@@ -212,21 +213,42 @@ FileInStream_readFloat(FileInStreamObj *self) {
 }
 
 
-static PyObject *
-FileInStream_readString(FileInStreamObj *self) {
+std::string
+_FileInStream_read_cppstring(FileInStreamObj *self) {
   std::string rval;
   PyThreadState *state;
-  _ASSERT_STREAM_OPEN;
   state = PyEval_SaveThread();
   try {
     HadoopUtils::deserializeString(rval, *self->stream);
   } catch (HadoopUtils::Error e) {
     PyEval_RestoreThread(state);
     PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
-    return NULL;
+    throw;
   }
   PyEval_RestoreThread(state);
-  return PyUnicode_FromString(rval.c_str());
+  return rval;
+}
+
+
+static PyObject *
+FileInStream_readString(FileInStreamObj *self) {
+  _ASSERT_STREAM_OPEN;
+  try {
+    return PyUnicode_FromString(_FileInStream_read_cppstring(self).c_str());
+  } catch (HadoopUtils::Error e) {
+    return NULL;
+  }
+}
+
+
+static PyObject *
+FileInStream_readBytes(FileInStreamObj *self) {
+  _ASSERT_STREAM_OPEN;
+  try {
+    return PyString_FromString(_FileInStream_read_cppstring(self).c_str());
+  } catch (HadoopUtils::Error e) {
+    return NULL;
+  }
 }
 
 
@@ -273,6 +295,13 @@ FileInStream_readTuple(FileInStreamObj *self, PyObject *args) {
       }
       PyTuple_SET_ITEM(rval, i, item);
       break;
+    case 'b':
+      if (!(item = FileInStream_readBytes(self))) {
+	Py_DECREF(rval);
+	return NULL;
+      }
+      PyTuple_SET_ITEM(rval, i, item);
+      break;
     default:
       Py_DECREF(rval);
       return PyErr_Format(PyExc_ValueError, "Unknown format '%c'", fmt[i]);
@@ -309,6 +338,8 @@ static PyMethodDef FileInStream_methods[] = {
    "read_float(): read a float from the stream"},
   {"read_string", (PyCFunction)FileInStream_readString, METH_NOARGS,
    "read_string(): read a string from the stream"},
+  {"read_bytes", (PyCFunction)FileInStream_readBytes, METH_NOARGS,
+   "read_bytes(): read a bytes object from the stream"},
   {"read_tuple", (PyCFunction)FileInStream_readTuple, METH_VARARGS,
    "read_tuple(fmt): read len(fmt) values, where fmt specifies types"},
   {"skip", (PyCFunction)FileInStream_skip, METH_VARARGS,
