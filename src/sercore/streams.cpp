@@ -88,7 +88,7 @@ FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
     if (!(self->fp = _PyFile_AsFile(inarg, "rb"))) {
       return -1;
     }
-    self->stream->open(self->fp);
+    self->stream->open(self->fp);  // this variant just stores a reference
   }
   self->closed = false;
   return 0;
@@ -261,46 +261,31 @@ FileInStream_readTuple(FileInStreamObj *self, PyObject *args) {
   for (std::size_t i = 0; i < nitems; ++i) {
     switch(fmt[i]) {
     case 'i':
-      if (!(item = FileInStream_readInt(self))) {
-	Py_DECREF(rval);
-	return NULL;
-      }
-      PyTuple_SET_ITEM(rval, i, item);
+      if (!(item = FileInStream_readInt(self))) goto error;
       break;
     case 'l':
-      if (!(item = FileInStream_readLong(self))) {
-	Py_DECREF(rval);
-	return NULL;
-      }
-      PyTuple_SET_ITEM(rval, i, item);
+      if (!(item = FileInStream_readLong(self))) goto error;
       break;
     case 'f':
-      if (!(item = FileInStream_readFloat(self))) {
-	Py_DECREF(rval);
-	return NULL;
-      }
-      PyTuple_SET_ITEM(rval, i, item);
+      if (!(item = FileInStream_readFloat(self))) goto error;
       break;
     case 's':
-      if (!(item = FileInStream_readString(self))) {
-	Py_DECREF(rval);
-	return NULL;
-      }
-      PyTuple_SET_ITEM(rval, i, item);
+      if (!(item = FileInStream_readString(self))) goto error;
       break;
     case 'b':
-      if (!(item = FileInStream_readBytes(self))) {
-	Py_DECREF(rval);
-	return NULL;
-      }
-      PyTuple_SET_ITEM(rval, i, item);
+      if (!(item = FileInStream_readBytes(self))) goto error;
       break;
     default:
       Py_DECREF(rval);
       return PyErr_Format(PyExc_ValueError, "Unknown format '%c'", fmt[i]);
     }
+    PyTuple_SET_ITEM(rval, i, item);
   }
   return rval;
+
+error:
+  Py_DECREF(rval);
+  return NULL;
 }
 
 
@@ -409,7 +394,7 @@ FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
     if (!(self->fp = _PyFile_AsFile(inarg, "wb"))) {
       return -1;
     }
-    self->stream->open(self->fp);
+    self->stream->open(self->fp);  // this variant just stores a reference
   }
   self->closed = false;
   return 0;
@@ -627,29 +612,19 @@ FileOutStream_writeTuple(FileOutStreamObj *self, PyObject *args) {
     }
     switch(fmt[i]) {
     case 'i':
-      if (!FileOutStream_writeInt(self, PyTuple_Pack(1, item))) {
-	goto error;
-      }
+      if (!FileOutStream_writeInt(self, PyTuple_Pack(1, item))) goto error;
       break;
     case 'l':
-      if (!FileOutStream_writeLong(self, PyTuple_Pack(1, item))) {
-	goto error;
-      }
+      if (!FileOutStream_writeLong(self, PyTuple_Pack(1, item))) goto error;
       break;
     case 'f':
-      if (!FileOutStream_writeFloat(self, PyTuple_Pack(1, item))) {
-	goto error;
-      }
+      if (!FileOutStream_writeFloat(self, PyTuple_Pack(1, item))) goto error;
       break;
     case 's':
-      if (!FileOutStream_writeString(self, PyTuple_Pack(1, item))) {
-	goto error;
-      }
+      if (!FileOutStream_writeString(self, PyTuple_Pack(1, item))) goto error;
       break;
     case 'b':
-      if (!FileOutStream_writeBytes(self, PyTuple_Pack(1, item))) {
-	goto error;
-      }
+      if (!FileOutStream_writeBytes(self, PyTuple_Pack(1, item))) goto error;
       break;
     default:
       PyErr_Format(PyExc_ValueError, "Unknown format '%c'", fmt[i]);
