@@ -284,6 +284,24 @@ class TestCheckClosed(unittest.TestCase):
         self.__check(ops)
         shutil.rmtree(wd)
 
+    def test_double_close(self):
+        wd = tempfile.mkdtemp(prefix="pydoop_")
+        fname = os.path.join(wd, "foo")
+        with sercore.FileOutStream(fname) as stream:
+            pass
+        stream.close()
+        with sercore.FileInStream(fname) as stream:
+            pass
+        stream.close()
+        with io.open(fname, "wb") as f:
+            with sercore.FileOutStream(f) as stream:
+                pass
+            stream.close()
+        with io.open(fname, "rb") as f:
+            with sercore.FileInStream(f) as stream:
+                pass
+            stream.close()
+
     def __check(self, ops):
         for o, args in ops:
             self.assertRaises(ValueError, o, *args)

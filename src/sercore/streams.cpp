@@ -97,6 +97,9 @@ FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
 
 static PyObject *
 FileInStream_close(FileInStreamObj *self) {
+  if (self->closed) {
+    Py_RETURN_NONE;
+  }
   if (self->fp) {
     fclose(self->fp);
   }
@@ -403,6 +406,9 @@ FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
 
 static PyObject *
 FileOutStream_close(FileOutStreamObj *self) {
+  if (self->closed) {
+    Py_RETURN_NONE;
+  }
   if (self->fp) {
     fclose(self->fp);
   }
