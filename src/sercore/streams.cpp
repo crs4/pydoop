@@ -549,30 +549,60 @@ _FileOutStream_write_cppstring(FileOutStreamObj *self, std::string s) {
 
 static PyObject *
 FileOutStream_writeString(FileOutStreamObj *self, PyObject *args) {
-  char *val;
-  PyObject *rval;
   _ASSERT_STREAM_OPEN;
-  if (!PyArg_ParseTuple(args, "es", "utf-8",  &val)) {
+#if PY_MAJOR_VERSION < 3
+  // default encoding is ASCII, so "s#" would not work here
+  PyObject *pystring, *pybytes;
+  if (!PyArg_ParseTuple(args, "O", &pystring)) {
     return NULL;
   }
-  rval = _FileOutStream_write_cppstring(self, std::string(val));
-  PyMem_Free((void*)val);
-  return rval;
+  std::string s;
+  if (PyBytes_Check(pystring)) {
+    s = std::string(PyBytes_AS_STRING(pystring), PyBytes_GET_SIZE(pystring));
+  } else {
+    if (!(pybytes = PyUnicode_AsUTF8String(pystring))) {
+      return NULL;
+    }
+    s = std::string(PyBytes_AS_STRING(pybytes), PyBytes_GET_SIZE(pybytes));
+    Py_DECREF(pybytes);
+  }
+  return _FileOutStream_write_cppstring(self, s);
+#else
+  const char* buf;
+  Py_ssize_t len;
+  if (!PyArg_ParseTuple(args, "s#", &buf,  &len)) {
+    return NULL;
+  }
+  return _FileOutStream_write_cppstring(self, std::string(buf, len));
+#endif
 }
 
 
 static PyObject *
 FileOutStream_writeBytes(FileOutStreamObj *self, PyObject *args) {
-  Py_buffer buffer = {NULL, NULL};
-  PyObject *rval;
   _ASSERT_STREAM_OPEN;
-  if (!PyArg_ParseTuple(args, "s*", &buffer)) {
+#if PY_MAJOR_VERSION < 3
+  // "y#" not available
+  PyObject *pyval, *rval;
+  Py_buffer buffer = {NULL, NULL};
+  if (!PyArg_ParseTuple(args, "O", &pyval)) {
+    return NULL;
+  }
+  if (PyObject_GetBuffer(pyval, &buffer, PyBUF_SIMPLE) < 0) {
     return NULL;
   }
   std::string s((const char*)buffer.buf, buffer.len);
   rval = _FileOutStream_write_cppstring(self, s);
   PyBuffer_Release(&buffer);
   return rval;
+#else
+  const char* buf;
+  Py_ssize_t len;
+  if (!PyArg_ParseTuple(args, "y#", &buf,  &len)) {
+    return NULL;
+  }
+  return _FileOutStream_write_cppstring(self, std::string(buf, len));
+#endif
 }
 
 

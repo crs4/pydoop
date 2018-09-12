@@ -115,7 +115,7 @@ class TestSerDe(unittest.TestCase):
     LONG = (2 << 62) - 1
     FLOAT = 3.14
     STRING = u'BO' + UNI_CHR
-    BYTES = b'a\x00b'
+    BYTES = b'a\x00b'  # bytes r/w methods MUST preserve null characters
     TUPLE = INT, LONG, FLOAT, STRING, BYTES
 
     def setUp(self):
@@ -214,6 +214,17 @@ class TestSerDe(unittest.TestCase):
             self.assertEqual(t[4], self.BYTES)
 
     def test_errors(self):
+        type_mismatches = [
+            ("int", 1.), ("int", "x"), ("int", b"x"),
+            ("long", 1.), ("long", "x"), ("long", b"x"),
+            ("float", "x"), ("float", b"x"),
+            ("bytes", 1), ("bytes", 1.), ("bytes", u"x"),
+            ("string", 1), ("string", 1.),
+        ]
+        with sercore.FileOutStream(self.fname) as s:
+            for name, val in type_mismatches:
+                meth = getattr(s, "write_%s" % name)
+                self.assertRaises(TypeError, meth, val)
         self.__fill_stream_tuple()
         with sercore.FileInStream(self.fname) as s:
             with self.assertRaises(IOError):
@@ -221,9 +232,22 @@ class TestSerDe(unittest.TestCase):
         with sercore.FileOutStream(self.fname) as s:
             with self.assertRaises(ValueError):
                 s.write_tuple((1, 2), "iis")  # not enough items
+
+    # "extra" features
+
+    def test_string_keep_zeros(self):
+        pystr = self.BYTES.decode("utf-8")
         with sercore.FileOutStream(self.fname) as s:
-            with self.assertRaises(TypeError):
-                s.write_tuple((1, 2.1), "ii")
+            s.write_string(pystr)
+        with sercore.FileInStream(self.fname) as s:
+            val = s.read_bytes()
+            self.assertEqual(val, self.BYTES)
+
+    def test_string_allow_bytes(self):
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_string(self.BYTES)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_bytes(), self.BYTES)
 
 
 class TestCheckClosed(unittest.TestCase):
@@ -252,7 +276,7 @@ class TestCheckClosed(unittest.TestCase):
             (stream.write_int, (1,)),
             (stream.write_long, (1,)),
             (stream.write_float, (1.0,)),
-            (stream.write_string, ("x")),
+            (stream.write_string, (u"x")),
             (stream.write_tuple, ("ii")),
             (stream.advance, (1,)),
             (stream.flush, ()),
