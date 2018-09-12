@@ -152,7 +152,7 @@ FileInStream_read(FileInStreamObj *self, PyObject *args) {
 
 
 static PyObject *
-FileInStream_readInt(FileInStreamObj *self) {
+FileInStream_readVInt(FileInStreamObj *self) {
   int32_t rval;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
@@ -170,7 +170,7 @@ FileInStream_readInt(FileInStreamObj *self) {
 
 
 static PyObject *
-FileInStream_readLong(FileInStreamObj *self) {
+FileInStream_readVLong(FileInStreamObj *self) {
   int64_t rval;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
@@ -264,10 +264,10 @@ FileInStream_readTuple(FileInStreamObj *self, PyObject *args) {
   for (std::size_t i = 0; i < nitems; ++i) {
     switch(fmt[i]) {
     case 'i':
-      if (!(item = FileInStream_readInt(self))) goto error;
+      if (!(item = FileInStream_readVInt(self))) goto error;
       break;
     case 'l':
-      if (!(item = FileInStream_readLong(self))) goto error;
+      if (!(item = FileInStream_readVLong(self))) goto error;
       break;
     case 'f':
       if (!(item = FileInStream_readFloat(self))) goto error;
@@ -311,10 +311,10 @@ static PyMethodDef FileInStream_methods[] = {
    "close(): close the currently open file"},
   {"read", (PyCFunction)FileInStream_read, METH_VARARGS,
    "read(len): read len bytes from the stream"},
-  {"read_int", (PyCFunction)FileInStream_readInt, METH_NOARGS,
-   "read_int(): read an integer from the stream"},
-  {"read_long", (PyCFunction)FileInStream_readLong, METH_NOARGS,
-   "read_long(): read a long integer from the stream"},
+  {"read_vint", (PyCFunction)FileInStream_readVInt, METH_NOARGS,
+   "read_vint(): read a variable length integer from the stream"},
+  {"read_vlong", (PyCFunction)FileInStream_readVLong, METH_NOARGS,
+   "read_vlong(): read a variable length long integer from the stream"},
   {"read_float", (PyCFunction)FileInStream_readFloat, METH_NOARGS,
    "read_float(): read a float from the stream"},
   {"read_string", (PyCFunction)FileInStream_readString, METH_NOARGS,
@@ -461,7 +461,7 @@ FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
 
 
 static PyObject *
-FileOutStream_writeInt(FileOutStreamObj *self, PyObject *args) {
+FileOutStream_writeVInt(FileOutStreamObj *self, PyObject *args) {
   int32_t val = 0;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
@@ -482,7 +482,7 @@ FileOutStream_writeInt(FileOutStreamObj *self, PyObject *args) {
 
 
 static PyObject *
-FileOutStream_writeLong(FileOutStreamObj *self, PyObject *args) {
+FileOutStream_writeVLong(FileOutStreamObj *self, PyObject *args) {
   int64_t val;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
@@ -618,10 +618,10 @@ FileOutStream_writeTuple(FileOutStreamObj *self, PyObject *args) {
     }
     switch(fmt[i]) {
     case 'i':
-      if (!FileOutStream_writeInt(self, PyTuple_Pack(1, item))) goto error;
+      if (!FileOutStream_writeVInt(self, PyTuple_Pack(1, item))) goto error;
       break;
     case 'l':
-      if (!FileOutStream_writeLong(self, PyTuple_Pack(1, item))) goto error;
+      if (!FileOutStream_writeVLong(self, PyTuple_Pack(1, item))) goto error;
       break;
     case 'f':
       if (!FileOutStream_writeFloat(self, PyTuple_Pack(1, item))) goto error;
@@ -675,10 +675,10 @@ static PyMethodDef FileOutStream_methods[] = {
    "close(): close the currently open file"},
   {"write", (PyCFunction)FileOutStream_write, METH_VARARGS,
    "write(data): write data to the stream"},
-  {"write_int", (PyCFunction)FileOutStream_writeInt, METH_VARARGS,
-   "write_int(n): write an integer to the stream"},
-  {"write_long", (PyCFunction)FileOutStream_writeLong, METH_VARARGS,
-   "write_long(n): write a long integer to the stream"},
+  {"write_vint", (PyCFunction)FileOutStream_writeVInt, METH_VARARGS,
+   "write_vint(n): write a variable length integer to the stream"},
+  {"write_vlong", (PyCFunction)FileOutStream_writeVLong, METH_VARARGS,
+   "write_vlong(n): write a variable length long integer to the stream"},
   {"write_float", (PyCFunction)FileOutStream_writeFloat, METH_VARARGS,
    "write_float(n): write a float to the stream"},
   {"write_string", (PyCFunction)FileOutStream_writeString, METH_VARARGS,

@@ -125,17 +125,17 @@ class TestSerDe(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.wd)
 
-    def test_int(self):
+    def test_vint(self):
         with sercore.FileOutStream(self.fname) as s:
-            s.write_int(self.INT)
+            s.write_vint(self.INT)
         with sercore.FileInStream(self.fname) as s:
-            self.assertEqual(s.read_int(), self.INT)
+            self.assertEqual(s.read_vint(), self.INT)
 
-    def test_long(self):
+    def test_vlong(self):
         with sercore.FileOutStream(self.fname) as s:
-            s.write_long(self.LONG)
+            s.write_vlong(self.LONG)
         with sercore.FileInStream(self.fname) as s:
-            self.assertEqual(s.read_long(), self.LONG)
+            self.assertEqual(s.read_vlong(), self.LONG)
 
     def test_float(self):
         with sercore.FileOutStream(self.fname) as s:
@@ -185,8 +185,8 @@ class TestSerDe(unittest.TestCase):
 
     def __fill_stream_multi(self):
         with sercore.FileOutStream(self.fname) as s:
-            s.write_int(self.INT)
-            s.write_long(self.LONG)
+            s.write_vint(self.INT)
+            s.write_vlong(self.LONG)
             s.write_float(self.FLOAT)
             s.write_string(self.STRING)
             s.write_bytes(self.BYTES)
@@ -197,8 +197,8 @@ class TestSerDe(unittest.TestCase):
 
     def __check_stream_multi(self):
         with sercore.FileInStream(self.fname) as s:
-            self.assertEqual(s.read_int(), self.INT)
-            self.assertEqual(s.read_long(), self.LONG)
+            self.assertEqual(s.read_vint(), self.INT)
+            self.assertEqual(s.read_vlong(), self.LONG)
             self.assertAlmostEqual(s.read_float(), self.FLOAT, 3)
             self.assertEqual(s.read_string(), self.STRING)
             self.assertEqual(s.read_bytes(), self.BYTES)
@@ -215,8 +215,8 @@ class TestSerDe(unittest.TestCase):
 
     def test_errors(self):
         type_mismatches = [
-            ("int", 1.), ("int", "x"), ("int", b"x"),
-            ("long", 1.), ("long", "x"), ("long", b"x"),
+            ("vint", 1.), ("vint", "x"), ("vint", b"x"),
+            ("vlong", 1.), ("vlong", "x"), ("vlong", b"x"),
             ("float", "x"), ("float", b"x"),
             ("bytes", 1), ("bytes", 1.), ("bytes", u"x"),
             ("string", 1), ("string", 1.),
@@ -257,8 +257,8 @@ class TestCheckClosed(unittest.TestCase):
             pass
         ops = (
             (stream.read, (1,)),
-            (stream.read_int, ()),
-            (stream.read_long, ()),
+            (stream.read_vint, ()),
+            (stream.read_vlong, ()),
             (stream.read_float, ()),
             (stream.read_string, ()),
             (stream.read_tuple, ("ii")),
@@ -273,8 +273,8 @@ class TestCheckClosed(unittest.TestCase):
             pass
         ops = (
             (stream.write, (b"x",)),
-            (stream.write_int, (1,)),
-            (stream.write_long, (1,)),
+            (stream.write_vint, (1,)),
+            (stream.write_vlong, (1,)),
             (stream.write_float, (1.0,)),
             (stream.write_string, (u"x")),
             (stream.write_tuple, ("ii")),
