@@ -19,12 +19,16 @@
 import io
 import os
 import shutil
+import struct
 import tempfile
 import unittest
 import uuid
+from random import randint
 
 import sercore
 
+INT64_MIN = -2**63
+INT64_MAX = 2**63 - 1
 
 # TODO: from pydoop.test_utils import UNI_CHR
 UNI_CHR = u'\N{CYRILLIC CAPITAL LETTER O WITH DIAERESIS}'
@@ -112,7 +116,7 @@ class TestStringInStream(unittest.TestCase):
 class TestSerDe(unittest.TestCase):
 
     INT = 42
-    LONG = (2 << 62) - 1
+    LONG = INT64_MAX
     FLOAT = 3.14
     STRING = u'BO' + UNI_CHR
     BYTES = b'a\x00b'  # bytes r/w methods MUST preserve null characters
@@ -307,12 +311,38 @@ class TestCheckClosed(unittest.TestCase):
             self.assertRaises(ValueError, o, *args)
 
 
+class TestHadoopTypes(unittest.TestCase):
+
+    def setUp(self):
+        self.wd = tempfile.mkdtemp(prefix="pydoop_")
+        self.fname = os.path.join(self.wd, "foo")
+
+    def test_long_writable(self):
+        preset_data = (INT64_MIN, -100, -1, 0, 1, 100, INT64_MAX)
+        random_data = [randint(INT64_MIN, INT64_MAX) for _ in range(100)]
+        for data in preset_data, random_data:
+            with io.open(self.fname, "wb") as f:
+                f.write(struct.pack(">" + len(data) * "q", *data))
+            with sercore.FileInStream(self.fname) as stream:
+                for v in data:
+                    self.assertEqual(stream.read_long_writable(), v)
+        # payload entry, e.g., TextInputFormat key
+        k = 1000
+        sk = struct.pack(">q", k)
+        with sercore.FileOutStream(self.fname) as stream:
+            stream.write_bytes(sk)
+        with sercore.FileInStream(self.fname) as stream:
+            self.assertEqual(stream.read_vint(), len(sk))
+            self.assertEqual(stream.read_long_writable(), k)
+
+
 CASES = [
     TestFileInStream,
     TestFileOutStream,
     TestStringInStream,
     TestSerDe,
     TestCheckClosed,
+    TestHadoopTypes,
 ]
 
 

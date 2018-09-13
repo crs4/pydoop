@@ -36,6 +36,8 @@
   }                                                                      \
 }
 
+# define INT64_SIZE sizeof(int64_t)
+
 
 // PyFile_AsFile is only available in Python 2, for "old style" file objects
 // This should work on anything associated to a file descriptor
@@ -306,6 +308,41 @@ FileInStream_skip(FileInStreamObj *self, PyObject *args) {
 }
 
 
+// Extra types not used directly by the protocol, but that may appear as a
+// result of serializing objects such as keys, values and input splits.
+// **NOTE**: within the command stream, each serialized object starts with a
+// VInt that specifies its length. For instance, to read a LongWritable key:
+//     assert stream.read_vint() == 8
+//     key = stream.read_long_writable()
+// Equivalent, but probably less efficient:
+//     key_bytes = stream.read_bytes()
+//     assert len(key_bytes) == 8
+//     key = struct.unpack(">q", key_bytes)[0]
+
+// Reads a hadoop.io.LongWritable (java.io.DataInput.readLong)
+// Same as struct.unpack('>q', stream.read(8))[0]
+static PyObject *
+FileInStream_readLongWritable(FileInStreamObj *self) {
+  int64_t rval = 0;
+  unsigned char bytes[INT64_SIZE];
+  PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
+  state = PyEval_SaveThread();
+  try {
+    self->stream->read(bytes, INT64_SIZE);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  for (std::size_t i = 0; i < INT64_SIZE; ++i) {
+    rval = (rval << INT64_SIZE) | bytes[i];
+  }
+  return Py_BuildValue("L", rval);
+}
+
+
 static PyMethodDef FileInStream_methods[] = {
   {"close", (PyCFunction)FileInStream_close, METH_NOARGS,
    "close(): close the currently open file"},
@@ -327,6 +364,8 @@ static PyMethodDef FileInStream_methods[] = {
    "skip(len): skip len bytes"},
   {"__enter__", (PyCFunction)FileInStream_enter, METH_NOARGS},
   {"__exit__", (PyCFunction)FileInStream_exit, METH_VARARGS},
+  {"read_long_writable", (PyCFunction)FileInStream_readLongWritable,
+   METH_NOARGS, "read_long_writable(): read a hadoop.io.LongWritable"},
   {NULL}  /* Sentinel */
 };
 
