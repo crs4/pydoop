@@ -27,13 +27,13 @@ import os
 import tempfile
 import uuid
 import logging
+import struct
 from pydoop.utils.py3compat import StringIO, iteritems, socketserver, unicode
 
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
 # threading._VERBOSE = True
-from pydoop.utils.serialize import serialize_long
 from pydoop.app.submit import AVRO_IO_CHOICES
 
 from .pipes import TaskContext, StreamRunner
@@ -76,12 +76,6 @@ try:
     AVRO_INSTALLED = True
 except ImportError:
     AVRO_INSTALLED = False
-
-
-def serialize_long_to_string(v):
-    f = StringIO()
-    serialize_long(v, f)
-    return f.getvalue()
 
 
 class TrivialRecordWriter(UpStreamAdapter):
@@ -544,7 +538,7 @@ class HadoopSimulator(object):
                 pos = 0
                 for l in file_in:
                     self.logger.debug("Line: %s", l)
-                    k = serialize_long_to_string(pos)
+                    k = struct.pack(">q", pos)
                     down_stream.send(down_stream.MAP_ITEM, k, l)
                     pos += len(l)
         down_stream.send(down_stream.CLOSE)

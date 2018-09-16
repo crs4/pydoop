@@ -25,7 +25,7 @@ import unittest
 import uuid
 from random import randint
 
-import sercore
+import pydoop.sercore as sercore
 
 INT64_MIN = -2**63
 INT64_MAX = 2**63 - 1
@@ -197,7 +197,7 @@ class TestSerDe(unittest.TestCase):
 
     def __fill_stream_tuple(self):
         with sercore.FileOutStream(self.fname) as s:
-            s.write_tuple(self.TUPLE, 'ilfsb')
+            s.write_tuple("ilfsb", self.TUPLE)
 
     def __check_stream_multi(self):
         with sercore.FileInStream(self.fname) as s:
@@ -235,7 +235,7 @@ class TestSerDe(unittest.TestCase):
                 s.read_tuple("ilfsbi")  # EOF
         with sercore.FileOutStream(self.fname) as s:
             with self.assertRaises(ValueError):
-                s.write_tuple((1, 2), "iis")  # not enough items
+                s.write_tuple("iis", (1, 2))  # not enough items
 
     # "extra" features
 
@@ -281,7 +281,7 @@ class TestCheckClosed(unittest.TestCase):
             (stream.write_vlong, (1,)),
             (stream.write_float, (1.0,)),
             (stream.write_string, (u"x")),
-            (stream.write_tuple, ("ii")),
+            (stream.write_tuple, ("ii", (1, 1))),
             (stream.advance, (1,)),
             (stream.flush, ()),
         )

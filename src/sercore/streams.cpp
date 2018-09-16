@@ -641,7 +641,7 @@ FileOutStream_writeTuple(FileOutStreamObj *self, PyObject *args) {
   PyObject *inarg, *iterator, *item;
   char *fmt;
   _ASSERT_STREAM_OPEN;
-  if (!PyArg_ParseTuple(args, "Os", &inarg, &fmt)) {
+  if (!PyArg_ParseTuple(args, "sO", &fmt, &inarg)) {
     return NULL;
   }
   if (!(iterator = PyObject_GetIter(inarg))) {
@@ -725,7 +725,7 @@ static PyMethodDef FileOutStream_methods[] = {
   {"write_bytes", (PyCFunction)FileOutStream_writeBytes, METH_VARARGS,
    "write_bytes(n): write a bytes object to the stream"},
   {"write_tuple", (PyCFunction)FileOutStream_writeTuple, METH_VARARGS,
-   "write_tuple(t, fmt): write values from iterable t to the stream"},
+   "write_tuple(fmt, t): write values from iterable t according to fmt"},
   {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
    "advance(len): advance len bytes"},
   {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,
