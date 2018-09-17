@@ -94,6 +94,10 @@ DESERIALIZERS = {
 }
 
 
+def _get_pickled(downlink):
+    return loads(downlink.stream.read_bytes())
+
+
 def _emit_pickled(context, key, value):
     context.uplink.output(dumps(key, HIGHEST_PROTOCOL),
                           dumps(value, HIGHEST_PROTOCOL))
@@ -106,22 +110,6 @@ def get_password():
         return None
     with open(pass_fn, "rb") as f:
         return f.read()
-
-
-def raw_kvs(stream):
-    key = None
-    for cmd, group in groupby(stream, itemgetter(0)):
-        # if cmd == CLOSE:
-        #     raise StopIteration
-        if cmd == REDUCE_KEY:
-            key = next(group)[1]
-        else:
-            yield key, (_[1] for _ in group)
-
-
-def unpickled_kvs(stream):
-    for k, vstream in raw_kvs(stream):
-        yield loads(k), (loads(_) for _ in vstream)
 
 
 class BinaryProtocol(object):
@@ -232,26 +220,42 @@ class BinaryProtocol(object):
             if not piped_output:
                 raise NotImplementedError  # TBD
             self.reducer = self.context.factory.create_reducer(self.context)
-            kvs = unpickled_kvs if self.context.private_encoding else raw_kvs
-            for self.context.key, self.context.values in kvs(self):
-                self.reducer.reduce(self.context)
-            # TODO: use part
+            if self.context.private_encoding:
+                self.__class__.get_k = _get_pickled
+                self.__class__.get_v = _get_pickled
+            # key = None
+            for cmd, subs in groupby(self, itemgetter(0)):
+                logging.debug("  GOT: %r, %r", CMD_REPR[cmd], subs)
+                if cmd == REDUCE_KEY:
+                    _, self.context.key = next(subs)
+                if cmd == REDUCE_VALUE:
+                    self.context.values = (v for _, v in subs)
+                    self.reducer.reduce(self.context)
+                if cmd == CLOSE:
+                    try:
+                        self.all_done()
+                    finally:
+                        raise StopIteration
+            # TODO: handle partitioned output
         elif cmd == REDUCE_KEY:
-            key = self.stream.read_bytes()
-            logging.debug("%s: %r", CMD_REPR[cmd], key)
-            return cmd, key
+            k = self.get_k()
+            logging.debug("%s: %r", CMD_REPR[cmd], k)
+            return cmd, k  # pass on to RUN_REDUCE iterator
         elif cmd == REDUCE_VALUE:
-            value = self.stream.read_bytes()
-            logging.debug("%s: %r", CMD_REPR[cmd], value)
-            return cmd, value
+            v = self.get_v()
+            logging.debug("%s: %r", CMD_REPR[cmd], v)
+            return cmd, v  # pass on to RUN_REDUCE iterator
         elif cmd == ABORT:
             raise RuntimeError("received ABORT command")
         elif cmd == CLOSE:
             logging.debug(CMD_REPR[cmd])
-            try:
-                self.all_done()
-            finally:
-                raise StopIteration
+            if self.mapper:
+                try:
+                    self.all_done()
+                finally:
+                    raise StopIteration
+            else:
+                return cmd, None  # pass on to RUN_REDUCE iterator
         else:
             raise RuntimeError("unknown command: %d" % cmd)
 
