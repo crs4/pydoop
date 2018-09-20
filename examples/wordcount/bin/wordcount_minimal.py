@@ -37,9 +37,7 @@ class Mapper(api.Mapper):
 class Reducer(api.Reducer):
 
     def reduce(self, context):
-        # context.emit(context.key, sum(context.values))
-        v = sum(context.values)
-        context.emit(context.key.encode("utf-8"), str(v).encode("utf-8"))
+        context.emit(context.key, sum(context.values))
 
 
 FACTORY = pipes.Factory(mapper_class=Mapper, reducer_class=Reducer)

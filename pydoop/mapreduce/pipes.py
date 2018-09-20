@@ -126,9 +126,6 @@ class BinaryProtocol(object):
         self.raw_v = raw_v
         self.password = get_password()
         self.auth_done = False
-        # -- move all the following to context?
-        self.mapper = None
-        self.reducer = None
 
     def close(self):
         self.stream.close()
@@ -193,9 +190,7 @@ class BinaryProtocol(object):
             self.context.input_split = split
             if not piped_input:
                 raise NotImplementedError  # TBD
-            self.mapper = self.context.factory.create_mapper(self.context)
-            if self.context.private_encoding:
-                self.context.__class__.emit = _emit_pickled
+            self.context.create_mapper()
             # TODO: use nred
         elif cmd == SET_INPUT_TYPES:
             key_type, value_type = self.stream.read_tuple('ss')
@@ -213,13 +208,13 @@ class BinaryProtocol(object):
             self.context.value = self.get_v()
             logging.debug("%s: %r, %r",
                           CMD_REPR[cmd], self.context.key, self.context.value)
-            self.mapper.map(self.context)
+            self.context.mapper.map(self.context)
         elif cmd == RUN_REDUCE:
             part, piped_output = self.stream.read_tuple('ii')
             logging.debug("%s: %r, %r", CMD_REPR[cmd], part, piped_output)
             if not piped_output:
                 raise NotImplementedError  # TBD
-            self.reducer = self.context.factory.create_reducer(self.context)
+            self.context.create_reducer()
             if self.context.private_encoding:
                 self.__class__.get_k = _get_pickled
                 self.__class__.get_v = _get_pickled
@@ -230,7 +225,7 @@ class BinaryProtocol(object):
                     _, self.context.key = next(subs)
                 if cmd == REDUCE_VALUE:
                     self.context.values = (v for _, v in subs)
-                    self.reducer.reduce(self.context)
+                    self.context.reducer.reduce(self.context)
                 if cmd == CLOSE:
                     try:
                         self.all_done()
@@ -249,7 +244,7 @@ class BinaryProtocol(object):
             raise RuntimeError("received ABORT command")
         elif cmd == CLOSE:
             logging.debug(CMD_REPR[cmd])
-            if self.mapper:
+            if self.context.mapper:
                 try:
                     self.all_done()
                 finally:
@@ -263,10 +258,10 @@ class BinaryProtocol(object):
     def all_done(self):
         # do *not* call uplink.done while user components are still active
         logging.debug("closing MR components")
-        if self.mapper:
-            self.mapper.close()
-        if self.reducer:
-            self.reducer.close()
+        if self.context.mapper:
+            self.context.mapper.close()
+        if self.context.reducer:
+            self.context.reducer.close()
         # TODO: close other components
         logging.debug("sending DONE")
         self.uplink.done()
@@ -296,7 +291,6 @@ class CommandWriter(object):
 
     def output(self, k, v):
         logging.debug("    Out: %r", (OUTPUT, k, v))
-        # only bytes objects supported for now
         self.stream.write_tuple("ibb", (OUTPUT, k, v))
         self.stream.flush()
 
@@ -384,14 +378,23 @@ def get_connection(context):
 
 class Context(object):
 
-    def __init__(self, factory, private_encoding=True):
+    def __init__(self, factory, private_encoding=True, auto_serialize=True):
         self.factory = factory
         self.private_encoding = private_encoding
+        self.auto_serialize = auto_serialize
         self.downlink = None
         self.uplink = None
         self.job_conf = {}
         self.key = None
         self.value = None
+        self.mapper = None
+        self.reducer = None
+
+    def create_mapper(self):
+        self.mapper = self.factory.create_mapper(self)
+
+    def create_reducer(self):
+        self.reducer = self.factory.create_reducer(self)
 
     def set_k(self, k):
         self.context.key = k
@@ -400,6 +403,14 @@ class Context(object):
         self.context.value = v
 
     def emit(self, key, value):
+        # TODO: send progress
+        if self.mapper and self.private_encoding:
+            key = dumps(key, HIGHEST_PROTOCOL)
+            value = dumps(value, HIGHEST_PROTOCOL)
+        elif self.auto_serialize:
+            # optimize by writing directly as "ss"?
+            key = str(key).encode("utf-8")
+            value = str(value).encode("utf-8")
         self.uplink.output(key, value)
         # TODO: partitioned output
 
@@ -439,8 +450,12 @@ class Factory(object):
         return None if not self.rwclass else self.rwclass(context)
 
 
-def run_task(factory, private_encoding=True):
-    context = Context(factory, private_encoding=private_encoding)
+def run_task(factory, private_encoding=True, auto_serialize=True):
+    context = Context(
+        factory,
+        private_encoding=private_encoding,
+        auto_serialize=auto_serialize
+    )
     with get_connection(context) as connection:
         context.downlink = connection.downlink
         context.uplink = connection.downlink.uplink
