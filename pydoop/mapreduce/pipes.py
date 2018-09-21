@@ -228,7 +228,7 @@ class BinaryProtocol(object):
                     self.context.reducer.reduce(self.context)
                 if cmd == CLOSE:
                     try:
-                        self.all_done()
+                        self.context.close()
                     finally:
                         raise StopIteration
             # TODO: handle partitioned output
@@ -246,25 +246,13 @@ class BinaryProtocol(object):
             logging.debug(CMD_REPR[cmd])
             if self.context.mapper:
                 try:
-                    self.all_done()
+                    self.context.close()
                 finally:
                     raise StopIteration
             else:
                 return cmd, None  # pass on to RUN_REDUCE iterator
         else:
             raise RuntimeError("unknown command: %d" % cmd)
-
-    # move to context?
-    def all_done(self):
-        # do *not* call uplink.done while user components are still active
-        logging.debug("closing MR components")
-        if self.context.mapper:
-            self.context.mapper.close()
-        if self.context.reducer:
-            self.context.reducer.close()
-        # TODO: close other components
-        logging.debug("sending DONE")
-        self.uplink.done()
 
     def __iter__(self):
         return self
@@ -396,12 +384,6 @@ class Context(object):
     def create_reducer(self):
         self.reducer = self.factory.create_reducer(self)
 
-    def set_k(self, k):
-        self.context.key = k
-
-    def set_v(self, v):
-        self.context.value = v
-
     def emit(self, key, value):
         # TODO: send progress
         if self.mapper and self.private_encoding:
@@ -413,6 +395,16 @@ class Context(object):
             value = str(value).encode("utf-8")
         self.uplink.output(key, value)
         # TODO: partitioned output
+
+    def close(self):
+        # do *not* call uplink.done while user components are still active
+        try:
+            if self.mapper:
+                self.mapper.close()
+            if self.reducer:
+                self.reducer.close()
+        finally:
+            self.uplink.done()
 
 
 # class Factory(api.Factory):
