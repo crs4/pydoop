@@ -188,10 +188,11 @@ class BinaryProtocol(object):
             logging.debug("%s: %r, %r, %r",
                           CMD_REPR[cmd], split, nred, piped_input)
             self.context.input_split = split
+            self.context.nred = nred
             if not piped_input:
                 raise NotImplementedError  # TBD
             self.context.create_mapper()
-            # TODO: use nred
+            self.context.create_partitioner()
         elif cmd == SET_INPUT_TYPES:
             key_type, value_type = self.stream.read_tuple('ss')
             logging.debug("%s: %r, %r", CMD_REPR[cmd], key_type, value_type)
@@ -376,10 +377,15 @@ class Context(object):
         self.key = None
         self.value = None
         self.mapper = None
+        self.partitioner = None
         self.reducer = None
+        self.nred = None
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
+
+    def create_partitioner(self):
+        self.partitioner = self.factory.create_partitioner(self)
 
     def create_reducer(self):
         self.reducer = self.factory.create_reducer(self)
@@ -393,8 +399,11 @@ class Context(object):
             # optimize by writing directly as "ss"?
             key = str(key).encode("utf-8")
             value = str(value).encode("utf-8")
-        self.uplink.output(key, value)
-        # TODO: partitioned output
+        if self.partitioner:
+            part = self.partitioner.partition(key, self.nred)
+            self.uplink.partitioned_output(part, key, value)
+        else:
+            self.uplink.output(key, value)
 
     def close(self):
         # do *not* call uplink.done while user components are still active
