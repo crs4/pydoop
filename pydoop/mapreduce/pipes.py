@@ -23,6 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 import os
 import socket
+from collections import namedtuple
 from itertools import groupby
 from operator import itemgetter
 try:
@@ -79,6 +80,30 @@ CMD_REPR = {
 }
 
 
+class InputSplit(object):
+    """\
+    Represents a subset of the input data assigned to a single map task.
+
+    ``InputSplit`` objects are created by the framework and made available
+    to the user application via the ``input_split`` context attribute.
+    """
+    pass
+
+
+class FileSplit(InputSplit,
+                namedtuple("FileSplit", "filename, offset, length")):
+    """\
+    A subset (described by offset and length) of an input file.
+    """
+    @classmethod
+    def fromstream(cls, stream):
+        stream.read_vint()  # whole serialized split length
+        filename = stream.read_string()
+        offset = stream.read_long_writable()
+        length = stream.read_long_writable()
+        return cls(filename, offset, length)
+
+
 def _get_LongWritable(downlink):
     assert downlink.stream.read_vint() == 8
     return downlink.stream.read_long_writable()
@@ -131,13 +156,6 @@ class BinaryProtocol(object):
         self.stream.close()
         self.uplink.close()
 
-    def read_file_split(self):
-        self.stream.read_vint()  # whole serialized split length
-        path = self.stream.read_string()
-        start = self.stream.read_long_writable()
-        length = self.stream.read_long_writable()
-        return path, start, length
-
     def read_job_conf(self):
         n = self.stream.read_vint()
         if n & 1:
@@ -183,16 +201,29 @@ class BinaryProtocol(object):
             if self.raw_split:
                 split, nred, piped_input = self.stream.read_tuple('bii')
             else:
-                split = self.read_file_split()
+                # TODO: support opaque splits
+                split = FileSplit.fromstream(self.stream)
                 nred, piped_input = self.stream.read_tuple("ii")
             logging.debug("%s: %r, %r, %r",
                           CMD_REPR[cmd], split, nred, piped_input)
             self.context.input_split = split
+            reader = self.context.create_record_reader()
+            if reader and piped_input:
+                raise RuntimeError("record reader defined when not needed")
+            if not reader and not piped_input:
+                raise RuntimeError("record reader not defined")
             self.context.nred = nred
-            if not piped_input:
-                raise NotImplementedError  # TBD
             self.context.create_mapper()
             self.context.create_partitioner()
+            if reader:
+                # TODO: progress
+                for self.context.key, self.context.value in reader:
+                    self.context.mapper.map(self.context)
+                # no CLOSE cmd from upstream in piped mode
+                try:
+                    self.context.close()
+                finally:
+                    raise StopIteration
         elif cmd == SET_INPUT_TYPES:
             key_type, value_type = self.stream.read_tuple('ss')
             logging.debug("%s: %r, %r", CMD_REPR[cmd], key_type, value_type)
@@ -383,12 +414,19 @@ class Context(object):
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
+        return self.mapper
 
     def create_partitioner(self):
         self.partitioner = self.factory.create_partitioner(self)
+        return self.partitioner
+
+    def create_record_reader(self):
+        self.record_reader = self.factory.create_record_reader(self)
+        return self.record_reader
 
     def create_reducer(self):
         self.reducer = self.factory.create_reducer(self)
+        return self.reducer
 
     def emit(self, key, value):
         # TODO: send progress
@@ -410,6 +448,8 @@ class Context(object):
         try:
             if self.mapper:
                 self.mapper.close()
+            if self.record_reader:
+                self.record_reader.close()
             if self.reducer:
                 self.reducer.close()
         finally:
