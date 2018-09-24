@@ -10,7 +10,7 @@ OPTS=( "-D" "pydoop.hdfs.user=${USER}" )
 
 nargs=1
 if [ $# -ne ${nargs} ]; then
-    die "Usage: $0 full|minimal|part|reader"
+    die "Usage: $0 full|minimal|part|reader|writer"
 fi
 BIN="${this_dir}"/bin/wordcount_$1.py
 

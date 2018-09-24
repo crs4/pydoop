@@ -6,6 +6,6 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
-for mode in minimal part full; do
+for mode in full minimal part reader writer; do
     ${BASH} "${this_dir}"/run_wc.sh ${mode}
 done

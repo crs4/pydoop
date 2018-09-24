@@ -32,6 +32,7 @@ except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL
 
 import pydoop.sercore as sercore
+from .api import JobConf
 from .string_utils import create_digest
 
 PROTOCOL_VERSION = 0
@@ -161,7 +162,7 @@ class BinaryProtocol(object):
         if n & 1:
             raise RuntimeError("number of items is not even")
         t = self.stream.read_tuple(n * 's')
-        return dict(t[i: i + 2] for i in range(0, n, 2))
+        return JobConf(t[i: i + 2] for i in range(0, n, 2))
 
     def verify_digest(self, digest, challenge):
         if self.password is not None:
@@ -243,14 +244,17 @@ class BinaryProtocol(object):
             self.context.mapper.map(self.context)
         elif cmd == RUN_REDUCE:
             part, piped_output = self.stream.read_tuple('ii')
+            # for some reason, part is always 0
             logging.debug("%s: %r, %r", CMD_REPR[cmd], part, piped_output)
-            if not piped_output:
-                raise NotImplementedError  # TBD
             self.context.create_reducer()
+            writer = self.context.create_record_writer()
+            if writer and piped_output:
+                raise RuntimeError("record writer defined when not needed")
+            if not writer and not piped_output:
+                raise RuntimeError("record writer not defined")
             if self.context.private_encoding:
                 self.__class__.get_k = _get_pickled
                 self.__class__.get_v = _get_pickled
-            # key = None
             for cmd, subs in groupby(self, itemgetter(0)):
                 logging.debug("  GOT: %r, %r", CMD_REPR[cmd], subs)
                 if cmd == REDUCE_KEY:
@@ -263,7 +267,6 @@ class BinaryProtocol(object):
                         self.context.close()
                     finally:
                         raise StopIteration
-            # TODO: handle partitioned output
         elif cmd == REDUCE_KEY:
             k = self.get_k()
             logging.debug("%s: %r", CMD_REPR[cmd], k)
@@ -398,6 +401,10 @@ def get_connection(context):
 
 class Context(object):
 
+    JOB_OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir"
+    TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
+    TASK_PARTITION = "mapreduce.task.partition"
+
     def __init__(self, factory, private_encoding=True, auto_serialize=True):
         self.factory = factory
         self.private_encoding = private_encoding
@@ -409,6 +416,8 @@ class Context(object):
         self.value = None
         self.mapper = None
         self.partitioner = None
+        self.record_reader = None
+        self.record_writer = None
         self.reducer = None
         self.nred = None
 
@@ -424,12 +433,19 @@ class Context(object):
         self.record_reader = self.factory.create_record_reader(self)
         return self.record_reader
 
+    def create_record_writer(self):
+        self.record_writer = self.factory.create_record_writer(self)
+        return self.record_writer
+
     def create_reducer(self):
         self.reducer = self.factory.create_reducer(self)
         return self.reducer
 
     def emit(self, key, value):
         # TODO: send progress
+        if self.record_writer:
+            self.record_writer.emit(key, value)
+            return
         if self.mapper and self.private_encoding:
             key = dumps(key, HIGHEST_PROTOCOL)
             value = dumps(value, HIGHEST_PROTOCOL)
@@ -450,10 +466,34 @@ class Context(object):
                 self.mapper.close()
             if self.record_reader:
                 self.record_reader.close()
+            if self.record_writer:
+                self.record_writer.close()
             if self.reducer:
                 self.reducer.close()
         finally:
             self.uplink.done()
+
+    def get_output_dir(self):
+        return self.job_conf[self.JOB_OUTPUT_DIR]
+
+    def get_work_path(self):
+        try:
+            return self.job_conf[self.TASK_OUTPUT_DIR]
+        except KeyError:
+            raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
+
+    def get_task_partition(self):
+        return self.job_conf.get_int(self.TASK_PARTITION)
+
+    def get_default_work_file(self, extension=""):
+        partition = self.get_task_partition()
+        if partition is None:
+            raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
+        base = self.job_conf.get("mapreduce.output.basename", "part")
+        task_type = "m" if self.mapper else "r"
+        return "%s/%s-%s-%05d%s" % (
+            self.get_work_path(), base, task_type, partition, extension
+        )
 
 
 # class Factory(api.Factory):

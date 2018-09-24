@@ -73,7 +73,7 @@ class JobConf(dict):
 
     def get_float(self, key, default=None):
         """
-        Same as :meth:`dict.get`, but the value is converted to an float.
+        Same as :meth:`dict.get`, but the value is converted to a float.
         """
         value = self.get(key, default)
         return None if value is None else float(value)
