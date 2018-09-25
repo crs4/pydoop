@@ -80,6 +80,8 @@ CMD_REPR = {
     AUTHENTICATION_RESP: "AUTHENTICATION_RESP",
 }
 
+IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+
 
 class InputSplit(object):
     """\
@@ -173,6 +175,13 @@ class BinaryProtocol(object):
         # self.password is None: assume reading from cmd file
         self.auth_done = True
 
+    def setup_record_writer(self, piped_output):
+        writer = self.context.create_record_writer()
+        if writer and piped_output:
+            raise RuntimeError("record writer defined when not needed")
+        if not writer and not piped_output:
+            raise RuntimeError("record writer not defined")
+
     def get_k(self):
         return self.stream.read_bytes()
 
@@ -213,6 +222,10 @@ class BinaryProtocol(object):
                 raise RuntimeError("record reader defined when not needed")
             if not reader and not piped_input:
                 raise RuntimeError("record reader not defined")
+            if nred < 1:  # map-only job
+                self.context.private_encoding = False
+                piped_output = self.context.job_conf.get_bool(IS_JAVA_RW)
+                self.setup_record_writer(piped_output)
             self.context.nred = nred
             self.context.create_mapper()
             self.context.create_partitioner()
@@ -220,7 +233,7 @@ class BinaryProtocol(object):
                 # TODO: progress
                 for self.context.key, self.context.value in reader:
                     self.context.mapper.map(self.context)
-                # no CLOSE cmd from upstream in piped mode
+                # no more commands from upstream, not even CLOSE
                 try:
                     self.context.close()
                 finally:
@@ -247,11 +260,7 @@ class BinaryProtocol(object):
             # for some reason, part is always 0
             logging.debug("%s: %r, %r", CMD_REPR[cmd], part, piped_output)
             self.context.create_reducer()
-            writer = self.context.create_record_writer()
-            if writer and piped_output:
-                raise RuntimeError("record writer defined when not needed")
-            if not writer and not piped_output:
-                raise RuntimeError("record writer not defined")
+            self.setup_record_writer(piped_output)
             if self.context.private_encoding:
                 self.__class__.get_k = _get_pickled
                 self.__class__.get_v = _get_pickled
