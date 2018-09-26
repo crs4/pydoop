@@ -35,6 +35,12 @@ import pydoop.sercore as sercore
 from .api import JobConf
 from .string_utils import create_digest
 
+# py2 compat
+try:
+    as_text = unicode
+except NameError:
+    as_text = str
+
 PROTOCOL_VERSION = 0
 
 # We can use an enum.IntEnum after dropping Python2 compatibility
@@ -460,8 +466,8 @@ class Context(object):
             value = dumps(value, HIGHEST_PROTOCOL)
         elif self.auto_serialize:
             # optimize by writing directly as "ss"?
-            key = str(key).encode("utf-8")
-            value = str(value).encode("utf-8")
+            key = as_text(key).encode("utf-8")
+            value = as_text(value).encode("utf-8")
         if self.partitioner:
             part = self.partitioner.partition(key, self.nred)
             self.uplink.partitioned_output(part, key, value)

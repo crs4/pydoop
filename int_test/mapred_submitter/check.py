@@ -22,10 +22,13 @@ import argparse
 import io
 import os
 import sys
+from collections import Counter
+from itertools import chain
 
 CHECKS = [
     "map_only_java_writer",
     "map_only_python_writer",
+    "map_reduce_java_rw",
 ]
 
 
@@ -40,22 +43,37 @@ def get_lines(dir_path):
     return rval
 
 
-def check_lines(lines, exp_lines):
-    if len(lines) != len(exp_lines):
-        raise RuntimeError("n. output lines = %d (expected: %d)" % (
-            len(lines), len(exp_lines)
+def check_output(items, exp_items):
+    if len(items) != len(exp_items):
+        raise RuntimeError("n. output items = %d (expected: %d)" % (
+            len(items), len(exp_items)
         ))
-    for i, (ln, exp_ln) in enumerate(zip(lines, exp_lines)):
-        if ln != exp_ln:
-            raise RuntimeError("wrong output line #%d: %r (expected: %r)" % (
-                i, ln, exp_ln
+    for i, (it, exp_it) in enumerate(zip(items, exp_items)):
+        if it != exp_it:
+            raise RuntimeError("wrong output item #%d: %r (expected: %r)" % (
+                i, it, exp_it
             ))
+
+
+def check_counters(counter, exp_counter):
+    return check_output(sorted(counter.items()), sorted(exp_counter.items()))
+
+
+def word_count(lines):
+    return Counter(chain(*(_.split() for _ in lines)))
 
 
 def check_map_only_java_writer(in_dir, out_dir):
     uc_lines = [_.upper() for _ in get_lines(in_dir)]
     out_values = [_.split("\t", 1)[1] for _ in get_lines(out_dir)]
-    check_lines(out_values, uc_lines)
+    check_output(out_values, uc_lines)
+
+
+def check_map_reduce_java_rw(in_dir, out_dir):
+    wc = word_count(get_lines(in_dir))
+    out_pairs = (_.split("\t", 1) for _ in get_lines(out_dir))
+    out_wc = {k: int(v) for k, v in out_pairs}
+    check_counters(out_wc, wc)
 
 
 check_map_only_python_writer = check_map_only_java_writer
