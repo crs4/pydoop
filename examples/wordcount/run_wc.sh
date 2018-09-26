@@ -6,7 +6,10 @@ this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
-OPTS=( "-D" "pydoop.hdfs.user=${USER}" )
+FULL_OPTS="\
+-D mapreduce.pipes.isjavarecordreader=false
+-D mapreduce.pipes.isjavarecordwriter=false
+-D pydoop.hdfs.user=${USER}"
 
 nargs=1
 if [ $# -ne ${nargs} ]; then
@@ -15,12 +18,10 @@ fi
 BIN="${this_dir}"/bin/wordcount_$1.py
 
 [ ! -f "${BIN}" ] && die "${BIN} not found"
-
 if [ $1 == "full" ]; then
-    OPTS+=( "-D" "mapreduce.pipes.isjavarecordreader=false" )
-fi
-if [ $1 == "full" ]; then
-    OPTS+=( "-D" "mapreduce.pipes.isjavarecordwriter=false" )
+    OPTS="${FULL_OPTS}"
+else
+    OPTS=""
 fi
 
-${PYTHON} "${this_dir}"/run_wc.py "${BIN}" "${this_dir}"/../input "${OPTS[@]}"
+${PYTHON} "${this_dir}"/run_wc.py "${BIN}" "${this_dir}"/../input ${OPTS}
