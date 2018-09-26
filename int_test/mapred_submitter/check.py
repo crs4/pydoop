@@ -74,6 +74,7 @@ CHECKS = {
     "map_only_java_writer": check_map_only,
     "map_only_python_writer": check_map_only,
     "map_reduce_java_rw": check_map_reduce,
+    "map_reduce_python_partitioner": check_map_reduce,
     "map_reduce_python_reader": check_map_reduce,
     "map_reduce_python_writer": check_map_reduce,
 }

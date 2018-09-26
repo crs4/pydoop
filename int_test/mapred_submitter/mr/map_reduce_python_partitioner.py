@@ -18,8 +18,6 @@
 #
 # END_COPYRIGHT
 
-# TODO: replace with something that works ONLY with a custom partitioner
-
 from hashlib import md5
 
 import pydoop.mapreduce.api as api
@@ -45,16 +43,13 @@ class Partitioner(api.Partitioner):
         return int(md5(key).hexdigest(), 16) % n_reduces
 
 
-FACTORY = pipes.Factory(
-    Mapper,
-    reducer_class=Reducer,
-    partitioner_class=Partitioner,
-)
-
-
-def main():
-    pipes.run_task(FACTORY)
+def __main__():
+    pipes.run_task(pipes.Factory(
+        Mapper,
+        reducer_class=Reducer,
+        partitioner_class=Partitioner
+    ))
 
 
 if __name__ == "__main__":
-    main()
+    __main__()

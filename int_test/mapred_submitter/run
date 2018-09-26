@@ -10,6 +10,7 @@ app_names=(
     map_only_java_writer
     map_only_python_writer
     map_reduce_java_rw
+    map_reduce_python_partitioner
     map_reduce_python_reader
     map_reduce_python_writer
 )

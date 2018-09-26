@@ -51,14 +51,6 @@ case ${name} in
 	    "-reduces" "0"
 	)
 	;;
-    map_reduce_java_rw )
-	input="input/map_reduce"
-	opts+=(
-	    "-D" "mapreduce.pipes.isjavarecordreader=true"
-	    "-D" "mapreduce.pipes.isjavarecordwriter=true"
-	    "-reduces" "2"
-	)
-	;;
     map_reduce_python_reader )
 	input="input/map_reduce"
 	opts+=(
@@ -72,6 +64,14 @@ case ${name} in
 	opts+=(
 	    "-D" "mapreduce.pipes.isjavarecordreader=true"
 	    "-D" "mapreduce.pipes.isjavarecordwriter=false"
+	    "-reduces" "2"
+	)
+	;;
+    map_reduce_* )
+	input="input/map_reduce"
+	opts+=(
+	    "-D" "mapreduce.pipes.isjavarecordreader=true"
+	    "-D" "mapreduce.pipes.isjavarecordwriter=true"
 	    "-reduces" "2"
 	)
 	;;
