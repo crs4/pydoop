@@ -10,13 +10,13 @@ OPTS=( "-D" "pydoop.hdfs.user=${USER}" )
 
 nargs=1
 if [ $# -ne ${nargs} ]; then
-    die "Usage: $0 full|minimal|part|reader|writer"
+    die "Usage: $0 full|minimal|part|writer"
 fi
 BIN="${this_dir}"/bin/wordcount_$1.py
 
 [ ! -f "${BIN}" ] && die "${BIN} not found"
 
-if [ $1 == "full" ] || [ $1 == "reader" ]; then
+if [ $1 == "full" ]; then
     OPTS+=( "-D" "mapreduce.pipes.isjavarecordreader=false" )
 fi
 if [ $1 == "full" ] || [ $1 == "writer" ]; then

@@ -67,16 +67,13 @@ class Reader(api.RecordReader):
         return min(self.bytes_read / self.split.length, 1.0)
 
 
-FACTORY = pipes.Factory(
-    Mapper,
-    reducer_class=Reducer,
-    record_reader_class=Reader,
-)
-
-
-def main():
-    pipes.run_task(FACTORY)
+def __main__():
+    pipes.run_task(pipes.Factory(
+        Mapper,
+        reducer_class=Reducer,
+        record_reader_class=Reader
+    ))
 
 
 if __name__ == "__main__":
-    main()
+    __main__()

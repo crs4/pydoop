@@ -25,12 +25,6 @@ import sys
 from collections import Counter
 from itertools import chain
 
-CHECKS = [
-    "map_only_java_writer",
-    "map_only_python_writer",
-    "map_reduce_java_rw",
-]
-
 
 def get_lines(dir_path):
     rval = []
@@ -63,29 +57,35 @@ def word_count(lines):
     return Counter(chain(*(_.split() for _ in lines)))
 
 
-def check_map_only_java_writer(in_dir, out_dir):
+def check_map_only(in_dir, out_dir):
     uc_lines = [_.upper() for _ in get_lines(in_dir)]
     out_values = [_.split("\t", 1)[1] for _ in get_lines(out_dir)]
     check_output(out_values, uc_lines)
 
 
-def check_map_reduce_java_rw(in_dir, out_dir):
+def check_map_reduce(in_dir, out_dir):
     wc = word_count(get_lines(in_dir))
     out_pairs = (_.split("\t", 1) for _ in get_lines(out_dir))
     out_wc = {k: int(v) for k, v in out_pairs}
     check_counters(out_wc, wc)
 
 
-check_map_only_python_writer = check_map_only_java_writer
+CHECKS = {
+    "map_only_java_writer": check_map_only,
+    "map_only_python_writer": check_map_only,
+    "map_reduce_java_rw": check_map_reduce,
+    "map_reduce_python_reader": check_map_reduce,
+}
 
 
 if __name__ == "__main__":
+    choices = sorted(CHECKS)
     parser = argparse.ArgumentParser()
-    parser.add_argument("name", metavar="NAME", choices=CHECKS,
-                        help="one of: %s" % "; ".join(CHECKS))
+    parser.add_argument("name", metavar="NAME", choices=choices,
+                        help="one of: %s" % "; ".join(choices))
     parser.add_argument("mr_in", metavar="IN_DIR", help="MapReduce in dir")
     parser.add_argument("mr_out", metavar="OUT_DIR", help="MapReduce out dir")
     args = parser.parse_args(sys.argv[1:])
-    check = globals()["check_%s" % args.name]
+    check = CHECKS[args.name]
     check(args.mr_in, args.mr_out)
     sys.stdout.write("OK\n")
