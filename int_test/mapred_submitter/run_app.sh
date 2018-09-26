@@ -67,6 +67,14 @@ case ${name} in
 	    "-reduces" "2"
 	)
 	;;
+    map_reduce_python_writer )
+	input="input/map_reduce"
+	opts+=(
+	    "-D" "mapreduce.pipes.isjavarecordreader=true"
+	    "-D" "mapreduce.pipes.isjavarecordwriter=false"
+	    "-reduces" "2"
+	)
+	;;
     * )
 	die "unknown app name: \"${name}\""
 esac

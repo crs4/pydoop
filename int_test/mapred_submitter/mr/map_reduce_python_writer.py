@@ -53,16 +53,13 @@ class Writer(api.RecordWriter):
         self.file.write(key + self.sep + str(value) + "\n")
 
 
-FACTORY = pipes.Factory(
-    Mapper,
-    reducer_class=Reducer,
-    record_writer_class=Writer,
-)
-
-
-def main():
-    pipes.run_task(FACTORY)
+def __main__():
+    pipes.run_task(pipes.Factory(
+        Mapper,
+        reducer_class=Reducer,
+        record_writer_class=Writer
+    ))
 
 
 if __name__ == "__main__":
-    main()
+    __main__()

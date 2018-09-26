@@ -11,6 +11,7 @@ app_names=(
     map_only_python_writer
     map_reduce_java_rw
     map_reduce_python_reader
+    map_reduce_python_writer
 )
 
 for name in "${app_names[@]}"; do

@@ -19,7 +19,7 @@ BIN="${this_dir}"/bin/wordcount_$1.py
 if [ $1 == "full" ]; then
     OPTS+=( "-D" "mapreduce.pipes.isjavarecordreader=false" )
 fi
-if [ $1 == "full" ] || [ $1 == "writer" ]; then
+if [ $1 == "full" ]; then
     OPTS+=( "-D" "mapreduce.pipes.isjavarecordwriter=false" )
 fi
 
