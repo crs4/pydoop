@@ -13,6 +13,7 @@ app_names=(
     map_reduce_python_partitioner
     map_reduce_python_reader
     map_reduce_python_writer
+    map_reduce_raw_io
 )
 
 for name in "${app_names[@]}"; do

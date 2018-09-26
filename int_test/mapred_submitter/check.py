@@ -77,6 +77,7 @@ CHECKS = {
     "map_reduce_python_partitioner": check_map_reduce,
     "map_reduce_python_reader": check_map_reduce,
     "map_reduce_python_writer": check_map_reduce,
+    "map_reduce_raw_io": check_map_reduce,
 }
 
 

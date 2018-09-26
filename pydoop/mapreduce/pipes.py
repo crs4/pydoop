@@ -148,16 +148,15 @@ def get_password():
 
 class BinaryProtocol(object):
 
-    def __init__(self, istream, context, ostream,
-                 raw_split=False,  # move to context?
-                 raw_k=False,  # move to context?
-                 raw_v=False):  # move to context?
+    def __init__(self, istream, context, ostream, **kwargs):
         self.stream = istream
         self.context = context
         self.uplink = CommandWriter(ostream)
-        self.raw_split = raw_split
-        self.raw_k = raw_k
-        self.raw_v = raw_v
+        self.raw_split = kwargs.get("raw_split", False)
+        self.raw_k = kwargs.get("raw_keys", False)
+        self.raw_v = kwargs.get("raw_values", False)
+        self.uplink.private_encoding = kwargs.get("private_encoding", True)
+        self.uplink.auto_serialize = kwargs.get("auto_serialize", True)
         self.password = get_password()
         self.auth_done = False
 
@@ -229,7 +228,7 @@ class BinaryProtocol(object):
             if not reader and not piped_input:
                 raise RuntimeError("record reader not defined")
             if nred < 1:  # map-only job
-                self.context.private_encoding = False
+                self.uplink.private_encoding = False
                 piped_output = self.context.job_conf.get_bool(IS_JAVA_RW)
                 self.setup_record_writer(piped_output)
             self.context.nred = nred
@@ -267,7 +266,7 @@ class BinaryProtocol(object):
             logging.debug("%s: %r, %r", CMD_REPR[cmd], part, piped_output)
             self.context.create_reducer()
             self.setup_record_writer(piped_output)
-            if self.context.private_encoding:
+            if self.uplink.private_encoding:
                 self.__class__.get_k = _get_pickled
                 self.__class__.get_v = _get_pickled
             for cmd, subs in groupby(self, itemgetter(0)):
@@ -381,13 +380,13 @@ class Connection(object):
 
 class NetworkConnection(Connection):
 
-    def __init__(self, context, host, port):
+    def __init__(self, context, host, port, **kwargs):
         super(NetworkConnection, self).__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         istream = sercore.FileInStream(self.socket)
         ostream = sercore.FileOutStream(self.socket)
-        self.downlink = BinaryProtocol(istream, context, ostream)
+        self.downlink = BinaryProtocol(istream, context, ostream, **kwargs)
 
     def close(self):
         super(NetworkConnection, self).close()
@@ -396,22 +395,22 @@ class NetworkConnection(Connection):
 
 class FileConnection(Connection):
 
-    def __init__(self, context, in_fn, out_fn):
+    def __init__(self, context, in_fn, out_fn, **kwargs):
         super(FileConnection, self).__init__()
         istream = sercore.FileInStream(in_fn)
         ostream = sercore.FileOutStream(out_fn)
-        self.downlink = BinaryProtocol(istream, context, ostream)
+        self.downlink = BinaryProtocol(istream, context, ostream, **kwargs)
 
 
-def get_connection(context):
+def get_connection(context, **kwargs):
     port = os.getenv("mapreduce.pipes.command.port")
     if port:
-        return NetworkConnection(context, "localhost", int(port))
+        return NetworkConnection(context, "localhost", int(port), **kwargs)
     in_fn = os.getenv("mapreduce.pipes.commandfile")
     if in_fn:
         out_fn = "%s.out" % in_fn
-        return FileConnection(context, in_fn, out_fn)
-    raise NotImplementedError  # TBD: text protocol
+        return FileConnection(context, in_fn, out_fn, **kwargs)
+    raise NotImplementedError  # TBD: text protocol (all kwargs ignored?)
 
 
 class Context(object):
@@ -420,10 +419,8 @@ class Context(object):
     TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
     TASK_PARTITION = "mapreduce.task.partition"
 
-    def __init__(self, factory, private_encoding=True, auto_serialize=True):
+    def __init__(self, factory):
         self.factory = factory
-        self.private_encoding = private_encoding
-        self.auto_serialize = auto_serialize
         self.downlink = None
         self.uplink = None
         self.job_conf = {}
@@ -461,10 +458,10 @@ class Context(object):
         if self.record_writer:
             self.record_writer.emit(key, value)
             return
-        if self.mapper and self.private_encoding:
+        if self.mapper and self.uplink.private_encoding:
             key = dumps(key, HIGHEST_PROTOCOL)
             value = dumps(value, HIGHEST_PROTOCOL)
-        elif self.auto_serialize:
+        elif self.uplink.auto_serialize:
             # optimize by writing directly as "ss"?
             key = as_text(key).encode("utf-8")
             value = as_text(value).encode("utf-8")
@@ -546,13 +543,25 @@ class Factory(object):
         return None if not self.rwclass else self.rwclass(context)
 
 
-def run_task(factory, private_encoding=True, auto_serialize=True):
-    context = Context(
-        factory,
-        private_encoding=private_encoding,
-        auto_serialize=auto_serialize
-    )
-    with get_connection(context) as connection:
+def run_task(factory, **kwargs):
+    """\
+    Run a MapReduce task.
+
+    Available keyword arguments:
+
+    * ``raw_keys`` (default: :obj:`False`): pass map input keys to context
+      as byte strings (ignore any type information)
+    * ``raw_values`` (default: :obj:`False`): pass map input values to context
+      as byte strings (ignore any type information)
+    * ``raw_split`` (default: :obj:`False`): pass input split to context as a
+      byte string (by default, a :class:`FileSplit` is assumed)
+    * ``private_encoding`` (default: :obj:`True`): automatically serialize map
+      output k/v and deserialize reduce input k/v (pickle)
+    * ``auto_serialize`` (default: :obj:`True`): automatically serialize reduce
+      output k/v (call str/unicode then encode as utf-8)
+    """
+    context = Context(factory)
+    with get_connection(context, **kwargs) as connection:
         context.downlink = connection.downlink
         context.uplink = connection.downlink.uplink
         for _ in connection.downlink:
