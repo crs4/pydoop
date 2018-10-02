@@ -437,6 +437,7 @@ class Context(object):
         self.progress_value = 0.0
         self.last_progress_t = 0.0
         self.status = None
+        self.ncounters = 0
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
@@ -470,6 +471,17 @@ class Context(object):
     def set_status(self, status):
         self.status = status
         self.progress()
+
+    def get_counter(self, group, name):
+        id = self.ncounters
+        self.uplink.register_counter(id, group, name)
+        self.ncounters += 1
+        return id
+
+    def increment_counter(self, counter, amount):
+        if counter < 0 or counter >= self.ncounters:
+            raise ValueError("invalid counter: %r" % (counter,))
+        self.uplink.increment_counter(counter, amount)
 
     def emit(self, key, value):
         if self.record_writer:
