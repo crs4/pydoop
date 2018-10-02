@@ -30,6 +30,7 @@ try:
     from cPickle import dumps, loads, HIGHEST_PROTOCOL
 except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL
+from time import time
 
 import pydoop.sercore as sercore
 from .api import JobConf
@@ -235,9 +236,10 @@ class BinaryProtocol(object):
             self.context.create_mapper()
             self.context.create_partitioner()
             if reader:
-                # TODO: progress
                 for self.context.key, self.context.value in reader:
                     self.context.mapper.map(self.context)
+                    self.context.progress_value = reader.get_progress()
+                    self.context.progress()
                 # no more commands from upstream, not even CLOSE
                 try:
                     self.context.close()
@@ -432,6 +434,9 @@ class Context(object):
         self.record_writer = None
         self.reducer = None
         self.nred = None
+        self.progress_value = 0.0
+        self.last_progress_t = 0.0
+        self.status = None
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
@@ -453,8 +458,20 @@ class Context(object):
         self.reducer = self.factory.create_reducer(self)
         return self.reducer
 
+    def progress(self):
+        now = time()
+        if now - self.last_progress_t > 1:
+            self.uplink.progress(self.progress_value)
+            self.last_progress_t = now
+            if self.status:
+                self.uplink.status(self.status)
+                self.status = None
+
+    def set_status(self, status):
+        self.status = status
+        self.progress()
+
     def emit(self, key, value):
-        # TODO: send progress
         if self.record_writer:
             self.record_writer.emit(key, value)
             return

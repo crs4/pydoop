@@ -1,0 +1,24 @@
+we need more
+than ten
+lines
+because
+we are
+setting the
+timeout to
+ten seconds
+and the map
+and reduce
+functions
+sleep for one
+seconds before
+each emit
+if things are
+working the
+timeout will
+reset at each
+emit and the
+job will
+complete
+if not the
+job will
+crash

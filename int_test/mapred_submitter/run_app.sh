@@ -67,6 +67,24 @@ case ${name} in
 	    "-reduces" "2"
 	)
 	;;
+    map_reduce_slow_java_rw )
+	input="input/map_reduce_long"
+	opts+=(
+	    "-D" "mapreduce.job.maps=1"
+	    "-D" "mapreduce.pipes.isjavarecordreader=true"
+	    "-D" "mapreduce.pipes.isjavarecordwriter=true"
+	    "-reduces" "1"
+	)
+	;;
+    map_reduce_slow_python_reader )
+	input="input/map_reduce_long"
+	opts+=(
+	    "-D" "mapreduce.job.maps=1"
+	    "-D" "mapreduce.pipes.isjavarecordreader=false"
+	    "-D" "mapreduce.pipes.isjavarecordwriter=true"
+	    "-reduces" "1"
+	)
+	;;
     map_reduce_* )
 	input="input/map_reduce"
 	opts+=(
