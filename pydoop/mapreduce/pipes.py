@@ -89,6 +89,10 @@ CMD_REPR = {
 
 IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
 
+PSTATS_DIR = "PYDOOP_PSTATS_DIR"
+PSTATS_FMT = "PYDOOP_PSTATS_FMT"
+DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
+
 
 class InputSplit(object):
     """\
@@ -214,6 +218,7 @@ class BinaryProtocol(object):
                 {k: v for k, v in list(self.context.job_conf.items())[:3]}
             )
         elif cmd == RUN_MAP:
+            self.context.task_type = "m"
             if self.raw_split:
                 split, nred, piped_input = self.stream.read_tuple('bii')
             else:
@@ -263,6 +268,7 @@ class BinaryProtocol(object):
                           CMD_REPR[cmd], self.context.key, self.context.value)
             self.context.mapper.map(self.context)
         elif cmd == RUN_REDUCE:
+            self.context.task_type = "r"
             part, piped_output = self.stream.read_tuple('ii')
             # for some reason, part is always 0
             logging.debug("%s: %r, %r", CMD_REPR[cmd], part, piped_output)
@@ -438,6 +444,7 @@ class Context(object):
         self.last_progress_t = 0.0
         self.status = None
         self.ncounters = 0
+        self.task_type = None
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
@@ -531,9 +538,8 @@ class Context(object):
         if partition is None:
             raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
         base = self.job_conf.get("mapreduce.output.basename", "part")
-        task_type = "m" if self.mapper else "r"
         return "%s/%s-%s-%05d%s" % (
-            self.get_work_path(), base, task_type, partition, extension
+            self.get_work_path(), base, self.task_type, partition, extension
         )
 
 
@@ -572,6 +578,14 @@ class Factory(object):
         return None if not self.rwclass else self.rwclass(context)
 
 
+def _run(context, **kwargs):
+    with get_connection(context, **kwargs) as connection:
+        context.downlink = connection.downlink
+        context.uplink = connection.downlink.uplink
+        for _ in connection.downlink:
+            pass
+
+
 def run_task(factory, **kwargs):
     """\
     Run a MapReduce task.
@@ -588,10 +602,37 @@ def run_task(factory, **kwargs):
       output k/v and deserialize reduce input k/v (pickle)
     * ``auto_serialize`` (default: :obj:`True`): automatically serialize reduce
       output k/v (call str/unicode then encode as utf-8)
+
+    Advanced keyword arguments:
+
+    * ``pstats_dir``: run the task with cProfile and store stats in this dir
+    * ``pstats_fmt``: use this pattern for pstats filenames (experts only)
+
+    The pstats dir and filename pattern can also be provided via ``pydoop
+    submit`` arguments, with lower precedence in case of clashes.
     """
     context = Context(factory)
-    with get_connection(context, **kwargs) as connection:
-        context.downlink = connection.downlink
-        context.uplink = connection.downlink.uplink
-        for _ in connection.downlink:
-            pass
+    pstats_dir = kwargs.get("pstats_dir", os.getenv(PSTATS_DIR))
+    if pstats_dir:
+        import cProfile
+        import tempfile
+        import pydoop.hdfs as hdfs
+        hdfs.mkdir(pstats_dir)
+        fd, pstats_fn = tempfile.mkstemp(suffix=".pstats")
+        os.close(fd)
+        cProfile.runctx(
+            "_run(context, **kwargs)", globals(), locals(),
+            filename=pstats_fn
+        )
+        pstats_fmt = kwargs.get(
+            "pstats_fmt",
+            os.getenv(PSTATS_FMT, DEFAULT_PSTATS_FMT)
+        )
+        name = pstats_fmt % (
+            context.task_type,
+            context.get_task_partition(),
+            os.path.basename(pstats_fn)
+        )
+        hdfs.put(pstats_fn, hdfs.path.join(pstats_dir, name))
+    else:
+        _run(context, **kwargs)

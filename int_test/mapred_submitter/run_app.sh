@@ -107,13 +107,18 @@ py_exe=$(${PYTHON} -c "import sys; print(sys.executable)")
 sed -i "1c#!${py_exe}" "${mrapp}"
 
 ensure_dfs_home
-${HDFS} dfs -rm -r -f "input" "output" "mrapp.py"
+${HDFS} dfs -rm -r -f "input" "output" "mrapp.py" "pstats"
 ${HDFS} dfs -put "${input}" "input"
 ${HDFS} dfs -put "${mrapp}" "mrapp.py"
 ${MAPRED} pipes "${opts[@]}" -program "mrapp.py" -input "input" -output "output"
 
 echo "checking results"
 ${HDFS} dfs -get output "${wd}/output"
+case "${name}" in
+    *pstats )
+	${HDFS} dfs -get pstats "${wd}/output.stats"
+	;;
+esac
 ${PYTHON} check.py "${name}" "${input}" "${wd}/output"
 
 rm -rf "${wd}"

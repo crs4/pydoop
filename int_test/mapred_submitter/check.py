@@ -21,6 +21,7 @@
 import argparse
 import io
 import os
+import pstats
 import sys
 from collections import Counter
 from itertools import chain
@@ -70,10 +71,20 @@ def check_map_reduce(in_dir, out_dir):
     check_counters(out_wc, wc)
 
 
+def check_pstats(pstats_dir):
+    pstats_names = os.listdir(pstats_dir)
+    try:
+        bn = pstats_names[0]
+    except IndexError:
+        raise RuntimeError("%r is empty" % (pstats_dir,))
+    pstats.Stats(os.path.join(pstats_dir, bn))
+
+
 CHECKS = {
     "map_only_java_writer": check_map_only,
     "map_only_python_writer": check_map_only,
     "map_reduce_java_rw": check_map_reduce,
+    "map_reduce_java_rw_pstats": check_map_reduce,
     "map_reduce_python_partitioner": check_map_reduce,
     "map_reduce_python_reader": check_map_reduce,
     "map_reduce_python_writer": check_map_reduce,
@@ -93,4 +104,6 @@ if __name__ == "__main__":
     args = parser.parse_args(sys.argv[1:])
     check = CHECKS[args.name]
     check(args.mr_in, args.mr_out)
+    if "pstats" in args.name:
+        check_pstats("%s.stats" % args.mr_out)
     sys.stdout.write("OK\n")
