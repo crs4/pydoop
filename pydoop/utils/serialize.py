@@ -57,63 +57,6 @@ import xdrlib
 
 from .py3compat import pickle, unicode, StringIO
 
-# FIXME ignore [F401]
-import pydoop.sercore as sc
-CommandWriter = sc.CommandWriter
-CommandReader = sc.CommandReader
-FlowReader = sc.FlowReader
-FlowWriter = sc.FlowWriter
-RULES = sc.RULES
-
-
-class FlowReader(sc.FlowReader):
-
-    def __init__(self, stream, is_owned=True):
-        super(FlowReader, self).__init__(stream)
-        # just to avoid gc if one uses the idiom FlowReader(open(...))
-        self.stream = stream
-        self.is_owned = is_owned
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exception_type, exception_val, exception_tb):
-        self.close()
-        if self.is_owned:
-            self.stream.close()
-        return False
-
-    def read(self, rule):
-        rule = rule.encode('UTF-8') if isinstance(rule, unicode) else rule
-        return super(FlowReader, self).read(rule)
-
-
-class FlowWriter(sc.FlowWriter):
-
-    def __init__(self, stream, is_owned=True):
-        super(FlowWriter, self).__init__(stream)
-        # just to avoid gc if one uses the idiom FlowWriter(open(...))
-        self.stream = stream
-        self.is_owned = is_owned
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exception_type, exception_val, exception_tb):
-        self.close()
-        if self.is_owned:
-            self.stream.close()
-        return False
-
-    def write(self, rule, data):
-        def sanitize(data):
-            return tuple(x.encode('utf-8')
-                         if isinstance(x, unicode)
-                         else sanitize(x) if isinstance(x, tuple) else x
-                         for x in data)
-        rule = rule.encode('UTF-8') if isinstance(rule, unicode) else rule
-        super(FlowWriter, self).write((rule, sanitize(data)))
-
 
 PRIVATE_PROTOCOL = pickle.HIGHEST_PROTOCOL
 

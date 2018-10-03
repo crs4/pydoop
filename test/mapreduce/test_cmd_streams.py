@@ -23,13 +23,25 @@ import pydoop.mapreduce.streams as streams
 from pydoop.mapreduce.text_streams import (TextWriter,
                                            TextDownStreamAdapter,
                                            TextUpStreamAdapter)
-from pydoop.mapreduce.binary_streams import (BinaryWriter,
-                                             BinaryDownStreamAdapter,
-                                             BinaryUpStreamAdapter)
-
 from pydoop.test_utils import WDTestCase
 
-from data.stream_data import STREAM_3_DATA as STREAM_1
+
+STREAM_1 = [
+    (streams.START_MESSAGE, 0),
+    (streams.SET_JOB_CONF, {'k': 'v'}),
+    (streams.RUN_MAP, 'input_split', 0, 1),
+    (streams.SET_INPUT_TYPES, 'key_type', 'value_type'),
+    (streams.MAP_ITEM, 'key1', 'the blue fox jumps on the table'),
+    (streams.MAP_ITEM, 'key1', 'a yellow fox turns around'),
+    (streams.MAP_ITEM, 'key2', 'a blue yellow fox sits on the table'),
+    (streams.RUN_REDUCE, 0, 0),
+    (streams.REDUCE_KEY, 'key1'),
+    (streams.REDUCE_VALUE, 'val1'),
+    (streams.REDUCE_VALUE, 'val2'),
+    (streams.REDUCE_KEY, 'key2'),
+    (streams.REDUCE_VALUE, 'val3'),
+    (streams.CLOSE,),
+]
 
 
 def stream_writer(fname, data, mod, Writer):
@@ -77,22 +89,14 @@ class TestCmdStreams(WDTestCase):
     def test_text_downlink(self):
         self.link_helper('', TextWriter, TextDownStreamAdapter)
 
-    def test_binary_downlink(self):
-        self.link_helper('b', BinaryWriter, BinaryDownStreamAdapter)
-
     def test_text_uplink(self):
         self.link_helper('', TextUpStreamAdapter, TextDownStreamAdapter)
-
-    def test_binary_uplink(self):
-        self.link_helper('b', BinaryUpStreamAdapter, BinaryDownStreamAdapter)
 
 
 def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestCmdStreams('test_text_downlink'))
-    suite_.addTest(TestCmdStreams('test_binary_downlink'))
     suite_.addTest(TestCmdStreams('test_text_uplink'))
-    suite_.addTest(TestCmdStreams('test_binary_uplink'))
     return suite_
 
 
