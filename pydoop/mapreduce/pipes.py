@@ -32,6 +32,7 @@ except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL
 from time import time
 
+import pydoop.config as config
 import pydoop.sercore as sercore
 from . import api
 from .string_utils import create_digest
@@ -133,6 +134,16 @@ DESERIALIZERS = {
 }
 
 
+def _get_avro_key(downlink):
+    raw = downlink.stream.read_bytes()
+    return downlink.avro_key_deserializer.deserialize(raw)
+
+
+def _get_avro_value(downlink):
+    raw = downlink.stream.read_bytes()
+    return downlink.avro_value_deserializer.deserialize(raw)
+
+
 def _get_pickled(downlink):
     return loads(downlink.stream.read_bytes())
 
@@ -164,6 +175,8 @@ class BinaryProtocol(object):
         self.uplink.auto_serialize = kwargs.get("auto_serialize", True)
         self.password = get_password()
         self.auth_done = False
+        self.avro_key_deserializer = None
+        self.avro_value_deserializer = None
 
     def close(self):
         self.stream.close()
@@ -197,6 +210,36 @@ class BinaryProtocol(object):
 
     def get_v(self):
         return self.stream.read_bytes()
+
+    def setup_avro_deser(self):
+        try:
+            from pydoop.avrolib import AvroDeserializer
+        except ImportError as e:
+            raise RuntimeError("cannot handle avro input: %s" % e)
+        jc = self.context.job_conf
+        avro_input = jc.get(config.AVRO_INPUT).upper()
+        if avro_input == 'K' or avro_input == 'KV':
+            if not self.raw_k:
+                schema = jc.get(config.AVRO_KEY_INPUT_SCHEMA)
+                self.avro_key_deserializer = AvroDeserializer(schema)
+                self.__class__.get_k = _get_avro_key
+        elif avro_input == 'V' or avro_input == 'KV':
+            if not self.raw_v:
+                schema = jc.get(config.AVRO_VALUE_INPUT_SCHEMA)
+                self.avro_value_deserializer = AvroDeserializer(schema)
+                self.__class__.get_v = _get_avro_value
+        else:
+            raise RuntimeError('invalid avro input mode: %s' % avro_input)
+
+    def setup_deser(self, key_type, value_type):
+        if not self.raw_k:
+            d = DESERIALIZERS.get(key_type)
+            if d is not None:
+                self.__class__.get_k = d
+        if not self.raw_v:
+            d = DESERIALIZERS.get(value_type)
+            if d is not None:
+                self.__class__.get_v = d
 
     def __next__(self):
         cmd = self.stream.read_vint()
@@ -253,14 +296,10 @@ class BinaryProtocol(object):
         elif cmd == SET_INPUT_TYPES:
             key_type, value_type = self.stream.read_tuple('ss')
             logging.debug("%s: %r, %r", CMD_REPR[cmd], key_type, value_type)
-            if not self.raw_k:
-                d = DESERIALIZERS.get(key_type)
-                if d is not None:
-                    self.__class__.get_k = d
-            if not self.raw_v:
-                d = DESERIALIZERS.get(value_type)
-                if d is not None:
-                    self.__class__.get_v = d
+            if config.AVRO_INPUT in self.context.job_conf:
+                self.setup_avro_deser()
+            else:
+                self.setup_deser(key_type, value_type)
         elif cmd == MAP_ITEM:
             self.context._key = self.get_k()
             self.context._value = self.get_v()
