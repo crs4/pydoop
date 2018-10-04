@@ -33,7 +33,7 @@ except ImportError:
 from time import time
 
 import pydoop.sercore as sercore
-from .api import JobConf
+from . import api
 from .string_utils import create_digest
 
 # py2 compat
@@ -174,7 +174,7 @@ class BinaryProtocol(object):
         if n & 1:
             raise RuntimeError("number of items is not even")
         t = self.stream.read_tuple(n * 's')
-        return JobConf(t[i: i + 2] for i in range(0, n, 2))
+        return api.JobConf(t[i: i + 2] for i in range(0, n, 2))
 
     def verify_digest(self, digest, challenge):
         if self.password is not None:
@@ -212,7 +212,7 @@ class BinaryProtocol(object):
             if (v != PROTOCOL_VERSION):
                 raise RuntimeError("Unknown protocol id: %d" % v)
         elif cmd == SET_JOB_CONF:
-            self.context.job_conf = self.read_job_conf()
+            self.context._job_conf = self.read_job_conf()
             logging.debug(
                 "%s: %r", CMD_REPR[cmd],
                 {k: v for k, v in list(self.context.job_conf.items())[:3]}
@@ -227,7 +227,7 @@ class BinaryProtocol(object):
                 nred, piped_input = self.stream.read_tuple("ii")
             logging.debug("%s: %r, %r, %r",
                           CMD_REPR[cmd], split, nred, piped_input)
-            self.context.input_split = split
+            self.context._input_split = split
             reader = self.context.create_record_reader()
             if reader and piped_input:
                 raise RuntimeError("record reader defined when not needed")
@@ -241,7 +241,7 @@ class BinaryProtocol(object):
             self.context.create_mapper()
             self.context.create_partitioner()
             if reader:
-                for self.context.key, self.context.value in reader:
+                for self.context._key, self.context._value in reader:
                     self.context.mapper.map(self.context)
                     self.context.progress_value = reader.get_progress()
                     self.context.progress()
@@ -262,8 +262,8 @@ class BinaryProtocol(object):
                 if d is not None:
                     self.__class__.get_v = d
         elif cmd == MAP_ITEM:
-            self.context.key = self.get_k()
-            self.context.value = self.get_v()
+            self.context._key = self.get_k()
+            self.context._value = self.get_v()
             logging.debug("%s: %r, %r",
                           CMD_REPR[cmd], self.context.key, self.context.value)
             self.context.mapper.map(self.context)
@@ -280,9 +280,9 @@ class BinaryProtocol(object):
             for cmd, subs in groupby(self, itemgetter(0)):
                 logging.debug("  GOT: %r, %r", CMD_REPR[cmd], subs)
                 if cmd == REDUCE_KEY:
-                    _, self.context.key = next(subs)
+                    _, self.context._key = next(subs)
                 if cmd == REDUCE_VALUE:
-                    self.context.values = (v for _, v in subs)
+                    self.context._values = (v for _, v in subs)
                     self.context.reducer.reduce(self.context)
                 if cmd == CLOSE:
                     try:
@@ -421,7 +421,7 @@ def get_connection(context, **kwargs):
     raise NotImplementedError  # TBD: text protocol (all kwargs ignored?)
 
 
-class Context(object):
+class TaskContext(api.Context):
 
     JOB_OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir"
     TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
@@ -431,9 +431,6 @@ class Context(object):
         self.factory = factory
         self.downlink = None
         self.uplink = None
-        self.job_conf = {}
-        self.key = None
-        self.value = None
         self.mapper = None
         self.partitioner = None
         self.record_reader = None
@@ -445,6 +442,26 @@ class Context(object):
         self.status = None
         self.ncounters = 0
         self.task_type = None
+        self._input_split = None
+        self._job_conf = {}
+        self._key = None
+        self._value = None
+        self._values = None
+
+    def get_input_split(self):
+        return self._input_split
+
+    def get_job_conf(self):
+        return self._job_conf
+
+    def get_input_key(self):
+        return self._key
+
+    def get_input_value(self):
+        return self._value
+
+    def get_input_values(self):
+        return self._values
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
@@ -543,8 +560,7 @@ class Context(object):
         )
 
 
-# class Factory(api.Factory):
-class Factory(object):
+class Factory(api.Factory):
 
     def __init__(self, mapper_class,
                  reducer_class=None,
@@ -611,7 +627,7 @@ def run_task(factory, **kwargs):
     The pstats dir and filename pattern can also be provided via ``pydoop
     submit`` arguments, with lower precedence in case of clashes.
     """
-    context = Context(factory)
+    context = TaskContext(factory)
     pstats_dir = kwargs.get("pstats_dir", os.getenv(PSTATS_DIR))
     if pstats_dir:
         import cProfile
