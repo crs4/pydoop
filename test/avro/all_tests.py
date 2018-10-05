@@ -21,7 +21,6 @@ from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
-    'test_context',
     'test_io',
 ]
 

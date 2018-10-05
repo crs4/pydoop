@@ -94,6 +94,8 @@ PSTATS_DIR = "PYDOOP_PSTATS_DIR"
 PSTATS_FMT = "PYDOOP_PSTATS_FMT"
 DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
 
+AVRO_IO_MODES = {'k', 'v', 'kv', 'K', 'V', 'KV'}
+
 
 class InputSplit(object):
     """\
@@ -218,18 +220,16 @@ class BinaryProtocol(object):
             raise RuntimeError("cannot handle avro input: %s" % e)
         jc = self.context.job_conf
         avro_input = jc.get(config.AVRO_INPUT).upper()
-        if avro_input == 'K' or avro_input == 'KV':
-            if not self.raw_k:
-                schema = jc.get(config.AVRO_KEY_INPUT_SCHEMA)
-                self.avro_key_deserializer = AvroDeserializer(schema)
-                self.__class__.get_k = _get_avro_key
-        elif avro_input == 'V' or avro_input == 'KV':
-            if not self.raw_v:
-                schema = jc.get(config.AVRO_VALUE_INPUT_SCHEMA)
-                self.avro_value_deserializer = AvroDeserializer(schema)
-                self.__class__.get_v = _get_avro_value
-        else:
+        if avro_input not in AVRO_IO_MODES:
             raise RuntimeError('invalid avro input mode: %s' % avro_input)
+        if avro_input == 'K' or avro_input == 'KV' and not self.raw_k:
+            schema = jc.get(config.AVRO_KEY_INPUT_SCHEMA)
+            self.avro_key_deserializer = AvroDeserializer(schema)
+            self.__class__.get_k = _get_avro_key
+        if avro_input == 'V' or avro_input == 'KV' and not self.raw_v:
+            schema = jc.get(config.AVRO_VALUE_INPUT_SCHEMA)
+            self.avro_value_deserializer = AvroDeserializer(schema)
+            self.__class__.get_v = _get_avro_value
 
     def setup_deser(self, key_type, value_type):
         if not self.raw_k:
@@ -256,10 +256,11 @@ class BinaryProtocol(object):
                 raise RuntimeError("Unknown protocol id: %d" % v)
         elif cmd == SET_JOB_CONF:
             self.context._job_conf = self.read_job_conf()
-            logging.debug(
-                "%s: %r", CMD_REPR[cmd],
-                {k: v for k, v in list(self.context.job_conf.items())[:3]}
-            )
+            logging.debug("JOB_CONF:")
+            for k, v in sorted(self.context.job_conf.items()):
+                logging.debug("  %r: %r", k, v)
+            if config.AVRO_OUTPUT in self.context.job_conf:
+                self.context._setup_avro_ser()
         elif cmd == RUN_MAP:
             self.context.task_type = "m"
             if self.raw_split:
@@ -481,6 +482,8 @@ class TaskContext(api.Context):
         self.status = None
         self.ncounters = 0
         self.task_type = None
+        self.avro_key_serializer = None
+        self.avro_value_serializer = None
         self._input_split = None
         self._job_conf = {}
         self._key = None
@@ -546,17 +549,45 @@ class TaskContext(api.Context):
             raise ValueError("invalid counter: %r" % (counter,))
         self.uplink.increment_counter(counter, amount)
 
+    def _setup_avro_ser(self):
+        try:
+            from pydoop.avrolib import AvroSerializer
+        except ImportError as e:
+            raise RuntimeError("cannot handle avro output: %s" % e)
+        jc = self.job_conf
+        avro_output = jc.get(config.AVRO_OUTPUT).upper()
+        logging.debug("avro output: %r", avro_output)
+        if avro_output not in AVRO_IO_MODES:
+            raise RuntimeError('invalid avro output mode: %s' % avro_output)
+        if avro_output == 'K' or avro_output == 'KV':
+            schema = jc.get(config.AVRO_KEY_OUTPUT_SCHEMA)
+            self.avro_key_serializer = AvroSerializer(schema)
+            logging.debug("K serializer set up with schema: %r", schema)
+        if avro_output == 'V' or avro_output == 'KV':
+            schema = jc.get(config.AVRO_VALUE_OUTPUT_SCHEMA)
+            self.avro_value_serializer = AvroSerializer(schema)
+            logging.debug("V serializer set up with schema: %r", schema)
+
+    def __maybe_serialize(self, key, value):
+        if self.task_type == "m" and self.uplink.private_encoding:
+            return dumps(key, HIGHEST_PROTOCOL), dumps(value, HIGHEST_PROTOCOL)
+        if self.avro_key_serializer:
+            key = self.avro_key_serializer.serialize(key)
+            logging.debug("serialized key: %r", key)
+        elif self.uplink.auto_serialize:
+            key = as_text(key).encode("utf-8")
+        if self.avro_value_serializer:
+            value = self.avro_value_serializer.serialize(value)
+            logging.debug("serialized value: %r", value)
+        elif self.uplink.auto_serialize:
+            value = as_text(value).encode("utf-8")
+        return key, value
+
     def emit(self, key, value):
         if self.record_writer:
             self.record_writer.emit(key, value)
             return
-        if self.mapper and self.uplink.private_encoding:
-            key = dumps(key, HIGHEST_PROTOCOL)
-            value = dumps(value, HIGHEST_PROTOCOL)
-        elif self.uplink.auto_serialize:
-            # optimize by writing directly as "ss"?
-            key = as_text(key).encode("utf-8")
-            value = as_text(value).encode("utf-8")
+        key, value = self.__maybe_serialize(key, value)
         if self.partitioner:
             part = self.partitioner.partition(key, self.nred)
             self.uplink.partitioned_output(part, key, value)

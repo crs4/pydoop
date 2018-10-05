@@ -56,7 +56,6 @@ if AVRO_PY_DIR not in sys.path:
 from pydoop.mapreduce.simulator import HadoopSimulatorNetwork
 from pydoop.mapreduce.simulator import HadoopSimulatorLocal
 from pydoop.mapreduce.pipes import InputSplit
-from pydoop.avrolib import AvroContext
 from pydoop.utils.py3compat import iteritems
 import pydoop.mapreduce.pipes as pp
 import pydoop.test_support as pts
@@ -202,9 +201,9 @@ def run_local_avro(logger, avro_in='v', avro_out=None):
     schema_k_out = STATS_SCHEMA_STR if avro_out in {'k', 'kv'} else None
     schema_v_out = STATS_SCHEMA_STR if avro_out in {'v', 'kv'} else None
     file_in = USERS_PETS_FN if avro_in == 'kv' else AVRO_FN
-    factory = pp.Factory(mapper_class=mapper, reducer_class=reducer)
+    factory = pp.Factory(mapper, reducer_class=reducer)
     simulator = HadoopSimulatorLocal(
-        factory, logger, logging.INFO, AvroContext,
+        factory, logger, logging.INFO,
         avro_in, avro_out, schema_k_out, schema_v_out
     )
     with open(file_in, 'rb') as fin, open(DATA_OUT, 'wb') as fout:
@@ -234,7 +233,7 @@ def run_network_avro(logger, avro_in='v', avro_out=None):
     schema_k_out = STATS_SCHEMA_STR if avro_out in {'k', 'kv'} else None
     schema_v_out = STATS_SCHEMA_STR if avro_out in {'v', 'kv'} else None
     simulator = HadoopSimulatorNetwork(
-        program, logger, logging.INFO, context_cls=AvroContext,
+        program, logger, logging.INFO,
         avro_input=avro_in, avro_output=avro_out,
         avro_output_key_schema=schema_k_out,
         avro_output_value_schema=schema_v_out

@@ -132,7 +132,7 @@ class Partitioner(api.Partitioner):
 
 # DOCS_INCLUDE_START
 FACTORY = pipes.Factory(
-    mapper_class=Mapper,
+    Mapper,
     reducer_class=Reducer,
     record_reader_class=Reader,
     record_writer_class=Writer,

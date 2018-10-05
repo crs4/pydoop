@@ -33,10 +33,8 @@ from pydoop.utils.py3compat import StringIO, iteritems, socketserver, unicode
 logging.basicConfig()
 LOGGER = logging.getLogger('simulator')
 LOGGER.setLevel(logging.CRITICAL)
-# threading._VERBOSE = True
-from pydoop.app.submit import AVRO_IO_CHOICES
 
-from .pipes import TaskContext, StreamRunner
+from .pipes import TaskContext, StreamRunner, AVRO_IO_MODES
 from .api import RecordReader, PydoopError
 from .streams import UpStreamAdapter
 from .binary_streams import (
@@ -395,7 +393,6 @@ class HadoopSimulator(object):
             self,
             logger,
             loglevel=logging.CRITICAL,
-            context_cls=None,
             avro_input=None,
             avro_output=None,
             avro_output_key_schema=None,
@@ -410,11 +407,11 @@ class HadoopSimulator(object):
         self.logger.debug('initialized')
         avro_io = avro_input or avro_output
         if avro_input:
-            if avro_input not in AVRO_IO_CHOICES:
+            if avro_input not in AVRO_IO_MODES:
                 raise ValueError('invalid avro input mode: %s' % avro_input)
             avro_input = avro_input.upper()
         if avro_output:
-            if avro_output not in AVRO_IO_CHOICES:
+            if avro_output not in AVRO_IO_MODES:
                 raise ValueError('invalid avro output mode: %s' % avro_output)
             avro_output = avro_output.upper()
             if avro_output in {'K', 'KV'} and not avro_output_key_schema:
@@ -424,9 +421,6 @@ class HadoopSimulator(object):
         if avro_io:
             if not AVRO_INSTALLED:
                 raise RuntimeError('avro is not installed')
-            if context_cls is None:
-                context_cls = avrolib.AvroContext
-        self.context_cls = context_cls or TaskContext
         self.avro_input = avro_input
         self.avro_output = avro_output
         self.avro_output_key_schema = avro_output_key_schema
@@ -629,7 +623,6 @@ class HadoopSimulatorLocal(HadoopSimulator):
             factory,
             logger=None,
             loglevel=logging.CRITICAL,
-            context_cls=None,
             avro_input=None,
             avro_output=None,
             avro_output_key_schema=None,
@@ -638,7 +631,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
         logger = logger.getChild('HadoopSimulatorLocal') if logger \
             else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorLocal, self).__init__(
-            logger, loglevel, context_cls, avro_input, avro_output,
+            logger, loglevel, avro_input, avro_output,
             avro_output_key_schema, avro_output_value_schema
         )
 
@@ -646,7 +639,7 @@ class HadoopSimulatorLocal(HadoopSimulator):
 
     def run_task(self, dstream, ustream):
         self.logger.debug('run task')
-        context = self.context_cls(ustream)
+        context = TaskContext(ustream)
         self.logger.debug('got context')
         stream_runner = StreamRunner(self.factory, context, dstream)
         self.logger.debug('got runner, ready to run')
@@ -737,7 +730,6 @@ class HadoopSimulatorNetwork(HadoopSimulator):
             logger=None,
             loglevel=logging.CRITICAL,
             sleep_delta=DEFAULT_SLEEP_DELTA,
-            context_cls=None,
             avro_input=None,
             avro_output=None,
             avro_output_key_schema=None,
@@ -746,7 +738,7 @@ class HadoopSimulatorNetwork(HadoopSimulator):
         logger = logger.getChild('HadoopSimulatorNetwork') if logger \
             else logging.getLogger(self.__class__.__name__)
         super(HadoopSimulatorNetwork, self).__init__(
-            logger, loglevel, context_cls, avro_input, avro_output,
+            logger, loglevel, avro_input, avro_output,
             avro_output_key_schema, avro_output_value_schema
         )
 

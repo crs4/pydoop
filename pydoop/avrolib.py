@@ -20,29 +20,24 @@
 Avro tools.
 """
 # DEV NOTE: since Avro is not a requirement, do *not* import this
-# module anywhere in the main code (importing it in the Avro examples
-# is OK, ofc).
+# module unconditionally anywhere in the main code (importing it in
+# the Avro examples is OK, ofc).
 
 import sys
 import avro.schema
 from avro.datafile import DataFileReader, DataFileWriter
 from avro.io import DatumReader, DatumWriter, BinaryDecoder, BinaryEncoder
 
-import pydoop.mapreduce.pipes as pp
 from pydoop.mapreduce.api import RecordWriter, RecordReader
 import pydoop.hdfs as hdfs
-from pydoop.app.submit import AVRO_IO_CHOICES
-from pydoop.utils.py3compat import StringIO, iteritems
+from pydoop.utils.py3compat import StringIO
 
-from pydoop.config import (
-    AVRO_INPUT, AVRO_KEY_INPUT_SCHEMA, AVRO_VALUE_INPUT_SCHEMA,
-    AVRO_OUTPUT, AVRO_KEY_OUTPUT_SCHEMA, AVRO_VALUE_OUTPUT_SCHEMA,
-)
 
 parse = avro.schema.Parse if sys.version_info[0] == 3 else avro.schema.parse
 
 
 class Deserializer(object):
+
     def __init__(self, schema_str):
         schema = parse(schema_str)
         self.reader = DatumReader(schema)
@@ -73,95 +68,6 @@ try:
     from pyavroc import AvroSerializer
 except ImportError as e:
     AvroSerializer = Serializer
-
-
-AVRO_IO_CHOICES = set(AVRO_IO_CHOICES)
-
-
-class AvroContext(pp.TaskContext):
-    """
-    A specialized context class that allows mappers and reducers to
-    work with Avro records.
-
-    For now, this works only with the Hadoop 2 mapreduce pipes code
-    (``src/it/crs4/pydoop/mapreduce/pipes``).  Avro I/O mode must
-    be explicitly requested when launching the application with pydoop
-    submit (``--avro-input``, ``--avro-output``).
-    """
-    def __init__(self, *args, **kwargs):
-        super(AvroContext, self).__init__(*args, **kwargs)
-        self.__serializers = {'K': None, 'V': None}
-
-    def setup_deserialization(self):
-        jc = self.get_job_conf()
-        if AVRO_INPUT in jc:
-            avro_input = jc.get(AVRO_INPUT).upper()
-            if avro_input not in AVRO_IO_CHOICES:
-                raise RuntimeError('invalid avro input: %s' % avro_input)
-            if avro_input == 'K' or avro_input == 'KV':
-                deserializer = AvroDeserializer(
-                    jc.get(AVRO_KEY_INPUT_SCHEMA)
-                )
-                self.get_input_key = self.deserializing(
-                    self.get_input_key, deserializer
-                )
-            if avro_input == 'V' or avro_input == 'KV':
-                deserializer = AvroDeserializer(
-                    jc.get(AVRO_VALUE_INPUT_SCHEMA)
-                )
-                self.get_input_value = self.deserializing(
-                    self.get_input_value, deserializer
-                )
-
-    def setup_serialization(self):
-        jc = self.get_job_conf()
-        if AVRO_OUTPUT in jc:
-            avro_output = jc.get(AVRO_OUTPUT).upper()
-            if avro_output not in AVRO_IO_CHOICES:
-                raise RuntimeError('invalid avro output: %s' % avro_output)
-            if avro_output == 'K' or avro_output == 'KV':
-                self.__serializers['K'] = AvroSerializer(
-                    jc.get(AVRO_KEY_OUTPUT_SCHEMA)
-                )
-            if avro_output == 'V' or avro_output == 'KV':
-                self.__serializers['V'] = AvroSerializer(
-                    jc.get(AVRO_VALUE_OUTPUT_SCHEMA)
-                )
-
-    def emit(self, key, value):
-        """
-        Emit key and value, serializing Avro data as needed.
-
-        We need to perform Avro serialization if:
-
-        #. AVRO_OUTPUT is in the job conf and
-        #. we are either in a reducer or in a map-only app's mapper
-        """
-        key, value = self.__serialize_as_needed(key, value)
-        super(AvroContext, self).emit(key, value)
-
-    def __serialize_as_needed(self, key, value):
-        out_kv = {'K': key, 'V': value}
-        jc = self.job_conf
-        if AVRO_OUTPUT in jc and (self.is_reducer() or self.__is_map_only()):
-            for mode, record in iteritems(out_kv):
-                serializer = self.__serializers.get(mode)
-                if serializer is not None:
-                    out_kv[mode] = serializer.serialize(record)
-        return out_kv['K'], out_kv['V']
-
-    # move to super?
-    def __is_map_only(self):
-        """\
-        Is this a map-only job?
-
-        By default, Hadoop runs a map-reduce job. To run a map-only
-        job, users must explicitly set the number of reducers to 0.
-        """
-        for k in 'mapreduce.job.reduces', 'mapred.reduce.tasks':
-            if self.job_conf.get_int(k, 1) < 1:
-                return True
-        return False
 
 
 class SeekableDataFileReader(DataFileReader):

@@ -33,7 +33,7 @@ import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
 import pydoop.utils as utils
 import pydoop.utils.conversion_tables as conv_tables
-from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT
+from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT, AVRO_IO_MODES
 
 from .argparse_types import a_file_that_can_be_read, UpdateMap
 from .argparse_types import a_comma_separated_list, a_hdfs_file
@@ -49,8 +49,6 @@ USER_HOME = "mapreduce.admin.user.home.dir"
 JOB_REDUCES = "mapreduce.job.reduces"
 JOB_NAME = "mapreduce.job.name"
 COMPRESS_MAP_OUTPUT = "mapreduce.map.output.compress"
-AVRO_IO_CHOICES = ['k', 'v', 'kv']
-AVRO_IO_CHOICES += [_.upper() for _ in AVRO_IO_CHOICES]
 
 
 class PydoopSubmitter(object):
@@ -532,11 +530,11 @@ def add_parser_arguments(parser):
               "in the launcher script.")
     )
     parser.add_argument(
-        '--avro-input', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
+        '--avro-input', metavar='k|v|kv', choices=AVRO_IO_MODES,
         help="Avro input mode (key, value or both)",
     )
     parser.add_argument(
-        '--avro-output', metavar='k|v|kv', choices=AVRO_IO_CHOICES,
+        '--avro-output', metavar='k|v|kv', choices=AVRO_IO_MODES,
         help="Avro output mode (key, value or both)",
     )
     parser.add_argument(

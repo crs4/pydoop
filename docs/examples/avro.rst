@@ -30,8 +30,7 @@ schema:
 
 Pydoop transparently serializes and/or deserializes Avro data as
 needed, allowing you to work directly with Python dictionaries.  To
-get this behavior, you have to set the context class to
-``AvroContext``, as shown above.  Moreover, when launching the
+get this behavior, when launching the
 application with pydoop submit, you have to enable Avro I/O and
 specify the output schema as follows:
 

@@ -40,7 +40,7 @@ class Reducer(api.Reducer):
         context.emit(context.key, sum(context.values))
 
 
-FACTORY = pipes.Factory(mapper_class=Mapper, reducer_class=Reducer)
+FACTORY = pipes.Factory(Mapper, reducer_class=Reducer)
 
 
 def main():
