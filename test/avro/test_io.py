@@ -23,7 +23,7 @@ import itertools as it
 import avro.datafile as avdf
 from avro.io import DatumReader, DatumWriter
 
-from pydoop.mapreduce.pipes import InputSplit
+from pydoop.mapreduce.pipes import FileSplit
 from pydoop.avrolib import (
     SeekableDataFileReader, AvroReader, AvroWriter, parse
 )
@@ -98,7 +98,7 @@ class TestAvroIO(WDTestCase):
                 self.input_split = isplit
 
         def get_areader(offset, length):
-            isplit = InputSplit(InputSplit.to_string(url, offset, length))
+            isplit = FileSplit(url, offset, length)
             ctx = FunkyCtx(isplit)
             return AvroReader(ctx)
 
