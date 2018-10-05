@@ -31,7 +31,6 @@ examples=(
     pydoop_submit
     self_contained
     sequence_file
-    simulator
     wordcount
 )
 some_failed=0
