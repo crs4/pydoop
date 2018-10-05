@@ -122,11 +122,17 @@ class Context(ABC):
     def input_split(self):
         """\
         The :class:`~.pipes.InputSplit` for this task (map tasks only).
+
+        This tries to deserialize the raw split sent from upstream. In the
+        most common scenario (file-based input format), the returned value
+        will be a :class:`~.pipes.FileSplit`.
+
+        To get the raw split, call :meth:`get_input_split` with ``raw=True``.
         """
         return self.get_input_split()
 
     @abstractmethod
-    def get_input_split(self):
+    def get_input_split(self, raw=False):
         pass
 
     @property

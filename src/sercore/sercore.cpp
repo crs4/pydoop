@@ -18,6 +18,7 @@
 
 #include <Python.h>
 
+#include "hu_extras.h"
 #include "streams.h"
 
 const char* m_name = "sercore";
@@ -31,7 +32,63 @@ const char* m_doc = "core serialization utils";
 #endif
 
 
+// Deserializes a hadoop.(mapred|mapreduce.lib.input).FileSplit
+static PyObject *
+deserializeFileSplit(PyObject *self, PyObject *args) {
+  PyObject *data, *rval;
+  Py_buffer buffer = {NULL, NULL};
+  PyThreadState *state;
+  if (!PyArg_ParseTuple(args, "O", &data)) {
+    return NULL;
+  }
+  if (PyObject_GetBuffer(data, &buffer, PyBUF_SIMPLE) < 0) {
+    PyErr_SetString(PyExc_TypeError, "data not accessible as a buffer");
+    return NULL;
+  }
+
+  // deserialize fields
+  std::string s((const char*)buffer.buf, buffer.len);
+  HadoopUtils::StringInStream stream(s);
+  std::string fname;
+  int64_t offset, length;
+  state = PyEval_SaveThread();
+  try {
+    HadoopUtils::deserializeString(fname, stream);
+    offset = deserializeLongWritable(stream);
+    length = deserializeLongWritable(stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyBuffer_Release(&buffer);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+  PyBuffer_Release(&buffer);
+
+  // build output tuple
+  PyObject *_fname, *_offset, *_length;
+  if (!(_fname = PyUnicode_FromStringAndSize(fname.c_str(), fname.size()))) {
+    return NULL;
+  }
+  if (!(_offset = Py_BuildValue("L", offset))) {
+    return NULL;
+  }
+  if (!(_length = Py_BuildValue("L", length))) {
+    return NULL;
+  }
+  if (!(rval = PyTuple_New(3))) {
+    return NULL;
+  }
+  PyTuple_SET_ITEM(rval, 0, _fname);
+  PyTuple_SET_ITEM(rval, 1, _offset);
+  PyTuple_SET_ITEM(rval, 2, _length);
+  return rval;
+}
+
+
 static PyMethodDef SercoreMethods[] = {
+  {"deserialize_file_split", deserializeFileSplit, METH_VARARGS,
+   "deserialize_file_split(data): deserialize a Hadoop FileSplit"},
   {NULL}
 };
 

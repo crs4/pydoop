@@ -112,13 +112,7 @@ class FileSplit(InputSplit,
     """\
     A subset (described by offset and length) of an input file.
     """
-    @classmethod
-    def fromstream(cls, stream):
-        stream.read_vint()  # whole serialized split length
-        filename = stream.read_string()
-        offset = stream.read_long_writable()
-        length = stream.read_long_writable()
-        return cls(filename, offset, length)
+    pass
 
 
 def _get_LongWritable(downlink):
@@ -170,7 +164,6 @@ class BinaryProtocol(object):
         self.stream = istream
         self.context = context
         self.uplink = CommandWriter(ostream)
-        self.raw_split = kwargs.get("raw_split", False)
         self.raw_k = kwargs.get("raw_keys", False)
         self.raw_v = kwargs.get("raw_values", False)
         self.uplink.private_encoding = kwargs.get("private_encoding", True)
@@ -263,15 +256,10 @@ class BinaryProtocol(object):
                 self.context._setup_avro_ser()
         elif cmd == RUN_MAP:
             self.context.task_type = "m"
-            if self.raw_split:
-                split, nred, piped_input = self.stream.read_tuple('bii')
-            else:
-                # TODO: support opaque splits
-                split = FileSplit.fromstream(self.stream)
-                nred, piped_input = self.stream.read_tuple("ii")
+            split, nred, piped_input = self.stream.read_tuple('bii')
             logging.debug("%s: %r, %r, %r",
                           CMD_REPR[cmd], split, nred, piped_input)
-            self.context._input_split = split
+            self.context._raw_split = split
             reader = self.context.create_record_reader()
             if reader and piped_input:
                 raise RuntimeError("record reader defined when not needed")
@@ -484,13 +472,20 @@ class TaskContext(api.Context):
         self.task_type = None
         self.avro_key_serializer = None
         self.avro_value_serializer = None
+        self._raw_split = None
         self._input_split = None
         self._job_conf = {}
         self._key = None
         self._value = None
         self._values = None
 
-    def get_input_split(self):
+    def get_input_split(self, raw=False):
+        if raw:
+            return self._raw_split
+        # TODO: support opaque splits
+        if not self._input_split:
+            fn, off, length = sercore.deserialize_file_split(self._raw_split)
+            self._input_split = FileSplit(fn, off, length)
         return self._input_split
 
     def get_job_conf(self):
@@ -682,8 +677,6 @@ def run_task(factory, **kwargs):
       as byte strings (ignore any type information)
     * ``raw_values`` (default: :obj:`False`): pass map input values to context
       as byte strings (ignore any type information)
-    * ``raw_split`` (default: :obj:`False`): pass input split to context as a
-      byte string (by default, a :class:`FileSplit` is assumed)
     * ``private_encoding`` (default: :obj:`True`): automatically serialize map
       output k/v and deserialize reduce input k/v (pickle)
     * ``auto_serialize`` (default: :obj:`True`): automatically serialize reduce

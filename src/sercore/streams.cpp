@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 
+#include "hu_extras.h"
 #include "streams.h"
 
 // This can only be used in functions that return a PyObject*
@@ -35,9 +36,6 @@
     return NULL;                                                         \
   }                                                                      \
 }
-
-# define INT64_SIZE sizeof(int64_t)
-
 
 // PyFile_AsFile is only available in Python 2, for "old style" file objects
 // This should work on anything associated to a file descriptor
@@ -324,21 +322,17 @@ FileInStream_skip(FileInStreamObj *self, PyObject *args) {
 static PyObject *
 FileInStream_readLongWritable(FileInStreamObj *self) {
   int64_t rval = 0;
-  unsigned char bytes[INT64_SIZE];
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
   state = PyEval_SaveThread();
   try {
-    self->stream->read(bytes, INT64_SIZE);
+    rval = deserializeLongWritable(*self->stream);
   } catch (HadoopUtils::Error e) {
     PyEval_RestoreThread(state);
     PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
     return NULL;
   }
   PyEval_RestoreThread(state);
-  for (std::size_t i = 0; i < INT64_SIZE; ++i) {
-    rval = (rval << INT64_SIZE) | bytes[i];
-  }
   return Py_BuildValue("L", rval);
 }
 

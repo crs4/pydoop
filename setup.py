@@ -185,6 +185,7 @@ EXTENSION_MODULES = [
     Extension(
         'pydoop.sercore',
         sources=[
+            "src/sercore/hu_extras.cpp",
             "src/sercore/sercore.cpp",
             "src/sercore/streams.cpp",
             "src/sercore/HadoopUtils/SerialUtils.cc",
