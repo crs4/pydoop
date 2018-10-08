@@ -34,6 +34,8 @@ opts=(
     "-D" "mapreduce.task.timeout=10000"
 )
 
+wd=$(mktemp -d)
+
 case ${name} in
     map_only_java_writer )
 	input="input/map_only"
@@ -49,6 +51,18 @@ case ${name} in
 	    "-D" "mapreduce.pipes.isjavarecordreader=true"
 	    "-D" "mapreduce.pipes.isjavarecordwriter=false"
 	    "-reduces" "0"
+	)
+	;;
+    map_reduce_combiner )
+	io_sort_mb=1
+	file_size=$((2 * io_sort_mb * 1024 * 1024))
+	input="${wd}/map_reduce_very_long"
+	${PYTHON} genwords.py "${input}" --file-size ${file_size}
+	opts+=(
+	    "-D" "mapreduce.pipes.isjavarecordreader=true"
+	    "-D" "mapreduce.pipes.isjavarecordwriter=true"
+	    "-D" "mapreduce.task.io.sort.mb=${io_sort_mb}"
+	    "-reduces" "2"
 	)
 	;;
     map_reduce_python_reader )
@@ -94,13 +108,13 @@ case ${name} in
 	)
 	;;
     * )
+	rm -rf "${wd}"
 	die "unknown app name: \"${name}\""
 esac
 
 mrapp="mr/${name}.py"
 [ -e "${mrapp}" ] || die "\"${mrapp}\" not found"
 
-wd=$(mktemp -d)
 cp "${mrapp}" "${wd}/mrapp.py"
 mrapp="${wd}/mrapp.py"
 py_exe=$(${PYTHON} -c "import sys; print(sys.executable)")

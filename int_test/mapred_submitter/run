@@ -9,6 +9,7 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 app_names=(
     map_only_java_writer
     map_only_python_writer
+    map_reduce_combiner
     map_reduce_java_rw
     map_reduce_java_rw_pstats
     map_reduce_python_partitioner

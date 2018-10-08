@@ -18,42 +18,21 @@
 #
 # END_COPYRIGHT
 
-import sys
-import time
-
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
 
 
 class Mapper(api.Mapper):
 
-    def __init__(self, context):
-        super(Mapper, self).__init__(context)
-        self.t0 = time.time()
-
     def map(self, context):
-        sys.stderr.write("in: %r, %r\n" % (context.key, context.value))
-        time.sleep(1)
         for w in context.value.split():
             context.emit(w, 1)
-
-    def close(self):
-        sys.stderr.write("total time: %.3f s\n" % (time.time() - self.t0))
 
 
 class Reducer(api.Reducer):
 
-    def __init__(self, context):
-        super(Reducer, self).__init__(context)
-        self.t0 = time.time()
-
     def reduce(self, context):
-        sys.stderr.write("input key: %r\n" % (context.key,))
-        time.sleep(1)
         context.emit(context.key, sum(context.values))
-
-    def close(self):
-        sys.stderr.write("total time: %.3f s\n" % (time.time() - self.t0))
 
 
 def __main__():

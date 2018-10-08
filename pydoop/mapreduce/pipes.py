@@ -31,6 +31,7 @@ try:
 except ImportError:
     from pickle import dumps, loads, HIGHEST_PROTOCOL
 from time import time
+from sys import getsizeof as sizeof
 
 import pydoop.config as config
 import pydoop.sercore as sercore
@@ -265,7 +266,10 @@ class BinaryProtocol(object):
                 raise RuntimeError("record reader defined when not needed")
             if not reader and not piped_input:
                 raise RuntimeError("record reader not defined")
+            combiner = self.context.create_combiner()
             if nred < 1:  # map-only job
+                if combiner:
+                    raise RuntimeError("combiner defined in map-only job")
                 self.uplink.private_encoding = False
                 piped_output = self.context.job_conf.get_bool(IS_JAVA_RW)
                 self.setup_record_writer(piped_output)
@@ -459,6 +463,7 @@ class TaskContext(api.Context):
         self.factory = factory
         self.downlink = None
         self.uplink = None
+        self.combiner = None
         self.mapper = None
         self.partitioner = None
         self.record_reader = None
@@ -478,6 +483,10 @@ class TaskContext(api.Context):
         self._key = None
         self._value = None
         self._values = None
+        self.__cache = {}
+        self.__cache_size = 0
+        self.__spill_size = None  # delayed until (if) create_combiner
+        self.__spilling = True  # enable actual emit
 
     def get_input_split(self, raw=False):
         if raw:
@@ -499,6 +508,15 @@ class TaskContext(api.Context):
 
     def get_input_values(self):
         return self._values
+
+    def create_combiner(self):
+        self.combiner = self.factory.create_combiner(self)
+        if self.combiner:
+            self.__spill_size = 1024 * 1024 * self.job_conf.get_int(
+                "mapreduce.task.io.sort.mb", 100
+            )
+            self.__spilling = False
+        return self.combiner
 
     def create_mapper(self):
         self.mapper = self.factory.create_mapper(self)
@@ -579,6 +597,17 @@ class TaskContext(api.Context):
         return key, value
 
     def emit(self, key, value):
+        if self.__spilling:
+            self.__actual_emit(key, value)
+        else:
+            # key must be hashable
+            self.__cache.setdefault(key, []).append(value)
+            self.__cache_size += sizeof(key) + sizeof(value)
+            self.progress()
+            if self.__cache_size >= self.__spill_size:
+                self.__spill_all()
+
+    def __actual_emit(self, key, value):
         if self.record_writer:
             self.record_writer.emit(key, value)
             self.progress()
@@ -590,11 +619,26 @@ class TaskContext(api.Context):
         else:
             self.uplink.output(key, value)
 
+    def __spill_all(self):
+        self.__spilling = True
+        for k in sorted(self.__cache):
+            self._key = k
+            self._values = iter(self.__cache[k])
+            self.combiner.reduce(self)
+        self.__cache.clear()
+        self.__cache_size = 0
+        self.__spilling = False
+
     def close(self):
         # do *not* call uplink.done while user components are still active
         try:
             if self.mapper:
                 self.mapper.close()
+            # handle combiner after mapper (mapper.close can call emit)
+            if self.__cache:
+                self.__spill_all()
+                self.__spilling = True  # re-enable emit for combiner.close
+                self.combiner.close()
             if self.record_reader:
                 self.record_reader.close()
             if self.record_writer:
@@ -681,7 +725,8 @@ def run_task(factory, **kwargs):
     * ``private_encoding`` (default: :obj:`True`): automatically serialize map
       output k/v and deserialize reduce input k/v (pickle)
     * ``auto_serialize`` (default: :obj:`True`): automatically serialize reduce
-      output k/v (call str/unicode then encode as utf-8)
+      output (map output in map-only jobs) k/v (call str/unicode then encode as
+      utf-8)
 
     Advanced keyword arguments:
 

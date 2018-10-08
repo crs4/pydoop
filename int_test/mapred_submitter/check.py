@@ -83,6 +83,7 @@ def check_pstats(pstats_dir):
 CHECKS = {
     "map_only_java_writer": check_map_only,
     "map_only_python_writer": check_map_only,
+    "map_reduce_combiner": check_map_reduce,
     "map_reduce_java_rw": check_map_reduce,
     "map_reduce_java_rw_pstats": check_map_reduce,
     "map_reduce_python_partitioner": check_map_reduce,
