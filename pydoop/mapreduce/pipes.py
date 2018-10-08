@@ -581,6 +581,7 @@ class TaskContext(api.Context):
     def emit(self, key, value):
         if self.record_writer:
             self.record_writer.emit(key, value)
+            self.progress()
             return
         key, value = self.__maybe_serialize(key, value)
         if self.partitioner:

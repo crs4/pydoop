@@ -16,7 +16,7 @@ app_names=(
     map_reduce_python_writer
     map_reduce_raw_io
     map_reduce_slow_java_rw
-    map_reduce_slow_python_reader
+    map_reduce_slow_python_rw
 )
 
 for name in "${app_names[@]}"; do

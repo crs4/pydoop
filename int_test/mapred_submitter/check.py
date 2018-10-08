@@ -90,7 +90,7 @@ CHECKS = {
     "map_reduce_python_writer": check_map_reduce,
     "map_reduce_raw_io": check_map_reduce,
     "map_reduce_slow_java_rw": check_map_reduce,
-    "map_reduce_slow_python_reader": check_map_reduce,
+    "map_reduce_slow_python_rw": check_map_reduce,
 }
 
 

@@ -27,6 +27,8 @@ import pydoop.hdfs as hdfs
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
 
+SEP_KEY = "mapreduce.output.textoutputformat.separator"
+
 
 class Mapper(api.Mapper):
 
@@ -88,11 +90,27 @@ class Reader(api.RecordReader):
         return min(self.bytes_read / self.split.length, 1.0)
 
 
+class Writer(api.RecordWriter):
+
+    def __init__(self, context):
+        super(Writer, self).__init__(context)
+        outfn = context.get_default_work_file()
+        self.file = hdfs.open(outfn, "wt")
+        self.sep = context.job_conf.get(SEP_KEY, "\t")
+
+    def close(self):
+        self.file.close()
+
+    def emit(self, key, value):
+        self.file.write(key + self.sep + str(value) + "\n")
+
+
 def __main__():
     pipes.run_task(pipes.Factory(
         Mapper,
         reducer_class=Reducer,
-        record_reader_class=Reader
+        record_reader_class=Reader,
+        record_writer_class=Writer
     ))
 
 

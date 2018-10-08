@@ -76,12 +76,12 @@ case ${name} in
 	    "-reduces" "1"
 	)
 	;;
-    map_reduce_slow_python_reader )
+    map_reduce_slow_python_rw )
 	input="input/map_reduce_long"
 	opts+=(
 	    "-D" "mapreduce.job.maps=1"
 	    "-D" "mapreduce.pipes.isjavarecordreader=false"
-	    "-D" "mapreduce.pipes.isjavarecordwriter=true"
+	    "-D" "mapreduce.pipes.isjavarecordwriter=false"
 	    "-reduces" "1"
 	)
 	;;
