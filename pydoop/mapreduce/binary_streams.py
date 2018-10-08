@@ -125,8 +125,6 @@ class BinaryProtocol(object):
         self.uplink = CommandWriter(ostream)
         self.raw_k = kwargs.get("raw_keys", False)
         self.raw_v = kwargs.get("raw_values", False)
-        self.uplink.private_encoding = kwargs.get("private_encoding", True)
-        self.uplink.auto_serialize = kwargs.get("auto_serialize", True)
         self.password = get_password()
         self.auth_done = False
         self.avro_key_deserializer = None
@@ -221,7 +219,7 @@ class BinaryProtocol(object):
             if nred < 1:  # map-only job
                 if combiner:
                     raise RuntimeError("combiner defined in map-only job")
-                self.uplink.private_encoding = False
+                self.context._private_encoding = False
                 piped_output = self.context.job_conf.get_bool(IS_JAVA_RW)
                 self.setup_record_writer(piped_output)
             self.context.nred = nred
@@ -253,7 +251,7 @@ class BinaryProtocol(object):
             # for some reason, part is always 0
             self.context.create_reducer()
             self.setup_record_writer(piped_output)
-            if self.uplink.private_encoding:
+            if self.context._private_encoding:
                 self.__class__.get_k = _get_pickled
                 self.__class__.get_v = _get_pickled
             for cmd, subs in groupby(self, itemgetter(0)):

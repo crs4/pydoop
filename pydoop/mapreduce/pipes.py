@@ -46,9 +46,8 @@ class TaskContext(api.Context):
     TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
     TASK_PARTITION = "mapreduce.task.partition"
 
-    def __init__(self, factory):
+    def __init__(self, factory, **kwargs):
         self.factory = factory
-        self.downlink = None
         self.uplink = None
         self.combiner = None
         self.mapper = None
@@ -64,12 +63,14 @@ class TaskContext(api.Context):
         self.task_type = None
         self.avro_key_serializer = None
         self.avro_value_serializer = None
+        self._private_encoding = kwargs.get("private_encoding", True)
         self._raw_split = None
         self._input_split = None
         self._job_conf = {}
         self._key = None
         self._value = None
         self._values = None
+        self.__auto_serialize = kwargs.get("auto_serialize", True)
         self.__cache = {}
         self.__cache_size = 0
         self.__spill_size = None  # delayed until (if) create_combiner
@@ -166,15 +167,15 @@ class TaskContext(api.Context):
             self.avro_value_serializer = AvroSerializer(schema)
 
     def __maybe_serialize(self, key, value):
-        if self.task_type == "m" and self.uplink.private_encoding:
+        if self.task_type == "m" and self._private_encoding:
             return dumps(key, HIGHEST_PROTOCOL), dumps(value, HIGHEST_PROTOCOL)
         if self.avro_key_serializer:
             key = self.avro_key_serializer.serialize(key)
-        elif self.uplink.auto_serialize:
+        elif self.__auto_serialize:
             key = as_text(key).encode("utf-8")
         if self.avro_value_serializer:
             value = self.avro_value_serializer.serialize(value)
-        elif self.uplink.auto_serialize:
+        elif self.__auto_serialize:
             value = as_text(value).encode("utf-8")
         return key, value
 
@@ -288,7 +289,6 @@ class Factory(api.Factory):
 
 def _run(context, **kwargs):
     with connections.get_connection(context, **kwargs) as connection:
-        context.downlink = connection.downlink
         context.uplink = connection.downlink.uplink
         for _ in connection.downlink:
             pass
@@ -318,7 +318,7 @@ def run_task(factory, **kwargs):
     The pstats dir and filename pattern can also be provided via ``pydoop
     submit`` arguments, with lower precedence in case of clashes.
     """
-    context = TaskContext(factory)
+    context = TaskContext(factory, **kwargs)
     pstats_dir = kwargs.get("pstats_dir", os.getenv(PSTATS_DIR))
     if pstats_dir:
         import cProfile
