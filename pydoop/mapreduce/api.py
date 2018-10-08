@@ -27,28 +27,9 @@ methods called by the framework.
 
 import json
 from abc import abstractmethod
+from collections import namedtuple
 
 from pydoop.utils.py3compat import ABC
-
-
-class PydoopError(Exception):
-    pass
-
-
-class Counter(object):
-    """
-    An interface to the Hadoop counters infrastructure.
-
-    Counter objects are instantiated and directly manipulated by the
-    framework; users get and update them via the :class:`Context`
-    interface.
-    """
-
-    def __init__(self, counter_id):
-        self.id = counter_id
-
-    def get_id(self):
-        return self.id
 
 
 class JobConf(dict):
@@ -104,6 +85,24 @@ class JobConf(dict):
         return None if value is None else json.loads(value)
 
 
+class InputSplit(object):
+    """\
+    Represents a subset of the input data assigned to a single map task.
+
+    ``InputSplit`` objects are created by the framework and made available
+    to the user application via the ``input_split`` context attribute.
+    """
+    pass
+
+
+class FileSplit(InputSplit,
+                namedtuple("FileSplit", "filename, offset, length")):
+    """\
+    A subset (described by offset and length) of an input file.
+    """
+    pass
+
+
 class Context(ABC):
     """
     Context objects are used for communication between the framework
@@ -121,11 +120,11 @@ class Context(ABC):
     @property
     def input_split(self):
         """\
-        The :class:`~.pipes.InputSplit` for this task (map tasks only).
+        The :class:`InputSplit` for this task (map tasks only).
 
         This tries to deserialize the raw split sent from upstream. In the
         most common scenario (file-based input format), the returned value
-        will be a :class:`~.pipes.FileSplit`.
+        will be a :class:`FileSplit`.
 
         To get the raw split, call :meth:`get_input_split` with ``raw=True``.
         """

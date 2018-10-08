@@ -23,7 +23,7 @@ import itertools as it
 import avro.datafile as avdf
 from avro.io import DatumReader, DatumWriter
 
-from pydoop.mapreduce.pipes import FileSplit
+from pydoop.mapreduce.api import FileSplit
 from pydoop.avrolib import (
     SeekableDataFileReader, AvroReader, AvroWriter, parse
 )
