@@ -32,7 +32,6 @@ from operator import itemgetter
 
 import pydoop.config as config
 from .api import AVRO_IO_MODES, JobConf
-from .string_utils import create_digest
 
 
 PROTOCOL_VERSION = 0
@@ -181,10 +180,9 @@ class Downlink(object):
     involves reading thousands of strings.
     """
 
-    def __init__(self, istream, context, ostream, **kwargs):
+    def __init__(self, istream, context, **kwargs):
         self.stream = istream
         self.context = context
-        self.uplink = Uplink(ostream)
         self.raw_k = kwargs.get("raw_keys", False)
         self.raw_v = kwargs.get("raw_values", False)
         self.password = get_password()
@@ -194,7 +192,6 @@ class Downlink(object):
 
     def close(self):
         self.stream.close()
-        self.uplink.close()
 
     def read_job_conf(self):
         n = self.stream.read_vint()
@@ -205,10 +202,7 @@ class Downlink(object):
 
     def verify_digest(self, digest, challenge):
         if self.password is not None:
-            if create_digest(self.password, challenge) != digest:
-                raise RuntimeError("server failed to authenticate")
-            response_digest = create_digest(self.password, digest)
-            self.uplink.authenticate(response_digest)
+            self.context._authenticate(self.password, digest, challenge)
         # self.password is None: assume reading from cmd file
         self.auth_done = True
 

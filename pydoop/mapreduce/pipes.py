@@ -16,6 +16,17 @@
 #
 # END_COPYRIGHT
 
+"""\
+Python driver for Hadoop Pipes tasks.
+
+The intended usage is to import this module in the executable script passed to
+``mapred pipes`` (or ``pydoop submit``) and call ``run_task`` with the
+appropriate arguments (see the docs and examples for further details).
+"""
+
+import base64
+import hashlib
+import hmac
 import os
 try:
     from cPickle import dumps, HIGHEST_PROTOCOL
@@ -37,6 +48,11 @@ except NameError:
 PSTATS_DIR = "PYDOOP_PSTATS_DIR"
 PSTATS_FMT = "PYDOOP_PSTATS_FMT"
 DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
+
+
+def create_digest(key, msg):
+    h = hmac.new(key, msg, hashlib.sha1)
+    return base64.b64encode(h.digest())
 
 
 class TaskContext(api.Context):
@@ -148,6 +164,12 @@ class TaskContext(api.Context):
         if counter < 0 or counter >= self.ncounters:
             raise ValueError("invalid counter: %r" % (counter,))
         self.uplink.increment_counter(counter, amount)
+
+    def _authenticate(self, password, digest, challenge):
+        if create_digest(password, challenge) != digest:
+            raise RuntimeError("server failed to authenticate")
+        response_digest = create_digest(password, digest)
+        self.uplink.authenticate(response_digest)
 
     def _setup_avro_ser(self):
         try:
@@ -288,7 +310,6 @@ class Factory(api.Factory):
 
 def _run(context, **kwargs):
     with connections.get_connection(context, **kwargs) as connection:
-        context.uplink = connection.downlink.uplink
         for _ in connection.downlink:
             pass
 
