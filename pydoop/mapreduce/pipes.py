@@ -27,7 +27,6 @@ from sys import getsizeof as sizeof
 import pydoop.config as config
 import pydoop.sercore as sercore
 from . import api, connections
-from .binary_streams import AVRO_IO_MODES
 
 # py2 compat
 try:
@@ -157,7 +156,7 @@ class TaskContext(api.Context):
             raise RuntimeError("cannot handle avro output: %s" % e)
         jc = self.job_conf
         avro_output = jc.get(config.AVRO_OUTPUT).upper()
-        if avro_output not in AVRO_IO_MODES:
+        if avro_output not in api.AVRO_IO_MODES:
             raise RuntimeError('invalid avro output mode: %s' % avro_output)
         if avro_output == 'K' or avro_output == 'KV':
             schema = jc.get(config.AVRO_KEY_OUTPUT_SCHEMA)

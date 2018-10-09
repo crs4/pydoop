@@ -20,7 +20,7 @@ import os
 import socket
 
 import pydoop.sercore as sercore
-from .binary_streams import BinaryProtocol
+from .binary_protocol import Downlink
 
 
 class Connection(object):
@@ -47,7 +47,7 @@ class NetworkConnection(Connection):
         self.socket.connect((host, port))
         istream = sercore.FileInStream(self.socket)
         ostream = sercore.FileOutStream(self.socket)
-        self.downlink = BinaryProtocol(istream, context, ostream, **kwargs)
+        self.downlink = Downlink(istream, context, ostream, **kwargs)
 
     def close(self):
         super(NetworkConnection, self).close()
@@ -60,7 +60,7 @@ class FileConnection(Connection):
         super(FileConnection, self).__init__()
         istream = sercore.FileInStream(in_fn)
         ostream = sercore.FileOutStream(out_fn)
-        self.downlink = BinaryProtocol(istream, context, ostream, **kwargs)
+        self.downlink = Downlink(istream, context, ostream, **kwargs)
 
 
 def get_connection(context, **kwargs):
@@ -71,4 +71,4 @@ def get_connection(context, **kwargs):
     if in_fn:
         out_fn = "%s.out" % in_fn
         return FileConnection(context, in_fn, out_fn, **kwargs)
-    raise NotImplementedError  # TBD: text protocol (all kwargs ignored?)
+    raise RuntimeError("no pipes source found")

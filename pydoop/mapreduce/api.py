@@ -32,6 +32,10 @@ from collections import namedtuple
 from pydoop.utils.py3compat import ABC
 
 
+# move to pydoop.properties?
+AVRO_IO_MODES = {'k', 'v', 'kv', 'K', 'V', 'KV'}
+
+
 class JobConf(dict):
     """
     Configuration properties assigned to this job.

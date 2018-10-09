@@ -33,7 +33,8 @@ import pydoop.hdfs as hdfs
 import pydoop.hadut as hadut
 import pydoop.utils as utils
 import pydoop.utils.conversion_tables as conv_tables
-from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT, AVRO_IO_MODES
+from pydoop.mapreduce.api import AVRO_IO_MODES
+from pydoop.mapreduce.pipes import PSTATS_DIR, PSTATS_FMT
 
 from .argparse_types import a_file_that_can_be_read, UpdateMap
 from .argparse_types import a_comma_separated_list, a_hdfs_file

@@ -16,6 +16,12 @@
 #
 # END_COPYRIGHT
 
+"""\
+Client side of the Hadoop pipes protocol.
+
+Ref: ``org.apache.hadoop.mapred.pipes.BinaryProtocol``.
+"""
+
 import os
 try:
     from cPickle import loads
@@ -25,7 +31,7 @@ from itertools import groupby
 from operator import itemgetter
 
 import pydoop.config as config
-from .api import JobConf
+from .api import AVRO_IO_MODES, JobConf
 from .string_utils import create_digest
 
 
@@ -74,8 +80,6 @@ CMD_REPR = {
     AUTHENTICATION_RESP: "AUTHENTICATION_RESP",
 }
 
-AVRO_IO_MODES = {'k', 'v', 'kv', 'K', 'V', 'KV'}
-
 IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
 
 
@@ -87,6 +91,9 @@ def get_password():
     with open(pass_fn, "rb") as f:
         return f.read()
 
+
+# _get_* functions to patch the downlink according to the chosen
+# deserialization policy (see below)
 
 def _get_LongWritable(downlink):
     assert downlink.stream.read_vint() == 8
@@ -117,12 +124,67 @@ def _get_pickled(downlink):
     return loads(downlink.stream.read_bytes())
 
 
-class BinaryProtocol(object):
+class Downlink(object):
+    """\
+    Reads and executes pipes commands as directed by upstream.
+
+    The downlink drives the entire MapReduce task, plugging in user components
+    and calling their methods as necessary. A task can be either a **map**
+    task or a **reduce** task, but this is not known until after a few initial
+    commands, as shown below.
+
+    All tasks start with the following commands::
+
+        AUTHENTICATION_REQ
+        START
+        SET_JOB_CONF
+
+    Map tasks follow up with::
+
+        RUN_MAP
+        if java_reader:
+            SET_INPUT_TYPES
+            for k, v in input:
+                MAP_ITEM
+            CLOSE
+
+    Reduce tasks follow up with::
+
+        RUN_REDUCE
+        for k in input:
+            REDUCE_KEY
+            for v in values_for(k):
+                REDUCE_VALUE
+        CLOSE
+
+    In both cases, the inner loop consists of handling the key/value
+    stream. All the code involved in this process, namely:
+
+      * reading and optionally deserializing input keys and values
+      * calling user methods
+      * emitting output keys and values back to upstream
+
+    must be as efficient as possible. For this reason, rather than having the
+    ``get_{k,v}`` methods go through a complex ``if`` tree at every call, we
+    patch the class itself by replacing each method with the one appropriate
+    for the current scenario. Note that we can do this because:
+
+      * the deserialization policy (including no deserialization) is the same
+        for all items of a given kind (key or value), meaning that an ``if``
+        tree would pick the same branch for the entire process
+      * there is only one Downlink object in the process, so we don't risk
+        altering the behavior of other instances
+      * the Downlink object is not part of the client API (it's not passed to
+        user code at all)
+
+    Job conf deserialization also needs to be somewhat efficient, since it
+    involves reading thousands of strings.
+    """
 
     def __init__(self, istream, context, ostream, **kwargs):
         self.stream = istream
         self.context = context
-        self.uplink = CommandWriter(ostream)
+        self.uplink = Uplink(ostream)
         self.raw_k = kwargs.get("raw_keys", False)
         self.raw_v = kwargs.get("raw_values", False)
         self.password = get_password()
@@ -292,8 +354,10 @@ class BinaryProtocol(object):
         return self.__next__()
 
 
-# rename to BinaryUpwardProtocol?
-class CommandWriter(object):
+class Uplink(object):
+    """\
+    Writes all information that needs to be sent upstream.
+    """
 
     def __init__(self, stream):
         self.stream = stream
