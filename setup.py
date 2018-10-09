@@ -191,8 +191,7 @@ EXTENSION_MODULES = [
             "src/sercore/HadoopUtils/SerialUtils.cc",
         ],
         include_dirs=["src/sercore/HadoopUtils"],
-        # add -O3?
-        extra_compile_args=EXTRA_COMPILE_ARGS + ["-std=c++11"],
+        extra_compile_args=EXTRA_COMPILE_ARGS + ["-std=c++11", "-O3"],
     )
 ]
 
