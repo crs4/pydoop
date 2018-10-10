@@ -99,20 +99,6 @@ class TestFileOutStream(unittest.TestCase):
             self.assertEqual(f.read(), self.data + 10 * b'\x00' + self.data)
 
 
-class TestStringInStream(unittest.TestCase):
-
-    def test_normal(self):
-        data = b"abcdefgh"
-        stream = sercore.StringInStream(data)
-        self.assertEqual(stream.read(5), data[:5])
-        self.assertEqual(stream.read(3), data[5:8])
-
-    def test_oob(self):
-        data = b"abc"
-        for length in -1, 100:
-            self.assertEqual(sercore.StringInStream(data).read(length), data)
-
-
 class TestSerDe(unittest.TestCase):
 
     INT = 42
@@ -339,7 +325,6 @@ class TestHadoopTypes(unittest.TestCase):
 CASES = [
     TestFileInStream,
     TestFileOutStream,
-    TestStringInStream,
     TestSerDe,
     TestCheckClosed,
     TestHadoopTypes,

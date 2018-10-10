@@ -16,7 +16,13 @@
 //
 // END_COPYRIGHT
 
-#define PY_SSIZE_T_CLEAN
+// WARNING: types defined here are **NOT** designed for inheritance. For
+// instance, FileInStream_readTuple calls other FileInStream_read* methods
+// directly at the C++ level. Since they are not part of the public API ---
+// exactly one input and one output stream are used in the pipes protocol, and
+// that's it --- we can make the code simpler and more efficient.
+
+#define PY_SSIZE_T_CLEAN  // must be defined before including Python.h
 
 #include <Python.h>
 
@@ -317,8 +323,6 @@ FileInStream_skip(FileInStreamObj *self, PyObject *args) {
 //     assert len(key_bytes) == 8
 //     key = struct.unpack(">q", key_bytes)[0]
 
-// Reads a hadoop.io.LongWritable (java.io.DataInput.readLong)
-// Same as struct.unpack('>q', stream.read(8))[0]
 static PyObject *
 FileInStream_readLongWritable(FileInStreamObj *self) {
   int64_t rval = 0;
@@ -767,95 +771,6 @@ PyTypeObject FileOutStreamType = {
     0,                                                /* tp_descr_set */
     0,                                                /* tp_dictoffset */
     (initproc)FileOutStream_init,                     /* tp_init */
-    0,                                                /* tp_alloc */
-    0,                                                /* tp_new */
-};
-
-
-static int
-StringInStream_init(StringInStreamObj *self, PyObject *args, PyObject *kwds) {
-  char *buf;
-  Py_ssize_t len;
-  if (!PyArg_ParseTuple(args, "s#", &buf, &len)) {
-    return -1;
-  }
-  self->data = std::make_shared<std::string>(buf, len);
-  self->stream = std::make_shared<HadoopUtils::StringInStream>(*self->data);
-  return 0;
-}
-
-
-static PyObject *
-StringInStream_read(StringInStreamObj *self, PyObject *args) {
-  size_t len;
-  PyObject *rval;
-  PyThreadState *state;
-  if (!PyArg_ParseTuple(args, "n", &len)) {
-    return NULL;
-  }
-  if (len < 0 || len > self->data->size()) {
-    len = self->data->size();  // as in io.BytesIO
-  }
-  if (!(rval = PyBytes_FromStringAndSize(NULL, len))) {
-    return NULL;
-  }
-  state = PyEval_SaveThread();
-  try {
-    self->stream->read(PyBytes_AS_STRING(rval), len);
-  } catch (HadoopUtils::Error e) {
-    PyEval_RestoreThread(state);
-    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
-    Py_DECREF(rval);
-    return NULL;
-  }
-  PyEval_RestoreThread(state);
-  return rval;
-}
-
-static PyMethodDef StringInStream_methods[] = {
-  {"read", (PyCFunction)StringInStream_read, METH_VARARGS,
-   "read(len): read len bytes from the stream"},
-  {NULL}
-};
-
-
-PyTypeObject StringInStreamType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "sercore.StringInStream",                         /* tp_name */
-    sizeof(StringInStreamObj),                        /* tp_basicsize */
-    0,                                                /* tp_itemsize */
-    0,                                                /* tp_dealloc */
-    0,                                                /* tp_print */
-    0,                                                /* tp_getattr */
-    0,                                                /* tp_setattr */
-    0,                                                /* tp_compare */
-    0,                                                /* tp_repr */
-    0,                                                /* tp_as_number */
-    0,                                                /* tp_as_sequence */
-    0,                                                /* tp_as_mapping */
-    0,                                                /* tp_hash */
-    0,                                                /* tp_call */
-    0,                                                /* tp_str */
-    0,                                                /* tp_getattro */
-    0,                                                /* tp_setattro */
-    0,                                                /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,         /* tp_flags */
-    "A stream that reads from a string",              /* tp_doc */
-    0,                                                /* tp_traverse */
-    0,                                                /* tp_clear */
-    0,                                                /* tp_richcompare */
-    0,                                                /* tp_weaklistoffset */
-    0,                                                /* tp_iter */
-    0,                                                /* tp_iternext */
-    StringInStream_methods,                           /* tp_methods */
-    0,                                                /* tp_members */
-    0,                                                /* tp_getset */
-    0,                                                /* tp_base */
-    0,                                                /* tp_dict */
-    0,                                                /* tp_descr_get */
-    0,                                                /* tp_descr_set */
-    0,                                                /* tp_dictoffset */
-    (initproc)StringInStream_init,                    /* tp_init */
     0,                                                /* tp_alloc */
     0,                                                /* tp_new */
 };

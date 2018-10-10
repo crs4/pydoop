@@ -38,12 +38,5 @@ typedef struct {
     std::shared_ptr<HadoopUtils::FileOutStream> stream;
 } FileOutStreamObj;
 
-typedef struct {
-    PyObject_HEAD
-    std::shared_ptr<std::string> data;
-    std::shared_ptr<HadoopUtils::StringInStream> stream;
-} StringInStreamObj;
-
 extern PyTypeObject FileInStreamType;
 extern PyTypeObject FileOutStreamType;
-extern PyTypeObject StringInStreamType;

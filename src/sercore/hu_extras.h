@@ -20,4 +20,7 @@
 
 #include "HadoopUtils/SerialUtils.hh"
 
+/**
+ * Read a hadoop.io.LongWritable (java.io.DataInput.readLong).
+ */
 int64_t deserializeLongWritable(HadoopUtils::InStream& stream);
