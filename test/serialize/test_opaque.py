@@ -29,8 +29,8 @@ from pydoop.utils.serialize import (
 import pydoop.test_utils as utils
 
 _JAVA_SRC_ROOT = 'it'
-_OPAQUE_ROUNDTRIP_CLASS = 'it.crs4.pydoop.mapreduce.pipes.opaque_roundtrip'
-_OPAQUE_ROUNDTRIP_SRC = 'it/crs4/pydoop/mapreduce/pipes/opaque_roundtrip.java'
+_OPAQUE_ROUNDTRIP_CLASS = 'it.crs4.pydoop.mapreduce.pipes.OpaqueRoundtrip'
+_OPAQUE_ROUNDTRIP_SRC = 'it/crs4/pydoop/mapreduce/pipes/OpaqueRoundtrip.java'
 
 
 class TestOpaqueInputSplit(unittest.TestCase):

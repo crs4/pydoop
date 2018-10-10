@@ -18,10 +18,9 @@
  */
 
 package it.crs4.pydoop.mapreduce.pipes;
+
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -34,48 +33,43 @@ import org.apache.hadoop.mapreduce.TaskID;
 import org.apache.hadoop.mapreduce.TaskType;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.io.IntWritable;
-
 import org.apache.hadoop.conf.Configuration;
 
 
-public class opaque_roundtrip {
+/**
+ * Use PipesNonJavaInputFormat.getSplits to read opaque splits from inUri,
+ * then write them out to outUri.
+ */
 
-	public static void main(String[] args)
-      throws java.io.IOException, InterruptedException {
-      final String in_uri = args[0];
-      final String out_uri = args[1];
+public class OpaqueRoundtrip {
 
-      JobID jobId = new JobID("201408272347", 0);
-      TaskID taskId = new TaskID(jobId, TaskType.MAP, 0);
-      TaskAttemptID taskAttemptid = new TaskAttemptID(taskId, 0);
-
-      Job job = new Job(new Configuration());
-      job.setJobID(jobId);
-      Configuration conf = job.getConfiguration();
-      conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, in_uri);
-      TaskAttemptContextImpl tcontext =
-          new TaskAttemptContextImpl(conf, taskAttemptid);
-      PipesNonJavaInputFormat iformat = new PipesNonJavaInputFormat();
-      List<InputSplit> read = iformat.getSplits(tcontext);
-
-      Path path = new Path(out_uri);
-      FileSystem fs = FileSystem.get(conf);
-      write_input_splits(read, fs, path);
-      fs.close();
-  }
-
-  private static void write_input_splits(List<InputSplit> splits,
-                                         FileSystem fs, Path path)
+  public static void main(String[] args)
       throws IOException, InterruptedException {
-    IntWritable n_records = new IntWritable(splits.size());
+    final String inUri = args[0];
+    final String outUri = args[1];
+    JobID jobId = new JobID("201408272347", 0);
+    TaskID taskId = new TaskID(jobId, TaskType.MAP, 0);
+    TaskAttemptID taID = new TaskAttemptID(taskId, 0);
+    Job job = Job.getInstance(new Configuration());
+    job.setJobID(jobId);
+    Configuration conf = job.getConfiguration();
+    conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, inUri);
+    TaskAttemptContextImpl ctx = new TaskAttemptContextImpl(conf, taID);
+    PipesNonJavaInputFormat iformat = new PipesNonJavaInputFormat();
+    List<InputSplit> splits = iformat.getSplits(ctx);
+    Path path = new Path(outUri);
+    FileSystem fs = FileSystem.get(conf);
+    IntWritable numRecords = new IntWritable(splits.size());
     FSDataOutputStream out = fs.create(path);
     try {
-      n_records.write(out);
-      for(int i = 0; i < n_records.get(); i++) {
+      numRecords.write(out);
+      for(int i = 0; i < numRecords.get(); i++) {
         ((OpaqueSplit)splits.get(i)).write(out);
       }
     } finally {
       out.close();
     }
+    fs.close();
   }
+
 }

@@ -170,13 +170,18 @@ def get_module(name, path=None):
         fp.close()
 
 
-def compile_java(java_file, classpath):
+def compile_java(java_file, classpath, opts=None):
+    if opts is None:
+        opts = []
     java_class_file = os.path.splitext(
         os.path.realpath(java_file)
     )[0] + '.class'
     if (not os.path.exists(java_class_file) or
             os.path.getmtime(java_file) > os.path.getmtime(java_class_file)):
-        cmd = [JAVAC, '-cp', classpath, java_file]
+        cmd = [JAVAC] + opts
+        if not {"-cp", "-classpath"}.intersection(opts):
+            cmd.extend(["-cp", classpath])
+        cmd.append(java_file)
         try:
             subprocess.check_call(cmd, cwd=os.path.dirname(java_file))
         except subprocess.CalledProcessError as e:
