@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -33,8 +32,6 @@ import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
 
@@ -50,110 +47,111 @@ import org.apache.hadoop.util.ReflectionUtils;
  * splits are retrieved by invoking the getSplits method of the 'actual'
  * InputFormat specified by the user in <i>mapreduce.pipes.inputformat</i>.
  */
-class PipesNonJavaInputFormat extends InputFormat<FloatWritable, NullWritable> {
+class PipesNonJavaInputFormat
+    extends InputFormat<FloatWritable, NullWritable> {
 
-    public static final String EXTERNAL_SPLITS_URI =
-        "pydoop.mapreduce.pipes.externalsplits.uri";
+  public static final String EXTERNAL_SPLITS_URI =
+      "pydoop.mapreduce.pipes.externalsplits.uri";
 
-    public List<InputSplit> getSplits(JobContext context
-                                      ) throws IOException, InterruptedException {
-        
-        Configuration conf = context.getConfiguration();
-        String splits_uri = conf.get(EXTERNAL_SPLITS_URI);
-        if (splits_uri != null) {
-            return getSplitsFromPath(conf, splits_uri);
-        } else {
-            return ReflectionUtils.newInstance(
-                                conf.getClass(Submitter.INPUT_FORMAT, 
-                                TextInputFormat.class, 
-                                InputFormat.class), conf).getSplits(context);
-        }
+  public List<InputSplit> getSplits(JobContext context)
+      throws IOException, InterruptedException {
+    Configuration conf = context.getConfiguration();
+    String uri = conf.get(EXTERNAL_SPLITS_URI);
+    if (uri != null) {
+      return getOpaqueSplits(conf, uri);
+    } else {
+      return ReflectionUtils.newInstance(
+          conf.getClass(Submitter.INPUT_FORMAT,
+                        TextInputFormat.class,
+                        InputFormat.class), conf).getSplits(context);
     }
+  }
 
-    private List<InputSplit> getSplitsFromPath(Configuration conf,
-                                               String splits_uri
-                                               ) throws IOException,
-                                                        InterruptedException {
-        FileSystem fs = FileSystem.get(conf);
-        Path path = new Path(splits_uri);
-        if (!fs.exists(path)) {
-            throw new IOException(splits_uri + " does not exists");
-        }
-        List<InputSplit> splits = new ArrayList<InputSplit>();
-        FSDataInputStream in = fs.open(path);
-        try {
-            IntWritable n_records = new IntWritable();
-            n_records.readFields(in);
-            for(int i = 0; i < n_records.get(); i++) {
-                OpaqueSplit o = new OpaqueSplit();
-                o.readFields(in);
-                splits.add(o);
-            }
-        } finally {
-            in.close();
-        }
-        return splits;
+  private List<InputSplit> getOpaqueSplits(Configuration conf, String uri)
+      throws IOException, InterruptedException {
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(uri);
+    if (!fs.exists(path)) {
+      throw new IOException(uri + " does not exists");
+    }
+    List<InputSplit> splits = new ArrayList<InputSplit>();
+    FSDataInputStream in = fs.open(path);
+    try {
+      IntWritable numRecords = new IntWritable();
+      numRecords.readFields(in);
+      for(int i = 0; i < numRecords.get(); i++) {
+        OpaqueSplit o = new OpaqueSplit();
+        o.readFields(in);
+        splits.add(o);
+      }
+    } finally {
+      in.close();
+    }
+    return splits;
+  }
+
+  @Override
+  public DummyRecordReader
+    createRecordReader(InputSplit split, TaskAttemptContext context)
+      throws IOException {
+    return new PipesDummyRecordReader(split, context);
+  }
+
+  /**
+   * A dummy {@link org.apache.hadoop.mapreduce.RecordReader} to help track the
+   * progress of Hadoop Pipes applications when they are using a non-Java
+   * <code>RecordReader</code>.
+   *
+   * The <code>PipesDummyRecordReader</code> is informed of the 'progress' of
+   * the task by the {@link OutputHandler#progress(float)} which calls the
+   * {@link #next(FloatWritable, NullWritable)} with the progress as the
+   * <code>key</code>.
+   */
+  static class PipesDummyRecordReader extends DummyRecordReader {
+
+    float progress = 0.0f;
+
+    public PipesDummyRecordReader() {}
+
+    public PipesDummyRecordReader(InputSplit split, TaskAttemptContext context)
+        throws IOException {
+      initialize(split, context);
     }
 
     @Override
-    public DummyRecordReader
-        createRecordReader(InputSplit split,
-                           TaskAttemptContext context)  throws IOException {
-        return new PipesDummyRecordReader(split, context);
+    public void initialize(InputSplit split, TaskAttemptContext context)
+        throws IOException {}
+
+    public synchronized void close() throws IOException {}
+
+    @Override
+    public float getProgress() throws IOException, InterruptedException {
+      return progress;
     }
 
-    /**
-     * A dummy {@link org.apache.hadoop.mapreduce.RecordReader} to help track the
-     * progress of Hadoop Pipes' applications when they are using a non-Java
-     * <code>RecordReader</code>.
-     *
-     * The <code>PipesDummyRecordReader</code> is informed of the 'progress' of
-     * the task by the {@link OutputHandler#progress(float)} which calls the
-     * {@link #next(FloatWritable, NullWritable)} with the progress as the
-     * <code>key</code>.
-     */
-    static class PipesDummyRecordReader extends DummyRecordReader {
-        float progress = 0.0f;
-
-        public PipesDummyRecordReader() { }
-        
-        public PipesDummyRecordReader(InputSplit split, TaskAttemptContext context) 
-            throws IOException {
-            initialize(split, context);
-        }
-
-        @Override
-        public void initialize(InputSplit split, TaskAttemptContext context) 
-            throws IOException {
-        }
-        
-        public synchronized void close() throws IOException {}
-
-        @Override
-        public float getProgress()  throws IOException, InterruptedException {
-            return progress;
-        }
-
-        @Override
-        public boolean nextKeyValue() throws IOException, InterruptedException {
-            return true;
-        }
-
-        @Override
-        public FloatWritable getCurrentKey() throws IOException, InterruptedException {
-            return new FloatWritable(progress);
-        }
-
-        @Override
-        public NullWritable getCurrentValue() throws IOException, InterruptedException {
-            return null;
-        }
-
-        @Override
-        public synchronized boolean next(FloatWritable key, NullWritable value)
-                                        throws IOException  {
-                progress = key.get();
-                return true;
-            }
+    @Override
+    public boolean nextKeyValue() throws IOException, InterruptedException {
+      return true;
     }
+
+    @Override
+    public FloatWritable getCurrentKey()
+        throws IOException, InterruptedException {
+      return new FloatWritable(progress);
+    }
+
+    @Override
+    public NullWritable getCurrentValue()
+        throws IOException, InterruptedException {
+      return null;
+    }
+
+    @Override
+    public synchronized boolean next(FloatWritable key, NullWritable value)
+        throws IOException  {
+      progress = key.get();
+      return true;
+    }
+  }
+
 }
