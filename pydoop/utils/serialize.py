@@ -70,16 +70,14 @@ def private_decode(s):
 
 
 class OpaqueInputSplit(object):
-    def __init__(self, code='', payload=''):
-        self.code = code
+
+    def __init__(self, payload=''):
         self.payload = payload
 
     def write(self, stream):
-        serialize_bytes_writable(private_encode(self.code), stream)
         serialize_bytes_writable(private_encode(self.payload), stream)
 
     def read(self, stream):
-        self.code = private_decode(deserialize_bytes_writable(stream))
         self.payload = private_decode(deserialize_bytes_writable(stream))
         return self
 

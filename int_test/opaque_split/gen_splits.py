@@ -40,5 +40,5 @@ if __name__ == "__main__":
     parser.add_argument("splits_path", metavar="HDFS_PATH")
     args = parser.parse_args(sys.argv[1:])
     with hdfs.open(args.splits_path, "wb") as f:
-        splits = [OpaqueInputSplit(1, _) for _ in gen_ranges()]
+        splits = [OpaqueInputSplit(_) for _ in gen_ranges()]
         write_opaques(splits, f)

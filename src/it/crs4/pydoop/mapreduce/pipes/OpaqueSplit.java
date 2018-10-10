@@ -32,21 +32,14 @@ import java.io.DataOutput;
  */
 class OpaqueSplit extends InputSplit implements Writable {
 
-  private BytesWritable code;
   private BytesWritable payload;
 
   public OpaqueSplit() {
-    code = new BytesWritable();
     payload = new BytesWritable();
   }
 
-  public OpaqueSplit(byte[] code, byte[] payload) {
-    this.code = new BytesWritable(code);
+  public OpaqueSplit(byte[] payload) {
     this.payload = new BytesWritable(payload);
-  }
-
-  public BytesWritable getCode() {
-    return code;
   }
 
   public BytesWritable getPayload() {
@@ -77,13 +70,11 @@ class OpaqueSplit extends InputSplit implements Writable {
 
   @Override
   public void write(DataOutput out) throws IOException {
-    code.write(out);
     payload.write(out);
   }
 
   @Override
   public void readFields(DataInput in) throws IOException {
-    code.readFields(in);
     payload.readFields(in);
   }
 

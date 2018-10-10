@@ -47,11 +47,9 @@ class TestOpaqueInputSplit(unittest.TestCase):
         return "%s/%s_%s" % (where or self.wd, uuid.uuid4().hex, utils.UNI_CHR)
 
     def _generate_opaque_splits(self, n):
-        return [OpaqueInputSplit('{}_code'.format(_), '{}_payload'.format(_))
-                for _ in range(n)]
+        return [OpaqueInputSplit('{}_payload'.format(_)) for _ in range(n)]
 
     def _test_opaque(self, o, no):
-        self.assertEqual(o.code, no.code)
         self.assertEqual(o.payload, no.payload)
 
     def _test_opaques(self, opaques, nopaques):
@@ -81,10 +79,8 @@ class TestOpaqueInputSplit(unittest.TestCase):
         return nsplits
 
     def test_opaque(self):
-        code = "acode222"
         payload = {'a': 33, 'b': "333"}
-        o = OpaqueInputSplit(code, payload)
-        self.assertEqual(code, o.code)
+        o = OpaqueInputSplit(payload)
         self.assertEqual(payload, o.payload)
         fname = self._make_random_path('/tmp')
         with open(fname, 'wb') as f:
