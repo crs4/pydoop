@@ -22,7 +22,7 @@ import argparse
 import sys
 
 import pydoop.hdfs as hdfs
-from pydoop.utils.serialize import OpaqueInputSplit, write_opaques
+from pydoop.mapreduce.pipes import OpaqueSplit, write_opaque_splits
 
 
 N_TASKS = 2
@@ -39,6 +39,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("splits_path", metavar="HDFS_PATH")
     args = parser.parse_args(sys.argv[1:])
+    splits = [OpaqueSplit(_) for _ in gen_ranges()]
     with hdfs.open(args.splits_path, "wb") as f:
-        splits = [OpaqueInputSplit(_) for _ in gen_ranges()]
-        write_opaques(splits, f)
+        write_opaque_splits(splits, f)

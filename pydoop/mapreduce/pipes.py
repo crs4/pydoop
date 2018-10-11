@@ -28,15 +28,19 @@ import base64
 import hashlib
 import hmac
 import os
+import struct
+
 try:
-    from cPickle import dumps, HIGHEST_PROTOCOL
+    from cPickle import dumps, loads, HIGHEST_PROTOCOL
 except ImportError:
-    from pickle import dumps, HIGHEST_PROTOCOL
+    from pickle import dumps, loads, HIGHEST_PROTOCOL
 from time import time
 from sys import getsizeof as sizeof
 
 import pydoop.config as config
 import pydoop.sercore as sercore
+import pydoop.utils.serialize as ser
+
 from . import api, connections
 
 # py2 compat
@@ -49,10 +53,52 @@ PSTATS_DIR = "PYDOOP_PSTATS_DIR"
 PSTATS_FMT = "PYDOOP_PSTATS_FMT"
 DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
 
+EXTERNALSPLITS_URI_KEY = "pydoop.mapreduce.pipes.externalsplits.uri"
+
+INT_WRITABLE_FMT = ">i"
+INT_WRITABLE_SIZE = struct.calcsize(INT_WRITABLE_FMT)
+
 
 def create_digest(key, msg):
     h = hmac.new(key, msg, hashlib.sha1)
     return base64.b64encode(h.digest())
+
+
+class FileSplit(api.FileSplit):
+
+    @classmethod
+    def frombuffer(cls, buf):
+        filename, offset, length = sercore.deserialize_file_split(buf)
+        return cls(filename, offset, length)
+
+
+class OpaqueSplit(api.OpaqueSplit):
+
+    @classmethod
+    def frombuffer(cls, buf):
+        length = struct.unpack_from(INT_WRITABLE_FMT, buf)[0]
+        payload = buf[INT_WRITABLE_SIZE: INT_WRITABLE_SIZE + length]
+        if len(payload) < length:
+            raise RuntimeError("cannot read data as a BytesWritable")
+        return cls(loads(payload))
+
+    @classmethod
+    def read(cls, f):
+        return cls(loads(ser.deserialize_bytes_writable(f)))
+
+    def write(self, f):
+        ser.serialize_bytes_writable(dumps(self.payload, HIGHEST_PROTOCOL), f)
+
+
+def write_opaque_splits(splits, f):
+    ser.serialize_int_java_io(len(splits), f)
+    for s in splits:
+        s.write(f)
+
+
+def read_opaque_splits(f):
+    n = ser.deserialize_int_java_io(f)
+    return [OpaqueSplit.read(f) for _ in range(n)]
 
 
 class TaskContext(api.Context):
@@ -94,10 +140,11 @@ class TaskContext(api.Context):
     def get_input_split(self, raw=False):
         if raw:
             return self._raw_split
-        # TODO: support opaque splits
         if not self._input_split:
-            fn, off, length = sercore.deserialize_file_split(self._raw_split)
-            self._input_split = api.FileSplit(fn, off, length)
+            if EXTERNALSPLITS_URI_KEY in self._job_conf:
+                self._input_split = OpaqueSplit.frombuffer(self._raw_split)
+            else:
+                self._input_split = FileSplit.frombuffer(self._raw_split)
         return self._input_split
 
     def get_job_conf(self):

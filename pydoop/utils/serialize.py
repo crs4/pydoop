@@ -69,30 +69,6 @@ def private_decode(s):
     return pickle.loads(s)
 
 
-class OpaqueInputSplit(object):
-
-    def __init__(self, payload=''):
-        self.payload = payload
-
-    def write(self, stream):
-        serialize_bytes_writable(private_encode(self.payload), stream)
-
-    def read(self, stream):
-        self.payload = private_decode(deserialize_bytes_writable(stream))
-        return self
-
-
-def write_opaques(opaques, stream):
-    serialize_int_java_io(len(opaques), stream)
-    for o in opaques:
-        o.write(stream)
-
-
-def read_opaques(stream):
-    n = deserialize_int_java_io(stream)
-    return [OpaqueInputSplit().read(stream) for _ in range(n)]
-
-
 # The following is a reimplementation of the Hadoop Pipes c++ utils functions.
 # Do not use these functions in time-critical regions.
 

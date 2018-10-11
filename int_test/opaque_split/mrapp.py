@@ -29,12 +29,10 @@ recognition).
 
 from __future__ import division
 
-import io
 import uuid
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
-from pydoop.utils.serialize import OpaqueInputSplit
 
 # py2 compat
 try:
@@ -47,9 +45,7 @@ class Reader(api.RecordReader):
 
     def __init__(self, context):
         super(Reader, self).__init__(context)
-        raw_split = context.get_input_split(raw=True)
-        split = OpaqueInputSplit().read(io.BytesIO(raw_split))
-        start, stop = split.payload
+        start, stop = context.input_split.payload
         self.gen = iter(range(start, stop))
         self.nitems = max(stop - start, 0)
         self.key = self.start = start

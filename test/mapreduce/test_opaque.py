@@ -23,8 +23,9 @@ import uuid
 
 import pydoop
 from pydoop.hdfs import hdfs
-from pydoop.utils.serialize import (
-    OpaqueInputSplit, write_opaques, read_opaques)
+from pydoop.mapreduce.pipes import (
+    OpaqueSplit, write_opaque_splits, read_opaque_splits
+)
 
 import pydoop.test_utils as utils
 
@@ -33,7 +34,7 @@ _OPAQUE_ROUNDTRIP_CLASS = 'it.crs4.pydoop.mapreduce.pipes.OpaqueRoundtrip'
 _OPAQUE_ROUNDTRIP_SRC = 'it/crs4/pydoop/mapreduce/pipes/OpaqueRoundtrip.java'
 
 
-class TestOpaqueInputSplit(unittest.TestCase):
+class TestOpaqueSplit(unittest.TestCase):
 
     def setUp(self):
         self.fs = hdfs()
@@ -47,7 +48,7 @@ class TestOpaqueInputSplit(unittest.TestCase):
         return "%s/%s_%s" % (where or self.wd, uuid.uuid4().hex, utils.UNI_CHR)
 
     def _generate_opaque_splits(self, n):
-        return [OpaqueInputSplit('{}_payload'.format(_)) for _ in range(n)]
+        return [OpaqueSplit('{}_payload'.format(_)) for _ in range(n)]
 
     def _test_opaque(self, o, no):
         self.assertEqual(o.payload, no.payload)
@@ -72,33 +73,32 @@ class TestOpaqueInputSplit(unittest.TestCase):
         in_uri = self._make_random_path()
         out_uri = self._make_random_path()
         with self.fs.open_file(in_uri, 'wb') as f:
-            write_opaques(splits, f)
+            write_opaque_splits(splits, f)
         self._run_java(in_uri, out_uri, wd)
         with self.fs.open_file(out_uri, 'rb') as f:
-            nsplits = read_opaques(f)
+            nsplits = read_opaque_splits(f)
         return nsplits
 
     def test_opaque(self):
         payload = {'a': 33, 'b': "333"}
-        o = OpaqueInputSplit(payload)
+        o = OpaqueSplit(payload)
         self.assertEqual(payload, o.payload)
         fname = self._make_random_path('/tmp')
         with open(fname, 'wb') as f:
             o.write(f)
         with open(fname, 'rb') as f:
-            no = OpaqueInputSplit()
-            no.read(f)
+            no = OpaqueSplit.read(f)
         self._test_opaque(o, no)
         os.unlink(fname)
 
-    def test_write_read_opaques(self):
+    def test_write_read_opaque_splits(self):
         n = 10
         opaques = self._generate_opaque_splits(n)
         fname = self._make_random_path('/tmp')
         with open(fname, 'wb') as f:
-            write_opaques(opaques, f)
+            write_opaque_splits(opaques, f)
         with open(fname, 'rb') as f:
-            nopaques = read_opaques(f)
+            nopaques = read_opaque_splits(f)
         self._test_opaques(opaques, nopaques)
         os.unlink(fname)
 
@@ -113,7 +113,7 @@ class TestOpaqueInputSplit(unittest.TestCase):
 
 
 def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestOpaqueInputSplit)
+    return unittest.TestLoader().loadTestsFromTestCase(TestOpaqueSplit)
 
 
 if __name__ == '__main__':

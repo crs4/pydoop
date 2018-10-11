@@ -107,6 +107,24 @@ class FileSplit(InputSplit,
     pass
 
 
+class OpaqueSplit(InputSplit, namedtuple("OpaqueSplit", "payload")):
+    """\
+    A wrapper for an arbitrary Python object.
+
+    Opaque splits are created on the Python side before job submission,
+    serialized as ``hadoop.io.Writable`` objects and stored in an HDFS file.
+    The Java submitter reads the splits from the above file and forwards them
+    to the Python tasks.
+
+    .. note::
+
+      Opaque splits are only available when running a job via ``pydoop
+      submit``. The HDFS path where splits are stored is specified via the
+      ``pydoop.mapreduce.pipes.externalsplits.uri`` configuration key.
+    """
+    pass
+
+
 class Context(ABC):
     """
     Context objects are used for communication between the framework

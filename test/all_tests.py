@@ -25,7 +25,6 @@ _TEST_DIRS = (
     "app",
     "hdfs",
     "mapreduce",
-    "serialize",
     "common",
 )
 
