@@ -27,6 +27,7 @@ appropriate arguments (see the docs and examples for further details).
 import base64
 import hashlib
 import hmac
+import io
 import os
 import struct
 
@@ -39,7 +40,6 @@ from sys import getsizeof as sizeof
 
 import pydoop.config as config
 import pydoop.sercore as sercore
-import pydoop.utils.serialize as ser
 
 from . import api, connections
 
@@ -64,6 +64,31 @@ def create_digest(key, msg):
     return base64.b64encode(h.digest())
 
 
+# extra support for java types, not meant for performance-critical sections
+
+def read_int_writable(f):
+    buf = f.read(INT_WRITABLE_SIZE)
+    return struct.unpack(INT_WRITABLE_FMT, buf)[0]
+
+
+def write_int_writable(n, f):
+    f.write(struct.pack(INT_WRITABLE_FMT, n))
+
+
+def read_bytes_writable(f):
+    length = read_int_writable(f)
+    buf = f.read(length)
+    if len(buf) < length:
+        raise RuntimeError("expected %d bytes, found %d" % (length, len(buf)))
+    return buf
+
+
+def write_bytes_writable(s, f):
+    write_int_writable(len(s), f)
+    if len(s) > 0:
+        f.write(s)
+
+
 class FileSplit(api.FileSplit):
 
     @classmethod
@@ -76,28 +101,24 @@ class OpaqueSplit(api.OpaqueSplit):
 
     @classmethod
     def frombuffer(cls, buf):
-        length = struct.unpack_from(INT_WRITABLE_FMT, buf)[0]
-        payload = buf[INT_WRITABLE_SIZE: INT_WRITABLE_SIZE + length]
-        if len(payload) < length:
-            raise RuntimeError("cannot read data as a BytesWritable")
-        return cls(loads(payload))
+        return cls.read(io.BytesIO(buf))
 
     @classmethod
     def read(cls, f):
-        return cls(loads(ser.deserialize_bytes_writable(f)))
+        return cls(loads(read_bytes_writable(f)))
 
     def write(self, f):
-        ser.serialize_bytes_writable(dumps(self.payload, HIGHEST_PROTOCOL), f)
+        write_bytes_writable(dumps(self.payload, HIGHEST_PROTOCOL), f)
 
 
 def write_opaque_splits(splits, f):
-    ser.serialize_int_java_io(len(splits), f)
+    write_int_writable(len(splits), f)
     for s in splits:
         s.write(f)
 
 
 def read_opaque_splits(f):
-    n = ser.deserialize_int_java_io(f)
+    n = read_int_writable(f)
     return [OpaqueSplit.read(f) for _ in range(n)]
 
 
