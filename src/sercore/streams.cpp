@@ -103,15 +103,20 @@ FileInStream_init(FileInStreamObj *self, PyObject *args, PyObject *kwds) {
 
 static PyObject *
 FileInStream_close(FileInStreamObj *self) {
+  PyThreadState *state;
   if (self->closed) {
     Py_RETURN_NONE;
   }
+  state = PyEval_SaveThread();
   if (self->fp) {
     fclose(self->fp);
   }
-  if (!self->stream->close()) {
+  bool res = self->stream->close();
+  if (!res) {
+    PyEval_RestoreThread(state);
     return PyErr_SetFromErrno(PyExc_IOError);
   }
+  PyEval_RestoreThread(state);
   self->closed = true;
   Py_RETURN_NONE;
 }
@@ -301,13 +306,18 @@ error:
 static PyObject *
 FileInStream_skip(FileInStreamObj *self, PyObject *args) {
   size_t len;
+  PyThreadState *state;
   _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
-  if (!self->stream->skip(len)) {
+  state = PyEval_SaveThread();
+  bool res = self->stream->skip(len);
+  if (!res) {
+    PyEval_RestoreThread(state);
     return PyErr_SetFromErrno(PyExc_IOError);
   }
+  PyEval_RestoreThread(state);
   Py_RETURN_NONE;
 }
 
@@ -443,15 +453,20 @@ FileOutStream_init(FileOutStreamObj *self, PyObject *args, PyObject *kwds) {
 
 static PyObject *
 FileOutStream_close(FileOutStreamObj *self) {
+  PyThreadState *state;
   if (self->closed) {
     Py_RETURN_NONE;
   }
+  state = PyEval_SaveThread();
   if (self->fp) {
     fclose(self->fp);
   }
-  if (!self->stream->close()) {
+  bool res = self->stream->close();
+  if (!res) {
+    PyEval_RestoreThread(state);
     return PyErr_SetFromErrno(PyExc_IOError);
   }
+  PyEval_RestoreThread(state);
   self->closed = true;
   Py_RETURN_NONE;
 }
@@ -688,21 +703,29 @@ error:
 static PyObject *
 FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
   size_t len;
+  PyThreadState *state;
   _ASSERT_STREAM_OPEN;
   if (!PyArg_ParseTuple(args, "n", &len)) {
     return NULL;
   }
-  if (!self->stream->advance(len)) {
+  state = PyEval_SaveThread();
+  bool res = self->stream->advance(len);
+  if (!res) {
+    PyEval_RestoreThread(state);
     return PyErr_SetFromErrno(PyExc_IOError);
   }
+  PyEval_RestoreThread(state);
   Py_RETURN_NONE;
 }
 
 
 static PyObject *
 FileOutStream_flush(FileOutStreamObj *self) {
+  PyThreadState *state;
   _ASSERT_STREAM_OPEN;
+  state = PyEval_SaveThread();
   self->stream->flush();
+  PyEval_RestoreThread(state);
   Py_RETURN_NONE;
 }
 
