@@ -18,22 +18,19 @@
 #
 # END_COPYRIGHT
 
-import struct
-import sys
-
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pipes
 
 
 class Mapper(api.Mapper):
 
+    # in this case there's no need to serialize/deserialize
+    # key is not used, and bytes objects can be split just like strings
     def map(self, context):
-        key = struct.unpack(">q", context.key)[0]
-        # in this case we could just split context.value directly
-        value = context.value.decode("utf-8")
-        sys.stderr.write("k, v = %d, %r\n" % (key, value))
-        for word in value.split():
-            context.emit(word.encode("utf-8"), b"1")
+        # key = struct.unpack(">q", context.key)[0]
+        # value = context.value.decode("utf-8")
+        for word in context.value.split():
+            context.emit(word, b"1")
 
 
 class Reducer(api.Reducer):
