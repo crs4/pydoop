@@ -141,7 +141,7 @@ class TaskContext(api.Context):
         self.progress_value = 0.0
         self.last_progress_t = 0.0
         self.status = None
-        self.ncounters = 0
+        self.counters = {}
         self.task_type = None
         self.avro_key_serializer = None
         self.avro_value_serializer = None
@@ -210,34 +210,51 @@ class TaskContext(api.Context):
         return self.reducer
 
     def progress(self):
+        """\
+        Report progress to the Java side.
+
+        This needs to flush the uplink stream, but too many flushes can
+        disrupt performance, so we actually talk to upstream once per second.
+        """
         now = time()
         if now - self.last_progress_t > 1:
-            self.uplink.progress(self.progress_value)
             self.last_progress_t = now
             if self.status:
                 self.uplink.status(self.status)
                 self.status = None
+            self.__spill_counters()
+            self.uplink.progress(self.progress_value)
+            self.uplink.flush()
 
     def set_status(self, status):
         self.status = status
         self.progress()
 
     def get_counter(self, group, name):
-        id = self.ncounters
+        id = len(self.counters)
         self.uplink.register_counter(id, group, name)
-        self.ncounters += 1
+        self.uplink.flush()
+        self.counters[id] = 0
         return id
 
     def increment_counter(self, counter, amount):
-        if counter < 0 or counter >= self.ncounters:
+        try:
+            self.counters[counter] += amount
+        except KeyError:
             raise ValueError("invalid counter: %r" % (counter,))
-        self.uplink.increment_counter(counter, amount)
+
+    def __spill_counters(self):
+        for c, amount in self.counters.items():
+            if amount:
+                self.uplink.increment_counter(c, amount)
+                self.counters[c] = 0
 
     def _authenticate(self, password, digest, challenge):
         if create_digest(password, challenge) != digest:
             raise RuntimeError("server failed to authenticate")
         response_digest = create_digest(password, digest)
         self.uplink.authenticate(response_digest)
+        self.uplink.flush()
 
     def _setup_avro_ser(self):
         try:
@@ -269,20 +286,31 @@ class TaskContext(api.Context):
         return key, value
 
     def emit(self, key, value):
+        """\
+        Handle an output key/value pair.
+
+        Reporting progress is strictly necessary only when using a Python
+        record writer, because sending an output key/value pair is an implicit
+        progress report. To take advantage of this, however, we would be
+        forced to flush the uplink stream at every output, and that would be
+        too costly. Rather than add a specific timer for this, we just call
+        progress unconditionally and piggyback on its timer instead. Note that
+        when a combiner is caching there is no actual output, so in that case
+        we would need an explicit progress report anyway.
+        """
         if self.__spilling:
             self.__actual_emit(key, value)
         else:
             # key must be hashable
             self.__cache.setdefault(key, []).append(value)
             self.__cache_size += sizeof(key) + sizeof(value)
-            self.progress()
             if self.__cache_size >= self.__spill_size:
                 self.__spill_all()
+        self.progress()
 
     def __actual_emit(self, key, value):
         if self.record_writer:
             self.record_writer.emit(key, value)
-            self.progress()
             return
         key, value = self.__maybe_serialize(key, value)
         if self.partitioner:
@@ -302,6 +330,7 @@ class TaskContext(api.Context):
         self.__spilling = False
 
     def close(self):
+        self.uplink.flush()
         # do *not* call uplink.done while user components are still active
         try:
             if self.mapper:
@@ -317,8 +346,10 @@ class TaskContext(api.Context):
                 self.record_writer.close()
             if self.reducer:
                 self.reducer.close()
+            self.__spill_counters()
         finally:
             self.uplink.done()
+            self.uplink.flush()
 
     def get_output_dir(self):
         return self.job_conf[self.JOB_OUTPUT_DIR]

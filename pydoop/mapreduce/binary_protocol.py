@@ -356,38 +356,34 @@ class Uplink(object):
     def __init__(self, stream):
         self.stream = stream
 
-    def close(self):
+    def flush(self):
         self.stream.flush()
+
+    def close(self):
         self.stream.close()
+
+    # pipes commands
 
     def authenticate(self, response_digest):
         self.stream.write_tuple("ib", (AUTHENTICATION_RESP, response_digest))
-        self.stream.flush()
 
     def output(self, k, v):
         self.stream.write_tuple("ibb", (OUTPUT, k, v))
-        self.stream.flush()
 
     def partitioned_output(self, part, k, v):
         self.stream.write_tuple("iibb", (PARTITIONED_OUTPUT, part, k, v))
-        self.stream.flush()
 
     def status(self, msg):
         self.stream.write_tuple("is", (STATUS, msg))
-        self.stream.flush()
 
     def progress(self, p):
         self.stream.write_tuple("if", (PROGRESS, p))
-        self.stream.flush()
 
     def done(self):
         self.stream.write_vint(DONE)
-        self.stream.flush()
 
     def register_counter(self, id, group, name):
         self.stream.write_tuple("iiss", (REGISTER_COUNTER, id, group, name))
-        self.stream.flush()
 
     def increment_counter(self, id, amount):
         self.stream.write_tuple("iil", (INCREMENT_COUNTER, id, amount))
-        self.stream.flush()

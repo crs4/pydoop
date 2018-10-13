@@ -101,7 +101,7 @@ class TestFileConnection(WDTestCase):
         self.assertTrue(os.path.exists(out_cmd_path))
         with sercore.FileInStream(out_cmd_path) as stream:
             out_cmds = set(cmd for cmd, _ in UplinkDumpReader(stream))
-        self.assertEqual(out_cmds, {bp.OUTPUT})
+        self.assertEqual(out_cmds, {bp.OUTPUT, bp.PROGRESS})
 
 
 def suite():
