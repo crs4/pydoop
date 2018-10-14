@@ -35,6 +35,10 @@
 #include "hu_extras.h"
 #include "streams.h"
 
+#define OUTPUT 50
+#define PARTITIONED_OUTPUT 51
+
+
 // This can only be used in functions that return a PyObject*
 # define _ASSERT_STREAM_OPEN {                                           \
   if (self->closed) {                                                    \
@@ -700,6 +704,68 @@ error:
 }
 
 
+// Same as write_tuple("ibb", (OUTPUT, k, v)) or, when part is specified,
+// write_tuple("iibb", (PARTITIONED_OUTPUT, part, k, v)), but more efficient.
+// Optimizing other commands in this way is probably worthless.
+static PyObject *
+FileOutStream_writeOutput(FileOutStreamObj *self, PyObject *args) {
+  int32_t part = -1;
+  PyThreadState *state;
+  _ASSERT_STREAM_OPEN;
+#if PY_MAJOR_VERSION < 3
+  // "y#" not available
+  PyObject *pykey, *pyval;
+  Py_buffer kbuf = {NULL, NULL};
+  Py_buffer vbuf = {NULL, NULL};
+  if (!PyArg_ParseTuple(args, "OO|n", &pykey, &pyval, &part)) {
+    return NULL;
+  }
+  if (PyObject_GetBuffer(pykey, &kbuf, PyBUF_SIMPLE) < 0) {
+    return NULL;
+  }
+  if (PyObject_GetBuffer(pyval, &vbuf, PyBUF_SIMPLE) < 0) {
+    PyBuffer_Release(&kbuf);
+    return NULL;
+  }
+  std::string ks((const char*)kbuf.buf, kbuf.len);
+  std::string vs((const char*)vbuf.buf, vbuf.len);
+#else
+  const char *key, *val;
+  Py_ssize_t klen, vlen;
+  if (!PyArg_ParseTuple(args, "y#y#|n", &key, &klen, &val, &vlen, &part)) {
+    return NULL;
+  }
+  std::string ks(key, klen);
+  std::string vs(val, vlen);
+#endif
+  state = PyEval_SaveThread();
+  try {
+    if (part >= 0) {
+      HadoopUtils::serializeInt(PARTITIONED_OUTPUT, *self->stream);
+      HadoopUtils::serializeInt(part, *self->stream);
+    } else {
+      HadoopUtils::serializeInt(OUTPUT, *self->stream);
+    }
+    HadoopUtils::serializeString(ks, *self->stream);
+    HadoopUtils::serializeString(vs, *self->stream);
+  } catch (HadoopUtils::Error e) {
+    PyEval_RestoreThread(state);
+    PyErr_SetString(PyExc_IOError, e.getMessage().c_str());
+#if PY_MAJOR_VERSION < 3
+    PyBuffer_Release(&kbuf);
+    PyBuffer_Release(&vbuf);
+#endif
+    return NULL;
+  }
+  PyEval_RestoreThread(state);
+#if PY_MAJOR_VERSION < 3
+  PyBuffer_Release(&kbuf);
+  PyBuffer_Release(&vbuf);
+#endif
+  Py_RETURN_NONE;
+}
+
+
 static PyObject *
 FileOutStream_advance(FileOutStreamObj *self, PyObject *args) {
   size_t len;
@@ -747,6 +813,8 @@ static PyMethodDef FileOutStream_methods[] = {
    "write_bytes(n): write a bytes object to the stream"},
   {"write_tuple", (PyCFunction)FileOutStream_writeTuple, METH_VARARGS,
    "write_tuple(fmt, t): write values from iterable t according to fmt"},
+  {"write_output", (PyCFunction)FileOutStream_writeOutput, METH_VARARGS,
+   "write_output(key, value[, part]): write pipes [partitioned] output"},
   {"advance", (PyCFunction)FileOutStream_advance, METH_VARARGS,
    "advance(len): advance len bytes"},
   {"flush", (PyCFunction)FileOutStream_flush, METH_NOARGS,

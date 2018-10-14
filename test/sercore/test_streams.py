@@ -25,6 +25,7 @@ import unittest
 import uuid
 from random import randint
 
+from pydoop.mapreduce.binary_protocol import OUTPUT, PARTITIONED_OUTPUT
 import pydoop.sercore as sercore
 
 INT64_MIN = -2**63
@@ -156,6 +157,23 @@ class TestSerDe(unittest.TestCase):
             s.write_bytes(self.BYTES)
         with sercore.FileInStream(self.fname) as s:
             self.assertEqual(s.read_bytes(), self.BYTES)
+
+    def test_output(self):
+        k, v = b"key", b"value"
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_output(k, v)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_vint(), OUTPUT)
+            self.assertEqual(s.read_bytes(), k)
+            self.assertEqual(s.read_bytes(), v)
+        part = 1
+        with sercore.FileOutStream(self.fname) as s:
+            s.write_output(k, v, part)
+        with sercore.FileInStream(self.fname) as s:
+            self.assertEqual(s.read_vint(), PARTITIONED_OUTPUT)
+            self.assertEqual(s.read_vint(), part)
+            self.assertEqual(s.read_bytes(), k)
+            self.assertEqual(s.read_bytes(), v)
 
     def test_multi_no_tuple(self):
         self.__fill_stream_multi()

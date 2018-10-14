@@ -368,10 +368,10 @@ class Uplink(object):
         self.stream.write_tuple("ib", (AUTHENTICATION_RESP, response_digest))
 
     def output(self, k, v):
-        self.stream.write_tuple("ibb", (OUTPUT, k, v))
+        self.stream.write_output(k, v)
 
     def partitioned_output(self, part, k, v):
-        self.stream.write_tuple("iibb", (PARTITIONED_OUTPUT, part, k, v))
+        self.stream.write_output(k, v, part)
 
     def status(self, msg):
         self.stream.write_tuple("is", (STATUS, msg))
