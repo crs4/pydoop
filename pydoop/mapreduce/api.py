@@ -300,6 +300,22 @@ class Reducer(Component, Closable):
         pass
 
 
+class Combiner(Reducer):
+    """\
+    A ``Combiner`` performs the same actions as a :class:`Reducer`, but it
+    runs locally within a map task. This helps cutting down the amount of data
+    sent to reducers across the network, with the downside that map tasks
+    require extra memory to cache intermediate key/value pairs. The cache size
+    is controlled by ``"mapreduce.task.io.sort.mb"`` and defaults to 100 MB.
+
+    Note that it's not strictly necessary to extend this class in order to
+    write a combiner: all that's required is that it has the same interface as
+    a :class:`reducer`. Indeed, in many cases it's useful to set the combiner
+    class to be the same as the reducer class.
+    """
+    pass
+
+
 class Partitioner(Component):
     r"""
     Controls the partitioning of intermediate keys output by the
