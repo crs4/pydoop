@@ -150,17 +150,26 @@ Partitioners and Combiners
 --------------------------
 
 The :class:`~pydoop.mapreduce.api.Partitioner` assigns intermediate keys to
-reducers: the default is to select the reducer on the basis of a hash
-function of the key:
+reducers. By default, Hadoop uses `HashPartitioner
+<https://hadoop.apache.org/docs/r3.0.0/api/org/apache/hadoop/mapreduce/lib/partition/HashPartitioner.html>`_,
+which selects the reducer on the basis of a hash function of the key. If the
+pipes factory does *not* provide a partitioner, partitioning will be done on
+the Java side (by default, with ``HashPartitioner``).
+
+To write a custom partitioner in Python, subclass
+:class:`~pydoop.mapreduce.api.Partitioner`, overriding the
+:meth:`~pydoop.mapreduce.api.Partitioner.partition` method. The framework will
+call this method with the current key and the total number of reducers ``N``
+as the arguments, and expect the chosen reducer ID --- in the ``[0, ...,
+N-1]`` range --- as the return value.
+
+The following examples shows how to write a partitioner that simply mimics the
+default ``HashPartitioner`` behavior:
 
 .. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
    :language: python
    :pyobject: Partitioner
    :prepend: from hashlib import md5
-
-The framework calls the partition method passing it the total number
-of reducers ``n_reduces``, and expects the chosen reducer ID --- in
-the ``[0, ..., n_reduces-1]`` range --- as the return value.
 
 The combiner is functionally identical to a reducer, but it is run
 locally, on the key-value stream output by a single mapper.  Although
@@ -168,10 +177,40 @@ nothing prevents the combiner from processing values differently from
 the reducer, the former, provided that the reduce function is
 associative and idempotent, is typically configured to be the same as
 the latter, in order to perform local aggregation and thus help cut
-down network traffic. Custom partitioner and combiner classes must be
-declared to the factory as done above for record readers and writers.
-To recap, if we need to use all of the above components, we need to
-instantiate the factory as:
+down network traffic.
+
+Local aggregation is implemented by caching intermediate key/value pairs in a
+dictionary. Like in standard Java Hadoop, cache size is controlled by
+``"mapreduce.task.io.sort.mb"`` and defaults to 100 MB. Pydoop uses
+:func:`sys.getsizeof` to determine key/value size, which takes into account
+Python object overhead. This can be quite substantial (e.g.,
+``sys.getsizeof(b"foo") == 36``) and must be taken into account if fine tuning
+is desired.
+
+.. important:: Due to the caching, when using a combiner there are additional
+  limitations on the types that can be used for intermediate keys and
+  values. First of all, keys must be `hashable
+  <https://docs.python.org/3/glossary.html>`_. In addition, if a mutable type
+  is used for values, then values should not change after they have been
+  emitted by the mapper. For instance, the following (however contrived)
+  example would not work as expected:
+
+  .. code-block:: python
+
+    intermediate_value = {}
+
+    class Mapper(api.Mapper):
+      def map(self, ctx):
+         intermediate_value.clear()
+         intermediate_value[ctx.key] = ctx.value
+         ctx.emit("foo", intermediate_value)
+
+  For these reasons, it is recommended to use immutable types for both keys
+  and values when the job includes a combiner.
+
+Custom partitioner and combiner classes must be declared to the factory as
+done above for record readers and writers. To recap, if we need to use all of
+the above components, we need to instantiate the factory as:
 
 .. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
    :language: python
