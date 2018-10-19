@@ -24,7 +24,6 @@ from collections import Counter
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from pydoop.avrolib import AvroContext
 
 
 class ColorPickBase(api.Mapper):
@@ -107,7 +106,4 @@ class AvroKeyValueColorCount(ColorCountBase):
 
 
 def run_task(mapper_class, reducer_class=NoAvroColorCount):
-    pp.run_task(
-        pp.Factory(mapper_class=mapper_class, reducer_class=reducer_class),
-        private_encoding=True, context_class=AvroContext
-    )
+    pp.run_task(pp.Factory(mapper_class, reducer_class=reducer_class))

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
+app_names=(
+    map_only_java_writer
+    map_only_python_writer
+    map_reduce_combiner
+    map_reduce_java_rw
+    map_reduce_java_rw_pstats
+    map_reduce_python_partitioner
+    map_reduce_python_reader
+    map_reduce_python_writer
+    map_reduce_raw_io
+    map_reduce_slow_java_rw
+    map_reduce_slow_python_rw
+)
+
+for name in "${app_names[@]}"; do
+    bash "${this_dir}"/run_app.sh ${name}
+done

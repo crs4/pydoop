@@ -184,12 +184,14 @@ EXTENSION_MODULES = [
     ),
     Extension(
         'pydoop.sercore',
-        sources=[os.path.join('src/serialize', x) for x in [
-            'sermodule.cc', 'flow.cc', 'command.cc',
-            'serialization.cc', 'SerialUtils.cc', 'StringUtils.cc'
-        ]],
-        undef_macros=["NDEBUG"],  # FIXME
-        extra_compile_args=EXTRA_COMPILE_ARGS + ["-O3"]
+        sources=[
+            "src/sercore/hu_extras.cpp",
+            "src/sercore/sercore.cpp",
+            "src/sercore/streams.cpp",
+            "src/sercore/HadoopUtils/SerialUtils.cc",
+        ],
+        include_dirs=["src/sercore/HadoopUtils"],
+        extra_compile_args=EXTRA_COMPILE_ARGS + ["-std=c++11", "-O3"],
     )
 ]
 

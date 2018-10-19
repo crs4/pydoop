@@ -15,4 +15,3 @@ done
 "${this_dir}"/run_avro_pyrw
 "${this_dir}"/run_color_count
 "${this_dir}"/run_kmer_count
-"${this_dir}"/run_simulate_cc

@@ -59,10 +59,7 @@ class Writer(api.RecordWriter):
 
 
 def __main__():
-    pipes.run_task(pipes.Factory(
-        mapper_class=Mapper,
-        record_writer_class=Writer,
-    ))
+    pipes.run_task(pipes.Factory(Mapper, record_writer_class=Writer))
 
 
 if __name__ == "__main__":

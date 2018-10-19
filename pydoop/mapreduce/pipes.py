@@ -16,117 +16,371 @@
 #
 # END_COPYRIGHT
 
-import sys
+"""\
+Python driver for Hadoop Pipes tasks.
+
+The intended usage is to import this module in the executable script passed to
+``mapred pipes`` (or ``pydoop submit``) and call ``run_task`` with the
+appropriate arguments (see the docs and examples for further details).
+"""
+
+import base64
+import hashlib
+import hmac
+import io
 import os
-import logging
-import time
-import numbers
 import struct
-import types
 
-from copy import deepcopy
+try:
+    from cPickle import dumps, loads, HIGHEST_PROTOCOL
+except ImportError:
+    from pickle import dumps, loads, HIGHEST_PROTOCOL
+from time import time
+from sys import getsizeof as sizeof
 
-from pydoop import hadoop_version_info
-from pydoop.utils.serialize import (
-    deserialize_text,
-    deserialize_long,
-    serialize_old_style_filename,
-    deserialize_old_style_filename,
-    serialize_text,
-    serialize_long,
-    private_encode,
-)
+import pydoop.config as config
+import pydoop.sercore as sercore
 
-from . import connections, api
-from .streams import get_key_value_stream, get_key_values_stream
-from .binary_streams import BinaryUpStreamAdapter
-from .string_utils import create_digest
+from . import api, connections
 
-from pydoop.utils.py3compat import unicode, StringIO, iteritems
-
-
-logging.basicConfig()
-LOGGER = logging.getLogger('pipes')
-LOGGER.setLevel(logging.CRITICAL)
+# py2 compat
+try:
+    as_text = unicode
+except NameError:
+    as_text = str
 
 PSTATS_DIR = "PYDOOP_PSTATS_DIR"
 PSTATS_FMT = "PYDOOP_PSTATS_FMT"
 DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
-if os.getenv(PSTATS_DIR):
-    import tempfile
-    import cProfile
-    import pydoop.hdfs as hdfs
-DEFAULT_IO_SORT_MB = 100
 
-_PORT_KEYS = frozenset([
-    "hadoop.pipes.command.port",  # Hadoop 1
-    "mapreduce.pipes.command.port",  # Hadoop 2
-])
-_FILE_KEYS = frozenset([
-    "hadoop.pipes.command.file",  # Hadoop 1
-    "mapreduce.pipes.commandfile"  # Hadoop 2.  No dot.
-])
-_SECRET_LOCATION_KEYS = frozenset([
-    "hadoop.pipes.shared.secret.location"  # All versions
-])
-_INPUT_FORMAT_KEYS = frozenset([
-    "mapred.input.format.class",
-    "mapreduce.job.inputformat.class",
-    "mapreduce.job.inputformat.class",
-])
+EXTERNALSPLITS_URI_KEY = "pydoop.mapreduce.pipes.externalsplits.uri"
 
-# FIXME: duplicate with app.submit, move to a common module
-IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
+INT_WRITABLE_FMT = ">i"
+INT_WRITABLE_SIZE = struct.calcsize(INT_WRITABLE_FMT)
 
 
-class LongWritableDeserializer(object):
-
-    def __init__(self):
-        self.struct = struct.Struct(">q")
-
-    def deserialize(self, record):
-        return self.struct.unpack(record)[0]
+def create_digest(key, msg):
+    h = hmac.new(key, msg, hashlib.sha1)
+    return base64.b64encode(h.digest())
 
 
-class TextDeserializer(object):
+# extra support for java types, not meant for performance-critical sections
 
-    def __init__(self):
-        self.decoder = "utf-8"
-
-    def deserialize(self, record):
-        return record.decode(self.decoder)
+def read_int_writable(f):
+    buf = f.read(INT_WRITABLE_SIZE)
+    return struct.unpack(INT_WRITABLE_FMT, buf)[0]
 
 
-def _get_from_env(candidate_keys):
-    for k in candidate_keys:
-        v = os.getenv(k)
-        if v is not None:
-            return v
-    return None
+def write_int_writable(n, f):
+    f.write(struct.pack(INT_WRITABLE_FMT, n))
 
 
-def get_command_port():
-    return _get_from_env(_PORT_KEYS)
+def read_bytes_writable(f):
+    length = read_int_writable(f)
+    buf = f.read(length)
+    if len(buf) < length:
+        raise RuntimeError("expected %d bytes, found %d" % (length, len(buf)))
+    return buf
 
 
-def get_command_file():
-    return _get_from_env(_FILE_KEYS)
+def write_bytes_writable(s, f):
+    write_int_writable(len(s), f)
+    if len(s) > 0:
+        f.write(s)
 
 
-def get_secret_location():
-    return _get_from_env(_SECRET_LOCATION_KEYS)
+class FileSplit(api.FileSplit):
+
+    @classmethod
+    def frombuffer(cls, buf):
+        filename, offset, length = sercore.deserialize_file_split(buf)
+        return cls(filename, offset, length)
+
+
+class OpaqueSplit(api.OpaqueSplit):
+
+    @classmethod
+    def frombuffer(cls, buf):
+        return cls.read(io.BytesIO(buf))
+
+    @classmethod
+    def read(cls, f):
+        return cls(loads(read_bytes_writable(f)))
+
+    def write(self, f):
+        write_bytes_writable(dumps(self.payload, HIGHEST_PROTOCOL), f)
+
+
+def write_opaque_splits(splits, f):
+    write_int_writable(len(splits), f)
+    for s in splits:
+        s.write(f)
+
+
+def read_opaque_splits(f):
+    n = read_int_writable(f)
+    return [OpaqueSplit.read(f) for _ in range(n)]
+
+
+class TaskContext(api.Context):
+
+    JOB_OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir"
+    TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
+    TASK_PARTITION = "mapreduce.task.partition"
+
+    def __init__(self, factory, **kwargs):
+        self.factory = factory
+        self.uplink = None
+        self.combiner = None
+        self.mapper = None
+        self.partitioner = None
+        self.record_reader = None
+        self.record_writer = None
+        self.reducer = None
+        self.nred = None
+        self.progress_value = 0.0
+        self.last_progress_t = 0.0
+        self.status = None
+        self.counters = {}
+        self.task_type = None
+        self.avro_key_serializer = None
+        self.avro_value_serializer = None
+        self._private_encoding = kwargs.get("private_encoding", True)
+        self._raw_split = None
+        self._input_split = None
+        self._job_conf = {}
+        self._key = None
+        self._value = None
+        self._values = None
+        self.__auto_serialize = kwargs.get("auto_serialize", True)
+        self.__cache = {}
+        self.__cache_size = 0
+        self.__spill_size = None  # delayed until (if) create_combiner
+        self.__spilling = True  # enable actual emit
+
+    def get_input_split(self, raw=False):
+        if raw:
+            return self._raw_split
+        if not self._input_split:
+            if EXTERNALSPLITS_URI_KEY in self._job_conf:
+                self._input_split = OpaqueSplit.frombuffer(self._raw_split)
+            else:
+                self._input_split = FileSplit.frombuffer(self._raw_split)
+        return self._input_split
+
+    def get_job_conf(self):
+        return self._job_conf
+
+    def get_input_key(self):
+        return self._key
+
+    def get_input_value(self):
+        return self._value
+
+    def get_input_values(self):
+        return self._values
+
+    def create_combiner(self):
+        self.combiner = self.factory.create_combiner(self)
+        if self.combiner:
+            self.__spill_size = 1024 * 1024 * self.job_conf.get_int(
+                "mapreduce.task.io.sort.mb", 100
+            )
+            self.__spilling = False
+        return self.combiner
+
+    def create_mapper(self):
+        self.mapper = self.factory.create_mapper(self)
+        return self.mapper
+
+    def create_partitioner(self):
+        self.partitioner = self.factory.create_partitioner(self)
+        return self.partitioner
+
+    def create_record_reader(self):
+        self.record_reader = self.factory.create_record_reader(self)
+        return self.record_reader
+
+    def create_record_writer(self):
+        self.record_writer = self.factory.create_record_writer(self)
+        return self.record_writer
+
+    def create_reducer(self):
+        self.reducer = self.factory.create_reducer(self)
+        return self.reducer
+
+    def progress(self):
+        """\
+        Report progress to the Java side.
+
+        This needs to flush the uplink stream, but too many flushes can
+        disrupt performance, so we actually talk to upstream once per second.
+        """
+        now = time()
+        if now - self.last_progress_t > 1:
+            self.last_progress_t = now
+            if self.status:
+                self.uplink.status(self.status)
+                self.status = None
+            self.__spill_counters()
+            self.uplink.progress(self.progress_value)
+            self.uplink.flush()
+
+    def set_status(self, status):
+        self.status = status
+        self.progress()
+
+    def get_counter(self, group, name):
+        id = len(self.counters)
+        self.uplink.register_counter(id, group, name)
+        self.uplink.flush()
+        self.counters[id] = 0
+        return id
+
+    def increment_counter(self, counter, amount):
+        try:
+            self.counters[counter] += amount
+        except KeyError:
+            raise ValueError("invalid counter: %r" % (counter,))
+
+    def __spill_counters(self):
+        for c, amount in self.counters.items():
+            if amount:
+                self.uplink.increment_counter(c, amount)
+                self.counters[c] = 0
+
+    def _authenticate(self, password, digest, challenge):
+        if create_digest(password, challenge) != digest:
+            raise RuntimeError("server failed to authenticate")
+        response_digest = create_digest(password, digest)
+        self.uplink.authenticate(response_digest)
+        self.uplink.flush()
+
+    def _setup_avro_ser(self):
+        try:
+            from pydoop.avrolib import AvroSerializer
+        except ImportError as e:
+            raise RuntimeError("cannot handle avro output: %s" % e)
+        jc = self.job_conf
+        avro_output = jc.get(config.AVRO_OUTPUT).upper()
+        if avro_output not in api.AVRO_IO_MODES:
+            raise RuntimeError('invalid avro output mode: %s' % avro_output)
+        if avro_output == 'K' or avro_output == 'KV':
+            schema = jc.get(config.AVRO_KEY_OUTPUT_SCHEMA)
+            self.avro_key_serializer = AvroSerializer(schema)
+        if avro_output == 'V' or avro_output == 'KV':
+            schema = jc.get(config.AVRO_VALUE_OUTPUT_SCHEMA)
+            self.avro_value_serializer = AvroSerializer(schema)
+
+    def __maybe_serialize(self, key, value):
+        if self.task_type == "m" and self._private_encoding:
+            return dumps(key, HIGHEST_PROTOCOL), dumps(value, HIGHEST_PROTOCOL)
+        if self.avro_key_serializer:
+            key = self.avro_key_serializer.serialize(key)
+        elif self.__auto_serialize:
+            key = as_text(key).encode("utf-8")
+        if self.avro_value_serializer:
+            value = self.avro_value_serializer.serialize(value)
+        elif self.__auto_serialize:
+            value = as_text(value).encode("utf-8")
+        return key, value
+
+    def emit(self, key, value):
+        """\
+        Handle an output key/value pair.
+
+        Reporting progress is strictly necessary only when using a Python
+        record writer, because sending an output key/value pair is an implicit
+        progress report. To take advantage of this, however, we would be
+        forced to flush the uplink stream at every output, and that would be
+        too costly. Rather than add a specific timer for this, we just call
+        progress unconditionally and piggyback on its timer instead. Note that
+        when a combiner is caching there is no actual output, so in that case
+        we would need an explicit progress report anyway.
+        """
+        if self.__spilling:
+            self.__actual_emit(key, value)
+        else:
+            # key must be hashable
+            self.__cache.setdefault(key, []).append(value)
+            self.__cache_size += sizeof(key) + sizeof(value)
+            if self.__cache_size >= self.__spill_size:
+                self.__spill_all()
+        self.progress()
+
+    def __actual_emit(self, key, value):
+        if self.record_writer:
+            self.record_writer.emit(key, value)
+            return
+        key, value = self.__maybe_serialize(key, value)
+        if self.partitioner:
+            part = self.partitioner.partition(key, self.nred)
+            self.uplink.partitioned_output(part, key, value)
+        else:
+            self.uplink.output(key, value)
+
+    def __spill_all(self):
+        self.__spilling = True
+        for k in sorted(self.__cache):
+            self._key = k
+            self._values = iter(self.__cache[k])
+            self.combiner.reduce(self)
+        self.__cache.clear()
+        self.__cache_size = 0
+        self.__spilling = False
+
+    def close(self):
+        self.uplink.flush()
+        # do *not* call uplink.done while user components are still active
+        try:
+            if self.mapper:
+                self.mapper.close()
+            # handle combiner after mapper (mapper.close can call emit)
+            if self.__cache:
+                self.__spill_all()
+                self.__spilling = True  # re-enable emit for combiner.close
+                self.combiner.close()
+            if self.record_reader:
+                self.record_reader.close()
+            if self.record_writer:
+                self.record_writer.close()
+            if self.reducer:
+                self.reducer.close()
+            self.__spill_counters()
+        finally:
+            self.uplink.done()
+            self.uplink.flush()
+
+    def get_output_dir(self):
+        return self.job_conf[self.JOB_OUTPUT_DIR]
+
+    def get_work_path(self):
+        try:
+            return self.job_conf[self.TASK_OUTPUT_DIR]
+        except KeyError:
+            raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
+
+    def get_task_partition(self):
+        return self.job_conf.get_int(self.TASK_PARTITION)
+
+    def get_default_work_file(self, extension=""):
+        partition = self.get_task_partition()
+        if partition is None:
+            raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
+        base = self.job_conf.get("mapreduce.output.basename", "part")
+        return "%s/%s-%s-%05d%s" % (
+            self.get_work_path(), base, self.task_type, partition, extension
+        )
 
 
 class Factory(api.Factory):
-    """
-    Creates MapReduce application components.
 
-    The classes to use for each component must be specified as arguments
-    to the constructor.
-    """
-    def __init__(self, mapper_class, reducer_class=None, combiner_class=None,
+    def __init__(self, mapper_class,
+                 reducer_class=None,
+                 combiner_class=None,
                  partitioner_class=None,
-                 record_writer_class=None, record_reader_class=None):
+                 record_writer_class=None,
+                 record_reader_class=None):
         self.mclass = mapper_class
         self.rclass = reducer_class
         self.cclass = combiner_class
@@ -153,480 +407,58 @@ class Factory(api.Factory):
         return None if not self.rwclass else self.rwclass(context)
 
 
-class InputSplit(object):
-    r"""
-    Represents the data to be processed by an individual :class:`Mapper`\ .
+def _run(context, **kwargs):
+    with connections.get_connection(context, **kwargs) as connection:
+        for _ in connection.downlink:
+            pass
 
-    Typically, it presents a byte-oriented view on the input and it is
-    the responsibility of the :class:`RecordReader` to convert this to a
-    record-oriented view.
 
-    The ``InputSplit`` is a *logical* representation of the actual
-    dataset chunk, expressed through the ``filename``, ``offset`` and
-    ``length`` attributes.
+def run_task(factory, **kwargs):
+    """\
+    Run a MapReduce task.
 
-    InputSplit objects are instantiated by the framework and accessed
-    via :attr:`MapContext.input_split`\ .
+    Available keyword arguments:
+
+    * ``raw_keys`` (default: :obj:`False`): pass map input keys to context
+      as byte strings (ignore any type information)
+    * ``raw_values`` (default: :obj:`False`): pass map input values to context
+      as byte strings (ignore any type information)
+    * ``private_encoding`` (default: :obj:`True`): automatically serialize map
+      output k/v and deserialize reduce input k/v (pickle)
+    * ``auto_serialize`` (default: :obj:`True`): automatically serialize reduce
+      output (map output in map-only jobs) k/v (call str/unicode then encode as
+      utf-8)
+
+    Advanced keyword arguments:
+
+    * ``pstats_dir``: run the task with cProfile and store stats in this dir
+    * ``pstats_fmt``: use this pattern for pstats filenames (experts only)
+
+    The pstats dir and filename pattern can also be provided via ``pydoop
+    submit`` arguments, with lower precedence in case of clashes.
     """
-    def __init__(self, data):
-        stream = StringIO(data)
-        if hadoop_version_info().has_variable_isplit_encoding():
-            self.filename = deserialize_text(stream)
-        else:
-            self.filename = deserialize_old_style_filename(stream)
-        self.offset = deserialize_long(stream)
-        self.length = deserialize_long(stream)
-
-    @classmethod
-    def to_string(cls, filename, offset, length):
-        stream = StringIO()
-        if hadoop_version_info().has_variable_isplit_encoding():
-            serialize_text(filename, stream)
-        else:
-            serialize_old_style_filename(filename, stream)
-        serialize_long(offset, stream)
-        serialize_long(length, stream)
-        return stream.getvalue()
-
-
-class CombineRunner(api.RecordWriter):
-
-    def __init__(self, spill_bytes, context, reducer, fast_combiner=False):
-        self.spill_bytes = spill_bytes
-        self.used_bytes = 0
-        self.data = {}
-        self.ctx = context
-        self.reducer = reducer
-        self.fast_combiner = fast_combiner
-        self.spill_counter = self.ctx.get_counter(
-            'Pydoop CombineRunner', 'spills')
-        self.spilled_bytes_counter = self.ctx.get_counter(
-            'Pydoop CombineRunner', 'spilled bytes')
-        self.in_rec_counter = self.ctx.get_counter(
-            'Pydoop CombineRunner', 'input records')
-
-    def __defensive_copy(self, v):
-        if isinstance(v, (str, unicode, numbers.Number)):
-            return v
-        else:
-            return deepcopy(v)
-
-    def emit(self, key, value):
-        self.used_bytes += sys.getsizeof(key)
-        self.used_bytes += sys.getsizeof(value)
-        if not self.fast_combiner:
-            key = self.__defensive_copy(key)
-            value = self.__defensive_copy(value)
-        self.data.setdefault(key, []).append(value)
-        self.ctx.increment_counter(self.in_rec_counter, 1)
-        if self.used_bytes >= self.spill_bytes:
-            self.spill_all()
-
-    def close(self):
-        self.spill_all()
-
-    def spill_all(self):
-        self.ctx.increment_counter(self.spill_counter, 1)
-        self.ctx.increment_counter(self.spilled_bytes_counter, self.used_bytes)
-        ctx = self.ctx
-        writer = ctx.writer
-        ctx.writer = None
-        # disable auto-deserialize (ctx.key will be called by reduce)
-        # FIXME: this might break custom Context implementations
-        get_input_key = ctx.get_input_key
-        ctx.get_input_key = types.MethodType(lambda self: self._key, ctx)
-        for key, values in iteritems(self.data):
-            ctx._key, ctx._values = key, iter(values)
-            self.reducer.reduce(ctx)
-        ctx.writer = writer
-        ctx.get_input_key = get_input_key
-        self.data.clear()
-        self.used_bytes = 0
-
-
-class TaskContext(api.MapContext, api.ReduceContext):
-
-    JOB_OUTPUT_DIR = "mapreduce.output.fileoutputformat.outputdir"
-    TASK_OUTPUT_DIR = "mapreduce.task.output.dir"
-    TASK_PARTITION = "mapreduce.task.partition"
-
-    def deserializing(self, meth, deserializer):
-        """
-        Decorate a key/value getter to make it auto-deserialize records.
-        """
-        def deserialize(*args, **kwargs):
-            ret = meth(*args, **kwargs)
-            return deserializer.deserialize(ret)
-        return deserialize
-
-    def __init__(self, up_link, private_encoding=True, fast_combiner=False):
-        self._fast_combiner = fast_combiner
-        self.private_encoding = private_encoding
-        self._private_encoding = False
-        self.up_link = up_link
-        self.writer = None
-        self.partitioner = None
-        self._job_conf = None
-        self._key = None
-        self._value = None
-        self.n_reduces = None
-        self._values = None
-        self._input_split = None
-        self._input_key_class = None
-        self._input_value_class = None
-        self._status = None
-        self._status_set = False
-        self._progress_float = 0.0
-        self._last_progress = 0
-        self._registered_counters = []
-        # None = unknown (yet), e.g., while setting conf.  In this
-        # case, *both* is_mapper() and is_reducer() must return False
-        self._is_mapper = None
-
-    def set_is_mapper(self):
-        self._is_mapper = True
-
-    def set_is_reducer(self):
-        self._is_mapper = False
-
-    def is_mapper(self):
-        return self._is_mapper is True
-
-    def is_reducer(self):
-        return self._is_mapper is False
-
-    def enable_private_encoding(self):
-        self._private_encoding = self.private_encoding
-
-    def close(self):
-        if self.writer:
-            self.writer.close()
-        self.up_link.send(self.up_link.DONE)
-
-    def set_combiner(self, factory, input_split, n_reduces):
-        self.n_reduces = n_reduces
-        if self.n_reduces > 0:
-            self.partitioner = factory.create_partitioner(self)
-            reducer = factory.create_combiner(self)
-            spill_size = self._job_conf.get_int(
-                "mapreduce.task.mapreduce.task.io.sort.mb", DEFAULT_IO_SORT_MB
-            )
-            if reducer:
-                self.writer = CombineRunner(spill_size * 1024 * 1024,
-                                            self, reducer,
-                                            fast_combiner=self._fast_combiner)
-            else:
-                self.writer = None
-
-    def emit(self, key, value):
-        self.progress()
-        if self.writer:
-            self.writer.emit(key, value)
-        else:
-            if self._is_mapper and self._private_encoding:
-                key = private_encode(key)
-                value = private_encode(value)
-            if self.partitioner:
-                part = self.partitioner.partition(key, self.n_reduces)
-                self.up_link.send(self.up_link.PARTITIONED_OUTPUT,
-                                  part, key, value)
-            else:
-                self.up_link.send(self.up_link.OUTPUT, key, value)
-
-    def set_job_conf(self, d):
-        self._job_conf = api.JobConf(d)
-
-    # FIXME: currently works only with the default TextInputFormat;
-    # TODO: generalize to support Hadoop Writable types
-    def setup_deserialization(self):
-        """\
-        Set up auto-deserialization of input key/values
-        """
-        # NOTE: assuming up link is binary => down link is binary
-        # the dict check is for the simulator
-        if isinstance(self.up_link, (BinaryUpStreamAdapter, dict)):
-            if not _INPUT_FORMAT_KEYS.intersection(self._job_conf):
-                self.get_input_key = self.deserializing(
-                    self.get_input_key, LongWritableDeserializer()
-                )
-                self.get_input_value = self.deserializing(
-                    self.get_input_value, TextDeserializer()
-                )
-
-    def setup_serialization(self):
-        """\
-        Set up auto-serialization of output key/values
-        """
-        pass
-
-    def get_job_conf(self):
-        return self._job_conf
-
-    def get_input_key(self):
-        return self._key
-
-    def get_input_value(self):
-        return self._value
-
-    def get_input_values(self):
-        return self._values
-
-    def progress(self):
-        if not self.up_link:
-            return
-        now = int(time.time())
-        if now - self._last_progress > 1:
-            self._last_progress = now
-            if self._status_set:
-                self.up_link.send(self.up_link.STATUS, self._status)
-                LOGGER.debug("Sending status: %r", self._status)
-                self._status_set = False
-            self.up_link.send(self.up_link.PROGRESS, self._progress_float)
-            self.up_link.flush()
-            LOGGER.debug("Sending progress: %r", self._progress_float)
-
-    def set_status(self, status):
-        self._status = status
-        self._status_set = True
-        self.progress()
-
-    def get_counter(self, group, name):
-        counter_id = len(self._registered_counters)
-        self._registered_counters.append(counter_id)
-        self.up_link.send(self.up_link.REGISTER_COUNTER,
-                          counter_id, group, name)
-        return api.Counter(counter_id)
-
-    def increment_counter(self, counter, amount):
-        self.up_link.send(self.up_link.INCREMENT_COUNTER,
-                          counter.get_id(), amount)
-
-    def get_input_split(self, raw=False):
-        return self._input_split if raw else InputSplit(self._input_split)
-
-    def get_input_key_class(self):
-        return self._input_key_class
-
-    def get_input_value_class(self):
-        return self._input_value_class
-
-    def next_value(self):
-        try:
-            self._value = next(self._values)
-            return True
-        except StopIteration:
-            return False
-
-    def get_output_dir(self):
-        return self._job_conf[self.JOB_OUTPUT_DIR]
-
-    def get_work_path(self):
-        try:
-            return self._job_conf[self.TASK_OUTPUT_DIR]
-        except KeyError:
-            raise RuntimeError("%r not set" % (self.TASK_OUTPUT_DIR,))
-
-    def get_task_partition(self):
-        return self._job_conf.get_int(self.TASK_PARTITION)
-
-    def get_default_work_file(self, extension=""):
-        partition = self.get_task_partition()
-        if partition is None:
-            raise RuntimeError("%r not set" % (self.TASK_PARTITION,))
-        base = self._job_conf.get("mapreduce.output.basename", "part")
-        task_type = "r" if self.is_reducer() else "m"
-        return "%s/%s-%s-%05d%s" % (
-            self.get_work_path(), base, task_type, partition, extension
-        )
-
-
-def resolve_connections(port=None, istream=None, ostream=None, cmd_file=None,
-                        auto_serialize=True):
-    """
-    Select appropriate connection streams and protocol.
-    """
-    port = port or get_command_port()
-    cmd_file = cmd_file or get_command_file()
-    if port is not None:
-        port = int(port)
-        conn = connections.open_network_connections(port, auto_serialize)
-    elif cmd_file is not None:
-        out_file = cmd_file + '.out'
-        conn = connections.open_playback_connections(
-            cmd_file, out_file, auto_serialize
-        )
-    else:
-        # auto_serialize has no effect here. Should we warn the user?
-        istream = sys.stdin if istream is None else istream
-        ostream = sys.stdout if ostream is None else ostream
-        conn = connections.open_file_connections(istream=istream,
-                                                 ostream=ostream)
-    return conn
-
-
-class StreamRunner(object):
-
-    def __init__(self, factory, context, cmd_stream):
-        self.logger = LOGGER.getChild('StreamRunner')
-        self.factory = factory
-        self.ctx = context
-        self.cmd_stream = cmd_stream
-        self.password = None
-        self.authenticated = False
-        self.get_password()
-
-    def get_password(self):
-        pfile_name = get_secret_location()
-        self.logger.debug('secret location: %r', pfile_name)
-        if pfile_name is None:
-            self.password = None
-            return
-        try:
-            with open(pfile_name, 'rb') as f:
-                self.password = f.read()
-                self.logger.debug('password: %r', self.password)
-        except IOError:
-            self.logger.error('Could not open the password file')
-
-    def run(self):
-        self.logger.debug('start running')
-        AUTHENTICATION_REQ = self.cmd_stream.AUTHENTICATION_REQ
-        SET_JOB_CONF = self.cmd_stream.SET_JOB_CONF
-        RUN_MAP = self.cmd_stream.RUN_MAP
-        RUN_REDUCE = self.cmd_stream.RUN_REDUCE
-
-        for cmd, args in self.cmd_stream:
-            self.logger.debug('dispatching cmd: %s, args: %s', cmd, args)
-            if cmd == AUTHENTICATION_REQ:
-                digest, challenge = args
-                self.logger.debug(
-                    'authenticationReq: %r, %r', digest, challenge)
-                if self.fails_to_authenticate(digest, challenge):
-                    self.logger.critical('Server failed to authenticate')
-                    break  # bailing out
-            elif cmd == SET_JOB_CONF:
-                self.ctx.set_job_conf({
-                    k.decode('utf-8') if isinstance(k, bytes) else k:
-                    v.decode('utf-8') if isinstance(v, bytes) else v
-                    for k, v in iteritems(args[0])
-                })
-            elif cmd == RUN_MAP:
-                self.ctx.set_is_mapper()
-                input_split, n_reduces, piped_input = args
-                if piped_input:
-                    self.ctx.setup_deserialization()
-                self.run_map(input_split, n_reduces, piped_input)
-                break  # we can bail out, there is nothing more to do.
-            elif cmd == RUN_REDUCE:
-                self.ctx.set_is_reducer()
-                part, piped_output = args
-                if piped_output:
-                    self.ctx.setup_serialization()
-                self.run_reduce(part, piped_output)
-                break  # we can bail out, there is nothing more to do.
-        self.logger.debug('done')
-
-    def fails_to_authenticate(self, digest, challenge):
-        if self.password is None:
-            self.logger.info('No password, assuming playback mode')
-            self.authenticated = True
-            return False
-        expected_digest = create_digest(self.password, challenge)
-        if expected_digest != digest:
-            return True
-        self.authenticated = True
-        response_digest = create_digest(self.password, digest)
-        self.logger.debug('authenticationResp: %r', response_digest)
-        self.ctx.up_link.send(self.ctx.up_link.AUTHENTICATION_RESP,
-                              response_digest)
-        self.ctx.up_link.flush()
-        return False
-
-    def run_map(self, input_split, n_reduces, piped_input):
-        self.logger.debug('start run_map')
-        factory, ctx = self.factory, self.ctx
-        if n_reduces > 0:
-            ctx.enable_private_encoding()
-        ctx._input_split = input_split
-        LOGGER.debug("Input split: %r", input_split)
-        if piped_input:
-            cmd, args = next(iter(self.cmd_stream))
-            if cmd == self.cmd_stream.SET_INPUT_TYPES:
-                ctx._input_key_class, ctx._input_value_class = args
-                LOGGER.debug("Input (key, value) class: (%r, %r)",
-                             ctx._input_key_class, ctx._input_value_class)
-        reader = factory.create_record_reader(ctx)
-        if reader is None and not piped_input:
-            raise api.PydoopError('RecordReader not defined')
-        send_progress = reader is not None
-        mapper = factory.create_mapper(ctx)
-        reader = reader if reader else get_key_value_stream(self.cmd_stream)
-        ctx.set_combiner(factory, input_split, n_reduces)
-        mapper_map = mapper.map
-        progress_function = ctx.progress
-        if n_reduces == 0:
-            ctx.writer = factory.create_record_writer(ctx)
-            if ctx.writer is None and not ctx.job_conf.get_bool(IS_JAVA_RW):
-                raise api.PydoopError('RecordWriter not defined')
-        for ctx._key, ctx._value in reader:
-            if send_progress:
-                ctx._progress_float = reader.get_progress()
-                LOGGER.debug("Progress updated to %r ", ctx._progress_float)
-                progress_function()
-            mapper_map(ctx)
-        mapper.close()
-        self.logger.debug('done with run_map')
-
-    def run_reduce(self, part, piped_output):
-        self.logger.debug('start run_reduce')
-        factory, ctx = self.factory, self.ctx
-        writer = factory.create_record_writer(ctx)
-        if writer is None and piped_output is None:
-            raise api.PydoopError('RecordWriter not defined')
-        ctx.writer = writer
-        reducer = factory.create_reducer(ctx)
-        kvs_stream = get_key_values_stream(self.cmd_stream,
-                                           ctx.private_encoding)
-        reducer_reduce = reducer.reduce
-        for ctx._key, ctx._values in kvs_stream:
-            reducer_reduce(ctx)
-        reducer.close()
-        self.logger.debug('done with run_reduce')
-
-
-def run_task(factory, port=None, istream=None, ostream=None,
-             private_encoding=True, context_class=TaskContext,
-             cmd_file=None, fast_combiner=False, auto_serialize=True):
-    """
-    Run the assigned task in the framework.
-
-    :rtype: bool
-    :return: :obj:`True` if the task succeeded.
-    """
-    connections = resolve_connections(
-        port, istream=istream, ostream=ostream, cmd_file=cmd_file,
-        auto_serialize=auto_serialize
-    )
-    context = context_class(connections.up_link,
-                            private_encoding=private_encoding,
-                            fast_combiner=fast_combiner)
-    stream_runner = StreamRunner(factory, context, connections.cmd_stream)
-    pstats_dir = os.getenv(PSTATS_DIR)
+    context = TaskContext(factory, **kwargs)
+    pstats_dir = kwargs.get("pstats_dir", os.getenv(PSTATS_DIR))
     if pstats_dir:
-        pstats_fmt = os.getenv(PSTATS_FMT, DEFAULT_PSTATS_FMT)
+        import cProfile
+        import tempfile
+        import pydoop.hdfs as hdfs
         hdfs.mkdir(pstats_dir)
         fd, pstats_fn = tempfile.mkstemp(suffix=".pstats")
         os.close(fd)
-        cProfile.runctx("stream_runner.run()",
-                        {"stream_runner": stream_runner}, globals(),
-                        filename=pstats_fn)
+        cProfile.runctx(
+            "_run(context, **kwargs)", globals(), locals(),
+            filename=pstats_fn
+        )
+        pstats_fmt = kwargs.get(
+            "pstats_fmt",
+            os.getenv(PSTATS_FMT, DEFAULT_PSTATS_FMT)
+        )
         name = pstats_fmt % (
-            "r" if context.is_reducer() else "m",
-            context.get_task_partition(), os.path.basename(pstats_fn)
+            context.task_type,
+            context.get_task_partition(),
+            os.path.basename(pstats_fn)
         )
         hdfs.put(pstats_fn, hdfs.path.join(pstats_dir, name))
     else:
-        stream_runner.run()
-    context.close()
-    connections.close()
-    return True
+        _run(context, **kwargs)

@@ -27,28 +27,13 @@ methods called by the framework.
 
 import json
 from abc import abstractmethod
+from collections import namedtuple
 
 from pydoop.utils.py3compat import ABC
 
 
-class PydoopError(Exception):
-    pass
-
-
-class Counter(object):
-    """
-    An interface to the Hadoop counters infrastructure.
-
-    Counter objects are instantiated and directly manipulated by the
-    framework; users get and update them via the :class:`Context`
-    interface.
-    """
-
-    def __init__(self, counter_id):
-        self.id = counter_id
-
-    def get_id(self):
-        return self.id
+# move to pydoop.properties?
+AVRO_IO_MODES = {'k', 'v', 'kv', 'K', 'V', 'KV'}
 
 
 class JobConf(dict):
@@ -73,7 +58,7 @@ class JobConf(dict):
 
     def get_float(self, key, default=None):
         """
-        Same as :meth:`dict.get`, but the value is converted to an float.
+        Same as :meth:`dict.get`, but the value is converted to a float.
         """
         value = self.get(key, default)
         return None if value is None else float(value)
@@ -104,6 +89,42 @@ class JobConf(dict):
         return None if value is None else json.loads(value)
 
 
+class InputSplit(object):
+    """\
+    Represents a subset of the input data assigned to a single map task.
+
+    ``InputSplit`` objects are created by the framework and made available
+    to the user application via the ``input_split`` context attribute.
+    """
+    pass
+
+
+class FileSplit(InputSplit,
+                namedtuple("FileSplit", "filename, offset, length")):
+    """\
+    A subset (described by offset and length) of an input file.
+    """
+    pass
+
+
+class OpaqueSplit(InputSplit, namedtuple("OpaqueSplit", "payload")):
+    """\
+    A wrapper for an arbitrary Python object.
+
+    Opaque splits are created on the Python side before job submission,
+    serialized as ``hadoop.io.Writable`` objects and stored in an HDFS file.
+    The Java submitter reads the splits from the above file and forwards them
+    to the Python tasks.
+
+    .. note::
+
+      Opaque splits are only available when running a job via ``pydoop
+      submit``. The HDFS path where splits are stored is specified via the
+      ``pydoop.mapreduce.pipes.externalsplits.uri`` configuration key.
+    """
+    pass
+
+
 class Context(ABC):
     """
     Context objects are used for communication between the framework
@@ -117,6 +138,23 @@ class Context(ABC):
               ...
               context.emit(new_key, new_value)
     """
+
+    @property
+    def input_split(self):
+        """\
+        The :class:`InputSplit` for this task (map tasks only).
+
+        This tries to deserialize the raw split sent from upstream. In the
+        most common scenario (file-based input format), the returned value
+        will be a :class:`FileSplit`.
+
+        To get the raw split, call :meth:`get_input_split` with ``raw=True``.
+        """
+        return self.get_input_split()
+
+    @abstractmethod
+    def get_input_split(self, raw=False):
+        pass
 
     @property
     def job_conf(self):
@@ -143,12 +181,23 @@ class Context(ABC):
     @property
     def value(self):
         """
-        Input value.
+        Input value (map tasks only).
         """
         return self.get_input_value()
 
     @abstractmethod
     def get_input_value(self):
+        pass
+
+    @property
+    def values(self):
+        """
+        Iterator over all values for the current key (reduce tasks only).
+        """
+        return self.get_input_values()
+
+    @abstractmethod
+    def get_input_values(self):
         pass
 
     @abstractmethod
@@ -194,72 +243,7 @@ class Context(ABC):
         pass
 
 
-class MapContext(Context):
-    """
-    The context given to the mapper.
-    """
-    @property
-    def input_split(self):
-        """\
-        The current input split as an :class:`~.pipes.InputSplit` object.
-        """
-        return self.get_input_split()
-
-    @abstractmethod
-    def get_input_split(self, raw=False):
-        """\
-        Get the current input split.
-
-        If ``raw`` is :obj:`False` (the default), return an
-        :class:`~.pipes.InputSplit` object; if it's :obj:`True`, return
-        a byte string (the unserialized split as sent via the downlink).
-        """
-        pass
-
-    @property
-    def input_key_class(self):
-        """
-        Return the type of the input key.
-        """
-        return self.get_input_key_class()
-
-    @abstractmethod
-    def get_input_key_class(self):
-        pass
-
-    @property
-    def input_value_class(self):
-        return self.get_input_value_class()
-
-    @abstractmethod
-    def get_input_value_class(self):
-        """
-        Return the type of the input value.
-        """
-        pass
-
-
-class ReduceContext(Context):
-    """
-    The context given to the reducer.
-    """
-    @property
-    def values(self):
-        return self.get_input_values()
-
-    @abstractmethod
-    def get_input_values(self):
-        pass
-
-    @abstractmethod
-    def next_value(self):
-        """
-        Return :obj:`True` if there is another value that can be processed.
-        """
-        pass
-
-
-class Closable(ABC):
+class Closable(object):
 
     def close(self):
         """
@@ -270,13 +254,16 @@ class Closable(ABC):
         pass
 
 
-class Mapper(Closable):
-    """
-    Maps input key/value pairs to a set of intermediate key/value pairs.
-    """
+class Component(ABC):
 
     def __init__(self, context):
         self.context = context
+
+
+class Mapper(Component, Closable):
+    """
+    Maps input key/value pairs to a set of intermediate key/value pairs.
+    """
 
     @abstractmethod
     def map(self, context):
@@ -285,22 +272,19 @@ class Mapper(Closable):
         split. Applications must override this, emitting an output
         key/value pair through the context.
 
-        :type context: :class:`MapContext`
+        :type context: :class:`Context`
         :param context: the context object passed by the
           framework, used to get the input key/value pair and emit the
           output key/value pair.
         """
-        assert isinstance(context, MapContext)
+        pass
 
 
-class Reducer(Closable):
+class Reducer(Component, Closable):
     """
     Reduces a set of intermediate values which share a key to a
     (possibly) smaller set of values.
     """
-
-    def __init__(self, context=None):
-        self.context = context
 
     @abstractmethod
     def reduce(self, context):
@@ -308,15 +292,31 @@ class Reducer(Closable):
         Called once for each key. Applications must override this, emitting
         an output key/value pair through the context.
 
-        :type context: :class:`ReduceContext`
+        :type context: :class:`Context`
         :param context: the context object passed by
           the framework, used to get the input key and corresponding
           set of values and emit the output key/value pair.
         """
-        assert isinstance(context, ReduceContext)
+        pass
 
 
-class Partitioner(ABC):
+class Combiner(Reducer):
+    """\
+    A ``Combiner`` performs the same actions as a :class:`Reducer`, but it
+    runs locally within a map task. This helps cutting down the amount of data
+    sent to reducers across the network, with the downside that map tasks
+    require extra memory to cache intermediate key/value pairs. The cache size
+    is controlled by ``"mapreduce.task.io.sort.mb"`` and defaults to 100 MB.
+
+    Note that it's not strictly necessary to extend this class in order to
+    write a combiner: all that's required is that it has the same interface as
+    a :class:`reducer`. Indeed, in many cases it's useful to set the combiner
+    class to be the same as the reducer class.
+    """
+    pass
+
+
+class Partitioner(Component):
     r"""
     Controls the partitioning of intermediate keys output by the
     :class:`Mapper`\ . The key (or a subset of it) is used to derive the
@@ -325,9 +325,6 @@ class Partitioner(ABC):
     job. Hence this controls which of the *m* reduce tasks the
     intermediate key (and hence the record) is sent to for reduction.
     """
-
-    def __init__(self, context):
-        self.context = context
 
     @abstractmethod
     def partition(self, key, num_of_reduces):
@@ -343,17 +340,13 @@ class Partitioner(ABC):
         :rtype: int
         :return: the partition number for ``key``\ .
         """
-        assert isinstance(key, str)
-        assert isinstance(num_of_reduces, int)
+        pass
 
 
-class RecordReader(Closable):
+class RecordReader(Component, Closable):
     r"""
     Breaks the data into key/value pairs for input to the :class:`Mapper`\ .
     """
-
-    def __init__(self, context=None):
-        self.context = context
 
     def __iter__(self):
         return self
@@ -387,13 +380,10 @@ class RecordReader(Closable):
         pass
 
 
-class RecordWriter(Closable):
+class RecordWriter(Component, Closable):
     """
     Writes the output key/value pairs to an output file.
     """
-
-    def __init__(self, context=None):
-        self.context = context
 
     @abstractmethod
     def emit(self, key, value):
@@ -409,20 +399,27 @@ class RecordWriter(Closable):
 
 
 class Factory(ABC):
-    """
-    Creates MapReduce application components.
+    """\
+    Creates MapReduce application components (e.g., mapper, reducer).
 
-    The classes to use for each component must be specified as arguments
-    to the constructor.
+    A factory object must be created by the application and passed to the
+    framework as the first argument to :func:`~.pipes.run_task`. All MapReduce
+    applications need at least a mapper object, while other components are
+    optional (the corresponding ``create_`` method can return :obj:`None`).
+    Note that the reducer is optional only in map-only jobs, where the number
+    of reduce tasks has been set to 0.
+
+    :class:`~.pipes.Factory` provides a generic implementation that takes
+    component *classes* as initialization parameters and creates component
+    objects as needed.
     """
 
     @abstractmethod
     def create_mapper(self, context):
-        assert isinstance(context, MapContext)
+        pass
 
-    @abstractmethod
     def create_reducer(self, context):
-        assert isinstance(context, ReduceContext)
+        return None
 
     def create_combiner(self, context):
         """
@@ -430,7 +427,6 @@ class Factory(ABC):
 
         Return the new combiner or :obj:`None`, if one is not needed.
         """
-        assert isinstance(context, MapContext)
         return None
 
     def create_partitioner(self, context):
@@ -440,7 +436,6 @@ class Factory(ABC):
         Return the new partitioner or :obj:`None`, if the default partitioner
         should be used.
         """
-        assert isinstance(context, MapContext)
         return None
 
     def create_record_reader(self, context):
@@ -450,7 +445,6 @@ class Factory(ABC):
         Return the new record reader or :obj:`None`, if the Java record
         reader should be used.
         """
-        assert isinstance(context, MapContext)
         return None
 
     def create_record_writer(self, context):
@@ -460,5 +454,4 @@ class Factory(ABC):
         Return the new record writer or :obj:`None`, if the Java record
         writer should be used.
         """
-        assert isinstance(context, ReduceContext)
         return None

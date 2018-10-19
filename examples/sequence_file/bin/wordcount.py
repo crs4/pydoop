@@ -19,7 +19,6 @@
 # END_COPYRIGHT
 
 import struct
-import re
 
 from pydoop.mapreduce.pipes import run_task, Factory
 from pydoop.mapreduce.api import Mapper, Reducer
@@ -28,8 +27,7 @@ from pydoop.mapreduce.api import Mapper, Reducer
 class WordCountMapper(Mapper):
 
     def map(self, context):
-        words = re.sub('[^0-9a-zA-Z]+', ' ', context.value).split()
-        for w in words:
+        for w in context.value.split():
             context.emit(w, 1)
 
 
@@ -37,8 +35,9 @@ class WordCountReducer(Reducer):
 
     def reduce(self, context):
         s = sum(context.values)
-        context.emit(context.key, struct.pack(">i", s))
+        context.emit(context.key.encode("utf-8"), struct.pack(">i", s))
 
 
 if __name__ == "__main__":
-    run_task(Factory(WordCountMapper, WordCountReducer))
+    factory = Factory(WordCountMapper, WordCountReducer)
+    run_task(factory, auto_serialize=False)

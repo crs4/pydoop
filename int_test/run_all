@@ -25,6 +25,7 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/config.sh"
 
 tests=(
+    mapred_submitter
     progress
 )
 

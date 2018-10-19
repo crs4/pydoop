@@ -50,7 +50,7 @@ class Writer(api.RecordWriter):
         self.file.write(str(key) + self.sep + str(value) + "\n")
 
 
-FACTORY = pipes.Factory(mapper_class=Mapper, record_writer_class=Writer)
+FACTORY = pipes.Factory(Mapper, record_writer_class=Writer)
 
 
 def __main__():

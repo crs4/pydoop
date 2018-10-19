@@ -22,7 +22,6 @@ import os
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from pydoop.avrolib import AvroContext
 
 
 class Mapper(api.Mapper):
@@ -34,5 +33,4 @@ class Mapper(api.Mapper):
 
 
 def __main__():
-    factory = pp.Factory(mapper_class=Mapper)
-    pp.run_task(factory, context_class=AvroContext)
+    pp.run_task(pp.Factory(Mapper))

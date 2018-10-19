@@ -23,7 +23,6 @@ from collections import Counter
 
 import pydoop.mapreduce.api as api
 import pydoop.mapreduce.pipes as pp
-from pydoop.avrolib import AvroContext
 
 
 class Mapper(api.Mapper):
@@ -43,5 +42,4 @@ class Reducer(api.Reducer):
 
 
 def __main__():
-    factory = pp.Factory(mapper_class=Mapper, reducer_class=Reducer)
-    pp.run_task(factory, private_encoding=True, context_class=AvroContext)
+    pp.run_task(pp.Factory(Mapper, reducer_class=Reducer))

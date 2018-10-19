@@ -34,7 +34,7 @@ class Mapper(api.Mapper):
 
 
 def __main__():
-    pipes.run_task(pipes.Factory(mapper_class=Mapper))
+    pipes.run_task(pipes.Factory(Mapper))
 
 
 if __name__ == "__main__":

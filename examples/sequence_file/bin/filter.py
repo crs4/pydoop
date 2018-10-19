@@ -25,7 +25,7 @@ Filter out words whose occurrence falls below a specified value.
 import struct
 
 from pydoop.mapreduce.pipes import run_task, Factory
-from pydoop.mapreduce.api import Mapper, Reducer
+from pydoop.mapreduce.api import Mapper
 
 
 class FilterMapper(Mapper):
@@ -45,11 +45,6 @@ class FilterMapper(Mapper):
             context.emit(word, str(occurrence))
 
 
-class FilterReducer(Reducer):
-
-    def reduce(self, context):
-        pass
-
-
 if __name__ == "__main__":
-    run_task(Factory(FilterMapper, FilterReducer))
+    factory = Factory(FilterMapper)
+    run_task(factory, raw_values=True)

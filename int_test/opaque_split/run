@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+# BEGIN_COPYRIGHT
+#
+# Copyright 2009-2018 CRS4.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy
+# of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+#
+# END_COPYRIGHT
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+. "${this_dir}/../config.sh"
+
+module="mrapp"
+input="input"
+output="output"
+splits_path="${input}.splits"
+
+opts=(
+    "-D" "pydoop.mapreduce.pipes.externalsplits.uri=${splits_path}"
+    "-D" "mapreduce.task.timeout=10000"
+    "-D" "mapreduce.job.maps=2"
+    "--python-program" "${PYTHON}"
+    "--job-name" "${module}"
+    "--num-reducers" "0"
+    "--upload-file-to-cache" "${this_dir}/${module}.py"
+    "--do-not-use-java-record-reader"
+)
+[ -n "${DEBUG:-}" ] && opts+=( "--log-level" "DEBUG" )
+
+pushd "${this_dir}"
+${PYTHON} gen_splits.py "${splits_path}"
+ensure_dfs_home
+${HDFS} dfs -rm -r -f "${input}" "${output}"
+${HDFS} dfs -mkdir -p "${input}"  # TODO: can we remove this constraint?
+${PYDOOP} submit "${opts[@]}" ${module} "${input}" "${output}"
+wd=$(mktemp -d)
+${HDFS} dfs -get "${output}" "${wd}/output"
+${PYTHON} check.py "${wd}/output"
+rm -rf "${wd}"
+popd

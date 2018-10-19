@@ -21,12 +21,8 @@ from pydoop.test_utils import get_module
 
 
 TEST_MODULE_NAMES = [
-    'test_cmd_streams',
-    'test_context',
-    'test_framework',
-    'test_streams',
-    'test_support',
-    'test_utils',
+    'test_connections',
+    'test_opaque',
 ]
 
 
