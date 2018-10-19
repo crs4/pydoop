@@ -25,7 +25,7 @@ New in 1.1.0
    issues.
  * ``NoSeparatorTextOutputFormat`` is now available for all MR
    versions.
- * Added Avro support to the :ref:`Hadoop Simulator <simulator-api>`.
+ * Added Avro support to the Hadoop Simulator.
  * Bug fixes and performance improvements.
 
 
@@ -42,8 +42,7 @@ New in 1.0.0
    simplifies job submission, in particular when running applications
    without installing Pydoop and other dependencies on the cluster
    nodes (see :ref:`self_contained`).
- * Added support for testing Pydoop programs in a :ref:`simulated
-   Hadoop framework <simulator-api>`
+ * Added support for testing Pydoop programs in a simulated Hadoop framework
  * Added support (experimental) for MapReduce V2 input/output formats (see
    :ref:`input_format_example`)
  * The :mod:`~pydoop.hdfs.path` module offers many new functions that
