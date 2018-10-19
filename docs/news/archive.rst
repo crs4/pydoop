@@ -21,8 +21,7 @@ New in 1.1.0
  * `Pyavroc <https://github.com/Byhiras/pyavroc>`_ is now
    automatically loaded if installed, enabling much faster (30-40x)
    Avro (de)serialization.
- * Added :ref:`Timer objects <timers>` to help debug performance
-   issues.
+ * Added Timer objects to help debug performance issues.
  * ``NoSeparatorTextOutputFormat`` is now available for all MR
    versions.
  * Added Avro support to the Hadoop Simulator.
