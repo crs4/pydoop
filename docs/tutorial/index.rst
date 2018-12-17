@@ -26,6 +26,6 @@ knowledge, is not available in other solutions.
 
 .. [#pydoop] Simone Leo, Gianluigi Zanetti. `Pydoop: a Python
    MapReduce and HDFS API for Hadoop.
-   <http://dx.doi.org/10.1145/1851476.1851594>`_, Proceedings Of The
+   <https://doi.org/10.1145/1851476.1851594>`_, Proceedings Of The
    19th ACM International Symposium On High Performance Distributed
    Computing, page 819--825, 2010
