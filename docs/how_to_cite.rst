@@ -4,7 +4,7 @@ How to Cite
 Pydoop is developed and maintained by researchers at `CRS4
 <http://www.crs4.it>`_ -- Distributed Computing group.  If you use
 Pydoop as part of your research work, please cite `the HPDC 2010 paper
-<http://dx.doi.org/10.1145/1851476.1851594>`_.
+<https://doi.org/10.1145/1851476.1851594>`_.
 
 **Plain text**::
 
