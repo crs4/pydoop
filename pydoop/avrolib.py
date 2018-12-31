@@ -61,12 +61,12 @@ class Serializer(object):
 
 try:
     from pyavroc import AvroDeserializer
-except ImportError as e:
+except ImportError:
     AvroDeserializer = Deserializer
 
 try:
     from pyavroc import AvroSerializer
-except ImportError as e:
+except ImportError:
     AvroSerializer = Serializer
 
 
