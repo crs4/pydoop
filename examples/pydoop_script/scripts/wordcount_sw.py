@@ -26,7 +26,7 @@ STOP_WORDS_FN = 'stop_words.txt'
 try:
     with open(STOP_WORDS_FN) as f:
         STOP_WORDS = frozenset(l.strip() for l in f if not l.isspace())
-except OSError as e:
+except OSError:
     STOP_WORDS = frozenset()
 
 
