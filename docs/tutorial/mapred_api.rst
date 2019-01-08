@@ -217,12 +217,36 @@ the above components, we need to instantiate the factory as:
    :start-after: DOCS_INCLUDE_START
    :end-before: DOCS_INCLUDE_END
 
-.. _timers:
 
-Timers
-------
+Profiling Your Application
+--------------------------
 
-``Timer`` objects can help debug performance issues in mapreduce applications:
+Python has built-in support for application `profiling
+<https://docs.python.org/3/library/profile.html>`_. Profiling a standalone
+program is relatively straightforward: run it through ``cProfile``, store
+stats in a file and use ``pstats`` to read and interpret them. A MapReduce
+job, however, spawns multiple map and reduce tasks, so we need a way to
+collect all stats. Pydoop supports this via a ``pstats_dir`` argument to
+``run_task``:
+
+.. code-block:: python
+
+  pipes.run_task(factory, pstats_dir="pstats")
+
+With the above call, Pydoop will run each MapReduce task with ``cProfile``,
+and store resulting pstats files in the ``"pstats"`` directory on HDFS. If
+you're using ``pydoop submit``, you can also enable profiling via the
+``--pstats-dir`` command line argument:
+
+.. code-block:: bash
+
+  pydoop submit --pstats-dir HDFS_DIR [...]
+
+If the pstats directory is specified both ways, the one from ``run_task``
+takes precedence.
+
+Another way to do time measurements is via counters. The ``utils.misc`` module
+provides a ``Timer`` object for this purpose:
 
 .. code-block:: python
 
@@ -244,12 +268,5 @@ With the above coding, the total time spent to execute
 ``context.value.split()`` (in ms) will be automatically accumulated in
 a ``TIME_TOKENIZE`` counter under the ``Timer`` counter group.
 
-Adding timers has a substantial effect on performance, so their use in
-production code should be avoided. Performance debugging can also be
-performed by enabling profiling::
-
-  pydoop submit --pstats-dir HDFS_DIR [...]
-
-If the above flag is set, each MapReduce task will be run with
-`cProfile <https://docs.python.org/3/library/profile.html>`_, and
-resulting pstats files will be saved to the specified HDFS directory.
+Since profiling and timers can substantially slow down the Hadoop job, they
+should only be used for performance debugging.
