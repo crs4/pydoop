@@ -18,6 +18,7 @@ RUN echo "assumeyes=1" >> /etc/yum.conf && \
       java-${JAVA_VERSION}-openjdk-devel \
       gcc \
       gcc-c++ \
+      make \
       python-devel \
       python-pip \
       python36u-devel \

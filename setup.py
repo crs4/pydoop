@@ -324,11 +324,6 @@ class BuildPydoop(build):
     def run(self):
         if HADOOP_VERSION_INFO.tuple < (2,):
             raise RuntimeError('Hadoop v1 is not supported')
-        # `is_local` requires running the local hadoop executable.
-        # Don't move this call into other methods of the class that
-        # may be called while executing other commands (e.g., clean)
-        if HADOOP_VERSION_INFO.is_local():
-            raise pydoop.LocalModeNotSupported()
         write_version()
         write_config()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
