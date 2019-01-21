@@ -1,0 +1,34 @@
+FROM centos:7
+MAINTAINER simone.leo@crs4.it
+
+ARG HADOOP_VERSION=3.0.3
+ARG JAVA_VERSION=1.8.0
+
+ENV HADOOP_HOME=/opt/hadoop
+ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+
+COPY install_hadoop.sh /
+
+RUN echo "assumeyes=1" >> /etc/yum.conf && \
+    yum install https://centos7.iuscommunity.org/ius-release.rpm && \
+    yum update && \
+    yum install \
+      java-${JAVA_VERSION}-openjdk-devel \
+      gcc \
+      gcc-c++ \
+      make \
+      python-devel \
+      python-pip \
+      python36u-devel \
+      python36u-pip && \
+    yum clean all && \
+    bash /install_hadoop.sh && \
+    echo "export JAVA_HOME=\"/usr/lib/jvm/java-${JAVA_VERSION}-openjdk\"" > /etc/profile.d/java.sh && \
+    echo "export PATH=\"${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${PATH}\"" > /etc/profile.d/hadoop.sh && \
+    ln -rs /usr/bin/python3.6 /usr/bin/python3 && \
+    ln -rs /usr/bin/pip3.6 /usr/bin/pip3 && \
+    for v in 2 3; do \
+      pip${v} install --no-cache-dir --upgrade pip; \
+    done
