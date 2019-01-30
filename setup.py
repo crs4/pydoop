@@ -69,9 +69,6 @@ from distutils import log
 import pydoop
 import pydoop.utils.jvm as jvm
 
-JAVA_HOME = jvm.get_java_home()
-JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
-
 HADOOP_HOME = pydoop.hadoop_home()
 HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
@@ -164,22 +161,19 @@ def write_version(filename="pydoop/version.py"):
 EXTENSION_MODULES = [
     Extension(
         'pydoop.native_core_hdfs',
-        include_dirs=jvm.get_include_dirs() + [
+        include_dirs=[
             'src/libhdfs',
             'src/libhdfs/include',
             'src/libhdfs/os/posix',
         ],
-        libraries=jvm.get_libraries(),
-        library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=list(itertools.chain(
             glob.iglob('src/libhdfs/*.c'),
             glob.iglob('src/libhdfs/common/*.c'),
             glob.iglob('src/libhdfs/os/posix/*.c'),
             glob.iglob('src/native_core_hdfs/*.cc')
         )),
-        define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
-        extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
+        # to be finalized at build time
     ),
     Extension(
         'pydoop.sercore',
@@ -224,7 +218,6 @@ class JavaBuilder(object):
     def run(self):
         log.info("hadoop_home: %r" % (HADOOP_HOME,))
         log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
-        log.info("java_home: %r" % (JAVA_HOME,))
         for jlib in self.java_libs:
             self.__build_java_lib(jlib)
 
@@ -292,16 +285,32 @@ class BuildPydoopExt(build_ext):
         shutil.rmtree(wd)
         return ret
 
+    def __finalize_hdfs(self, ext):
+        """\
+        Adds a few bits that depend on the specific environment.
+
+        Delaying this until the build_ext phase allows non-build commands
+        (e.g., sdist) to be run without java.
+        """
+        java_home = jvm.get_java_home()
+        jvm_lib_path, _ = jvm.get_jvm_lib_path_and_name(java_home)
+        ext.include_dirs = jvm.get_include_dirs() + ext.include_dirs
+        ext.libraries = jvm.get_libraries()
+        ext.library_dirs = [os.path.join(java_home, "Libraries"), jvm_lib_path]
+        ext.define_macros = jvm.get_macros()
+        ext.extra_link_args = ['-Wl,-rpath,%s' % jvm_lib_path]
+        if self.__have_better_tls():
+            ext.define_macros.append(("HAVE_BETTER_TLS", None))
+        try:
+            # too many warnings in libhdfs
+            self.compiler.compiler_so.remove("-Wsign-compare")
+        except (AttributeError, ValueError):
+            pass
+
     # called for each extension, after compiler has been set up
     def build_extension(self, ext):
         if ext.name == "pydoop.native_core_hdfs":
-            if self.__have_better_tls():
-                ext.define_macros.append(("HAVE_BETTER_TLS", None))
-            try:
-                # too many warnings in libhdfs
-                self.compiler.compiler_so.remove("-Wsign-compare")
-            except (AttributeError, ValueError):
-                pass
+            self.__finalize_hdfs(ext)
         build_ext.build_extension(self, ext)
 
 
