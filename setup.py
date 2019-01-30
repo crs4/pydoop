@@ -61,8 +61,8 @@ os.environ['OPT'] = ' '.join(
 )
 
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
 from distutils.command.build import build
-from distutils.command.build_ext import build_ext
 from distutils.errors import DistutilsSetupError, CompileError
 from distutils import log
 
