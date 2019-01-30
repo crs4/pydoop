@@ -63,7 +63,6 @@ os.environ['OPT'] = ' '.join(
 from setuptools import setup, find_packages, Extension
 from distutils.command.build import build
 from distutils.command.build_ext import build_ext
-from distutils.command.clean import clean
 from distutils.errors import DistutilsSetupError, CompileError
 from distutils import log
 
@@ -340,32 +339,6 @@ class BuildPydoop(build):
         log.info("Build finished")
 
 
-class Clean(clean):
-
-    def run(self):
-        clean.run(self)
-        garbage_list = [
-            "build",
-            "dist",
-            "pydoop.egg-info",
-            "pydoop/config.py",
-            "pydoop/version.py",
-            "examples/avro/java/target",
-            "examples/avro/java/project/project",
-            "examples/avro/java/project/target",
-            "examples/avro/py/to_from_avro",
-        ]
-        for p in garbage_list:
-            rm_rf(p, self.dry_run)
-        self._clean_examples()
-
-    @staticmethod
-    def _clean_examples():
-        for root, _, files in os.walk('examples'):
-            if 'Makefile' in files:
-                subprocess.call(["make", "-C", root, "clean"])
-
-
 setup(
     name="pydoop",
     version=get_version_string(),
@@ -387,7 +360,6 @@ setup(
     cmdclass={
         "build": BuildPydoop,
         "build_ext": BuildPydoopExt,
-        "clean": Clean
     },
     entry_points={'console_scripts': CONSOLE_SCRIPTS},
     platforms=["Linux"],
