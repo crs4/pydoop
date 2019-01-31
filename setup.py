@@ -16,20 +16,17 @@
 #
 # END_COPYRIGHT
 
-"""
-Important environment variables
--------------------------------
+"""\
+Pydoop is a Python MapReduce and HDFS API for Hadoop.
 
-The Pydoop setup looks in a number of default paths for what it
-needs.  If necessary, you can override its behaviour or provide an
-alternative path by exporting the environment variables below::
+Pydoop is built on top of two C/C++ extension modules: a libhdfs wrapper and a
+(de)serialization library for types used by the Hadoop Pipes protocol. Since
+libhdfs is, in turn, a JNI wrapper for the HDFS Java code, Pydoop needs a JDK
+(a JRE is not enough) to build.
 
-  JAVA_HOME, e.g., /opt/sun-jdk
-  HADOOP_HOME, e.g., /opt/hadoop
-
-Other relevant environment variables include::
-
-  HADOOP_VERSION, e.g., 2.7.4 (override Hadoop's version string).
+You can point Pydoop to the Java home directory by exporting the JAVA_HOME
+environment variable. Make sure JAVA_HOME points to the JDK home directory
+(e.g., ${JAVA_HOME}/include/jni.h should be a valid path).
 """
 from __future__ import print_function
 
@@ -68,9 +65,6 @@ from distutils import log
 
 import pydoop
 import pydoop.utils.jvm as jvm
-
-HADOOP_HOME = pydoop.hadoop_home()
-HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
 VERSION_FN = "VERSION"
 GIT_REV_FN = "GIT_REV"
@@ -216,8 +210,6 @@ class JavaBuilder(object):
         self.java_libs = [JavaLib()]
 
     def run(self):
-        log.info("hadoop_home: %r" % (HADOOP_HOME,))
-        log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
         for jlib in self.java_libs:
             self.__build_java_lib(jlib)
 
@@ -330,8 +322,6 @@ class BuildPydoop(build):
         shutil.rmtree(self.build_temp)
 
     def run(self):
-        if HADOOP_VERSION_INFO.tuple < (2,):
-            raise RuntimeError('Hadoop v1 is not supported')
         write_version()
         write_config()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
