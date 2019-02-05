@@ -55,8 +55,10 @@ def get_java_home():
             f.write(JPROG.substitute(classname=jclass))
         try:
             subprocess.check_call(["javac", jsrc])
-            path = subprocess.check_output(["java", "-cp", wd, jclass])
-        except (OSError, subprocess.CalledProcessError):
+            path = subprocess.check_output(
+                ["java", "-cp", wd, jclass], universal_newlines=True
+            )
+        except (OSError, UnicodeDecodeError, subprocess.CalledProcessError):
             raise error
         finally:
             shutil.rmtree(wd)
