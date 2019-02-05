@@ -71,18 +71,17 @@ Environment Setup
 -----------------
 
 Pydoop needs to know where the JDK and Hadoop are installed on your
-system. This is done by exporting, respectively, the ``JAVA_HOME`` and
-``HADOOP_HOME`` environment variables. For instance::
+system. Although it will try to guess both locations, you can help by
+exporting, respectively, the ``JAVA_HOME`` and ``HADOOP_HOME`` environment
+variables. For instance::
 
   export HADOOP_HOME="/opt/hadoop-3.0.1"
   export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
-If you don't know where your JDK is, find the path of the ``java`` executable::
-
-  $ readlink -f $(which java)
-  /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
-
-Then strip the trailing ``/jre/bin/java`` to get the ``JAVA_HOME``.
+Note that Pydoop is interested in the **JDK** home (where ``include/jni.h``
+can be found), not the JRE home. Depending on your Java distribution and
+version, these can be different directories (usually the former being the
+latter's parent).
 
 
 Building and Installing
@@ -115,8 +114,7 @@ additional info.
 Troubleshooting
 ---------------
 
-#. "java home not found" error, with ``JAVA_HOME`` properly exported: try
-   setting ``JAVA_HOME`` in ``hadoop-env.sh``
+#. "java home not found" error: try setting ``JAVA_HOME`` in ``hadoop-env.sh``
 
 #. "libjvm.so not found" error: try the following::
 
