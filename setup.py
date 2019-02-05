@@ -16,20 +16,23 @@
 #
 # END_COPYRIGHT
 
-"""
-Important environment variables
--------------------------------
+"""\
+Pydoop is a Python MapReduce and HDFS API for Hadoop.
 
-The Pydoop setup looks in a number of default paths for what it
-needs.  If necessary, you can override its behaviour or provide an
-alternative path by exporting the environment variables below::
+Pydoop is built on top of two C/C++ extension modules: a libhdfs wrapper and a
+(de)serialization library for types used by the Hadoop Pipes protocol. Since
+libhdfs is, in turn, a JNI wrapper for the HDFS Java code, Pydoop needs a JDK
+(a JRE is not enough) to build.
 
-  JAVA_HOME, e.g., /opt/sun-jdk
-  HADOOP_HOME, e.g., /opt/hadoop
+You can point Pydoop to the Java home directory by exporting the JAVA_HOME
+environment variable. Make sure JAVA_HOME points to the JDK home directory
+(e.g., ${JAVA_HOME}/include/jni.h should be a valid path). If JAVA_HOME is not
+defined, Pydoop will try to get the JDK home from Java system properties.
 
-Other relevant environment variables include::
-
-  HADOOP_VERSION, e.g., 2.7.4 (override Hadoop's version string).
+To compile its Java components, Pydoop also needs to know where Hadoop is. You
+can specify its location via the HADOOP_HOME environment variable. If
+HADOOP_HOME is not defined, Pydoop will try a few common locations before
+giving up.
 """
 from __future__ import print_function
 
@@ -61,20 +64,13 @@ os.environ['OPT'] = ' '.join(
 )
 
 from setuptools import setup, find_packages, Extension
+from setuptools.command.build_ext import build_ext
 from distutils.command.build import build
-from distutils.command.build_ext import build_ext
-from distutils.command.clean import clean
 from distutils.errors import DistutilsSetupError, CompileError
 from distutils import log
 
 import pydoop
 import pydoop.utils.jvm as jvm
-
-JAVA_HOME = jvm.get_java_home()
-JVM_LIB_PATH, JVM_LIB_NAME = jvm.get_jvm_lib_path_and_name(JAVA_HOME)
-
-HADOOP_HOME = pydoop.hadoop_home()
-HADOOP_VERSION_INFO = pydoop.hadoop_version_info()
 
 VERSION_FN = "VERSION"
 GIT_REV_FN = "GIT_REV"
@@ -165,22 +161,19 @@ def write_version(filename="pydoop/version.py"):
 EXTENSION_MODULES = [
     Extension(
         'pydoop.native_core_hdfs',
-        include_dirs=jvm.get_include_dirs() + [
+        include_dirs=[
             'src/libhdfs',
             'src/libhdfs/include',
             'src/libhdfs/os/posix',
         ],
-        libraries=jvm.get_libraries(),
-        library_dirs=[JAVA_HOME + "/Libraries", JVM_LIB_PATH],
         sources=list(itertools.chain(
             glob.iglob('src/libhdfs/*.c'),
             glob.iglob('src/libhdfs/common/*.c'),
             glob.iglob('src/libhdfs/os/posix/*.c'),
             glob.iglob('src/native_core_hdfs/*.cc')
         )),
-        define_macros=jvm.get_macros(),
         extra_compile_args=EXTRA_COMPILE_ARGS,
-        extra_link_args=['-Wl,-rpath,%s' % JVM_LIB_PATH]
+        # to be finalized at build time
     ),
     Extension(
         'pydoop.sercore',
@@ -223,9 +216,6 @@ class JavaBuilder(object):
         self.java_libs = [JavaLib()]
 
     def run(self):
-        log.info("hadoop_home: %r" % (HADOOP_HOME,))
-        log.info("hadoop_version: '%s'" % HADOOP_VERSION_INFO)
-        log.info("java_home: %r" % (JAVA_HOME,))
         for jlib in self.java_libs:
             self.__build_java_lib(jlib)
 
@@ -293,16 +283,32 @@ class BuildPydoopExt(build_ext):
         shutil.rmtree(wd)
         return ret
 
+    def __finalize_hdfs(self, ext):
+        """\
+        Adds a few bits that depend on the specific environment.
+
+        Delaying this until the build_ext phase allows non-build commands
+        (e.g., sdist) to be run without java.
+        """
+        java_home = jvm.get_java_home()
+        jvm_lib_path, _ = jvm.get_jvm_lib_path_and_name(java_home)
+        ext.include_dirs = jvm.get_include_dirs() + ext.include_dirs
+        ext.libraries = jvm.get_libraries()
+        ext.library_dirs = [os.path.join(java_home, "Libraries"), jvm_lib_path]
+        ext.define_macros = jvm.get_macros()
+        ext.extra_link_args = ['-Wl,-rpath,%s' % jvm_lib_path]
+        if self.__have_better_tls():
+            ext.define_macros.append(("HAVE_BETTER_TLS", None))
+        try:
+            # too many warnings in libhdfs
+            self.compiler.compiler_so.remove("-Wsign-compare")
+        except (AttributeError, ValueError):
+            pass
+
     # called for each extension, after compiler has been set up
     def build_extension(self, ext):
         if ext.name == "pydoop.native_core_hdfs":
-            if self.__have_better_tls():
-                ext.define_macros.append(("HAVE_BETTER_TLS", None))
-            try:
-                # too many warnings in libhdfs
-                self.compiler.compiler_so.remove("-Wsign-compare")
-            except (AttributeError, ValueError):
-                pass
+            self.__finalize_hdfs(ext)
         build_ext.build_extension(self, ext)
 
 
@@ -322,8 +328,6 @@ class BuildPydoop(build):
         shutil.rmtree(self.build_temp)
 
     def run(self):
-        if HADOOP_VERSION_INFO.tuple < (2,):
-            raise RuntimeError('Hadoop v1 is not supported')
         write_version()
         write_config()
         shutil.copyfile(PROP_FN, os.path.join("pydoop", PROP_BN))
@@ -338,32 +342,6 @@ class BuildPydoop(build):
             time.sleep(0.5)
             self.clean_up()
         log.info("Build finished")
-
-
-class Clean(clean):
-
-    def run(self):
-        clean.run(self)
-        garbage_list = [
-            "build",
-            "dist",
-            "pydoop.egg-info",
-            "pydoop/config.py",
-            "pydoop/version.py",
-            "examples/avro/java/target",
-            "examples/avro/java/project/project",
-            "examples/avro/java/project/target",
-            "examples/avro/py/to_from_avro",
-        ]
-        for p in garbage_list:
-            rm_rf(p, self.dry_run)
-        self._clean_examples()
-
-    @staticmethod
-    def _clean_examples():
-        for root, _, files in os.walk('examples'):
-            if 'Makefile' in files:
-                subprocess.call(["make", "-C", root, "clean"])
 
 
 setup(
@@ -387,7 +365,6 @@ setup(
     cmdclass={
         "build": BuildPydoop,
         "build_ext": BuildPydoopExt,
-        "clean": Clean
     },
     entry_points={'console_scripts': CONSOLE_SCRIPTS},
     platforms=["Linux"],

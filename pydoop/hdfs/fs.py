@@ -287,7 +287,7 @@ class hdfs(object):
         :return: filesystem capacity
         """
         _complain_ifclosed(self.closed)
-        if self.__status.host is '':
+        if not self.__status.host:
             raise RuntimeError('Capacity is not defined for a local fs')
         return self.fs.get_capacity()
 

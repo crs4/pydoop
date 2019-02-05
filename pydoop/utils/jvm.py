@@ -17,15 +17,58 @@
 # END_COPYRIGHT
 
 import os
+import shutil
+import string
+import subprocess
 import sys
+import tempfile
 import fnmatch
 
 
+JPROG = string.Template("""\
+public class ${classname} {
+  public static void main(String[] args) {
+    System.out.println(System.getProperty("java.home"));
+  }
+}
+""")
+
+
 def get_java_home():
+    """\
+    Try getting JAVA_HOME from system properties.
+
+    We are interested in the JDK home, containing include/jni.h, while the
+    java.home property points to the JRE home. If a JDK is installed, however,
+    the two are (usually) related: the JDK home is either the same directory
+    as the JRE home (recent java versions) or its parent (and java.home points
+    to jdk_home/jre).
+    """
+    error = RuntimeError("java home not found, try setting JAVA_HOME")
     try:
         return os.environ["JAVA_HOME"]
     except KeyError:
-        raise RuntimeError("java home not found, try setting JAVA_HOME")
+        wd = tempfile.mkdtemp(prefix='pydoop_')
+        jclass = "Temp"
+        jsrc = os.path.join(wd, "%s.java" % jclass)
+        with open(jsrc, "w") as f:
+            f.write(JPROG.substitute(classname=jclass))
+        try:
+            subprocess.check_call(["javac", jsrc])
+            path = subprocess.check_output(
+                ["java", "-cp", wd, jclass], universal_newlines=True
+            )
+        except (OSError, UnicodeDecodeError, subprocess.CalledProcessError):
+            raise error
+        finally:
+            shutil.rmtree(wd)
+        path = os.path.normpath(path.strip())
+        if os.path.exists(os.path.join(path, "include", "jni.h")):
+            return path
+        path = os.path.dirname(path)
+        if os.path.exists(os.path.join(path, "include", "jni.h")):
+            return path
+        raise error
 
 
 def load_jvm_lib(java_home=None):
