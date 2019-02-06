@@ -6,10 +6,11 @@ COPY install_maven.sh /
 
 RUN yum install https://centos7.iuscommunity.org/ius-release.rpm
 
-# needed only to run examples: zip, wheel
+# needed only to run examples: zip
 RUN yum install \
       gcc \
       gcc-c++ \
+      make \
       python-devel \
       python-pip \
       python36u-devel \
