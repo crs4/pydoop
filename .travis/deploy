@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -euo pipefail
-[ -n "${DEBUG:-}" ] && set -x
+
 this="${BASH_SOURCE-$0}"
 this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 
@@ -24,13 +24,17 @@ for v in 2 3; do
 done
 docker stop pydoop
 
-## Actual deployment disabled for now
-# docker login -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"
-# for img in pydoop pydoop-dist pydoop-docs; do
-#     for tag in latest ${VERSION}; do
-# 	docker push crs4/${img}:${tag}
-#     done
-# done
+echo "${CI_PASS}" | docker login -u "${CI_USER}" --password-stdin
+for img in pydoop pydoop-dist pydoop-docs; do
+    for tag in latest ${VERSION}; do
+	docker push crs4/${img}:${tag}
+    done
+done
+
+export TWINE_PASSWORD="${CI_PASS}"
+twine upload -u "${CI_USER}" pydoop-${VERSION}.tar.gz
 
 popd
 popd
+
+rm -rf "${WD}"

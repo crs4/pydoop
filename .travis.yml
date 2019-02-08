@@ -36,6 +36,9 @@ script:
  # Needs to run only once. For balance, add this to the fastest job
  - if ([ "${TRAVIS_PYTHON_VERSION}" = "2.7" ] && [ "${HADOOP_MAJOR_VERSION}" = "2" ]); then docker build -t crs4/pydoop-docs -f Dockerfile.docs .; fi
 
+before_deploy:
+  - pip install setuptools twine wheel
+
 deploy:
   provider: script
   script: .travis/deploy
