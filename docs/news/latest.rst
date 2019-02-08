@@ -1,3 +1,15 @@
+New in 2.0a4
+------------
+
+ * The ``sercore`` extension, together with most of the ``pydoop.mapreduce``
+   subpackage, has been rewritten from scratch. Now it's simpler and slightly
+   faster (much faster when using a combiner)
+ * Opaque splits are now auto-deserialized  to ``context.input_split.payload``
+ * ``JobConf`` is now fully compatible with ``dict``
+ * Compilation of avro-parquet-based examples is now much faster
+ * The Hadoop simulator has been dropped
+ * Bug fixes and performance improvements
+
 New in 2.0a3
 ------------
 
