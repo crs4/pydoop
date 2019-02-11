@@ -36,5 +36,3 @@ twine upload -u "${CI_USER}" pydoop-${VERSION}.tar.gz
 
 popd
 popd
-
-rm -rf "${WD}"
