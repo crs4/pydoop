@@ -57,12 +57,12 @@ class TestPydoop(unittest.TestCase):
             self.assertEqual(pydoop.hadoop_home(), new_home)
 
     def test_conf(self):
-        os.environ['HADOOP_CONF_DIR'] = self.wd
-        # silence Hadoop 3 warning
-        with open(os.path.join(self.wd, 'log4j.properties'), 'w'):
-            pass
+        old_conf = pydoop.hadoop_conf()
+        new_conf = os.path.join(self.wd, "conf")
+        shutil.copytree(old_conf, new_conf)
+        os.environ['HADOOP_CONF_DIR'] = new_conf
         reload(pydoop)
-        self.assertEqual(pydoop.hadoop_conf(), self.wd)
+        self.assertEqual(pydoop.hadoop_conf(), new_conf)
 
     def test_pydoop_jar_path(self):
         jar_path = pydoop.jar_path()
