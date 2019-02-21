@@ -458,6 +458,8 @@ class PathFinder(object):
         return self.__hadoop_version_info
 
     def hadoop_conf(self, hadoop_home=None):
+        if not hadoop_home:
+            hadoop_home = self.hadoop_home()
         if not self.__hadoop_conf:
             try:
                 self.__hadoop_conf = os.environ["HADOOP_CONF_DIR"]
@@ -467,8 +469,6 @@ class PathFinder(object):
                 elif os.path.isdir(self.RPM_HADOOP_HOME):
                     candidate = '/etc/hadoop'
                 else:
-                    if not hadoop_home:
-                        hadoop_home = self.hadoop_home()
                     v = self.hadoop_version_info(hadoop_home)
                     if v.main >= (2, 0, 0):
                         candidate = os.path.join(hadoop_home, 'etc', 'hadoop')
