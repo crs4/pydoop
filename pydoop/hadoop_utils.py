@@ -349,7 +349,6 @@ class PathFinder(object):
     """
     Encapsulates the logic to find paths and other info required by Pydoop.
     """
-    CDH_HADOOP_EXEC = "/usr/bin/hadoop"  # CDH and rpm
     RPM_HADOOP_HOME = "/usr/share/hadoop"
 
     def __init__(self):
@@ -386,10 +385,8 @@ class PathFinder(object):
 
     def mapred_exec(self, hadoop_home=None):
         if not self.__mapred_exec:
-            if not (hadoop_home or
-                    os.getenv("HADOOP_PREFIX", os.getenv("HADOOP_HOME"))):
-                if is_exe(self.CDH_HADOOP_EXEC):
-                    self.__mapred_exec = self.CDH_HADOOP_EXEC
+            if is_exe("/usr/bin/mapred") and not hadoop_home:
+                self.__mapred_exec = "/usr/bin/mapred"
             else:
                 mapred = os.path.join(
                     hadoop_home or self.hadoop_home(), "bin", "mapred"
@@ -402,11 +399,8 @@ class PathFinder(object):
 
     def hadoop_exec(self, hadoop_home=None):
         if not self.__hadoop_exec:
-            # allow overriding of package-installed hadoop exec
-            if not (hadoop_home or
-                    os.getenv("HADOOP_PREFIX", os.getenv("HADOOP_HOME"))):
-                if is_exe(self.CDH_HADOOP_EXEC):
-                    self.__hadoop_exec = self.CDH_HADOOP_EXEC
+            if is_exe("/usr/bin/hadoop") and not hadoop_home:
+                self.__hadoop_exec = "/usr/bin/hadoop"
             else:
                 fn = os.path.join(
                     hadoop_home or self.hadoop_home(), "bin", "hadoop"
