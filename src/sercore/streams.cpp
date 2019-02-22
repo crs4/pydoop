@@ -180,7 +180,7 @@ FileInStream_readVInt(FileInStreamObj *self) {
     return NULL;
   }
   PyEval_RestoreThread(state);
-  return Py_BuildValue("I", rval);
+  return Py_BuildValue("i", rval);
 }
 
 
@@ -518,10 +518,10 @@ FileOutStream_write(FileOutStreamObj *self, PyObject *args) {
 
 static PyObject *
 FileOutStream_writeVInt(FileOutStreamObj *self, PyObject *args) {
-  int32_t val = 0;
+  int val = 0;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
-  if (!PyArg_ParseTuple(args, "n", &val)) {
+  if (!PyArg_ParseTuple(args, "i", &val)) {
     return NULL;
   }
   state = PyEval_SaveThread();
@@ -539,10 +539,10 @@ FileOutStream_writeVInt(FileOutStreamObj *self, PyObject *args) {
 
 static PyObject *
 FileOutStream_writeVLong(FileOutStreamObj *self, PyObject *args) {
-  int64_t val;
+  long long val;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
-  if (!PyArg_ParseTuple(args, "n", &val)) {
+  if (!PyArg_ParseTuple(args, "L", &val)) {
     return NULL;
   }
   state = PyEval_SaveThread();
@@ -709,7 +709,7 @@ error:
 // Optimizing other commands in this way is probably worthless.
 static PyObject *
 FileOutStream_writeOutput(FileOutStreamObj *self, PyObject *args) {
-  int32_t part = -1;
+  int part = -1;
   PyThreadState *state;
   _ASSERT_STREAM_OPEN;
 #if PY_MAJOR_VERSION < 3
@@ -717,7 +717,7 @@ FileOutStream_writeOutput(FileOutStreamObj *self, PyObject *args) {
   PyObject *pykey, *pyval;
   Py_buffer kbuf = {NULL, NULL};
   Py_buffer vbuf = {NULL, NULL};
-  if (!PyArg_ParseTuple(args, "OO|n", &pykey, &pyval, &part)) {
+  if (!PyArg_ParseTuple(args, "OO|i", &pykey, &pyval, &part)) {
     return NULL;
   }
   if (PyObject_GetBuffer(pykey, &kbuf, PyBUF_SIMPLE) < 0) {
@@ -732,7 +732,7 @@ FileOutStream_writeOutput(FileOutStreamObj *self, PyObject *args) {
 #else
   const char *key, *val;
   Py_ssize_t klen, vlen;
-  if (!PyArg_ParseTuple(args, "y#y#|n", &key, &klen, &val, &vlen, &part)) {
+  if (!PyArg_ParseTuple(args, "y#y#|i", &key, &klen, &val, &vlen, &part)) {
     return NULL;
   }
   std::string ks(key, klen);
