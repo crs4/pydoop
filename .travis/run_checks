@@ -3,14 +3,8 @@
 set -euo pipefail
 [ -n "${DEBUG:-}" ] && set -x
 
-export PYTHON="python${TRAVIS_PYTHON_VERSION%.*}"
-docker exec pydoop bash -c \
-  "source /etc/profile && cd test && ${PYTHON} all_tests.py"
-docker exec pydoop bash -c \
-  "source /etc/profile && cd test/avro && ${PYTHON} all_tests.py"
-docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
-  "source /etc/profile && cd int_test && ./run_all"
-docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
-  "source /etc/profile && cd examples && ./run_all"
-docker exec -e PYTHON="${PYTHON}" -e DEBUG="${DEBUG:-}" pydoop bash -c \
-  "source /etc/profile && cd examples/avro && ./run"
+docker exec pydoop bash -c 'cd test && ${PYTHON} all_tests.py'
+docker exec pydoop bash -c 'cd test/avro && ${PYTHON} all_tests.py'
+docker exec -e DEBUG="${DEBUG:-}" pydoop bash -c 'cd int_test && ./run_all'
+docker exec -e DEBUG="${DEBUG:-}" pydoop bash -c 'cd examples && ./run_all'
+docker exec -e DEBUG="${DEBUG:-}" pydoop bash -c 'cd examples/avro && ./run'
