@@ -75,7 +75,10 @@ class TestAvroIO(WDTestCase):
                     if t == s:
                         continue
                     s = t
-                    x = next(sreader)
+                    try:
+                        x = next(sreader)
+                    except StopIteration:
+                        return
                     yield (t, x)
 
             i = 0
