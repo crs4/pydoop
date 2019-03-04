@@ -26,6 +26,7 @@ install: true
 before_script:
   - flake8 -v .
   - DEBUG=true ./.travis/check_script_template -v
+  - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
 
 script:
  - docker build --build-arg hadoop_version=${HADOOP_VERSION} --build-arg python_version=${TRAVIS_PYTHON_VERSION} -t crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} .
@@ -33,8 +34,6 @@ script:
  - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop
- # Needs to run only once. For balance, add this to the fastest job
- # - if ([ "${TRAVIS_PYTHON_VERSION}" = "2.7" ] && [ "${HADOOP_VERSION}" = "2" ]); then docker build -t crs4/pydoop-docs -f Dockerfile.docs .; fi
 
 before_deploy:
   - pip install setuptools twine wheel
