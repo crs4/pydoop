@@ -1,29 +1,29 @@
-ARG HADOOP_MAJOR_VERSION=3
-FROM crs4/hadoop:${HADOOP_MAJOR_VERSION}
-MAINTAINER simone.leo@crs4.it
+ARG hadoop_version=3.2.0
+ARG python_version=3.6
+ARG maven_home=/opt/maven
+ARG maven_version=3.6.0
 
+FROM crs4/hadoop:${hadoop_version}-ubuntu
+ARG maven_home
+ARG maven_version
+ARG python_version
+ENV PYTHON=python${python_version}
 COPY install_maven.sh /
-
-RUN yum install https://centos7.iuscommunity.org/ius-release.rpm
-
-# needed only to run examples: zip
-RUN yum install \
-      gcc \
-      gcc-c++ \
-      make \
-      python-devel \
-      python-pip \
-      python36u-devel \
-      python36u-pip \
-      zip && \
-    yum clean all && \
-    bash /install_maven.sh && \
-    ln -rs /usr/bin/python3.6 /usr/bin/python3 && \
-    ln -rs /usr/bin/pip3.6 /usr/bin/pip3 && \
-    for v in 2 3; do \
-      pip${v} install --no-cache-dir --upgrade pip; \
-    done
-
-ENV HADOOP_HOME /opt/hadoop
-ENV LC_ALL en_US.UTF-8
-ENV LANG en_US.UTF-8
+RUN v=$([ ${python_version%%.*} -eq 3 ] && echo 3 || echo) \
+    && apt -y update && apt -y install \
+      wget \
+      openjdk-8-jdk \
+      python${python_version}-dev \
+      python${v}-pip \
+      zip \
+    && apt clean && rm -rf /var/lib/apt-lists/* \
+    && bash /install_maven.sh \
+    && rm -f /install_maven.sh \
+    && ${PYTHON} -m pip install --no-cache-dir --upgrade pip
+ENV HADOOP_HOME=/opt/hadoop
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+ENV M2_HOME="${maven_home}"
+ENV M2="${M2_HOME}/bin"
+ENV PATH="${M2}:${PATH}"
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8

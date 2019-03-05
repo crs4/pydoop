@@ -5,13 +5,13 @@ cache: pip
 matrix:
   include:
   - python: "2.7"
-    env: HADOOP_MAJOR_VERSION=2
-  - python: "2.7"
-    env: HADOOP_MAJOR_VERSION=3
+    env: HADOOP_VERSION=3.2.0
   - python: "3.6"
-    env: HADOOP_MAJOR_VERSION=3
+    env: HADOOP_VERSION=2.9.2
+  - python: "3.6"
+    env: HADOOP_VERSION=3.2.0
   - python: "3.7"
-    env: HADOOP_MAJOR_VERSION=3
+    env: HADOOP_VERSION=3.2.0
     dist: xenial
 
 sudo: required
@@ -26,15 +26,14 @@ install: true
 before_script:
   - flake8 -v .
   - DEBUG=true ./.travis/check_script_template -v
+  - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
 
 script:
- - docker build --build-arg HADOOP_MAJOR_VERSION=${HADOOP_MAJOR_VERSION} -t crs4/pydoop .
- - docker run --rm --name pydoop -d crs4/pydoop
+ - docker build --build-arg hadoop_version=${HADOOP_VERSION} --build-arg python_version=${TRAVIS_PYTHON_VERSION} -t crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} .
+ - docker run --rm --name pydoop -d crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION}
  - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop
- # Needs to run only once. For balance, add this to the fastest job
- - if ([ "${TRAVIS_PYTHON_VERSION}" = "2.7" ] && [ "${HADOOP_MAJOR_VERSION}" = "2" ]); then docker build -t crs4/pydoop-docs -f Dockerfile.docs .; fi
 
 before_deploy:
   - pip install setuptools twine wheel
@@ -44,6 +43,6 @@ deploy:
   script: .travis/deploy
   on:
     python: "3.6"
-    condition: $HADOOP_MAJOR_VERSION = 3
+    condition: $HADOOP_VERSION = 3.2.0
     repo: crs4/pydoop
     tags: true

@@ -33,9 +33,9 @@ Read on for detailed installation instructions.
 Supported Platforms
 -------------------
 
-At the moment, Pydoop is being tested on `CentOS <http://www.centos.org>`_ 7
-only, although it should also work on other Linux distros and (possibly with
-some tweaking) on macOS. Windows is **not** supported.
+We regularly test Pydoop on Ubuntu only, but it should also work on other
+Linux distros and (possibly with some tweaking) on macOS. Other platforms are
+**not** supported.
 
 
 Prerequisites
@@ -47,7 +47,7 @@ Prerequisites
 
 * `setuptools <https://pypi.python.org/pypi/setuptools>`_ >= 3.3;
 
-* Hadoop >=2. We currently run regular CI tests with the latest versions of
+* Hadoop >=2. We run regular CI tests with the latest versions of
   `Apache Hadoop <http://hadoop.apache.org/releases.html>`_ 2.x and 3.x,
   but we expect Pydoop to also work on other Hadoop distributions. In
   particular, we have tested it on `Amazon EMR <https://aws.amazon.com/emr>`_
