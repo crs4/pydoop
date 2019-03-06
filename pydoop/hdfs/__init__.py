@@ -61,6 +61,7 @@ __all__ = [
     'put',
     'get',
     'mkdir',
+    'rm',
     'rmr',
     'lsl',
     'ls',
@@ -264,15 +265,23 @@ def mkdir(hdfs_path, user=None):
     return retval
 
 
-def rmr(hdfs_path, user=None):
+def rm(hdfs_path, recursive=True, user=None):
     """
-    Recursively remove files and directories.
+    Remove a file or directory.
+
+    If ``recursive`` is :obj:`True` (the default), directory contents are
+    removed recursively.
     """
     host, port, path_ = path.split(hdfs_path, user)
     fs = hdfs(host, port, user)
-    retval = fs.delete(path_)
+    retval = fs.delete(path_, recursive=recursive)
     fs.close()
     return retval
+
+
+# backwards compatibility
+def rmr(hdfs_path, user=None):
+    return rm(hdfs_path, recursive=True, user=user)
 
 
 def lsl(hdfs_path, user=None, recursive=False):

@@ -288,7 +288,7 @@ class PydoopSubmitter(object):
                 self.logger.debug(
                     "Removing temporary working directory %s", self.remote_wd
                 )
-                hdfs.rmr(self.remote_wd)
+                hdfs.rm(self.remote_wd)
             except IOError:
                 pass
 
