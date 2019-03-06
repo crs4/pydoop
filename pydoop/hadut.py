@@ -487,7 +487,7 @@ class PipesRunner(object):
         Remove the working directory, if any.
         """
         if self.wd:
-            hdfs.rmr(self.wd)
+            hdfs.rm(self.wd)
 
     def set_input(self, input_, put=False):
         """

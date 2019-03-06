@@ -175,7 +175,7 @@ class TestHDFS(unittest.TestCase):
             if t.kind == 0:
                 self.assertEqual(hdfs.load(exp_t.name), self.data)
         # check semantics when target dir already exists
-        hdfs.rmr(copy_on_wd)
+        hdfs.rm(copy_on_wd)
         hdfs.mkdir(copy_on_wd)
         hdfs.cp(src, copy_on_wd, mode="wb")
         exp_t = self.__make_tree(copy_on_wd, root=src_bn, create=False)
@@ -209,10 +209,10 @@ class TestHDFS(unittest.TestCase):
             rdata = fi.read()
         self.assertEqual(rdata, self.data)
 
-    def rmr(self):
+    def rm(self):
         for wd in self.local_wd, self.hdfs_wd:
             t1 = self.__make_tree(wd)
-            hdfs.rmr(t1.name)
+            hdfs.rm(t1.name)
             self.assertEqual(len(hdfs.ls(wd)), 0)
 
     def chmod(self):
@@ -360,7 +360,7 @@ class TestHDFS(unittest.TestCase):
         self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         with counter:
-            hdfs.rmr(self.hdfs_paths[0] + '_2')
+            hdfs.rm(self.hdfs_paths[0] + '_2')
         self.assertGreaterEqual(counter.count, acceptable_threshold)
 
         # ...we could go on, but the better strategy would be to insert a check
@@ -378,7 +378,7 @@ def suite():
     suite_.addTest(TestHDFS("cp"))
     suite_.addTest(TestHDFS("put"))
     suite_.addTest(TestHDFS("get"))
-    suite_.addTest(TestHDFS("rmr"))
+    suite_.addTest(TestHDFS("rm"))
     suite_.addTest(TestHDFS("chmod"))
     suite_.addTest(TestHDFS("move"))
     suite_.addTest(TestHDFS("chown"))

@@ -234,7 +234,7 @@ class TestExists(unittest.TestCase):
         for path in base_path, base_path + UNI_CHR:
             hdfs.dump("foo\n", path)
             self.assertTrue(hdfs.path.exists(path))
-            hdfs.rmr(path)
+            hdfs.rm(path)
             self.assertFalse(hdfs.path.exists(path))
 
 
@@ -250,12 +250,12 @@ class TestKind(unittest.TestCase):
             try:
                 hdfs.dump("foo\n", path)
                 self.assertEqual('file', hdfs.path.kind(path))
-                hdfs.rmr(path)
+                hdfs.rm(path)
                 hdfs.mkdir(path)
                 self.assertEqual('directory', hdfs.path.kind(path))
             finally:
                 try:
-                    hdfs.rmr(path)
+                    hdfs.rm(path)
                 except IOError:
                     pass
 
@@ -265,12 +265,12 @@ class TestKind(unittest.TestCase):
             try:
                 hdfs.dump("foo\n", path)
                 self.assertTrue(hdfs.path.isfile(path))
-                hdfs.rmr(path)
+                hdfs.rm(path)
                 hdfs.mkdir(path)
                 self.assertFalse(hdfs.path.isfile(path))
             finally:
                 try:
-                    hdfs.rmr(path)
+                    hdfs.rm(path)
                 except IOError:
                     pass
 
@@ -280,12 +280,12 @@ class TestKind(unittest.TestCase):
             try:
                 hdfs.dump("foo\n", path)
                 self.assertFalse(hdfs.path.isdir(path))
-                hdfs.rmr(path)
+                hdfs.rm(path)
                 hdfs.mkdir(path)
                 self.assertTrue(hdfs.path.isdir(path))
             finally:
                 try:
-                    hdfs.rmr(path)
+                    hdfs.rm(path)
                 except IOError:
                     pass
 
@@ -351,7 +351,7 @@ class TestStat(unittest.TestCase):
             self.assertEqual(attr, info[n2])
         self.__check_extra_args(s, info)
         self.__check_wrapper_funcs(p)
-        hdfs.rmr(p)
+        hdfs.rm(p)
 
     def stat_on_local(self):
         wd_ = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
@@ -381,7 +381,7 @@ class TestStat(unittest.TestCase):
                     self.assertEqual(getattr(s, n), exp_v)
         self.__check_extra_args(s, info)
         self.__check_wrapper_funcs(p)
-        hdfs.rmr(wd)
+        hdfs.rm(wd)
 
     def stat_on_dir(self):
         s = hdfs.path.stat('/user/%s' % DEFAULT_USER)
@@ -418,7 +418,7 @@ class TestIsSomething(unittest.TestCase):
         link = os.path.join(wd_, make_random_str())
         os.symlink(wd_, link)
         self.assertTrue(hdfs.path.islink('file:%s' % link))
-        hdfs.rmr(wd)
+        hdfs.rm(wd)
 
     def ismount(self):
         self.assertFalse(hdfs.path.ismount('hdfs://host:1/foo'))
@@ -443,7 +443,7 @@ class TestReal(unittest.TestCase):
         os.symlink(wd_, link)
         expected_path = 'file:%s' % os.path.realpath(wd_)
         self.assertEqual(hdfs.path.realpath('file:%s' % link), expected_path)
-        hdfs.rmr(wd)
+        hdfs.rm(wd)
 
 
 class TestSame(unittest.TestCase):
@@ -454,13 +454,13 @@ class TestSame(unittest.TestCase):
         link = os.path.join(wd_, make_random_str())
         os.symlink(wd_, link)
         self.assertTrue(hdfs.path.samefile('file:%s' % link, 'file:%s' % wd_))
-        hdfs.rmr(wd)
+        hdfs.rm(wd)
 
     def samefile_rel(self):
         p = make_random_str() + UNI_CHR
         hdfs.dump("foo\n", p)
         self.assertTrue(hdfs.path.samefile(p, hdfs.path.abspath(p)))
-        hdfs.rmr(p)
+        hdfs.rm(p)
 
     def samefile_norm(self):
         for pre in '', 'file:/', 'hdfs://host:1/':
@@ -478,7 +478,7 @@ class TestAccess(unittest.TestCase):
         hdfs.mkdir(self.path)
 
     def tearDown(self):
-        hdfs.rmr(self.path)
+        hdfs.rm(self.path)
 
     # FIXME: far from exhaustive.  This is a slow test
     def __test(self, offset, user=None):
@@ -506,7 +506,7 @@ class TestUtime(unittest.TestCase):
         st = hdfs.path.stat(path)
         self.assertEqual(st.st_atime, new_atime)
         self.assertEqual(st.st_mtime, new_mtime)
-        hdfs.rmr(path)
+        hdfs.rm(path)
 
 
 class TestCallFromHdfs(unittest.TestCase):
@@ -516,7 +516,7 @@ class TestCallFromHdfs(unittest.TestCase):
         hdfs.dump("foo\n", self.path)
 
     def tearDown(self):
-        hdfs.rmr(self.path)
+        hdfs.rm(self.path)
 
     def test_stat(self):
         for name in 'stat', 'lstat':

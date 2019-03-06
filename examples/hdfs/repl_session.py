@@ -48,8 +48,8 @@ if __name__ == "__main__":
     import os
     import pydoop.hdfs as hdfs
     try:
-        hdfs.rmr("test")
-        hdfs.rmr("test.copy")
+        hdfs.rm("test")
+        hdfs.rm("test.copy")
         os.remove("/tmp/hello.txt")
     except OSError:
         pass
