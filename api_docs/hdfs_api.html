@@ -6,17 +6,18 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pydoop.hdfs — HDFS API &#8212; Pydoop 2.0a2 documentation</title>
+    <title>pydoop.hdfs — HDFS API &#8212; Pydoop 2.0a4 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="pydoop.mapreduce.simulator — Hadoop Simulator API" href="simulator.html" />
+    <link rel="next" title="pydoop.hadut — Hadoop shell interaction" href="hadut.html" />
     <link rel="prev" title="pydoop.mapreduce.api — MapReduce API" href="mr_api.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
@@ -29,7 +30,7 @@
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="simulator.html" title="pydoop.mapreduce.simulator — Hadoop Simulator API"
+          <a href="hadut.html" title="pydoop.hadut — Hadoop shell interaction"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="mr_api.html" title="pydoop.mapreduce.api — MapReduce API"
@@ -64,8 +65,8 @@
             <p class="topless"><a href="mr_api.html"
                                   title="previous chapter"><code class="docutils literal notranslate"><span class="pre">pydoop.mapreduce.api</span></code> — MapReduce API</a></p>
             <h4>Next topic</h4>
-            <p class="topless"><a href="simulator.html"
-                                  title="next chapter"><code class="docutils literal notranslate"><span class="pre">pydoop.mapreduce.simulator</span></code> — Hadoop Simulator API</a></p>
+            <p class="topless"><a href="hadut.html"
+                                  title="next chapter"><code class="docutils literal notranslate"><span class="pre">pydoop.hadut</span></code> — Hadoop shell interaction</a></p>
 
 					<h4>Get Pydoop</h4>
 					<ul>
@@ -611,6 +612,13 @@ if <code class="docutils literal notranslate"><span class="pre">top</span></code
 </dd></dl>
 
 <dl class="function">
+<dt id="pydoop.hdfs.default_is_local">
+<code class="descclassname">pydoop.hdfs.</code><code class="descname">default_is_local</code><span class="sig-paren">(</span><em>hadoop_conf=None</em>, <em>hadoop_home=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.hdfs.default_is_local" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is Hadoop configured to use the local file system?</p>
+<p>By default, it is. A DFS must be explicitly configured.</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="pydoop.hdfs.open">
 <code class="descclassname">pydoop.hdfs.</code><code class="descname">open</code><span class="sig-paren">(</span><em>hdfs_path</em>, <em>mode='r'</em>, <em>buff_size=0</em>, <em>replication=0</em>, <em>blocksize=0</em>, <em>user=None</em>, <em>encoding=None</em>, <em>errors=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.hdfs.open" title="Permalink to this definition">¶</a></dt>
 <dd><p>Open a file, returning an <a class="reference internal" href="#pydoop.hdfs.file.hdfs_file" title="pydoop.hdfs.file.hdfs_file"><code class="xref py py-class docutils literal notranslate"><span class="pre">hdfs_file</span></code></a> object.</p>
@@ -1014,6 +1022,13 @@ the same rules as <a class="reference external" href="https://docs.python.org/2.
 </div>
 <span class="target" id="module-pydoop.hdfs.fs"></span><div class="section" id="pydoop-hdfs-fs-file-system-handles">
 <h2>pydoop.hdfs.fs – File System Handles<a class="headerlink" href="#pydoop-hdfs-fs-file-system-handles" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="pydoop.hdfs.fs.default_is_local">
+<code class="descclassname">pydoop.hdfs.fs.</code><code class="descname">default_is_local</code><span class="sig-paren">(</span><em>hadoop_conf=None</em>, <em>hadoop_home=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.hdfs.fs.default_is_local" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is Hadoop configured to use the local file system?</p>
+<p>By default, it is. A DFS must be explicitly configured.</p>
+</dd></dl>
+
 <dl class="class">
 <dt id="pydoop.hdfs.fs.hdfs">
 <em class="property">class </em><code class="descclassname">pydoop.hdfs.fs.</code><code class="descname">hdfs</code><span class="sig-paren">(</span><em>host='default'</em>, <em>port=0</em>, <em>user=None</em>, <em>groups=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pydoop.hdfs.fs.hdfs" title="Permalink to this definition">¶</a></dt>
@@ -1782,7 +1797,7 @@ many platforms allow seeking beyond the end of a file).</p>
           <a href="../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
         <li class="right" >
-          <a href="simulator.html" title="pydoop.mapreduce.simulator — Hadoop Simulator API"
+          <a href="hadut.html" title="pydoop.hadut — Hadoop shell interaction"
              >next</a> |</li>
         <li class="right" >
           <a href="mr_api.html" title="pydoop.mapreduce.api — MapReduce API"
@@ -1797,8 +1812,8 @@ many platforms allow seeking beyond the end of a file).</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2009-2018, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+        &#169; Copyright 2009-2019, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>

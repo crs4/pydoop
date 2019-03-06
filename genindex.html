@@ -7,13 +7,14 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Index &#8212; Pydoop 2.0a2 documentation</title>
+    <title>Index &#8212; Pydoop 2.0a4 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="#" />
     <link rel="search" title="Search" href="search.html" /> 
@@ -161,8 +162,6 @@
       </ul></li>
       <li><a href="api_docs/hadut.html#pydoop.hadut.PipesRunner.clean">clean() (pydoop.hadut.PipesRunner method)</a>
 </li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Closable">Closable (class in pydoop.mapreduce.api)</a>
-</li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.file.FileIO.close">close() (pydoop.hdfs.file.FileIO method)</a>
 
       <ul>
@@ -171,8 +170,6 @@
         <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.fs.hdfs.close">(pydoop.hdfs.fs.hdfs method)</a>
 </li>
         <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.hdfs.close">(pydoop.hdfs.hdfs method)</a>
-</li>
-        <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Closable.close">(pydoop.mapreduce.api.Closable method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -183,6 +180,10 @@
         <li><a href="api_docs/hadut.html#pydoop.hadut.PipesRunner.collect_output">(pydoop.hadut.PipesRunner method)</a>
 </li>
       </ul></li>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Combiner">Combiner (class in pydoop.mapreduce.api)</a>
+</li>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Component">Component (class in pydoop.mapreduce.api)</a>
+</li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Context">Context (class in pydoop.mapreduce.api)</a>
 </li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.fs.hdfs.copy">copy() (pydoop.hdfs.fs.hdfs method)</a>
@@ -191,8 +192,6 @@
         <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.hdfs.copy">(pydoop.hdfs.hdfs method)</a>
 </li>
       </ul></li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Counter">Counter (class in pydoop.mapreduce.api)</a>
-</li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.cp">cp() (in module pydoop.hdfs)</a>
 </li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Factory.create_combiner">create_combiner() (pydoop.mapreduce.api.Factory method)</a>
@@ -221,14 +220,20 @@
         <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.hdfs.default_block_size">(pydoop.hdfs.hdfs method)</a>
 </li>
       </ul></li>
+      <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.default_is_local">default_is_local() (in module pydoop.hdfs)</a>
+
+      <ul>
+        <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.fs.default_is_local">(in module pydoop.hdfs.fs)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.fs.hdfs.delete">delete() (pydoop.hdfs.fs.hdfs method)</a>
 
       <ul>
         <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.hdfs.delete">(pydoop.hdfs.hdfs method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/hadut.html#pydoop.hadut.dfs">dfs() (in module pydoop.hadut)</a>
 </li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.path.dirname">dirname() (in module pydoop.hdfs.path)</a>
@@ -271,6 +276,8 @@
 </li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.file.FileIO">FileIO (class in pydoop.hdfs.file)</a>
 </li>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.FileSplit">FileSplit (class in pydoop.mapreduce.api)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/hadut.html#pydoop.hadut.find_jar">find_jar() (in module pydoop.hadut)</a>
@@ -286,11 +293,7 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.get">get() (in module pydoop.hdfs)</a>
-
-      <ul>
-        <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.JobConf.get">(pydoop.mapreduce.api.JobConf method)</a>
 </li>
-      </ul></li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.JobConf.get_bool">get_bool() (pydoop.mapreduce.api.JobConf method)</a>
 </li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Context.get_counter">get_counter() (pydoop.mapreduce.api.Context method)</a>
@@ -303,16 +306,12 @@
         <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.hdfs.get_hosts">(pydoop.hdfs.hdfs method)</a>
 </li>
       </ul></li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.MapContext.get_input_split">get_input_split() (pydoop.mapreduce.api.MapContext method)</a>
-</li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.MapContext.get_input_value_class">get_input_value_class() (pydoop.mapreduce.api.MapContext method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.JobConf.get_int">get_int() (pydoop.mapreduce.api.JobConf method)</a>
 </li>
       <li><a href="api_docs/hadut.html#pydoop.hadut.get_num_nodes">get_num_nodes() (in module pydoop.hadut)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.fs.hdfs.get_path_info">get_path_info() (pydoop.hdfs.fs.hdfs method)</a>
 
       <ul>
@@ -337,10 +336,6 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_docs/simulator.html#pydoop.mapreduce.simulator.HadoopSimulatorLocal">HadoopSimulatorLocal (class in pydoop.mapreduce.simulator)</a>
-</li>
-      <li><a href="api_docs/simulator.html#pydoop.mapreduce.simulator.HadoopSimulatorNetwork">HadoopSimulatorNetwork (class in pydoop.mapreduce.simulator)</a>
-</li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.hdfs">hdfs (class in pydoop.hdfs)</a>
 
       <ul>
@@ -365,11 +360,9 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Context.increment_counter">increment_counter() (pydoop.mapreduce.api.Context method)</a>
 </li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.MapContext.input_key_class">input_key_class (pydoop.mapreduce.api.MapContext attribute)</a>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Context.input_split">input_split (pydoop.mapreduce.api.Context attribute)</a>
 </li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.MapContext.input_split">input_split (pydoop.mapreduce.api.MapContext attribute)</a>
-</li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.pipes.InputSplit">InputSplit (class in pydoop.mapreduce.pipes)</a>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.InputSplit">InputSplit (class in pydoop.mapreduce.api)</a>
 </li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.path.isabs">isabs() (in module pydoop.hdfs.path)</a>
 </li>
@@ -441,14 +434,12 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Mapper.map">map() (pydoop.mapreduce.api.Mapper method)</a>
 </li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.MapContext">MapContext (class in pydoop.mapreduce.api)</a>
-</li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Mapper">Mapper (class in pydoop.mapreduce.api)</a>
+</li>
+      <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.mkdir">mkdir() (in module pydoop.hdfs)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.mkdir">mkdir() (in module pydoop.hdfs)</a>
-</li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.move">move() (in module pydoop.hdfs)</a>
 
       <ul>
@@ -473,8 +464,6 @@
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.ReduceContext.next_value">next_value() (pydoop.mapreduce.api.ReduceContext method)</a>
-</li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.path.normpath">normpath() (in module pydoop.hdfs.path)</a>
 </li>
   </ul></td>
@@ -483,6 +472,8 @@
 <h2 id="O">O</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.OpaqueSplit">OpaqueSplit (class in pydoop.mapreduce.api)</a>
+</li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.open">open() (in module pydoop.hdfs)</a>
 </li>
   </ul></td>
@@ -519,10 +510,10 @@
 </li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.file.hdfs_file.pread_chunk">pread_chunk() (pydoop.hdfs.file.hdfs_file method)</a>
 </li>
-      <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.put">put() (in module pydoop.hdfs)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.put">put() (in module pydoop.hdfs)</a>
+</li>
       <li><a href="api_docs/hadut.html#module-pydoop.hadut">pydoop.hadut (module)</a>
 </li>
       <li><a href="api_docs/hdfs_api.html#module-pydoop.hdfs">pydoop.hdfs (module)</a>
@@ -536,10 +527,6 @@
       <li><a href="api_docs/hdfs_api.html#module-pydoop.hdfs.path">pydoop.hdfs.path (module)</a>
 </li>
       <li><a href="api_docs/mr_api.html#module-pydoop.mapreduce.api">pydoop.mapreduce.api (module)</a>
-</li>
-      <li><a href="api_docs/simulator.html#module-pydoop.mapreduce.simulator">pydoop.mapreduce.simulator (module)</a>
-</li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.PydoopError">PydoopError</a>
 </li>
       <li><a href="api_docs/hadut.html#pydoop.hadut.PydoopScriptRunner">PydoopScriptRunner (class in pydoop.hadut)</a>
 </li>
@@ -563,8 +550,6 @@
 </li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Reducer.reduce">reduce() (pydoop.mapreduce.api.Reducer method)</a>
 </li>
-      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.ReduceContext">ReduceContext (class in pydoop.mapreduce.api)</a>
-</li>
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Reducer">Reducer (class in pydoop.mapreduce.api)</a>
 </li>
       <li><a href="api_docs/hdfs_api.html#pydoop.hdfs.rename">rename() (in module pydoop.hdfs)</a>
@@ -585,10 +570,6 @@
 
       <ul>
         <li><a href="api_docs/hadut.html#pydoop.hadut.PydoopScriptRunner.run">(pydoop.hadut.PydoopScriptRunner method)</a>
-</li>
-        <li><a href="api_docs/simulator.html#pydoop.mapreduce.simulator.HadoopSimulatorLocal.run">(pydoop.mapreduce.simulator.HadoopSimulatorLocal method)</a>
-</li>
-        <li><a href="api_docs/simulator.html#pydoop.mapreduce.simulator.HadoopSimulatorNetwork.run">(pydoop.mapreduce.simulator.HadoopSimulatorNetwork method)</a>
 </li>
       </ul></li>
       <li><a href="api_docs/hadut.html#pydoop.hadut.run_class">run_class() (in module pydoop.hadut)</a>
@@ -704,6 +685,10 @@
       <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Context.value">value (pydoop.mapreduce.api.Context attribute)</a>
 </li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api_docs/mr_api.html#pydoop.mapreduce.api.Context.values">values (pydoop.mapreduce.api.Context attribute)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="W">W</h2>
@@ -753,8 +738,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2009-2018, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+        &#169; Copyright 2009-2019, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>
