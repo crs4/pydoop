@@ -23,9 +23,9 @@ import importlib
 
 _TEST_DIRS = (
     "app",
-    "hdfs",
-    "mapreduce",
     "common",
+    "mapreduce",
+    "hdfs",  # run these last, in case HDFS needs time to be fully up
 )
 
 
