@@ -6,13 +6,14 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>New in 2.0a2 &#8212; Pydoop 2.0a2 documentation</title>
+    <title>New in 2.0a4 &#8212; Pydoop 2.0a4 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -51,7 +52,9 @@
             </a></p>
             <h3><a href="../index.html">Table Of Contents</a></h3>
             <ul>
-<li><a class="reference internal" href="#">New in 2.0a2</a></li>
+<li><a class="reference internal" href="#">New in 2.0a4</a></li>
+<li><a class="reference internal" href="#new-in-2-0a3">New in 2.0a3</a></li>
+<li><a class="reference internal" href="#new-in-2-0a2">New in 2.0a2</a></li>
 <li><a class="reference internal" href="#new-in-2-0a1">New in 2.0a1</a></li>
 </ul>
 
@@ -97,7 +100,32 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="new-in-2-0a2">
+  <div class="section" id="new-in-2-0a4">
+<h1>New in 2.0a4<a class="headerlink" href="#new-in-2-0a4" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><ul class="simple">
+<li>The <code class="docutils literal notranslate"><span class="pre">sercore</span></code> extension, together with most of the <code class="docutils literal notranslate"><span class="pre">pydoop.mapreduce</span></code>
+subpackage, has been rewritten from scratch. Now it’s simpler and slightly
+faster (much faster when using a combiner)</li>
+<li>Opaque splits are now auto-deserialized  to <code class="docutils literal notranslate"><span class="pre">context.input_split.payload</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">JobConf</span></code> is now fully compatible with <code class="docutils literal notranslate"><span class="pre">dict</span></code></li>
+<li>Compilation of avro-parquet-based examples is now much faster</li>
+<li>The Hadoop simulator has been dropped</li>
+<li>Bug fixes and performance improvements</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="new-in-2-0a3">
+<h1>New in 2.0a3<a class="headerlink" href="#new-in-2-0a3" title="Permalink to this headline">¶</a></h1>
+<blockquote>
+<div><ul class="simple">
+<li>Support for Hadoop 3</li>
+<li><a class="reference external" href="https://github.com/crs4/pydoop/pull/302">Support for opaque binary input splits</a></li>
+<li>Moved terasort example to <a class="reference external" href="https://github.com/crs4/pydoop-examples">https://github.com/crs4/pydoop-examples</a></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="new-in-2-0a2">
 <h1>New in 2.0a2<a class="headerlink" href="#new-in-2-0a2" title="Permalink to this headline">¶</a></h1>
 <blockquote>
 <div><ul class="simple">
@@ -150,8 +178,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2009-2018, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+        &#169; Copyright 2009-2019, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>

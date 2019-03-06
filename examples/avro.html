@@ -6,13 +6,14 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Avro I/O &#8212; Pydoop 2.0a2 documentation</title>
+    <title>Avro I/O &#8212; Pydoop 2.0a4 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -111,7 +112,6 @@ modified) version of the color count example from the Avro docs:</p>
 
 <span class="kn">import</span> <span class="nn">pydoop.mapreduce.api</span> <span class="kn">as</span> <span class="nn">api</span>
 <span class="kn">import</span> <span class="nn">pydoop.mapreduce.pipes</span> <span class="kn">as</span> <span class="nn">pp</span>
-<span class="kn">from</span> <span class="nn">pydoop.avrolib</span> <span class="kn">import</span> <span class="n">AvroContext</span>
 
 
 <span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
@@ -131,8 +131,7 @@ modified) version of the color count example from the Avro docs:</p>
 
 
 <span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
-    <span class="n">factory</span> <span class="o">=</span> <span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">)</span>
-    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">private_encoding</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">context_class</span><span class="o">=</span><span class="n">AvroContext</span><span class="p">)</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>The application counts the per-office occurrence of favorite colors in
@@ -166,8 +165,7 @@ schema:</p>
 </div>
 <p>Pydoop transparently serializes and/or deserializes Avro data as
 needed, allowing you to work directly with Python dictionaries.  To
-get this behavior, you have to set the context class to
-<code class="docutils literal notranslate"><span class="pre">AvroContext</span></code>, as shown above.  Moreover, when launching the
+get this behavior, when launching the
 application with pydoop submit, you have to enable Avro I/O and
 specify the output schema as follows:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">STATS_SCHEMA</span><span class="o">=</span><span class="k">$(</span>cat stats.avsc<span class="k">)</span>
@@ -207,7 +205,6 @@ caller.</p>
 <a class="reference external" href="https://github.com/bigdatagenomics/adam">ADAM</a> docs:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pydoop.mapreduce.api</span> <span class="kn">as</span> <span class="nn">api</span>
 <span class="kn">import</span> <span class="nn">pydoop.mapreduce.pipes</span> <span class="kn">as</span> <span class="nn">pp</span>
-<span class="kn">from</span> <span class="nn">pydoop.avrolib</span> <span class="kn">import</span> <span class="n">AvroContext</span>
 
 <span class="n">WIDTH</span> <span class="o">=</span> <span class="mi">5</span>
 
@@ -232,10 +229,7 @@ caller.</p>
 
 
 <span class="k">def</span> <span class="nf">__main__</span><span class="p">():</span>
-    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span>
-        <span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">),</span>
-        <span class="n">context_class</span><span class="o">=</span><span class="n">AvroContext</span>
-    <span class="p">)</span>
+    <span class="n">pp</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">pp</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>To run the above program, execute pydoop submit as follows:</p>
@@ -261,15 +255,11 @@ reading input records from values is not an option: that’s how
 <h2>Running the examples<a class="headerlink" href="#running-the-examples" title="Permalink to this headline">¶</a></h2>
 <p>To run the Avro examples you have to install the Python Avro package
 (you can get it from the Avro web site), while the <code class="docutils literal notranslate"><span class="pre">avro</span></code> jar is
-included in Hadoop and the <code class="docutils literal notranslate"><span class="pre">avro-mapred</span></code> one is included in
-Pydoop.  Part of the examples code (e.g., input generation) is written
-in Java.  To compile it, you need <a class="reference external" href="http://www.scala-sbt.org">sbt</a>.</p>
-<p>Move to the examples directory and compile the Java code:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> examples/avro/java
-sbt assembly
-</pre></div>
-</div>
-<p>Now you should be able to run all examples under <code class="docutils literal notranslate"><span class="pre">examples/avro/py</span></code>.</p>
+included in Hadoop and the <code class="docutils literal notranslate"><span class="pre">avro-mapred</span></code> one is included in Pydoop.
+Part of the examples code (e.g., input generation) is written in Java.
+Compilation and packaging into a jar is handled by the bash runners,
+but <a class="reference external" href="https://maven.apache.org/">Maven</a> needs to be installed on the
+client machine.</p>
 </div>
 </div>
 
@@ -304,8 +294,8 @@ sbt assembly
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2009-2018, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+        &#169; Copyright 2009-2019, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>

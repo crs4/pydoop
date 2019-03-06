@@ -6,13 +6,14 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Writing Full-Featured Applications &#8212; Pydoop 2.0a2 documentation</title>
+    <title>Writing Full-Featured Applications &#8212; Pydoop 2.0a4 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -56,7 +57,7 @@
 <li><a class="reference internal" href="#counters-and-status-updates">Counters and Status Updates</a></li>
 <li><a class="reference internal" href="#record-readers-and-writers">Record Readers and Writers</a></li>
 <li><a class="reference internal" href="#partitioners-and-combiners">Partitioners and Combiners</a></li>
-<li><a class="reference internal" href="#timers">Timers</a></li>
+<li><a class="reference internal" href="#profiling-your-application">Profiling Your Application</a></li>
 </ul>
 </li>
 </ul>
@@ -141,7 +142,7 @@ following snippet shows how to write the mapper and reducer for the
         <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">context</span><span class="o">.</span><span class="n">values</span><span class="p">))</span>
 
 
-<span class="n">FACTORY</span> <span class="o">=</span> <span class="n">pipes</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">)</span>
+<span class="n">FACTORY</span> <span class="o">=</span> <span class="n">pipes</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span><span class="n">Mapper</span><span class="p">,</span> <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
@@ -317,7 +318,7 @@ shows how to get job configuration parameters: the one starting with
 <code class="docutils literal notranslate"><span class="pre">mapreduce</span></code> is a standard Hadoop parameter, while <code class="docutils literal notranslate"><span class="pre">pydoop.hdfs.user</span></code>
 is a custom parameter defined by the application developer.
 Configuration properties are passed as <code class="docutils literal notranslate"><span class="pre">-D</span> <span class="pre">&lt;key&gt;=&lt;value&gt;</span></code> (e.g.,
-<code class="docutils literal notranslate"><span class="pre">-D</span> <span class="pre">mapred.textoutputformat.separator='|'</span></code>) to the submitter.</p>
+<code class="docutils literal notranslate"><span class="pre">-D</span> <span class="pre">mapreduce.output.textoutputformat.separator='|'</span></code>) to the submitter.</p>
 <p>To use the writer, pass the class object to the factory with
 <code class="docutils literal notranslate"><span class="pre">record_writer_class=Writer</span></code> and, when running the program with
 <code class="docutils literal notranslate"><span class="pre">pydoop</span> <span class="pre">submit</span></code>, set the <code class="docutils literal notranslate"><span class="pre">--do-not-use-java-record-writer</span></code> flag.</p>
@@ -325,8 +326,18 @@ Configuration properties are passed as <code class="docutils literal notranslate
 <div class="section" id="partitioners-and-combiners">
 <h2>Partitioners and Combiners<a class="headerlink" href="#partitioners-and-combiners" title="Permalink to this headline">¶</a></h2>
 <p>The <a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Partitioner" title="pydoop.mapreduce.api.Partitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Partitioner</span></code></a> assigns intermediate keys to
-reducers: the default is to select the reducer on the basis of a hash
-function of the key:</p>
+reducers. By default, Hadoop uses <a class="reference external" href="https://hadoop.apache.org/docs/r3.0.0/api/org/apache/hadoop/mapreduce/lib/partition/HashPartitioner.html">HashPartitioner</a>,
+which selects the reducer on the basis of a hash function of the key. If the
+pipes factory does <em>not</em> provide a partitioner, partitioning will be done on
+the Java side (by default, with <code class="docutils literal notranslate"><span class="pre">HashPartitioner</span></code>).</p>
+<p>To write a custom partitioner in Python, subclass
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Partitioner" title="pydoop.mapreduce.api.Partitioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Partitioner</span></code></a>, overriding the
+<a class="reference internal" href="../api_docs/mr_api.html#pydoop.mapreduce.api.Partitioner.partition" title="pydoop.mapreduce.api.Partitioner.partition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">partition()</span></code></a> method. The framework will
+call this method with the current key and the total number of reducers <code class="docutils literal notranslate"><span class="pre">N</span></code>
+as the arguments, and expect the chosen reducer ID — in the <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">...,</span>
+<span class="pre">N-1]</span></code> range — as the return value.</p>
+<p>The following examples shows how to write a partitioner that simply mimics the
+default <code class="docutils literal notranslate"><span class="pre">HashPartitioner</span></code> behavior:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">hashlib</span> <span class="kn">import</span> <span class="n">md5</span>
 <span class="k">class</span> <span class="nc">Partitioner</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Partitioner</span><span class="p">):</span>
 
@@ -340,21 +351,45 @@ function of the key:</p>
         <span class="k">return</span> <span class="n">reducer_id</span>
 </pre></div>
 </div>
-<p>The framework calls the partition method passing it the total number
-of reducers <code class="docutils literal notranslate"><span class="pre">n_reduces</span></code>, and expects the chosen reducer ID — in
-the <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">...,</span> <span class="pre">n_reduces-1]</span></code> range — as the return value.</p>
 <p>The combiner is functionally identical to a reducer, but it is run
 locally, on the key-value stream output by a single mapper.  Although
 nothing prevents the combiner from processing values differently from
 the reducer, the former, provided that the reduce function is
 associative and idempotent, is typically configured to be the same as
 the latter, in order to perform local aggregation and thus help cut
-down network traffic. Custom partitioner and combiner classes must be
-declared to the factory as done above for record readers and writers.
-To recap, if we need to use all of the above components, we need to
-instantiate the factory as:</p>
+down network traffic.</p>
+<p>Local aggregation is implemented by caching intermediate key/value pairs in a
+dictionary. Like in standard Java Hadoop, cache size is controlled by
+<code class="docutils literal notranslate"><span class="pre">&quot;mapreduce.task.io.sort.mb&quot;</span></code> and defaults to 100 MB. Pydoop uses
+<a class="reference external" href="https://docs.python.org/2.7/library/sys.html#sys.getsizeof" title="(in Python v2.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">sys.getsizeof()</span></code></a> to determine key/value size, which takes into account
+Python object overhead. This can be quite substantial (e.g.,
+<code class="docutils literal notranslate"><span class="pre">sys.getsizeof(b&quot;foo&quot;)</span> <span class="pre">==</span> <span class="pre">36</span></code>) and must be taken into account if fine tuning
+is desired.</p>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p>Due to the caching, when using a combiner there are additional
+limitations on the types that can be used for intermediate keys and
+values. First of all, keys must be <a class="reference external" href="https://docs.python.org/3/glossary.html">hashable</a>. In addition, if a mutable type
+is used for values, then values should not change after they have been
+emitted by the mapper. For instance, the following (however contrived)
+example would not work as expected:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">intermediate_value</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ctx</span><span class="p">):</span>
+     <span class="n">intermediate_value</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+     <span class="n">intermediate_value</span><span class="p">[</span><span class="n">ctx</span><span class="o">.</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">value</span>
+     <span class="n">ctx</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s2">&quot;foo&quot;</span><span class="p">,</span> <span class="n">intermediate_value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="last">For these reasons, it is recommended to use immutable types for both keys
+and values when the job includes a combiner.</p>
+</div>
+<p>Custom partitioner and combiner classes must be declared to the factory as
+done above for record readers and writers. To recap, if we need to use all of
+the above components, we need to instantiate the factory as:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">FACTORY</span> <span class="o">=</span> <span class="n">pipes</span><span class="o">.</span><span class="n">Factory</span><span class="p">(</span>
-    <span class="n">mapper_class</span><span class="o">=</span><span class="n">Mapper</span><span class="p">,</span>
+    <span class="n">Mapper</span><span class="p">,</span>
     <span class="n">reducer_class</span><span class="o">=</span><span class="n">Reducer</span><span class="p">,</span>
     <span class="n">record_reader_class</span><span class="o">=</span><span class="n">Reader</span><span class="p">,</span>
     <span class="n">record_writer_class</span><span class="o">=</span><span class="n">Writer</span><span class="p">,</span>
@@ -364,9 +399,28 @@ instantiate the factory as:</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="timers">
-<span id="id1"></span><h2>Timers<a class="headerlink" href="#timers" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">Timer</span></code> objects can help debug performance issues in mapreduce applications:</p>
+<div class="section" id="profiling-your-application">
+<h2>Profiling Your Application<a class="headerlink" href="#profiling-your-application" title="Permalink to this headline">¶</a></h2>
+<p>Python has built-in support for application <a class="reference external" href="https://docs.python.org/3/library/profile.html">profiling</a>. Profiling a standalone
+program is relatively straightforward: run it through <code class="docutils literal notranslate"><span class="pre">cProfile</span></code>, store
+stats in a file and use <code class="docutils literal notranslate"><span class="pre">pstats</span></code> to read and interpret them. A MapReduce
+job, however, spawns multiple map and reduce tasks, so we need a way to
+collect all stats. Pydoop supports this via a <code class="docutils literal notranslate"><span class="pre">pstats_dir</span></code> argument to
+<code class="docutils literal notranslate"><span class="pre">run_task</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pipes</span><span class="o">.</span><span class="n">run_task</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">pstats_dir</span><span class="o">=</span><span class="s2">&quot;pstats&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With the above call, Pydoop will run each MapReduce task with <code class="docutils literal notranslate"><span class="pre">cProfile</span></code>,
+and store resulting pstats files in the <code class="docutils literal notranslate"><span class="pre">&quot;pstats&quot;</span></code> directory on HDFS. If
+you’re using <code class="docutils literal notranslate"><span class="pre">pydoop</span> <span class="pre">submit</span></code>, you can also enable profiling via the
+<code class="docutils literal notranslate"><span class="pre">--pstats-dir</span></code> command line argument:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pydoop submit --pstats-dir HDFS_DIR <span class="o">[</span>...<span class="o">]</span>
+</pre></div>
+</div>
+<p>If the pstats directory is specified both ways, the one from <code class="docutils literal notranslate"><span class="pre">run_task</span></code>
+takes precedence.</p>
+<p>Another way to do time measurements is via counters. The <code class="docutils literal notranslate"><span class="pre">utils.misc</span></code> module
+provides a <code class="docutils literal notranslate"><span class="pre">Timer</span></code> object for this purpose:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pydoop.utils.misc</span> <span class="kn">import</span> <span class="n">Timer</span>
 
 <span class="k">class</span> <span class="nc">Mapper</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">Mapper</span><span class="p">):</span>
@@ -385,15 +439,8 @@ instantiate the factory as:</p>
 <p>With the above coding, the total time spent to execute
 <code class="docutils literal notranslate"><span class="pre">context.value.split()</span></code> (in ms) will be automatically accumulated in
 a <code class="docutils literal notranslate"><span class="pre">TIME_TOKENIZE</span></code> counter under the <code class="docutils literal notranslate"><span class="pre">Timer</span></code> counter group.</p>
-<p>Adding timers has a substantial effect on performance, so their use in
-production code should be avoided. Performance debugging can also be
-performed by enabling profiling:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pydoop</span> <span class="n">submit</span> <span class="o">--</span><span class="n">pstats</span><span class="o">-</span><span class="nb">dir</span> <span class="n">HDFS_DIR</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
-</pre></div>
-</div>
-<p>If the above flag is set, each MapReduce task will be run with
-<a class="reference external" href="https://docs.python.org/3/library/profile.html">cProfile</a>, and
-resulting pstats files will be saved to the specified HDFS directory.</p>
+<p>Since profiling and timers can substantially slow down the Hadoop job, they
+should only be used for performance debugging.</p>
 </div>
 </div>
 
@@ -428,8 +475,8 @@ resulting pstats files will be saved to the specified HDFS directory.</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2009-2018, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+        &#169; Copyright 2009-2019, CRS4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
     </div>
   </body>
 </html>
