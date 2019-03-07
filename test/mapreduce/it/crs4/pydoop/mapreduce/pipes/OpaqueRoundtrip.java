@@ -21,6 +21,7 @@ package it.crs4.pydoop.mapreduce.pipes;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -52,8 +53,9 @@ public class OpaqueRoundtrip {
     TaskAttemptID taID = new TaskAttemptID(taskId, 0);
     Job job = Job.getInstance(new Configuration());
     job.setJobID(jobId);
+    Properties props = Submitter.getPydoopProperties();
     Configuration conf = job.getConfiguration();
-    conf.set(PipesNonJavaInputFormat.EXTERNAL_SPLITS_URI, inUri);
+    conf.set(props.getProperty("PIPES_EXTERNALSPLITS_URI"), inUri);
     TaskAttemptContextImpl ctx = new TaskAttemptContextImpl(conf, taID);
     PipesNonJavaInputFormat iformat = new PipesNonJavaInputFormat();
     List<InputSplit> splits = iformat.getSplits(ctx);

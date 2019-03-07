@@ -53,8 +53,6 @@ PSTATS_DIR = "PYDOOP_PSTATS_DIR"
 PSTATS_FMT = "PYDOOP_PSTATS_FMT"
 DEFAULT_PSTATS_FMT = "%s_%05d_%s"  # task_type, task_id, random suffix
 
-EXTERNALSPLITS_URI_KEY = "pydoop.mapreduce.pipes.externalsplits.uri"
-
 INT_WRITABLE_FMT = ">i"
 INT_WRITABLE_SIZE = struct.calcsize(INT_WRITABLE_FMT)
 
@@ -162,7 +160,7 @@ class TaskContext(api.Context):
         if raw:
             return self._raw_split
         if not self._input_split:
-            if EXTERNALSPLITS_URI_KEY in self._job_conf:
+            if config.PIPES_EXTERNALSPLITS_URI in self._job_conf:
                 self._input_split = OpaqueSplit.frombuffer(self._raw_split)
             else:
                 self._input_split = FileSplit.frombuffer(self._raw_split)
