@@ -20,6 +20,7 @@ package it.crs4.pydoop.mapreduce.pipes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -50,13 +51,11 @@ import org.apache.hadoop.util.ReflectionUtils;
 class PipesNonJavaInputFormat
     extends InputFormat<FloatWritable, NullWritable> {
 
-  public static final String EXTERNAL_SPLITS_URI =
-      "pydoop.mapreduce.pipes.externalsplits.uri";
-
   public List<InputSplit> getSplits(JobContext context)
       throws IOException, InterruptedException {
+    Properties props = Submitter.getPydoopProperties();
     Configuration conf = context.getConfiguration();
-    String uri = conf.get(EXTERNAL_SPLITS_URI);
+    String uri = conf.get(props.getProperty("PIPES_EXTERNALSPLITS_URI"));
     if (uri != null) {
       return getOpaqueSplits(conf, uri);
     } else {
