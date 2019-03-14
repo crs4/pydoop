@@ -80,8 +80,10 @@ def main(argv=None):
     except AttributeError:  # not the script app
         pass
     try:
-        args.func(args, unknown)
+        func = args.func
     except AttributeError:
         parser.error("too few arguments")
+    try:
+        func(args, unknown)
     except RuntimeError as e:
         sys.exit("ERROR - {}:  {}".format(type(e).__name__, e))
