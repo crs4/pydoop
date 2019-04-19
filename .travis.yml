@@ -11,7 +11,7 @@ matrix:
   - python: "3.6"
     env: HADOOP_VERSION=3.2.0
   - python: "3.6"
-    env: HADOOP_VERSION=3.2.0 CMD=/cmd/hadoop_localfs.sh
+    env: HADOOP_VERSION=3.2.0 LOCAL_FS=true
   - python: "3.7"
     env: HADOOP_VERSION=3.2.0
     dist: xenial
@@ -31,9 +31,7 @@ before_script:
   - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
 
 script:
- - docker build --build-arg hadoop_version=${HADOOP_VERSION} --build-arg python_version=${TRAVIS_PYTHON_VERSION} -t crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} .
- - docker run --rm --name pydoop -v "${PWD}"/.travis/cmd:/cmd:ro -d crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} ${CMD}
- - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
+ - DEBUG=true ./.travis/start_container
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop
 
