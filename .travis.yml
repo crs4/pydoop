@@ -32,7 +32,7 @@ before_script:
 
 script:
  - docker build --build-arg hadoop_version=${HADOOP_VERSION} --build-arg python_version=${TRAVIS_PYTHON_VERSION} -t crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} .
- - docker run --rm --name pydoop -v "${PWD}"/docker/cmd:/cmd:ro -d crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} ${CMD}
+ - docker run --rm --name pydoop -v "${PWD}"/.travis/cmd:/cmd:ro -d crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION} ${CMD}
  - "docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'"
  - DEBUG=true ./.travis/run_checks
  - docker stop pydoop
