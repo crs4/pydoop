@@ -72,7 +72,7 @@ def _get_ip(host, default=None):
 def _get_connection_info(host, port, user):
     fs = core_hdfs_fs(host, port, user)
     res = urlparse(fs.get_working_directory())
-    if res.scheme == "file":
+    if not res.scheme or res.scheme == "file":
         h, p, u = "", 0, getpass.getuser()
         fs.set_working_directory(os.getcwd())  # libhdfs "remembers" old cwd
     else:
