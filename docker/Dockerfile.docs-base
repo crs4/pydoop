@@ -1,8 +1,0 @@
-FROM crs4/pydoop-base
-
-# Inkscape installs ImageMagick as a dep
-RUN apt -y update && apt -y install inkscape \
-    && apt clean && rm -rf /var/lib/apt-lists/* \
-    && ${PYTHON} -m pip install --no-cache-dir sphinx
-
-ENTRYPOINT []
