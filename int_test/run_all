@@ -25,9 +25,13 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/config.sh"
 
 tests=(
-    mapred_submitter
     progress
 )
+
+# https://issues.apache.org/jira/browse/MAPREDUCE-4000
+if [ "$(hadoop_fs)" != "file" ]; then
+    tests+=( mapred_submitter )
+fi
 
 for e in ${tests[@]}; do
     pushd "${this_dir}/${e}"
