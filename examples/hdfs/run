@@ -28,8 +28,13 @@ export TEST_ROOT="${TEST_ROOT:-pydoop_test_tree}"
 DEPTH=${1:-3}
 SPAN=${2:-4}
 
-echo "Waiting for HDFS to exit safe mode..."
-"${HDFS}" dfsadmin -safemode wait
+if [ "$(hadoop_fs)" != "file" ]; then
+    echo "Waiting for HDFS to exit safe mode..."
+    "${HDFS}" dfsadmin -safemode wait
+fi
+
+WD=$(mktemp -d)
+pushd "${WD}"
 
 echo "Generating tree (depth=${DEPTH}, span=${SPAN})..."
 "${PYTHON}" "${this_dir}"/treegen.py ${DEPTH} ${SPAN}
@@ -38,9 +43,12 @@ echo "Computing usage by block size..."
 "${PYTHON}" "${this_dir}"/treewalk.py
 
 echo "Cleaning up..."
-"${HADOOP}" fs -rm -r "${TEST_ROOT}"
+${HDFS} dfs -rm -r -f "${TEST_ROOT}"
 
-(( ${PY_VER} != 3 )) && exit 0
+if (( ${PY_VER} >= 3 )); then
+    echo "Checking REPL example..."
+    ${PYTHON} "${this_dir}"/repl_session.py
+fi
 
-echo "Checking REPL example..."
-${PYTHON} "${this_dir}"/repl_session.py
+popd
+rm -rf "${WD}"
