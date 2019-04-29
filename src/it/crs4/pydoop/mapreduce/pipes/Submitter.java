@@ -178,6 +178,10 @@ public class Submitter extends Configured implements Tool {
     props = getPydoopProperties();
   }
 
+  public static boolean isLocalFS(Configuration conf) throws IOException {
+    return FileSystem.get(conf).equals(FileSystem.getLocal(conf));
+  }
+
   /**
    * Get the URI of the application's executable.
    * @param conf
@@ -334,8 +338,17 @@ public class Submitter extends Configured implements Tool {
   }
 
   private static void setupPipesJob(Job job)
-      throws IOException, ClassNotFoundException {
+      throws IOException, ClassNotFoundException, URISyntaxException {
     Configuration conf = job.getConfiguration();
+
+    // -libjars does not work when running on the local FS
+    if (isLocalFS(conf)) {
+      URL[] libjars = GenericOptionsParser.getLibJars(conf);
+      for (URL jarUrl: libjars) {
+        job.addFileToClassPath(new Path(jarUrl.toURI()));
+      }
+    }
+
     // default map output types to Text
     if (!getIsJavaMapper(conf)) {
       job.setMapperClass(PipesMapper.class);
