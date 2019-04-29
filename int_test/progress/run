@@ -43,12 +43,17 @@ DATA="${WD}"/${RANDOM}
 for i in $(seq 1 ${N_LINES}); do
     echo "foobar_${i}" >> "${DATA}"
 done
-INPUT=$(basename ${DATA})_in
-OUTPUT=$(basename ${DATA})_out
 
-ensure_dfs_home
-${HDFS} dfs -rm -r -f "${INPUT}" "${OUTPUT}"
-${HDFS} dfs -put "${DATA}" "${INPUT}"
+if [ "$(hadoop_fs)" != "file" ]; then
+    ensure_dfs_home
+    INPUT=$(basename ${DATA})_in
+    OUTPUT=$(basename ${DATA})_out
+    ${HDFS} dfs -rm -r -f "${INPUT}" "${OUTPUT}"
+    ${HDFS} dfs -put "${DATA}" "${INPUT}"
+else
+    INPUT="${DATA}"
+    OUTPUT="${WD}"/$(basename ${DATA})_out
+fi
 ${PYDOOP} submit "${OPTS[@]}" ${MODULE} "${INPUT}" "${OUTPUT}"
 
 ${HDFS} dfs -test -e "${OUTPUT}"/part-m-00000
