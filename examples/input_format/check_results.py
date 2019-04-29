@@ -17,23 +17,16 @@
 # END_COPYRIGHT
 
 import sys
-import os
 import logging
 
 logging.basicConfig(level=logging.INFO)
 
-from pydoop.hdfs import hdfs
+import pydoop.hadut as hadut
 import pydoop.test_support as pts
 
 
 def get_res(output_dir):
-    fs = hdfs()
-    data = []
-    for x in fs.list_directory(output_dir):
-        if os.path.split(x['path'])[-1].startswith('part-'):
-            with fs.open_file(x['path'], 'rt') as f:
-                data.append(f.read())
-    all_data = ''.join(data)
+    all_data = hadut.collect_output(output_dir)
     return pts.parse_mr_output(all_data, vtype=int)
 
 
