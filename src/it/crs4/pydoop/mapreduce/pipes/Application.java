@@ -109,8 +109,9 @@ class Application<K1 extends Writable, V1 extends Writable,
         // This password is used as shared secret key between this application and
         // child pipes process
         byte[]  password = jobToken.getPassword();
-        String localPasswordFile = new File(".") + Path.SEPARATOR
-            + "jobTokenPassword";
+        String localPasswordFile = new File(
+            System.getProperty("user.dir"), "jobTokenPassword"
+        ).getAbsolutePath();
         writePasswordToLocalFile(localPasswordFile, password, conf);
         // FIXME why is this not Submitter.SECRET_LOCATION ?
         env.put("hadoop.pipes.shared.secret.location", localPasswordFile);
