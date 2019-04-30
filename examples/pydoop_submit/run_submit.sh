@@ -90,13 +90,22 @@ case ${MODULE} in
 	OPTS+=( "--do-not-use-java-record-writer" )
 	;;
 esac
-INPUT="/user/${USER}/$(basename ${DATA})"
-OUTPUT="/user/${USER}/${MODULE}_output"
 OPTS+=( "--upload-file-to-cache" "${APP_DIR}/${MODULE}.py" )
 [ -n "${DEBUG:-}" ] && OPTS+=( "--log-level" "DEBUG" )
 
-${HADOOP} fs -mkdir -p "/user/${USER}"
-${HADOOP} fs -rm -r "${INPUT}" "${OUTPUT}" || :
-${HADOOP} fs -put "${DATA}" "${INPUT}"
+WD=$(mktemp -d)
+
+if [ "$(hadoop_fs)" != "file" ]; then
+    ensure_dfs_home
+    INPUT="input"
+    OUTPUT="output"
+    ${HDFS} dfs -rm -r -f "${INPUT}" "${OUTPUT}"
+    ${HDFS} dfs -put "${DATA}" "${INPUT}"
+else
+    INPUT="${DATA}"
+    OUTPUT="${WD}/output"
+fi
 ${PYDOOP} submit "${OPTS[@]}" ${MODULE} "${INPUT}" "${OUTPUT}"
 ${PYTHON} "${this_dir}"/check.py ${MODULE} "${OUTPUT}"
+
+rm -rf "${WD}"
