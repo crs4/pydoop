@@ -56,21 +56,20 @@ def check_base_histogram(mr_out_dir):
 
 
 def check_caseswitch(mr_out_dir, switch="upper"):
-    output = hadut.collect_output(mr_out_dir)
-    exp_output = []
-    for name in sorted(os.listdir(DEFAULT_INPUT_DIR)):
+    output = set(hadut.collect_output(mr_out_dir).splitlines())
+    exp_output = set()
+    for name in os.listdir(DEFAULT_INPUT_DIR):
         with open(os.path.join(DEFAULT_INPUT_DIR, name)) as f:
-            exp_output.append(getattr(f.read(), switch)())
-    exp_output = "".join(exp_output)
-    return output.splitlines() == exp_output.splitlines()
+            exp_output.update(getattr(_.rstrip(), switch)() for _ in f)
+    return output == exp_output
 
 
 def check_grep(mr_out_dir):
-    output = hadut.collect_output(mr_out_dir).splitlines()
-    exp_output = []
-    for name in sorted(os.listdir(DEFAULT_INPUT_DIR)):
+    output = set(hadut.collect_output(mr_out_dir).splitlines())
+    exp_output = set()
+    for name in os.listdir(DEFAULT_INPUT_DIR):
         with open(os.path.join(DEFAULT_INPUT_DIR, name)) as f:
-            exp_output.extend([_.strip() for _ in f if "March" in _])
+            exp_output.update(_.rstrip() for _ in f if "March" in _)
     return output == exp_output
 
 
