@@ -27,12 +27,12 @@ install: true
 
 before_script:
   - flake8 -v .
-  - DEBUG=true ./.travis/check_script_template -v
+  - ./.travis/check_script_template -v
   - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
 
 script:
- - DEBUG=true ./.travis/start_container
- - DEBUG=true ./.travis/run_checks
+ - ./.travis/start_container
+ - ./.travis/run_checks
  - docker stop pydoop
 
 before_deploy:
