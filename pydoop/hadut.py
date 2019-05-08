@@ -21,7 +21,6 @@ The hadut module provides access to some functionalities available
 via the Hadoop shell.
 """
 
-import logging
 import os
 import shlex
 import subprocess
@@ -335,66 +334,6 @@ def run_class(class_name, args=None, properties=None, classpath=None,
     return res
 
 
-def run_pipes(executable, input_path, output_path, more_args=None,
-              properties=None, force_pydoop_submitter=False,
-              hadoop_conf_dir=None, logger=None, keep_streams=False):
-    """
-    Run a pipes command.
-
-    ``more_args`` (after setting input/output path) and ``properties``
-    are passed to :func:`run_cmd`.
-
-    If not specified otherwise, this function sets the properties
-    ``mapreduce.pipes.isjavarecordreader`` and
-    ``mapreduce.pipes.isjavarecordwriter`` to ``"true"``.
-
-    This function works around a bug in Hadoop pipes that affects
-    versions of Hadoop with security when the local file system is
-    used as the default FS (no HDFS); see
-    https://issues.apache.org/jira/browse/MAPREDUCE-4000.  In those
-    set-ups, the function uses Pydoop's own pipes submitter
-    application.  You can force the use of Pydoop's submitter by
-    passing the argument force_pydoop_submitter=True.
-    """
-    if logger is None:
-        logger = utils.NullLogger()
-    if not hdfs.path.exists(executable):
-        raise IOError("executable %s not found" % executable)
-    if not hdfs.path.exists(input_path) and not (set(input_path) & GLOB_CHARS):
-        raise IOError("input path %s not found" % input_path)
-    if properties is None:
-        properties = {}
-    properties.setdefault('mapreduce.pipes.isjavarecordreader', 'true')
-    properties.setdefault('mapreduce.pipes.isjavarecordwriter', 'true')
-    if force_pydoop_submitter:
-        use_pydoop_submit = True
-    else:
-        use_pydoop_submit = False
-        ver = pydoop.hadoop_version_info()
-        if ver.has_security():
-            if ver.is_cdh_mrv2() and hdfs.default_is_local():
-                raise RuntimeError("mrv2 on local fs not supported yet")
-            use_pydoop_submit = hdfs.default_is_local()
-    args = [
-        "-program", executable,
-        "-input", input_path,
-        "-output", output_path,
-    ]
-    if more_args is not None:
-        args.extend(more_args)
-    if use_pydoop_submit:
-        submitter = "it.crs4.pydoop.pipes.Submitter"
-        pydoop_jar = pydoop.jar_path()
-        args.extend(("-libjars", pydoop_jar))
-        return run_class(submitter, args, properties,
-                         classpath=pydoop_jar, logger=logger,
-                         keep_streams=keep_streams)
-    else:
-        return run_mapred_cmd("pipes", args=args, properties=properties,
-                              hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                              keep_streams=keep_streams)
-
-
 def find_jar(jar_name, root_path=None):
     """
     Look for the named jar in:
@@ -445,126 +384,6 @@ def collect_output(mr_out_dir, out_file=None):
                     while len(data) > 0:
                         o.write(data)
                         data = f.read(block_size)
-
-
-class PipesRunner(object):
-    """
-    Allows to set up and run pipes jobs, optionally automating a few
-    common tasks.
-
-    :type prefix: str
-    :param prefix: if specified, it must be a writable directory path
-      that all nodes can see (the latter could be an issue if the local
-      file system is used rather than HDFS)
-
-    :type logger: :class:`logging.Logger`
-    :param logger: optional logger
-
-    If ``prefix`` is set, the runner object will create a working
-    directory with that prefix and use it to store the job's input and
-    output --- the intended use is for quick application testing.  If it
-    is not set, you **must** call :meth:`set_output` with an hdfs path
-    as its argument, and ``put`` will be ignored in your call to
-    :meth:`set_input`.  In any event, the launcher script will be placed
-    in the output directory's parent (this has to be writable for the
-    job to succeed).
-    """
-    def __init__(self, prefix=None, logger=None):
-        hadoop_version_info = pydoop.hadoop_version_info()
-        if hadoop_version_info.is_local():
-            raise pydoop.LocalModeNotSupported()
-
-        self.wd = self.exe = self.input = self.output = None
-        self.logger = logger or utils.NullLogger()
-        if prefix:
-            self.wd = utils.make_random_str(prefix=prefix)
-            hdfs.mkdir(self.wd)
-            for n in "input", "output":
-                setattr(self, n, hdfs.path.join(self.wd, n))
-
-    def clean(self):
-        """
-        Remove the working directory, if any.
-        """
-        if self.wd:
-            hdfs.rm(self.wd)
-
-    def set_input(self, input_, put=False):
-        """
-        Set the input path for the job.  If ``put`` is :obj:`True`, copy
-        (local) ``input_`` to the working directory.
-        """
-        if put and self.wd:
-            self.logger.info("copying input data to HDFS")
-            hdfs.put(input_, self.input)
-        else:
-            self.input = input_
-            self.logger.info("assigning input to %s", self.input)
-
-    def set_output(self, output):
-        """
-        Set the output path for the job.  Optional if the runner has been
-        instantiated with a prefix.
-        """
-        self.output = output
-        self.logger.info("assigning output to %s", self.output)
-
-    def set_exe(self, pipes_code):
-        """
-        Dump launcher code to the distributed file system.
-        """
-        if not self.output:
-            raise RuntimeError("no output directory, can't create launcher")
-        parent = hdfs.path.dirname(hdfs.path.abspath(self.output.rstrip("/")))
-        self.exe = hdfs.path.join(parent, utils.make_random_str())
-        hdfs.dump(pipes_code, self.exe)
-
-    def run(self, **kwargs):
-        """
-        Run the pipes job.  Keyword arguments are passed to :func:`run_pipes`.
-        """
-        if not (self.input and self.output and self.exe):
-            raise RuntimeError("setup incomplete, can't run")
-        self.logger.info("running MapReduce application")
-        run_pipes(self.exe, self.input, self.output, **kwargs)
-
-    def collect_output(self, out_file=None):
-        """
-        Run :func:`collect_output` on the job's output directory.
-        """
-        if self.logger.isEnabledFor(logging.INFO):
-            self.logger.info(
-                "collecting output %s", " to %s" % out_file if out_file else ''
-            )
-            self.logger.info("self.output %s", self.output)
-        return collect_output(self.output, out_file)
-
-    def __str__(self):
-        res = [self.__class__.__name__]
-        for n in "exe", "input", "output":
-            res.append("  %s: %s" % (n, getattr(self, n)))
-        return os.linesep.join(res) + os.linesep
-
-
-class PydoopScriptRunner(PipesRunner):
-    """
-    Specialization of :class:`PipesRunner` to support the set up and running of
-    pydoop script jobs.
-    """
-    PYDOOP_EXE = None
-    for path in os.environ['PATH'].split(os.pathsep):
-        path = path.strip('"')
-        exe_file = os.path.expanduser(os.path.join(path, 'pydoop'))
-        if os.path.isfile(exe_file) and os.access(exe_file, os.X_OK):
-            PYDOOP_EXE = exe_file
-            break
-
-    def run(self, script, more_args=None, pydoop_exe=PYDOOP_EXE):
-        args = [pydoop_exe, "script", script, self.input, self.output]
-        self.logger.info("running pydoop script")
-        retcode = subprocess.call(args + (more_args or []))
-        if retcode:
-            raise RuntimeError("Error running pydoop_script")
 
 
 if __name__ == "__main__":
