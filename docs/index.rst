@@ -7,11 +7,11 @@
 <http://hadoop.apache.org>`_ that allows you to write MapReduce
 applications in pure Python:
 
-.. literalinclude:: ../examples/wordcount/bin/wordcount_minimal.py
+.. literalinclude:: ../examples/pydoop_submit/mr/wordcount_minimal.py
    :language: python
    :pyobject: Mapper
 
-.. literalinclude:: ../examples/wordcount/bin/wordcount_minimal.py
+.. literalinclude:: ../examples/pydoop_submit/mr/wordcount_minimal.py
    :language: python
    :pyobject: Reducer
 

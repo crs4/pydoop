@@ -25,7 +25,7 @@ this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
 . "${this_dir}/../config.sh"
 
 module="wordcount_minimal"
-module_path="${this_dir}/../wordcount/bin/${module}.py"
+module_path="${this_dir}/../pydoop_submit/mr/${module}.py"
 job_name="input_format_test_job"
 jar_name="pydoop-input-formats.jar"
 

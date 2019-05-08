@@ -54,6 +54,7 @@ if [ $# -ne ${nargs} ]; then
 fi
 MODULE=$1
 
+APP_DIR="${this_dir}/mr"
 JOBNAME=${MODULE}
 RESULTS=results.txt
 
@@ -61,12 +62,10 @@ OPTS+=( "--job-name" "${JOBNAME}" )
 case ${MODULE} in
     wordcount_minimal )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/../wordcount/bin"
 	OPTS+=("--entry-point" "main")
 	;;
     wordcount_full )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/../wordcount/bin"
 	OPTS+=("--entry-point" "main")
 	OPTS+=( "--do-not-use-java-record-reader" )
 	OPTS+=( "--do-not-use-java-record-writer" )
@@ -74,18 +73,15 @@ case ${MODULE} in
 	;;
     nosep )
 	DATA="${this_dir}"/data
-	APP_DIR="${this_dir}/mr"
 	OPTS+=( "--num-reducers" "0" )
 	OPTS+=( "--output-format" "it.crs4.pydoop.NoSeparatorTextOutputFormat" )
 	;;
     map_only_java_writer )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/mr"
 	OPTS+=( "--num-reducers" "0" )
 	;;
     map_only_python_writer )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/mr"
 	OPTS+=( "--num-reducers" "0" )
 	OPTS+=( "--do-not-use-java-record-writer" )
 	;;

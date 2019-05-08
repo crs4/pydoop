@@ -27,7 +27,7 @@ the :meth:`~pydoop.mapreduce.api.Reducer.reduce` method.  The
 following snippet shows how to write the mapper and reducer for the
 :ref:`word count <word_count>` problem:
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_minimal.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_minimal.py
    :language: python
    :start-after: DOCS_INCLUDE_START
 
@@ -49,7 +49,7 @@ Where ``input`` is the HDFS input directory.
 
 See the section on :ref:`running Pydoop programs<running_apps>` for
 more details.  Source code for the word count example is located under
-``examples/wordcount`` in the Pydoop distribution.
+``examples/pydoop_submit/mr`` in the Pydoop distribution.
 
 
 Counters and Status Updates
@@ -66,11 +66,11 @@ configurable amount of time (ten minutes by default).
 The following snippet shows how to modify the above example to use
 counters and status updates:
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_full.py
    :language: python
    :pyobject: Mapper
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_full.py
    :language: python
    :pyobject: Reducer
 
@@ -99,7 +99,7 @@ The following example shows how to write a record reader that mimics
 Hadoop's default ``LineRecordReader``, where keys are byte offsets
 with respect to the whole file and values are text lines:
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_full.py
    :language: python
    :pyobject: Reader
 
@@ -130,7 +130,7 @@ behavior is to write one tab-separated key/value pair per line; if you
 want to do something different, you have to write a custom
 :class:`~pydoop.mapreduce.api.RecordWriter`:
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_full.py
    :language: python
    :pyobject: Writer
 
@@ -166,7 +166,7 @@ N-1]`` range --- as the return value.
 The following examples shows how to write a partitioner that simply mimics the
 default ``HashPartitioner`` behavior:
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_full.py
    :language: python
    :pyobject: Partitioner
    :prepend: from hashlib import md5
@@ -212,7 +212,7 @@ Custom partitioner and combiner classes must be declared to the factory as
 done above for record readers and writers. To recap, if we need to use all of
 the above components, we need to instantiate the factory as:
 
-.. literalinclude:: ../../examples/wordcount/bin/wordcount_full.py
+.. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_full.py
    :language: python
    :start-after: DOCS_INCLUDE_START
    :end-before: DOCS_INCLUDE_END
