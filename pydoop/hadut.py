@@ -182,51 +182,6 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
                  keep_streams=keep_streams)
 
 
-def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
-    """
-    Get the list of task trackers in the Hadoop cluster.
-
-    Each element in the returned list is in the ``(host, port)`` format.
-    All arguments are passed to :func:`run_class`.
-
-    If ``offline`` is :obj:`True`, try getting the list of task trackers from
-    the ``slaves`` file in Hadoop's configuration directory (no attempt is
-    made to contact the Hadoop daemons).  In this case, ports are set to 0.
-    """
-    if offline:
-        if not hadoop_conf_dir:
-            hadoop_conf_dir = pydoop.hadoop_conf()
-            slaves = os.path.join(hadoop_conf_dir, "slaves")
-        try:
-            with open(slaves) as f:
-                task_trackers = [(l.strip(), 0) for l in f]
-        except IOError:
-            task_trackers = []
-    else:
-        # run JobClient directly (avoids "hadoop job" deprecation)
-        stdout = run_class(
-            "org.apache.hadoop.mapred.JobClient", ["-list-active-trackers"],
-            properties=properties, hadoop_conf_dir=hadoop_conf_dir,
-            keep_streams=True
-        )
-        task_trackers = []
-        for line in stdout.splitlines():
-            if not line:
-                continue
-            line = line.split(":")
-            task_trackers.append((line[0].split("_")[1], int(line[-1])))
-    return task_trackers
-
-
-def get_num_nodes(properties=None, hadoop_conf_dir=None, offline=False):
-    """
-    Get the number of task trackers in the Hadoop cluster.
-
-    All arguments are passed to :func:`get_task_trackers`.
-    """
-    return len(get_task_trackers(properties, hadoop_conf_dir, offline))
-
-
 def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
             keep_streams=True):
     """
