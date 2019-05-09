@@ -27,12 +27,9 @@ import subprocess
 
 import pydoop
 import pydoop.utils.misc as utils
-import pydoop.hadoop_utils as hu
 import pydoop.hdfs as hdfs
 from .utils.py3compat import basestring
 
-
-GLOB_CHARS = frozenset('*,?[]{}')
 
 # --- FIXME: perhaps we need a more sophisticated tool for setting args ---
 GENERIC_ARGS = frozenset([
@@ -83,13 +80,6 @@ def _merge_csv_args(args):
 
 def _construct_property_args(prop_dict):
     return sum((['-D', '%s=%s' % p] for p in prop_dict.items()), [])
-
-
-# 'a:b:c' OR ['a', 'b', 'c'] OR ['a:b', 'c'] --> {'a', 'b', 'c'}
-def _to_set(classpath):
-    if isinstance(classpath, basestring):
-        classpath = [classpath]
-    return set(_.strip() for s in classpath for _ in s.split(":"))
 
 
 # inherits from RuntimeError for backwards compatibility
@@ -180,26 +170,6 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
     run_tool_cmd(tool, cmd, args=args, properties=properties,
                  hadoop_conf_dir=hadoop_conf_dir, logger=logger,
                  keep_streams=keep_streams)
-
-
-def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
-            keep_streams=True):
-    """
-    Run a jar on Hadoop (``hadoop jar`` command).
-
-    All arguments are passed to :func:`run_cmd` (``args = [jar_name] +
-    more_args``) .
-    """
-    if hu.is_readable(jar_name):
-        args = [jar_name]
-        if more_args is not None:
-            args.extend(more_args)
-        return run_cmd(
-            "jar", args, properties, hadoop_conf_dir=hadoop_conf_dir,
-            keep_streams=keep_streams
-        )
-    else:
-        raise ValueError("Can't read jar file %s" % jar_name)
 
 
 def run_class(class_name, args=None, properties=None, classpath=None,

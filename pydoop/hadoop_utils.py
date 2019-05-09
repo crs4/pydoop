@@ -269,13 +269,6 @@ def is_exe(fpath):
     return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
 
 
-def is_readable(fpath):
-    """
-    Path references a readable file.
-    """
-    return os.path.isfile(fpath) and os.access(fpath, os.R_OK)
-
-
 def extract_text(node):
     return "".join(
         c.data.strip() for c in node.childNodes if c.nodeType == c.TEXT_NODE
