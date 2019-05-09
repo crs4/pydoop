@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -euo pipefail
+[ -n "${DEBUG:-}" ] && set -x
+this="${BASH_SOURCE-$0}"
+this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
+img=crs4/pydoop:${HADOOP_VERSION}-${TRAVIS_PYTHON_VERSION}
+
+pushd "${this_dir}"
+cmd_dir=$(readlink -e "cmd")
+pushd ..
+docker build . \
+  --build-arg hadoop_version=${HADOOP_VERSION} \
+  --build-arg python_version=${TRAVIS_PYTHON_VERSION} \
+  -t ${img}
+if [ -n "${LOCAL_FS:-}" ]; then
+    docker run --rm --name pydoop -v "${cmd_dir}":/cmd:ro -d ${img} \
+      /cmd/hadoop_localfs.sh
+else
+    docker run --rm --name pydoop -d ${img}
+    docker exec pydoop bash -c 'until datanode_cid; do sleep 0.1; done'
+fi
+popd
+popd

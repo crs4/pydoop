@@ -33,7 +33,11 @@ if [ $# -ne ${nargs} ]; then
 fi
 prog=$1
 
-OPTS=( "--log-level" "DEBUG" )
+OPTS=(
+    "-D" "mapreduce.job.name=${prog}"
+    "-D" "mapreduce.task.timeout=10000"
+)
+[ -n "${DEBUG:-}" ] && OPTS+=( "--log-level" "DEBUG" )
 case ${prog} in
     base_histogram )
 	DATA="${this_dir}/data/base_histogram_input"
@@ -67,12 +71,9 @@ case ${prog} in
 		;;
 	esac
 esac
-INPUT="/user/${USER}/$(basename ${DATA})"
-OUTPUT="/user/${USER}/${prog}_output"
 
-WD=""
+WD=$(mktemp -d)
 if [ ${prog} == grep_compiled ]; then
-    WD=$(mktemp -d)
     src="${this_dir}"/scripts/grep.py
     script="${WD}"/grep.pyc
     ${PYTHON} -c "from py_compile import compile; compile('${src}', cfile='${script}')"
@@ -80,9 +81,16 @@ else
     script="${this_dir}"/scripts/${prog}.py
 fi
 
-${HADOOP} fs -mkdir -p "/user/${USER}"
-${HADOOP} fs -rm -r "${INPUT}" "${OUTPUT}" || :
-${HADOOP} fs -put "${DATA}" "${INPUT}"
+if [ "$(hadoop_fs)" != "file" ]; then
+    ensure_dfs_home
+    INPUT="input"
+    OUTPUT="output"
+    ${HDFS} dfs -rm -r -f "${INPUT}" "${OUTPUT}"
+    ${HDFS} dfs -put "${DATA}" "${INPUT}"
+else
+    INPUT="${DATA}"
+    OUTPUT="${WD}/output"
+fi
 ${PYDOOP} script "${OPTS[@]}" "${script}" "${INPUT}" "${OUTPUT}"
 ${PYTHON} "${this_dir}"/check.py ${prog} "${OUTPUT}"
 

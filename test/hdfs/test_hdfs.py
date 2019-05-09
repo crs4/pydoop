@@ -253,9 +253,10 @@ class TestHDFS(unittest.TestCase):
         hdfs.rename(test_path, new_path)
         self.assertFalse(hdfs.path.exists(test_path))
         self.assertTrue(hdfs.path.exists(new_path))
-        self.assertRaises(
-            RuntimeError, hdfs.rename, test_path, self.local_paths[0]
-        )
+        if not hdfs.default_is_local():
+            self.assertRaises(
+                RuntimeError, hdfs.rename, new_path, self.local_paths[0]
+            )
 
     def renames(self):
         test_path = self.hdfs_paths[0]

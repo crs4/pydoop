@@ -384,9 +384,20 @@ class TestStat(unittest.TestCase):
         hdfs.rm(wd)
 
     def stat_on_dir(self):
-        s = hdfs.path.stat('/user/%s' % DEFAULT_USER)
-        for attr in s.st_size, s.st_blksize, s.st_blocks:
-            self.assertEqual(attr, 0)
+        if hdfs.default_is_local():
+            wd = tempfile.mkdtemp(prefix='pydoop_', suffix=UNI_CHR)
+        else:
+            wd = make_random_str() + UNI_CHR
+            hdfs.mkdir(wd)
+        s = hdfs.path.stat(wd)
+        if hdfs.default_is_local():
+            os_s = os.stat(wd)
+            for name in 'st_size', 'st_blksize', 'st_blocks':
+                self.assertEqual(getattr(s, name), getattr(os_s, name))
+        else:
+            for attr in s.st_size, s.st_blksize, s.st_blocks:
+                self.assertEqual(attr, 0)
+        hdfs.rm(wd)
 
     def __check_extra_args(self, stat_res, path_info):
         for n in 'kind', 'name', 'replication':
@@ -504,8 +515,8 @@ class TestUtime(unittest.TestCase):
         new_atime, new_mtime = atime + 100, mtime + 200
         hdfs.path.utime(path, (new_atime, new_mtime))
         st = hdfs.path.stat(path)
-        self.assertEqual(st.st_atime, new_atime)
-        self.assertEqual(st.st_mtime, new_mtime)
+        self.assertEqual(int(st.st_atime), int(new_atime))
+        self.assertEqual(int(st.st_mtime), int(new_mtime))
         hdfs.rm(path)
 
 

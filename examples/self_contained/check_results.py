@@ -23,16 +23,15 @@ from collections import Counter
 
 logging.basicConfig(level=logging.INFO)
 
-from pydoop.hdfs import hdfs
+import pydoop.hdfs as hdfs
 import pydoop.test_support as pts
 import pydoop.hadut as hadut
 
 
 def compute_vc(input_dir):
-    fs = hdfs()
     data = []
-    for x in fs.list_directory(input_dir):
-        with fs.open_file(x['path'], 'rt') as f:
+    for path in hdfs.ls(input_dir):
+        with hdfs.open(path, 'rt') as f:
             data.append(f.read())
     all_data = ''.join(data)
     vowels = re.findall('[AEIOUY]', all_data.upper())

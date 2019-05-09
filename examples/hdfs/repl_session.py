@@ -26,7 +26,7 @@ False
 ...
 'hello, world'
 >>> hdfs.put('/tmp/hello.txt', 'test.copy/hello.txt.copy')
->>> for x in hdfs.ls('test.copy'): print(repr(hdfs.path.basename(x)))
+>>> for x in sorted(hdfs.ls('test.copy')): print(repr(hdfs.path.basename(x)))
 ...
 'hello.txt'
 'hello.txt.copy'
@@ -43,14 +43,17 @@ b'hel'
 """
 
 
+def clean():
+    for path in "test", "test.copy", "file:/tmp/hello.txt":
+        try:
+            hdfs.rm(path)
+        except OSError:
+            pass
+
+
 if __name__ == "__main__":
     import doctest
-    import os
     import pydoop.hdfs as hdfs
-    try:
-        hdfs.rm("test")
-        hdfs.rm("test.copy")
-        os.remove("/tmp/hello.txt")
-    except OSError:
-        pass
+    clean()
     doctest.testmod(verbose=True)
+    clean()

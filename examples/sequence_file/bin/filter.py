@@ -45,6 +45,6 @@ class FilterMapper(Mapper):
             context.emit(word, str(occurrence))
 
 
-if __name__ == "__main__":
+def __main__():
     factory = Factory(FilterMapper)
     run_task(factory, raw_values=True)

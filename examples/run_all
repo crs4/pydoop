@@ -31,7 +31,6 @@ examples=(
     pydoop_submit
     self_contained
     sequence_file
-    wordcount
 )
 some_failed=0
 

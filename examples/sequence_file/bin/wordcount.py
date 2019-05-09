@@ -38,6 +38,6 @@ class WordCountReducer(Reducer):
         context.emit(context.key.encode("utf-8"), struct.pack(">i", s))
 
 
-if __name__ == "__main__":
+def __main__():
     factory = Factory(WordCountMapper, WordCountReducer)
     run_task(factory, auto_serialize=False)

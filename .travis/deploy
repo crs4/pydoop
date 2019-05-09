@@ -19,7 +19,7 @@ docker exec pydoop bash -c 'while : ; do jps | grep DataNode && break; done'
 # smoke test
 docker exec pydoop bash -c "cd test && pydoop -V"
 docker exec -e VERSION=${VERSION} pydoop bash -c 'cd test && ${PYTHON} -c "import pydoop.version as v; assert v.version == \"${VERSION}\"; assert v.git_rev"'
-docker exec pydoop bash -c "cd examples/wordcount && bash run_wc.sh full"
+docker exec pydoop bash -c "cd examples/pydoop_submit && bash run_submit.sh wordcount_full"
 docker stop pydoop
 
 echo "${CI_PASS}" | docker login -u "${CI_USER}" --password-stdin

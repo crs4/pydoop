@@ -54,6 +54,7 @@ if [ $# -ne ${nargs} ]; then
 fi
 MODULE=$1
 
+APP_DIR="${this_dir}/mr"
 JOBNAME=${MODULE}
 RESULTS=results.txt
 
@@ -61,12 +62,10 @@ OPTS+=( "--job-name" "${JOBNAME}" )
 case ${MODULE} in
     wordcount_minimal )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/../wordcount/bin"
 	OPTS+=("--entry-point" "main")
 	;;
     wordcount_full )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/../wordcount/bin"
 	OPTS+=("--entry-point" "main")
 	OPTS+=( "--do-not-use-java-record-reader" )
 	OPTS+=( "--do-not-use-java-record-writer" )
@@ -74,29 +73,35 @@ case ${MODULE} in
 	;;
     nosep )
 	DATA="${this_dir}"/data
-	APP_DIR="${this_dir}/mr"
 	OPTS+=( "--num-reducers" "0" )
 	OPTS+=( "--output-format" "it.crs4.pydoop.NoSeparatorTextOutputFormat" )
 	;;
     map_only_java_writer )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/mr"
 	OPTS+=( "--num-reducers" "0" )
 	;;
     map_only_python_writer )
 	DATA="${this_dir}"/../input
-	APP_DIR="${this_dir}/mr"
 	OPTS+=( "--num-reducers" "0" )
 	OPTS+=( "--do-not-use-java-record-writer" )
 	;;
 esac
-INPUT="/user/${USER}/$(basename ${DATA})"
-OUTPUT="/user/${USER}/${MODULE}_output"
 OPTS+=( "--upload-file-to-cache" "${APP_DIR}/${MODULE}.py" )
 [ -n "${DEBUG:-}" ] && OPTS+=( "--log-level" "DEBUG" )
 
-${HADOOP} fs -mkdir -p "/user/${USER}"
-${HADOOP} fs -rm -r "${INPUT}" "${OUTPUT}" || :
-${HADOOP} fs -put "${DATA}" "${INPUT}"
+WD=$(mktemp -d)
+
+if [ "$(hadoop_fs)" != "file" ]; then
+    ensure_dfs_home
+    INPUT="input"
+    OUTPUT="output"
+    ${HDFS} dfs -rm -r -f "${INPUT}" "${OUTPUT}"
+    ${HDFS} dfs -put "${DATA}" "${INPUT}"
+else
+    INPUT="${DATA}"
+    OUTPUT="${WD}/output"
+fi
 ${PYDOOP} submit "${OPTS[@]}" ${MODULE} "${INPUT}" "${OUTPUT}"
 ${PYTHON} "${this_dir}"/check.py ${MODULE} "${OUTPUT}"
+
+rm -rf "${WD}"

@@ -18,4 +18,8 @@ ensure_dfs_home() {
     ${HDFS} dfs -mkdir -p /user/${USER}
 }
 
-export -f die ensure_dfs_home
+hadoop_fs() {
+    ${HDFS} getconf -confKey fs.defaultFS | cut -d : -f 1
+}
+
+export -f die ensure_dfs_home hadoop_fs
