@@ -182,14 +182,6 @@ def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
                  keep_streams=keep_streams)
 
 
-def run_mapred_cmd(cmd, args=None, properties=None, hadoop_home=None,
-                   hadoop_conf_dir=None, logger=None, keep_streams=True):
-    tool = pydoop.mapred_exec(hadoop_home=hadoop_home)
-    run_tool_cmd(tool, cmd, args=args, properties=properties,
-                 hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                 keep_streams=keep_streams)
-
-
 def get_task_trackers(properties=None, hadoop_conf_dir=None, offline=False):
     """
     Get the list of task trackers in the Hadoop cluster.
@@ -233,36 +225,6 @@ def get_num_nodes(properties=None, hadoop_conf_dir=None, offline=False):
     All arguments are passed to :func:`get_task_trackers`.
     """
     return len(get_task_trackers(properties, hadoop_conf_dir, offline))
-
-
-def dfs(args=None, properties=None, hadoop_conf_dir=None):
-    """
-    Run the Hadoop file system shell.
-
-    All arguments are passed to :func:`run_class`.
-    """
-    # run FsShell directly (avoids "hadoop dfs" deprecation)
-    return run_class(
-        "org.apache.hadoop.fs.FsShell", args, properties,
-        hadoop_conf_dir=hadoop_conf_dir, keep_streams=True
-    )
-
-
-def path_exists(path, properties=None, hadoop_conf_dir=None):
-    """
-    Return :obj:`True` if ``path`` exists in the default HDFS.
-
-    Keyword arguments are passed to :func:`dfs`.
-
-    This function does the same thing as :func:`hdfs.path.exists
-    <pydoop.hdfs.path.exists>`, but it uses a wrapper for the Hadoop
-    shell rather than the hdfs extension.
-    """
-    try:
-        dfs(["-stat", path], properties, hadoop_conf_dir=hadoop_conf_dir)
-    except RuntimeError:
-        return False
-    return True
 
 
 def run_jar(jar_name, more_args=None, properties=None, hadoop_conf_dir=None,
@@ -334,27 +296,6 @@ def run_class(class_name, args=None, properties=None, classpath=None,
     return res
 
 
-def find_jar(jar_name, root_path=None):
-    """
-    Look for the named jar in:
-
-    #. ``root_path``, if specified
-    #. working directory -- ``PWD``
-    #. ``${PWD}/build``
-    #. ``/usr/share/java``
-
-    Return the full path of the jar if found; else return :obj:`None`.
-    """
-    jar_name = os.path.basename(jar_name)
-    root = root_path or os.getcwd()
-    paths = (root, os.path.join(root, "build"), "/usr/share/java")
-    for p in paths:
-        p = os.path.join(p, jar_name)
-        if os.path.exists(p):
-            return p
-    return None
-
-
 def iter_mr_out_files(mr_out_dir):
     for fn in hdfs.ls(mr_out_dir):
         if hdfs.path.basename(fn).startswith("part"):
@@ -384,9 +325,3 @@ def collect_output(mr_out_dir, out_file=None):
                     while len(data) > 0:
                         o.write(data)
                         data = f.read(block_size)
-
-
-if __name__ == "__main__":
-    import doctest
-    FLAGS = doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-    doctest.testmod(optionflags=FLAGS)
