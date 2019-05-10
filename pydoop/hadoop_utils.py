@@ -352,7 +352,6 @@ class PathFinder(object):
         self.__hadoop_version = None  # str
         self.__hadoop_version_info = None  # HadoopVersion
         self.__hadoop_params = None
-        self.__hadoop_native = None
         self.__hadoop_classpath = None
 
     def reset(self):
@@ -481,42 +480,6 @@ class PathFinder(object):
                     pass  # silently ignore, as in Hadoop
             self.__hadoop_params = params
         return self.__hadoop_params
-
-    def hadoop_native(self, hadoop_home=None):
-        if hadoop_home is None:
-            hadoop_home = self.hadoop_home()
-        if not self.__hadoop_native:
-            if os.path.isdir(self.RPM_HADOOP_HOME):
-                self.__hadoop_native = os.path.join(
-                    '/usr', 'lib%s' % get_arch()[1]
-                )
-                return self.__hadoop_native
-            v = self.hadoop_version_info(hadoop_home)
-            if v.distribution == 'apache':
-                if v.main >= (2, 0, 0):
-                    self.__hadoop_native = os.path.join(
-                        hadoop_home, 'lib', 'native'
-                    )
-                else:
-                    self.__hadoop_native = os.path.join(
-                        hadoop_home, 'lib', 'native',
-                        'Linux-%s-%s' % get_arch()
-                    )
-            elif v.distribution == 'hdp':
-                if v.main >= (2, 0, 0):
-                    self.__hadoop_native = os.path.join(
-                        hadoop_home, 'hadoop', 'lib', 'native'
-                    )
-                else:
-                    raise RuntimeError('%s is not supported' % v)
-            elif v.distribution == 'cdh':
-                hadoop_home = _cdh_hadoop_home()
-                self.__hadoop_native = os.path.join(
-                    hadoop_home, 'lib', 'native'
-                )
-            else:
-                raise RuntimeError('%s is not supported' % v)
-        return self.__hadoop_native
 
     def hadoop_classpath(self, hadoop_home=None):
         if hadoop_home is None:

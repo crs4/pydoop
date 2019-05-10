@@ -27,25 +27,15 @@ Configuration
 
 The hdfs module is built on top of ``libhdfs``, in turn a JNI wrapper
 around the Java fs code: therefore, for the module to work properly,
-the ``CLASSPATH`` environment variable must include all paths to the
-relevant Hadoop jars. Pydoop will do this for you, but it needs to
-know where your Hadoop installation is located and what is your hadoop
-configuration directory: if Pydoop is not able to automatically find
-these directories, you have to make sure that the ``HADOOP_HOME`` and
-``HADOOP_CONF_DIR`` environment variables are set to the appropriate
-values.
+the Java class path must include all relevant Hadoop jars. Pydoop tries to
+populate the class path automatically by calling ``hadoop classpath``, so make
+sure the ``hadoop`` command is in the ``PATH`` on all cluster nodes. If your
+Hadoop configuration directory is in a non-standard location, also ensure that
+the ``HADOOP_CONF_DIR`` env var is set to the appropriate value.
 
-Another important environment variable for this module is
-``LIBHDFS_OPTS``\ . This is used to set options for the JVM on top of
-which the module runs, most notably the amount of memory it uses. If
-``LIBHDFS_OPTS`` is not set, the C libhdfs will let it fall back to
-the default for your system, typically 1 GB. According to our
-experience, this is *much* more than most applications need and adds a
-lot of unnecessary memory overhead. For this reason, the hdfs module
-sets ``LIBHDFS_OPTS`` to ``-Xmx48m``\ , a value that we found to be
-appropriate for most applications.  If your needs are different, you
-can set the environment variable externally and it will override the
-above setting.
+Another important environment variable for this module is ``LIBHDFS_OPTS``,
+used to set options for the JVM on top of which it runs. To control the heap
+size, for instance, you could set ``LIBHDFS_OPTS`` to ``"-Xms32m -Xmx512m"``.
 """
 
 __all__ = [
@@ -94,9 +84,6 @@ def init():
     os.environ["CLASSPATH"] = "%s:%s:%s" % (
         pydoop.hadoop_classpath(), _ORIG_CLASSPATH, pydoop.hadoop_conf()
     )
-    os.environ["LIBHDFS_OPTS"] = os.getenv(
-        "LIBHDFS_OPTS", common.DEFAULT_LIBHDFS_OPTS
-    ) + " -Djava.library.path=%s" % pydoop.hadoop_native()
 
 
 init()
