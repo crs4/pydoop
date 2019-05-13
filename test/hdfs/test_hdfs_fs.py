@@ -18,6 +18,7 @@
 
 import unittest
 import getpass
+import os
 import socket
 from itertools import product
 
@@ -27,6 +28,14 @@ import pydoop.test_utils as u
 from pydoop.utils.py3compat import clong
 
 CURRENT_USER = getpass.getuser()
+DEFAULT_FS = hdfs.fs._default_fs()
+
+
+def get_explicit_hp():
+    hp = DEFAULT_FS.netloc.split(":")
+    if len(hp) < 2:
+        hp.append(u._DEFAULT_HDFS_PORT)
+    return os.getenv("HDFS_HOST", hp[0]), int(os.getenv("HDFS_PORT", hp[1]))
 
 
 class TestConnection(unittest.TestCase):
@@ -34,15 +43,16 @@ class TestConnection(unittest.TestCase):
     def setUp(self):
         self.hp_cases = [("default", 0)]
         self.u_cases = [None, CURRENT_USER]
-        if not hdfs.default_is_local():
-            self.hp_cases.append((u.HDFS_HOST, u.HDFS_PORT))
+        if DEFAULT_FS.scheme == "hdfs":
+            hdfs_host, hdfs_port = get_explicit_hp()
+            self.hp_cases.append((hdfs_host, hdfs_port))
             self.u_cases.append("nobody")
             try:
-                hdfs_ip = socket.gethostbyname(u.HDFS_HOST)
+                hdfs_ip = socket.gethostbyname(hdfs_host)
             except socket.gaierror:
                 pass
             else:
-                self.hp_cases.append((hdfs_ip, u.HDFS_PORT))
+                self.hp_cases.append((hdfs_ip, hdfs_port))
 
     def connect(self):
         for host, port in self.hp_cases:
@@ -191,7 +201,7 @@ def suite():
     suite_.addTest(TestConnection('connect'))
     suite_.addTest(TestConnection('cache'))
     tests = common_tests()
-    if not hdfs.default_is_local():
+    if DEFAULT_FS.scheme == "hdfs":
         tests.extend([
             'capacity',
             'default_block_size',
