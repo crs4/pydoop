@@ -72,20 +72,12 @@ def hadoop_exec(hadoop_home=None):
     return _PATH_FINDER.hadoop_exec(hadoop_home)
 
 
-def mapred_exec(hadoop_home=None):
-    return _PATH_FINDER.mapred_exec(hadoop_home)
-
-
 def hadoop_version(hadoop_home=None):
     return _PATH_FINDER.hadoop_version(hadoop_home)
 
 
 def hadoop_version_info(hadoop_home=None):
     return _PATH_FINDER.hadoop_version_info(hadoop_home)
-
-
-def has_mrv2(hadoop_home=None):
-    return _PATH_FINDER.hadoop_version_info(hadoop_home).has_mrv2()
 
 
 def is_apache(hadoop_home=None):

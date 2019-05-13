@@ -191,10 +191,6 @@ class HadoopVersion(object):
     def is_hortonworks(self):
         return self.distribution == 'hdp'
 
-    def is_yarn(self):
-        pf = PathFinder()
-        return pf.is_yarn()
-
     def is_local(self):
         pf = PathFinder()
         return pf.is_local()
@@ -202,12 +198,6 @@ class HadoopVersion(object):
     def is_cdh_mrv2(self):
         return (self.distribution == 'cdh' and
                 self.dist_version >= (4, 0, 0) and not self.dist_ext)
-
-    def has_mrv2(self):
-        return \
-            self.main >= (2, 0, 0) and self.is_yarn() and \
-            (not self.is_cloudera() or (
-                self.is_cloudera() and self.dist_version >= (5, 0, 0)))
 
     def is_cdh_v5(self):
         return (self.distribution == 'cdh' and
@@ -222,11 +212,6 @@ class HadoopVersion(object):
         return ((self.distribution == 'cdh' and
                  self.dist_version >= (3, 0, 0)) or
                 self.main >= (0, 20, 203))
-
-    def has_variable_isplit_encoding(self):
-        pf = PathFinder()
-        return ((self.tuple >= (2, 0, 0) and not self.is_cloudera()) or
-                pf.is_yarn())
 
     @property
     def tuple(self):
@@ -347,7 +332,6 @@ class PathFinder(object):
     def __init__(self):
         self.__hadoop_home = None
         self.__hadoop_exec = None
-        self.__mapred_exec = None
         self.__hadoop_conf = None
         self.__hadoop_version = None  # str
         self.__hadoop_version_info = None  # HadoopVersion
@@ -374,20 +358,6 @@ class PathFinder(object):
         if not self.__hadoop_home:
             PathFinder.__error("hadoop home", "HADOOP_PREFIX or HADOOP_HOME")
         return self.__hadoop_home
-
-    def mapred_exec(self, hadoop_home=None):
-        if not self.__mapred_exec:
-            if is_exe("/usr/bin/mapred") and not hadoop_home:
-                self.__mapred_exec = "/usr/bin/mapred"
-            else:
-                mapred = os.path.join(
-                    hadoop_home or self.hadoop_home(), "bin", "mapred"
-                )
-                if os.path.exists(mapred):
-                    self.__mapred_exec = mapred
-                else:
-                    self.__mapred_exec = self.hadoop_exec(hadoop_home)
-        return self.__mapred_exec
 
     def hadoop_exec(self, hadoop_home=None):
         if not self.__hadoop_exec:
@@ -509,11 +479,6 @@ class PathFinder(object):
             except ValueError:
                 info[a] = None
         return info
-
-    def is_yarn(self, hadoop_conf=None, hadoop_home=None):
-        return self.hadoop_params(hadoop_conf, hadoop_home).get(
-            'mapreduce.framework.name', ''
-        ).lower() == 'yarn'
 
     def is_local(self, hadoop_conf=None, hadoop_home=None):
         """\
