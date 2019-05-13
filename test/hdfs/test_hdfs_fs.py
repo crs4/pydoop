@@ -22,7 +22,6 @@ import socket
 from itertools import product
 
 import pydoop.hdfs as hdfs
-import pydoop
 from common_hdfs_tests import TestCommon, common_tests
 import pydoop.test_utils as u
 from pydoop.utils.py3compat import clong
@@ -121,11 +120,10 @@ class TestHDFS(TestCommon):
         )
 
     def block_size(self):
-        if not pydoop.hadoop_version_info().has_deprecated_bs():
-            for bs_MB in range(100, 500, 50):
-                bs = bs_MB * 2**20
-                path = self._make_random_file(blocksize=bs)
-                self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
+        for bs_MB in range(100, 500, 50):
+            bs = bs_MB * 2**20
+            path = self._make_random_file(blocksize=bs)
+            self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
 
     def replication(self):
         for r in range(1, 6):
@@ -150,19 +148,12 @@ class TestHDFS(TestCommon):
                 data = b'X' * min(chunk_size, size - written)
                 written += f.write(data)
 
-        hd_info = pydoop.hadoop_version_info()
-        kwargs = {}
-        if hd_info.has_deprecated_bs():
-            bs = hdfs.fs.hdfs().default_block_size()
-        else:
-            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
-            bs = 1048576
-            kwargs['blocksize'] = bs
-
+        # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+        bs = 1048576
         line = b"012345678\n"
         offset = bs - (10 * len(line) + 5)
         path = self._make_random_path()
-        with self.fs.open_file(path, mode="w", **kwargs) as f:
+        with self.fs.open_file(path, mode="w", blocksize=bs) as f:
             bytes_written = lines_written = 0
             _write_prefix(f, offset, bs)
             bytes_written = offset
@@ -183,17 +174,11 @@ class TestHDFS(TestCommon):
             self.assertEqual(L, line, "line %d: %r != %r" % (i, L, line))
 
     def get_hosts(self):
-        hd_info = pydoop.hadoop_version_info()
-        kwargs = {}
-        if hd_info.has_deprecated_bs() and not hd_info.is_cdh_v5():
-            blocksize = hdfs.fs.hdfs().default_block_size()
-        else:
-            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
-            blocksize = 1048576
-            kwargs['blocksize'] = blocksize
+        # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+        blocksize = 1048576
         N = 4
         content = b"x" * blocksize * N
-        path = self._make_random_file(content=content, **kwargs)
+        path = self._make_random_file(content=content, blocksize=blocksize)
         start = 0
         for i in range(N):
             length = blocksize * i + 1

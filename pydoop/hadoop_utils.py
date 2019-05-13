@@ -204,10 +204,6 @@ class HadoopVersion(object):
                 self.dist_version >= (5, 0, 0) and
                 self.dist_version < (6, 0, 0))
 
-    def has_deprecated_bs(self):
-        return (self.distribution == 'cdh' and
-                self.dist_version[:2] >= (4, 3))
-
     def has_security(self):
         return ((self.distribution == 'cdh' and
                  self.dist_version >= (3, 0, 0)) or
