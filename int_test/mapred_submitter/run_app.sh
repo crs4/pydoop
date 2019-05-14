@@ -29,10 +29,7 @@ pushd "${this_dir}"
 [ $# -ge 1 ] || die "Usage: $0 APP_NAME"
 name=$1
 
-${PYTHON} -c "import pydoop
-if pydoop.hadoop_version_info().is_local():
-    raise pydoop.LocalModeNotSupported()
-"
+${PYTHON} -c "import pydoop; pydoop.check_local_mode()"
 
 opts=(
     "-D" "mapreduce.job.name=${name}"

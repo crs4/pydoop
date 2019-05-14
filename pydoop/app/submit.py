@@ -58,10 +58,7 @@ class PydoopSubmitter(object):
     DESCRIPTION = "Simplified pydoop jobs submission"
 
     def __init__(self):
-        hadoop_version_info = pydoop.hadoop_version_info()
-        if hadoop_version_info.is_local():
-            raise pydoop.LocalModeNotSupported()
-
+        pydoop.check_local_mode()
         self.logger = logging.getLogger("PydoopSubmitter")
         self.properties = {
             CACHE_FILES: '',

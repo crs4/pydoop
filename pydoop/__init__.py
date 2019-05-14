@@ -185,3 +185,8 @@ class LocalModeNotSupported(RuntimeError):
     def __init__(self):
         msg = 'ERROR: Hadoop is configured to run in local mode'
         super(LocalModeNotSupported, self).__init__(msg)
+
+
+def check_local_mode(hadoop_conf=None, hadoop_home=None):
+    if _PATH_FINDER.is_local(hadoop_conf, hadoop_home):
+        raise LocalModeNotSupported()
