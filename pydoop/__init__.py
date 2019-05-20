@@ -38,7 +38,6 @@ try:
 except ImportError:  # should only happen at compile time
     __version__ = None
 _PATH_FINDER = hu.PathFinder()
-_HADOOP_INFO = _PATH_FINDER.find()  # fill the cache ASAP
 
 __author__ = ", ".join((
     "Simone Leo",
@@ -68,20 +67,16 @@ def hadoop_home():
     return _PATH_FINDER.hadoop_home()
 
 
-def hadoop_exec(hadoop_home=None):
-    return _PATH_FINDER.hadoop_exec(hadoop_home)
+def hadoop_conf():
+    return _PATH_FINDER.hadoop_conf()
 
 
-def hadoop_conf(hadoop_home=None):
-    return _PATH_FINDER.hadoop_conf(hadoop_home)
+def hadoop_params():
+    return _PATH_FINDER.hadoop_params()
 
 
-def hadoop_params(hadoop_conf=None, hadoop_home=None):
-    return _PATH_FINDER.hadoop_params(hadoop_conf, hadoop_home)
-
-
-def hadoop_classpath(hadoop_home=None):
-    return _PATH_FINDER.hadoop_classpath(hadoop_home)
+def hadoop_classpath():
+    return _PATH_FINDER.hadoop_classpath()
 
 
 def package_dir():
@@ -167,6 +162,6 @@ class LocalModeNotSupported(RuntimeError):
         super(LocalModeNotSupported, self).__init__(msg)
 
 
-def check_local_mode(hadoop_conf=None, hadoop_home=None):
-    if _PATH_FINDER.is_local(hadoop_conf, hadoop_home):
+def check_local_mode():
+    if _PATH_FINDER.is_local():
         raise LocalModeNotSupported()

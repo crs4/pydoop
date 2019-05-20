@@ -81,8 +81,8 @@ except NameError:
 
 # --- MODULE CONFIG ---
 def init():
-    os.environ["CLASSPATH"] = "%s:%s:%s" % (
-        pydoop.hadoop_classpath(), _ORIG_CLASSPATH, pydoop.hadoop_conf()
+    os.environ["CLASSPATH"] = "%s:%s" % (
+        pydoop.hadoop_classpath(), _ORIG_CLASSPATH
     )
 
 

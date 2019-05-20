@@ -19,9 +19,7 @@
 import unittest
 import tempfile
 import os
-import stat
 import shutil
-import subprocess as sp
 
 from xml.dom.minidom import getDOMImplementation
 
@@ -36,39 +34,14 @@ class TestHadoopUtils(unittest.TestCase):
         self.hadoop_home = tempfile.mkdtemp(prefix="pydoop_test_")
         self.hadoop_conf = os.path.join(self.hadoop_home, "conf")
         os.mkdir(self.hadoop_conf)
-        self.bindir = os.path.join(self.hadoop_home, "bin")
-        os.mkdir(self.bindir)
-        self.hadoop_exe = os.path.join(self.bindir, "hadoop")
-        with open(self.hadoop_exe, "w") as fo:
-            fd = fo.fileno()
-            os.fchmod(fd, os.fstat(fd).st_mode | stat.S_IXUSR)
-            fo.write("#!/bin/bash\necho Hadoop 3.2.0\n")
         self.orig_env = os.environ.copy()
+        os.environ["HADOOP_CONF_DIR"] = self.hadoop_conf
         self.pf = hu.PathFinder()
 
     def tearDown(self):
         os.environ.clear()
         os.environ.update(self.orig_env)
         shutil.rmtree(self.hadoop_home)
-
-    def test_get_hadoop_exec(self):
-        # hadoop home as argument
-        self.assertEqual(
-            self.pf.hadoop_exec(hadoop_home=self.hadoop_home), self.hadoop_exe
-        )
-        # hadoop home from environment
-        os.environ["HADOOP_HOME"] = self.hadoop_home
-        self.assertEqual(self.pf.hadoop_exec(), self.hadoop_exe)
-        # no hadoop home in environment
-        del os.environ["HADOOP_HOME"]
-        os.environ["PATH"] = self.bindir
-        hadoop_exec = self.pf.hadoop_exec()
-        cmd = sp.Popen([hadoop_exec, "version"], env=self.orig_env,
-                       stdout=sp.PIPE, stderr=sp.PIPE)
-        out, _ = cmd.communicate()
-        self.assertTrue(
-            out.splitlines()[0].strip().lower().startswith(b"hadoop")
-        )
 
     def test_get_hadoop_params(self):
         self.__check_params()
@@ -93,13 +66,12 @@ class TestHadoopUtils(unittest.TestCase):
         if xml_content is not None:
             with open(xml_fn, "w") as fo:
                 fo.write(xml_content)
-        params = self.pf.hadoop_params(hadoop_conf=self.hadoop_conf)
+        params = self.pf.hadoop_params()
         self.assertEqual(params, expected)
 
 
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(TestHadoopUtils('test_get_hadoop_exec'))
     suite.addTest(TestHadoopUtils('test_get_hadoop_params'))
     return suite
 

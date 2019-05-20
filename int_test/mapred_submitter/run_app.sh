@@ -117,10 +117,16 @@ esac
 mrapp="mr/${name}.py"
 [ -e "${mrapp}" ] || die "\"${mrapp}\" not found"
 
-cp "${mrapp}" "${wd}/mrapp.py"
-mrapp="${wd}/mrapp.py"
-py_exe=$(${PYTHON} -c "import sys; print(sys.executable)")
-sed -i "1c#!${py_exe}" "${mrapp}"
+# wrap the python app with a bash layer that sets PATH
+cat >"${wd}/mrapp" <<EOF
+#!${BASH}
+""":"
+export PATH="${PATH}"
+exec "${PYTHON}" -u "\$0" "\$@"
+":"""
+EOF
+cat "${mrapp}" >>"${wd}/mrapp"
+mrapp="${wd}/mrapp"
 
 ensure_dfs_home
 ${HDFS} dfs -rm -r -f "input" "output" "mrapp.py" "pstats"

@@ -25,7 +25,6 @@ import os
 import shlex
 import subprocess
 
-import pydoop
 import pydoop.utils.misc as utils
 import pydoop.hdfs as hdfs
 from .utils.py3compat import basestring
@@ -166,8 +165,7 @@ def run_tool_cmd(tool, cmd, args=None, properties=None, hadoop_conf_dir=None,
 
 def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
             hadoop_conf_dir=None, logger=None, keep_streams=True):
-    tool = pydoop.hadoop_exec(hadoop_home=hadoop_home)
-    run_tool_cmd(tool, cmd, args=args, properties=properties,
+    run_tool_cmd("hadoop", cmd, args=args, properties=properties,
                  hadoop_conf_dir=hadoop_conf_dir, logger=logger,
                  keep_streams=keep_streams)
 

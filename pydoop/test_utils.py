@@ -39,8 +39,6 @@ JAVA_HOME = jvm.get_java_home()
 JAVA = os.path.join(JAVA_HOME, "bin", "java")
 JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
 
-_HADOOP_HOME = pydoop.hadoop_home()
-_HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32
 # Default NameNode RPC port. 8020 for all versions except 3.0.0. See
 # https://issues.apache.org/jira/browse/HDFS-12990
@@ -134,7 +132,7 @@ def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
 
 
 def get_bytes_per_checksum():
-    params = pydoop.hadoop_params(_HADOOP_CONF_DIR, _HADOOP_HOME)
+    params = pydoop.hadoop_params()
     return int(params.get('dfs.bytes-per-checksum',
                           params.get('io.bytes.per.checksum',
                                      _DEFAULT_BYTES_PER_CHECKSUM)))
