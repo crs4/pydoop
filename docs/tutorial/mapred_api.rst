@@ -5,8 +5,8 @@ Writing Full-Featured Applications
 
 While :ref:`Pydoop Script <pydoop_script_tutorial>` allows to solve
 many problems with minimal programming effort, some tasks require a
-broader set of features.  If your data is not structured into simple
-text lines, for instance, you may need to write a record reader; if
+broader set of features. If your data is not simple text with one record
+per line, for instance, you may need to write a record reader; if
 you need to change the way intermediate keys are assigned to reducers,
 you have to write your own partitioner.  These components are
 accessible via the Pydoop MapReduce API.
@@ -24,8 +24,9 @@ The Pydoop API is object-oriented: the application developer writes a
 performed by the :meth:`~pydoop.mapreduce.api.Mapper.map` method, and
 a :class:`~pydoop.mapreduce.api.Reducer` class that processes data via
 the :meth:`~pydoop.mapreduce.api.Reducer.reduce` method.  The
-following snippet shows how to write the mapper and reducer for the
-:ref:`word count <word_count>` problem:
+following snippet shows how to write the mapper and reducer for
+*wordcount*, an application that counts the occurrence of each word in a
+text data set:
 
 .. literalinclude:: ../../examples/pydoop_submit/mr/wordcount_minimal.py
    :language: python
@@ -34,7 +35,7 @@ following snippet shows how to write the mapper and reducer for the
 The mapper is instantiated by the MapReduce framework that, for each
 input record, calls the ``map`` method passing a ``context`` object to it.
 The context serves as a communication interface between the framework
-and the application: in the map method, it is used to get the current
+and the application: in the ``map`` method, it is used to get the current
 key (not used in the above example) and value, and to emit (send back
 to the framework) intermediate key-value pairs.  The reducer works in
 a similar way, the main difference being the fact that the ``reduce``
@@ -89,7 +90,8 @@ your text data is structured into records that span multiple lines,
 you need to write your own :class:`~pydoop.mapreduce.api.RecordReader`.
 The **record reader** operates at the HDFS file level: its job is to read
 data from the file and feed it as a stream of key-value pairs
-(records) to the Mapper. To interact with HDFS files, we need to import the ``hdfs`` submodule:
+(records) to the mapper. To interact with HDFS files, we need to import the
+``hdfs`` submodule:
 
 .. code-block:: python
 
@@ -150,11 +152,11 @@ Partitioners and Combiners
 --------------------------
 
 The :class:`~pydoop.mapreduce.api.Partitioner` assigns intermediate keys to
-reducers. By default, Hadoop uses `HashPartitioner
+reducers. If you do *not* explicitly set a partitioner via the factory,
+partitioning will be done on the Java side. By default, Hadoop uses
+`HashPartitioner
 <https://hadoop.apache.org/docs/r3.0.0/api/org/apache/hadoop/mapreduce/lib/partition/HashPartitioner.html>`_,
-which selects the reducer on the basis of a hash function of the key. If the
-pipes factory does *not* provide a partitioner, partitioning will be done on
-the Java side (by default, with ``HashPartitioner``).
+which selects the reducer on the basis of a hash function of the key.
 
 To write a custom partitioner in Python, subclass
 :class:`~pydoop.mapreduce.api.Partitioner`, overriding the
@@ -181,17 +183,17 @@ down network traffic.
 
 Local aggregation is implemented by caching intermediate key/value pairs in a
 dictionary. Like in standard Java Hadoop, cache size is controlled by
-``"mapreduce.task.io.sort.mb"`` and defaults to 100 MB. Pydoop uses
+``mapreduce.task.io.sort.mb`` and defaults to 100 MB. Pydoop uses
 :func:`sys.getsizeof` to determine key/value size, which takes into account
 Python object overhead. This can be quite substantial (e.g.,
 ``sys.getsizeof(b"foo") == 36``) and must be taken into account if fine tuning
 is desired.
 
-.. important:: Due to the caching, when using a combiner there are additional
+.. important:: Due to the caching, when using a combiner there are
   limitations on the types that can be used for intermediate keys and
   values. First of all, keys must be `hashable
-  <https://docs.python.org/3/glossary.html>`_. In addition, if a mutable type
-  is used for values, then values should not change after they have been
+  <https://docs.python.org/3/glossary.html>`_. In addition, values
+  belonging to a mutable type should not change after having been
   emitted by the mapper. For instance, the following (however contrived)
   example would not work as expected:
 
@@ -234,9 +236,8 @@ collect all stats. Pydoop supports this via a ``pstats_dir`` argument to
   pipes.run_task(factory, pstats_dir="pstats")
 
 With the above call, Pydoop will run each MapReduce task with ``cProfile``,
-and store resulting pstats files in the ``"pstats"`` directory on HDFS. If
-you're using ``pydoop submit``, you can also enable profiling via the
-``--pstats-dir`` command line argument:
+and store resulting pstats files in the ``"pstats"`` directory on HDFS.
+You can also enable profiling in the ``pydoop submit`` command line:
 
 .. code-block:: bash
 

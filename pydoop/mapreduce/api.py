@@ -16,13 +16,9 @@
 #
 # END_COPYRIGHT
 
-"""
-The MapReduce API allows to write the components of a MapReduce application.
-
-The basic MapReduce components (:class:`Mapper`, :class:`Reducer`,
-:class:`RecordReader`, etc.)  are provided as abstract classes that
-must be subclassed by the developer, providing implementations for all
-methods called by the framework.
+"""\
+This module provides the base abstract classes used to develop MapReduce
+application components (:class:`Mapper`, :class:`Reducer`, etc.).
 """
 
 import json

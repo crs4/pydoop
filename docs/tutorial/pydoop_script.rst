@@ -45,12 +45,7 @@ and running programs.
 Word Count
 ++++++++++
 
-The word count example can be considered as the "hello world" of
-MapReduce.  A simple application that counts the occurrence of each
-word in a set of text files, it is included in both the original
-MapReduce paper [#]_ and in the Hadoop documentation as a MapReduce
-programming tutorial.  The Pydoop Script implementation requires only
-five lines of code:
+Count the occurrence of each word in a set of text files.
 
 .. literalinclude:: ../../examples/pydoop_script/scripts/wordcount.py
    :language: python
@@ -112,17 +107,8 @@ Applicability
 Pydoop Script makes it easy to solve simple problems.  It makes it
 feasible to write simple (even throw-away) scripts to perform simple
 manipulations or analyses on your data, especially if it's text-based.
-
 If you can specify your algorithm in two simple functions that have no
 state or have a simple state that can be stored in module variables,
 then you can consider using Pydoop Script.
-
-If you need something more sophisticated, then consider using the
-:ref:`full Pydoop API <api_tutorial>`.
-
-
-.. rubric:: Footnotes
-
-.. [#] J. Dean and S. Ghemawat, *MapReduce: simplified data processing
-       on large clusters*, in OSDI '04: 6th Symposium on Operating
-       Systems Design and Implementation, 2004
+If, on the other hand, you need more sophisticated processing, consider
+using the :ref:`full Pydoop API <api_tutorial>`.

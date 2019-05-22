@@ -17,8 +17,7 @@
 # END_COPYRIGHT
 
 """
-The hadut module provides access to some functionalities available
-via the Hadoop shell.
+Provides access to some functionalities available via the Hadoop shell.
 """
 
 import os
@@ -84,7 +83,7 @@ def _construct_property_args(prop_dict):
 # inherits from RuntimeError for backwards compatibility
 class RunCmdError(RuntimeError):
     """
-    This exception is raised by run_cmd and all functions that make
+    Raised by :func:`run_tool_cmd` and all functions that make
     use of it to indicate that the call failed (returned non-zero).
     """
     def __init__(self, returncode, cmd, output=None):
@@ -113,18 +112,13 @@ def run_tool_cmd(tool, cmd, args=None, properties=None, hadoop_conf_dir=None,
     the command succeeds, the former will be returned; if it fails, a
     ``RunCmdError`` will be raised with the latter as the message.
     This mode is appropriate for short-running commands whose "result"
-    is represented by their standard output (e.g., ``"dfsadmin",
-    ["-safemode", "get"]``).
+    is represented by their standard output (e.g.,
+    ``rval = run_tool_cmd("hdfs", "dfsadmin", ["-safemode", "get"])``).
 
     If ``keep_streams`` is set to :obj:`False`, the command will write
     directly to the stdout and stderr of the calling process, and the
     return value will be empty.  This mode is appropriate for long
-    running commands that do not write their "real" output to stdout
-    (such as pipes).
-
-    .. code-block:: python
-
-      >>> hadoop_classpath = run_cmd('classpath')
+    running commands that do not write their "real" output to stdout.
     """
     if logger is None:
         logger = utils.NullLogger()
@@ -165,9 +159,14 @@ def run_tool_cmd(tool, cmd, args=None, properties=None, hadoop_conf_dir=None,
 
 def run_cmd(cmd, args=None, properties=None, hadoop_home=None,
             hadoop_conf_dir=None, logger=None, keep_streams=True):
-    run_tool_cmd("hadoop", cmd, args=args, properties=properties,
-                 hadoop_conf_dir=hadoop_conf_dir, logger=logger,
-                 keep_streams=keep_streams)
+    """
+    Runs the ``hadoop`` command.
+
+    Calls :func:`run_tool_cmd` with ``"hadoop"`` as the first argument.
+    """
+    return run_tool_cmd("hadoop", cmd, args=args, properties=properties,
+                        hadoop_conf_dir=hadoop_conf_dir, logger=logger,
+                        keep_streams=keep_streams)
 
 
 def run_class(class_name, args=None, properties=None, classpath=None,
