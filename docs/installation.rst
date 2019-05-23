@@ -3,59 +3,27 @@
 Installation
 ============
 
-The fastest way to try Pydoop is via the `Docker <https://www.docker.com/>`_
-image::
-
-  docker pull crs4/pydoop
-  export PORT_FW="-p 8020:8020 -p 8042:8042 -p 8088:8088 -p 9000:9000 -p 10020:10020 -p 19888:19888 -p 9866:9866 -p 9867:9867 -p 9870:9870 -p 9864:9864 -p 9868:9868"
-  docker run ${PORT_FW} --name pydoop -d crs4/pydoop
-
-This spins up a single-node, `pseudo-distributed
-<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation>`_
-Hadoop cluster with `HDFS
-<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html#Introduction>`_,
-`YARN
-<https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html>`_
-and a Job History server. To check that all daemons are up and running, you
-can run ``jps`` on the container. If everything is OK, you should get something
-like this::
-
-  $ docker exec -it pydoop bash -c 'jps | grep -v Jps'
-  161 DataNode
-  356 NodeManager
-  523 JobHistoryServer
-  75 NameNode
-  301 ResourceManager
-
-Read on for detailed installation instructions.
-
-
-Supported Platforms
--------------------
-
-We regularly test Pydoop on Ubuntu only, but it should also work on other
-Linux distros and (possibly with some tweaking) on macOS. Other platforms are
-**not** supported.
-
-
 Prerequisites
 -------------
 
-* `Python <http://www.python.org>`_ 2 or 3 (tested with 2.7 and 3.6),
-  including header files (e.g., ``python-devel`` on CentOS, ``python-dev`` on
-  Debian);
+We regularly test Pydoop on Ubuntu only, but it should also work on other
+Linux distros and (possibly with some tweaking) on macOS. Other platforms are
+**not** supported. Additional requirements:
+
+* `Python <http://www.python.org>`_ 2 or 3, including header files (e.g.,
+  ``apt-get install python-dev``, ``yum install python-devel``);
 
 * `setuptools <https://pypi.python.org/pypi/setuptools>`_ >= 3.3;
 
-* Hadoop >=2. We run regular CI tests with the latest versions of
+* Hadoop >=2. We run regular CI tests with recent versions of
   `Apache Hadoop <http://hadoop.apache.org/releases.html>`_ 2.x and 3.x,
-  but we expect Pydoop to also work on other Hadoop distributions. In
+  but we expect Pydoop to also work with other Hadoop distributions. In
   particular, we have tested it on `Amazon EMR <https://aws.amazon.com/emr>`_
   (see :ref:`emr`).
 
-These are both build time and run time requirements. At build time only, you
-will also need a C++ compiler (e.g., ``yum install gcc gcc-c++``) and a JDK
-(i.e., a JRE alone is not sufficient) for Pydoop's extension modules.
+These are both build time and run time requirements. At build time you will
+also need a C++ compiler (e.g., ``apt-get install build-essential``, ``yum
+install gcc gcc-c++``) and a JDK (a JRE is not sufficient).
 
 **Optional:**
 
@@ -63,25 +31,41 @@ will also need a C++ compiler (e.g., ``yum install gcc gcc-c++``) and a JDK
   :ref:`avro_io` (run time only). Note that the pip packages for Python 2 and 3
   are named differently (respectively ``avro`` and ``avro-python3``).
 
-* Some examples have additional requirements. Check out the Dockerfile and
-  ``requirements.txt`` for details.
-
 
 Environment Setup
 -----------------
 
-Pydoop needs to know where the JDK and Hadoop are installed on your
-system. Although it will try to guess both locations, you can help by
-exporting, respectively, the ``JAVA_HOME`` and ``HADOOP_HOME`` environment
-variables. For instance::
+To compile the HDFS extension module, Pydoop needs the path to the JDK
+installation. You can specify this via ``JAVA_HOME``. For instance::
 
-  export HADOOP_HOME="/opt/hadoop-3.0.1"
   export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
 
 Note that Pydoop is interested in the **JDK** home (where ``include/jni.h``
 can be found), not the JRE home. Depending on your Java distribution and
 version, these can be different directories (usually the former being the
-latter's parent).
+latter's parent). If ``JAVA_HOME`` is not found in the environment, Pydoop
+will try to locate the JDK via Java system properties.
+
+Pydoop also includes some Java components, and it needs Hadoop libraries to be
+in the ``CLASSPATH`` in order to build them. This is done by calling ``hadoop
+classpath``, so make sure that the ``hadoop`` executable is in the
+``PATH``. For instance, if Hadoop was installed by unpacking the tarball into
+``/opt/hadoop``::
+
+  export PATH="/opt/hadoop/bin:/opt/hadoop/sbin:${PATH}"
+
+The Hadoop class path is also needed at run time by the HDFS extension. Again,
+since Pydoop picks it up from ``hadoop classpath``, ensure that ``hadoop`` is
+in the ``PATH``, as shown above. ``pydoop submit`` must also be able to call
+the ``hadoop`` executable.
+
+Additionally, Pydoop needs to read part of the Hadoop configuration to adapt
+to specific scenarios. If ``HADOOP_CONF_DIR`` is in the environment, Pydoop
+will try to read the configuration from the corresponding location. As a
+fallback, Pydoop will also try ``${HADOOP_HOME}/etc/hadoop`` (in the above
+example, ``HADOOP_HOME`` would be ``/opt/hadoop``). If ``HADOOP_HOME`` is not
+defined, Pydoop will try to guess it from the ``hadoop`` executable (again,
+this will have to be in the ``PATH``).
 
 
 Building and Installing
@@ -106,17 +90,15 @@ Or get the source code and build it locally::
 In the git repository, the ``master`` branch corresponds to the latest
 release, while the ``develop`` branch contains code under active development.
 
-Note that installing Pydoop and your MapReduce applications to all cluster
-nodes (or to an NFS share) is *not* required: see :doc:`self_contained` for
-additional info.
+If possible, you should install Pydoop on all cluster nodes. Alternatively, it
+can be distributed, together with your MapReduce applications, via the Hadoop
+distributed cache (see :doc:`self_contained`).
 
 
 Troubleshooting
 ---------------
 
-#. "java home not found" error: try setting ``JAVA_HOME`` in ``hadoop-env.sh``
-
-#. "libjvm.so not found" error: try the following::
+#. ``libjvm.so`` not found: try the following::
 
     export LD_LIBRARY_PATH="${JAVA_HOME}/jre/lib/amd64/server:${LD_LIBRARY_PATH}"
 
@@ -148,13 +130,6 @@ Troubleshooting
     export LD_LIBRARY_PATH="/my/lib/path:${LD_LIBRARY_PATH}"
     pip install pydoop
 
-#. Hadoop version issues. The Hadoop version selected at compile time is 
-   automatically detected based on the output of running ``hadoop version``.
-   If this fails for any reason, you can provide the correct version string
-   through the ``HADOOP_VERSION`` environment variable, e.g.::
-
-     export HADOOP_VERSION="2.7.4"
-
 
 Testing your Installation
 -------------------------
@@ -164,20 +139,16 @@ tests and/or examples to verify that everything works fine. Here is a short
 list of things that can go wrong and how to fix them. For full details on
 running tests and examples, see ``.travis.yml``.
 
-#. make sure that Pydoop is able to detect your Hadoop home and
-   configuration directories.  If auto-detection fails, try setting
-   the ``HADOOP_HOME`` and ``HADOOP_CONF_DIR`` environment variables
-   to the appropriate locations;
+#. Incomplete configuration: make sure that Pydoop is able to find the
+   ``hadoop`` executable and configuration directory (check the above section
+   on environment setup).
 
-#. Make sure all HDFS and YARN daemons are up (see above);
-
-#. Wait until HDFS exits from safe mode::
-
-     ${HADOOP_HOME}/bin/hadoop dfsadmin -safemode wait
+#. Cluster not ready: wait until all Hadoop daemons are up and HDFS exits from
+   safe mode (``hadoop dfsadmin -safemode wait``).
 
 #. HDFS tests may fail if your NameNode's hostname and port are
    non-standard. In this case, set the ``HDFS_HOST`` and ``HDFS_PORT``
-   environment variables accordingly;
+   environment variables accordingly.
 
 #. Some HDFS tests may fail if not run by the cluster superuser, in
    particular ``capacity``, ``chown`` and ``used``.  To get superuser
@@ -232,3 +203,30 @@ Python 3, install version 3.6 with yum:
   ...
 
 The above instructions have been tested on ``emr-5.12.0``.
+
+
+Trying Pydoop without installing it
+-----------------------------------
+
+You can try Pydoop on a `Docker <https://www.docker.com/>`_ container. The
+Dockerfile is in the distribution root directory::
+
+  docker build -t pydoop .
+  docker run --name pydoop -d pydoop
+
+This spins up a single-node, `pseudo-distributed
+<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation>`_
+Hadoop cluster with `HDFS
+<https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html#Introduction>`_,
+`YARN
+<https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html>`_
+and a Job History server. Before attempting to use the container, wait a few
+seconds until all daemons are up and running.
+
+You may want to expose some ports to the host, such as the ones used by the
+web interfaces. For instance::
+
+  docker run --name pydoop -p 8088:8088 -p 9870:9870 -p 19888:19888 -d pydoop
+
+Refer to the Hadoop docs for a complete list of ports used by the various
+services.

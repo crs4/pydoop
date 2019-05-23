@@ -18,16 +18,24 @@
 
 import unittest
 import getpass
+import os
 import socket
 from itertools import product
 
 import pydoop.hdfs as hdfs
-import pydoop
 from common_hdfs_tests import TestCommon, common_tests
 import pydoop.test_utils as u
 from pydoop.utils.py3compat import clong
 
 CURRENT_USER = getpass.getuser()
+DEFAULT_FS = hdfs.fs._default_fs()
+
+
+def get_explicit_hp():
+    hp = DEFAULT_FS.netloc.split(":")
+    if len(hp) < 2:
+        hp.append(u._DEFAULT_HDFS_PORT)
+    return os.getenv("HDFS_HOST", hp[0]), int(os.getenv("HDFS_PORT", hp[1]))
 
 
 class TestConnection(unittest.TestCase):
@@ -35,15 +43,16 @@ class TestConnection(unittest.TestCase):
     def setUp(self):
         self.hp_cases = [("default", 0)]
         self.u_cases = [None, CURRENT_USER]
-        if not hdfs.default_is_local():
-            self.hp_cases.append((u.HDFS_HOST, u.HDFS_PORT))
+        if DEFAULT_FS.scheme == "hdfs":
+            hdfs_host, hdfs_port = get_explicit_hp()
+            self.hp_cases.append((hdfs_host, hdfs_port))
             self.u_cases.append("nobody")
             try:
-                hdfs_ip = socket.gethostbyname(u.HDFS_HOST)
+                hdfs_ip = socket.gethostbyname(hdfs_host)
             except socket.gaierror:
                 pass
             else:
-                self.hp_cases.append((hdfs_ip, u.HDFS_PORT))
+                self.hp_cases.append((hdfs_ip, hdfs_port))
 
     def connect(self):
         for host, port in self.hp_cases:
@@ -121,11 +130,10 @@ class TestHDFS(TestCommon):
         )
 
     def block_size(self):
-        if not pydoop.hadoop_version_info().has_deprecated_bs():
-            for bs_MB in range(100, 500, 50):
-                bs = bs_MB * 2**20
-                path = self._make_random_file(blocksize=bs)
-                self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
+        for bs_MB in range(100, 500, 50):
+            bs = bs_MB * 2**20
+            path = self._make_random_file(blocksize=bs)
+            self.assertEqual(self.fs.get_path_info(path)["block_size"], bs)
 
     def replication(self):
         for r in range(1, 6):
@@ -150,19 +158,12 @@ class TestHDFS(TestCommon):
                 data = b'X' * min(chunk_size, size - written)
                 written += f.write(data)
 
-        hd_info = pydoop.hadoop_version_info()
-        kwargs = {}
-        if hd_info.has_deprecated_bs():
-            bs = hdfs.fs.hdfs().default_block_size()
-        else:
-            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
-            bs = 1048576
-            kwargs['blocksize'] = bs
-
+        # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+        bs = 1048576
         line = b"012345678\n"
         offset = bs - (10 * len(line) + 5)
         path = self._make_random_path()
-        with self.fs.open_file(path, mode="w", **kwargs) as f:
+        with self.fs.open_file(path, mode="w", blocksize=bs) as f:
             bytes_written = lines_written = 0
             _write_prefix(f, offset, bs)
             bytes_written = offset
@@ -183,17 +184,11 @@ class TestHDFS(TestCommon):
             self.assertEqual(L, line, "line %d: %r != %r" % (i, L, line))
 
     def get_hosts(self):
-        hd_info = pydoop.hadoop_version_info()
-        kwargs = {}
-        if hd_info.has_deprecated_bs() and not hd_info.is_cdh_v5():
-            blocksize = hdfs.fs.hdfs().default_block_size()
-        else:
-            # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
-            blocksize = 1048576
-            kwargs['blocksize'] = blocksize
+        # (dfs.namenode.fs-limits.min-block-size): 4096 < 1048576
+        blocksize = 1048576
         N = 4
         content = b"x" * blocksize * N
-        path = self._make_random_file(content=content, **kwargs)
+        path = self._make_random_file(content=content, blocksize=blocksize)
         start = 0
         for i in range(N):
             length = blocksize * i + 1
@@ -206,7 +201,7 @@ def suite():
     suite_.addTest(TestConnection('connect'))
     suite_.addTest(TestConnection('cache'))
     tests = common_tests()
-    if not hdfs.default_is_local():
+    if DEFAULT_FS.scheme == "hdfs":
         tests.extend([
             'capacity',
             'default_block_size',

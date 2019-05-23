@@ -40,7 +40,6 @@ from .argparse_types import a_file_that_can_be_read, UpdateMap
 from .argparse_types import a_comma_separated_list, a_hdfs_file
 
 
-DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 DEFAULT_ENTRY_POINT = '__main__'
 IS_JAVA_RR = "mapreduce.pipes.isjavarecordreader"
 IS_JAVA_RW = "mapreduce.pipes.isjavarecordwriter"
@@ -59,10 +58,7 @@ class PydoopSubmitter(object):
     DESCRIPTION = "Simplified pydoop jobs submission"
 
     def __init__(self):
-        hadoop_version_info = pydoop.hadoop_version_info()
-        if hadoop_version_info.is_local():
-            raise pydoop.LocalModeNotSupported()
-
+        pydoop.check_local_mode()
         self.logger = logging.getLogger("PydoopSubmitter")
         self.properties = {
             CACHE_FILES: '',
@@ -153,7 +149,8 @@ class PydoopSubmitter(object):
         self.properties[IS_JAVA_RW] = (
             'false' if args.do_not_use_java_record_writer else 'true'
         )
-        self.properties[JOB_REDUCES] = args.num_reducers
+        if args.num_reducers is not None:
+            self.properties[JOB_REDUCES] = args.num_reducers
         if args.job_name:
             self.properties[JOB_NAME] = args.job_name
         self.properties.update(args.job_conf or {})
@@ -403,7 +400,6 @@ def run(args, unknown_args=None):
 def add_parser_common_arguments(parser):
     parser.add_argument(
         '--num-reducers', metavar='INT', type=int,
-        default=DEFAULT_REDUCE_TASKS,
         help="Number of reduce tasks. Specify 0 to only perform map phase"
     )
     parser.add_argument(

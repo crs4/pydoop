@@ -29,7 +29,6 @@ python module.
 """
 
 import os
-import pydoop.hadut as hadut
 import pydoop.utils as utils
 import argparse
 from tempfile import NamedTemporaryFile
@@ -37,7 +36,6 @@ from zipfile import ZipFile
 from .submit import PydoopSubmitter, add_parser_common_arguments
 from .script_template import DRIVER_TEMPLATE
 
-DEFAULT_REDUCE_TASKS = max(3 * hadut.get_num_nodes(offline=True), 1)
 OUT_SEP_KEY = 'mapreduce.output.textoutputformat.separator'
 NOSEP_OUTPUT_FORMAT = 'it.crs4.pydoop.NoSeparatorTextOutputFormat'
 

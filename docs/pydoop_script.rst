@@ -122,10 +122,9 @@ and ``reducer`` functions has the following methods:
 
 The latter two methods are useful for keeping your task alive in cases
 where the amount of computation to be done for a single record might
-exceed Hadoop's timeout interval: Hadoop kills a task after a number
-of milliseconds set through the ``mapreduce.task.timeout`` property --
-which defaults to 600000, i.e., 10 minutes -- if it neither reads an
-input, writes an output, nor updates its status string.
+exceed Hadoop's timeout interval (Hadoop kills a task if it neither reads an
+input, writes an output, nor updates its status for a configurable amount
+of time, set to 10 minutes by default).
 
 
 Accessing Parameters

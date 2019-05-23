@@ -15,17 +15,14 @@ applications in pure Python:
    :language: python
    :pyobject: Reducer
 
-Pydoop offers several features not commonly found in other Python
-libraries for Hadoop:
+Feature highlights:
 
 * a rich :ref:`HDFS API <hdfs_api_tutorial>`;
 
 * a :ref:`MapReduce API <api_tutorial>` that allows to write pure
   Python record readers / writers, partitioners and combiners;
 
-* transparent :ref:`Avro (de)serialization <avro_io>`;
-
-* easy :ref:`installation-free <self_contained>` usage;
+* transparent :ref:`Avro (de)serialization <avro_io>`.
 
 Pydoop enables MapReduce programming via a pure (except for a
 performance-critical serialization section) Python client for Hadoop
@@ -51,7 +48,6 @@ Contents
    api_docs/index
    examples/index
    self_contained
-   ideas_list
    how_to_cite
 
 

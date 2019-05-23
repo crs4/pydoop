@@ -4,9 +4,8 @@ Avro I/O
 ========
 
 Pydoop transparently supports reading and writing `Avro
-<http://avro.apache.org>`_ records in MapReduce applications. This is
-only available when applications are run via ``pydoop submit`` (rather
-than via ``hadoop pipes``).
+<http://avro.apache.org>`_ records in MapReduce applications. This must be
+enabled by setting appropriate options in ``pydoop submit`` (see below).
 
 The following program implements a (slightly
 modified) version of the color count example from the Avro docs:
@@ -30,9 +29,7 @@ schema:
 
 Pydoop transparently serializes and/or deserializes Avro data as
 needed, allowing you to work directly with Python dictionaries.  To
-get this behavior, when launching the
-application with pydoop submit, you have to enable Avro I/O and
-specify the output schema as follows:
+get this behavior, enable Avro I/O and specify the output schema as follows:
 
 .. code-block:: bash
 

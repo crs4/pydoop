@@ -1,3 +1,21 @@
+New in 2.0b1
+------------
+
+ * ``pydoop submit`` now works when the default file system is local.
+ * Many utilities for guessing details of the Hadoop environment have been
+   either removed or drastically simplified (affects ``hadoop_utils`` and
+   related package-level functions). Pydoop now assumes that the ``hadoop``
+   command is in the ``PATH``, and uses only that information to try fallback
+   values when ``HADOOP_HOME`` and/or ``HADOOP_CONF_DIR`` are not defined.
+ * The ``hadut`` module has been stripped down to contain little more than
+   what's required by ``pydoop submit``. In particular, ``PipesRunner`` is
+   gone. Running applications with ``mapred pipes`` still works, but with
+   caveats (e.g., `it does not work on the local fs
+   <https://issues.apache.org/jira/browse/MAPREDUCE-4000>`_, and controlling
+   the remote task environment is not trivial).
+ * The ``hdfs`` module no longer provides a default value for ``LIBHDFS_OPTS``.
+
+
 New in 2.0a4
 ------------
 

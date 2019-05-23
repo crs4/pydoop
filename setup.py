@@ -29,10 +29,9 @@ environment variable. Make sure JAVA_HOME points to the JDK home directory
 (e.g., ${JAVA_HOME}/include/jni.h should be a valid path). If JAVA_HOME is not
 defined, Pydoop will try to get the JDK home from Java system properties.
 
-To compile its Java components, Pydoop also needs to know where Hadoop is. You
-can specify its location via the HADOOP_HOME environment variable. If
-HADOOP_HOME is not defined, Pydoop will try a few common locations before
-giving up.
+To compile its Java components, Pydoop also needs to find the Hadoop
+libraries. In order to do so, it will try to call ``hadoop classpath``, so
+make sure that the ``hadoop`` executable is in the PATH.
 """
 from __future__ import print_function
 

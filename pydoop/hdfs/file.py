@@ -302,9 +302,9 @@ class local_file(io.FileIO):
     """\
     Support class to handle local files.
 
-    Objects from this class should not be instantiated directly, but
-    rather obtained through the top-level ``open`` function in the
-    hdfs package.
+    Object of this type have the same interface as :class:`FileIO` (and should
+    also be obtained via higher level methods rather than instantiated
+    directly), but act as handles to local files.
     """
     def __init__(self, fs, name, mode):
         if not mode.startswith("r"):

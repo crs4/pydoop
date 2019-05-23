@@ -39,14 +39,11 @@ JAVA_HOME = jvm.get_java_home()
 JAVA = os.path.join(JAVA_HOME, "bin", "java")
 JAVAC = os.path.join(JAVA_HOME, "bin", "javac")
 
-_HADOOP_HOME = pydoop.hadoop_home()
-_HADOOP_CONF_DIR = pydoop.hadoop_conf()
 _RANDOM_DATA_SIZE = 32
-_DEFAULT_HDFS_HOST = os.getenv("HOSTNAME", "localhost")
-_DEFAULT_HDFS_PORT = 8020 if pydoop.is_cloudera() else 9000
+# Default NameNode RPC port. 8020 for all versions except 3.0.0. See
+# https://issues.apache.org/jira/browse/HDFS-12990
+_DEFAULT_HDFS_PORT = 8020
 _DEFAULT_BYTES_PER_CHECKSUM = 512
-HDFS_HOST = os.getenv("HDFS_HOST", _DEFAULT_HDFS_HOST)
-HDFS_PORT = os.getenv("HDFS_PORT", _DEFAULT_HDFS_PORT)
 
 
 def _get_special_chr():
@@ -76,11 +73,6 @@ def _get_special_chr():
 
 
 UNI_CHR = _get_special_chr()
-
-try:
-    HDFS_PORT = int(HDFS_PORT)
-except ValueError:
-    raise ValueError("Environment variable HDFS_PORT must be an int")
 
 _FD_MAP = {
     "stdout": sys.stdout.fileno(),
@@ -140,7 +132,7 @@ def make_random_data(size=_RANDOM_DATA_SIZE, printable=True):
 
 
 def get_bytes_per_checksum():
-    params = pydoop.hadoop_params(_HADOOP_CONF_DIR, _HADOOP_HOME)
+    params = pydoop.hadoop_params()
     return int(params.get('dfs.bytes-per-checksum',
                           params.get('io.bytes.per.checksum',
                                      _DEFAULT_BYTES_PER_CHECKSUM)))
