@@ -7,6 +7,5 @@ COPY . /build/pydoop
 WORKDIR /build/pydoop
 
 RUN ${PYTHON} -m pip install --no-cache-dir --upgrade -r requirements.txt \
-    && ${PYTHON} setup.py build \
-    && ${PYTHON} setup.py install --skip-build \
-    && ${PYTHON} setup.py clean
+    && ${PYTHON} setup.py sdist \
+    && ${PYTHON} -m pip install --pre dist/pydoop-$(cat VERSION).tar.gz
