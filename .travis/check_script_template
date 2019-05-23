@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-set -euo pipefail
-[ -n "${DEBUG:-}" ] && set -x
-this="${BASH_SOURCE-$0}"
-this_dir=$(cd -P -- "$(dirname -- "${this}")" && pwd -P)
-
-export PYTHON="python${TRAVIS_PYTHON_VERSION%.*}"
-${PYTHON} "${this_dir}/check_script_template.py" "$@"
