@@ -40,7 +40,6 @@ import time
 import os
 import glob
 import shutil
-import subprocess
 import itertools
 import tempfile
 
