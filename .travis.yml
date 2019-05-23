@@ -35,14 +35,11 @@ script:
  - ./.travis/run_checks
  - docker stop pydoop
 
-before_deploy:
-  - pip install setuptools twine wheel
-
 deploy:
-  provider: script
-  script: .travis/deploy
+  provider: pypi
+  user: "${CI_USER}"
+  password: "${CI_PASS}"
   on:
-    python: "3.6"
-    condition: $HADOOP_VERSION = 3.2.0
+    python: "3.7"
     repo: crs4/pydoop
     tags: true
