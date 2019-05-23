@@ -27,7 +27,7 @@ install: true
 
 before_script:
   - flake8 -v .
-  - ./.travis/check_script_template -v
+  - python .travis/check_script_template.py -v
   - docker build -t crs4/pydoop-docs -f Dockerfile.docs .
 
 script:
