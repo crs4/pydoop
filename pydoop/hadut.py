@@ -138,15 +138,10 @@ def run_tool_cmd(tool, cmd, args=None, properties=None, hadoop_conf_dir=None,
     logger.debug('final args: %r', (_args,))
     if keep_streams:
         p = subprocess.Popen(
-            _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            _args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True,
         )
-        error = ""
-        stderr_iterator = iter(p.stderr.readline, b"")
-        for line in stderr_iterator:
-            error += line
-            logger.info("cmd stderr line: %s", line.strip())
-
-        output, _ = p.communicate()
+        output, error = p.communicate()
     else:
         p = subprocess.Popen(_args, stdout=None, stderr=None, bufsize=1)
         ret = p.wait()
@@ -179,13 +174,6 @@ def run_class(class_name, args=None, properties=None, classpath=None,
     ``classpath`` (either as a non-string sequence where each element
     is a classpath element or as a ``':'``-separated string).  Other
     arguments are passed to :func:`run_cmd`.
-
-    .. code-block:: python
-
-      >>> cls = 'org.apache.hadoop.fs.FsShell'
-      >>> try: out = run_class(cls, args=['-test', '-e', 'file:/tmp'])
-      ... except RunCmdError: tmp_exists = False
-      ... else: tmp_exists = True
 
     .. note::
 

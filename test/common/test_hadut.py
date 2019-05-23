@@ -22,6 +22,7 @@
 Test suite for pydoop.hadut
 """
 
+import subprocess
 import unittest
 
 import pydoop.hadut as hadut
@@ -32,6 +33,11 @@ def pair_set(seq):
 
 
 class TestHadut(unittest.TestCase):
+
+    CHECKNATIVE_OUT, _ = subprocess.Popen(
+        ["hadoop", "checknative"], universal_newlines=True,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ).communicate()
 
     def assertEqualPairSet(self, seq1, seq2):
         return self.assertEqual(pair_set(seq1), pair_set(seq2))
@@ -69,11 +75,23 @@ class TestHadut(unittest.TestCase):
                 args, ['-libjars', 'l2,l1', '-fs', 'f', '-files', 'pippo']
             )
 
+    def test_cmd(self):
+        out = hadut.run_cmd("checknative", keep_streams=True)
+        self.assertEqual(out, self.CHECKNATIVE_OUT)
+
+    def test_run_class(self):
+        out = hadut.run_class(
+            "org.apache.hadoop.util.NativeLibraryChecker", keep_streams=True
+        )
+        self.assertEqual(out, self.CHECKNATIVE_OUT)
+
 
 def suite():
     suite_ = unittest.TestSuite()
     suite_.addTest(TestHadut('test_pop_generic_args'))
     suite_.addTest(TestHadut('test_merge_csv_args'))
+    suite_.addTest(TestHadut('test_cmd'))
+    suite_.addTest(TestHadut('test_run_class'))
     return suite_
 
 
