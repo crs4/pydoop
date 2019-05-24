@@ -40,6 +40,6 @@ usually preserve your environment, you might lose some essential
 setting like ``LD_LIBRARY_PATH``\ .
 
 For this reason, by default ``pydoop submit`` copies some environment
-variables to the driver script that launches the job on Hadoop.  If
-this behavior is not desired, you can disable it via the
+variables from the submitting node to the driver script that runs each task
+on Hadoop.  If this behavior is not desired, you can disable it via the
 ``--no-override-env`` command line option.

@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>News Archive &#8212; Pydoop 2.0a4 documentation</title>
+    <meta charset="utf-8" />
+    <title>News Archive &#8212; Pydoop 2.0.0 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -18,7 +16,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Tutorial" href="../tutorial/index.html" />
-    <link rel="prev" title="New in 2.0a4" href="latest.html" /> 
+    <link rel="prev" title="New in 2.0.0" href="latest.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -33,10 +31,10 @@
           <a href="../tutorial/index.html" title="Tutorial"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="latest.html" title="New in 2.0a4"
+          <a href="latest.html" title="New in 2.0.0"
              accesskey="P">previous</a> |</li>
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
-	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="../installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -76,7 +74,7 @@
 
             <h4>Previous topic</h4>
             <p class="topless"><a href="latest.html"
-                                  title="previous chapter">New in 2.0a4</a></p>
+                                  title="previous chapter">New in 2.0.0</a></p>
             <h4>Next topic</h4>
             <p class="topless"><a href="../tutorial/index.html"
                                   title="next chapter">Tutorial</a></p>
@@ -122,13 +120,13 @@
 <h2>New in 1.2.0<a class="headerlink" href="#new-in-1-2-0" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Added support for Hadoop 2.7.2.</li>
-<li>Dropped support for Python 2.6. Maintaining 2.6 compatibility would
+<li><p>Added support for Hadoop 2.7.2.</p></li>
+<li><p>Dropped support for Python 2.6. Maintaining 2.6 compatibility would
 require adding another dimension to the Travis matrix, vastly
 increasing the build time and ultimately slowing down the
 development. Since the default Python version in all major
-distributions is 2.7, the added effort would gain us little.</li>
-<li>Bug fixes.</li>
+distributions is 2.7, the added effort would gain us little.</p></li>
+<li><p>Bug fixes.</p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -136,15 +134,15 @@ distributions is 2.7, the added effort would gain us little.</li>
 <h2>New in 1.1.0<a class="headerlink" href="#new-in-1-1-0" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Added support for <a class="reference external" href="http://hortonworks.com/hdp/">HDP</a> 2.2.</li>
-<li><a class="reference external" href="https://github.com/Byhiras/pyavroc">Pyavroc</a> is now
+<li><p>Added support for <a class="reference external" href="http://hortonworks.com/hdp/">HDP</a> 2.2.</p></li>
+<li><p><a class="reference external" href="https://github.com/Byhiras/pyavroc">Pyavroc</a> is now
 automatically loaded if installed, enabling much faster (30-40x)
-Avro (de)serialization.</li>
-<li>Added Timer objects to help debug performance issues.</li>
-<li><code class="docutils literal notranslate"><span class="pre">NoSeparatorTextOutputFormat</span></code> is now available for all MR
-versions.</li>
-<li>Added Avro support to the Hadoop Simulator.</li>
-<li>Bug fixes and performance improvements.</li>
+Avro (de)serialization.</p></li>
+<li><p>Added Timer objects to help debug performance issues.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NoSeparatorTextOutputFormat</span></code> is now available for all MR
+versions.</p></li>
+<li><p>Added Avro support to the Hadoop Simulator.</p></li>
+<li><p>Bug fixes and performance improvements.</p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -152,29 +150,29 @@ versions.</li>
 <h2>New in 1.0.0<a class="headerlink" href="#new-in-1-0-0" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Pydoop now features a brand new, more pythonic <a class="reference internal" href="../api_docs/mr_api.html#mr-api"><span class="std std-ref">MapReduce API</span></a></li>
-<li>Added built-in <a class="reference external" href="http://avro.apache.org">Avro</a> support (for now,
+<li><p>Pydoop now features a brand new, more pythonic <a class="reference internal" href="../api_docs/mr_api.html#mr-api"><span class="std std-ref">MapReduce API</span></a></p></li>
+<li><p>Added built-in <a class="reference external" href="http://avro.apache.org">Avro</a> support (for now,
 only with Hadoop 2).  By setting a few flags in the submitter and
 selecting <code class="docutils literal notranslate"><span class="pre">AvroContext</span></code> as your application’s context class, you
 can read and write Avro data, transparently manipulating records as
-Python dictionaries.  See the <a class="reference internal" href="../examples/avro.html#avro-io"><span class="std std-ref">Avro I/O</span></a> docs for further details.</li>
-<li>The new <a class="reference internal" href="../running_pydoop_applications.html#running-apps"><span class="std std-ref">pydoop submit</span></a> tool drastically
+Python dictionaries.  See the <a class="reference internal" href="../examples/avro.html#avro-io"><span class="std std-ref">Avro I/O</span></a> docs for further details.</p></li>
+<li><p>The new <a class="reference internal" href="../running_pydoop_applications.html#running-apps"><span class="std std-ref">pydoop submit</span></a> tool drastically
 simplifies job submission, in particular when running applications
 without installing Pydoop and other dependencies on the cluster
-nodes (see <a class="reference internal" href="../self_contained.html#self-contained"><span class="std std-ref">Installation-free Usage</span></a>).</li>
-<li>Added support for testing Pydoop programs in a simulated Hadoop framework</li>
-<li>Added support (experimental) for MapReduce V2 input/output formats (see
-<a class="reference internal" href="../examples/input_format.html#input-format-example"><span class="std std-ref">Writing a Custom InputFormat</span></a>)</li>
-<li>The <a class="reference internal" href="../api_docs/hdfs_api.html#module-pydoop.hdfs.path" title="pydoop.hdfs.path"><code class="xref py py-mod docutils literal notranslate"><span class="pre">path</span></code></a> module offers many new functions that
-serve as the HDFS-aware counterparts of those in <a class="reference external" href="https://docs.python.org/2.7/library/os.path.html#module-os.path" title="(in Python v2.7)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">os.path</span></code></a></li>
-<li>The pipes backend (except for the performance-critical
-serialization section) has been reimplemented in pure Python</li>
-<li>An alternative (optional) JPype HDFS backend is available
-(currently slower than the one based on libhdfs)</li>
-<li>Added support for CDH5 and Apache Hadoop 2.4.1, 2.5.2 and 2.6.0</li>
-<li>Removed support for CDH3 and Apache Hadoop 0.20.2</li>
-<li>Installation has been greatly simplified: now Pydoop does not
-require any external library to build its native extensions</li>
+nodes (see <a class="reference internal" href="../self_contained.html#self-contained"><span class="std std-ref">Installation-free Usage</span></a>).</p></li>
+<li><p>Added support for testing Pydoop programs in a simulated Hadoop framework</p></li>
+<li><p>Added support (experimental) for MapReduce V2 input/output formats (see
+<a class="reference internal" href="../examples/input_format.html#input-format-example"><span class="std std-ref">Writing a Custom InputFormat</span></a>)</p></li>
+<li><p>The <a class="reference internal" href="../api_docs/hdfs_api.html#module-pydoop.hdfs.path" title="pydoop.hdfs.path"><code class="xref py py-mod docutils literal notranslate"><span class="pre">path</span></code></a> module offers many new functions that
+serve as the HDFS-aware counterparts of those in <a class="reference external" href="https://docs.python.org/2.7/library/os.path.html#module-os.path" title="(in Python v2.7)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">os.path</span></code></a></p></li>
+<li><p>The pipes backend (except for the performance-critical
+serialization section) has been reimplemented in pure Python</p></li>
+<li><p>An alternative (optional) JPype HDFS backend is available
+(currently slower than the one based on libhdfs)</p></li>
+<li><p>Added support for CDH5 and Apache Hadoop 2.4.1, 2.5.2 and 2.6.0</p></li>
+<li><p>Removed support for CDH3 and Apache Hadoop 0.20.2</p></li>
+<li><p>Installation has been greatly simplified: now Pydoop does not
+require any external library to build its native extensions</p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -182,8 +180,8 @@ require any external library to build its native extensions</li>
 <h2>New in 0.12.0<a class="headerlink" href="#new-in-0-12-0" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>YARN is now fully supported</li>
-<li>Added support for CDH 4.4.0 and CDH 4.5.0</li>
+<li><p>YARN is now fully supported</p></li>
+<li><p>Added support for CDH 4.4.0 and CDH 4.5.0</p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -191,8 +189,8 @@ require any external library to build its native extensions</li>
 <h2>New in 0.11.1<a class="headerlink" href="#new-in-0-11-1" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Added support for hadoop 2.2.0</li>
-<li>Added support for hadoop 1.2.1</li>
+<li><p>Added support for hadoop 2.2.0</p></li>
+<li><p>Added support for hadoop 1.2.1</p></li>
 </ul>
 </div></blockquote>
 </div>
@@ -200,46 +198,48 @@ require any external library to build its native extensions</li>
 <h2>New in 0.10.0<a class="headerlink" href="#new-in-0-10-0" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Added support for CDH 4.3.0</li>
-<li>Added a <a class="reference internal" href="../api_docs/hdfs_api.html#pydoop.hdfs.fs.hdfs.walk" title="pydoop.hdfs.fs.hdfs.walk"><code class="xref py py-meth docutils literal notranslate"><span class="pre">walk()</span></code></a> method to hdfs instances
-(works similarly to <a class="reference external" href="https://docs.python.org/2.7/library/os.html#os.walk" title="(in Python v2.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.walk()</span></code></a> from Python’s standard library)</li>
-<li>The Hadoop version parser is now more flexible.  It should be able
+<li><p>Added support for CDH 4.3.0</p></li>
+<li><p>Added a <a class="reference internal" href="../api_docs/hdfs_api.html#pydoop.hdfs.fs.hdfs.walk" title="pydoop.hdfs.fs.hdfs.walk"><code class="xref py py-meth docutils literal notranslate"><span class="pre">walk()</span></code></a> method to hdfs instances
+(works similarly to <a class="reference external" href="https://docs.python.org/2.7/library/os.html#os.walk" title="(in Python v2.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">os.walk()</span></code></a> from Python’s standard library)</p></li>
+<li><p>The Hadoop version parser is now more flexible.  It should be able
 to parse version strings for all CDH releases, including older ones
-(note that most of them are <strong>not</strong> supported)</li>
-<li>Pydoop script can now handle modules whose file name has no extension</li>
-<li>Fixed “unable to load native-hadoop library” problem (thanks to
-Liam Slusser)</li>
+(note that most of them are <strong>not</strong> supported)</p></li>
+<li><p>Pydoop script can now handle modules whose file name has no extension</p></li>
+<li><p>Fixed “unable to load native-hadoop library” problem (thanks to
+Liam Slusser)</p></li>
 </ul>
 </div></blockquote>
 </div>
 <div class="section" id="new-in-0-9-0">
 <h2>New in 0.9.0<a class="headerlink" href="#new-in-0-9-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Added explicit support for:<ul>
-<li>Apache Hadoop 1.1.2</li>
-<li>CDH 4.2.0</li>
+<li><p>Added explicit support for:</p>
+<ul>
+<li><p>Apache Hadoop 1.1.2</p></li>
+<li><p>CDH 4.2.0</p></li>
 </ul>
 </li>
-<li>Added support for Cloudera from-parcels layout (as installed by
-Cloudera Manager)</li>
-<li>Added <a class="reference internal" href="../api_docs/hdfs_api.html#pydoop.hdfs.move" title="pydoop.hdfs.move"><code class="xref py py-func docutils literal notranslate"><span class="pre">pydoop.hdfs.move()</span></code></a></li>
-<li>Record writers can now be used in map-only jobs</li>
+<li><p>Added support for Cloudera from-parcels layout (as installed by
+Cloudera Manager)</p></li>
+<li><p>Added <a class="reference internal" href="../api_docs/hdfs_api.html#pydoop.hdfs.move" title="pydoop.hdfs.move"><code class="xref py py-func docutils literal notranslate"><span class="pre">pydoop.hdfs.move()</span></code></a></p></li>
+<li><p>Record writers can now be used in map-only jobs</p></li>
 </ul>
 </div>
 <div class="section" id="new-in-0-8-1">
 <h2>New in 0.8.1<a class="headerlink" href="#new-in-0-8-1" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Fixed a problem that was breaking installation from PyPI via pip install</li>
+<li><p>Fixed a problem that was breaking installation from PyPI via pip install</p></li>
 </ul>
 </div>
 <div class="section" id="new-in-0-8-0">
 <h2>New in 0.8.0<a class="headerlink" href="#new-in-0-8-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Added support for Apple OS X Mountain Lion</li>
-<li>Added support for Hadoop 1.1.1</li>
-<li>Patches now include a fix for <a class="reference external" href="https://issues.apache.org/jira/browse/HDFS-829">HDFS-829</a></li>
-<li>Restructured docs<ul>
-<li>A separate tutorial section collects and expands introductory material</li>
+<li><p>Added support for Apple OS X Mountain Lion</p></li>
+<li><p>Added support for Hadoop 1.1.1</p></li>
+<li><p>Patches now include a fix for <a class="reference external" href="https://issues.apache.org/jira/browse/HDFS-829">HDFS-829</a></p></li>
+<li><p>Restructured docs</p>
+<ul>
+<li><p>A separate tutorial section collects and expands introductory material</p></li>
 </ul>
 </li>
 </ul>
@@ -247,21 +247,22 @@ Cloudera Manager)</li>
 <div class="section" id="new-in-0-7-0">
 <h2>New in 0.7.0<a class="headerlink" href="#new-in-0-7-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Added Debian package</li>
+<li><p>Added Debian package</p></li>
 </ul>
 </div>
 <div class="section" id="new-in-0-7-0-rc3">
 <h2>New in 0.7.0-rc3<a class="headerlink" href="#new-in-0-7-0-rc3" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Fixed a bug in the hdfs instance caching method</li>
+<li><p>Fixed a bug in the hdfs instance caching method</p></li>
 </ul>
 </div>
 <div class="section" id="new-in-0-7-0-rc2">
 <h2>New in 0.7.0-rc2<a class="headerlink" href="#new-in-0-7-0-rc2" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Support for HDFS append open mode<ul>
-<li>fails if your Hadoop version and/or configuration does not support
-HDFS append</li>
+<li><p>Support for HDFS append open mode</p>
+<ul>
+<li><p>fails if your Hadoop version and/or configuration does not support
+HDFS append</p></li>
 </ul>
 </li>
 </ul>
@@ -269,29 +270,33 @@ HDFS append</li>
 <div class="section" id="new-in-0-7-0-rc1">
 <h2>New in 0.7.0-rc1<a class="headerlink" href="#new-in-0-7-0-rc1" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Works with CDH4, with the following limitations:<ul>
-<li>support for MapReduce v1 only</li>
-<li>CDH4 must be installed from dist-specific packages (no tarball)</li>
+<li><p>Works with CDH4, with the following limitations:</p>
+<ul>
+<li><p>support for MapReduce v1 only</p></li>
+<li><p>CDH4 must be installed from dist-specific packages (no tarball)</p></li>
 </ul>
 </li>
-<li>Tested with the latest releases of other Hadoop versions<ul>
-<li>Apache Hadoop 0.20.2, 1.0.4</li>
-<li>CDH 3u5, 4.1.2</li>
+<li><p>Tested with the latest releases of other Hadoop versions</p>
+<ul>
+<li><p>Apache Hadoop 0.20.2, 1.0.4</p></li>
+<li><p>CDH 3u5, 4.1.2</p></li>
 </ul>
 </li>
-<li>Simpler build process<ul>
-<li>the source code we need is now included, rather than searched for
-at compile time</li>
+<li><p>Simpler build process</p>
+<ul>
+<li><p>the source code we need is now included, rather than searched for
+at compile time</p></li>
 </ul>
 </li>
-<li>Pydoop scripts can now accept user-defined configuration parameters<ul>
-<li>New examples show how to use the new feature</li>
+<li><p>Pydoop scripts can now accept user-defined configuration parameters</p>
+<ul>
+<li><p>New examples show how to use the new feature</p></li>
 </ul>
 </li>
-<li>New wrapper object makes it easier to interact with the JobConf</li>
-<li>New hdfs.path functions: isdir, isfile, kind</li>
-<li>HDFS: support for string description of permission modes in chmod</li>
-<li>Several bug fixes</li>
+<li><p>New wrapper object makes it easier to interact with the JobConf</p></li>
+<li><p>New hdfs.path functions: isdir, isfile, kind</p></li>
+<li><p>HDFS: support for string description of permission modes in chmod</p></li>
+<li><p>Several bug fixes</p></li>
 </ul>
 </div>
 <div class="section" id="new-in-0-6-6">
@@ -314,30 +319,30 @@ Hadoop.  This happens when you set a <code class="docutils literal notranslate">
 <div class="section" id="new-in-0-6-0">
 <h2>New in 0.6.0<a class="headerlink" href="#new-in-0-6-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>The HDFS API features new high-level tools for easier manipulation
+<li><p>The HDFS API features new high-level tools for easier manipulation
 of files and directories. See the <a class="reference internal" href="../api_docs/hdfs_api.html#hdfs-api"><span class="std std-ref">API docs</span></a> for
-more info</li>
-<li>Examples have been thoroughly revised in order to make them easier
-to understand and run</li>
-<li>Several bugs were fixed; we also introduced a few optimizations,
-most notably the automatic caching of HDFS instances</li>
+more info</p></li>
+<li><p>Examples have been thoroughly revised in order to make them easier
+to understand and run</p></li>
+<li><p>Several bugs were fixed; we also introduced a few optimizations,
+most notably the automatic caching of HDFS instances</p></li>
 </ul>
 </div>
 <div class="section" id="new-in-0-5-0">
 <h2>New in 0.5.0<a class="headerlink" href="#new-in-0-5-0" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Pydoop now works with Hadoop 1.0</li>
-<li>Multiple versions of Hadoop can now be supported by the same
-installation of Pydoop.</li>
-<li>We have added a <a class="reference internal" href="../tutorial/pydoop_script.html#pydoop-script-tutorial"><span class="std std-ref">command line tool</span></a> to
+<li><p>Pydoop now works with Hadoop 1.0</p></li>
+<li><p>Multiple versions of Hadoop can now be supported by the same
+installation of Pydoop.</p></li>
+<li><p>We have added a <a class="reference internal" href="../tutorial/pydoop_script.html#pydoop-script-tutorial"><span class="std std-ref">command line tool</span></a> to
 make it trivially simple to write shorts scripts for simple
-problems.</li>
-<li>In order to work out-of-the-box, Pydoop now requires Pydoop 2.7.
+problems.</p></li>
+<li><p>In order to work out-of-the-box, Pydoop now requires Pydoop 2.7.
 Python 2.6 can be used provided that you install a few additional
 modules (see the <a class="reference internal" href="../installation.html#installation"><span class="std std-ref">installation</span></a> page for
-details).</li>
-<li>We have dropped support for the 0.21 branch of Hadoop, which has
-been marked as unstable and unsupported by Hadoop developers.</li>
+details).</p></li>
+<li><p>We have dropped support for the 0.21 branch of Hadoop, which has
+been marked as unstable and unsupported by Hadoop developers.</p></li>
 </ul>
 </div>
 </div>
@@ -361,10 +366,10 @@ been marked as unstable and unsupported by Hadoop developers.</li>
           <a href="../tutorial/index.html" title="Tutorial"
              >next</a> |</li>
         <li class="right" >
-          <a href="latest.html" title="New in 2.0a4"
+          <a href="latest.html" title="New in 2.0.0"
              >previous</a> |</li>
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
-	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="../installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -374,7 +379,7 @@ been marked as unstable and unsupported by Hadoop developers.</li>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2009-2019, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
     </div>
   </body>
 </html>

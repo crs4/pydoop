@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Pydoop Submit User Guide &#8212; Pydoop 2.0a4 documentation</title>
+    <meta charset="utf-8" />
+    <title>Pydoop Submit User Guide &#8212; Pydoop 2.0.0 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -36,7 +34,7 @@
           <a href="pydoop_script.html" title="Pydoop Script User Guide"
              accesskey="P">previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
-	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -121,138 +119,138 @@ overwritten: instead, an error will be generated if it already exists
 when you launch the program.</p>
 <p>If your entry point has a different name, specify it via <code class="docutils literal notranslate"><span class="pre">--entry-point</span></code>.</p>
 <p>The following table shows command line options for <code class="docutils literal notranslate"><span class="pre">pydoop</span> <span class="pre">submit</span></code>:</p>
-<table border="1" class="docutils">
+<table class="docutils align-center">
 <colgroup>
-<col width="4%" />
-<col width="20%" />
-<col width="76%" />
+<col style="width: 4%" />
+<col style="width: 20%" />
+<col style="width: 76%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Short</th>
-<th class="head">Long</th>
-<th class="head">Meaning</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Short</p></th>
+<th class="head"><p>Long</p></th>
+<th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--num-reducers</span></code></td>
-<td>Number of reduce tasks. Specify 0 to only perform map phase</td>
+<tbody>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--num-reducers</span></code></p></td>
+<td><p>Number of reduce tasks. Specify 0 to only perform map phase</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-home</span></code></td>
-<td>Don’t set the script’s HOME directory to the $HOME in your environment.  Hadoop will set it to the value of the ‘mapreduce.admin.user.home.dir’ property</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-home</span></code></p></td>
+<td><p>Don’t set the script’s HOME directory to the $HOME in your environment.  Hadoop will set it to the value of the ‘mapreduce.admin.user.home.dir’ property</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-env</span></code></td>
-<td>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-env</span></code></p></td>
+<td><p>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-ld-path</span></code></td>
-<td>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-ld-path</span></code></p></td>
+<td><p>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-pypath</span></code></td>
-<td>Use the default PYTHONPATH instead of copying it from the submitting client node</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-pypath</span></code></p></td>
+<td><p>Use the default PYTHONPATH instead of copying it from the submitting client node</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-path</span></code></td>
-<td>Use the default PATH instead of copying it from the submitting client node</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-path</span></code></p></td>
+<td><p>Use the default PATH instead of copying it from the submitting client node</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--set-env</span></code></td>
-<td>Set environment variables for the tasks. If a variable is set to ‘’, it will not be overridden by Pydoop.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--set-env</span></code></p></td>
+<td><p>Set environment variables for the tasks. If a variable is set to ‘’, it will not be overridden by Pydoop.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-D</span></code></td>
-<td><code class="docutils literal notranslate"><span class="pre">--job-conf</span></code></td>
-<td>Set a Hadoop property, e.g., -D mapreduce.job.priority=high</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-D</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--job-conf</span></code></p></td>
+<td><p>Set a Hadoop property, e.g., -D mapreduce.job.priority=high</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--python-zip</span></code></td>
-<td>Additional python zip file</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--python-zip</span></code></p></td>
+<td><p>Additional python zip file</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--upload-file-to-cache</span></code></td>
-<td>Upload and add this file to the distributed cache.</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--upload-file-to-cache</span></code></p></td>
+<td><p>Upload and add this file to the distributed cache.</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--upload-archive-to-cache</span></code></td>
-<td>Upload and add this archive file to the distributed cache.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--upload-archive-to-cache</span></code></p></td>
+<td><p>Upload and add this archive file to the distributed cache.</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--log-level</span></code></td>
-<td>Logging level</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--log-level</span></code></p></td>
+<td><p>Logging level</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--job-name</span></code></td>
-<td>name of the job</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--job-name</span></code></p></td>
+<td><p>name of the job</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--python-program</span></code></td>
-<td>python executable that should be used by the wrapper</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--python-program</span></code></p></td>
+<td><p>python executable that should be used by the wrapper</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--pretend</span></code></td>
-<td>Do not actually submit a job, print the generated config settings and the command line that would be invoked</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--pretend</span></code></p></td>
+<td><p>Do not actually submit a job, print the generated config settings and the command line that would be invoked</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--hadoop-conf</span></code></td>
-<td>Hadoop configuration file</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--hadoop-conf</span></code></p></td>
+<td><p>Hadoop configuration file</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--input-format</span></code></td>
-<td>java classname of InputFormat</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--input-format</span></code></p></td>
+<td><p>java classname of InputFormat</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--disable-property-name-conversion</span></code></td>
-<td>Do not adapt property names to the hadoop version used.</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--disable-property-name-conversion</span></code></p></td>
+<td><p>Do not adapt property names to the hadoop version used.</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--do-not-use-java-record-reader</span></code></td>
-<td>Disable java RecordReader</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--do-not-use-java-record-reader</span></code></p></td>
+<td><p>Disable java RecordReader</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--do-not-use-java-record-writer</span></code></td>
-<td>Disable java RecordWriter</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--do-not-use-java-record-writer</span></code></p></td>
+<td><p>Disable java RecordWriter</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--output-format</span></code></td>
-<td>java classname of OutputFormat</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--output-format</span></code></p></td>
+<td><p>java classname of OutputFormat</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--libjars</span></code></td>
-<td>Additional comma-separated list of jar files</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--libjars</span></code></p></td>
+<td><p>Additional comma-separated list of jar files</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--cache-file</span></code></td>
-<td>Add this HDFS file to the distributed cache as a file.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--cache-file</span></code></p></td>
+<td><p>Add this HDFS file to the distributed cache as a file.</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--cache-archive</span></code></td>
-<td>Add this HDFS archive file to the distributed cacheas an archive.</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--cache-archive</span></code></p></td>
+<td><p>Add this HDFS archive file to the distributed cacheas an archive.</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--entry-point</span></code></td>
-<td>Explicitly execute MODULE.ENTRY_POINT() in the launcher script.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--entry-point</span></code></p></td>
+<td><p>Explicitly execute MODULE.ENTRY_POINT() in the launcher script.</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--avro-input</span></code></td>
-<td>Avro input mode (key, value or both)</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--avro-input</span></code></p></td>
+<td><p>Avro input mode (key, value or both)</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--avro-output</span></code></td>
-<td>Avro output mode (key, value or both)</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--avro-output</span></code></p></td>
+<td><p>Avro output mode (key, value or both)</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--pstats-dir</span></code></td>
-<td>Profile each task and store stats in this dir</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--pstats-dir</span></code></p></td>
+<td><p>Profile each task and store stats in this dir</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--pstats-fmt</span></code></td>
-<td>pstats filename pattern (expert use only)</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--pstats-fmt</span></code></p></td>
+<td><p>pstats filename pattern (expert use only)</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--keep-wd</span></code></td>
-<td>Don’t remove the work dir</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--keep-wd</span></code></p></td>
+<td><p>Don’t remove the work dir</p></td>
 </tr>
 </tbody>
 </table>
@@ -264,8 +262,8 @@ as your home directory. Since non-interactive ssh connections do not
 usually preserve your environment, you might lose some essential
 setting like <code class="docutils literal notranslate"><span class="pre">LD_LIBRARY_PATH</span></code>.</p>
 <p>For this reason, by default <code class="docutils literal notranslate"><span class="pre">pydoop</span> <span class="pre">submit</span></code> copies some environment
-variables to the driver script that launches the job on Hadoop.  If
-this behavior is not desired, you can disable it via the
+variables from the submitting node to the driver script that runs each task
+on Hadoop.  If this behavior is not desired, you can disable it via the
 <code class="docutils literal notranslate"><span class="pre">--no-override-env</span></code> command line option.</p>
 </div>
 </div>
@@ -292,7 +290,7 @@ this behavior is not desired, you can disable it via the
           <a href="pydoop_script.html" title="Pydoop Script User Guide"
              >previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
-	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -301,7 +299,7 @@ this behavior is not desired, you can disable it via the
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2009-2019, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
     </div>
   </body>
 </html>

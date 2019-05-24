@@ -3,8 +3,6 @@
 API Docs
 ========
 
-Contents:
-
 .. toctree::
 
    mr_api

@@ -13,7 +13,6 @@
    :members:
 
 .. automodule:: pydoop.hdfs.file
-   :members:
+   :members: FileIO
 
-.. automodule:: pydoop.hdfs.common
-   :members:
+.. autoclass:: pydoop.hdfs.file.local_file

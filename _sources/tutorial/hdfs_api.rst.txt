@@ -16,7 +16,7 @@ directories and global file system properties:
 Low-level API
 -------------
 
-However convenient, the high level API showcased above is inefficient
+The high level API showcased above can be inefficient
 when performing multiple operations on the same HDFS instance. This is
 due to the fact that, under the hood, each function opens a separate
 connection to the HDFS server and closes it before returning. The
