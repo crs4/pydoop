@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>The HDFS API &#8212; Pydoop 2.0a4 documentation</title>
+    <meta charset="utf-8" />
+    <title>The HDFS API &#8212; Pydoop 2.0.0 documentation</title>
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -36,7 +34,7 @@
           <a href="pydoop_script.html" title="Easy Hadoop Scripting with Pydoop Script"
              accesskey="P">previous</a> |</li>
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
-	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="../installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -131,7 +129,7 @@ directories and global file system properties:</p>
 <span class="gp">...</span>
 <span class="go">&#39;hello, world&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">hdfs</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;/tmp/hello.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;test.copy/hello.txt.copy&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">hdfs</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="s1">&#39;test.copy&#39;</span><span class="p">):</span> <span class="k">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">hdfs</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">hdfs</span><span class="o">.</span><span class="n">ls</span><span class="p">(</span><span class="s1">&#39;test.copy&#39;</span><span class="p">)):</span> <span class="k">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">hdfs</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
 <span class="gp">...</span>
 <span class="go">&#39;hello.txt&#39;</span>
 <span class="go">&#39;hello.txt.copy&#39;</span>
@@ -148,7 +146,7 @@ directories and global file system properties:</p>
 </div>
 <div class="section" id="low-level-api">
 <h2>Low-level API<a class="headerlink" href="#low-level-api" title="Permalink to this headline">¶</a></h2>
-<p>However convenient, the high level API showcased above is inefficient
+<p>The high level API showcased above can be inefficient
 when performing multiple operations on the same HDFS instance. This is
 due to the fact that, under the hood, each function opens a separate
 connection to the HDFS server and closes it before returning. The
@@ -206,7 +204,7 @@ is located under <code class="docutils literal notranslate"><span class="pre">ex
           <a href="pydoop_script.html" title="Easy Hadoop Scripting with Pydoop Script"
              >previous</a> |</li>
 	<li><a href="../index.html">Home</a>|&nbsp;</li>
-	<li><a href="../installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="../installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -216,7 +214,7 @@ is located under <code class="docutils literal notranslate"><span class="pre">ex
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2009-2019, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
     </div>
   </body>
 </html>

@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Pydoop Script User Guide &#8212; Pydoop 2.0a4 documentation</title>
+    <meta charset="utf-8" />
+    <title>Pydoop Script User Guide &#8212; Pydoop 2.0.0 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -36,7 +34,7 @@
           <a href="installation.html" title="Installation"
              accesskey="P">previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
-	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -129,106 +127,106 @@ your map and reduce functions, in Python, while <code class="docutils literal no
 <code class="docutils literal notranslate"><span class="pre">OUTPUT</span></code> are, respectively, the HDFS paths of your input data and
 your job’s output directory.</p>
 <p>Options are shown in the following table.</p>
-<table border="1" class="docutils">
+<table class="docutils align-center">
 <colgroup>
-<col width="4%" />
-<col width="16%" />
-<col width="80%" />
+<col style="width: 4%" />
+<col style="width: 16%" />
+<col style="width: 80%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Short</th>
-<th class="head">Long</th>
-<th class="head">Meaning</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Short</p></th>
+<th class="head"><p>Long</p></th>
+<th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--num-reducers</span></code></td>
-<td>Number of reduce tasks. Specify 0 to only perform map phase</td>
+<tbody>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--num-reducers</span></code></p></td>
+<td><p>Number of reduce tasks. Specify 0 to only perform map phase</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-home</span></code></td>
-<td>Don’t set the script’s HOME directory to the $HOME in your environment.  Hadoop will set it to the value of the ‘mapreduce.admin.user.home.dir’ property</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-home</span></code></p></td>
+<td><p>Don’t set the script’s HOME directory to the $HOME in your environment.  Hadoop will set it to the value of the ‘mapreduce.admin.user.home.dir’ property</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-env</span></code></td>
-<td>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-env</span></code></p></td>
+<td><p>Use the default PATH, LD_LIBRARY_PATH and PYTHONPATH, instead of copying them from the submitting client node</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-ld-path</span></code></td>
-<td>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-ld-path</span></code></p></td>
+<td><p>Use the default LD_LIBRARY_PATH instead of copying it from the submitting client node</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-pypath</span></code></td>
-<td>Use the default PYTHONPATH instead of copying it from the submitting client node</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-pypath</span></code></p></td>
+<td><p>Use the default PYTHONPATH instead of copying it from the submitting client node</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--no-override-path</span></code></td>
-<td>Use the default PATH instead of copying it from the submitting client node</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--no-override-path</span></code></p></td>
+<td><p>Use the default PATH instead of copying it from the submitting client node</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--set-env</span></code></td>
-<td>Set environment variables for the tasks. If a variable is set to ‘’, it will not be overridden by Pydoop.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--set-env</span></code></p></td>
+<td><p>Set environment variables for the tasks. If a variable is set to ‘’, it will not be overridden by Pydoop.</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-D</span></code></td>
-<td><code class="docutils literal notranslate"><span class="pre">--job-conf</span></code></td>
-<td>Set a Hadoop property, e.g., -D mapreduce.job.priority=high</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-D</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--job-conf</span></code></p></td>
+<td><p>Set a Hadoop property, e.g., -D mapreduce.job.priority=high</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--python-zip</span></code></td>
-<td>Additional python zip file</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--python-zip</span></code></p></td>
+<td><p>Additional python zip file</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--upload-file-to-cache</span></code></td>
-<td>Upload and add this file to the distributed cache.</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--upload-file-to-cache</span></code></p></td>
+<td><p>Upload and add this file to the distributed cache.</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--upload-archive-to-cache</span></code></td>
-<td>Upload and add this archive file to the distributed cache.</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--upload-archive-to-cache</span></code></p></td>
+<td><p>Upload and add this archive file to the distributed cache.</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--log-level</span></code></td>
-<td>Logging level</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--log-level</span></code></p></td>
+<td><p>Logging level</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--job-name</span></code></td>
-<td>name of the job</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--job-name</span></code></p></td>
+<td><p>name of the job</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--python-program</span></code></td>
-<td>python executable that should be used by the wrapper</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--python-program</span></code></p></td>
+<td><p>python executable that should be used by the wrapper</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--pretend</span></code></td>
-<td>Do not actually submit a job, print the generated config settings and the command line that would be invoked</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--pretend</span></code></p></td>
+<td><p>Do not actually submit a job, print the generated config settings and the command line that would be invoked</p></td>
 </tr>
-<tr class="row-odd"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--hadoop-conf</span></code></td>
-<td>Hadoop configuration file</td>
+<tr class="row-odd"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--hadoop-conf</span></code></p></td>
+<td><p>Hadoop configuration file</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--input-format</span></code></td>
-<td>java classname of InputFormat</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--input-format</span></code></p></td>
+<td><p>java classname of InputFormat</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-m</span></code></td>
-<td><code class="docutils literal notranslate"><span class="pre">--map-fn</span></code></td>
-<td>name of map function within module</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-m</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--map-fn</span></code></p></td>
+<td><p>name of map function within module</p></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">-r</span></code></td>
-<td><code class="docutils literal notranslate"><span class="pre">--reduce-fn</span></code></td>
-<td>name of reduce function within module</td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-r</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--reduce-fn</span></code></p></td>
+<td><p>name of reduce function within module</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-c</span></code></td>
-<td><code class="docutils literal notranslate"><span class="pre">--combine-fn</span></code></td>
-<td>name of combine function within module</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--combine-fn</span></code></p></td>
+<td><p>name of combine function within module</p></td>
 </tr>
-<tr class="row-even"><td>&#160;</td>
-<td><code class="docutils literal notranslate"><span class="pre">--combiner-fn</span></code></td>
-<td>–combine-fn alias for backwards compatibility</td>
+<tr class="row-even"><td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--combiner-fn</span></code></p></td>
+<td><p>–combine-fn alias for backwards compatibility</p></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">-t</span></code></td>
-<td><code class="docutils literal notranslate"><span class="pre">--kv-separator</span></code></td>
-<td>output key-value separator</td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-t</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--kv-separator</span></code></p></td>
+<td><p>output key-value separator</p></td>
 </tr>
 </tbody>
 </table>
@@ -282,12 +280,12 @@ and <code class="docutils literal notranslate"><span class="pre">TextOutputForma
 <p>The <code class="docutils literal notranslate"><span class="pre">mapper</span></code> function in your module will be called for each record
 in your input data.  It receives 3 parameters:</p>
 <ol class="arabic simple">
-<li>key: the byte offset with respect to the current input file. In most cases,
-you can ignore it;</li>
-<li>value: the line of text to be processed;</li>
-<li>writer object: a Python object to write output and count values (see below);</li>
-<li>optionally, a job conf object from which to fetch configuration
-property values (see <a class="reference internal" href="#accessing-parameters">Accessing Parameters</a> below).</li>
+<li><p>key: the byte offset with respect to the current input file. In most cases,
+you can ignore it;</p></li>
+<li><p>value: the line of text to be processed;</p></li>
+<li><p>writer object: a Python object to write output and count values (see below);</p></li>
+<li><p>optionally, a job conf object from which to fetch configuration
+property values (see <a class="reference internal" href="#accessing-parameters">Accessing Parameters</a> below).</p></li>
 </ol>
 </div>
 <div class="section" id="combiner">
@@ -295,13 +293,13 @@ property values (see <a class="reference internal" href="#accessing-parameters">
 <p>The <code class="docutils literal notranslate"><span class="pre">combiner</span></code> function will be called for each unique key-value pair
 produced by your map function.  It also receives 3 parameters:</p>
 <ol class="arabic simple">
-<li>key: the key produced by your map function</li>
-<li>values iterable: iterate over this parameter to see all the values emitted
-for the current key</li>
-<li>writer object: a writer object identical to the one given to the
-map function</li>
-<li>optionally, a job conf object, identical to the one given to the
-map function.</li>
+<li><p>key: the key produced by your map function</p></li>
+<li><p>values iterable: iterate over this parameter to see all the values emitted
+for the current key</p></li>
+<li><p>writer object: a writer object identical to the one given to the
+map function</p></li>
+<li><p>optionally, a job conf object, identical to the one given to the
+map function.</p></li>
 </ol>
 <p>The key-value pair emitted by your combiner will be piped to the reducer.</p>
 </div>
@@ -310,12 +308,12 @@ map function.</li>
 <p>The <code class="docutils literal notranslate"><span class="pre">reducer</span></code> function will be called for each unique key-value pair
 produced by your map function.  It also receives 3 parameters:</p>
 <ol class="arabic simple">
-<li>key: the key produced by your map function;</li>
-<li>values iterable: iterate over this parameter to traverse all the
-values emitted for the current key;</li>
-<li>writer object: this is identical to the one given to the map function;</li>
-<li>optionally, a job conf object, identical to the one given to the
-map function.</li>
+<li><p>key: the key produced by your map function;</p></li>
+<li><p>values iterable: iterate over this parameter to traverse all the
+values emitted for the current key;</p></li>
+<li><p>writer object: this is identical to the one given to the map function;</p></li>
+<li><p>optionally, a job conf object, identical to the one given to the
+map function.</p></li>
 </ol>
 <p>The key-value pair emitted by your reducer will be joined by the
 key-value separator specified with the <code class="docutils literal notranslate"><span class="pre">--kv-separator</span></code> option
@@ -326,20 +324,19 @@ key-value separator specified with the <code class="docutils literal notranslate
 <p>The writer object given as the third parameter to both the <code class="docutils literal notranslate"><span class="pre">mapper</span></code>
 and <code class="docutils literal notranslate"><span class="pre">reducer</span></code> functions has the following methods:</p>
 <ul class="simple">
-<li><code class="docutils literal notranslate"><span class="pre">emit(k,</span> <span class="pre">v)</span></code>: pass a <code class="docutils literal notranslate"><span class="pre">(k,</span> <span class="pre">v)</span></code> key-value pair to the framework;</li>
-<li><code class="docutils literal notranslate"><span class="pre">count(what,</span> <span class="pre">how_many)</span></code>: add <code class="docutils literal notranslate"><span class="pre">how_many</span></code> to the counter named
+<li><p><code class="docutils literal notranslate"><span class="pre">emit(k,</span> <span class="pre">v)</span></code>: pass a <code class="docutils literal notranslate"><span class="pre">(k,</span> <span class="pre">v)</span></code> key-value pair to the framework;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">count(what,</span> <span class="pre">how_many)</span></code>: add <code class="docutils literal notranslate"><span class="pre">how_many</span></code> to the counter named
 <code class="docutils literal notranslate"><span class="pre">what</span></code>.  If the counter doesn’t already exist, it will be created
-dynamically;</li>
-<li><code class="docutils literal notranslate"><span class="pre">status(msg)</span></code>: update the task status to <code class="docutils literal notranslate"><span class="pre">msg</span></code>;</li>
-<li><code class="docutils literal notranslate"><span class="pre">progress()</span></code>: mark your task as having made progress without changing
-the status message.</li>
+dynamically;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">status(msg)</span></code>: update the task status to <code class="docutils literal notranslate"><span class="pre">msg</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">progress()</span></code>: mark your task as having made progress without changing
+the status message.</p></li>
 </ul>
 <p>The latter two methods are useful for keeping your task alive in cases
 where the amount of computation to be done for a single record might
-exceed Hadoop’s timeout interval: Hadoop kills a task after a number
-of milliseconds set through the <code class="docutils literal notranslate"><span class="pre">mapreduce.task.timeout</span></code> property –
-which defaults to 600000, i.e., 10 minutes – if it neither reads an
-input, writes an output, nor updates its status string.</p>
+exceed Hadoop’s timeout interval (Hadoop kills a task if it neither reads an
+input, writes an output, nor updates its status for a configurable amount
+of time, set to 10 minutes by default).</p>
 </div>
 <div class="section" id="accessing-parameters">
 <h3>Accessing Parameters<a class="headerlink" href="#accessing-parameters" title="Permalink to this headline">¶</a></h3>
@@ -389,7 +386,7 @@ separated by the key-value separator.</p>
           <a href="installation.html" title="Installation"
              >previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
-	<li><a href="installation.html">Download & Install</a>|&nbsp;</li>
+	<li><a href="installation.html">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -398,7 +395,7 @@ separated by the key-value separator.</p>
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2009-2019, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
     </div>
   </body>
 </html>

@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Installation &#8212; Pydoop 2.0a4 documentation</title>
+    <meta charset="utf-8" />
+    <title>Installation &#8212; Pydoop 2.0.0 documentation</title>
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -36,7 +34,7 @@
           <a href="tutorial/mapred_api.html" title="Writing Full-Featured Applications"
              accesskey="P">previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
-	<li><a href="#">Download & Install</a>|&nbsp;</li>
+	<li><a href="#">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -52,13 +50,13 @@
             <h3><a href="index.html">Table Of Contents</a></h3>
             <ul>
 <li><a class="reference internal" href="#">Installation</a><ul>
-<li><a class="reference internal" href="#supported-platforms">Supported Platforms</a></li>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#environment-setup">Environment Setup</a></li>
 <li><a class="reference internal" href="#building-and-installing">Building and Installing</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
 <li><a class="reference internal" href="#testing-your-installation">Testing your Installation</a></li>
 <li><a class="reference internal" href="#using-pydoop-on-amazon-emr">Using Pydoop on Amazon EMR</a></li>
+<li><a class="reference internal" href="#trying-pydoop-without-installing-it">Trying Pydoop without installing it</a></li>
 </ul>
 </li>
 </ul>
@@ -107,73 +105,62 @@
             
   <div class="section" id="installation">
 <span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
-<p>The fastest way to try Pydoop is via the <a class="reference external" href="https://www.docker.com/">Docker</a>
-image:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>docker pull crs4/pydoop
-export PORT_FW=&quot;-p 8020:8020 -p 8042:8042 -p 8088:8088 -p 9000:9000 -p 10020:10020 -p 19888:19888 -p 9866:9866 -p 9867:9867 -p 9870:9870 -p 9864:9864 -p 9868:9868&quot;
-docker run ${PORT_FW} --name pydoop -d crs4/pydoop
-</pre></div>
-</div>
-<p>This spins up a single-node, <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation">pseudo-distributed</a>
-Hadoop cluster with <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html#Introduction">HDFS</a>,
-<a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html">YARN</a>
-and a Job History server. To check that all daemons are up and running, you
-can run <code class="docutils literal notranslate"><span class="pre">jps</span></code> on the container. If everything is OK, you should get something
-like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ docker exec -it pydoop bash -c &#39;jps | grep -v Jps&#39;
-161 DataNode
-356 NodeManager
-523 JobHistoryServer
-75 NameNode
-301 ResourceManager
-</pre></div>
-</div>
-<p>Read on for detailed installation instructions.</p>
-<div class="section" id="supported-platforms">
-<h2>Supported Platforms<a class="headerlink" href="#supported-platforms" title="Permalink to this headline">¶</a></h2>
-<p>At the moment, Pydoop is being tested on <a class="reference external" href="http://www.centos.org">CentOS</a> 7
-only, although it should also work on other Linux distros and (possibly with
-some tweaking) on macOS. Windows is <strong>not</strong> supported.</p>
-</div>
 <div class="section" id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>We regularly test Pydoop on Ubuntu only, but it should also work on other
+Linux distros and (possibly with some tweaking) on macOS. Other platforms are
+<strong>not</strong> supported. Additional requirements:</p>
 <ul class="simple">
-<li><a class="reference external" href="http://www.python.org">Python</a> 2 or 3 (tested with 2.7 and 3.6),
-including header files (e.g., <code class="docutils literal notranslate"><span class="pre">python-devel</span></code> on CentOS, <code class="docutils literal notranslate"><span class="pre">python-dev</span></code> on
-Debian);</li>
-<li><a class="reference external" href="https://pypi.python.org/pypi/setuptools">setuptools</a> &gt;= 3.3;</li>
-<li>Hadoop &gt;=2. We currently run regular CI tests with the latest versions of
+<li><p><a class="reference external" href="http://www.python.org">Python</a> 2 or 3, including header files (e.g.,
+<code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">python-dev</span></code>, <code class="docutils literal notranslate"><span class="pre">yum</span> <span class="pre">install</span> <span class="pre">python-devel</span></code>);</p></li>
+<li><p><a class="reference external" href="https://pypi.python.org/pypi/setuptools">setuptools</a> &gt;= 3.3;</p></li>
+<li><p>Hadoop &gt;=2. We run regular CI tests with recent versions of
 <a class="reference external" href="http://hadoop.apache.org/releases.html">Apache Hadoop</a> 2.x and 3.x,
-but we expect Pydoop to also work on other Hadoop distributions. In
+but we expect Pydoop to also work with other Hadoop distributions. In
 particular, we have tested it on <a class="reference external" href="https://aws.amazon.com/emr">Amazon EMR</a>
-(see <a class="reference internal" href="#emr"><span class="std std-ref">Using Pydoop on Amazon EMR</span></a>).</li>
+(see <a class="reference internal" href="#emr"><span class="std std-ref">Using Pydoop on Amazon EMR</span></a>).</p></li>
 </ul>
-<p>These are both build time and run time requirements. At build time only, you
-will also need a C++ compiler (e.g., <code class="docutils literal notranslate"><span class="pre">yum</span> <span class="pre">install</span> <span class="pre">gcc</span> <span class="pre">gcc-c++</span></code>) and a JDK
-(i.e., a JRE alone is not sufficient) for Pydoop’s extension modules.</p>
+<p>These are both build time and run time requirements. At build time you will
+also need a C++ compiler (e.g., <code class="docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">build-essential</span></code>, <code class="docutils literal notranslate"><span class="pre">yum</span>
+<span class="pre">install</span> <span class="pre">gcc</span> <span class="pre">gcc-c++</span></code>) and a JDK (a JRE is not sufficient).</p>
 <p><strong>Optional:</strong></p>
 <ul class="simple">
-<li><a class="reference external" href="https://avro.apache.org/">Avro</a> Python implementation to enable
+<li><p><a class="reference external" href="https://avro.apache.org/">Avro</a> Python implementation to enable
 <a class="reference internal" href="examples/avro.html#avro-io"><span class="std std-ref">Avro I/O</span></a> (run time only). Note that the pip packages for Python 2 and 3
-are named differently (respectively <code class="docutils literal notranslate"><span class="pre">avro</span></code> and <code class="docutils literal notranslate"><span class="pre">avro-python3</span></code>).</li>
-<li>Some examples have additional requirements. Check out the Dockerfile and
-<code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code> for details.</li>
+are named differently (respectively <code class="docutils literal notranslate"><span class="pre">avro</span></code> and <code class="docutils literal notranslate"><span class="pre">avro-python3</span></code>).</p></li>
 </ul>
 </div>
 <div class="section" id="environment-setup">
 <h2>Environment Setup<a class="headerlink" href="#environment-setup" title="Permalink to this headline">¶</a></h2>
-<p>Pydoop needs to know where the JDK and Hadoop are installed on your
-system. Although it will try to guess both locations, you can help by
-exporting, respectively, the <code class="docutils literal notranslate"><span class="pre">JAVA_HOME</span></code> and <code class="docutils literal notranslate"><span class="pre">HADOOP_HOME</span></code> environment
-variables. For instance:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">HADOOP_HOME</span><span class="o">=</span><span class="s2">&quot;/opt/hadoop-3.0.1&quot;</span>
-<span class="n">export</span> <span class="n">JAVA_HOME</span><span class="o">=</span><span class="s2">&quot;/usr/lib/jvm/java-8-openjdk-amd64&quot;</span>
+<p>To compile the HDFS extension module, Pydoop needs the path to the JDK
+installation. You can specify this via <code class="docutils literal notranslate"><span class="pre">JAVA_HOME</span></code>. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">JAVA_HOME</span><span class="o">=</span><span class="s2">&quot;/usr/lib/jvm/java-8-openjdk-amd64&quot;</span>
 </pre></div>
 </div>
 <p>Note that Pydoop is interested in the <strong>JDK</strong> home (where <code class="docutils literal notranslate"><span class="pre">include/jni.h</span></code>
 can be found), not the JRE home. Depending on your Java distribution and
 version, these can be different directories (usually the former being the
-latter’s parent).</p>
+latter’s parent). If <code class="docutils literal notranslate"><span class="pre">JAVA_HOME</span></code> is not found in the environment, Pydoop
+will try to locate the JDK via Java system properties.</p>
+<p>Pydoop also includes some Java components, and it needs Hadoop libraries to be
+in the <code class="docutils literal notranslate"><span class="pre">CLASSPATH</span></code> in order to build them. This is done by calling <code class="docutils literal notranslate"><span class="pre">hadoop</span>
+<span class="pre">classpath</span></code>, so make sure that the <code class="docutils literal notranslate"><span class="pre">hadoop</span></code> executable is in the
+<code class="docutils literal notranslate"><span class="pre">PATH</span></code>. For instance, if Hadoop was installed by unpacking the tarball into
+<code class="docutils literal notranslate"><span class="pre">/opt/hadoop</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">PATH</span><span class="o">=</span><span class="s2">&quot;/opt/hadoop/bin:/opt/hadoop/sbin:$</span><span class="si">{PATH}</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+<p>The Hadoop class path is also needed at run time by the HDFS extension. Again,
+since Pydoop picks it up from <code class="docutils literal notranslate"><span class="pre">hadoop</span> <span class="pre">classpath</span></code>, ensure that <code class="docutils literal notranslate"><span class="pre">hadoop</span></code> is
+in the <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, as shown above. <code class="docutils literal notranslate"><span class="pre">pydoop</span> <span class="pre">submit</span></code> must also be able to call
+the <code class="docutils literal notranslate"><span class="pre">hadoop</span></code> executable.</p>
+<p>Additionally, Pydoop needs to read part of the Hadoop configuration to adapt
+to specific scenarios. If <code class="docutils literal notranslate"><span class="pre">HADOOP_CONF_DIR</span></code> is in the environment, Pydoop
+will try to read the configuration from the corresponding location. As a
+fallback, Pydoop will also try <code class="docutils literal notranslate"><span class="pre">${HADOOP_HOME}/etc/hadoop</span></code> (in the above
+example, <code class="docutils literal notranslate"><span class="pre">HADOOP_HOME</span></code> would be <code class="docutils literal notranslate"><span class="pre">/opt/hadoop</span></code>). If <code class="docutils literal notranslate"><span class="pre">HADOOP_HOME</span></code> is not
+defined, Pydoop will try to guess it from the <code class="docutils literal notranslate"><span class="pre">hadoop</span></code> executable (again,
+this will have to be in the <code class="docutils literal notranslate"><span class="pre">PATH</span></code>).</p>
 </div>
 <div class="section" id="building-and-installing">
 <h2>Building and Installing<a class="headerlink" href="#building-and-installing" title="Permalink to this headline">¶</a></h2>
@@ -186,30 +173,30 @@ latter’s parent).</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pydoop</span>
 </pre></div>
 </div>
-<p>Or get the source code and build it locally:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="o">-</span><span class="n">b</span> <span class="n">master</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">crs4</span><span class="o">/</span><span class="n">pydoop</span><span class="o">.</span><span class="n">git</span>
+<p>To install a pre-release (e.g., alpha, beta) add <code class="docutils literal notranslate"><span class="pre">--pre</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">pre</span> <span class="n">pydoop</span>
+</pre></div>
+</div>
+<p>You can also install the latest development version from GitHub:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">crs4</span><span class="o">/</span><span class="n">pydoop</span><span class="o">.</span><span class="n">git</span>
 <span class="n">cd</span> <span class="n">pydoop</span>
 <span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">build</span>
 <span class="n">python</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="n">install</span> <span class="o">--</span><span class="n">skip</span><span class="o">-</span><span class="n">build</span>
 </pre></div>
 </div>
-<p>In the git repository, the <code class="docutils literal notranslate"><span class="pre">master</span></code> branch corresponds to the latest
-release, while the <code class="docutils literal notranslate"><span class="pre">develop</span></code> branch contains code under active development.</p>
-<p>Note that installing Pydoop and your MapReduce applications to all cluster
-nodes (or to an NFS share) is <em>not</em> required: see <a class="reference internal" href="self_contained.html"><span class="doc">Installation-free Usage</span></a> for
-additional info.</p>
+<p>If possible, you should install Pydoop on all cluster nodes. Alternatively, it
+can be distributed, together with your MapReduce applications, via the Hadoop
+distributed cache (see <a class="reference internal" href="self_contained.html"><span class="doc">Installation-free Usage</span></a>).</p>
 </div>
 <div class="section" id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
-<li><p class="first">“java home not found” error: try setting <code class="docutils literal notranslate"><span class="pre">JAVA_HOME</span></code> in <code class="docutils literal notranslate"><span class="pre">hadoop-env.sh</span></code></p>
-</li>
-<li><p class="first">“libjvm.so not found” error: try the following:</p>
+<li><p><code class="docutils literal notranslate"><span class="pre">libjvm.so</span></code> not found: try the following:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">LD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;$</span><span class="si">{JAVA_HOME}</span><span class="s2">/jre/lib/amd64/server:$</span><span class="si">{LD_LIBRARY_PATH}</span><span class="s2">&quot;</span>
 </pre></div>
 </div>
 </li>
-<li><p class="first">non-standard include/lib directories: the setup script looks for
+<li><p>non-standard include/lib directories: the setup script looks for
 includes and libraries in standard places – read <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> for
 details. If some of the requirements are stored in different
 locations, you need to add them to the search path. Example:</p>
@@ -235,14 +222,6 @@ download and install with pip:</p>
 </pre></div>
 </div>
 </li>
-<li><p class="first">Hadoop version issues. The Hadoop version selected at compile time is
-automatically detected based on the output of running <code class="docutils literal notranslate"><span class="pre">hadoop</span> <span class="pre">version</span></code>.
-If this fails for any reason, you can provide the correct version string
-through the <code class="docutils literal notranslate"><span class="pre">HADOOP_VERSION</span></code> environment variable, e.g.:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">HADOOP_VERSION</span><span class="o">=</span><span class="s2">&quot;2.7.4&quot;</span>
-</pre></div>
-</div>
-</li>
 </ol>
 </div>
 <div class="section" id="testing-your-installation">
@@ -251,30 +230,21 @@ through the <code class="docutils literal notranslate"><span class="pre">HADOOP_
 tests and/or examples to verify that everything works fine. Here is a short
 list of things that can go wrong and how to fix them. For full details on
 running tests and examples, see <code class="docutils literal notranslate"><span class="pre">.travis.yml</span></code>.</p>
-<ol class="arabic">
-<li><p class="first">make sure that Pydoop is able to detect your Hadoop home and
-configuration directories.  If auto-detection fails, try setting
-the <code class="docutils literal notranslate"><span class="pre">HADOOP_HOME</span></code> and <code class="docutils literal notranslate"><span class="pre">HADOOP_CONF_DIR</span></code> environment variables
-to the appropriate locations;</p>
-</li>
-<li><p class="first">Make sure all HDFS and YARN daemons are up (see above);</p>
-</li>
-<li><p class="first">Wait until HDFS exits from safe mode:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${HADOOP_HOME}/bin/hadoop dfsadmin -safemode wait
-</pre></div>
-</div>
-</li>
-<li><p class="first">HDFS tests may fail if your NameNode’s hostname and port are
+<ol class="arabic simple">
+<li><p>Incomplete configuration: make sure that Pydoop is able to find the
+<code class="docutils literal notranslate"><span class="pre">hadoop</span></code> executable and configuration directory (check the above section
+on environment setup).</p></li>
+<li><p>Cluster not ready: wait until all Hadoop daemons are up and HDFS exits from
+safe mode (<code class="docutils literal notranslate"><span class="pre">hadoop</span> <span class="pre">dfsadmin</span> <span class="pre">-safemode</span> <span class="pre">wait</span></code>).</p></li>
+<li><p>HDFS tests may fail if your NameNode’s hostname and port are
 non-standard. In this case, set the <code class="docutils literal notranslate"><span class="pre">HDFS_HOST</span></code> and <code class="docutils literal notranslate"><span class="pre">HDFS_PORT</span></code>
-environment variables accordingly;</p>
-</li>
-<li><p class="first">Some HDFS tests may fail if not run by the cluster superuser, in
+environment variables accordingly.</p></li>
+<li><p>Some HDFS tests may fail if not run by the cluster superuser, in
 particular <code class="docutils literal notranslate"><span class="pre">capacity</span></code>, <code class="docutils literal notranslate"><span class="pre">chown</span></code> and <code class="docutils literal notranslate"><span class="pre">used</span></code>.  To get superuser
 privileges, you can either start the cluster with your own user account or
 set the <code class="docutils literal notranslate"><span class="pre">dfs.permissions.superusergroup</span></code> Hadoop property to one of your
 unix groups (type <code class="docutils literal notranslate"><span class="pre">groups</span></code> at the command prompt to get the list of
-groups for your current user), then restart the HDFS daemons.</p>
-</li>
+groups for your current user), then restart the HDFS daemons.</p></li>
 </ol>
 </div>
 <div class="section" id="using-pydoop-on-amazon-emr">
@@ -315,6 +285,27 @@ sudo alternatives --set python /usr/bin/python3.6
 </div>
 <p>The above instructions have been tested on <code class="docutils literal notranslate"><span class="pre">emr-5.12.0</span></code>.</p>
 </div>
+<div class="section" id="trying-pydoop-without-installing-it">
+<h2>Trying Pydoop without installing it<a class="headerlink" href="#trying-pydoop-without-installing-it" title="Permalink to this headline">¶</a></h2>
+<p>You can try Pydoop on a <a class="reference external" href="https://www.docker.com/">Docker</a> container. The
+Dockerfile is in the distribution root directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">build</span> <span class="o">-</span><span class="n">t</span> <span class="n">pydoop</span> <span class="o">.</span>
+<span class="n">docker</span> <span class="n">run</span> <span class="o">--</span><span class="n">name</span> <span class="n">pydoop</span> <span class="o">-</span><span class="n">d</span> <span class="n">pydoop</span>
+</pre></div>
+</div>
+<p>This spins up a single-node, <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-common/SingleCluster.html#Pseudo-Distributed_Operation">pseudo-distributed</a>
+Hadoop cluster with <a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html#Introduction">HDFS</a>,
+<a class="reference external" href="https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/YARN.html">YARN</a>
+and a Job History server. Before attempting to use the container, wait a few
+seconds until all daemons are up and running.</p>
+<p>You may want to expose some ports to the host, such as the ones used by the
+web interfaces. For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span> <span class="n">run</span> <span class="o">--</span><span class="n">name</span> <span class="n">pydoop</span> <span class="o">-</span><span class="n">p</span> <span class="mi">8088</span><span class="p">:</span><span class="mi">8088</span> <span class="o">-</span><span class="n">p</span> <span class="mi">9870</span><span class="p">:</span><span class="mi">9870</span> <span class="o">-</span><span class="n">p</span> <span class="mi">19888</span><span class="p">:</span><span class="mi">19888</span> <span class="o">-</span><span class="n">d</span> <span class="n">pydoop</span>
+</pre></div>
+</div>
+<p>Refer to the Hadoop docs for a complete list of ports used by the various
+services.</p>
+</div>
 </div>
 
 
@@ -339,7 +330,7 @@ sudo alternatives --set python /usr/bin/python3.6
           <a href="tutorial/mapred_api.html" title="Writing Full-Featured Applications"
              >previous</a> |</li>
 	<li><a href="index.html">Home</a>|&nbsp;</li>
-	<li><a href="#">Download & Install</a>|&nbsp;</li>
+	<li><a href="#">Installation</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop/issues">Support</a>|&nbsp;</li>
 	<li><a href="https://github.com/crs4/pydoop">Git Repo</a>|&nbsp;</li>
 	<li><a href="https://crs4.github.io/pydoop/_pydoop1">Pydoop 1</a></li>
@@ -348,7 +339,7 @@ sudo alternatives --set python /usr/bin/python3.6
     </div>
     <div class="footer" role="contentinfo">
         &#169; Copyright 2009-2019, CRS4.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 2.0.1.
     </div>
   </body>
 </html>
