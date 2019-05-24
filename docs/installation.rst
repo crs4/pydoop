@@ -80,15 +80,16 @@ Install Pydoop via pip::
 
   pip install pydoop
 
-Or get the source code and build it locally::
+To install a pre-release (e.g., alpha, beta) add ``--pre``::
 
-  git clone -b master https://github.com/crs4/pydoop.git
+  pip install --pre pydoop
+
+You can also install the latest development version from GitHub::
+
+  git clone https://github.com/crs4/pydoop.git
   cd pydoop
   python setup.py build
   python setup.py install --skip-build
-
-In the git repository, the ``master`` branch corresponds to the latest
-release, while the ``develop`` branch contains code under active development.
 
 If possible, you should install Pydoop on all cluster nodes. Alternatively, it
 can be distributed, together with your MapReduce applications, via the Hadoop
