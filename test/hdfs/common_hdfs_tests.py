@@ -516,6 +516,9 @@ class TestCommon(unittest.TestCase):
             l.sort(key=operator.itemgetter("name"))
         for i, e in zip(infos, expected_infos):
             self.assertEqualPathInfo(i, e)
+        if not _is_py3:
+            # check it's OK for "top" to be a bytes string
+            list(self.fs.walk("/"))
         nonexistent_walk = self.fs.walk(self._make_random_path())
         if _is_py3:
             self.assertRaises(OSError, lambda: next(nonexistent_walk))

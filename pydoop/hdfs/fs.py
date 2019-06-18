@@ -627,7 +627,7 @@ class hdfs(object):
         """
         if not top:
             raise ValueError("Empty path")
-        if isinstance(top, basestring):
+        if not isinstance(top, dict):
             top = self.get_path_info(top)
         yield top
         if top['kind'] == 'directory':
