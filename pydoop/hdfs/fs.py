@@ -36,7 +36,6 @@ from .core import core_hdfs_fs
 # py3 compatibility
 from functools import reduce
 
-from pydoop.utils.py3compat import basestring
 try:
     from urllib.parse import urlparse
 except ImportError:
@@ -627,7 +626,7 @@ class hdfs(object):
         """
         if not top:
             raise ValueError("Empty path")
-        if isinstance(top, basestring):
+        if not isinstance(top, dict):
             top = self.get_path_info(top)
         yield top
         if top['kind'] == 'directory':

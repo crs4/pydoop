@@ -45,12 +45,15 @@ class TestCommon(unittest.TestCase):
         self.fs.delete(self.wd)
         self.fs.close()
 
-    def _make_random_path(self, where=None):
-        return "%s/%s_%s" % (where or self.wd, uuid.uuid4().hex, utils.UNI_CHR)
+    def _make_random_path(self, where=None, add_uni=True):
+        rval = "%s/%s" % (where or self.wd, uuid.uuid4().hex)
+        if add_uni:
+            rval = "%s_%s" % (rval, utils.UNI_CHR)
+        return rval
 
     # also an implicit test for the create_directory method
-    def _make_random_dir(self, where=None):
-        path = self._make_random_path(where=where)
+    def _make_random_dir(self, where=None, add_uni=True):
+        path = self._make_random_path(where=where, add_uni=add_uni)
         self.fs.create_directory(path)
         self.assertTrue(self.fs.exists(path))
         return path
@@ -516,6 +519,14 @@ class TestCommon(unittest.TestCase):
             l.sort(key=operator.itemgetter("name"))
         for i, e in zip(infos, expected_infos):
             self.assertEqualPathInfo(i, e)
+        if not _is_py3:
+            # check it's OK for "top" to be a bytes string
+            b_top = self._make_random_dir(add_uni=False)
+            try:
+                b_top = b_top.encode()
+            except Exception:
+                pass
+            list(self.fs.walk(b_top))
         nonexistent_walk = self.fs.walk(self._make_random_path())
         if _is_py3:
             self.assertRaises(OSError, lambda: next(nonexistent_walk))
