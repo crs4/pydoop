@@ -10,7 +10,7 @@ basically have two options:
    you need to process
 #. convert your data to Hadoop's standard ``SequenceFile`` format.
 
-To write sequence files with Pydoop, set the ouput format and the
+To write sequence files with Pydoop, set the output format and the
 compression type as follows::
 
   pydoop submit \
