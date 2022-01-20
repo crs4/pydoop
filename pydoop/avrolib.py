@@ -82,7 +82,7 @@ class SeekableDataFileReader(DataFileReader):
         if offset <= 0:  # FIXME what is a negative offset??
             f.seek(0)
             self._block_count = 0
-            self._read_header()  # FIXME we can't extimate how big it is...
+            self._read_header()  # FIXME we can't estimate how big it is...
             return
         sm = self.sync_marker
         sml = len(sm)

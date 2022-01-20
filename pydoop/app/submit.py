@@ -227,7 +227,7 @@ class PydoopSubmitter(object):
             env['PYTHONPATH'] = ':'.join([
                 self.__cache_archive_link(ar) for ar in self.args.python_zip
             ] + [env['PYTHONPATH']])
-        # Note that we have to explicitely put the working directory
+        # Note that we have to explicitly put the working directory
         # in the python path otherwise it will miss cached modules and
         # packages.
         env['PYTHONPATH'] = "${PWD}:" + env['PYTHONPATH']

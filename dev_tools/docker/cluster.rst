@@ -167,7 +167,7 @@ Log in on the client, install pydoop and run the tests::
 Details
 -------
 
-Boostrap strategy
+Bootstrap strategy
 ;;;;;;;;;;;;;;;;;
 
 The main synchronization issues are:
@@ -180,7 +180,7 @@ The main synchronization issues are:
    pre-condition to service firing up.
 
 
-The boostrap strategy is as follows.
+The bootstrap strategy is as follows.
 
  #. There is an external mechanism -- here is the script
     ``../scripts/share_etc_hosts.py``, but it should really be integrated in
@@ -189,19 +189,19 @@ The boostrap strategy is as follows.
     that can talk to the docker server to be sure that we got all the nodes
     involved.
 
- #. We have a zookeper node that is guaranteed to be fired before any other
+ #. We have a zookeeper node that is guaranteed to be fired before any other
     service by having all other nodes linked to it in the docker-compose.yml
     file.
 
- #. We have an auxiliary service, boostrap, that is in charge of orchestrating
-    the system boostrap.
+ #. We have an auxiliary service, bootstrap, that is in charge of orchestrating
+    the system bootstrap.
 
- #. The expected boostrap workflow is as follows.
+ #. The expected bootstrap workflow is as follows.
 
    a. docker-compose starts
-   b. all services (except zookeper and bootstrap) wait until
+   b. all services (except zookeeper and bootstrap) wait until
       ``zookeeper:/<servicename>`` is set to ``boot``
-   c. boostrap then does the following:
+   c. bootstrap then does the following:
       
       1. waits until its /etc/hosts  has been changed;
       2. sets ``/{namenode,datanode}`` to boot;

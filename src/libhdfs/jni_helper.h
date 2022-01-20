@@ -146,7 +146,7 @@ jthrowable hadoopConfSetStr(JNIEnv *env, jobject jConfiguration,
  * @param valueName         The name of the enum value
  * @param out               (out param) on success, a local reference to an
  *                          instance of the enum object.  (Since Java enums are
- *                          singletones, this is also the only instance.)
+ *                          singletons, this is also the only instance.)
  *
  * @return                  NULL on success; exception otherwise
  */
